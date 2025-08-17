@@ -305,6 +305,14 @@ unit Dasm
                         Space(); LDA ZP.ACCH HOut(); LDA ZP.ACCL HOut(); Space();
                         switch (X)
                         {
+                            case OpCode.GETITEMGG:
+                            case OpCode.GETITEMGL:
+                            case OpCode.GETITEMLG:
+                            case OpCode.GETITEMLL:
+                            {
+                                // Show as two separate byte operands
+                                Space(); LDA ZP.ACCL HOut(); Space(); LDA ZP.ACCH HOut(); Space();
+                            }
                             case OpCode.CALL:
                             {
                                 CLC

@@ -206,21 +206,6 @@ unit ZP // ZeroPage.asm
     const byte M14                  = 0x5D;  // Multi-use workspace 14
     const byte M15                  = 0x5E;  // Multi-use workspace 15
     
-    // Optimizer.asm aliases (never calls Memory functions)
-    const byte PEEP3                = M0;  // Peephole optimizer : previous instructions
-    const byte PEEP2                = M1;
-    const byte PEEP1                = M2;
-    const byte PEEP0                = M3;
-    const byte PEEPOP0              = M4;  // Peephole optimizer : previous instructions operands
-    const byte PEEPOP1              = M5;
-    const byte PEEPOP2              = M6;
-    const byte PEEPOP3              = M7;
-    const byte PEEPOPS              = M8;  // number of OpCodes in the current pattern
-    const byte PEEPCONSTRAINTS      = M9;  // constraint flags for the current pattern
-    const byte PEEPREPLACE          = M10; // replacement OpCode for the current pattern
-    const byte PEEPOPERANDS         = M11; // operands for replacement instruction for the current pattern
-    
-    
     // Debug.asm aliases (never calls Memory functions)
     const byte DB0                  = M0;
     const byte DB1                  = M1;
@@ -345,6 +330,21 @@ unit ZP // ZeroPage.asm
     const byte GVI                  = 0x84;  // Global Variable index (to skip in LoadGlobals | SaveGlobals when (BBS4, ZP.FLAGS)
     const byte GVIL                 = 0x84;
     const byte GVIH                 = 0x85;
+    
+    // Optimizer.asm aliases (never calls Memory functions)
+    const byte PEEP3                = 0x86;  // Peephole optimizer : previous instructions
+    const byte PEEP2                = 0x87;
+    const byte PEEP1                = 0x88;
+    const byte PEEP0                = 0x89;
+    const byte PEEPOP0              = M1;  // Peephole optimizer : previous instructions operands
+    const byte PEEPOP1              = M2;
+    const byte PEEPOP2              = M3;
+    const byte PEEPOP3              = M4;
+    const byte PEEPOPS              = M5;  // number of OpCodes in the current pattern
+    const byte PEEPCONSTRAINTS      = M6;   // constraint flags for the current pattern
+    const byte PEEPREPLACE          = M7;  // replacement OpCode for the current pattern
+    const byte PEEPOPERANDS         = M8;  // operands for replacement instruction for the current pattern
+    
     
     
     

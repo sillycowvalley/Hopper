@@ -143,11 +143,13 @@ unit OpCodes
         FORITF  = 0xC2,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]  
                          // Built for speed, increments iterator by +1, FROM and TO are +ve and FROM < TO, checks limit (no FORCHK), jumps back if continuing
        
+        DONTCARE = 0xFF, // for optimizer patterns
    }
    
    
    // String constants for all opcodes
    const string opcodeUNDEFINED = "UNDEFINED";
+   const string opcodeDONTCARE = "DONTCARE";
    const string opcodeINVALID = "INVALID";
    const string opcodeADD = "ADD";
    const string opcodeSUB = "SUB";
@@ -302,13 +304,6 @@ unit OpCodes
                 LDA #(opcodeCLEARSCREEN % 256)
                 STA ZP.STRL
                 LDA #(opcodeCLEARSCREEN / 256)
-                STA ZP.STRH
-            }
-            case OpCode.INVALID:
-            {
-                LDA #(opcodeINVALID % 256)
-                STA ZP.STRL
-                LDA #(opcodeINVALID / 256)
                 STA ZP.STRH
             }
             case OpCode.ADD:
@@ -652,6 +647,20 @@ unit OpCodes
                 LDA #(opcodeFORITF % 256)
                 STA ZP.STRL
                 LDA #(opcodeFORITF / 256)
+                STA ZP.STRH
+            }
+            case OpCode.DONTCARE:
+            {
+                LDA #(opcodeDONTCARE % 256)
+                STA ZP.STRL
+                LDA #(opcodeDONTCARE / 256)
+                STA ZP.STRH
+            }
+            case OpCode.INVALID:
+            {
+                LDA #(opcodeINVALID % 256)
+                STA ZP.STRL
+                LDA #(opcodeINVALID / 256)
                 STA ZP.STRH
             }
             default:

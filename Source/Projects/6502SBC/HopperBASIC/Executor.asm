@@ -530,6 +530,22 @@ unit Executor // Executor.asm
            {
                executeGetItem();
            }
+           case OpCode.GETITEMGG:
+           {
+               executeGetItemGG();
+           }
+           case OpCode.GETITEMGL:
+           {
+               executeGetItemGL();
+           }
+           case OpCode.GETITEMLG:
+           {
+               executeGetItemLG();
+           }
+           case OpCode.GETITEMLL:
+           {
+               executeGetItemLL();
+           }
            case OpCode.SETITEM:
            {
                executeSetItem();
@@ -2354,6 +2370,221 @@ unit Executor // Executor.asm
     #endif
     }
     
+    // Execute GETITEMGG opcode - get array[index] where both are globals
+    // Input: PC points to operand bytes (array global index, index global index)
+    // Output: Array element pushed to stack, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.IDY, stack
+    const string executeGetItemGGTrace = "GETITEMGG // Get array[index] global/global";
+    executeGetItemGG()
+    {
+    #ifdef TRACE
+        LDA #(executeGetItemGGTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemGGTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch array global index (first operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            TAX  // X = array global index
+            
+            // Fetch index global index (second operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            TAY  // Y = index global index
+            
+            // Load array pointer and type
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X  // Array type
+            STA ZP.ACCT
+            
+            // Load index value  
+            LDA Address.ValueStackLSB, Y
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.IDYH
+            
+            // Call common implementation
+            commonGetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeGetItemGGTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemGGTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute GETITEMGL opcode - get array[index] where array=global, index=local
+    // Input: PC points to operand bytes (array global index, index local offset)
+    // Output: Array element pushed to stack, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.IDY, stack
+    const string executeGetItemGLTrace = "GETITEMGL // Get array[index] global/local";
+    executeGetItemGL()
+    {
+    #ifdef TRACE
+        LDA #(executeGetItemGLTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemGLTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch array global index (first operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            TAX  // X = array global index
+            
+            // Fetch index local offset (second operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Calculate local position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAY  // Y = index local position
+            
+            // Load array pointer and type
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X  // Array type
+            STA ZP.ACCT
+            
+            // Load index value from local  
+            LDA Address.ValueStackLSB, Y
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.IDYH
+            
+            // Call common implementation
+            commonGetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeGetItemGLTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemGLTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute GETITEMLG opcode - get array[index] where array=local, index=global
+    // Input: PC points to operand bytes (array local offset, index global index)
+    // Output: Array element pushed to stack, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.IDY, stack
+    const string executeGetItemLGTrace = "GETITEMLG // Get array[index] local/global";
+    executeGetItemLG()
+    {
+    #ifdef TRACE
+        LDA #(executeGetItemLGTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemLGTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch array local offset (first operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Calculate local position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = array local position
+            
+            // Fetch index global index (second operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            TAY  // Y = index global index
+            
+            // Load array pointer and type from local
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X  // Array type
+            STA ZP.ACCT
+            
+            // Load index value from global
+            LDA Address.ValueStackLSB, Y
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.IDYH
+            
+            // Call common implementation
+            commonGetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeGetItemLGTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemLGTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+
+    // Execute GETITEMLL opcode - get array[index] where both are locals
+    // Input: PC points to operand bytes (array local offset, index local offset)
+    // Output: Array element pushed to stack, PC advanced by 2
+    // Modifies: A, X, Y, ZP.PC, ZP.IDX, ZP.IDY, stack
+    const string executeGetItemLLTrace = "GETITEMLL // Get array[index] local/local";
+    executeGetItemLL()
+    {
+    #ifdef TRACE
+        LDA #(executeGetItemLLTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemLLTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            // Fetch array local offset (first operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Calculate array local position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAX  // X = array local position
+            
+            // Fetch index local offset (second operand)
+            FetchOperandByte();
+            States.CanContinue();
+            if (NC) { break; }
+            
+            // Calculate index local position: BP + offset
+            CLC
+            ADC ZP.BP
+            TAY  // Y = index local position
+            
+            // Load array pointer and type from local
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X  // Array type
+            STA ZP.ACCT
+            
+            // Load index value from local
+            LDA Address.ValueStackLSB, Y
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.IDYH
+            
+            // Call common implementation
+            commonGetItem();
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeGetItemLLTrace % 256) STA ZP.TraceMessageL LDA #(executeGetItemLLTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
     
     // Execute INDEX opcode - string/array indexing
     // Stack: [..., collection_ref, index] -> [..., element_value]
@@ -2372,8 +2603,46 @@ unit Executor // Executor.asm
         loop // Single exit block
         {
             // Pop index value from stack
-            Stacks.PopTop();  // TODO: GetItem: Result in ZP.TOP (index), ZP.TOPT (index type)
+            DEC ZP.SP
+            LDX ZP.SP
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDYH
+            LDA Address.TypeStackLSB, X
+            STA ZP.TOPT
             
+            // Pop collection reference from stack
+            DEC ZP.SP
+            LDX ZP.SP
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X
+            STA ZP.ACCT
+            
+            // Inputs: ZP.ACCT = array type, ZP.IDX = array pointer, ZP.TOPT = index type, ZP.IDY = index
+            // Output: Element pushed to stack, States set appropriately  
+            commonGetItem();
+            
+            break;
+        } // loop
+        
+    #ifdef TRACE
+        LDA #(executeGetItemTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeGetItemTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+    // Common GETITEM implementation
+    // Inputs: ZP.ACCT = array type, ZP.IDX = array pointer, ZP.TOPT = index type, ZP.IDY = index
+    // Output: Element pushed to stack, States set appropriately  
+    commonGetItem()
+    {
+        loop
+        {
             // Check index type is numeric (INT, WORD, or BYTE)
             LDA ZP.TOPT
             AND #BASICType.TYPEMASK  // Remove VAR bit if present
@@ -2405,159 +2674,81 @@ unit Executor // Executor.asm
                 }
             }
             
-            // Save index value to ACC registers
-            LDA ZP.TOPL
-            STA ZP.ACCL
-            LDA ZP.TOPH
-            STA ZP.ACCH
-            
-            // Pop collection reference from stack
-            Stacks.PopTop();  // TODO: GetItem: Result in ZP.TOP (collection ref), ZP.TOPT (type)
-            
-            // Save collection pointer to NEXT
-            LDA ZP.TOPL
-            STA ZP.NEXTL
-            LDA ZP.TOPH
-            STA ZP.NEXTH
-
             // Dispatch based on collection type
-            LDA ZP.TOPT
+            LDA ZP.ACCT
             AND # BASICType.TYPEMASK
             CMP # BASICType.STRING
             if (Z)
             {
-                indexString();  // Input: ZP.NEXT = string ptr, ZP.ACC = index
-                                // Output: States set, char pushed if successful
+                // Get string length
+                LDY #0
+                loop
+                {
+                    LDA [ZP.IDX], Y
+                    if (Z) { break; }
+                    INY
+        #ifdef DEBUG
+                    if (Z) // wrapped around from 0xFF to 0x00
+                    {
+                        LDA # 0x04  Debug.Crash(); // runaway StringLength() calculation
+                    }
+        #endif
+                }
+                STY ZP.TOPL
+                                        
+                // Check if index is within bounds (index < length)
+                // Compare index (IDY) with length (TOP)
+                LDA ZP.IDYH
+                if (NZ)  // strings are always <= 255
+                {
+                    Error.RangeError(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+                LDA ZP.IDYL
+                CMP ZP.TOPL
+                if (C)   // IDYL >= TOPL (index >= length
+                {
+                    Error.RangeError(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+                
+                // Read the character at the calculated address
+                LDY ZP.IDYL
+                LDA [ZP.IDX], Y
+                
+                // Store character value in ZP.TOP as CHAR type
+                STA ZP.TOPL
+                STZ ZP.TOPH  // Clear high byte
+                LDA #BASICType.CHAR
             }
             else
             {
-                LDA ZP.TOPT
+                LDA ZP.ACCT
                 AND # BASICType.ARRAY
                 if (NZ)
                 {
-                    indexArray(); // Input: ZP.NEXT = array ptr, ZP.ACC = index
-                                  // Output: States set, item pushed if successful
+                    // Get the element value
+                    BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT
+                    if (NC)
+                    {
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    // Push result with correct type
+                    LDA ZP.ACCT
                 }
                 else
                 {
                     Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     States.SetFailure();
+                    break;
                 }
             }
-            break;
-        } // loop
-        
-    #ifdef TRACE
-        LDA #(executeGetItemTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeGetItemTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
-    }
-
-    // Index into a string to get a character
-    // Input: ZP.NEXT = string pointer, ZP.ACC = index (already validated as non-negative)
-    // Output: Character pushed to stack as CHAR type if successful
-    //         States set to Success or Failure
-    // Modifies: ZP.TOP, ZP.TOPT
-    const string indexStringTrace = "IndexStr";
-    indexString()
-    {
-    #ifdef TRACE
-        LDA #(indexStringTrace % 256) STA ZP.TraceMessageL 
-        LDA #(indexStringTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-    #endif
-
-        loop // Single exit
-        {
-            // Move string pointer to TOP for length calculation
-            LDA ZP.NEXTL
-            TAX
-            LDA ZP.NEXTH
-            TAY
             
-            // Get string length
-            Tools.StringLength();  // Returns length in A
-            STA ZP.TOPL
-                                    
-            // Check if index is within bounds (index < length)
-            // Compare index (ACC) with length (TOP)
-            LDA ZP.ACCH
-            if (NZ)  // strings are always <= 255
-            {
-                Error.RangeError(); BIT ZP.EmulatorPCL
-                States.SetFailure();
-                break;
-            }
-            LDA ZP.ACCL
-            CMP ZP.TOPL
-            if (C)   // ACCL >= TOPL (index >= length
-            {
-                Error.RangeError(); BIT ZP.EmulatorPCL
-                States.SetFailure();
-                break;
-            }
-            
-            // Read the character at the calculated address
-            LDY ZP.ACCL
-            LDA [ZP.NEXT], Y
-            
-            // Store character value in ZP.TOP as CHAR type
-            STA ZP.TOPL
-            STZ ZP.TOPH  // Clear high byte
-            LDA #BASICType.CHAR
-            Stacks.PushTop(); // indexString
-            
-            States.SetSuccess();
-            break;
-        }
-
-    #ifdef TRACE
-        LDA #(indexStringTrace % 256) STA ZP.TraceMessageL 
-        LDA #(indexStringTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
-    }
-
-    // Index into an array to get an element
-    // Input: ZP.NEXT = array pointer, ZP.ACC = index (already validated as non-negative)
-    // Output: Element pushed to stack with appropriate type if successful
-    //         States set to Success or Failure
-    // Modifies: ZP.TOP, ZP.TOPT
-    // Note: Arrays not yet implemented - this is a placeholder for future functionality
-    const string indexArrayTrace = "IndexArray";
-    indexArray()
-    {
-    #ifdef TRACE
-        LDA #(indexArrayTrace % 256) STA ZP.TraceMessageL 
-        LDA #(indexArrayTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-    #endif
-    
-        loop
-        {
-            // Transfer to BASICArray unit format
-            LDA ZP.NEXTL
-            STA ZP.IDXL
-            LDA ZP.NEXTH
-            STA ZP.IDXH
-            
-            LDA ZP.ACCL
-            STA ZP.IDYL
-            LDA ZP.ACCH
-            STA ZP.IDYH
-            
-            // Get the element value
-            BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT
-            if (NC)
-            {
-                States.SetFailure();
-                break;
-            }
-            
-            // Push result with correct type
             LDY ZP.SP
-            LDA ZP.ACCT
             STA Address.TypeStackLSB, Y
             LDA ZP.TOPL
             STA Address.ValueStackLSB, Y
@@ -2567,17 +2758,10 @@ unit Executor // Executor.asm
             
             LDA #State.Success
             STA ZP.SystemState
-        
             break;
         } // single exit
-    
-    #ifdef TRACE
-        LDA #(indexArrayTrace % 256) STA ZP.TraceMessageL 
-        LDA #(indexArrayTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
     }
-    
+
     // Execute SETITEM opcode - array element assignment
     // Stack layout on entry: [array_ptr][index][value]
     // Stack layout on exit: [] (all consumed)

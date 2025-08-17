@@ -17,31 +17,48 @@ unit Optimizer
         Operand0,            // PEEPREPLACE PEEPOP0
         Operand0AndOperand2, // PEEPREPLACE PEEPOP0 PEEPOP2
         Operand0AndOperand3, // PEEPREPLACE PEEPOP0 PEEPOP3
+        Operand2AndOperand1, // PEEPREPLACE PEEPOP2 PEEPOP1
     }
     
     const byte[] peepPatterns = {
-    //  PEEP0,             PEEP1,        PEEP2,            PEEP3,             CONSTRAINTS,                       OPERANDS,                        EMIT            
+    //  PEEP0,             PEEP1,        PEEP2,            PEEP3,             CONSTRAINTS,                          OPERANDS,                        EMIT            
     
     // PUSHGLOBAL <n>, PUSH1, ADD, POPGLOBAL <n> -> INCGLOBAL <n>
-        OpCode.POPGLOBAL,  OpCode.ADD,   OpCode.PUSH1,     OpCode.PUSHGLOBAL, PeepConstraint.EqualOperands0and3, NewOperands.Operand0,            OpCode.INCGLOBAL, 
+        OpCode.POPGLOBAL,  OpCode.ADD,   OpCode.PUSH1,     OpCode.PUSHGLOBAL, PeepConstraint.EqualOperands0and3,    NewOperands.Operand0,            OpCode.INCGLOBAL, 
     // PUSHLOCAL <n>,  PUSH1, ADD, POPLOCAL  <n> -> INCLOCAL <n>        
-        OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSH1,     OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and3, NewOperands.Operand0,            OpCode.INCLOCAL,  
+        OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSH1,     OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and3,    NewOperands.Operand0,            OpCode.INCLOCAL,  
     
     // PUSHLOCAL <n>,  PUSHLOCAL <m>, ADD, POPLOCAL  <n> -> ADDLOCALS <n> <m>
-        OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and3, NewOperands.Operand0AndOperand2, OpCode.ADDLOCALS,
+        OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and3,    NewOperands.Operand0AndOperand2, OpCode.ADDLOCALS,
     // PUSHLOCAL <m>,  PUSHLOCAL <n>, ADD, POPLOCAL  <n> -> ADDLOCALS <n> <m>
-        OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and2, NewOperands.Operand0AndOperand3, OpCode.ADDLOCALS,
+        OpCode.POPLOCAL,   OpCode.ADD,   OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,  PeepConstraint.EqualOperands0and2,    NewOperands.Operand0AndOperand3, OpCode.ADDLOCALS,
     
     // PUSHGLOBAL <n>,  PUSHGLOBAL <m>, ADD, POPGLOBAL  <n> -> ADDGLOBALS <n> <m>
         OpCode.POPGLOBAL,   OpCode.ADD,   OpCode.PUSHGLOBAL, OpCode.PUSHGLOBAL,  PeepConstraint.EqualOperands0and3, NewOperands.Operand0AndOperand2, OpCode.ADDGLOBALS,
     // PUSHGLOBAL <m>,  PUSHGLOBAL <n>, ADD, POPGLOBAL  <n> -> ADDGLOBALS <n> <m>
         OpCode.POPGLOBAL,   OpCode.ADD,   OpCode.PUSHGLOBAL, OpCode.PUSHGLOBAL,  PeepConstraint.EqualOperands0and2, NewOperands.Operand0AndOperand3, OpCode.ADDGLOBALS,    
+        
+        
+    // PUSHGLOBAL array, PUSHGLOBAL index, GETITEM -> GETITEMGG array index
+        OpCode.GETITEM,    OpCode.PUSHGLOBAL, OpCode.PUSHGLOBAL, OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand2AndOperand1, OpCode.GETITEMGG,
+    
+    // PUSHGLOBAL array, PUSHLOCAL index, GETITEM -> GETITEMGL array index  
+        OpCode.GETITEM,    OpCode.PUSHLOCAL,  OpCode.PUSHGLOBAL, OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand2AndOperand1, OpCode.GETITEMGL,
+    
+    // PUSHLOCAL array, PUSHGLOBAL index, GETITEM -> GETITEMLG array index
+        OpCode.GETITEM,    OpCode.PUSHGLOBAL, OpCode.PUSHLOCAL,  OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand2AndOperand1, OpCode.GETITEMLG,
+    
+    // PUSHLOCAL array, PUSHLOCAL index, GETITEM -> GETITEMLL array index
+        OpCode.GETITEM,    OpCode.PUSHLOCAL,  OpCode.PUSHLOCAL,  OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand2AndOperand1, OpCode.GETITEMLL,
+            
+        
         OpCode.INVALID  // End marker = 0
     };
 
     
     ClearPeeps()
     {
+        // 0x00 = INVALID
         STZ ZP.PEEP3
         STZ ZP.PEEP2
         STZ ZP.PEEP1
@@ -66,6 +83,7 @@ unit Optimizer
         Space();
         
         LDX ZP.PEEP3
+        CPX # OpCode.INVALID
         if (NZ)
         {
             Space(); OpCodes.ToString(); PrintStringSTR(); 
@@ -78,6 +96,7 @@ unit Optimizer
             }
         }
         LDX ZP.PEEP2
+        CPX # OpCode.INVALID
         if (NZ)
         {
             Space(); OpCodes.ToString(); PrintStringSTR(); 
@@ -90,6 +109,7 @@ unit Optimizer
             }
         }
         LDX ZP.PEEP1
+        CPX # OpCode.INVALID
         if (NZ)
         {
             Space(); OpCodes.ToString(); PrintStringSTR(); 
@@ -102,6 +122,7 @@ unit Optimizer
             }
         }
         LDX ZP.PEEP0
+        CPX # OpCode.INVALID
         if (NZ)
         {
             Space(); OpCodes.ToString(); PrintStringSTR(); 
@@ -245,7 +266,7 @@ unit Optimizer
             
             // Check for end marker
             LDY #0
-            LDA [ZP.IDX], Y
+            LDA [ZP.IDX], Y // Y = 0
             if (Z) { CLC break; } // Found OpCode.INVALID - no more patterns
             
             // Compare PEEP0
@@ -253,35 +274,36 @@ unit Optimizer
             if (NZ) { continue; }
             
             // Compare PEEP1
-            LDY #1
-            LDA [ZP.IDX], Y
+            INY
+            LDA [ZP.IDX], Y // Y = 1
             CMP ZP.PEEP1
             if (NZ) { continue; }
-            
+
             // Compare PEEP2
             INY
-            LDA [ZP.IDX], Y
-            CMP OpCode.INVALID
+            LDA [ZP.IDX], Y // Y = 2
+            CMP # OpCode.DONTCARE
             if (NZ) // do we have a 3rd instruction in the pattern?
             {
                 CMP ZP.PEEP2
-                if (NZ) { continue; }
-                
+                if (NZ) { continue; } // does PEEP3 match the pattern?
+
                 // Compare PEEP3
                 INY
-                LDA [ZP.IDX], Y
-                CMP OpCode.INVALID
+                LDA [ZP.IDX], Y // Y = 3
+                CMP # OpCode.DONTCARE
                 if (NZ) // do we have a 4th instruction in the pattern?
                 {
                     CMP ZP.PEEP3
-                    if (NZ) { continue; }
+                    if (NZ) { continue; } // does PEEP3 match the pattern?
+                    
+                    INY // Y = 4
                 }
             }
             
             // The opcodes match the pattern!
-            
+
             // store the number of instructions in the pattern
-            INY
             STY ZP.PEEPOPS
             
             // store operand constraints
@@ -298,7 +320,7 @@ unit Optimizer
             LDY #6
             LDA [ZP.IDX], Y
             STA ZP.PEEPREPLACE 
-            
+                        
             // Load operands for instructions that have single byte operands
             LDA ZP.XPCL
             STA ZP.IDYL
@@ -309,7 +331,7 @@ unit Optimizer
             STZ ZP.PEEPOP1
             STZ ZP.PEEPOP2
             STZ ZP.PEEPOP3
-            
+           
             // PEEP0 - step back 1 to opcode
             LDA ZP.PEEP0
             stepBack();
@@ -400,7 +422,7 @@ unit Optimizer
             LDA #0 DumpPeeps();
 #endif
             
-            // remove ZP.PEEPOPS instructions
+            // remove ZP.PEEPOPS x instructions
             LDX ZP.PEEPOPS
             loop
             {
@@ -412,7 +434,6 @@ unit Optimizer
             }
             
             // Emit ZP.PEEPREPLACE opcode
-            
             // Write opcode
             LDA ZP.PEEPREPLACE
             STA Compiler.compilerOpCode
@@ -421,7 +442,6 @@ unit Optimizer
             incXPC();
             
             pushPeepOp(); // Compiler.compilerOpCode is the new PEEP0
-            
             
             // Write operands
             LDA ZP.PEEPOPERANDS
@@ -453,13 +473,23 @@ unit Optimizer
                     STA [ZP.XPC]
                     incXPC();
                 }
+                case NewOperands.Operand2AndOperand1:
+                {
+                    LDA ZP.PEEPOP2
+                    STA [ZP.XPC]
+                    incXPC();
+                    
+                    LDA ZP.PEEPOP1
+                    STA [ZP.XPC]
+                    incXPC();
+                }
                 
                 default:
                 {
                     Error.TODO(); BIT ZP.EmulatorPCL
                 }
             }
-            
+           
 #ifdef DEBUG            
             LDA #1 DumpPeeps();
 #endif
