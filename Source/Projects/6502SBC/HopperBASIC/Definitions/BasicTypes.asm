@@ -315,18 +315,18 @@ unit BASICTypes // BASICTypes.asm
                 if (C)
                 {
                     LDA #'"' Serial.WriteChar();
-                    PrintStringTOP();  // Print the actual string content
+                    Tools.PrintStringTOP();  // Print the actual string content
                     LDA #'"' Serial.WriteChar();
                 }
                 else
                 {
-                    PrintStringTOP();  // Print the actual string content
+                    Tools.PrintStringTOP();  // Print the actual string content
                 }
                 PHP
             }
             default:
             {
-                PrintDecimalWord(); // Numeric types
+                Tools.PrintDecimal(); // Numeric types
             }
         }
         

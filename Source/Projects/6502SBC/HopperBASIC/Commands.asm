@@ -57,7 +57,7 @@ unit Commands
         STA ZP.TOPL
         LDA ZP.ACCH
         STA ZP.TOPH
-        Tools.PrintDecimalWord();
+        Tools.PrintDecimal();
         
         LDA #(Messages.BytesMsg % 256)
         STA ZP.STRL
@@ -393,7 +393,7 @@ unit Commands
         STA ZP.TOPL
         LDA ZP.ACCH
         STA ZP.TOPH
-        Tools.PrintDecimalWord();
+        Tools.PrintDecimal();
         
         LDA #']' Serial.WriteChar();
         LDA #' ' Serial.WriteChar();

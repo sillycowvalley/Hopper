@@ -290,8 +290,7 @@ unit CompilerFlow
         if (NC)
         {
             // Clean up stack on error path (restore stack balance)
-            PLA  // Discard loop start position MSB
-            PLA  // Discard loop start position LSB
+            Stacks.PopTop();
         }
 
     #ifdef TRACE

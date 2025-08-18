@@ -240,7 +240,7 @@ unit Dasm
                                 
                                 LDA #BASICType.INT
                                 STA ZP.TOPT
-                                Tools.PrintDecimalWord();  // Handles negative numbers correctly
+                                Tools.PrintDecimal();  // Handles negative numbers correctly
                                 
                                 LDA #']' COut();
                             }
@@ -270,7 +270,7 @@ unit Dasm
                                 
                                 LDA #BASICType.INT
                                 STA ZP.TOPT
-                                Tools.PrintDecimalWord();
+                                Tools.PrintDecimal();
                                 
                                 LDA #' ' COut(); 
                                 LDA #'-' COut(); 
@@ -407,7 +407,7 @@ unit Dasm
                                 {
                                     LDA #'+' COut();
                                 }
-                                Tools.PrintDecimalWord();
+                                Tools.PrintDecimal();
                                 
                                 LDA #' ' COut(); LDA #'-' COut(); LDA #'>' COut(); LDA #' ' COut();
                                 
@@ -461,7 +461,7 @@ unit Dasm
                                 
                                 LDA #BASICType.INT
                                 STA ZP.TOPT
-                                Tools.PrintDecimalWord();  // Handles negative numbers correctly
+                                Tools.PrintDecimal();  // Handles negative numbers correctly
                                 LDA #']' COut();
                                 
                                 Space();
@@ -513,7 +513,7 @@ unit Dasm
                                 
                                 LDA #BASICType.INT
                                 STA ZP.TOPT
-                                Tools.PrintDecimalWord();  // Handles negative numbers correctly
+                                Tools.PrintDecimal();  // Handles negative numbers correctly
                                 LDA #']' COut();
                                 
                                 Space();

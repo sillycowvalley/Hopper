@@ -5,7 +5,7 @@ MEM
 ! Noel's RetroLab Benchmark
 
 BEGIN
-    WORD START = MILLIS()
+    LONG START = MILLIS()
     LONG S
     WORD J
     FOR i=1 TO 10

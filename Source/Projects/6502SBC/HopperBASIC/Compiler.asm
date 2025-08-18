@@ -1983,6 +1983,7 @@ unit Compiler // Compiler.asm
                case Token.BIT:
                case Token.STRING:
                case Token.VAR:
+               case Token.LONG:
                {
                    // Check if we've already seen flow altering statements
                     LDA compilerCanDeclareLocals
@@ -2357,6 +2358,19 @@ unit Compiler // Compiler.asm
                     // Emit PUSHCHAR 0
                     LDA #0
                     Emit.PushChar();
+                }
+                case BASICType.LONG:
+                {
+                    // For LONG locals, push LONG 0 using TOLONG conversion
+                    LDA #0
+                    Emit.PushByte();        // Push BYTE 0
+                    Error.CheckError();
+                    if (NC) { break; }
+                    
+                    // Convert BYTE to LONG
+                    LDA #OpCode.TOLONG
+                    STA Compiler.compilerOpCode
+                    Emit.OpCode();
                 }
                 case BASICType.VAR:
                 {

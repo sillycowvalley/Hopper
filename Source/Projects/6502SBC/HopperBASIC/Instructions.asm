@@ -38,22 +38,6 @@ unit Instructions // Instructions.asm
             }
             
             LDA ZP.NEXTT
-            CMP #BASICType.BYTE
-            if (Z)
-            {
-                // Special case for BYTE type - only allows values 0-255
-                LDA ZP.TOPH
-                if (NZ)
-                {
-                    CLC  // Incompatible - value > 255
-                    break;
-                }
-                // Value is 0-255, but still need to check type compatibility
-                // Fall through to CheckTypeCompatibility()
-            }
-            
-            
-            LDA ZP.NEXTT
             CMP ZP.TOPT
             if (Z)
             {
@@ -70,6 +54,102 @@ unit Instructions // Instructions.asm
                 break;
             }
             
+            
+            // Check if RHS is LONG - allow assignment if value fits in target type
+            LDA ZP.TOPT
+            CMP #BASICType.LONG
+            if (Z)
+            {
+                // RHS is LONG - check if value fits in LHS type
+                LDA ZP.NEXTT
+                switch (A)
+                {
+                    case BASICType.BYTE:
+                    {
+                        // LONG ? BYTE: value must be 0-255
+                        LDA ZP.LTOP1  // Check bytes 1, 2, 3 are all zero
+                        ORA ZP.LTOP2
+                        ORA ZP.LTOP3
+                        if (NZ)
+                        {
+                            CLC  // Incompatible - value > 255
+                            break;
+                        }
+                    }
+                    case BASICType.WORD:
+                    {
+                        // LONG ? WORD: value must be 0-65535  
+                        LDA ZP.LTOP2  // Check bytes 2, 3 are zero
+                        ORA ZP.LTOP3
+                        if (NZ)
+                        {
+                            CLC  // Incompatible - value > 65535
+                            break;
+                        }
+                    }
+                    case BASICType.INT:
+                    {
+                        // LONG ? INT: value must be -32768 to 32767
+                        // Check if high 16 bits are either all 0 (positive) or all 1 (negative)
+                        LDA ZP.LTOP2
+                        CMP ZP.LTOP3  // Both bytes should be same for valid sign extension
+                        if (NZ)
+                        {
+                            CLC  // Incompatible - not valid sign extension
+                            break;
+                        }
+                        
+                        // Check if sign extension is consistent with bit 15
+                        BIT ZP.LTOP1  // Check bit 7 of byte 1 (bit 15 of 16-bit value)
+                        if (MI)       // Negative 16-bit value
+                        {
+                            LDA ZP.LTOP2
+                            CMP #0xFF     // High bytes should be 0xFF for negative
+                            if (NZ)
+                            {
+                                CLC  // Incompatible - not properly sign extended
+                                break;
+                            }
+                        }
+                        else          // Positive 16-bit value  
+                        {
+                            LDA ZP.LTOP2
+                            if (NZ)       // High bytes should be 0x00 for positive
+                            {
+                                CLC  // Incompatible - value too large
+                                break;
+                            }
+                        }
+                    }
+                    default:
+                    {
+                        CLC  // Incompatible - cannot assign LONG to non-numeric type
+                        break;
+                    }
+                }// switch
+                
+                // if we got this far we are good
+                SEC
+                break;
+            } // RHS = LONG, LHS != LONG
+            
+            
+            LDA ZP.NEXTT
+            CMP #BASICType.BYTE
+            if (Z)
+            {
+                // Special case for BYTE type - only allows values 0-255
+                LDA ZP.TOPH
+                if (NZ)
+                {
+                    CLC  // Incompatible - value > 255
+                    break;
+                }
+                // Value is 0-255, but still need to check type compatibility
+                // Fall through to CheckTypeCompatibility()
+            }
+            
+                       
             // For all types (including BIT, CHAR and STRING), use general type compatibility checking
             LDA #5  // Assignment mode
             CheckTypeCompatibility();
@@ -508,6 +588,8 @@ PLP
             
             
             
+            
+            
             LDA ZP.NEXTT
             CMP #BASICType.STRING
             if (Z)
@@ -602,6 +684,65 @@ PLP
                 }
                 // CHAR vs STRING CHAR handled above
             }
+            
+            
+            // Check if either operand is LONG
+            LDA ZP.NEXTT
+            CMP #BASICType.LONG
+            if (Z)
+            {
+                // Left operand is LONG - promote right operand and result to LONG
+                LDA ZP.TOPT
+                switch (A)
+                {
+                    case BASICType.BYTE:
+                    case BASICType.WORD:
+                    case BASICType.INT:
+                    case BASICType.LONG:
+                    {
+                        // Compatible numeric types - result is LONG
+                        LDA #BASICType.LONG
+                        STA ZP.NEXTT  // Set result type to LONG
+                        SEC  // Set C - compatible
+                        break;
+                    }
+                    default:
+                    {
+                        CLC  // Set NC - incompatible (non-numeric with LONG)
+                        break;
+                    }
+                }
+            }
+            
+            LDA ZP.TOPT
+            CMP #BASICType.LONG
+            if (Z)
+            {
+                // Right operand is LONG - promote left operand and result to LONG
+                LDA ZP.NEXTT
+                switch (A)
+                {
+                    case BASICType.BYTE:
+                    case BASICType.WORD:
+                    case BASICType.INT:
+                    case BASICType.LONG:
+                    {
+                        // Compatible numeric types - result is LONG
+                        LDA #BASICType.LONG
+                        STA ZP.NEXTT  // Set result type to LONG
+                        SEC  // Set C - compatible
+                        break;
+                    }
+                    default:
+                    {
+                        CLC  // Set NC - incompatible (non-numeric with LONG)
+                        break;
+                    }
+                }
+            }
+            
+            
+            
             
             // No other compatibility rules matched
             CLC  // Set NC - incompatible

@@ -2508,6 +2508,10 @@ unit Debug // Debug.asm
                     {
                         LDA #'i' cOut();
                     }
+                    case BASICType.LONG:
+                    {
+                        LDA #'l' cOut();
+                    }
                     case BASICType.VOID:
                     {
                         LDA #'v' cOut();
@@ -2543,11 +2547,23 @@ unit Debug // Debug.asm
                 }
                 LDA #':' cOut();
                 
+                
+                LDA Address.TypeStackLSB, X
+                Long.IsLong();
+                if (C)
+                {
+                    LDA Address.ValueStackMSB3, X
+                    hOut();
+                    LDA Address.ValueStackMSB2, X
+                    hOut();
+                }
+                
                 // Print value (4 hex digits)
                 LDA Address.ValueStackMSB, X
                 hOut();
                 LDA Address.ValueStackLSB, X
                 hOut();
+                
                 
                 LDA ZP.DB0
                 if (NZ)

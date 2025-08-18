@@ -598,7 +598,7 @@ unit Tokens
             
             LDA [ZP.IDY], Y     // Get length again
             STA ZP.TOPL
-            Tools.PrintDecimalWord();
+            Tools.PrintDecimal();
             Debug.Space();
             TAX                 // X = keyword length
             
@@ -691,7 +691,7 @@ unit Tokens
             LDA #'A' Debug.COut();
             LDA #'H' Debug.COut();
             LDA #'=' Debug.COut();
-            Tools.PrintDecimalWord();
+            Tools.PrintDecimal();
             Debug.Space();
 #endif
         }
@@ -722,7 +722,7 @@ unit Tokens
             LDA #'I' Debug.COut();
             LDA #'Z' Debug.COut();
             LDA #'=' Debug.COut();
-            Tools.PrintDecimalWord();
+            Tools.PrintDecimal();
             Debug.NL();
 #endif
         }

@@ -2045,6 +2045,15 @@ unit Executor // Executor.asm
             LDA Address.ValueStackMSB, X
             STA Address.ValueStackMSB, Y
             
+            LDA Address.TypeStackLSB, Y
+            Long.IsLong();
+            if (C)
+            {
+                LDA Address.ValueStackMSB2, X
+                STA Address.ValueStackMSB2, Y
+                LDA Address.ValueStackMSB3, X
+                STA Address.ValueStackMSB3, Y
+            }
             States.SetSuccess();
             
             break;
@@ -2101,9 +2110,15 @@ unit Executor // Executor.asm
         LDA Address.TypeStackLSB, Y
         AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
         STA Address.TypeStackLSB, X
-        
+        Long.IsLong();
+        if (C)
+        {
+            LDA Address.ValueStackMSB2, Y
+            STA Address.ValueStackMSB2, X
+            LDA Address.ValueStackMSB3, Y
+            STA Address.ValueStackMSB3, X
+        }
         INC ZP.SP
-    
         
     #ifdef TRACE
         LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -3583,8 +3598,7 @@ unit Executor // Executor.asm
             Stacks.PopTop();
             Error.CheckError();
             if (NC) { break; }
-            
-            
+
             // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
             // Output: ZP.LTOP0-3, ZP.TOPT
             Long.ToLong();
@@ -3593,6 +3607,7 @@ unit Executor // Executor.asm
             Long.PushTop();
             
             SEC  // Set C (successful conversion)
+            break;
         } // Single exit block
         
     #ifdef TRACE

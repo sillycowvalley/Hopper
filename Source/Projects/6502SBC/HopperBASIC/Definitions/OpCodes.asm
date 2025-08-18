@@ -151,6 +151,7 @@ unit OpCodes
    
    
    // String constants for all opcodes
+   const string opcodeTOLONG = "TOLONG";
    const string opcodeUNDEFINED = "UNDEFINED";
    const string opcodeDONTCARE = "DONTCARE";
    const string opcodeINVALID = "INVALID";
@@ -230,6 +231,13 @@ unit OpCodes
         PHA
         switch (X)
         {
+            case OpCode.TOLONG:
+            {
+                LDA #(opcodeTOLONG % 256)
+                STA ZP.STRL
+                LDA #(opcodeTOLONG / 256)
+                STA ZP.STRH
+            }
             case OpCode.GETITEMGG:
             {
                 LDA #(opcodeGETITEMGG % 256)

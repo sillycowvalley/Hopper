@@ -789,6 +789,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     break;
                 }
             }
+            
             Stacks.PushX();
             SEC
             break;

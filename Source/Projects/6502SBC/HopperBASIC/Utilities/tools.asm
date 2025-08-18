@@ -202,134 +202,36 @@ unit Tools // Tools.asm
     
     // Print 16-bit decimal number with no leading zeros
     // Input: ZP.TOP = 16-bit number to print (0-65535)
+    //        ZP.LTOP0-3 = 32 bit signed LONG (if ZP.TOPT == BASICType.LONG)
     //        ZP.TOPT = type (for signed/unsigned determination)
     // Output: Decimal number printed to serial
     // Preserves: Everything
-    PrintDecimalWord()
+    PrintDecimal()
     {
         PHA
-        PHX
-        PHY
-        
-        // Save ZP.ACC since we'll use it as working space
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-        // Save ZP.TOP since we'll modify it during conversion
-        LDA ZP.TOPL
-        PHA
-        LDA ZP.TOPH
-        PHA
-        
-        // Check if this is a signed type that's negative
         LDA ZP.TOPT
-        CMP #BASICType.INT
-        if (Z)  // INT type
+        PHA
+        
+        loop
         {
-            BIT ZP.TOPH  // Test sign bit
-            if (MI)      // Negative
+            LDA ZP.TOPT
+            Long.IsLong();
+            if (NC)
             {
-                // Print minus sign
-                LDA #'-'
-                Serial.WriteChar();
-                
-                // Negate the value: TOP = 0 - TOP
-                SEC
-                LDA #0
-                SBC ZP.TOPL
-                STA ZP.TOPL
-                LDA #0
-                SBC ZP.TOPH
-                STA ZP.TOPH
-            }
-        }
-        
-        STZ ZP.ACCL         // Initialize: no padding (suppress leading zeros)
-        
-        LDY #8              // Offset to powers of ten table
-        
-        loop                // Outer loop for each digit
-        {
-            LDX #0xFF       // Start with digit = -1
-            SEC             // Prepare for subtraction
-            
-            loop            // Inner loop - subtract current power of 10
-            {
-                LDA ZP.TOPL
-                SBC PrDec16Tens, Y
-                STA ZP.TOPL
-                LDA ZP.TOPH
-                SBC PrDec16Tens+1, Y
-                STA ZP.TOPH
-                INX         // Count digits
-                if (NC) { break; } // Loop until result < 0 (no carry)
-            }
-            
-            // Add the power of 10 back (we subtracted one too many)
-            LDA ZP.TOPL
-            ADC PrDec16Tens, Y
-            STA ZP.TOPL
-            LDA ZP.TOPH
-            ADC PrDec16Tens+1, Y
-            STA ZP.TOPH
-            
-            TXA             // Get digit count
-            if (NZ)         // Not zero, print it
-            {
-                LDX #'0'    // No more zero padding needed
-                STX ZP.ACCL
-                ORA #'0'    // Convert digit to ASCII
-                Serial.WriteChar();
-            }
-            else
-            {
-                LDA ZP.ACCL // Check padding
-                if (NZ)     // pad != 0, use it
+                Long.ToLong(); // ZP.TOPL, ZP.TOPH, ZP.TOPT -> ZP.LTOP0-3, ZP.TOPT
+                if (NC)
                 {
-                    Serial.WriteChar();
+                    break;
                 }
             }
-            
-            DEY             // Move to next power of 10
-            DEY             // (table entries are 2 bytes each)
-            if (MI) { break; } // Exit when Y goes negative
-        }
+            Long.Print();
+            break;
+        } // single exit
         
-        // If we never printed anything (ACCL is still 0), the number was 0
-        LDA ZP.ACCL
-        if (Z)  // Never set padding, so number was 0
-        {
-            LDA #'0'
-            Serial.WriteChar();
-        }
-        
-        // Restore ZP.TOP
         PLA
-        STA ZP.TOPH
-        PLA
-        STA ZP.TOPL
-        
-        // Restore ZP.ACC
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
-        PLY
-        PLX
+        STA ZP.TOPT
         PLA
     }
-    
-    // Powers of 10 table for PrintDecimalWord (little-endian format)
-    const byte[] PrDec16Tens = { 
-        0x01, 0x00,  // 1 (little-endian)
-        0x0A, 0x00,  // 10
-        0x64, 0x00,  // 100  
-        0xE8, 0x03,  // 1000
-        0x10, 0x27   // 10000
-    };
     
     // Copy bytes from source to destination
     // Input: ZP.FSOURCEADDRESS = source pointer

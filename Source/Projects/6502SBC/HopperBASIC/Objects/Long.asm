@@ -48,7 +48,7 @@ unit Long
         // Optional: verify type is BASICType.LONG
     }
     
-    Long.IsLong() // checks A: C if LONG, NC if not
+    IsLong() // checks A: C if LONG, NC if not
     {
         PHA
         AND # BASICType.TYPEMASK
@@ -130,6 +130,157 @@ unit Long
         } // single exit
     }
     
+    // Powers of 10 table for 32-bit LONG values (little-endian format)
+    // Each entry is 4 bytes: LSB, byte1, byte2, MSB
+    const byte[] PrDec32Tens = { 
+        0x01, 0x00, 0x00, 0x00,  // 1
+        0x0A, 0x00, 0x00, 0x00,  // 10
+        0x64, 0x00, 0x00, 0x00,  // 100  
+        0xE8, 0x03, 0x00, 0x00,  // 1000
+        0x10, 0x27, 0x00, 0x00,  // 10000
+        0xA0, 0x86, 0x01, 0x00,  // 100000
+        0x40, 0x42, 0x0F, 0x00,  // 1000000
+        0x80, 0x96, 0x98, 0x00,  // 10000000
+        0x00, 0xE1, 0xF5, 0x05,  // 100000000
+        0x00, 0xCA, 0x9A, 0x3B   // 1000000000
+    };
+
+    // Print 32-bit LONG decimal number with no leading zeros
+    // Input: ZP.LTOP0-3 = 32-bit number to print (0-4294967295)
+    //        ZP.TOPT = type (for signed/unsigned determination) 
+    // Output: Decimal number printed to serial
+    // Preserves: Everything
+    Print()
+    {
+        PHA
+        PHX
+        PHY
+        
+        // Save ZP.ACC since we'll use it as working space
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
+        // Save ZP.LTOP since we'll modify it during conversion
+        LDA ZP.LTOP0
+        PHA
+        LDA ZP.LTOP1
+        PHA
+        LDA ZP.LTOP2
+        PHA
+        LDA ZP.LTOP3
+        PHA
+        
+        
+        BIT ZP.LTOP3  // Test sign bit of MSB
+        if (MI)       // Negative
+        {
+            // Print minus sign
+            LDA #'-'
+            Serial.WriteChar();
+            
+            // Negate the 32-bit value: LTOP = 0 - LTOP
+            negateLongTOP();
+        }
+        
+        STZ ZP.ACCL         // Initialize: no padding (suppress leading zeros)
+        
+        LDY #36             // Offset to powers of ten table (10 entries × 4 bytes = 40, start at end: 36)
+        
+        loop                // Outer loop for each digit
+        {
+            LDX #0xFF       // Start with digit = -1
+            SEC             // Prepare for subtraction
+            
+            loop            // Inner loop - subtract current power of 10
+            {
+                // 32-bit subtraction: LTOP = LTOP - PrDec32Tens[Y]
+                LDA ZP.LTOP0
+                SBC PrDec32Tens, Y
+                STA ZP.LTOP0
+                LDA ZP.LTOP1
+                SBC PrDec32Tens+1, Y
+                STA ZP.LTOP1
+                LDA ZP.LTOP2
+                SBC PrDec32Tens+2, Y
+                STA ZP.LTOP2
+                LDA ZP.LTOP3
+                SBC PrDec32Tens+3, Y
+                STA ZP.LTOP3
+                
+                INX         // Count digits
+                if (NC) { break; } // Loop until result < 0 (no carry)
+            }
+            
+            // Add the power of 10 back (we subtracted one too many)
+            LDA ZP.LTOP0
+            ADC PrDec32Tens, Y
+            STA ZP.LTOP0
+            LDA ZP.LTOP1
+            ADC PrDec32Tens+1, Y
+            STA ZP.LTOP1
+            LDA ZP.LTOP2
+            ADC PrDec32Tens+2, Y
+            STA ZP.LTOP2
+            LDA ZP.LTOP3
+            ADC PrDec32Tens+3, Y
+            STA ZP.LTOP3
+            
+            TXA             // Get digit count
+            if (NZ)         // Not zero, print it
+            {
+                LDX #'0'    // No more zero padding needed
+                STX ZP.ACCL
+                ORA #'0'    // Convert digit to ASCII
+                Serial.WriteChar();
+            }
+            else
+            {
+                LDA ZP.ACCL // Check padding
+                if (NZ)     // pad != 0, use it
+                {
+                    Serial.WriteChar();
+                }
+            }
+            
+            // Move to next power of 10 (table entries are 4 bytes each)
+            DEY
+            DEY
+            DEY
+            DEY
+            if (MI) { break; } // Exit when Y goes negative
+        }
+        
+        // If we never printed anything (ACCL is still 0), the number was 0
+        LDA ZP.ACCL
+        if (Z)  // Never set padding, so number was 0
+        {
+            LDA #'0'
+            Serial.WriteChar();
+        }
+        
+        // Restore ZP.LTOP
+        PLA
+        STA ZP.LTOP3
+        PLA
+        STA ZP.LTOP2
+        PLA
+        STA ZP.LTOP1
+        PLA
+        STA ZP.LTOP0
+        
+        // Restore ZP.ACC
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
+        
+        PLY
+        PLX
+        PLA
+    }
+
     compareEqual()
     {
         // compare two objects in IDX and IDY

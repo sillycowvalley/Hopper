@@ -2,12 +2,13 @@ NEW
 
 BEGIN
     WORD I
+    LONG MS
     DO
-        LONG MS = MILLIS()
+        MS = MILLIS()
         PRINT MS
         DELAY(1000)
         I = I + 1
-    UINT I > 100
+    UNTIL I > 100
 END
 RUN
 DASM
