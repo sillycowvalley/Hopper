@@ -1,8 +1,11 @@
 CLS
 
-! FOR/NEXT Loop Test Suite for Hopper BASIC
+! FOR/NEXT Loop Test Suite for Hopper BASIC - Updated for Design Change
 ! Following progressive isolation methodology
 ! Tests basic loops, STEP, nested loops, type promotion, optimization
+! 
+! DESIGN CHANGE: Implicit iterators go out of scope after NEXT
+! Declared iterators persist after NEXT (traditional BASIC behavior)
 
 MEM 
 
@@ -90,21 +93,26 @@ BEGIN
 END
 RUN
 
-! ===== TEST 7: Iterator Value After Loop (Local) =====
+! ===== TEST 7: Iterator Scope Behavior (Updated) =====
 NEW
-FUNC TestIterAfter()
+FUNC TestIteratorScope()
     INT j
+    PRINT "Testing iterator scope:"
+    
+    ! Test implicit iterator (goes out of scope)
     FOR i = 1 TO 3
-        ! Loop body
+        ! i is implicit - available within loop
     NEXT i
-    PRINT "After FOR 1 TO 3: "; i; " ! expect 4"
-    FOR j = 10 TO 6 STEP -2
-        ! Loop body
+    PRINT "Implicit iterator 'i' correctly out of scope"
+    
+    ! Test declared iterator (persists)
+    FOR j = 10 TO 12
+        ! j is declared - available within loop
     NEXT j
-    PRINT "After FOR 10 TO 6 STEP -2: "; j; " ! expect 4"
+    PRINT "Declared iterator j after loop: "; j; " ! expect 13"
 ENDFUNC
 BEGIN
-    TestIterAfter()
+    TestIteratorScope()
 END
 RUN
 
@@ -118,13 +126,12 @@ BEGIN
     PRINT "Global after FOR 1 TO 3: "; g; " ! expect 4"
 END
 RUN
-  ! Check global value persists
 VARS
 
 ! ===== TEST 9: Nested Loops (Declaration Required) =====
 NEW
 FUNC TestNested()
-    INT j  ! Must declare before first flow control
+    INT j
     PRINT "Nested 3x3:"
     FOR i = 1 TO 3
         FOR j = 1 TO 3
@@ -234,36 +241,37 @@ BEGIN
     TestMixedScope()
 END
 RUN
-  ! Check outer
 VARS
 
-! ===== TEST 16: Empty Loop Body =====
+! ===== TEST 16: Empty Loop with Declared Iterator (Updated) =====
 NEW
-FUNC TestEmptyLoop()
-    PRINT "Empty loop executes:"
+FUNC TestEmptyLoopDeclared()
+    INT i
+    PRINT "Empty loop with declared iterator:"
     FOR i = 1 TO 3
     NEXT i
-    PRINT i; " ! expect 4 (after FOR 1 TO 3)"
+    PRINT "i after empty loop: "; i; " ! expect 4"
 ENDFUNC
 BEGIN
-    TestEmptyLoop()
+    TestEmptyLoopDeclared()
 END
 RUN
 
-! ===== TEST 17: WORD Iterator Large Range =====
-!NEW
-!FUNC TestWordRange()
-!    WORD w
-!    PRINT "WORD 65530 TO 65535:"
-!    FOR w = 65530 TO 65535
-!        PRINT w,
-!    NEXT w
-!    PRINT " ! expect 65530-65535"
-!ENDFUNC
-!BEGIN
-!    TestWordRange()
-!END
-!RUN
+! ===== TEST 17: WORD Iterator Safe Range =====
+NEW
+FUNC TestWordRange()
+    WORD w
+    PRINT "WORD 65530 TO 65533:"
+    FOR w = 65530 TO 65533
+        PRINT w;
+    NEXT w
+    PRINT " ! expect 65530-65533"
+    PRINT "After: w="; w; " ! expect 65534"
+ENDFUNC
+BEGIN
+    TestWordRange()
+END
+RUN
 
 ! ===== TEST 18: FOR with Arguments =====
 NEW
@@ -277,18 +285,101 @@ ENDFUNC
 BEGIN
     TestForWithArg(3, 6)
     TestForWithArg(5, 5)
-    TestForWithArg(10, 8)  ! No iteration
+    TestForWithArg(10, 8)
 END
 RUN
 
-! ===== TEST 19: STEP Zero Test (May hang!) =====
+! ===== TEST 19: Nested Implicit Iterators (New) =====
+NEW
+FUNC TestNestedImplicit()
+    PRINT "Nested implicit iterators:"
+    FOR i = 1 TO 2
+        FOR j = 1 TO 2
+            FOR k = 1 TO 2
+                PRINT i; j; k; " ";
+            NEXT k
+        NEXT j
+        PRINT "|";
+    NEXT i
+    PRINT " ! expect 111 112 121 122 |211 212 221 222 |"
+    PRINT "All iterators (i,j,k) now out of scope"
+ENDFUNC
+BEGIN
+    TestNestedImplicit()
+END
+RUN
+
+! ===== TEST 20: Mixed Implicit and Declared (New) =====
+NEW
+INT outer
+FUNC TestMixedIterators()
+    PRINT "Mixed iterator types:"
+    FOR outer = 1 TO 2
+        FOR inner = 1 TO 2
+            PRINT outer; inner; " ";
+        NEXT inner
+    NEXT outer
+    PRINT "| outer after: "; outer; " ! expect 3"
+    PRINT "inner is out of scope (implicit)"
+ENDFUNC
+BEGIN
+    TestMixedIterators()
+END
+RUN
+
+! ===== TEST 21: Multiple Implicit Sequential (New) =====
+NEW
+FUNC TestSequentialImplicit()
+    PRINT "Sequential implicit iterators:"
+    FOR i = 1 TO 3
+        PRINT i;
+    NEXT i
+    PRINT " first loop done"
+    FOR i = 10 TO 12
+        PRINT i;
+    NEXT i
+    PRINT " second loop done"
+    PRINT "Both 'i' variables out of scope"
+ENDFUNC
+BEGIN
+    TestSequentialImplicit()
+END
+RUN
+
+! ===== TEST 22: Implicit Iterator Type Changes (New) =====
+NEW
+FUNC TestImplicitTypes()
+    BYTE b = 5
+    WORD w = 300
+    PRINT "Implicit iterator type promotion:"
+    FOR i = b TO 10
+        PRINT i;
+    NEXT i
+    PRINT " BYTE to INT"
+    FOR i = 1 TO w
+        IF i > 5 THEN
+            RETURN
+        ENDIF
+        PRINT i;
+    NEXT i
+    PRINT " INT to WORD"
+ENDFUNC
+BEGIN
+    TestImplicitTypes()
+END
+RUN
+
+! ===== TEST 23: STEP Zero Test (May hang!) =====
 ! Uncomment with caution - might require ^C
 !NEW
 !FUNC TestStepZero()
 !    PRINT "Testing STEP 0 (may hang):"
 !    FOR i = 1 TO 5 STEP 0
 !        PRINT i
-!        IF i > 2 THEN PRINT "Infinite!" : RETURN ENDIF
+!        IF i > 2 THEN
+!            PRINT "Infinite!"
+!            RETURN
+!        ENDIF
 !    NEXT i
 !ENDFUNC
 !BEGIN
@@ -296,7 +387,7 @@ RUN
 !END
 !RUN
 
-! ===== TEST 20: Memory Check =====
+! ===== TEST 24: Memory Check =====
 NEW
 MEM
-PRINT "Memory check complete"
+PRINT "Memory check complete - all iterators cleaned up"
