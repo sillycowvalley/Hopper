@@ -492,9 +492,7 @@ unit Commands
         Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
         
         // Check if it's an ARRAY
-        LDA ZP.ACCT
-        AND # BASICType.ARRAY
-        if (NZ)
+        if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
         {
             LDA ZP.ACCT  // Get full type for helper
             displayArrayVariable();  // A = full type, ZP.IDX = node
@@ -502,9 +500,7 @@ unit Commands
         else
         {
             // Check if it has VAR bit set
-            LDA ZP.ACCT  // Get full type back
-            AND # BASICType.VAR
-            if (NZ)  // Variable has VAR bit
+            if (BBS4, ZP.ACCT) // Bit 4 - VAR
             {
                 // Print "VAR" first
                 LDA # Token.VAR

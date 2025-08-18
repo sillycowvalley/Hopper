@@ -60,9 +60,7 @@ unit Variables
                 STZ ZP.NEXTH
             }
             
-            LDA ZP.ACCT
-            AND # BASICType.ARRAY
-            if (NZ)
+            if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
                 // Array declaration
                 // ZP.NEXT contains size, extract element type
@@ -128,9 +126,7 @@ unit Variables
             {
                 SetValue(); // TOP->
             }
-            LDA ZP.ACCT
-            AND # BASICType.ARRAY
-            if (NZ)
+            if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
                 LDA ZP.NEXTL
                 STA ZP.TOPL
@@ -303,8 +299,8 @@ unit Variables
             }
             
             LDA ZP.ACCT // symbolType|dataType from Objects.GetData()
-            AND # BASICType.ARRAY
-            if (NZ)
+            
+            if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
                 // ARRAY management happens elsewhere, just overwrite ptr              
                 // Non-STRING - use value
@@ -368,11 +364,10 @@ unit Variables
                     STA ZP.IDYH
                 }
                 
-                // Update type if it's a VAR variable
-                LDA ZP.ACCT // Variable type (packed)
-                AND # BASICType.VAR
-                if (NZ)  // VAR variable - update type in symbol table
+                // Update type if it's a VAR variable : Variable type (packed)
+                if (BBS4, ZP.ACCT) // Bit 4 - VAR
                 {
+                    // VAR variable - update type in symbol table
                     LDA ZP.ACCT
                     AND # (SymbolType.MASK | BASICType.VAR) // preserve VARIABLE|CONSTANT and VARness
                     ORA ZP.TOPT
@@ -888,18 +883,14 @@ unit Variables
             // Get variable data
             Objects.GetData(); // Returns type in ZP.ACCT, value in ZP.IDY
             
-            // Check if it's a STRING variable
-            LDA ZP.ACCT
-            AND # BASICType.TYPEMASK
-            CMP # BASICType.STRING
-            if (NZ)
+            // Check if it's a ARRAY variable
+            if (BBR5, ZP.ACCT) // Bit 5 - ARRAY
             {
-                // not STRING
-                
-                // Check if it's a ARRAY variable
+                // not ARRAY
                 LDA ZP.ACCT
-                AND # BASICType.ARRAY
-                if (Z)
+                AND # BASICType.TYPEMASK
+                CMP # BASICType.STRING
+                if (NZ)
                 {
                     // Not a STRING or ARRAY variable - nothing to free
                     SEC // Success (nop)
@@ -1159,11 +1150,10 @@ unit Variables
                 LDA ZP.LTOP3
                 STA [ZP.IDX], Y
                 
-                // Update type if it's a VAR variable
-                LDA ZP.ACCT // Variable type (packed)
-                AND #BASICType.VAR
-                if (NZ)  // VAR variable - update type in symbol table
+                // Update type if it's a VAR variable : Variable type (packed)
+                if (BBS4, LDA ZP.ACCT) // Bit 4 - VAR
                 {
+                    // VAR variable - update type in symbol table
                     LDA ZP.ACCT
                     AND #(SymbolType.MASK | BASICType.VAR) // preserve VARIABLE|CONSTANT and VARness
                     ORA ZP.TOPT

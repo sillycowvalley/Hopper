@@ -107,10 +107,9 @@ unit Executor // Executor.asm
                     Variables.IterateNext();
                     continue;  // Skip to next iteration
                 }
-                LDA ZP.ACCT
-                AND # BASICType.ARRAY
-                if (NZ)  // It's an ARRAY - skip it
+                if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
                 {
+                    // It's an ARRAY - skip it
                     INY  // Still increment index to stay in sync with stack position
                     Variables.IterateNext();
                     continue;  // Skip to next iteration
@@ -1064,7 +1063,7 @@ unit Executor // Executor.asm
        LDA #(executePushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(executePushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
    #endif
        
-       // Store VOID 0 in ZP.TOP
+       // Store VOID 0 in ZP.TOP // TODO : LONG
        STZ ZP.TOPL
        STZ ZP.TOPH
        LDA # (BASICType.VAR|BASICType.INT)
@@ -1854,18 +1853,14 @@ unit Executor // Executor.asm
            // Get global type from type stack
            LDA Address.TypeStackLSB, Y
            STA ZP.TOPT
-           
-           // Check if this is a VAR type
-           AND #BASICType.VAR
-           if (NZ)  // VAR type - strip VAR bit for runtime use
+           if (BBS4, ZP.TOPT) // Bit 4 - VAR
            {
-               LDA ZP.TOPT
+               // VAR type - strip VAR bit for runtime use
                AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
                STA Address.TypeStackLSB, X
            }
            else
            {
-               LDA ZP.TOPT
                STA Address.TypeStackLSB, X
            }
            LDA Address.ValueStackLSB, Y
@@ -1920,11 +1915,10 @@ unit Executor // Executor.asm
             LDA Address.TypeStackLSB, Y
             STA ZP.ACCT
             // Check if variable has VAR bit set
-            AND #BASICType.VAR
-            if (Z) // Non-VAR variable - use normal type checking
+            if (BBR4, ZP.ACCT) // Bit 4 - VAR
             {
+                // Non-VAR variable - use normal type checking
                 // Move LHS type to correct register for CheckRHSTypeCompatibility
-                LDA ZP.ACCT
                 STA ZP.NEXTT 
 
                 // VAR slots should never be popped directly but there is a special case for
@@ -1951,7 +1945,7 @@ unit Executor // Executor.asm
             {
                 // For VAR variables, update underlying type but keep VAR bit
                 LDA Address.TypeStackLSB, X
-                ORA #BASICType.VAR           // Add VAR bit
+                ORA # BASICType.VAR           // Add VAR bit
                 STA Address.TypeStackLSB, Y  // Update stored type
             }
 
@@ -2018,13 +2012,20 @@ unit Executor // Executor.asm
             STA ZP.ACCT
             
             // Check if variable has VAR bit set
-            AND #BASICType.VAR
-            if (Z) // Non-VAR variable - use normal type checking
+            if (BBR4, ZP.ACCT) // Bit 4 - VAR
             {
+                // Non-VAR variable - use normal type checking
                 // Move LHS type to correct register for CheckRHSTypeCompatibility
-                LDA ZP.ACCT
-                AND #BASICType.MASK  // Extract data type
+                AND # BASICType.TYPEMASK  // Extract data type
                 STA ZP.NEXTT 
+                
+                // get the popped type and values for type checking
+                LDA Address.TypeStackLSB, X
+                STA ZP.TOPT
+                LDA Address.ValueStackLSB, X
+                STA ZP.TOPL
+                LDA Address.ValueStackMSB, X
+                STA ZP.TOPH
                 
                 // Check type compatibility for assignment
                 Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
@@ -2034,6 +2035,20 @@ unit Executor // Executor.asm
                     States.SetFailure();
                     break; 
                 }
+                
+                // Store to calculated stack position
+                LDA ZP.TOPL
+                STA Address.ValueStackLSB, Y
+                LDA ZP.TOPH
+                STA Address.ValueStackMSB, Y
+                if (BBS3, ZP.ACCT) // Bit 3 - LONG
+                {
+                    // LONG TODO
+                    LDA Address.ValueStackMSB2, X
+                    STA Address.ValueStackMSB2, Y
+                    LDA Address.ValueStackMSB3, X
+                    STA Address.ValueStackMSB3, Y
+                }
             }
             else
             {
@@ -2041,22 +2056,21 @@ unit Executor // Executor.asm
                 LDA Address.TypeStackLSB, X
                 ORA #BASICType.VAR
                 STA Address.TypeStackLSB, Y
-            }
-            
-            // Store to calculated stack position
-            LDA Address.ValueStackLSB, X
-            STA Address.ValueStackLSB, Y
-            LDA Address.ValueStackMSB, X
-            STA Address.ValueStackMSB, Y
-            
-            LDA Address.TypeStackLSB, Y
-            AND #BASICType.LONG
-            if (NZ)
-            {
-                LDA Address.ValueStackMSB2, X
-                STA Address.ValueStackMSB2, Y
-                LDA Address.ValueStackMSB3, X
-                STA Address.ValueStackMSB3, Y
+                
+                // Store to calculated stack position
+                LDA Address.ValueStackLSB, X
+                STA Address.ValueStackLSB, Y
+                LDA Address.ValueStackMSB, X
+                STA Address.ValueStackMSB, Y
+                
+                if (BBS3, ZP.ACCT) // Bit 3 - LONG
+                {
+                    // LONG TOSO
+                    LDA Address.ValueStackMSB2, X
+                    STA Address.ValueStackMSB2, Y
+                    LDA Address.ValueStackMSB3, X
+                    STA Address.ValueStackMSB3, Y
+                }
             }
             States.SetSuccess();
             
@@ -2895,9 +2909,7 @@ unit Executor // Executor.asm
             }
             else
             {
-                LDA ZP.ACCT
-                AND # BASICType.ARRAY
-                if (NZ)
+                if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
                 {
                     // Get the element value
                     BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT

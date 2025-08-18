@@ -45,9 +45,7 @@ unit Instructions // Instructions.asm
                 SEC
                 break;
             }
-            LDA ZP.NEXTT
-            AND # BASICType.VAR
-            if (NZ)
+            if (BBS4, ZP.NEXTT)
             {
                 // if LHS is VAR, you can assign anything to it
                 SEC
@@ -56,9 +54,8 @@ unit Instructions // Instructions.asm
             
             
             // Check if RHS is LONG - allow assignment if value fits in target type
-            LDA ZP.TOPT
-            CMP #BASICType.LONG
-            if (Z)
+            
+            if (BBS3, ZP.TOPT) // Bit 3 - LONG
             {
                 // RHS is LONG - check if value fits in LHS type
                 LDA ZP.NEXTT
@@ -687,9 +684,7 @@ PLP
             
             
             // Check if either operand is LONG
-            LDA ZP.NEXTT
-            CMP #BASICType.LONG
-            if (Z)
+            if (BBS3, ZP.NEXTT) // Bit 3 - LONG
             {
                 // Left operand is LONG - promote right operand and result to LONG
                 LDA ZP.TOPT
@@ -714,9 +709,7 @@ PLP
                 }
             }
             
-            LDA ZP.TOPT
-            CMP #BASICType.LONG
-            if (Z)
+            if (BBS3,  ZP.TOPT) // Bit 3 - LONG
             {
                 // Right operand is LONG - promote left operand and result to LONG
                 LDA ZP.NEXTT

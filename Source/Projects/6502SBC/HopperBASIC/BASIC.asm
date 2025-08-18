@@ -5,7 +5,7 @@ program HopperBASIC
     //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     #define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
-    //#define TRACEEXE // instructions in Executor
+    #define TRACEEXE // instructions in Executor
 
     // Defunct?    
     //#define TRACESP

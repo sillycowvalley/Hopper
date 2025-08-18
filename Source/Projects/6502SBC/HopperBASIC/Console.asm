@@ -1000,9 +1000,7 @@ unit Console // Console.asm
             LDA ZP.IDXH
             STA ZP.GVIH
 
-            LDA ZP.ACCT
-            AND # BASICType.ARRAY
-            if (NZ)
+            if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
                 
                 Variables.GetValue(); // Variable = IDX: BASICArray -> TOP, Tokens -> NEXT
@@ -1102,9 +1100,7 @@ unit Console // Console.asm
                         }
                         default:
                         {
-                            LDA ZP.ACCT
-                            AND # BASICType.ARRAY
-                            if (NZ)
+                            if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
                             {
                                 // should never get here (see case above)
                                 Error.TODO(); BIT ZP.EmulatorPCL

@@ -10,7 +10,7 @@ unit BASICTypes // BASICTypes.asm
         STRING   = 0x05, // Hopper VM Types.String
         BIT      = 0x06, // Hopper VM Types.Bool - must 0x06!
         
-        LONG     = 0x08, // LONG is the only type to use this bit!
+        LONG     = 0x08, // Bit 3 - LONG is the only type to use this bit!
         
         
         

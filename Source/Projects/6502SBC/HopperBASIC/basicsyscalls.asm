@@ -577,9 +577,7 @@ unit BASICSysCalls
                     else
                     {
                         // Check if it's an array type
-                        LDA ZP.TOPT
-                        AND # BASICType.ARRAY
-                        if (NZ)
+                        if (BBS5, ZP.TOPT) // Bit 5 - ARRAY
                         {
                             // Array handling
                             LDA ZP.TOPL
