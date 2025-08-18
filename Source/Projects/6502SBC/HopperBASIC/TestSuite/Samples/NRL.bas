@@ -6,6 +6,7 @@ MEM
 
 BEGIN
     LONG START = MILLIS()
+    WORD ST = SECONDS()
     LONG S
     WORD J
     FOR i=1 TO 10
@@ -17,9 +18,10 @@ BEGIN
     NEXT i
     PRINT s
     PRINT MILLIS() - START; " ms"
+    PRINT SECONDS() - ST; " seconds"
 END
 
 RUN
-DASM
+!DASM
 !NEW
 !MEM

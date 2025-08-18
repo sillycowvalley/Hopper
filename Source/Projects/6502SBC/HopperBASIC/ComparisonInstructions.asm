@@ -290,9 +290,16 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.EQ();
+                SEC
+                break;
+            }
             
             LDX #0          // Assume false (not equal)
+            
             
             // Handle STRING type combinations
             LDA ZP.NEXTT
@@ -425,7 +432,13 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.NE();
+                SEC
+                break;
+            }
             
             LDX #1          // Assume true (not equal)
             
@@ -629,7 +642,13 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.LT();
+                SEC
+                break;
+            }
             
             LDA #1 // not allowed : STRING, BIT
             checkBITandCHARTypes();
@@ -732,7 +751,13 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.GT();
+                SEC
+                break;
+            }
             
             LDA #1 // not allowed : CHAR, STRING, BIT
             checkBITandCHARTypes();
@@ -836,7 +861,13 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.LE();
+                SEC
+                break;
+            }
             
             LDA #1 // not allowed : CHAR, STRING, BIT
             checkBITandCHARTypes();
@@ -939,7 +970,13 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.GE();
+                SEC
+                break;
+            }
             
             LDA #1 // not allowed : CHAR, STRING, BIT
             checkBITandCHARTypes();

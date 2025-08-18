@@ -1,20 +1,17 @@
 program HopperBASIC
 {
-    #define PEEPHOLE // include the peephole optimizer
-    
+    // Optional Features
+    #define PEEPHOLE  // include the peephole optimizer
+    #define BASICLONG // include LONG type
+        
     //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    #define DEBUG
+    //#define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
-    #define TRACEEXE // instructions in Executor
+    //#define TRACEEXE // instructions in Executor
 
-    // Defunct?    
-    //#define TRACESP
-    //#define TRACEJIT     // detail for JIT / CALL->CALLF patching
-    
-    
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
-    #define BASICLONG
+    
     
     #define CPU_65C02S
     #define HOPPER_BASIC
@@ -45,11 +42,8 @@ program HopperBASIC
     uses "./Objects/Locals"
     uses "./Objects/Functions"
     uses "./Objects/Array"
-    #ifdef BASICLONG
     uses "./Objects/Long"
-    #endif
-    
-    
+        
     uses "./Utilities/Tools"
     uses "./Utilities/BufferManager"
     uses "Tokenizer"

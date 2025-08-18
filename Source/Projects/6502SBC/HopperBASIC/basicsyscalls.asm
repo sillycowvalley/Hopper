@@ -173,11 +173,13 @@ unit BASICSysCalls
                case 0: { /* No arguments to pop */ }
                case 1: 
                { 
-                   Stacks.PopTop();  // Arg in ZP.TOP*
+                   Long.PopTop();  // Arg in ZP.TOP*, munts X
                }
                case 2: 
                { 
-                   Stacks.PopTopNext(); // First arg in ZP.NEXT, Second arg in ZP.TOP*
+                   PHY
+                   Long.PopTopNext(); // First arg in ZP.NEXT, Second arg in ZP.TOP*, munts X and Y
+                   PLY
                }
                case 3: 
                { 
@@ -251,12 +253,11 @@ unit BASICSysCalls
                }
                case SysCallType.Millis:        // ID = 5
                {
-                   // MILLIS function - get system timer
-                   LDA ZP.TICK0 STA ZP.TOP0     // Get system timer
-                   LDA ZP.TICK1 STA ZP.TOP1
-#ifdef BASICLONG
+                   LDA ZP.TICK3 STA ZP.TOP3  // reading TICK3 makes a snapshot of all 4 registers on the emulator
                    LDA ZP.TICK2 STA ZP.TOP2
-                   LDA ZP.TICK3 STA ZP.TOP3
+                   LDA ZP.TICK1 STA ZP.TOP1
+                   LDA ZP.TICK0 STA ZP.TOP0
+#ifdef BASICLONG
                    LDA #BASICType.LONG STA ZP.TOPT
 #else
                    LDA #BASICType.WORD STA ZP.TOPT
@@ -614,14 +615,8 @@ unit BASICSysCalls
            AND # 0b00000100 // Test return value bit
            if (NZ) 
            {
-               if (BBS3, ZP.TOPT) // LONG = bit 3
-               {
-                   Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
-               }
-               else
-               {
-                   Stacks.PushTop();  // Push return value from ZP.TOP*
-               }
+               // type in ZP.TOPT
+               Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
            }
            SEC
            States.SetSuccess();

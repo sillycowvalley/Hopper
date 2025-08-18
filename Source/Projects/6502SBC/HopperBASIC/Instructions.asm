@@ -699,7 +699,7 @@ PLP
                 // CHAR vs STRING CHAR handled above
             }
             
-            
+#ifdef BASICLONG
             // Check if either operand is LONG
             if (BBS3, ZP.NEXTT) // Bit 3 - LONG
             {
@@ -750,7 +750,7 @@ PLP
                     }
                 }
             }
-            
+#endif
             
             
             
@@ -795,16 +795,24 @@ PLP
             
             // Perform subtraction (left - right)
             SEC
-            LDA ZP.NEXTL
-            SBC ZP.TOPL
-            STA ZP.NEXTL
-            LDA ZP.NEXTH
-            SBC ZP.TOPH
-            STA ZP.NEXTH
-            
+            LDA ZP.NEXT0
+            SBC ZP.TOP0
+            STA ZP.NEXT0
+            LDA ZP.NEXT1
+            SBC ZP.TOP1
+            STA ZP.NEXT1
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                LDA ZP.NEXT2
+                SBC ZP.TOP2
+                STA ZP.NEXT2
+                LDA ZP.NEXT3
+                SBC ZP.TOP3
+                STA ZP.NEXT3
+            }
             // Push result to stack
             LDA ZP.NEXTT
-            Stacks.PushNext();
+            Long.PushNext();
             
             SEC
             break;
@@ -828,8 +836,8 @@ PLP
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
-            
+            Long.PopTopNext();
+
             LDA #1  // Arithmetic operation
             CheckTypeCompatibility();
             
@@ -841,16 +849,25 @@ PLP
             
             // Perform addition
             CLC
-            LDA ZP.NEXTL
-            ADC ZP.TOPL
-            STA ZP.NEXTL
-            LDA ZP.NEXTH
-            ADC ZP.TOPH
-            STA ZP.NEXTH
-            
+            LDA ZP.NEXT0
+            ADC ZP.TOP0
+            STA ZP.NEXT0
+            LDA ZP.NEXT1
+            ADC ZP.TOP1
+            STA ZP.NEXT1
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                LDA ZP.NEXT2
+                ADC ZP.TOP2
+                STA ZP.NEXT2
+                LDA ZP.NEXT3
+                ADC ZP.TOP3
+                STA ZP.NEXT3
+            }
+
             // Push result to stack
             LDA ZP.NEXTT
-            Stacks.PushNext();
+            Long.PushNext();
             SEC
             break;
         }
@@ -870,7 +887,7 @@ PLP
         PHX
         
         // Pop two operands
-        Stacks.PopTopNext();
+        Long.PopTopNext();
         
         // Delegate to shared subtraction logic
         subShared();
@@ -921,7 +938,27 @@ PLP
         loop
         {
             // Pop the operand to negate
-            Stacks.PopTop();
+            Long.PopTop();
+            
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                SEC
+                LDA # 0
+                SBC ZP.TOP0
+                STA ZP.NEXT0
+                LDA # 0
+                SBC ZP.TOP1
+                STA ZP.NEXT1
+                LDA # 0
+                SBC ZP.TOP2
+                STA ZP.NEXT2
+                LDA # 0
+                SBC ZP.TOP3
+                STA ZP.NEXT3
+                Long.PushNext();
+                SEC
+                break;
+            }
             
             // Check if this is WORD 32768 (special case for -32768)
             LDA ZP.TOPT
@@ -1005,7 +1042,7 @@ PLP
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
             
             LDA #1  // Arithmetic operation
             CheckTypeCompatibility();
@@ -1013,6 +1050,12 @@ PLP
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.Mul();
+                SEC
                 break;
             }
             
@@ -1068,7 +1111,7 @@ PLP
         loop
         {
             // Pop two operands
-            Stacks.PopTopNext();
+            Long.PopTopNext();
             
             // Check for division by zero
             LDA ZP.TOPL
@@ -1085,6 +1128,12 @@ PLP
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.Div();
+                SEC
                 break;
             }
             
@@ -1133,7 +1182,7 @@ PLP
         
         loop
         {
-            Stacks.PopTopNext();
+            Long.PopTopNext();
             
             // Check for division by zero
             LDA ZP.TOPL
@@ -1150,6 +1199,12 @@ PLP
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                Long.Mod();
+                SEC
                 break;
             }
             
@@ -1188,7 +1243,7 @@ PLP
         
         loop
         {
-            Stacks.PopTopNext();
+            Long.PopTopNext();
             
             LDA #2  // Bitwise operation (numeric types only)
             CheckTypeCompatibility();
@@ -1200,15 +1255,24 @@ PLP
             }
             
             // NEXT & TOP -> NEXT
-            LDA ZP.NEXTL
-            AND ZP.TOPL
-            STA ZP.NEXTL
-            LDA ZP.NEXTH
-            AND ZP.TOPH
-            STA ZP.NEXTH
+            LDA ZP.NEXT0
+            AND ZP.TOP0
+            STA ZP.NEXT0
+            LDA ZP.NEXT1
+            AND ZP.TOP1
+            STA ZP.NEXT1
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                LDA ZP.NEXT2
+                AND ZP.TOP2
+                STA ZP.NEXT2
+                LDA ZP.NEXT3
+                AND ZP.TOP3
+                STA ZP.NEXT3
+            }
             
             LDA ZP.NEXTT
-            Stacks.PushNext();
+            Long.PushNext();
             SEC
             break;
         }
@@ -1231,7 +1295,7 @@ PLP
         
         loop
         {
-            Stacks.PopTopNext();
+            Long.PopTopNext();
             
             LDA #2  // Bitwise operation (numeric types only)
             CheckTypeCompatibility();
@@ -1243,15 +1307,24 @@ PLP
             }
             
             // NEXT | TOP -> NEXT
-            LDA ZP.NEXTL
-            ORA ZP.TOPL
-            STA ZP.NEXTL
-            LDA ZP.NEXTH
-            ORA ZP.TOPH
-            STA ZP.NEXTH
+            LDA ZP.NEXT0
+            ORA ZP.TOP0
+            STA ZP.NEXT0
+            LDA ZP.NEXT1
+            ORA ZP.TOP1
+            STA ZP.NEXT1
+            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+            {
+                LDA ZP.NEXT2
+                ORA ZP.TOP2
+                STA ZP.NEXT2
+                LDA ZP.NEXT2
+                ORA ZP.TOP2
+                STA ZP.NEXT2
+            }
             
             LDA ZP.NEXTT
-            Stacks.PushNext();
+            Long.PushNext();
             SEC
             break;
         }

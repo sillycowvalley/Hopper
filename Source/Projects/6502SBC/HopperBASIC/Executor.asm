@@ -1063,10 +1063,18 @@ unit Executor // Executor.asm
        LDA #(executePushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(executePushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
    #endif
        
-       // Store VOID 0 in ZP.TOP // TODO : LONG
-       STZ ZP.TOPL
-       STZ ZP.TOPH
+       // Store VOID 0 in ZP.TOP
+       STZ ZP.TOP0
+       STZ ZP.TOP1
+/*
+#ifdef BASICLONG
+       STZ ZP.TOP2
+       STZ ZP.TOP3
+       LDA # (BASICType.VAR|BASICType.LONG)
+#else       
+*/
        LDA # (BASICType.VAR|BASICType.INT)
+//#endif
        STA ZP.TOPT
        Stacks.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
        
@@ -1867,6 +1875,7 @@ unit Executor // Executor.asm
            STA Address.ValueStackB0, X
            LDA Address.ValueStackB1, Y  
            STA Address.ValueStackB1, X
+#ifdef BASICLONG
            if (BBS3, ZP.TOPT) // Bit 3 - LONG
            {
                LDA Address.ValueStackB2, Y
@@ -1874,7 +1883,7 @@ unit Executor // Executor.asm
                LDA Address.ValueStackB3, Y
                STA Address.ValueStackB3, X
            }
-           
+#endif
            LDA #State.Success
            STA ZP.SystemState
            break;
@@ -1931,6 +1940,7 @@ unit Executor // Executor.asm
             STA ZP.TOP0
             LDA Address.ValueStackB1, X
             STA ZP.TOP1
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // Bit 3 - LONG RHS
             {
                 // popping 4 bytes
@@ -1943,9 +1953,10 @@ unit Executor // Executor.asm
             {
                 if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
                 {
-                    Long.ToLong(); // RHS -> LONG
+                    Long.TopToLong(); // RHS -> LONG
                 }
             }
+#endif            
             
             // Check if variable has VAR bit set
             if (BBS4, ZP.NEXTT) // Bit 4 - VAR
@@ -1983,6 +1994,7 @@ unit Executor // Executor.asm
             STA Address.ValueStackB0, Y
             LDA ZP.TOP1
             STA Address.ValueStackB1, Y
+#ifdef BASICLONG
             if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS
             {
                 LDA ZP.TOP2
@@ -1990,7 +2002,7 @@ unit Executor // Executor.asm
                 LDA ZP.TOP3
                 STA Address.ValueStackB3, Y
             }
-                        
+#endif             
             LDA #State.Success
             STA ZP.SystemState
         
@@ -2056,6 +2068,7 @@ unit Executor // Executor.asm
             STA ZP.TOP0
             LDA Address.ValueStackB1, X
             STA ZP.TOP1
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // Bit 3 - LONG RHS
             {
                 // popping 4 bytes
@@ -2068,10 +2081,10 @@ unit Executor // Executor.asm
             {
                 if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
                 {
-                    Long.ToLong(); // RHS -> LONG
+                    Long.TopToLong(); // RHS -> LONG
                 }
             }
-            
+#endif
             // Check if variable has VAR bit set
             if (BBS4, ZP.NEXTT) // Bit 4 - VAR
             {
@@ -2097,6 +2110,7 @@ unit Executor // Executor.asm
             STA Address.ValueStackB0, Y
             LDA ZP.TOP1
             STA Address.ValueStackB1, Y
+#ifdef BASICLONG
             if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS
             {
                 LDA ZP.TOP2
@@ -2104,6 +2118,7 @@ unit Executor // Executor.asm
                 LDA ZP.TOP3
                 STA Address.ValueStackB3, Y
             }
+#endif
             LDA #State.Success
             STA ZP.SystemState
             break;
@@ -2342,6 +2357,7 @@ unit Executor // Executor.asm
             States.CanContinue(); // preserves X
             if (NC) { break; }  // Type mismatch or overflow
 
+
             // Store updated iterator back (TOP now has new value)
             LDA Executor.executorOperandBP
             Stacks.SetStackTopBP();  // Store ZP.TOP/TOPT to BP+offset, preserves X
@@ -2451,7 +2467,7 @@ unit Executor // Executor.asm
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
 
-            // Increment iterator++ and store back immediatelywith WORD type
+            // Increment iterator++ and store back immediately with WORD type
             INC ZP.TOPL
             if (Z) 
             {
@@ -2461,8 +2477,9 @@ unit Executor // Executor.asm
             }
             LDA ZP.TOPL
             STA Address.ValueStackLSB, Y
-            LDA #(BASICType.WORD | BASICType.VAR)
-            STA Address.TypeStackLSB, Y
+            // TODO : why?
+            //LDA #(BASICType.WORD | BASICType.VAR)
+            //STA Address.TypeStackLSB, Y
                         
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
@@ -3510,7 +3527,7 @@ unit Executor // Executor.asm
             // Calculate target stack position: BP + target_offset
             CLC
             ADC ZP.BP
-            TAX  // X = target stack position
+            TAX                                 // X = target stack position (LHS)
             
 #ifdef TRACEEXE
             FetchOperandByte(); // -> A
@@ -3524,49 +3541,81 @@ unit Executor // Executor.asm
                 INC ZP.PCH
             }
 #endif
-            
+              
             // Calculate source stack position: BP + source_offset
             CLC
             ADC ZP.BP
-            TAY  // Y = source stack position
+            TAY                                // Y = source stack position (RHS)
+            
+            
+            LDA Address.TypeStack, Y
+            STA ZP.TOPT
+            LDA Address.TypeStack, X
+            STA ZP.NEXTT
+            
             
             CLC
-            LDA Address.ValueStackLSB, X
-            ADC Address.ValueStackLSB, Y
-            STA Address.ValueStackLSB, X
-            LDA Address.ValueStackMSB, X
-            ADC Address.ValueStackMSB, Y
-            STA Address.ValueStackMSB, X
+            LDA Address.ValueStackB0, X
+            ADC Address.ValueStackB0, Y
+            STA Address.ValueStackB0, X
+            LDA Address.ValueStackB1, X
+            ADC Address.ValueStackB1, Y
+            STA Address.ValueStackB1, X
             
-            /*
-            // Load target value into ZP.TOP
-            LDA Address.ValueStackLSB, X
-            STA ZP.TOPL
-            LDA Address.ValueStackMSB, X
-            STA ZP.TOPH
+            if (BBS3, ZP.NEXTT) // LHS is LONG
+            {
+                if (BBS3, ZP.TOPT) // RHS is LONG
+                {
+                    LDA Address.ValueStackB2, X
+                    ADC Address.ValueStackB2, Y
+                    STA Address.ValueStackB2, X
+                    LDA Address.ValueStackB3, X
+                    ADC Address.ValueStackB3, Y
+                    STA Address.ValueStackB3, X
+                } 
+                else
+                {
+                    // TODO: if RHS is -ve INT we need to sign extend
+                    LDA Address.ValueStackB2, X
+                    ADC #0
+                    STA Address.ValueStackB2, X
+                    LDA Address.ValueStackB3, X
+                    ADC #0
+                    STA Address.ValueStackB3, X
+                }
+            }
+            else
+            {
+                // LHS is not LONG
+                if (BBS3, ZP.TOPT) // RHS is LONG
+                {
+                    if (BBS4, ZP.NEXTT) // LHS is VAR
+                    {
+                        // make LHS LONG
+                        LDA #(BASICType.VAR | BASICType.LONG)
+                        STA Address.TypeStack, X
+                        
+                        // TODO: if LHS is -ve INT we need to sign extend
+                        
+                        LDA #0
+                        ADC Address.ValueStackB2, Y
+                        STA Address.ValueStackB2, X
+                        LDA #0
+                        ADC Address.ValueStackB3, Y
+                        STA Address.ValueStackB3, X
+                    }
+                    else
+                    {
+                        // TODO: overflow?
+                    }
+                }
+                else
+                {
+                    // neither LHS nor RHS are long
+                }
+            }
             
-            // Load source value into ZP.NEXT
-            LDA Address.ValueStackLSB, Y
-            STA ZP.NEXTL
-            LDA Address.ValueStackMSB, Y
-            STA ZP.NEXTH
             
-            // Add source to target: TOP = TOP + NEXT
-            CLC
-            LDA ZP.TOPL
-            ADC ZP.NEXTL
-            STA ZP.TOPL
-            LDA ZP.TOPH
-            ADC ZP.NEXTH
-            STA ZP.TOPH
-            
-            // Store result back to target location
-            LDA ZP.TOPL
-            STA Address.ValueStackLSB, X
-            LDA ZP.TOPH
-            STA Address.ValueStackMSB, X
-            // Type remains unchanged
-            */
             LDA #State.Success
             STA ZP.SystemState
             break;
@@ -3630,6 +3679,7 @@ unit Executor // Executor.asm
     const string executeToLongTrace = "TOLONG";
     executeToLong()
     {
+#ifdef BASICLONG        
         PHA
         PHX
         PHY
@@ -3649,9 +3699,10 @@ unit Executor // Executor.asm
 
             // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
             // Output: ZP.LTOP0-3, ZP.TOPT
-            Long.ToLong();
+            Long.TopToLong();
             
             // Push the converted LONG value back to stack
+            // type in ZP.TOPT
             Long.PushTop();
             
             SEC  // Set C (successful conversion)
@@ -3667,5 +3718,8 @@ unit Executor // Executor.asm
         PLY
         PLX
         PLA
+#else     
+        Error.InternalError(); BIT ZP.EmulatorPCL   
+#endif        
     }
 }

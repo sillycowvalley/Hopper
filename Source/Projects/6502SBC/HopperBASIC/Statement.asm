@@ -380,13 +380,21 @@ unit Statement // Statement.asm
             case Token.WORD:
             case Token.BIT:
             case Token.BYTE:
-            case Token.LONG:
             case Token.CHAR:
             case Token.STRING:
             case Token.VAR: 
             {
                 executeVariableDeclaration();
             }
+            case Token.LONG:
+            {
+#ifdef BASICLONG
+                executeVariableDeclaration();
+#else
+                Error.SyntaxError(); BIT ZP.EmulatorPCL
+#endif
+            }
+            
             
             default:
             {
@@ -797,14 +805,28 @@ unit Statement // Statement.asm
                         CMP #BASICType.VAR  // Check if pure VAR (not VAR with underlying type)
                         if (Z)  // Pure VAR variable without initialization
                         {
-                            // Default VAR to INT with value 0
-                            LDA #BASICType.INT
-                            ORA #BASICType.VAR
+                            STZ ZP.NEXT0
+                            STZ ZP.NEXT1
+/*                            
+#ifdef BASICLONG
+                            STZ ZP.NEXT2
+                            STZ ZP.NEXT3
+                            
+                            // Default VAR to LONG with value 0
+                            LDA # (BASICType.VAR | BASICType.LONG)
                             STA stmtType
-                            STZ ZP.NEXTL
-                            STZ ZP.NEXTH
+                            LDA #BASICType.LONG
+                            STA ZP.NEXTT
+#else                            
+*/
+                            // Default VAR to INT with value 0
+                            LDA # (BASICType.VAR | BASICType.INT)
+                            STA stmtType
                             LDA #BASICType.INT
                             STA ZP.NEXTT
+//#endif
+                            
+                            
                             SEC  // Success
                             break;
                         }

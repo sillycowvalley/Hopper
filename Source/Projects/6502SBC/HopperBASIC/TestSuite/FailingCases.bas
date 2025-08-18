@@ -8,8 +8,7 @@ BEGIN
         PRINT MS
         DELAY(1000)
         I = I + 1
-    UNTIL I > 100
+    UNTIL I > 10
 END
 RUN
 DASM
-

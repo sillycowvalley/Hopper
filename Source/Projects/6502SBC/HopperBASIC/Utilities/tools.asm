@@ -216,7 +216,7 @@ unit Tools // Tools.asm
         {
             if (BBR3, ZP.TOPT) // LONG = bit 3
             {
-                Long.ToLong(); // ZP.TOPL, ZP.TOPH, ZP.TOPT -> ZP.LTOP0-3, ZP.TOPT
+                Long.TopToLong(); // ZP.TOPL, ZP.TOPH, ZP.TOPT -> ZP.LTOP0-3, ZP.TOPT
                 if (NC)
                 {
                     break;

@@ -17,7 +17,7 @@ WORD elapsed
 BEGIN
     PRINT "10 iterations"
     start = SECONDS()
-    FOR iter = 1 TO 1
+    FOR iter = 1 TO 10
         count = 0
         
         ! Initialize flags array to true
@@ -44,8 +44,7 @@ BEGIN
     PRINT "Done."
     PRINT count, " primes", elapsed, " seconds"
 END
-
-! run the benchmark
 RUN
+
 ! DASM
 

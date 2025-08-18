@@ -113,8 +113,12 @@ unit BASICTypes // BASICTypes.asm
                     }
                     case BASICType.LONG:
                     {
+#ifdef BASICLONG
                         LDA #Token.LONG
                         Tokens.PrintKeyword();
+#else
+                        Error.InternalError(); BIT ZP.EmulatorPCL
+#endif
                     }
                     case BASICType.BIT:
                     {

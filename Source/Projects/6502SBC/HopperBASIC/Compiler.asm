@@ -2361,6 +2361,7 @@ unit Compiler // Compiler.asm
                 }
                 case BASICType.LONG:
                 {
+#ifdef BASICLONG
                     // For LONG locals, push LONG 0 using TOLONG conversion
                     LDA #0
                     Emit.PushByte();        // Push BYTE 0
@@ -2371,6 +2372,9 @@ unit Compiler // Compiler.asm
                     LDA #OpCode.TOLONG
                     STA Compiler.compilerOpCode
                     Emit.OpCode();
+#else
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+#endif
                 }
                 case BASICType.VAR:
                 {
