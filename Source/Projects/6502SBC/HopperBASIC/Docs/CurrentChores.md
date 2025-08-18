@@ -1,3 +1,5 @@
+You're absolutely right! Let me correct those misconceptions:
+
 # LONG Type Implementation Status - Updated
 
 Our current state is reflected in BASIC.asm where the HopperBASIC program is.
@@ -26,224 +28,125 @@ END
 RUN
 ```
 
-## Phase 1: Infrastructure and Stack Operations
+## ✅ **COMPLETED INFRASTRUCTURE (90%)**
+- **✅ Core Infrastructure**: Zero page, stack operations, type definitions 
+- **✅ LONG Arithmetic Library**: All 32-bit math functions (Add, Sub, Mul, Div, Mod, Negate)
+- **✅ MILLIS() Function**: Returns 32-bit LONG when `#ifdef BASICLONG`
+- **✅ Global Variable Support**: LONG declaration, assignment, and retrieval working
+- **✅ Variable Declaration**: `LONG variableName` syntax working
+- **✅ LONG to String Conversion**: `Long.Print()` working for PRINT statements
+- **✅ Type System**: TOLONG opcode, Long.ToLong() promotion function
+- **✅ Variable Storage**: Variables.SetLongValue() and Variables.GetLongValue()
+- **✅ Type Compatibility Rules**: LONG promotion rules added to CheckTypeCompatibility()
 
-### ✅ **COMPLETED: Core Infrastructure**
-- **✅ BASICLONG Support**: `#define BASICLONG` enabled in basic.asm
-- **✅ Type Definition**: `BASICType.LONG = 0x05` defined in BASICTypes.asm
-- **✅ Zero Page Variables**: 
-  - LNEXT0-3 (0x73-0x76), LTOP0-3 (0x77-0x7A), LRESULT0-7 allocated
-  - All LONG arithmetic operations use these correctly
-- **✅ Stack Memory Layout**: 5-byte slots already allocated:
-  ```
-  0x0500: TypeStackLSB     (type information)
-  0x0600: ValueStackLSB    (byte 0 - LSB)  
-  0x0700: ValueStackMSB    (byte 1)
-  0x0800: ValueStackMSB2   (byte 2) 
-  0x0900: ValueStackMSB3   (byte 3 - MSB)
-  ```
+## 🚧 **REMAINING WORK**
 
-### ✅ **COMPLETED: LONG Stack Operations**
-- **✅ Long.PushTop()**: Push 4-byte value from LTOP0-3 + BASICType.LONG ✅ IMPLEMENTED
-- **✅ Long.PopTop()**: Pop 4-byte value to LTOP0-3 ✅ IMPLEMENTED  
-- **✅ Long.PopNext()**: Pop 4-byte value to LNEXT0-3 ✅ IMPLEMENTED
+### **1. Arithmetic Expression Dispatch (Critical - blocks benchmark)**
+**Status**: Missing LONG type detection in arithmetic instructions
 
-## Phase 2: Type System
+**Files**: Instructions.asm 
+- `Instructions.Addition()` - needs LONG dispatch
+- `Instructions.Subtraction()` - needs LONG dispatch  
+- `Instructions.Multiply()` - needs LONG dispatch
+- `Instructions.Division()` - needs LONG dispatch
+- `Instructions.Modulo()` - needs LONG dispatch
 
-### ✅ **COMPLETED: LONG Type Support**
-- **✅ BASICType.LONG**: Already exists and working
-- **✅ TOLONG Opcode**: `OpCode.TOLONG = 0x1D` ✅ IMPLEMENTED
-- **✅ executeToLong()**: Handles TOLONG opcode dispatch ✅ IMPLEMENTED
-- **✅ Long.ToLong()**: Type promotion function ✅ IMPLEMENTED
-  - BYTE → LONG: Zero-extend (0x42 → 0x00000042) ✅
-  - WORD → LONG: Zero-extend (0x1234 → 0x00001234) ✅  
-  - INT → LONG: Sign-extend (0x8000 → 0xFFFF8000, 0x7FFF → 0x00007FFF) ✅
-
-### ✅ **COMPLETED: Variable Storage**  
-- **✅ Variables.SetLongValue()**: Store 4-byte LONG in variable ✅ IMPLEMENTED
-- **✅ Variables.GetLongValue()**: Retrieve 4-byte LONG from variable ✅ IMPLEMENTED
-- **✅ LONG Storage Layout**: Uses Objects.snValue (offset 5-6) + extended (offset 7-8) ✅
-
-## Phase 3: LONG Arithmetic Library
-
-### ✅ **COMPLETED: LONG Arithmetic Functions**
-All core LONG arithmetic operations are implemented in Long.asm:
-- **✅ Long.Add()**: 32-bit addition ✅ IMPLEMENTED
-- **✅ Long.Sub()**: 32-bit subtraction ✅ IMPLEMENTED  
-- **✅ Long.Mul()**: 32-bit multiplication ✅ IMPLEMENTED
-- **✅ Long.Div()**: 32-bit division ✅ IMPLEMENTED
-- **✅ Long.Mod()**: 32-bit modulo ✅ IMPLEMENTED
-- **✅ Long.Negate()**: 32-bit negation ✅ IMPLEMENTED
-- **✅ Sign handling**: utilityDoLongSigns() for signed operations ✅
-
-## Phase 4: System Integration
-
-### ✅ **COMPLETED: MILLIS() Function**
-- **✅ MILLIS() Returns LONG**: When `#ifdef BASICLONG`, MILLIS() returns 32-bit value ✅ IMPLEMENTED
-  ```assembly
-  #ifdef BASICLONG
-      LDA ZP.TICK0 STA ZP.LTOP0     // Get system timer
-      LDA ZP.TICK1 STA ZP.LTOP1
-      LDA ZP.TICK2 STA ZP.LTOP2
-      LDA ZP.TICK3 STA ZP.LTOP3
-      LDA #BASICType.LONG STA ZP.TOPT
-  #endif
-  ```
-
-## Phase 5: **REMAINING WORK - Type-Aware Arithmetic**
-
-### ⚠️ **PARTIALLY IMPLEMENTED: Arithmetic Instruction Dispatch**
-The core arithmetic instructions exist but need LONG type detection:
-
-**Current State:**
-- ✅ Instructions.Addition() exists ✅ IMPLEMENTED
-- ✅ Instructions.Subtraction() exists ✅ IMPLEMENTED  
-- ✅ Instructions.Multiply() exists ✅ IMPLEMENTED
-- ✅ CheckTypeCompatibility() exists ✅ IMPLEMENTED
-
-**❌ Missing:** LONG type detection and dispatch to Long functions
-
-**Required Changes:**
+**Required Changes**:
 ```assembly
 // In Instructions.Addition() - ADD AFTER CheckTypeCompatibility():
-LDA ZP.NEXTT
-AND #BASICType.TYPEMASK
-CMP #BASICType.LONG
-if (Z) 
+if (BBS3, ZP.NEXTT) // Bit 3 - LONG
 {
-    // Either operand is LONG - promote both and use Long.Add()
-    JMP handleLongAddition
+    // Result type is LONG - use Long.Add()
+    Long.PopNext();  // Get left operand as LONG
+    Long.PopTop();   // Get right operand as LONG  
+    Long.Add();      // Perform 32-bit addition
+    Long.PushTop();  // Push LONG result
+    SEC              // Success
+    break;
 }
-
-LDA ZP.TOPT  
-AND #BASICType.TYPEMASK
-CMP #BASICType.LONG
-if (Z)
-{
-    // Second operand is LONG - promote first and use Long.Add()
-    JMP handleLongAddition  
-}
-
-// Continue with existing 16-bit addition...
 ```
 
-### ❌ **NOT IMPLEMENTED: CheckTypeCompatibility() LONG Support**
-- **File**: Instructions.asm CheckTypeCompatibility()
-- **Missing**: LONG type promotion rules
-- **Required**: Add LONG compatibility with BYTE/WORD/INT (promotes to LONG)
+**Impact**: This is the main blocker. Without this, `s=s+j` fails regardless of where it appears.
 
-### ❌ **NOT IMPLEMENTED: LONG Variable Declaration**  
-- **File**: Statement.asm / Compiler.asm
-- **Missing**: Recognition of "LONG variableName" syntax
-- **Required**: Add Token.LONG to BASICTypes.FromToken() and parser
+### **2. FOR Loop Iterator Support (LONG iterator variables)**
+**Status**: FOR loop opcodes only handle 16-bit iterator arithmetic
 
-### ❌ **NOT IMPLEMENTED: LONG Literals**
-- **File**: Tokenizer / Compiler
-- **Missing**: Support for LONG constants like `12345L` or large numbers
-- **Current Workaround**: Use `PUSHBYTE 0, TOLONG` for simple cases like `s=0`
+**Files**: executor.asm
+- `executeFORCHK()` - initial loop condition check
+- `executeFORIT()` - iterator increment
 
-### ❌ **NOT IMPLEMENTED: LONG to String Conversion**
-- **File**: Need LongToString() function
-- **Missing**: Convert 32-bit LONG to decimal string for PRINT
-- **Algorithm**: Use existing Long.DivMod() with divisor 10, collect digits
+**Issue**: When iterator is LONG type, these opcodes need 32-bit arithmetic.
 
-## Phase 6: **IMPLEMENTATION PRIORITY**
-
-### **CRITICAL PATH: Complete Type-Aware Arithmetic (Ready to implement)**
-1. **Add LONG detection to Instructions.Addition()**:
-   ```assembly
-   // After existing CheckTypeCompatibility() call:
-   LDA ZP.NEXTT
-   AND #BASICType.TYPEMASK  
-   CMP #BASICType.LONG
-   if (Z) { JMP longAddition }
-   
-   LDA ZP.TOPT
-   AND #BASICType.TYPEMASK
-   CMP #BASICType.LONG  
-   if (Z) { JMP promoteAndAddLong }
-   ```
-
-2. **Add LONG promotion to CheckTypeCompatibility()**:
-   ```assembly
-   // Add LONG promotion rules:
-   // BYTE + LONG → LONG
-   // WORD + LONG → LONG  
-   // INT + LONG → LONG
-   ```
-
-3. **Add LONG Variable Declaration**:
-   - Add Token.LONG to tokenizer
-   - Update BASICTypes.FromToken() to handle LONG
-   - Test: `LONG START = MILLIS()` should work
-
-4. **Add LongToString() Function**:
-   ```assembly
-   LongToString():
-       // Use Long.DivMod() with divisor 10
-       // Collect remainder digits in reverse
-       // Handle negative sign
-       // Reverse for final string
-   ```
-
-## Testing Strategy
-
-### **Phase 1 Test: Basic LONG Operations**
+**Example**: 
 ```basic
-LONG A = 1000000
-LONG B = 2000000  
-LONG C = A + B
-PRINT C  ! Should print 3000000
+LONG bigStart = 1000000
+FOR i = bigStart TO bigStart + 1000  ← FORCHK/FORIT need LONG support
 ```
 
-### **Phase 2 Test: MILLIS() Integration**
+### **3. FORITF Optimization Guard**
+**Status**: FORITF optimization needs LONG compatibility check
+
+**File**: CompilerFlow.asm (not Instructions.asm)
+
+**Issue**: FORITF is a 16-bit optimization. Should only apply when iterator, FROM, TO, and STEP are all 16-bit or less.
+
+**Required**: Add guard to prevent FORITF when any FOR loop component is LONG.
+
+### **4. Number Literal Auto-Promotion**
+**Status**: Large number literals should auto-promote to LONG
+
+**Files**: Tokenizer.asm, NUMBER token parsing
+
+**Current**: Parser works for normal ranges, but large values (>65535) should automatically become LONG.
+
+**Required**: Detect when parsed number exceeds WORD/INT range and set type to LONG automatically.
+
+**Example**: 
 ```basic
-LONG START = MILLIS()
-DELAY(100)
-PRINT MILLIS() - START  ! Should print ~100
+LONG big = 1000000  ← Should parse 1000000 as LONG, not overflow
 ```
 
-### **Phase 3 Test: Full Benchmark**
+## **Implementation Priority**
+
+### **Phase 1: Critical (Blocks benchmark)**
+1. **Arithmetic Expression Dispatch** - Add LONG detection to arithmetic instructions
+
+### **Phase 2: FOR Loop Support**  
+2. **FORCHK/FORIT LONG Support** - Handle LONG iterator variables
+3. **FORITF Guard in CompilerFlow** - Prevent optimization when LONG involved
+
+### **Phase 3: Polish**
+4. **Number Literal Auto-Promotion** - Large constants become LONG automatically
+
+## **Current Test Status**
+
+### **✅ Working**
 ```basic
-! The complete benchmark from the target
+LONG ms = MILLIS()  ✅ LONG declaration and assignment
+PRINT ms            ✅ LONG to string conversion  
+LONG l = ms         ✅ LONG variable copying
 ```
 
-## Success Criteria
-- ✅ Benchmark compiles without errors  
-- ✅ Benchmark runs and produces correct output (50005000)  
-- ✅ Timing measurement works (MILLIS() subtraction shows reasonable time)  
-- ✅ Existing BYTE/WORD/INT programs continue to work unchanged  
-- ✅ Type promotion works seamlessly in mixed arithmetic (`s=s+j`)  
-- ✅ Performance impact is acceptable for the added functionality  
-- ✅ No memory corruption or stack overflow issues
+### **❌ Expected to Fail (Missing Arithmetic Dispatch)**
+```basic
+LONG s = 1000
+WORD j = 500
+s = s + j           ❌ Arithmetic dispatch missing - same everywhere
+```
 
-## Current Status Summary
+### **❌ Expected to Fail (FOR with LONG iterator)**
+```basic
+LONG start = 1000000
+FOR i = start TO start + 10  ❌ FORCHK/FORIT need LONG support
+NEXT i
+```
 
-**✅ INFRASTRUCTURE: 100% Complete**
-- Zero page, stack operations, type definitions all ready
+## **Success Criteria**
+- ✅ LONG variables and MILLIS() working
+- ❌ Mixed arithmetic expressions (`LONG + WORD`) - **main blocker**
+- ❌ FOR loops with LONG iterator variables
+- ❌ Complete benchmark execution
 
-**✅ LONG LIBRARY: 100% Complete**  
-- All arithmetic functions implemented and tested
+**ESTIMATED COMPLETION: ~90% complete**
 
-**✅ MILLIS(): 100% Complete**
-- Returns LONG when BASICLONG is enabled
-
-**⚠️ ARITHMETIC DISPATCH: 20% Complete**
-- Instructions exist but need LONG type detection
-
-**❌ PARSER SUPPORT: 0% Complete**
-- LONG variable declaration not implemented
-- LONG literals not implemented  
-
-**❌ STRING CONVERSION: 0% Complete**
-- LongToString() not implemented
-
-**ESTIMATED COMPLETION: ~40% complete**
-
-The foundation is solid. The remaining work is primarily:
-1. Adding LONG type detection to existing arithmetic instructions
-2. Implementing LONG variable declaration parsing  
-3. Creating LongToString() for PRINT support
-4. LONG literal support (lowest priority)
-
-The benchmark should work with minimal additional code since the core infrastructure and arithmetic library are complete.
+The main blocker is arithmetic expression dispatch. Once that's fixed, the benchmark should work for most cases. FOR loop LONG support is needed for edge cases with LONG iterators.
