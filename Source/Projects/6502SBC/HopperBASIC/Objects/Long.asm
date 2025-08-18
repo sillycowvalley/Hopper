@@ -7,13 +7,13 @@ unit Long
         LDY ZP.SP                    // Current stack pointer
         LDA #BASICType.LONG
         STA TypeStackLSB,Y           // Store type
-        LDA ZP.LTOP0
+        LDA ZP.TOP0
         STA ValueStackLSB,Y          // Store byte 0 (LSB)
-        LDA ZP.LTOP1  
+        LDA ZP.TOP1  
         STA ValueStackMSB,Y          // Store byte 1
-        LDA ZP.LTOP2
+        LDA ZP.TOP2
         STA ValueStackMSB2,Y         // Store byte 2
-        LDA ZP.LTOP3
+        LDA ZP.TOP3
         STA ValueStackMSB3,Y         // Store byte 3 (MSB)
         INC ZP.SP                    // Advance stack pointer
     }
@@ -23,14 +23,15 @@ unit Long
         DEC ZP.SP                    // Move back to top item
         LDY ZP.SP
         LDA ValueStackLSB,Y          // Load byte 0 (LSB)
-        STA ZP.LTOP0
+        STA ZP.TOP0
         LDA ValueStackMSB,Y          // Load byte 1
-        STA ZP.LTOP1  
+        STA ZP.TOP1  
         LDA ValueStackMSB2,Y         // Load byte 2
-        STA ZP.LTOP2
+        STA ZP.TOP2
         LDA ValueStackMSB3,Y         // Load byte 3 (MSB)
-        STA ZP.LTOP3
-        // Optional: verify type is BASICType.LONG
+        STA ZP.TOP3
+        LDA TypeStackLSB, Y
+        STA ZP.TOPT
     }
     
     PopNext()     // Pop 4-byte value to LNEXT0-3, verify LONG type
@@ -38,14 +39,15 @@ unit Long
         DEC ZP.SP                    // Move back to top item
         LDY ZP.SP
         LDA ValueStackLSB,Y          // Load byte 0 (LSB)
-        STA ZP.LNEXT0
+        STA ZP.NEXT0
         LDA ValueStackMSB,Y          // Load byte 1
-        STA ZP.LNEXT1  
+        STA ZP.NEXT1  
         LDA ValueStackMSB2,Y         // Load byte 2
-        STA ZP.LNEXT2
+        STA ZP.NEXT2
         LDA ValueStackMSB3,Y         // Load byte 3 (MSB)
-        STA ZP.LNEXT3
-        // Optional: verify type is BASICType.LONG
+        STA ZP.NEXT3
+        LDA TypeStackLSB, Y
+        STA ZP.NEXTT
     }
     
     // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
@@ -62,41 +64,30 @@ unit Long
                 case BASICType.BYTE:
                 {
                     // Zero-extend BYTE: 0x42 → 0x00000042
-                    LDA ZP.TOPL
-                    STA ZP.LTOP0
-                    STZ ZP.LTOP1
-                    STZ ZP.LTOP2
-                    STZ ZP.LTOP3
+                    STZ ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
                 }
                 case BASICType.WORD:
                 {
                     // Zero-extend WORD: 0x1234 → 0x00001234
-                    LDA ZP.TOPL
-                    STA ZP.LTOP0
-                    LDA ZP.TOPH
-                    STA ZP.LTOP1
-                    STZ ZP.LTOP2
-                    STZ ZP.LTOP3
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
                 }
                 case BASICType.INT:
                 {
                     // Sign-extend INT based on high bit
-                    LDA ZP.TOPL
-                    STA ZP.LTOP0
-                    LDA ZP.TOPH
-                    STA ZP.LTOP1
-                    
                     // Check sign bit in TOPH and extend accordingly
-                    if (MI) // Set MI (negative)
+                    if (BBS7, ZP.TOP1) // Set MI (negative)
                     {
                         LDA #0xFF     // Negative: extend with 0xFF
-                        STA ZP.LTOP2
-                        STA ZP.LTOP3
+                        STA ZP.TOP2
+                        STA ZP.TOP3
                     }
                     else
                     {
-                        STZ ZP.LTOP2  // Positive: extend with 0x00
-                        STZ ZP.LTOP3
+                        STZ ZP.TOP2  // Positive: extend with 0x00
+                        STZ ZP.TOP3
                     }
                 }
                 default:
@@ -147,18 +138,16 @@ unit Long
         PHA
         
         // Save ZP.LTOP since we'll modify it during conversion
-        LDA ZP.LTOP0
+        LDA ZP.TOP0
         PHA
-        LDA ZP.LTOP1
+        LDA ZP.TOP1
         PHA
-        LDA ZP.LTOP2
+        LDA ZP.TOP2
         PHA
-        LDA ZP.LTOP3
+        LDA ZP.TOP3
         PHA
         
-        
-        BIT ZP.LTOP3  // Test sign bit of MSB
-        if (MI)       // Negative
+        if (BBS7, ZP.TOP3)       // Negative
         {
             // Print minus sign
             LDA #'-'
@@ -180,36 +169,36 @@ unit Long
             loop            // Inner loop - subtract current power of 10
             {
                 // 32-bit subtraction: LTOP = LTOP - PrDec32Tens[Y]
-                LDA ZP.LTOP0
+                LDA ZP.TOP0
                 SBC PrDec32Tens, Y
-                STA ZP.LTOP0
-                LDA ZP.LTOP1
+                STA ZP.TOP0
+                LDA ZP.TOP1
                 SBC PrDec32Tens+1, Y
-                STA ZP.LTOP1
-                LDA ZP.LTOP2
+                STA ZP.TOP1
+                LDA ZP.TOP2
                 SBC PrDec32Tens+2, Y
-                STA ZP.LTOP2
-                LDA ZP.LTOP3
+                STA ZP.TOP2
+                LDA ZP.TOP3
                 SBC PrDec32Tens+3, Y
-                STA ZP.LTOP3
+                STA ZP.TOP3
                 
                 INX         // Count digits
                 if (NC) { break; } // Loop until result < 0 (no carry)
             }
             
             // Add the power of 10 back (we subtracted one too many)
-            LDA ZP.LTOP0
+            LDA ZP.TOP0
             ADC PrDec32Tens, Y
-            STA ZP.LTOP0
-            LDA ZP.LTOP1
+            STA ZP.TOP0
+            LDA ZP.TOP1
             ADC PrDec32Tens+1, Y
-            STA ZP.LTOP1
-            LDA ZP.LTOP2
+            STA ZP.TOP1
+            LDA ZP.TOP2
             ADC PrDec32Tens+2, Y
-            STA ZP.LTOP2
-            LDA ZP.LTOP3
+            STA ZP.TOP2
+            LDA ZP.TOP3
             ADC PrDec32Tens+3, Y
-            STA ZP.LTOP3
+            STA ZP.TOP3
             
             TXA             // Get digit count
             if (NZ)         // Not zero, print it
@@ -246,13 +235,13 @@ unit Long
         
         // Restore ZP.LTOP
         PLA
-        STA ZP.LTOP3
+        STA ZP.TOP3
         PLA
-        STA ZP.LTOP2
+        STA ZP.TOP2
         PLA
-        STA ZP.LTOP1
+        STA ZP.TOP1
         PLA
-        STA ZP.LTOP0
+        STA ZP.TOP0
         
         // Restore ZP.ACC
         PLA
@@ -467,33 +456,33 @@ unit Long
     {
         SEC
         LDA # 0
-        SBC LTOP0
-        STA LTOP0
+        SBC TOP0
+        STA TOP0
         LDA # 0
-        SBC LTOP1
-        STA LTOP1
+        SBC TOP1
+        STA TOP1
         LDA # 0
-        SBC LTOP2
-        STA LTOP2
+        SBC TOP2
+        STA TOP2
         LDA # 0
-        SBC LTOP3
-        STA LTOP3
+        SBC TOP3
+        STA TOP3
     }
     negateLongNEXT()
     {
         SEC
         LDA # 0
-        SBC LNEXT0
-        STA LNEXT0
+        SBC NEXT0
+        STA NEXT0
         LDA # 0
-        SBC LNEXT1
-        STA LNEXT1
+        SBC NEXT1
+        STA NEXT1
         LDA # 0
-        SBC LNEXT2
-        STA LNEXT2
+        SBC NEXT2
+        STA NEXT2
         LDA # 0
-        SBC LNEXT3
-        STA LNEXT3
+        SBC NEXT3
+        STA NEXT3
     }
     
     utilityDoLongSigns()
@@ -521,53 +510,53 @@ unit Long
         
     DivMod()
     {
-        // LNEXT = LNEXT / LTOP + LRESULT
+        // NEXT = NEXT / TOP + RESULT
         
         // #### https://llx.com/Neil/a2/mult.html ####
         // http://www.6502.org/source/integers/32muldiv.htm
         
         // Initialize remainder to 0
-        STZ LRESULT0
-        STZ LRESULT1
-        STZ LRESULT2
-        STZ LRESULT3
+        STZ RESULT0
+        STZ RESULT1
+        STZ RESULT2
+        STZ RESULT3
         LDX #32       // there are 16 bits in N
 
         loop
         {
-            ASL LNEXT0    // shift hi bit of N into R
-            ROL LNEXT1    // (vacating the lo bit, which will be used for the quotient)
-            ROL LNEXT2
-            ROL LNEXT3
-            ROL LRESULT0
-            ROL LRESULT1
-            ROL LRESULT2
-            ROL LRESULT3
+            ASL NEXT0    // shift hi bit of N into R
+            ROL NEXT1    // (vacating the lo bit, which will be used for the quotient)
+            ROL NEXT2
+            ROL NEXT3
+            ROL RESULT0
+            ROL RESULT1
+            ROL RESULT2
+            ROL RESULT3
             
             SEC           // trial subtraction
-            LDA LRESULT0
-            SBC LTOP0
-            STA LRESULT4
-            LDA LRESULT1
-            SBC LTOP1
-            STA LRESULT5
-            LDA LRESULT2
-            SBC LTOP2
-            STA LRESULT6
-            LDA LRESULT3
-            SBC LTOP3
-            //STA LRESULT7
+            LDA RESULT0
+            SBC TOP0
+            STA RESULT4
+            LDA RESULT1
+            SBC TOP1
+            STA RESULT5
+            LDA RESULT2
+            SBC TOP2
+            STA RESULT6
+            LDA RESULT3
+            SBC TOP3
+            //STA RESULT7
             if (C)        // did subtraction succeed?
             {
                 // LDA LRESULT7
-                STA LRESULT3  // if yes, save it
-                LDA LRESULT6
-                STA LRESULT2
-                LDA LRESULT5 
-                STA LRESULT1
-                LDA LRESULT4
-                STA LRESULT0
-                INC LNEXT0    // and record a 1 in the quotient
+                STA RESULT3  // if yes, save it
+                LDA RESULT6
+                STA RESULT2
+                LDA RESULT5 
+                STA RESULT1
+                LDA RESULT4
+                STA RESULT0
+                INC NEXT0    // and record a 1 in the quotient
             }
             DEX
             if (Z) { break; }

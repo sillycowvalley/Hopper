@@ -252,22 +252,20 @@ unit BASICSysCalls
                case SysCallType.Millis:        // ID = 5
                {
                    // MILLIS function - get system timer
+                   LDA ZP.TICK0 STA ZP.TOP0     // Get system timer
+                   LDA ZP.TICK1 STA ZP.TOP1
 #ifdef BASICLONG
-                   LDA ZP.TICK0 STA ZP.LTOP0     // Get system timer
-                   LDA ZP.TICK1 STA ZP.LTOP1
-                   LDA ZP.TICK2 STA ZP.LTOP2
-                   LDA ZP.TICK3 STA ZP.LTOP3
+                   LDA ZP.TICK2 STA ZP.TOP2
+                   LDA ZP.TICK3 STA ZP.TOP3
                    LDA #BASICType.LONG STA ZP.TOPT
 #else
-                   LDA ZP.TICK0 STA ZP.TOPL     // Get system timer
-                   LDA ZP.TICK1 STA ZP.TOPH
                    LDA #BASICType.WORD STA ZP.TOPT
 #endif
                }
                case SysCallType.Seconds:       // ID = 6
                {
                    // SECONDS function - get elapsed seconds
-                   Time.Seconds();              
+                   Tools.Seconds();              
                    LDY #0 // already pushed the result
                }
                case SysCallType.Delay:         // ID = 7

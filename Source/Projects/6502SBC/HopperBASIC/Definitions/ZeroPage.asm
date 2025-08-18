@@ -65,32 +65,33 @@ unit ZP // ZeroPage.asm
     const byte ACC                  = 0x0E;  // Accumulator
     const byte ACCL                 = 0x0E;  // Accumulator low (alias)
     const byte ACCH                 = 0x0F;  // Accumulator high
+    const byte ACCT                 = 0x10;  // Accumulator type
     
-    const byte TOP                  = 0x10;  // Top of stack value
-    const byte TOPL                 = 0x10;  // Top low (alias)
-    const byte TOPH                 = 0x11;  // Top high
+    const byte TOP                  = 0x11;  // Top of stack value
+    const byte TOP0                 = 0x11;  // 
+    const byte TOPL                 = TOP0;
+    const byte TOP1                 = 0x12;
+    const byte TOPH                 = TOP1;
+    const byte TOP2                 = 0x13;
+    const byte TOP3                 = 0x14;
+    const byte TOPT                 = 0x15;  // Top type
     
-    const byte NEXT                 = 0x12;  // Next stack value
-    const byte NEXTL                = 0x12;  // Next low (alias)
-    const byte NEXTH                = 0x13;  // Next high
-    
-    const byte IDX                  = 0x14;  // Index register X
-    const byte IDXL                 = 0x14;  // Index X low (alias)
-    const byte IDXH                 = 0x15;  // Index X high
-    
-    const byte IDY                  = 0x16;  // Index register Y
-    const byte IDYL                 = 0x16;  // Index Y low (alias)
-    const byte IDYH                 = 0x17;  // Index Y high
-    
-    const byte ACCT                 = 0x18;  // Accumulator type
-    const byte TOPT                 = 0x19;  // Top type
+    const byte NEXT                 = 0x16;  // Next stack value
+    const byte NEXT0                = 0x16;
+    const byte NEXTL                = NEXT0;
+    const byte NEXT1                = 0x17;
+    const byte NEXTH                = NEXT1;
+    const byte NEXT2                = 0x18;
+    const byte NEXT3                = 0x19;
     const byte NEXTT                = 0x1A;  // Next type
     
-    const byte I2CInWritePtr        = 0x1B;  // I2C buffer write pointer
-    const byte I2CInReadPtr         = 0x1C;  // I2C buffer read pointer
-
-    const byte EmulatorPCL          = 0x1D;  // BIT this to capture PC
-    const byte EmulatorPCH          = 0x1E;  // Captured PC high byte
+    const byte IDX                  = 0x1B;  // Index register X
+    const byte IDXL                 = 0x1B;  // Index X low (alias)
+    const byte IDXH                 = 0x1C;  // Index X high
+    
+    const byte IDY                  = 0x1D;  // Index register Y
+    const byte IDYL                 = 0x1D;  // Index Y low (alias)
+    const byte IDYH                 = 0x1E;  // Index Y high
     
     // 0x1F: Available
     
@@ -229,16 +230,15 @@ unit ZP // ZeroPage.asm
     const byte TARGET2              = M2;
     const byte TARGET3              = M3;
     
-    // Time.Seconds() workspace (uses M0-M7)
-    // Long: used by syscallLongDiv, syscallLongMod, syscallLongMul:
-    const byte LRESULT0             = M0;
-    const byte LRESULT1             = M1;
-    const byte LRESULT2             = M2;
-    const byte LRESULT3             = M3;
-    const byte LRESULT4             = M4;
-    const byte LRESULT5             = M5;
-    const byte LRESULT6             = M6;
-    const byte LRESULT7             = M7;
+    // Time.Seconds(), Long workspace (uses M0-M7)
+    const byte RESULT0              = M0;
+    const byte RESULT1              = M1;
+    const byte RESULT2              = M2;
+    const byte RESULT3              = M3;
+    const byte RESULT4              = M4;
+    const byte RESULT5              = M5;
+    const byte RESULT6              = M6;
+    const byte RESULT7              = M7;
     
     // IntMath extended workspace (only uses M0-M3)
     const byte UWIDE4               = M0;
@@ -301,14 +301,11 @@ unit ZP // ZeroPage.asm
     const byte UWIDE2               = 0x71;  // IntMath 32-bit multiply
     const byte UWIDE3               = 0x72;  // IntMath 32-bit multiply high
     
-    const byte LNEXT0               = 0x73;  // Long math next operand byte 0
-    const byte LNEXT1               = 0x74;  // Long math next operand byte 1
-    const byte LNEXT2               = 0x75;  // Long math next operand byte 2
-    const byte LNEXT3               = 0x76;  // Long math next operand byte 3
-    const byte LTOP0                = 0x77;  // Long math top operand byte 0
-    const byte LTOP1                = 0x78;  // Long math top operand byte 1
-    const byte LTOP2                = 0x79;  // Long math top operand byte 2
-    const byte LTOP3                = 0x7A;  // Long math top operand byte 3
+    const byte I2CInWritePtr        = 0x73;  // I2C buffer write pointer
+    const byte I2CInReadPtr         = 0x74;  // I2C buffer read pointer
+
+    const byte EmulatorPCL          = 0x75;  // BIT this to capture PC
+    const byte EmulatorPCH          = 0x76;  // Captured PC high byte
     
     const byte STR                  = 0x7B;  // String pointer
     const byte STRL                 = 0x7B;  // String low (alias)

@@ -571,4 +571,32 @@ unit Tools // Tools.asm
         }
         PLA
     }
+    
+    Seconds()
+    {
+        LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
+        STA NEXT3
+        LDA ZP.TICK2
+        STA NEXT2
+        LDA ZP.TICK1
+        STA NEXT1
+        LDA ZP.TICK0 
+        STA NEXT0
+        
+        LDA # 0xE8 // 1000 = 0x03E8
+        STA TOP0
+        LDA # 0x03
+        STA TOP1
+        STZ TOP2
+        STZ TOP3
+        
+        Long.DivMod(); // Seconds = Millis / 1000   
+        
+        LDA NEXT0
+        STA TOPL
+        LDA NEXT1
+        STA TOPH
+        LDA # Types.UInt
+        Stacks.PushTop();
+    }
 }

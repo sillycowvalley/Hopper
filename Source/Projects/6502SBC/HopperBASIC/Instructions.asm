@@ -64,9 +64,9 @@ unit Instructions // Instructions.asm
                     case BASICType.BYTE:
                     {
                         // LONG ? BYTE: value must be 0-255
-                        LDA ZP.LTOP1  // Check bytes 1, 2, 3 are all zero
-                        ORA ZP.LTOP2
-                        ORA ZP.LTOP3
+                        LDA ZP.TOP1  // Check bytes 1, 2, 3 are all zero
+                        ORA ZP.TOP2
+                        ORA ZP.TOP3
                         if (NZ)
                         {
                             CLC  // Incompatible - value > 255
@@ -76,8 +76,8 @@ unit Instructions // Instructions.asm
                     case BASICType.WORD:
                     {
                         // LONG ? WORD: value must be 0-65535  
-                        LDA ZP.LTOP2  // Check bytes 2, 3 are zero
-                        ORA ZP.LTOP3
+                        LDA ZP.TOP2  // Check bytes 2, 3 are zero
+                        ORA ZP.TOP3
                         if (NZ)
                         {
                             CLC  // Incompatible - value > 65535
@@ -88,8 +88,8 @@ unit Instructions // Instructions.asm
                     {
                         // LONG ? INT: value must be -32768 to 32767
                         // Check if high 16 bits are either all 0 (positive) or all 1 (negative)
-                        LDA ZP.LTOP2
-                        CMP ZP.LTOP3  // Both bytes should be same for valid sign extension
+                        LDA ZP.TOP2
+                        CMP ZP.TOP3  // Both bytes should be same for valid sign extension
                         if (NZ)
                         {
                             CLC  // Incompatible - not valid sign extension
@@ -97,10 +97,10 @@ unit Instructions // Instructions.asm
                         }
                         
                         // Check if sign extension is consistent with bit 15
-                        BIT ZP.LTOP1  // Check bit 7 of byte 1 (bit 15 of 16-bit value)
+                        BIT ZP.TOP1  // Check bit 7 of byte 1 (bit 15 of 16-bit value)
                         if (MI)       // Negative 16-bit value
                         {
-                            LDA ZP.LTOP2
+                            LDA ZP.TOP2
                             CMP #0xFF     // High bytes should be 0xFF for negative
                             if (NZ)
                             {
@@ -110,7 +110,7 @@ unit Instructions // Instructions.asm
                         }
                         else          // Positive 16-bit value  
                         {
-                            LDA ZP.LTOP2
+                            LDA ZP.TOP2
                             if (NZ)       // High bytes should be 0x00 for positive
                             {
                                 CLC  // Incompatible - value too large
