@@ -5,12 +5,12 @@ unit Functions
         
     // Function management building on Objects foundation
     // Functions use the existing Objects node structure:
-    // Offset 0-1: next pointer (managed by Table unit)
-    // Offset 2:   function flags byte (was unused)
-    // Offset 3-4: function body tokens pointer / compiled opcodes pointer (dual purpose)
-    // Offset 5-6: arguments list head pointer (points directly to first argument node)
-    // Offset 7-8: opcode stream pointer (16-bit - for functions, unused for variables/constants)
-    // Offset 9+:  null-terminated name string
+    // Offset 0-1:  next pointer (managed by Table unit)
+    // Offset 2:    function flags byte (was unused)
+    // Offset 3-4:  function body tokens pointer / compiled opcodes pointer (dual purpose)
+    // Offset 5-6:  arguments list head pointer (points directly to first argument node)
+    // Offset 9-10: opcode stream pointer (16-bit - for functions, unused for variables/constants)
+    // Offset 11+:  null-terminated name string
     
     // Declare new function
     // Input: ZP.TOP = name pointer

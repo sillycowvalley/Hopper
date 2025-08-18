@@ -101,13 +101,12 @@ unit Trace // Trace.asm
             LDA #' ' Debug.COut(); States.PrintState();
         }
         
-        LDA ZP.LastErrorL
-        ORA ZP.LastErrorH
+        LDA ZP.LastError
         if (NZ)
         {
             LDA #' ' Debug.COut(); 
             LDA #'(' Debug.COut(); 
-            LDA ZP.LastErrorL STA ZP.STRL LDA ZP.LastErrorH STA ZP.STRH Tools.PrintStringSTR();
+            LDA ZP.LastErrorL Error.PrintError();
             LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
             PLP
             if (NC)

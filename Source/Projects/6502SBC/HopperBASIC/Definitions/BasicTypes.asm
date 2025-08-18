@@ -109,6 +109,11 @@ unit BASICTypes // BASICTypes.asm
                         LDA #Token.WORD
                         Tokens.PrintKeyword();
                     }
+                    case BASICType.LONG:
+                    {
+                        LDA #Token.LONG
+                        Tokens.PrintKeyword();
+                    }
                     case BASICType.BIT:
                     {
                         LDA #Token.BIT
@@ -193,6 +198,11 @@ unit BASICTypes // BASICTypes.asm
             case #Token.ARRAY:
             {
                 LDA # BASICType.ARRAY
+                SEC
+            }
+            case #Token.LONG:
+            {
+                LDA # BASICType.LONG
                 SEC
             }
             default:

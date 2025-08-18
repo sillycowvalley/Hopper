@@ -6,7 +6,7 @@ MEM
 
 BEGIN
     WORD START = MILLIS()
-    WORD S
+    LONG S
     WORD J
     FOR i=1 TO 10
         s=0
