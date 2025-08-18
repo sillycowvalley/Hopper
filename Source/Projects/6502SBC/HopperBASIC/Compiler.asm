@@ -1006,6 +1006,24 @@ unit Compiler // Compiler.asm
                         AND #BASICType.MASK
                         switch (A)
                         {
+                            case BASICType.LONG:
+                            {
+                                LDA ZP.TOP0
+                                STA Compiler.compilerOperand1
+                                LDA ZP.TOP1
+                                STA Compiler.compilerOperand2
+                                LDA # BASICType.WORD
+                                STA ZP.TOPT
+                                Emit.PushWord();
+                                
+                                LDA ZP.TOP2
+                                STA Compiler.compilerOperand1
+                                LDA ZP.TOP3
+                                STA Compiler.compilerOperand2
+                                LDA # BASICType.LONG
+                                STA ZP.TOPT
+                                Emit.PushWord();
+                            }
                             case BASICType.BIT:
                             {
                                 LDA ZP.TOPL
@@ -1300,25 +1318,52 @@ unit Compiler // Compiler.asm
                    }
                    else
                    {
-                       CMP #BASICType.BYTE
-                       if (Z)
+                       if (BBS3, ZP.TOPT) // Bit 3 - LONG
                        {
-                           LDA ZP.TOPL
-                           Emit.PushByte();
-                           CheckError();
-                           if (NC) { break; }
-                       }
-                       else // 16-bit value (INT or WORD)
-                       {
-                           // Set up operands for word emission
-                           LDA ZP.TOPL
+                           LDA ZP.TOP0
                            STA compilerOperand1  // LSB
-                           LDA ZP.TOPH
+                           LDA ZP.TOP1
                            STA compilerOperand2  // MSB
                            
+                           LDA # BASICType.WORD
+                           STA ZP.TOPT
                            Emit.PushWord();
                            CheckError();
                            if (NC) { break; }
+                           
+                           LDA ZP.TOP2
+                           STA compilerOperand1  // LSB
+                           LDA ZP.TOP3
+                           STA compilerOperand2  // MSB
+                           
+                           LDA # BASICType.LONG
+                           STA ZP.TOPT
+                           Emit.PushWord();
+                           CheckError();
+                           if (NC) { break; }
+                       }
+                       else
+                       {
+                           CMP #BASICType.BYTE
+                           if (Z)
+                           {
+                               LDA ZP.TOPL
+                               Emit.PushByte();
+                               CheckError();
+                               if (NC) { break; }
+                           }
+                           else // 16-bit value (INT or WORD)
+                           {
+                               // Set up operands for word emission
+                               LDA ZP.TOPL
+                               STA compilerOperand1  // LSB
+                               LDA ZP.TOPH
+                               STA compilerOperand2  // MSB
+                               
+                               Emit.PushWord();
+                               CheckError();
+                               if (NC) { break; }
+                           }
                        }
                    }
                    if (BBS0, ZP.CompilerFlags) // constant expression: NUMBER: PUSH numeric literal

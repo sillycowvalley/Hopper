@@ -655,6 +655,7 @@ unit Optimizer
                     }
                     case Token.NUMBER:
                     {
+                        // TODO : LONG - fail if > WORD
                         // Get the literal value
                         Tokenizer.GetTokenNumber(); // Output: ZP.TOP = value, ZP.TOPT = type
                         // Check next token is EOL

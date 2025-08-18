@@ -316,7 +316,7 @@ unit Emit
 #endif
    }
    
-   // Emit the most efficient opcode for a constant value
+    // Emit the most efficient opcode for a constant value
     // Input: ZP.TOP/TOPT = constant value and type
     // Output: Appropriate constant push opcode emitted
     // Modifies: Compiler state, buffer
@@ -337,6 +337,28 @@ unit Emit
             
             switch (A)
             {
+                case BASICType.LONG:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: LONG: not ideal for constant folding
+                    
+                    LDA ZP.TOP0
+                    STA Compiler.compilerOperand1
+                    LDA ZP.TOP1  
+                    STA Compiler.compilerOperand2
+                    LDA # BASICType.WORD
+                    STA ZP.TOPT
+                    Emit.PushWord();
+                    
+                    LDA ZP.TOP2
+                    STA Compiler.compilerOperand1
+                    LDA ZP.TOP3  
+                    STA Compiler.compilerOperand2
+                    LDA # BASICType.LONG
+                    STA ZP.TOPT
+                    Emit.PushWord();
+                    break;
+                }
+                
                 case BASICType.INT:
                 case BASICType.WORD:
                 {
@@ -658,7 +680,7 @@ unit Emit
 #endif
    }
    
-   // Emit PUSHINT or PUSHWORD opcode with word value
+   // Emit PUSHINT, PUSHWORD or PUSHLONG opcode with word value
    // Input: ZP.TOPT = type (determines opcode), compilerOperand1 = LSB, compilerOperand2 = MSB
    // Output: Appropriate opcode emitted with value
    // Modifies: compilerOpCode, buffer state via Emit.OpCodeWithWord()
@@ -690,6 +712,14 @@ unit Emit
                Emit.OpCodeWithWord();
                break;
            }
+           CMP #BASICType.LONG
+           if (Z)
+           {
+               LDA #OpCode.PUSHLONG
+               STA Compiler.compilerOpCode
+               Emit.OpCodeWithWord();
+               break;
+           }
            
            // Invalid type for word push
            Error.TypeMismatch(); BIT ZP.EmulatorPCL
@@ -701,6 +731,7 @@ unit Emit
 #endif
    }
    
+     
   
    
    

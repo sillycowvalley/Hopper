@@ -291,13 +291,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.EQ();
                 SEC
                 break;
             }
-            
+#endif
             LDX #0          // Assume false (not equal)
             
             
@@ -433,13 +434,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.NE();
                 SEC
                 break;
             }
-            
+#endif
             LDX #1          // Assume true (not equal)
             
             // Handle STRING type combinations
@@ -643,13 +645,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.LT();
                 SEC
                 break;
             }
-            
+#endif
             LDA #1 // not allowed : STRING, BIT
             checkBITandCHARTypes();
             if (NC)
@@ -752,12 +755,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.GT();
                 SEC
                 break;
             }
+#endif
             
             LDA #1 // not allowed : CHAR, STRING, BIT
             checkBITandCHARTypes();
@@ -862,12 +867,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.LE();
                 SEC
                 break;
             }
+#endif
             
             LDA #1 // not allowed : CHAR, STRING, BIT
             checkBITandCHARTypes();
@@ -971,12 +978,14 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.GE();
                 SEC
                 break;
             }
+#endif
             
             LDA #1 // not allowed : CHAR, STRING, BIT
             checkBITandCHARTypes();

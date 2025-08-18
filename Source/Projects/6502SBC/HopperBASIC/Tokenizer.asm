@@ -1160,6 +1160,7 @@ unit Tokenizer // Tokenizer.asm
         // Return it in A
     }    
     
+    /*
     // Check if multiplying ZP.TOP by 10 and adding a digit would overflow
     // Input: ZP.TOP = current 16-bit value, A = digit to add (0-9)
     // Output: C set if operation is safe, NC set if would overflow
@@ -1343,6 +1344,118 @@ unit Tokenizer // Tokenizer.asm
         }
     }
     
+    */
+    
+    // Get current token as number (assumes current token is NUMBER)
+    // Input: ZP.TokenLiteralPos = position of number string in token buffer
+    // Output: ZP.TOP = number value, ZP.TOPT = determined type (BYTE/INT/WORD/LONG)
+    //         For LONG: ZP.TOP0-3 contains full 32-bit value
+    //         For others: ZP.TOP0-1 contains 16-bit value, ZP.TOP2-3 cleared
+    // Munts: ZP.TOP0-3, ZP.TOPT, ZP.IDX, ZP.NEXT0-3, ZP.RESULT0-7, A, Y
+    // Error: Sets ZP.LastError if number is invalid or overflows 32-bit
+    GetTokenNumber()
+    {
+        // Initialize to zero
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        
+        // Set up 16-bit pointer to saved literal position in token buffer
+        LDA ZP.TokenBufferL
+        CLC
+        ADC ZP.TokenLiteralPosL
+        STA ZP.IDXL
+        LDA ZP.TokenBufferH
+        ADC ZP.TokenLiteralPosH
+        STA ZP.IDXH
+        
+        LDY #0  // Index into the number string
+        
+        // Check for hex format (0x prefix)
+        LDA [ZP.IDX], Y
+        CMP #'0'
+        if (Z)
+        {
+            INY
+            LDA [ZP.IDX], Y
+            CMP #'x'
+            if (Z) { parseHexNumber(); return; }
+            CMP #'X'
+            if (Z) { parseHexNumber(); return; }
+            DEY  // Back up
+        }
+        
+        loop
+        {
+            LDA [ZP.IDX], Y
+            if (Z) { break; }  // Hit null terminator
+            
+            // Check if character is a digit
+            LDA [ZP.IDX], Y
+            IsDigit();
+            if (NC) { break; }  // Not a digit
+            
+            // Convert ASCII to digit value (0-9)
+            LDA [ZP.IDX], Y
+            SEC
+            SBC #'0'
+            PHA  // Save digit
+            
+            // Multiply current value by 10
+            Long.MultiplyBy10();
+            if (NC)  // 32-bit overflow
+            {
+                PLA  // Clean up stack
+                Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                return;
+            }
+            
+            // Add the digit
+            PLA  // Restore digit (0-9)
+            Long.AddDigit();
+            if (NC)  // 32-bit overflow or invalid digit
+            {
+                Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                return;
+            }
+            INY
+        }
+        
+        LDA ZP.TOP3
+        ORA ZP.TOP2
+        if (NZ)
+        {
+            // Value requires LONG (65536-4294967295)
+            LDA #BASICType.LONG
+            STA ZP.TOPT
+        }
+        else
+        {
+            LDA ZP.TOP1
+            if (NZ)
+            {
+                // Value > 255
+                BIT ZP.TOP1          // Check high bit
+                if (MI)
+                {
+                    LDA #BASICType.WORD   // Large positive (32768-65535)
+                    STA ZP.TOPT
+                }
+                else
+                {
+                    LDA #BASICType.INT    // Medium positive (256-32767)
+                    STA ZP.TOPT       
+                }
+            }
+            else
+            {
+                LDA #BASICType.BYTE   // Values 0-255 are BYTE
+                STA ZP.TOPT
+            }
+        }
+    }    
+    
     // Skip past null-terminated string at current tokenizer position
     // Input: ZP.TokenizerPos = current position in token buffer
     // Output: ZP.TokenizerPos advanced past null terminator, C set on success, NC on error
@@ -1390,7 +1503,7 @@ unit Tokenizer // Tokenizer.asm
             }
             
             // Not null, continue scanning
-        }// single exit
+        }// single exit
     }    
     // Read a line of input into BasicInputBuffer
     // Input: None (reads from serial)

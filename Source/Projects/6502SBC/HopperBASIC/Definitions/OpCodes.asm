@@ -132,6 +132,8 @@ unit OpCodes
        SETITEMGL    = 0x91,  // pop from stack and SETITEM <array global address> <index local offset>
        SETITEMLG    = 0x92,  // pop from stack and SETITEM <array local offset>   <index global address>
        SETITEMLL    = 0x93,  // pop from stack and SETITEM <array local offset>   <index local offset>
+       
+       PUSHLONG     = 0x94,  // pops word from stack, combines that with  WORD immediate [lsb] [msb] then pushes a LONG
 
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
         // Bits 7-6: 11 (three operand bytes)
@@ -193,6 +195,7 @@ unit OpCodes
    const string opcodeRETURNVAL = "RETURNVAL";
    const string opcodePUSHINT = "PUSHINT";
    const string opcodePUSHWORD = "PUSHWORD";
+   const string opcodePUSHLONG = "PUSHLONG";
    const string opcodePUSHCSTRING = "PUSHCSTRING";
    const string opcodeCALL = "CALL";
    const string opcodeCALLF = "CALLF";
@@ -615,6 +618,13 @@ unit OpCodes
                 LDA #(opcodePUSHWORD % 256)
                 STA ZP.STRL
                 LDA #(opcodePUSHWORD / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHLONG:
+            {
+                LDA #(opcodePUSHLONG % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHLONG / 256)
                 STA ZP.STRH
             }
             case OpCode.PUSHCSTRING:

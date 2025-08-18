@@ -508,6 +508,10 @@ unit Executor // Executor.asm
             {
                 executeToLong();
             }
+            case OpCode.PUSHLONG:
+            {
+                executePushLong();
+            }
            
            case OpCode.GETITEM:
            {
@@ -3669,6 +3673,56 @@ unit Executor // Executor.asm
     #ifdef TRACE
         LDA #(executeAddGlobalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddGlobalsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
+    }
+    
+    const string executePushLongTrace = "PUSHLONG";
+    executePushLong()
+    {
+#ifdef BASICLONG        
+        PHA
+        PHX
+        PHY
+        
+    #ifdef TRACE
+        LDA #(executePushLongTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executePushLongTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Pop the LSW from stack
+            Stacks.PopTop();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            FetchOperandWord();
+            LDA executorOperandL
+            STA ZP.TOP2
+            LDA executorOperandH
+            STA ZP.TOP2
+   
+            // Push the recombined LONG value to stack
+            LDA # BASICType.LONG
+            STA ZP.TOPT
+            Long.PushTop();
+            
+            SEC  // Set C (successful conversion)
+            break;
+        } // Single exit block
+        
+    #ifdef TRACE
+        LDA #(executePushLongTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executePushLongTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLX
+        PLA
+#else     
+        Error.InternalError(); BIT ZP.EmulatorPCL   
+#endif        
     }
     
     // Execute TOLONG opcode - convert stack top to LONG type

@@ -801,6 +801,7 @@ PLP
             LDA ZP.NEXT1
             SBC ZP.TOP1
             STA ZP.NEXT1
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 LDA ZP.NEXT2
@@ -810,6 +811,7 @@ PLP
                 SBC ZP.TOP3
                 STA ZP.NEXT3
             }
+#endif
             // Push result to stack
             LDA ZP.NEXTT
             Long.PushNext();
@@ -855,6 +857,7 @@ PLP
             LDA ZP.NEXT1
             ADC ZP.TOP1
             STA ZP.NEXT1
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 LDA ZP.NEXT2
@@ -864,7 +867,7 @@ PLP
                 ADC ZP.TOP3
                 STA ZP.NEXT3
             }
-
+#endif
             // Push result to stack
             LDA ZP.NEXTT
             Long.PushNext();
@@ -939,7 +942,7 @@ PLP
         {
             // Pop the operand to negate
             Long.PopTop();
-            
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 SEC
@@ -959,7 +962,7 @@ PLP
                 SEC
                 break;
             }
-            
+#endif
             // Check if this is WORD 32768 (special case for -32768)
             LDA ZP.TOPT
             CMP #BASICType.WORD
@@ -1052,12 +1055,14 @@ PLP
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.Mul();
                 SEC
                 break;
             }
+#endif
             
             LDA ZP.NEXTT
             CMP #BASICType.INT
@@ -1114,12 +1119,30 @@ PLP
             Long.PopTopNext();
             
             // Check for division by zero
-            LDA ZP.TOPL
-            ORA ZP.TOPH
+            LDA ZP.TOP0
+            ORA ZP.TOP1
             if (Z)  // Divisor is zero
             {
+#ifdef BASICLONG
+                if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+                {                
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (Z)  // Divisor is zero
+                    {
+                        Error.DivisionByZero(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                else
+                {
+                    Error.DivisionByZero(); BIT ZP.EmulatorPCL
+                    break;
+                }
+#else
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 break;
+#endif
             }
             
             LDA #1  // Arithmetic operation
@@ -1130,13 +1153,14 @@ PLP
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.Div();
                 SEC
                 break;
             }
-            
+#endif
             LDA ZP.NEXTT
             CMP #BASICType.INT
             if (Z)
@@ -1185,12 +1209,30 @@ PLP
             Long.PopTopNext();
             
             // Check for division by zero
-            LDA ZP.TOPL
-            ORA ZP.TOPH
+            LDA ZP.TOP0
+            ORA ZP.TOP1
             if (Z)  // Divisor is zero
             {
+#ifdef BASICLONG
+                if (BBS3, ZP.TOPT) // if either is LONG, both will be long
+                {                
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (Z)  // Divisor is zero
+                    {
+                        Error.DivisionByZero(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                else
+                {
+                    Error.DivisionByZero(); BIT ZP.EmulatorPCL
+                    break;
+                }
+#else
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 break;
+#endif
             }
             
             LDA #1  // Arithmetic operation
@@ -1201,12 +1243,14 @@ PLP
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.Mod();
                 SEC
                 break;
             }
+#endif
             
             LDA ZP.NEXTT
             CMP #BASICType.INT
@@ -1247,12 +1291,12 @@ PLP
             
             LDA #2  // Bitwise operation (numeric types only)
             CheckTypeCompatibility();
-            
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
+
             
             // NEXT & TOP -> NEXT
             LDA ZP.NEXT0
@@ -1261,6 +1305,7 @@ PLP
             LDA ZP.NEXT1
             AND ZP.TOP1
             STA ZP.NEXT1
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 LDA ZP.NEXT2
@@ -1270,6 +1315,8 @@ PLP
                 AND ZP.TOP3
                 STA ZP.NEXT3
             }
+#endif
+            
             
             LDA ZP.NEXTT
             Long.PushNext();
@@ -1299,13 +1346,12 @@ PLP
             
             LDA #2  // Bitwise operation (numeric types only)
             CheckTypeCompatibility();
-            
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
-            
+
             // NEXT | TOP -> NEXT
             LDA ZP.NEXT0
             ORA ZP.TOP0
@@ -1313,6 +1359,7 @@ PLP
             LDA ZP.NEXT1
             ORA ZP.TOP1
             STA ZP.NEXT1
+#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 LDA ZP.NEXT2
@@ -1322,7 +1369,7 @@ PLP
                 ORA ZP.TOP2
                 STA ZP.NEXT2
             }
-            
+#endif
             LDA ZP.NEXTT
             Long.PushNext();
             SEC
@@ -1351,12 +1398,12 @@ PLP
             
             LDA #4  // Logical operation (BIT types only)
             CheckTypeCompatibility();
-            
             if (NC)  // Type mismatch
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
+
             
             // Logical AND: both operands must be non-zero for result to be 1
             LDX #0  // Assume result is 0 (false)
