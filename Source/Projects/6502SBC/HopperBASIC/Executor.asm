@@ -1697,11 +1697,17 @@ unit Executor // Executor.asm
            
             // Check if value is zero (FALSE)     
             LDA Address.ValueStackLSB, X
+            LDA Address.ValueStackLSB, X
             if (Z)  // Value is zero/FALSE - take the jump
             {
                 // Fetch 16-bit signed operand
 #ifdef TRACEEXE
                 FetchOperandWord();
+                LDA executorOperandL
+                STA ZP.NEXTL
+                LDA executorOperandH
+                STA ZP.NEXTH
+
                 // Apply offset to PC
                 applySignedOffsetToPC();
 #else
@@ -1734,8 +1740,6 @@ unit Executor // Executor.asm
                 ADC ZP.NEXTH
                 STA ZP.PCH
 #endif                
-                
-                
             }
             else  // Value is non-zero/TRUE - skip the jump
             {
@@ -2046,8 +2050,8 @@ unit Executor // Executor.asm
             STA Address.ValueStackMSB, Y
             
             LDA Address.TypeStackLSB, Y
-            Long.IsLong();
-            if (C)
+            AND #BASICType.LONG
+            if (NZ)
             {
                 LDA Address.ValueStackMSB2, X
                 STA Address.ValueStackMSB2, Y
@@ -2110,8 +2114,8 @@ unit Executor // Executor.asm
         LDA Address.TypeStackLSB, Y
         AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
         STA Address.TypeStackLSB, X
-        Long.IsLong();
-        if (C)
+        AND #BASICType.LONG
+        if (NZ)
         {
             LDA Address.ValueStackMSB2, Y
             STA Address.ValueStackMSB2, X

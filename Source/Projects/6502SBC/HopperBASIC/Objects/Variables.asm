@@ -1061,9 +1061,7 @@ unit Variables
             Objects.GetData(); // Returns type in ZP.ACCT, value in ZP.IDY
             
             // Check if it's a LONG variable
-            LDA ZP.ACCT
-            Long.IsLong(); // checks A: C if LONG, NC if not
-            if (NC)
+            if (BBR3, ZP.ACCT) // LONG = bit 3
             {
                 // Not a LONG variable
                 // Read 2-byte value directly from Objects node
@@ -1075,7 +1073,7 @@ unit Variables
                 INY
                 LDA [ZP.IDX], Y
                 STA ZP.LTOPH
-                Long.ToLong(); // TOP -> LTOP
+                Long.ToLong(); // TOP -> LTOP, C or NC
             }
             else
             {

@@ -2363,17 +2363,17 @@ unit Debug // Debug.asm
         PLY PLX PLA PLP
     }
 
-    // Internal compact stack implementation
+    // Internal compact stack implementation with LONG support
     // Input: A = mode (0=count characters, 1=print)
     //        Stack state (ZP.SP, ZP.BP, Address.*Stack arrays)
     // Output: If counting (A=0): character count in ZP.ACCL
     //         If printing (A=1): formatted stack dump to serial
-    // Modifies: ZP.ACCL (character counter when A=0), ZP.DB0 (VAR flag temp)
+    // Modifies: ZP.ACCL (character counter when A=0), ZP.DB0 (flag bits: 0=VAR, 1=ARRAY, 2=LONG)
     compactStack()
     {
         PHA  // Save mode on stack
         
-        // Stack values from SP-19 to SP (newest on left, oldest on right)
+        // Check for empty stack
         LDX ZP.SP
         CPX #0
         if (Z) 
@@ -2390,35 +2390,12 @@ unit Debug // Debug.asm
             STZ ZP.ACCL
         }
         
-        LDY #0  // Counter for 20 elements
-        
-        // Handle initial BP marker or space
-        PLA
-        PHA  // Peek at mode again
-        if (Z)
-        {
-            // Counting mode
-            INC ZP.ACCL  // Count the BP marker or space
-        }
-        else
-        {
-            // Printing mode
-            LDA ZP.BP
-            CMP ZP.SP
-            if (Z)
-            {
-                LDA #'|' cOut();
-            }
-            else
-            {
-                space();
-            }
-        }
+        LDY #0  // Counter for elements processed
         
         loop  // Element loop
         {
             CPY #20
-            if (Z) { break; }
+            if (Z) { break; }  // Max 20 elements
             
             DEX  // Point to actual stack element (SP-1 is top)
             CPX #0xFF  // Did we wrap around?
@@ -2428,23 +2405,32 @@ unit Debug // Debug.asm
                 break; 
             }
             
-            // Check VAR status
-            STZ ZP.DB0
+            // Check special cases using bit flags
+            STZ ZP.DB0  // Clear all flags
+            
+            // Check VAR status  
             LDA Address.TypeStackLSB, X
             AND #BASICType.VAR
             if (NZ)
             {
-                LDA #1
-                STA ZP.DB0  // Remember VAR status
+                SMB0 ZP.DB0  // Set bit 0 for VAR
             }
+            
             // Check ARRAY status
-            STZ ZP.DB0
-            LDA Address.TypeStackLSB, X
+            LDA Address.TypeStackLSB, X  
             AND #BASICType.ARRAY
             if (NZ)
             {
-                LDA #1
-                STA ZP.DB0  // Remember VAR|ARRAY status
+                SMB1 ZP.DB0  // Set bit 1 for ARRAY
+            }
+            
+            // Check LONG type
+            LDA Address.TypeStackLSB, X
+            AND #BASICType.TYPEMASK
+            CMP #BASICType.LONG
+            if (Z)
+            {
+                SMB2 ZP.DB0  // Set bit 2 for LONG
             }
             
             PLA
@@ -2452,141 +2438,179 @@ unit Debug // Debug.asm
             if (Z)
             {
                 // === COUNTING MODE ===
-                LDA ZP.DB0
-                if (NZ)
+                
+                // Count opening bracket for VAR or ARRAY
+                if (BBS0, ZP.DB0)  // VAR?
                 {
-                    INC ZP.ACCL  // '[' | '{'
+                    INC ZP.ACCL  // '{'
+                }
+                else
+                {
+                    if (BBS1, ZP.DB0)  // ARRAY?
+                    {
+                        INC ZP.ACCL  // '['
+                    }
                 }
                 
                 INC ZP.ACCL      // Type character
                 INC ZP.ACCL      // ':'
-                INC ZP.ACCL      // 4 hex digits
-                INC ZP.ACCL
-                INC ZP.ACCL
-                INC ZP.ACCL
                 
-                LDA ZP.DB0
-                if (NZ)
+                // Count hex digits based on type
+                if (BBS2, ZP.DB0)  // LONG?
                 {
-                    INC ZP.ACCL  // ']' | '}'
+                    // LONG: 8 hex digits (4 bytes: 0x12345678)
+                    LDA ZP.ACCL
+                    CLC
+                    ADC #8
+                    STA ZP.ACCL
+                }
+                else
+                {
+                    // Regular: 4 hex digits (2 bytes: 0x1234)
+                    LDA ZP.ACCL
+                    CLC 
+                    ADC #4
+                    STA ZP.ACCL
                 }
                 
-                INC ZP.ACCL      // Space or '|'
+                // Count closing bracket for VAR or ARRAY
+                if (BBS0, ZP.DB0)  // VAR?
+                {
+                    INC ZP.ACCL  // '}'
+                }
+                else
+                {
+                    if (BBS1, ZP.DB0)  // ARRAY?
+                    {
+                        INC ZP.ACCL  // ']'
+                    }
+                }
+                
+                INC ZP.ACCL      // Space or '|' separator
             }
             else
             {
                 // === PRINTING MODE ===
-                LDA ZP.DB0
-                if (NZ)
+                
+                // Print opening bracket for VAR or ARRAY
+                if (BBS0, ZP.DB0)  // VAR?
                 {
-                    LDA Address.TypeStackLSB, X
-                    AND # BASICType.ARRAY
-                    if (NZ)
-                    {
-                        LDA #'[' 
-                    }
-                    else 
-                    {
-                        LDA #'{' 
-                    }
+                    LDA #'{'
                     cOut();
                 }
+                else
+                {
+                    if (BBS1, ZP.DB0)  // ARRAY?
+                    {
+                        LDA #'['
+                        cOut();
+                    }
+                }
                 
+                // Print type character
                 LDA Address.TypeStackLSB, X
-                AND # SymbolType.MASK
+                AND #SymbolType.MASK
                 if (NZ)
                 {
-                    LDA #'!' cOut(); cOut(); cOut(); // massive error SymbolType should never be on the heap, only BASICType
+                    LDA #'!'
+                    cOut();
+                }
+                else
+                {
+                    LDA Address.TypeStackLSB, X
+                    AND #BASICType.TYPEMASK
+                    switch (A)
+                    {
+                        case BASICType.VOID:
+                        {
+                            LDA #'v'
+                            cOut();
+                        }
+                        case BASICType.CHAR:
+                        {
+                            LDA #'c'
+                            cOut();
+                        }
+                        case BASICType.INT:
+                        {
+                            LDA #'i'
+                            cOut();
+                        }
+                        case BASICType.BYTE:
+                        {
+                            LDA #'b'
+                            cOut();
+                        }
+                        case BASICType.WORD:
+                        {
+                            LDA #'w'
+                            cOut();
+                        }
+                        case BASICType.LONG:
+                        {
+                            LDA #'l'  // lowercase "l" for LONG
+                            cOut();
+                        }
+                        case BASICType.BIT:
+                        {
+                            LDA #'B'
+                            cOut();
+                        }
+                        case BASICType.STRING:
+                        {
+                            LDA #'s'
+                            cOut();
+                        }
+                        default:
+                        {
+                            LDA #'?'
+                            cOut();
+                        }
+                    }
                 }
                 
-                // Print type nibble
-                LDA Address.TypeStackLSB, X
-                AND # BASICType.TYPEMASK
-                switch (A)
-                {
-                    case BASICType.INT:
-                    {
-                        LDA #'i' cOut();
-                    }
-                    case BASICType.LONG:
-                    {
-                        LDA #'l' cOut();
-                    }
-                    case BASICType.VOID:
-                    {
-                        LDA #'v' cOut();
-                    }
-                    case BASICType.WORD:
-                    {
-                        LDA #'w' cOut();
-                    }
-                    case BASICType.BYTE:
-                    {
-                        LDA #'b' cOut();
-                    }
-                    case BASICType.CHAR:
-                    {
-                        LDA #'c' cOut();
-                    }
-                    case BASICType.BIT:
-                    {
-                        LDA #'B' cOut();
-                    }
-                    case BASICType.STRING:
-                    {
-                        LDA #'s' cOut();
-                    }
-                    case BASICType.ARRAY:
-                    {
-                        LDA #'a' cOut();
-                    }
-                    default:
-                    {
-                        hNibbleOut();
-                    }
-                }
-                LDA #':' cOut();
+                // Print colon
+                LDA #':'
+                cOut();
                 
-                
-                LDA Address.TypeStackLSB, X
-                Long.IsLong();
-                if (C)
+                // Print value based on type
+                if (BBS2, ZP.DB0)  // LONG?
                 {
-                    LDA Address.ValueStackMSB3, X
-                    hOut();
+                    // Print 4 more hex digits for LONG
+                    LDA Address.ValueStackMSB3, X  // MSB first
+                    Serial.HexOut();
                     LDA Address.ValueStackMSB2, X
-                    hOut();
+                    Serial.HexOut();
                 }
                 
-                // Print value (4 hex digits)
-                LDA Address.ValueStackMSB, X
-                hOut();
-                LDA Address.ValueStackLSB, X
-                hOut();
+                // Print 4 hex digits for regular types (2 bytes)
+                LDA Address.ValueStackMSB, X   // MSB first
+                Serial.HexOut();
+                LDA Address.ValueStackLSB, X   // LSB last  
+                Serial.HexOut();
                 
-                
-                LDA ZP.DB0
-                if (NZ)
+                // Print closing bracket for VAR or ARRAY
+                if (BBS0, ZP.DB0)  // VAR?
                 {
-                    LDA Address.TypeStackLSB, X
-                    AND # BASICType.ARRAY
-                    if (NZ)
-                    {
-                        LDA #']' 
-                    }
-                    else 
-                    {
-                        LDA #'}' 
-                    }
+                    LDA #'}'
                     cOut();
                 }
+                else
+                {
+                    if (BBS1, ZP.DB0)  // ARRAY?
+                    {
+                        LDA #']'
+                        cOut();
+                    }
+                }
                 
-                // Print separator
-                TXA
+                // Print separator (space or BP marker)
+                TXA  // Current stack position
                 CMP ZP.BP
                 if (Z)
                 {
-                    LDA #'|' cOut();
+                    LDA #'|'  // BP marker
+                    cOut();
                 }
                 else
                 {
@@ -2594,7 +2618,7 @@ unit Debug // Debug.asm
                 }
             }
             
-            INY
+            INY  // Increment element counter
         } // Element loop
         
         PLA  // Clean up mode from stack

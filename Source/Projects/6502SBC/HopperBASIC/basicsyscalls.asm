@@ -618,9 +618,7 @@ unit BASICSysCalls
            AND # 0b00000100 // Test return value bit
            if (NZ) 
            {
-               LDA ZP.TOPT
-               Long.IsLong(); // checks A: C if LONG, NC if not
-               if (C)
+               if (BBS3, ZP.TOPT) // LONG = bit 3
                {
                    Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
                }

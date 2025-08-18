@@ -7,10 +7,12 @@ unit BASICTypes // BASICTypes.asm
         INT      = 0x02, // Hopper VM Types.Int
         BYTE     = 0x03, // Hopper VM Types.Byte
         WORD     = 0x04, // Hopper VM Types.UInt
-        LONG     = 0x05,
+        STRING   = 0x05, // Hopper VM Types.String
         BIT      = 0x06, // Hopper VM Types.Bool - must 0x06!
         
-        STRING   = 0x0F, // Hopper VM Types.String
+        LONG     = 0x08, // LONG is the only type to use this bit!
+        
+        
         
         VAR      = 0x10, // Bit 4 - runtime-determined type
         ARRAY    = 0x20, // Bit 5 - array 
