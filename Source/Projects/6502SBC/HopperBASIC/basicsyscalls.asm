@@ -619,8 +619,8 @@ unit BASICSysCalls
            if (NZ) 
            {
                LDA ZP.TOPT
-               CMP BASICType.LONG
-               if (Z)
+               Long.IsLong(); // checks A: C if LONG, NC if not
+               if (C)
                {
                    Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
                }
@@ -629,7 +629,7 @@ unit BASICSysCalls
                    Stacks.PushTop();  // Push return value from ZP.TOP*
                }
            }
-           
+           SEC
            States.SetSuccess();
            break;
        } // loop exit

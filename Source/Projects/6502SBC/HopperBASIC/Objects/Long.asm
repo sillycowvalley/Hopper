@@ -48,6 +48,22 @@ unit Long
         // Optional: verify type is BASICType.LONG
     }
     
+    Long.IsLong() // checks A: C if LONG, NC if not
+    {
+        PHA
+        AND # BASICType.TYPEMASK
+        CMP # BASICType.LONG
+        if (Z)
+        {
+            SEC
+        }
+        else
+        {
+            CLC
+        }
+        PLA
+    }
+    
     // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
     // Output: ZP.LTOP0-3, ZP.TOPT
     ToLong()
@@ -56,7 +72,7 @@ unit Long
         {
             // Check the current type and convert accordingly
             LDA ZP.TOPT
-            AND #BASICType.TYPEMASK
+            AND # BASICType.TYPEMASK
             switch (A)
             {
                 case BASICType.BYTE:

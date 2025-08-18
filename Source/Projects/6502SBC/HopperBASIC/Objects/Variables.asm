@@ -1062,21 +1062,19 @@ unit Variables
             
             // Check if it's a LONG variable
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.LONG
-            if (NZ)
+            Long.IsLong(); // checks A: C if LONG, NC if not
+            if (NC)
             {
                 // Not a LONG variable
                 // Read 2-byte value directly from Objects node
                 // LSW from snValue (offset 5-6)
+                STA ZP.TOPT // from ZP.ACCT
                 LDY #Objects.snValue
                 LDA [ZP.IDX], Y
                 STA ZP.TOPL
                 INY
                 LDA [ZP.IDX], Y
                 STA ZP.LTOPH
-                LDA ZP.ACCT
-                STA ZP.TOPT
                 Long.ToLong(); // TOP -> LTOP
             }
             else
@@ -1139,9 +1137,7 @@ unit Variables
             
             // Check if it's a LONG variable
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
-            CMP #BASICType.LONG
-            if (NZ)
+            if (NC)
             {
                 // Not a LONG variable
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
