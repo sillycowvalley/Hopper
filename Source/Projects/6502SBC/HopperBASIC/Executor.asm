@@ -504,6 +504,12 @@ unit Executor // Executor.asm
            {
                ComparisonInstructions.GreaterEqual();
            }
+           
+            case OpCode.TOLONG:
+            {
+                executeToLong();
+            }
+           
            case OpCode.GETITEM:
            {
                executeGetItem();
@@ -3551,5 +3557,52 @@ unit Executor // Executor.asm
     #ifdef TRACE
         LDA #(executeAddGlobalsTrace % 256) STA ZP.TraceMessageL LDA #(executeAddGlobalsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
+    }
+    
+    // Execute TOLONG opcode - convert stack top to LONG type
+    // Input: Stack top contains 16 bit value to convert
+    // Output: Stack top contains LONG value, C set if successful, NC if error
+    // Modifies: ZP.TOP*, ZP.LTOP0-3, A, X, Y
+    // Preserves: All other registers and zero page locations
+    const string executeToLongTrace = "TOLONG";
+    executeToLong()
+    {
+        PHA
+        PHX
+        PHY
+        
+    #ifdef TRACE
+        LDA #(executeToLongTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeToLongTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Pop the value to convert from stack
+            Stacks.PopTop();
+            Error.CheckError();
+            if (NC) { break; }
+            
+            
+            // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
+            // Output: ZP.LTOP0-3, ZP.TOPT
+            Long.ToLong();
+            
+            // Push the converted LONG value back to stack
+            Long.PushTop();
+            
+            SEC  // Set C (successful conversion)
+        } // Single exit block
+        
+    #ifdef TRACE
+        LDA #(executeToLongTrace % 256) STA ZP.TraceMessageL 
+        LDA #(executeToLongTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLX
+        PLA
     }
 }

@@ -1,5 +1,94 @@
 # LONG Type Implementation Chores
 
+Our current stat is reflected in BASIC.asm where the HopperBASIC program is.
+While we have a lot of reference source code, our project only includes what is included by BASIC.asm, etc.
+
+RULE #0:  TOP PRIORITY
+Assume that the project knowledge is current and up to date. That includes source code, guideline documentation and specifications.
+
+Read it all BEFORE (including all the other rules here) try to solve a problem. If you do not have access to the project knowledge or are having problems accessing the project knowledge, tell me (and don't generate any code).
+
+Search Strategy for this project:
+- Hopper Assembly files (.asm): Search "unit" and "program" to find all source files
+- Documentation (.md): Search "Document Type" to find all documentation, or search specific types
+- Always search before coding - the answer is usually already implemented or documented
+
+Or, in short "Use the source, Luke!"
+
+Always warn me if you spot a duplicate document in the project knowledge so that I can remove the older one.
+
+RULE #1:   
+SILENT FAILURE IS NEVER ACCEPTABLE!
+BRK is not a silent failure (the emulator throws an exception on BRK). A good pattern for a 'TODO' is:
+`// TODO: Show variables
+LDA #(Messages.NotImplemented % 256)
+STA ZP.LastErrorL
+LDA #(Messages.NotImplemented / 256)
+STA ZP.LastErrorH
+BRK`
+
+RULE #2:
+You may not use ZeroPage slots that are not part of the BASIC project without asking first.  For storing temporary values over a short simple section of code, prefer the stack over zero page variables (PHX, PHY, PHA ..)
+
+RULE #3:
+For comments about flags, don't use '0' and '1'. Use comments like these which are much easier for a dyslexic person to understand:
+// Set Z
+// Set NZ
+
+RULE #4:
+NEVER DO THIS:
+    // Rest of the function remains the same...
+Always generate complete methods. The above is just crying for cut and paste errors and loss of good code.
+
+RULE #5:
+When asked to analyze a bug, don't start by generating tons of code because you think you know what it is. You are usually wrong and do multiple iterations of this tedious approach. Start by suggesting where we should insert debug output statements (using our debug output methods from the Tools unit in preference to Serial.WriteChar methods since they preserve flags, etc) so we can further diagnose the issue.
+"Thoughts?" is shorthand for "Rule #5" - don't generate code, just do some analysis, etc.
+Align debug output code on the left margin (no indentation) so that it makes it easier to see and remove later.
+When I ask you to annotate a Crash dump you have the zero page available so should be able to annotate any pertinent ZP.xxx variables by name. If there is a stack from the TRACE MethodEntry and MethodExit calls, you can examine the source at the near the location when Debug.Crash was called and give relevant ZP.xx variables values.
+
+RULE # 6:
+The "X-Indexed Zero Page Indirect" addressing mode for 6502 is forbidden for this project (opcodes like A1 and 81 for example). It is an evil and highly error prone addressing mode.
+
+RULE #7:
+Prefer C | NC flags over Z | NZ when using a flag to return the success (C) or failure (NC) status of a method call.
+
+Rule #8:
+Identifiers like NEXT_POINTER_OFFSET are just plain ugly and loud. Prefer CamelCase | camelCase where possible.
+
+**RULE #9:**
+When using enum values, don't qualify them with the unit namespace. Use the direct enum syntax:
+Correct:
+LDA #SymbolType.VARIABLE
+Incorrect:
+LDA #Objects.SymbolType.VARIABLE
+The enum names are imported into the current scope when you `uses` the unit that defines them, so the shorter, cleaner syntax is preferred.
+
+RULE #10: Hopper Assembly Switch Statements
+Hopper Assembly switch statements automatically break at the end of each case - there is no fall-through behavior. Avoid break in switch cases because it breaks out of the surrounding loop, not the case, creating nasty bugs.
+
+**RULE #11: What Changed?**
+When something that was working stops working during incremental development, always start with "what changed?" not "what's broken?" The bug is almost certainly in the new/modified code, not in the code that was working before.
+
+This rule pairs well with your Rule #5 ("Thoughts?" - analyze before generating code). Together they promote systematic debugging:
+1. What changed?
+2. Where in that change could the issue be?
+3. Add targeted debug output there
+4. Only then generate fixes
+
+
+
+
+
+Notes:
+
+The large FREE block at the end of the heap dump is the remaining from part of the heap (remaining RAM). It is not corruption.
+
+namespace / unit qualification (like ZP.) is optional for Hopper Assembler - only required to resolve ambiguity where two units have the same public symbol (that's why it compiles).
+However it is good practice to include the namespace to avoid nasty defects in future (when a 2nd unit adds the same name - actually the assembler should call that out as an error (ambiguity)).
+
+Avoid excessive promotional language in documentation and stick to simple checkmarks (✅) and crosses (❌) to indicate implementation status.
+
+
 ## Target Benchmark
 ```basic
 NEW

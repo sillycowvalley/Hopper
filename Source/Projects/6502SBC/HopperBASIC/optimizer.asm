@@ -445,7 +445,7 @@ unit Optimizer
             }
             
             // We have a winner!!
-#ifdef DEBUG            
+#ifdef DEBUGPEEPS
             LDA #0 DumpPeeps();
 #endif
             
@@ -517,7 +517,7 @@ unit Optimizer
                 }
             }
            
-#ifdef DEBUG            
+#ifdef DEBUGPEEPS
             LDA #1 DumpPeeps();
 #endif
             

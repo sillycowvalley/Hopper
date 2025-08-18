@@ -1037,6 +1037,163 @@ unit Variables
         PLX
         PLA
     }
+    
+    // Get LONG variable value and push to stack
+    // Input: ZP.IDX = LONG variable node address (from Find)
+    // Output: LONG value returned in ZP.LTOP0-3 and ZP.TOPT,  C set if successful, NC if error
+    // Modifies: ZP.LTOP0-3, A, X, Y
+    // Preserves: ZP.IDX
+    const string getLongValueTrace = "GetLongVal";
+    GetLongValue()
+    {
+        PHA
+        PHY
+        
+    #ifdef TRACE
+        LDA #(getLongValueTrace % 256) STA ZP.TraceMessageL 
+        LDA #(getLongValueTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Get variable type
+            Objects.GetData(); // Returns type in ZP.ACCT, value in ZP.IDY
+            
+            // Check if it's a LONG variable
+            LDA ZP.ACCT
+            AND #BASICType.TYPEMASK
+            CMP #BASICType.LONG
+            if (NZ)
+            {
+                // Not a LONG variable
+                // Read 2-byte value directly from Objects node
+                // LSW from snValue (offset 5-6)
+                LDY #Objects.snValue
+                LDA [ZP.IDX], Y
+                STA ZP.TOPL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.LTOPH
+                LDA ZP.ACCT
+                STA ZP.TOPT
+                Long.ToLong(); // TOP -> LTOP
+            }
+            else
+            {
+                // Read 4-byte LONG value directly from Objects node
+                // LSW from snValue (offset 5-6)
+                LDY #Objects.snValue
+                LDA [ZP.IDX], Y
+                STA ZP.LTOP0
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.LTOP1
+                
+                // MSW from extended value (offset 7-8)  
+                LDY #7  // Extended value offset
+                LDA [ZP.IDX], Y
+                STA ZP.LTOP2
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.LTOP3
+                
+                LDA #BASICType.LONG
+                STA ZP.TOPT
+                
+                SEC // Success
+            }
+        } // Single exit block
+        
+    #ifdef TRACE
+        LDA #(getLongValueTrace % 256) STA ZP.TraceMessageL 
+        LDA #(getLongValueTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLA
+    }
+
+    // Set LONG variable value from stack
+    // Input: ZP.IDX = LONG variable node address, ZP.LTOP0-3 = new value, ZP.TOPT = new value type
+    // Output: Variable updated with new value, C set if successful, NC if error
+    // Modifies: ZP.ACCT, A, X, Y
+    // Preserves: ZP.IDX
+    const string setLongValueTrace = "SetLongVal";
+    SetLongValue()
+    {
+        PHA
+        PHY
+        
+    #ifdef TRACE
+        LDA #(setLongValueTrace % 256) STA ZP.TraceMessageL 
+        LDA #(setLongValueTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        loop // Single exit block
+        {
+            // Get current variable type  
+            Objects.GetData(); // Returns type in ZP.ACCT
+            
+            // Check if it's a LONG variable
+            LDA ZP.ACCT
+            AND #BASICType.TYPEMASK
+            CMP #BASICType.LONG
+            if (NZ)
+            {
+                // Not a LONG variable
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+            }
+            else
+            {
+                // Store 4-byte LONG value directly to Objects node
+                // LSW to snValue (offset 5-6)
+                LDY #Objects.snValue
+                LDA ZP.LTOP0
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.LTOP1
+                STA [ZP.IDX], Y
+                
+                // MSW to extended value (offset 7-8)
+                LDY #7  // Extended value offset
+                LDA ZP.LTOP2
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.LTOP3
+                STA [ZP.IDX], Y
+                
+                // Update type if it's a VAR variable
+                LDA ZP.ACCT // Variable type (packed)
+                AND #BASICType.VAR
+                if (NZ)  // VAR variable - update type in symbol table
+                {
+                    LDA ZP.ACCT
+                    AND #(SymbolType.MASK | BASICType.VAR) // preserve VARIABLE|CONSTANT and VARness
+                    ORA ZP.TOPT
+                    STA ZP.ACCT
+                    
+                    // Set symbolType|dataType (offset snType)
+                    LDY #Objects.snType
+                    LDA ZP.ACCT
+                    STA [ZP.IDX], Y
+                }
+                
+                SEC // Success
+            }
+        } // Single exit block
+        
+    #ifdef TRACE
+        LDA #(setLongValueTrace % 256) STA ZP.TraceMessageL 
+        LDA #(setLongValueTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+        
+        PLY
+        PLA
+    }
 
 
 }

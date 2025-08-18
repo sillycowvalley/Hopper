@@ -48,6 +48,72 @@ unit Long
         // Optional: verify type is BASICType.LONG
     }
     
+    // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
+    // Output: ZP.LTOP0-3, ZP.TOPT
+    ToLong()
+    {
+        loop
+        {
+            // Check the current type and convert accordingly
+            LDA ZP.TOPT
+            AND #BASICType.TYPEMASK
+            switch (A)
+            {
+                case BASICType.BYTE:
+                {
+                    // Zero-extend BYTE: 0x42 → 0x00000042
+                    LDA ZP.TOPL
+                    STA ZP.LTOP0
+                    STZ ZP.LTOP1
+                    STZ ZP.LTOP2
+                    STZ ZP.LTOP3
+                }
+                case BASICType.WORD:
+                {
+                    // Zero-extend WORD: 0x1234 → 0x00001234
+                    LDA ZP.TOPL
+                    STA ZP.LTOP0
+                    LDA ZP.TOPH
+                    STA ZP.LTOP1
+                    STZ ZP.LTOP2
+                    STZ ZP.LTOP3
+                }
+                case BASICType.INT:
+                {
+                    // Sign-extend INT based on high bit
+                    LDA ZP.TOPL
+                    STA ZP.LTOP0
+                    LDA ZP.TOPH
+                    STA ZP.LTOP1
+                    
+                    // Check sign bit in TOPH and extend accordingly
+                    if (MI) // Set MI (negative)
+                    {
+                        LDA #0xFF     // Negative: extend with 0xFF
+                        STA ZP.LTOP2
+                        STA ZP.LTOP3
+                    }
+                    else
+                    {
+                        STZ ZP.LTOP2  // Positive: extend with 0x00
+                        STZ ZP.LTOP3
+                    }
+                }
+                default:
+                {
+                    // Unsupported type for LONG conversion
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    CLC
+                }
+                
+            }
+            LDA #BASICType.LONG
+            STA ZP.TOPT
+            SEC
+            break;
+        } // single exit
+    }
+    
     compareEqual()
     {
         // compare two objects in IDX and IDY
