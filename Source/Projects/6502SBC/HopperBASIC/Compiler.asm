@@ -213,48 +213,53 @@ unit Compiler // Compiler.asm
    CompileFoldedExpressionTree()
    {
 #ifdef TRACE
-       LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       SMB0 ZP.CompilerFlags // constant expression = TRUE
-       LDA ZP.SP
-       PHA
-       
-        // Save initial buffer length for potential rollback
-        LDA ZP.OpCodeBufferContentLengthL
-        PHA
-        LDA ZP.OpCodeBufferContentLengthH  
-        PHA
-        LDA ZP.XPCL
-        PHA
-        LDA ZP.XPCH
+        SMB0 ZP.CompilerFlags // constant expression = TRUE
+        LDA ZP.SP
         PHA
         
-        compileExpressionTree();
-       
-        if (BBS0, ZP.CompilerFlags) // constant expression:  was constant expression, the folded value is on VM stack
+        loop
         {
-            Stacks.PopTop(); // Get the constant value into ZP.TOP/TOPT
-                        
-            // Rollback the opcode buffer to initial state
-            PLA 
-            STA ZP.XPCH
-            PLA 
-            STA ZP.XPCL
-            PLA 
-            STA ZP.OpCodeBufferContentLengthH
-            PLA 
-            STA ZP.OpCodeBufferContentLengthL
+            // Save initial buffer length for potential rollback
+            LDA ZP.OpCodeBufferContentLengthL
+            PHA
+            LDA ZP.OpCodeBufferContentLengthH  
+            PHA
+            LDA ZP.XPCL
+            PHA
+            LDA ZP.XPCH
+            PHA
             
-            // Emit single constant opcode based on value and type
-            Emit.OptimizedConstant();
-        }
-        else
-        {
-            // Not constant - clean up saved state
+            compileExpressionTree();
+            CheckError();
+            if (C)
+            {
+                if (BBS0, ZP.CompilerFlags) // constant expression:  was constant expression, the folded value is on VM stack
+                {
+                    Stacks.PopTop(); // Get the constant value into ZP.TOP/TOPT
+                                
+                    // Rollback the opcode buffer to initial state
+                    PLA 
+                    STA ZP.XPCH
+                    PLA 
+                    STA ZP.XPCL
+                    PLA 
+                    STA ZP.OpCodeBufferContentLengthH
+                    PLA 
+                    STA ZP.OpCodeBufferContentLengthL
+                    
+                    // Emit single constant opcode based on value and type
+                    Emit.OptimizedConstant();
+                    break;
+                }
+            }
+            
+            // error or not constant - clean up saved state
             PLA PLA PLA PLA
-        }
-
+            break;
+        } // single exit
         PLA
         STA ZP.SP
 
@@ -936,7 +941,6 @@ unit Compiler // Compiler.asm
         
         loop // Single exit
         {
-            
             // Get the identifier name first!
             Tokenizer.GetTokenString();  // Result in ZP.TOP
             CheckError();
@@ -982,6 +986,7 @@ unit Compiler // Compiler.asm
             ORA ZP.IDXL
             if (Z)
             {
+                // no function node?
                 // declaring the constant
                 Emit.PushGlobal();
                 CheckError();
@@ -1047,13 +1052,13 @@ unit Compiler // Compiler.asm
                                 STA Compiler.compilerOperand2
                                 Emit.PushWord();
                             }
-                        }
+                        } // switch
                         if (BBS0, ZP.CompilerFlags) // constant expression:  PUSH constant value
                         {
                             LDA ZP.TOPT
                             Stacks.PushTop();
                         }
-                    }
+                    } // simple integral constant
                     else
                     {
                         // Normal variable reference
@@ -1063,6 +1068,12 @@ unit Compiler // Compiler.asm
                     CheckError();
                     if (NC) { break; }
                     SEC // Success
+                } // found
+                else
+                {
+                    // not found?!
+                    Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
                 }
             }
             break;
@@ -2897,7 +2908,7 @@ unit Compiler // Compiler.asm
                default:
                {
                    // Unknown identifier type
-                   Error.SyntaxError(); BIT ZP.EmulatorPCL
+                   Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                    States.SetFailure();
                    break;
                }

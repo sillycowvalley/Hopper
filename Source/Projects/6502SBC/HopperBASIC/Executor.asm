@@ -3700,7 +3700,7 @@ unit Executor // Executor.asm
             LDA executorOperandL
             STA ZP.TOP2
             LDA executorOperandH
-            STA ZP.TOP2
+            STA ZP.TOP3
    
             // Push the recombined LONG value to stack
             LDA # BASICType.LONG

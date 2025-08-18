@@ -33,7 +33,16 @@ NEXT i
 **Status:** ACTIVE  
 **Note:** Classic BASIC compatibility issue - error vs. infinite loop
 
-### 3. VARS Command Comment Parsing
+### 3. Variable Declaration Comment Parsing
+**Symptom:** SYNTAX ERROR when variable declaration followed by comment  
+**Reproduce:**
+```basic
+INT outer ! comment
+```
+**Error:** `?SYNTAX ERROR (0xC77A)`  
+**Status:** ACTIVE
+
+### 4. VARS Command Comment Parsing
 **Symptom:** SYNTAX ERROR when VARS followed by comment  
 **Reproduce:**
 ```basic
@@ -47,7 +56,7 @@ VARS ! comment
 ## ANNOYANCES
 *Minor issues, cosmetic, or nice-to-haves*
 
-### 4. CHAR Ordered Comparison Error Message
+### 5. CHAR Ordered Comparison Error Message
 **Symptom:** STRING comparison gives INVALID OPERATOR instead of TYPE MISMATCH  
 **Reproduce:**
 ```basic
@@ -63,19 +72,20 @@ PRINT c >= s
 ## FIXED
 *Already resolved*
 
-### ~~VAR Type Re-initialization~~ ✓
+### ~~VAR Type Re-initialization~~ ✅
 **Was:** Hang when initialized VAR changed type to STRING then RUN  
 **Fixed:** Now properly resets to declared type/value on RUN
 
-### ~~STRING Local Variables~~ ✓
+### ~~STRING Local Variables~~ ✅
 **Was:** SYNTAX ERROR for STRING declarations in functions  
 **Fixed:** Tokenizer issue with >256 byte token streams
 
-### ~~DEL Reserved Word~~ ✓
+### ~~DEL Reserved Word~~ ✅
 **Was:** Variable name 'del' conflicts with DEL command  
 **Note:** Working as designed - DEL reserved for future file operations
 
 ---
 
 *Last Updated: Testing session with FOR/NEXT loops*  
-*Version: Hopper BASIC v2.0*
+*Version: Hopper BASIC v2.0*  
+*Critical Bug: VAR initialized variables crash on type change to STRING*

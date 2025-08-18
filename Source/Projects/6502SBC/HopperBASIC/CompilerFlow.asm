@@ -813,6 +813,7 @@ unit CompilerFlow
                    STA ZP.IDXH
                     
                    // Iterator not found - check if we can create implicit local
+                   /* IMPLICIT SCOPE
                    LDA Compiler.compilerCanDeclareLocals
                    if (Z)  // Can't create new locals
                    {
@@ -820,6 +821,7 @@ unit CompilerFlow
                        States.SetFailure();
                        break;
                    }
+                   */
                     
                    // Iterator not found - create implicit local
                    // First push a default value to create the stack slot
@@ -924,6 +926,13 @@ unit CompilerFlow
            
            Compiler.CompileFoldedExpressionTree();  // Compile TO expression (leaves on stack)
            
+           LDA ZP.TOPT
+           PHA
+           LDA ZP.TOPL
+           PHA
+           LDA ZP.TOPH
+           PHA
+           
            // placeholder slot
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
@@ -935,6 +944,13 @@ unit CompilerFlow
            STA ZP.TOPH
            Locals.Add(); // HERE
            
+           PLA
+           STA ZP.TOPH
+           PLA
+           STA ZP.TOPL
+           PLA
+           STA ZP.TOPT
+           
            INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            CheckError();
            if (NC) { States.SetFailure(); break; }
@@ -942,6 +958,10 @@ unit CompilerFlow
            LDA ZP.TOPT
            Stacks.PushTop(); // TO integeral value
            if (BBR0, ZP.CompilerFlags) // TO is not constant expression
+           {
+               RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
+           }
+           if (BBS3, ZP.TOPT) // LONG not ok
            {
                RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
            }
@@ -1365,7 +1385,8 @@ unit CompilerFlow
            Locals.RemoveLast(); 
            Locals.RemoveLast();
            
-           // If we used a global (BIT2 set) and made our own "shadow local", update global and remove shadow
+           
+           // BIT2 set : If we used a global and made our own "shadow local", update global
            if (BBS2, ZP.CompilerFlags)
            {
                // Shadow local is now at top of stack
@@ -1383,7 +1404,23 @@ unit CompilerFlow
                Emit.OpCodeWithByte();
                CheckError();
                if (NC) { States.SetFailure(); break; }
-
+               
+               LDA Compiler.compilerSavedNodeAddrL
+               STA ZP.IDXL
+               LDA Compiler.compilerSavedNodeAddrH
+               STA ZP.IDXH
+               Locals.RemoveLast();
+               DEC Compiler.compilerFuncLocals
+          }
+          
+          // BIT5 set : We created an implicit local that needs to be removed at the end of the function
+          if (BBS5, ZP.CompilerFlags) // IMPLICIT SCOPE : we own it
+          {
+               LDA #0x01  // Decrement by 1 position
+               Emit.DecSp();
+               CheckError();
+               if (NC) { States.SetFailure(); break; }
+               
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH

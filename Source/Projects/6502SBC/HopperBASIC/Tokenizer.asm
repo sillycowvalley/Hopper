@@ -1370,6 +1370,12 @@ unit Tokenizer // Tokenizer.asm
         ADC ZP.TokenLiteralPosH
         STA ZP.IDXH
         
+//LDA ZP.IDXL
+//STA ZP.STRL        
+//LDA ZP.IDXH
+//STA ZP.STRH
+//Debug.NL(); PrintStringSTR();
+                
         LDY #0  // Index into the number string
         
         // Check for hex format (0x prefix)
@@ -1454,6 +1460,9 @@ unit Tokenizer // Tokenizer.asm
                 STA ZP.TOPT
             }
         }
+
+//Debug.NL(); TLOut();
+        
     }    
     
     // Skip past null-terminated string at current tokenizer position
