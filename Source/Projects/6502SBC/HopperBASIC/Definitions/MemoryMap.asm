@@ -8,11 +8,14 @@ unit Address // MemoryMap.asm
     const uint CallStackMSB         = 0x0400;  // MSBs of 256 call stack slots
  
     const uint TypeStackLSB         = 0x0500;  // 256 type stack slots
+    const uint TypeStack      = TypeStackLSB;
     
     const uint ValueStackLSB        = 0x0600;  // LSBs of 256 value stack slots
+    const uint ValueStackB0  = ValueStackLSB;
     const uint ValueStackMSB        = 0x0700;  // MSBs of 256 value stack slots
-    const uint ValueStackMSB2       = 0x0800;  // byte 3 for LONG 
-    const uint ValueStackMSB3       = 0x0900;  // byte 4 for LONG 
+    const uint ValueStackB1  = ValueStackMSB;
+    const uint ValueStackB2         = 0x0800;  // byte 3 for LONG 
+    const uint ValueStackB3         = 0x0900;  // byte 4 for LONG 
     
     const uint I2CInBuffer          = 0x0A00;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     

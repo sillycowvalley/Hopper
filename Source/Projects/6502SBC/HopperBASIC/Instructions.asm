@@ -364,6 +364,23 @@ PLP
             
             // Different types - apply specific compatibility rules and type promotion
             
+            // Any type + LONG -> LONG (promote to LONG)
+            if (BBS3, ZP.NEXTT) // Bit 3 - LONG
+            {
+                // LHS is LONG - promote RHS to LONG  
+                SEC  // Compatible
+                break;
+            }
+
+            if (BBS3, ZP.TOPT) // Bit 3 - LONG
+            {
+                // RHS is LONG - promote LHS to LONG
+                LDA #BASICType.LONG
+                STA ZP.NEXTT  // Set result type to LONG
+                SEC  // Compatible
+                break;
+            }
+            
             // BYTE vs INT - always compatible, promotes to INT
             LDA ZP.NEXTT
             CMP #BASICType.BYTE

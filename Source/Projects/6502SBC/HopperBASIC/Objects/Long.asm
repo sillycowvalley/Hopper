@@ -6,15 +6,15 @@ unit Long
     {
         LDY ZP.SP                    // Current stack pointer
         LDA #BASICType.LONG
-        STA TypeStackLSB,Y           // Store type
+        STA TypeStack, Y           // Store type
         LDA ZP.TOP0
-        STA ValueStackLSB,Y          // Store byte 0 (LSB)
+        STA ValueStackB0,Y          // Store byte 0 (LSB)
         LDA ZP.TOP1  
-        STA ValueStackMSB,Y          // Store byte 1
+        STA ValueStackB1,Y          // Store byte 1
         LDA ZP.TOP2
-        STA ValueStackMSB2,Y         // Store byte 2
+        STA ValueStackB2,Y         // Store byte 2
         LDA ZP.TOP3
-        STA ValueStackMSB3,Y         // Store byte 3 (MSB)
+        STA ValueStackB3,Y         // Store byte 3 (MSB)
         INC ZP.SP                    // Advance stack pointer
     }
 
@@ -22,15 +22,15 @@ unit Long
     {
         DEC ZP.SP                    // Move back to top item
         LDY ZP.SP
-        LDA ValueStackLSB,Y          // Load byte 0 (LSB)
+        LDA ValueStackB0,Y          // Load byte 0 (LSB)
         STA ZP.TOP0
-        LDA ValueStackMSB,Y          // Load byte 1
+        LDA ValueStackB1,Y          // Load byte 1
         STA ZP.TOP1  
-        LDA ValueStackMSB2,Y         // Load byte 2
+        LDA ValueStackB2,Y         // Load byte 2
         STA ZP.TOP2
-        LDA ValueStackMSB3,Y         // Load byte 3 (MSB)
+        LDA ValueStackB3,Y         // Load byte 3 (MSB)
         STA ZP.TOP3
-        LDA TypeStackLSB, Y
+        LDA TypeStack, Y
         STA ZP.TOPT
     }
     
@@ -38,15 +38,15 @@ unit Long
     {
         DEC ZP.SP                    // Move back to top item
         LDY ZP.SP
-        LDA ValueStackLSB,Y          // Load byte 0 (LSB)
+        LDA ValueStackB0,Y          // Load byte 0 (LSB)
         STA ZP.NEXT0
-        LDA ValueStackMSB,Y          // Load byte 1
+        LDA ValueStackB1,Y          // Load byte 1
         STA ZP.NEXT1  
-        LDA ValueStackMSB2,Y         // Load byte 2
+        LDA ValueStackB2,Y         // Load byte 2
         STA ZP.NEXT2
-        LDA ValueStackMSB3,Y         // Load byte 3 (MSB)
+        LDA ValueStackB3,Y         // Load byte 3 (MSB)
         STA ZP.NEXT3
-        LDA TypeStackLSB, Y
+        LDA TypeStack, Y
         STA ZP.NEXTT
     }
     
@@ -92,6 +92,9 @@ unit Long
                 }
                 default:
                 {
+#ifdef DEBUG                    
+Debug.NL(); TLOut();
+#endif
                     // Unsupported type for LONG conversion
                     Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     CLC

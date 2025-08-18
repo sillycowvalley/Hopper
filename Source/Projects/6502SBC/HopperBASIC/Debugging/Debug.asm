@@ -328,6 +328,50 @@ unit Debug // Debug.asm
         space();
     }
     
+    nlOut()  // Output NEXT register with type
+    {
+        LDA #(regNXT % 256)
+        STA ZP.STR
+        LDA #(regNXT / 256)
+        STA ZP.STRH
+        printString();
+        LDA ZP.NEXTT
+        BASICTypes.PrintType();
+        LDA #':'
+        cOut();
+        LDA ZP.NEXT3
+        hOut();
+        LDA ZP.NEXT2
+        hOut();
+        LDA ZP.NEXT1
+        hOut();
+        LDA ZP.NEXT0
+        hOut();
+        space();
+    }
+    
+    tlOut()  // Output TOP register with type
+    {
+        LDA #(regTOP % 256)
+        STA ZP.STR
+        LDA #(regTOP / 256)
+        STA ZP.STRH
+        printString();
+        LDA ZP.TOPT
+        BASICTypes.PrintType();
+        LDA #':'
+        cOut();
+        LDA ZP.TOP3
+        hOut();
+        LDA ZP.TOP2
+        hOut();
+        LDA ZP.TOP1
+        hOut();
+        LDA ZP.TOP0
+        hOut();
+        space();
+    }
+    
     pcOut()  // Output PC register
     {
         LDA #(regPC % 256)
@@ -474,6 +518,19 @@ unit Debug // Debug.asm
     {
         PHP PHA PHY
         tOut();
+        PLY PLA PLP
+    }
+    NLOut()
+    {
+        PHP PHA PHY
+        nlOut();
+        PLY PLA PLP
+    }
+    
+    TLOut()
+    {
+        PHP PHA PHY
+        tlOut();
         PLY PLA PLP
     }
     
@@ -2577,16 +2634,16 @@ unit Debug // Debug.asm
                 if (BBS2, ZP.DB0)  // LONG?
                 {
                     // Print 4 more hex digits for LONG
-                    LDA Address.ValueStackMSB3, X  // MSB first
+                    LDA Address.ValueStackB3, X  // MSB first
                     Serial.HexOut();
-                    LDA Address.ValueStackMSB2, X
+                    LDA Address.ValueStackB2, X
                     Serial.HexOut();
                 }
                 
                 // Print 4 hex digits for regular types (2 bytes)
-                LDA Address.ValueStackMSB, X   // MSB first
+                LDA Address.ValueStackB1, X   // MSB first
                 Serial.HexOut();
-                LDA Address.ValueStackLSB, X   // LSB last  
+                LDA Address.ValueStackB0, X   // LSB last  
                 Serial.HexOut();
                 
                 // Print closing bracket for VAR or ARRAY

@@ -380,6 +380,7 @@ unit Statement // Statement.asm
             case Token.WORD:
             case Token.BIT:
             case Token.BYTE:
+            case Token.LONG:
             case Token.CHAR:
             case Token.STRING:
             case Token.VAR: 

@@ -1850,8 +1850,8 @@ unit Executor // Executor.asm
            LDX ZP.SP
            INC ZP.SP
            
-           // Get global type from type stack
-           LDA Address.TypeStackLSB, Y
+           // Get global type from type varibale
+           LDA Address.TypeStack, Y
            STA ZP.TOPT
            if (BBS4, ZP.TOPT) // Bit 4 - VAR
            {
@@ -1861,12 +1861,19 @@ unit Executor // Executor.asm
            }
            else
            {
-               STA Address.TypeStackLSB, X
+               STA Address.TypeStack, X
            }
-           LDA Address.ValueStackLSB, Y
-           STA Address.ValueStackLSB, X
-           LDA Address.ValueStackMSB, Y  
-           STA Address.ValueStackMSB, X
+           LDA Address.ValueStackB0, Y
+           STA Address.ValueStackB0, X
+           LDA Address.ValueStackB1, Y  
+           STA Address.ValueStackB1, X
+           if (BBS3, ZP.TOPT) // Bit 3 - LONG
+           {
+               LDA Address.ValueStackB2, Y
+               STA Address.ValueStackB2, X
+               LDA Address.ValueStackB3, Y
+               STA Address.ValueStackB3, X
+           }
            
            LDA #State.Success
            STA ZP.SystemState
@@ -1905,22 +1912,53 @@ unit Executor // Executor.asm
             }
 #endif
             
-            TAY  // Y = global index
+            TAY         // Y = global index
            
-            // Pop value from stack (RHS of assignment)
+            // Pop value from stack
             DEC ZP.SP
-            LDX ZP.SP
+            LDX ZP.SP   // X = stack position
             
-            // Get global type from type stack
-            LDA Address.TypeStackLSB, Y
-            STA ZP.ACCT
-            // Check if variable has VAR bit set
-            if (BBR4, ZP.ACCT) // Bit 4 - VAR
+            // get the type of the variable slot
+            LDA Address.TypeStack, Y
+            STA ZP.NEXTT
+            
+            // get the type of the stack value
+            LDA Address.TypeStack, X
+            STA ZP.TOPT
+            
+            // Pop the RHS
+            LDA Address.ValueStackB0, X
+            STA ZP.TOP0
+            LDA Address.ValueStackB1, X
+            STA ZP.TOP1
+            if (BBS3, ZP.TOPT) // Bit 3 - LONG RHS
             {
-                // Non-VAR variable - use normal type checking
-                // Move LHS type to correct register for CheckRHSTypeCompatibility
-                STA ZP.NEXTT 
-
+                // popping 4 bytes
+                LDA Address.ValueStackB2, X
+                STA ZP.TOP2
+                LDA Address.ValueStackB3, X
+                STA ZP.TOP3
+            }
+            else
+            {
+                if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
+                {
+                    Long.ToLong(); // RHS -> LONG
+                }
+            }
+            
+            // Check if variable has VAR bit set
+            if (BBS4, ZP.NEXTT) // Bit 4 - VAR
+            {
+                // VAR type: keep the VAR bit in the slot but change the type of the variable
+                LDA ZP.TOPT
+                ORA #BASICType.VAR
+                STA Address.TypeStack, Y
+            }
+            else
+            {   // Non-VAR variable - use normal type checking
+                LDA ZP.NEXTT
+                
                 // VAR slots should never be popped directly but there is a special case for
                 // global shadow variables in FOR iterators (where we are popping and actual
                 // variable slot rather than stack data). Regular stack data should NEVER have
@@ -1929,8 +1967,7 @@ unit Executor // Executor.asm
                 AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
                 STA ZP.TOPT 
                 
-                // Check type compatibility for assignment
-                Instructions.CheckRHSTypeCompatibility(); // preserves Y, Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
+                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
                 if (NC) 
                 { 
                     Error.TypeMismatch(); BIT ZP.EmulatorPCL
@@ -1941,20 +1978,19 @@ unit Executor // Executor.asm
                 LDA ZP.NEXTT
                 STA Address.TypeStackLSB, Y
             }
-            else  // VAR variable
-            {
-                // For VAR variables, update underlying type but keep VAR bit
-                LDA Address.TypeStackLSB, X
-                ORA # BASICType.VAR           // Add VAR bit
-                STA Address.TypeStackLSB, Y  // Update stored type
-            }
-
-            // Store value to global slot
-            LDA Address.ValueStackLSB, X
-            STA Address.ValueStackLSB, Y
-            LDA Address.ValueStackMSB, X
-            STA Address.ValueStackMSB, Y
             
+            LDA ZP.TOP0
+            STA Address.ValueStackB0, Y
+            LDA ZP.TOP1
+            STA Address.ValueStackB1, Y
+            if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS
+            {
+                LDA ZP.TOP2
+                STA Address.ValueStackB2, Y
+                LDA ZP.TOP3
+                STA Address.ValueStackB3, Y
+            }
+                        
             LDA #State.Success
             STA ZP.SystemState
         
@@ -2001,33 +2037,54 @@ unit Executor // Executor.asm
             // Add signed offset to BP (handles negative naturally)
             CLC
             ADC ZP.BP
-            TAY                     // Y = stack position
+            TAY                     // Y = local position
             
             // Pop value from stack
             DEC ZP.SP
-            LDX ZP.SP
+            LDX ZP.SP               // X = stack position
             
             // get the type of the variable slot
-            LDA Address.TypeStackLSB, Y
-            STA ZP.ACCT
+            LDA Address.TypeStack, Y
+            STA ZP.NEXTT
+            
+            // get the type of the stack value
+            LDA Address.TypeStack, X
+            STA ZP.TOPT
+            
+            // Pop the RHS
+            LDA Address.ValueStackB0, X
+            STA ZP.TOP0
+            LDA Address.ValueStackB1, X
+            STA ZP.TOP1
+            if (BBS3, ZP.TOPT) // Bit 3 - LONG RHS
+            {
+                // popping 4 bytes
+                LDA Address.ValueStackB2, X
+                STA ZP.TOP2
+                LDA Address.ValueStackB3, X
+                STA ZP.TOP3
+            }
+            else
+            {
+                if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
+                {
+                    Long.ToLong(); // RHS -> LONG
+                }
+            }
             
             // Check if variable has VAR bit set
-            if (BBR4, ZP.ACCT) // Bit 4 - VAR
+            if (BBS4, ZP.NEXTT) // Bit 4 - VAR
             {
-                // Non-VAR variable - use normal type checking
-                // Move LHS type to correct register for CheckRHSTypeCompatibility
-                AND # BASICType.TYPEMASK  // Extract data type
-                STA ZP.NEXTT 
-                
-                // get the popped type and values for type checking
-                LDA Address.TypeStackLSB, X
-                STA ZP.TOPT
-                LDA Address.ValueStackLSB, X
-                STA ZP.TOPL
-                LDA Address.ValueStackMSB, X
-                STA ZP.TOPH
-                
-                // Check type compatibility for assignment
+                // VAR type: keep the VAR bit in the slot but change the type of the variable
+                LDA ZP.TOPT
+                ORA #BASICType.VAR
+                STA Address.TypeStack, Y
+            }
+            else
+            {   // Check type compatibility for assignment
+                LDA ZP.NEXTT
+                AND # BASICType.TYPEMASK  // Extract LHS data type
+                STA ZP.NEXTT
                 Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
                 if (NC) 
                 { 
@@ -2035,45 +2092,20 @@ unit Executor // Executor.asm
                     States.SetFailure();
                     break; 
                 }
-                
-                // Store to calculated stack position
-                LDA ZP.TOPL
-                STA Address.ValueStackLSB, Y
-                LDA ZP.TOPH
-                STA Address.ValueStackMSB, Y
-                if (BBS3, ZP.ACCT) // Bit 3 - LONG
-                {
-                    // LONG TODO
-                    LDA Address.ValueStackMSB2, X
-                    STA Address.ValueStackMSB2, Y
-                    LDA Address.ValueStackMSB3, X
-                    STA Address.ValueStackMSB3, Y
-                }
             }
-            else
+            LDA ZP.TOP0
+            STA Address.ValueStackB0, Y
+            LDA ZP.TOP1
+            STA Address.ValueStackB1, Y
+            if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS
             {
-                // VAR type: keep the VAR bit in the slot but change the type of the variable
-                LDA Address.TypeStackLSB, X
-                ORA #BASICType.VAR
-                STA Address.TypeStackLSB, Y
-                
-                // Store to calculated stack position
-                LDA Address.ValueStackLSB, X
-                STA Address.ValueStackLSB, Y
-                LDA Address.ValueStackMSB, X
-                STA Address.ValueStackMSB, Y
-                
-                if (BBS3, ZP.ACCT) // Bit 3 - LONG
-                {
-                    // LONG TOSO
-                    LDA Address.ValueStackMSB2, X
-                    STA Address.ValueStackMSB2, Y
-                    LDA Address.ValueStackMSB3, X
-                    STA Address.ValueStackMSB3, Y
-                }
+                LDA ZP.TOP2
+                STA Address.ValueStackB2, Y
+                LDA ZP.TOP3
+                STA Address.ValueStackB3, Y
             }
-            States.SetSuccess();
-            
+            LDA #State.Success
+            STA ZP.SystemState
             break;
         } // single exit
         
@@ -2121,20 +2153,20 @@ unit Executor // Executor.asm
         
         LDX ZP.SP
         
-        LDA Address.ValueStackLSB, Y
-        STA Address.ValueStackLSB, X
-        LDA Address.ValueStackMSB, Y
-        STA Address.ValueStackMSB, X
-        LDA Address.TypeStackLSB, Y
+        LDA Address.ValueStackB0, Y
+        STA Address.ValueStackB0, X
+        LDA Address.ValueStackB1, Y
+        STA Address.ValueStackB1, X
+        LDA Address.TypeStack, Y
         AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
-        STA Address.TypeStackLSB, X
+        STA Address.TypeStack, X
         AND #BASICType.LONG
         if (NZ)
         {
-            LDA Address.ValueStackMSB2, Y
-            STA Address.ValueStackMSB2, X
-            LDA Address.ValueStackMSB3, Y
-            STA Address.ValueStackMSB3, X
+            LDA Address.ValueStackB2, Y
+            STA Address.ValueStackB2, X
+            LDA Address.ValueStackB3, Y
+            STA Address.ValueStackB3, X
         }
         INC ZP.SP
         
