@@ -36,8 +36,13 @@ unit Address // MemoryMap.asm
 
     const uint FunctionOpCodeBuffer    = REPLOpCodeBuffer + Limits.OpCodeBufferSize;                   // 512 bytes - JIT compiled BASIC function opcodes
     
-    const uint HopperData              = FunctionOpCodeBuffer     + Limits.OpCodeBufferSize;               // start of Hopper RAM (program, then heap)
-    
+#ifdef HASEEPROM    
+    const uint FileSystemBuffers       = FunctionOpCodeBuffer     + Limits.OpCodeBufferSize;          // 768 bytes - file system buffers (may be shared or smaller in future)
+        
+    const uint HopperData              = FileSystemBuffers        + Limits.FileSystemBufferSize;      // start of Hopper RAM (program, then heap)
+#else
+    const uint HopperData              = FunctionOpCodeBuffer     + Limits.OpCodeBufferSize;          // start of Hopper RAM (program, then heap)
+#endif
     const uint RamSize                 = 0x8000;  // we assume RAM starts at 0x0000 and that we have at least 32K ..
     //const uint RamSize                = 0xC000;  // we assume RAM starts at 0x0000 and that we have at least 48K ..
 

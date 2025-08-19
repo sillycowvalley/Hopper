@@ -10,12 +10,8 @@ unit EEPROM
         STZ ZP.PLUGNPLAY
         
         // Clear I2C buffer
-        LDA #0
-        STA IDXL
         LDA # (I2CInBuffer >> 8)
-        STA IDXH
-        LDX # 1
-        Utilities.ClearPages();
+        Memory.ClearPage();
         
         STZ ZP.PLUGNPLAY
         LDA # I2C.SerialEEPROMAddress
@@ -68,8 +64,8 @@ unit EEPROM
     }
     
     // Write single 256-byte page from RAM to EEPROM
-    // Input: ZP.IDX = RAM source address (16-bit, page-aligned recommended)
-    //        ZP.IDY = EEPROM destination address (16-bit, page-aligned recommended)
+    // Input: ZP.IDXH = RAM source address (16-bit, page-aligned, ZP.IDXL set to 0)
+    //        ZP.IDYH = EEPROM destination address (16-bit, page-aligned, ZP.IDYL set to 0)
     // Output: 256 bytes copied from RAM to EEPROM
     //         ZP.IDX advanced by 256 bytes
     //         ZP.IDY advanced by 256 bytes
@@ -84,6 +80,10 @@ unit EEPROM
         PHA
         LDA ZP.TOPH
         PHA
+        
+        // LSB's always zero
+        STZ ZP.IDYL
+        STZ ZP.IDXL
         
         // copy a 256 byte 6502 page:
         SerialEEPROM.copyPageToEEPROM();
@@ -108,8 +108,8 @@ unit EEPROM
     }
     
     // Read single 256-byte page from EEPROM to RAM
-    // Input: ZP.IDY = EEPROM source address (16-bit, page-aligned recommended)
-    //        ZP.IDX = RAM destination address (16-bit, page-aligned recommended)
+    // Input: ZP.IDY = EEPROM source address (16-bit, page-aligned, ZP.IDXL set to 0)
+    //        ZP.IDX = RAM destination address (16-bit, page-aligned, ZP.IDYL set to 0)
     // Output: 256 bytes copied from EEPROM to RAM
     //         ZP.IDY advanced by 256 bytes
     //         ZP.IDX advanced by 256 bytes
@@ -121,6 +121,10 @@ unit EEPROM
     {
         // IDY contains the source address (in EEPROM)
         // IDX contains the destination address
+        
+        // LSB's always zero
+        STZ ZP.IDYL
+        STZ ZP.IDXL
         
         // copy a 256 byte 6502 page:
         SerialEEPROM.copyProgramPage();

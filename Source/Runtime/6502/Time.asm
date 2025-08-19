@@ -21,11 +21,14 @@ unit Time // Times.asm
     DelayTOP()
     {
         PHA
+        PHX
         
         // add ArgumentWord to Ticks0..3 and store in Target0..3
+        LDX ZP.TICK3     // reading TICK3 makes a snapshot of all 4 registers on the emulator      
+        
         CLC
         LDA ZP.TOPL
-        ADC ZP.TICK0     // reading TICK0 makes a snapshot of all 4 registers on the emulator
+        ADC ZP.TICK0
         STA ZP.TARGET0
         LDA ZP.TOPH
         ADC ZP.TICK1
@@ -33,7 +36,7 @@ unit Time // Times.asm
         LDA ZP.TICK2
         ADC #0 // to collect the carry
         STA ZP.TARGET2
-        LDA ZP.TICK3
+        TXA // restore ZP.TICK3
         ADC #0 // to collect the carry
         STA ZP.TARGET3
         
@@ -58,6 +61,7 @@ unit Time // Times.asm
             break; // Target >= Ticks : match ->
         }
         
+        PLX
         PLA
     }
     

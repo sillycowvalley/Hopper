@@ -243,78 +243,7 @@ unit Long
         Long.PushNext();
     }
     
-    // APIs for Tokenizer.GetTokenNumber() 
     
-    // Multiply 32-bit value by 10 in place
-    // Input: ZP.TOP0-3 = 32-bit value to multiply
-    // Output: ZP.TOP0-3 = input * 10, C set on success, NC on 32-bit overflow
-    // Error: Returns NC if result > 0xFFFFFFFF
-    MultiplyBy10()
-    {
-        // ZP.RESULT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
-        LDA #10
-        STA ZP.NEXT0
-        STZ ZP.NEXT1
-        STZ ZP.NEXT2
-        STZ ZP.NEXT3
-        utilityLongMUL();
-        LDA ZP.RESULT0
-        STA ZP.TOP0
-        LDA ZP.RESULT1
-        STA ZP.TOP1
-        LDA ZP.RESULT2
-        STA ZP.TOP2
-        LDA ZP.RESULT3
-        STA ZP.TOP3
-        
-        LDA ZP.RESULT4
-        ORA ZP.RESULT5  // Check if any high bytes 
-        ORA ZP.RESULT6  // are non-zero
-        ORA ZP.RESULT7
-        if (NZ)
-        {
-            CLC
-        }
-        else
-        {
-            SEC
-        }
-    }
-    
-    // Add single digit (0-9) to 32-bit value
-    // Input: ZP.TOP0-3 = 32-bit value, A = digit (0-9)
-    // Output: ZP.TOP0-3 = input + digit, C set on success, NC on 32-bit overflow  
-    // Munts: ZP.TOP0, ZP.TOP1, ZP.TOP2, ZP.TOP3
-    // Error: Returns NC if result > 0xFFFFFFFF or A > 9
-    AddDigit()
-    {
-        CMP #10
-        if (C)  // A >= 10, invalid digit
-        {
-            CLC  // Return NC for error
-            return;
-        }
-        CLC
-        ADC ZP.TOP0
-        STA ZP.TOP0
-        LDA ZP.TOP1
-        ADC #0
-        STA ZP.TOP1
-        LDA ZP.TOP2
-        ADC #0
-        STA ZP.TOP2
-        LDA ZP.TOP3
-        ADC #0
-        STA ZP.TOP3
-        if (C)
-        {
-            CLC // Return NC for overflow
-        }
-        else
-        {
-            SEC // Return C for success
-        }
-    }
     
     negateLongNEXT()
     {
@@ -356,54 +285,6 @@ unit Long
         PLX
     }
     
-    utilityLongMUL()
-    {
-        // ZP.NEXT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
-        
-        // https://llx.com/Neil/a2/mult.html
-        // http://www.6502.org/source/integers/32muldiv.htm
-        
-        LDA # 0x00
-        STA ZP.RESULT4   // Clear upper half of
-        STA ZP.RESULT5   // product
-        STA ZP.RESULT6
-        STA ZP.RESULT7
-        LDX # 32     // set binary count to 32
-        loop
-        {
-            LSR ZP.NEXT3   // shift multiplyer right
-            ROR ZP.NEXT2
-            ROR ZP.NEXT1
-            ROR ZP.NEXT0
-            if (C) // Go rotate right if c = 0
-            {
-                LDA ZP.RESULT4   // get upper half of product and add multiplicand to it
-                CLC               
-                ADC ZP.TOP0
-                STA ZP.RESULT4
-                LDA ZP.RESULT5
-                ADC ZP.TOP1
-                STA ZP.RESULT5
-                LDA ZP.RESULT6
-                ADC ZP.TOP2
-                STA ZP.RESULT6
-                LDA ZP.RESULT7
-                ADC ZP.TOP3
-            }
-            ROR A    // rotate partial product
-            STA ZP.RESULT7   // right
-            ROR ZP.RESULT6
-            ROR ZP.RESULT5
-            ROR ZP.RESULT4
-            ROR ZP.RESULT3
-            ROR ZP.RESULT2
-            ROR ZP.RESULT1
-            ROR ZP.RESULT0
-            DEX                // decrement bit count and
-            if (Z) { break; }  // exit loop when 32 bits are done
-        }
-    }
-        
     NextToLong()
     {
         loop
@@ -806,5 +687,125 @@ unit Long
         PLY
         PLX
         PLA
+    }
+    
+    // APIs for Tokenizer.GetTokenNumber() 
+    utilityLongMUL()
+    {
+        // ZP.NEXT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
+        
+        // https://llx.com/Neil/a2/mult.html
+        // http://www.6502.org/source/integers/32muldiv.htm
+        
+        LDA # 0x00
+        STA ZP.RESULT4   // Clear upper half of
+        STA ZP.RESULT5   // product
+        STA ZP.RESULT6
+        STA ZP.RESULT7
+        LDX # 32     // set binary count to 32
+        loop
+        {
+            LSR ZP.NEXT3   // shift multiplyer right
+            ROR ZP.NEXT2
+            ROR ZP.NEXT1
+            ROR ZP.NEXT0
+            if (C) // Go rotate right if c = 0
+            {
+                LDA ZP.RESULT4   // get upper half of product and add multiplicand to it
+                CLC               
+                ADC ZP.TOP0
+                STA ZP.RESULT4
+                LDA ZP.RESULT5
+                ADC ZP.TOP1
+                STA ZP.RESULT5
+                LDA ZP.RESULT6
+                ADC ZP.TOP2
+                STA ZP.RESULT6
+                LDA ZP.RESULT7
+                ADC ZP.TOP3
+            }
+            ROR A    // rotate partial product
+            STA ZP.RESULT7   // right
+            ROR ZP.RESULT6
+            ROR ZP.RESULT5
+            ROR ZP.RESULT4
+            ROR ZP.RESULT3
+            ROR ZP.RESULT2
+            ROR ZP.RESULT1
+            ROR ZP.RESULT0
+            DEX                // decrement bit count and
+            if (Z) { break; }  // exit loop when 32 bits are done
+        }
+    }
+    
+    // Multiply 32-bit value by 10 in place
+    // Input: ZP.TOP0-3 = 32-bit value to multiply
+    // Output: ZP.TOP0-3 = input * 10, C set on success, NC on 32-bit overflow
+    // Error: Returns NC if result > 0xFFFFFFFF
+    MultiplyBy10()
+    {
+        // ZP.RESULT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
+        LDA #10
+        STA ZP.NEXT0
+        STZ ZP.NEXT1
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
+        utilityLongMUL();
+        LDA ZP.RESULT0
+        STA ZP.TOP0
+        LDA ZP.RESULT1
+        STA ZP.TOP1
+        LDA ZP.RESULT2
+        STA ZP.TOP2
+        LDA ZP.RESULT3
+        STA ZP.TOP3
+        
+        LDA ZP.RESULT4
+        ORA ZP.RESULT5  // Check if any high bytes 
+        ORA ZP.RESULT6  // are non-zero
+        ORA ZP.RESULT7
+        if (NZ)
+        {
+            CLC
+        }
+        else
+        {
+            SEC
+        }
+    }
+    
+    // Add single digit (0-9) to 32-bit value
+    // Input: ZP.TOP0-3 = 32-bit value, A = digit (0-9)
+    // Output: ZP.TOP0-3 = input + digit, C set on success, NC on 32-bit overflow  
+    // Munts: ZP.TOP0, ZP.TOP1, ZP.TOP2, ZP.TOP3
+    // Error: Returns NC if result > 0xFFFFFFFF or A > 9
+    AddDigit()
+    {
+        CMP #10
+        if (C)  // A >= 10, invalid digit
+        {
+            CLC  // Return NC for error
+            return;
+        }
+        CLC
+        ADC ZP.TOP0
+        STA ZP.TOP0
+        LDA ZP.TOP1
+        ADC #0
+        STA ZP.TOP1
+        LDA ZP.TOP2
+        ADC #0
+        STA ZP.TOP2
+        LDA ZP.TOP3
+        ADC #0
+        STA ZP.TOP3
+        if (C)
+        {
+            CLC // Return NC for overflow
+        }
+        else
+        {
+            SEC // Return C for success
+        }
     }
 }

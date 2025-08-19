@@ -544,5 +544,25 @@ unit Memory // Memory.asm
             DEC ZP.FLENGTHL
         }
     }
+    
+    // Clear entire 256-byte page to zero
+    // Input: A = page MSB (e.g., 0x14 for page 0x1400-0x14FF)
+    // Output: Entire page filled with 0x00
+    // Modifies: ZP.IDX, A, Y
+    ClearPage()
+    {
+        STA ZP.IDXH
+        STZ ZP.IDXL
+        
+        LDY #0
+        LDA #0
+        loop
+        {
+            STA [IDX], Y
+            DEY
+            if (Z) { break; }
+        }
+    }
+    
 #endif
 }

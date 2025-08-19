@@ -28,12 +28,21 @@ unit Print
     {
         Serial.WriteChar();
     }
+    // Write single byte to serial output as two hex digits
+    // Input: A = byte to write
+    // Output: two hex characters sent to serial port
+    // Preserves: X, Y, A
+    // Munts: Flags
+    Hex()
+    {
+        Serial.HexOut();
+    }
     
     // Write '\n'
     // Output: '\n' printed to serial
     // Preserves: X, Y, A
     // Munts: A, Flags
-    PrintNewLine()
+    NewLine()
     {
         LDA #'\n' 
         Serial.WriteChar();

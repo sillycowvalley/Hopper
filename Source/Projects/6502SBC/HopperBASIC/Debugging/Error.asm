@@ -705,9 +705,6 @@ unit Error // ErrorID.asm
             States.IsFailure();
             if (C)
             {
-#if defined(DEBUG)
-                LDA #'F' Debug.COut(); LDA #'!' Debug.COut();
-#endif
                 CLC  // Failure
             }
             else
@@ -722,13 +719,6 @@ unit Error // ErrorID.asm
             {
                 States.SetFailure();
             }
-#if defined(DEBUG)
-            IsTracing();
-            if (C)
-            {
-                LDA #'E' Debug.COut(); LDA #'!' Debug.COut();
-            }
-#endif
             CLC  // Error occurred
         }
         PLA
