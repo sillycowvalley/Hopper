@@ -6,11 +6,11 @@ unit File
     const uint FATBuffer            = Address.FileSystemBuffers + 512;  // [512-767]
     
     // File System Zero Page Variables (aliases to existing slots)
-    const byte SectorDest           = ZP.FDESTINATIONADDRESS;
-    const byte SectorDestL          = ZP.FDESTINATIONADDRESSL; // Destination address for sector ops
-    const byte SectorDestH          = ZP.FDESTINATIONADDRESSH;
+    const byte SectorSource         = ZP.FSOURCEADDRESS;       // for use with LDX [SectorSource], Y for example
+    const byte SectorSourceL        = ZP.FSOURCEADDRESSL;      // Source address for sector ops
+    const byte SectorSourceH        = ZP.FSOURCEADDRESSH;     
     
-    const byte TransferLength       = ZP.FLENGTH;
+    const byte TransferLength       = ZP.FLENGTH;              // for use with LDX [TransferLength], Y for example
     const byte TransferLengthL      = ZP.FLENGTHL;             // Bytes to transfer (LSB)
     const byte TransferLengthH      = ZP.FLENGTHH;             // Bytes to transfer (MSB)
     
@@ -26,7 +26,7 @@ unit File
     const byte FileSystemFlags      = ZP.FSIGN;                // Operation mode and status flags
     
     const byte NextFileSector       = ZP.LNEXTL;               // Next sector in chain (from FAT)
-
+    
     // Check if character is valid for filename (alphanumeric + period)
     // Input: A = character to test
     // Output: C set if valid, NC if invalid
@@ -72,18 +72,18 @@ unit File
         {
             // Check length bounds
             CPY # 0
-            if (Z) { CLC break; }  // Invalid - empty
+            if (Z) { CLC break; }  // Invalid - empty
             CPY # 13
-            if (C){ CLC break; }   // Invalid - too long  
+            if (C){ CLC break; }   // Invalid - too long  
             
             // Check each character
             LDY #0
             loop
             {
                 LDA [ZP.STR], Y
-                if (Z)  { SEC break; }// Valid - reached end
+                if (Z)  { SEC break; }// Valid - reached end
                 IsValidFilenameChar();
-                if (NC){ CLC break; } // Invalid character
+                if (NC){ CLC break; } // Invalid character
                 INY
             }
             break;
@@ -188,12 +188,8 @@ unit File
             SEC
             break;
         }
-        
     }
     
-    //==============================================================================
-    // HELPER METHODS for StartSave
-    //==============================================================================
     
     // Find free directory entry (or existing file to overwrite)
     // Output: C set if entry found, NC if directory full
@@ -481,6 +477,7 @@ unit File
 
 //#ifdef DEBUG
     // Diagnostic dump of drive state
+    // Input:  A = 1 to load from EEPROM, A = 0 to just show current RAM
     // Output: Drive state printed to serial, C set if successful
     // Preserves: X, Y
     // Munts: A
@@ -493,7 +490,11 @@ unit File
       
             
             // Load current FAT and directory
-            loadFAT();
+            CMP #1
+            if (Z)
+            {
+                loadFAT();
+            }
             
             loadDirectory();
             

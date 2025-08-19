@@ -103,6 +103,8 @@ program EEPROMTest
         LDA # (TestDataOne % 256)
         STA ZP.STRL
         String.Length(); // -> Y
+        
+        PHY
            
         // Set up copy parameters
         LDA ZP.STRH
@@ -126,6 +128,7 @@ program EEPROMTest
         LDA #0x10
         DumpPage();       
         */
+        PLY
     }
     
     LoadTestDataTwo()
@@ -275,8 +278,9 @@ program EEPROMTest
         {
 Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char(); 
         }
-        /*
+        LDA #1 // load
         File.DumpDriveState();
+        /*
         if (NC)
         {
             Error.CheckAndPrint();
@@ -299,6 +303,22 @@ Debug.NL();
             Error.CheckAndPrint();
         }
         
+        LoadTestDataOne();
+        
+        LDA #(FunctionOpCodeBuffer / 256)
+        STA File.SectorSourceH
+        LDA #(FunctionOpCodeBuffer % 256)
+        STA File.SectorSourceL
+        
+        STY File.TransferLengthL
+        STZ File.TransferLengthH
+        //File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+
+LDA #0 // don't load
 File.DumpDriveState();
 File.DumpFileState();
 
