@@ -378,13 +378,13 @@ Expected usage: 10-15 programs easily fit
 ### **Allocation Strategy**
 ```
 File allocation: First-fit algorithm
-- Scan FAT[2..255] for first free sector (FAT[i] == 0)
+- Scan FATBuffer[2..255] for first free sector (FAT[i] == 0)
 - Allocate sectors on-demand as file grows
 - No pre-allocation or clustering
 
 File deallocation: Chain following
 - Start from file's startSector
-- Follow FAT chain marking each sector free
+- Follow FATBuffer chain marking each sector free
 - No defragmentation needed (all sectors equal)
 
 Directory management: Linear scan
@@ -394,13 +394,31 @@ Directory management: Linear scan
 
 ### **Buffer Strategy**
 ```
-Working buffers: Use existing FunctionOpCodeBuffer (512 bytes)
-- Buffer A (0-255): Primary sector buffer for file I/O
-- Buffer B (256-511): FAT/directory operations
+Three-buffer approach for optimal performance:
 
-No additional memory allocation required
-All operations use existing HopperBASIC buffer infrastructure
+FileDataBuffer (256 bytes):
+- Current file sector being read/written
+- Streaming I/O operations (AppendStream/NextStream)
+- File content buffering during save/load
+
+WorkingSectorBuffer (256 bytes):  
+- Directory sector operations
+- Temporary sector I/O during multi-step operations
+- General workspace for file system metadata
+
+FATBuffer (256 bytes):
+- Dedicated FAT caching (major performance improvement)
+- Loaded once per file operation, flushed on completion
+- Eliminates repeated sector 0 reads
+- Enables atomic FAT updates
+
+Benefits:
+- FAT stays resident throughout operations
+- No buffer conflicts between file data and metadata
+- Atomic updates reduce EEPROM wear
+- Clean separation of concerns
 ```
+
 
 ---
 
