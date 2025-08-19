@@ -6,11 +6,11 @@ unit File
     const uint FATBuffer            = Address.FileSystemBuffers + 512;  // [512-767]
     
     // File System Zero Page Variables (aliases to existing slots)
-    const byte SectorSource         = ZP.FSOURCEADDRESS;       // for use with LDX [SectorSource], Y for example
+    const byte SectorSource         = ZP.FSOURCEADDRESS;       // for use with LDA [SectorSource], Y for example
     const byte SectorSourceL        = ZP.FSOURCEADDRESSL;      // Source address for sector ops
     const byte SectorSourceH        = ZP.FSOURCEADDRESSH;     
     
-    const byte TransferLength       = ZP.FLENGTH;              // for use with LDX [TransferLength], Y for example
+    const byte TransferLength       = ZP.FLENGTH;              // for use with LDA [TransferLength], Y for example
     const byte TransferLengthL      = ZP.FLENGTHL;             // Bytes to transfer (LSB)
     const byte TransferLengthH      = ZP.FLENGTHH;             // Bytes to transfer (MSB)
     
@@ -26,6 +26,10 @@ unit File
     const byte FileSystemFlags      = ZP.FSIGN;                // Operation mode and status flags
     
     const byte NextFileSector       = ZP.LNEXTL;               // Next sector in chain (from FAT)
+    
+    const byte BytesRemaining       = ZP.M0;                   // for use with LDA [BytesRemaining], Y for example
+    const byte BytesRemainingL      = ZP.M0;                   // 16-bit: bytes left to copy
+    const byte BytesRemainingH      = ZP.M1;
     
     // Check if character is valid for filename (alphanumeric + period)
     // Input: A = character to test
@@ -187,6 +191,205 @@ unit File
             // Success - file ready for AppendStream calls
             SEC
             break;
+        }
+    }
+    
+    // Write data chunk to current save file  
+    // Input: ZP.FSOURCEADDRESS = pointer to data
+    //        ZP.FLENGTH = number of bytes to write
+    // Output: C set if successful, NC if error (disk full)
+    // Preserves: X, Y
+    // Munts: A, file system state  
+    AppendStream()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Copy input parameters to working variables
+            LDA TransferLengthL
+            STA BytesRemainingL
+            LDA TransferLengthH  
+            STA BytesRemainingH
+            
+            loop // Single exit for byte copy
+            {
+                // Check if done
+                LDA BytesRemainingL
+                ORA BytesRemainingH
+                if (Z) { SEC break; } // Set C - success
+                
+                // Copy one byte from source to file data buffer
+                LDY #0
+                LDA [SectorSource], Y
+                LDY SectorPosition
+                STA FileDataBuffer, Y
+                
+                // Update source pointer
+                INC SectorSourceL
+                if (Z) { INC SectorSourceH }
+                
+                // Update sector position
+                INC SectorPosition
+                if (Z) // Wrapped to 0 = sector full (256 bytes)
+                {
+                    flushAndAllocateNext();
+                    if (NC) { Error.EEPROMFull(); BIT ZP.EmulatorPCL break; } // Error - disk full
+                }
+                
+                // Decrement 16-bit remaining count  
+                LDA BytesRemainingL
+                if (NZ)
+                {
+                    DEC BytesRemainingL
+                }
+                else
+                {
+                    DEC BytesRemainingH
+                    LDA #0xFF
+                    STA BytesRemainingL
+                }
+                
+                // Update FilePosition (16-bit)
+                INC FilePositionL
+                if (Z) { INC FilePositionH }
+            }
+            
+            break;
+        }
+        
+        PLY
+        PLX
+    }
+    
+    
+    // Close and finalize current save file
+    // Output: C set if successful, NC if error
+    // Preserves: X, Y  
+    // Munts: A, file system state
+    EndSave()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Write final sector if it has data
+            LDA SectorPosition
+            if (NZ)
+            {
+                LDA CurrentFileSector
+                writeSector();
+            }
+            
+            // Update directory entry with final file info
+            // Calculate directory entry offset: CurrentFileEntry * 16
+            LDA CurrentFileEntry
+            ASL ASL ASL ASL              // * 16
+            TAY                          // Y = directory entry offset
+            
+            // Set file length (FilePosition)
+            LDA FilePositionL
+            STA WorkingSectorBuffer + 0, Y
+            LDA FilePositionH  
+            STA WorkingSectorBuffer + 1, Y
+            
+            // Set start sector
+            LDA FileStartSector
+            STA WorkingSectorBuffer + 2, Y
+            
+            // Flush metadata to EEPROM
+            writeFAT();
+            writeDirectory();
+            
+            // Clear file system state
+            STZ FileSystemFlags
+            
+            SEC // Success
+            break;
+        }
+        
+        PLY
+        PLX
+    }
+    
+    
+    // Flush current sector and allocate next sector
+    // Output: C set if successful, NC if disk full
+    // Munts: A, Y, file system state
+    flushAndAllocateNext()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Write current FileDataBuffer to CurrentFileSector using existing writeSector()
+            LDA CurrentFileSector
+            writeSector();
+            
+            // Allocate next sector (reuse allocation logic from allocateFirstSector)
+            allocateNextSector();
+            if (NC) 
+            { 
+                // Disk full
+                Error.EEPROMFull(); BIT ZP.EmulatorPCL
+                break; 
+            }
+            // NextFileSector now contains new sector number
+            
+            // Link in FAT chain: FATBuffer[CurrentFileSector] = NextFileSector
+            LDY CurrentFileSector
+            LDA NextFileSector
+            STA FATBuffer, Y
+            
+            // Move to new sector
+            LDA NextFileSector
+            STA CurrentFileSector
+            STZ SectorPosition       // Reset to start of new sector
+            
+            // Clear new file data buffer using existing function
+            clearFileDataBuffer();
+            
+            SEC // Success
+            break;
+        }
+        
+        PLY  
+        PLX
+    }
+    
+    // Allocate next free sector (reuse logic from allocateFirstSector)
+    // Output: C set if sector allocated, NC if disk full
+    //         NextFileSector = allocated sector number if successful
+    // Munts: A, Y  
+    allocateNextSector()
+    {
+        LDY #2                   // Start from sector 2 (skip FAT and directory)
+        
+        loop
+        {
+            LDA FATBuffer, Y
+            if (Z)               // Free sector found
+            {
+                // Mark sector as end-of-chain (will be updated when next sector allocated)
+                LDA #1
+                STA FATBuffer, Y
+                
+                // Set next file sector
+                STY NextFileSector
+                
+                SEC
+                return;
+            }
+            
+            INY
+            if (Z)               // Y wrapped to 0 - checked all sectors  
+            {
+                CLC              // Disk full
+                return;
+            }
         }
     }
     
@@ -487,24 +690,38 @@ unit File
         PHY
         loop
         {
-      
-            
-            // Load current FAT and directory
-            CMP #1
-            if (Z)
-            {
-                loadFAT();
-            }
-            
-            loadDirectory();
-            
             // Print header
+            PHA
             LDA #(dumpHeader % 256)
             STA ZP.STRL
             LDA #(dumpHeader / 256)
             STA ZP.STRH
             Print.String();
+            PLA
+            
+            // Load current FAT and directory
+            CMP #1
+            if (Z)
+            {
+                LDA #(dumpHeaderLoaded % 256)
+                STA ZP.STRL
+                LDA #(dumpHeaderLoaded / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                loadFAT();
+            }
+            else
+            {
+                LDA #(dumpHeaderRAM % 256)
+                STA ZP.STRL
+                LDA #(dumpHeaderRAM / 256)
+                STA ZP.STRH
+                Print.String();
+            }
             Print.NewLine();
+            
+            loadDirectory();
             
             // Dump directory entries
             dumpDirectoryEntries();
@@ -527,6 +744,8 @@ unit File
     //==============================================================================
     
     const string dumpHeader  = "=== DRIVE STATE DUMP ===";
+    const string dumpHeaderLoaded  = " (RELOADED FROM EEPROM)";
+    const string dumpHeaderRAM  = " (FROM RAM)";
     const string dirHeader   = "Directory Entries:";
     const string fatHeader   = "FAT Map (. = free, E = end-of-chain, * = used):";
     const string statsHeader = "Sector Statistics:";
@@ -862,12 +1081,9 @@ unit File
         LDA #(filePositionLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA FilePosition         // FilePositionL
-        STA ZP.TOPL
-        LDA FilePosition + 1     // FilePositionH  
-        STA ZP.TOPH
-        LDA #0
-        STA ZP.TOPT
+        LDA FilePositionH
+        Print.Hex();
+        LDA FilePositionL
         Print.Hex();
         Print.NewLine();
         

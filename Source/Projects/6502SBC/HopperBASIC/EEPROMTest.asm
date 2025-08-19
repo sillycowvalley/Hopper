@@ -294,8 +294,8 @@ Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char();
         STA ZP.STRH
         LDA #(TestFileOne % 256)
         STA ZP.STRL
-Debug.NL(); Print.String();        
-Debug.NL(); 
+Print.NewLine(); Print.String();        
+Print.NewLine(); 
         
         File.StartSave();
         if (NC)
@@ -312,7 +312,61 @@ Debug.NL();
         
         STY File.TransferLengthL
         STZ File.TransferLengthH
-        //File.AppendStream();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+        LoadTestDataOne();
+        
+        LDA #(FunctionOpCodeBuffer / 256)
+        STA File.SectorSourceH
+        LDA #(FunctionOpCodeBuffer % 256)
+        STA File.SectorSourceL
+        
+        STY File.TransferLengthL
+        STZ File.TransferLengthH
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        EndSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+        /*
+        LDA #(TestFileTwo / 256)
+        STA ZP.STRH
+        LDA #(TestFileTwo % 256)
+        STA ZP.STRL
+Print.NewLine(); Print.String();        
+Print.NewLine(); 
+        
+        File.StartSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+        LoadTestDataOne();
+        
+        LDA #(FunctionOpCodeBuffer / 256)
+        STA File.SectorSourceH
+        LDA #(FunctionOpCodeBuffer % 256)
+        STA File.SectorSourceL
+        
+        STY File.TransferLengthL
+        STZ File.TransferLengthH
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        EndSave();
         if (NC)
         {
             Error.CheckAndPrint();
@@ -321,16 +375,26 @@ Debug.NL();
 LDA #0 // don't load
 File.DumpDriveState();
 File.DumpFileState();
+*/
 
-Debug.NL();        
+
+/*
+Print.NewLine();        
 LDA #(FATBuffer / 256)
 Debug.DumpPage();
-Debug.NL();        
+Print.NewLine();        
 
-Debug.NL();        
+Print.NewLine();        
 LDA #(FileDataBuffer / 256)
 Debug.DumpPage();
-Debug.NL();        
+Print.NewLine();        
+*/
+
+Print.NewLine();
+Print.NewLine();
+
+LDA #1 // load
+File.DumpDriveState();
         
         LDA #(msgComplete % 256)
         STA ZP.STRL
