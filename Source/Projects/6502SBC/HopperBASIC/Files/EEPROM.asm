@@ -85,7 +85,7 @@ unit EEPROM
         
         // copy a 256 byte 6502 page:
         SerialEEPROM.copyPageToEEPROM();
-        vcopyPageToEEPROM();
+        SerialEEPROM.copyPageToEEPROM();
 #ifdef SERIAL64BYTEPAGES
         SerialEEPROM.copyPageToEEPROM();
         SerialEEPROM.copyPageToEEPROM();

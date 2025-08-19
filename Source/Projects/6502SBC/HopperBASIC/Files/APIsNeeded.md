@@ -125,7 +125,7 @@ Memory.Allocate()
 // Free allocated memory block
 // Input: ZP.IDX = pointer to memory block to free
 // Output: C set if successful, NC if failed  
-// Preserves: X, Y, processor status (full preservation with PHP/PHA/PHX/PHY)
+// Preserves: X, Y, processor status, ZP.IDX (full preservation with PHP/PHA/PHX/PHY)
 // Munts: Internal ZP.M* scratch space only
 Memory.Free()
 ```
@@ -137,8 +137,9 @@ Memory.Free()
 // Input: ZP.FDESTINATIONADDRESS = destination pointer  
 //        ZP.FLENGTH = number of bytes to zero (16-bit)
 // Output: Memory zeroed at destination
-// Preserves: Input parameters unchanged
+// Preserves: X
 // Munts: A, Y, processor flags
+//        ZP.FDESTINATIONADDRESS (incremented to end), ZP.FLENGTH (decremented to zero)
 Memory.Clear()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
@@ -149,8 +150,9 @@ Memory.Clear()
 //        ZP.FDESTINATIONADDRESS = destination pointer
 //        ZP.FLENGTH = number of bytes to copy (16-bit)
 // Output: Data copied from source to destination
-// Preserves: Input parameters unchanged
+// Preserves: X
 // Munts: A, Y, processor flags
+//        ZP.FSOURCEADDRESS (incremented to end), ZP.FDESTINATIONADDRESS (incremented to end), ZP.FLENGTH (decremented to zero)
 Memory.Copy()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
@@ -251,10 +253,9 @@ EEPROM.GetSize()
 // Input: ZP.IDY = EEPROM source address (16-bit, page-aligned recommended)
 //        ZP.IDX = RAM destination address (16-bit, page-aligned recommended)
 // Output: 256 bytes copied from EEPROM to RAM
-//         ZP.IDY advanced by 256 bytes
-//         ZP.IDX advanced by 256 bytes
 // Preserves: X, Y (hardware registers)
-// Munts: A, ZP.IDX, ZP.IDY, processor flags, working registers
+// Munts: A, processor flags, working registers
+//        ZP.IDY (advanced by 256 bytes), ZP.IDX (advanced by 256 bytes)
 // Note: Handles EEPROM page size differences automatically (64/128/256 byte pages)
 EEPROM.ReadPage()
 ```
@@ -265,11 +266,11 @@ EEPROM.ReadPage()
 // Input: ZP.IDX = RAM source address (16-bit, page-aligned recommended)
 //        ZP.IDY = EEPROM destination address (16-bit, page-aligned recommended)
 // Output: 256 bytes copied from RAM to EEPROM
-//         ZP.IDX advanced by 256 bytes
-//         ZP.IDY advanced by 256 bytes
 // Preserves: X, Y (hardware registers)
-// Munts: A, ZP.IDX, ZP.IDY, processor flags, working registers
+// Munts: A, processor flags, working registers
+//        ZP.IDX (advanced by 256 bytes), ZP.IDY (advanced by 256 bytes)
 // Note: Handles EEPROM page size differences automatically (64/128/256 byte pages)
+//       ⚠️  Source has typo "vcopyPageToEEPROM();" - should be "SerialEEPROM.copyPageToEEPROM();"
 EEPROM.WritePage()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit
@@ -373,11 +374,9 @@ NextStream()
 ### **File Management Operations**
 ```hopper
 // List all files in directory
-// Input: ZP.IDX = pointer to working buffer
-//        ZP.FLENGTH = length of working buffer in bytes
 // Output: File list printed to serial, C set if successful
 // Preserves: X, Y
-// Munts: A, working buffer
+// Munts: A
 DirectoryList()
 ```
 **Status:** ❌ **NEEDED** - File system core functionality
@@ -385,23 +384,19 @@ DirectoryList()
 ```hopper
 // Delete a file
 // Input: ZP.STR = pointer to filename (null-terminated, uppercase)
-//        ZP.IDX = pointer to working buffer
-//        ZP.FLENGTH = length of working buffer in bytes
 // Output: C set if file deleted successfully, NC if error (file not found)
 // Preserves: X, Y
-// Munts: A, file system state, working buffer
+// Munts: A, file system state
 DeleteFile()
 ```
 **Status:** ❌ **NEEDED** - File system core functionality
 
 ```hopper
 // Format EEPROM and initialize empty file system
-// Input: ZP.IDX = pointer to working buffer
-//        ZP.FLENGTH = length of working buffer in bytes
 // Output: C set if format successful, NC if error
 //         All existing files destroyed, file system reset
 // Preserves: X, Y
-// Munts: A, entire EEPROM contents, working buffer
+// Munts: A, entire EEPROM contents
 // Note: User confirmation already handled by Console before calling
 Format()
 ```
@@ -490,7 +485,14 @@ Format()
 ### **Contract Accuracy Benefits:**
 - **File system can rely on exact behavior** - No surprises about register preservation
 - **Proper integration planning** - Knows exactly which registers need saving
+- **ZP variable munting documented** - Critical for file system state management
 - **Debugging clarity** - Contract matches actual implementation
 - **Performance optimization** - Can minimize unnecessary preservation
 
 **🚀 Ready for File System Core:** Only 6 core file operations remain with rock-solid, accurately documented infrastructure!
+
+### **⚠️ Important ZP Variable Munting:**
+- **Memory.Copy()** munts all 3 input ZP variables (source, destination, length)
+- **Memory.Clear()** munts 2 input ZP variables (destination, length)  
+- **EEPROM.ReadPage()/WritePage()** advance ZP.IDX and ZP.IDY by 256 bytes
+- **File system must save ZP state** before calling these APIs if values need to be preserved

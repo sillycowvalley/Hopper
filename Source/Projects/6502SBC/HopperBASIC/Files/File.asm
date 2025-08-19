@@ -92,4 +92,34 @@ unit File
         
         PLY
     }
+    
+    // List all files in directory
+    // Output: File list printed to serial, C set if successful
+    // Preserves: X, Y
+    // Munts: A
+    DirectoryList()
+    {
+        TODO(); BIT ZP.EmulatorPCL
+    }
+    
+    // Delete a file
+    // Input: ZP.STR = pointer to filename (null-terminated, uppercase)
+    // Output: C set if file deleted successfully, NC if error (file not found)
+    // Preserves: X, Y
+    // Munts: A, file system state
+    DeleteFile()
+    {
+        TODO(); BIT ZP.EmulatorPCL
+    }
+    
+    // Format EEPROM and initialize empty file system
+    // Output: C set if format successful, NC if error
+    //         All existing files destroyed, file system reset
+    // Preserves: X, Y
+    // Munts: A, entire EEPROM contents
+    // Note: User confirmation already handled by Console before calling
+    Format()
+    {
+        TODO(); BIT ZP.EmulatorPCL
+    }
 }
