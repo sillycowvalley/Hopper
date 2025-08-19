@@ -3,20 +3,23 @@ program HopperBASIC
     // Optional Features
     #define PEEPHOLE  // include the peephole optimizer
     #define BASICLONG // include LONG type
+    #define HASEEPROM
         
     //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    //#define DEBUG
+    #define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
 
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
-    
-    
     #define CPU_65C02S
     #define HOPPER_BASIC
+    
+#ifdef DEBUG    
     #define ROM_48K
-    //#define ROM_32K
+#else
+    #define ROM_32K
+#endif
     
     uses "./Definitions/ZeroPage"
     uses "./Definitions/Limits"
@@ -37,9 +40,6 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Time"
     uses "/Source/Runtime/6502/Parallel"
     
-    uses "/Source/Runtime/6502/I2C"
-    uses "/Source/Runtime/6502/Devices/SerialEEPROM"
-    
     uses "./Objects/Table"
     uses "./Objects/Objects"
     uses "./Objects/Variables"
@@ -47,7 +47,10 @@ program HopperBASIC
     uses "./Objects/Functions"
     uses "./Objects/Array"
     uses "./Objects/Long"
-        
+    
+#ifdef HASEEPROM    
+    uses "./Files/EEPROM"
+#endif
     uses "./Utilities/Tools"
     uses "./Utilities/BufferManager"
     uses "Tokenizer"
@@ -96,6 +99,10 @@ program HopperBASIC
 #else
         RMB2 ZP.FLAGS  // TROFF by default
 #endif        
+
+#ifdef HASEEPROM
+        EEPROM.Initialize();
+#endif
         
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too
@@ -214,8 +221,5 @@ program HopperBASIC
         // Enter the main interpreter loop
         interpreterLoop();
         
-        // to include EEPROM code
-        ReadPage();
-        WritePage();
     }
 }

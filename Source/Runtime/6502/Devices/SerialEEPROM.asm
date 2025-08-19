@@ -1,5 +1,9 @@
 unit SerialEEPROM
 {
+#ifdef HOPPER_BASIC
+    friend EEPROM;
+#endif    
+    
     // API Status: Clean
     // Serial EEPROM interface for program storage and retrieval
     // All public methods preserve caller state except for documented outputs
@@ -235,51 +239,4 @@ unit SerialEEPROM
     }
 #endif
 
-    // Write single 256-byte page from RAM to EEPROM
-    // Input: ZP.IDX = RAM source address (16-bit, page-aligned recommended)
-    //        ZP.IDY = EEPROM destination address (16-bit, page-aligned recommended)
-    // Output: 256 bytes copied from RAM to EEPROM
-    //         ZP.IDX advanced by 256 bytes
-    //         ZP.IDY advanced by 256 bytes
-    // Modifies: All registers used by copyPageToEEPROM()
-    // Note: High-level interface that handles EEPROM page size differences automatically
-    //       For 128-byte EEPROMs: calls copyPageToEEPROM() twice
-    //       For 64-byte EEPROMs: calls copyPageToEEPROM() four times
-    WritePage()
-    {
-        // IDX contains the source address
-        // IDY contains the destination address (in EEPROM)
-        
-        // copy a 256 byte 6502 page:
-        copyPageToEEPROM();
-        copyPageToEEPROM();
-#ifdef SERIAL64BYTEPAGES
-        copyPageToEEPROM();
-        copyPageToEEPROM();
-#endif
-    }
-    
-    // Read single 256-byte page from EEPROM to RAM
-    // Input: ZP.IDY = EEPROM source address (16-bit, page-aligned recommended)
-    //        ZP.IDX = RAM destination address (16-bit, page-aligned recommended)
-    // Output: 256 bytes copied from EEPROM to RAM
-    //         ZP.IDY advanced by 256 bytes
-    //         ZP.IDX advanced by 256 bytes
-    // Modifies: All registers used by copyProgramPage()
-    // Note: High-level interface that handles EEPROM page size differences automatically
-    //       For 128-byte EEPROMs: calls copyProgramPage() twice
-    //       For 64-byte EEPROMs: calls copyProgramPage() four times
-    ReadPage()
-    {
-        // IDY contains the source address (in EEPROM)
-        // IDX contains the destination address
-        
-        // copy a 256 byte 6502 page:
-        copyProgramPage();
-        copyProgramPage();
-#ifdef SERIAL64BYTEPAGES
-        copyProgramPage();
-        copyProgramPage();
-#endif
-    }
 }

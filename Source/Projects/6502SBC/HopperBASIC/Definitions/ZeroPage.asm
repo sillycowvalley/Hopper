@@ -348,6 +348,7 @@ unit ZP // ZeroPage.asm
     const byte OutB                 = 0x8A;
     const byte InB                  = 0x8B;
     const byte LastAck              = 0x8C;
+    const byte PLUGNPLAY            = 0x8D;
     
     // 0x84-0xEB: Available (104 bytes!)
 
