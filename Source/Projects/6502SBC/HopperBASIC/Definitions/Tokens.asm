@@ -600,7 +600,7 @@ unit Tokens
             STA ZP.TOPL
             LDA #BASICType.WORD
             STA ZP.TOPT
-            Tools.PrintDecimal();
+            Print.Decimal();
             Debug.Space();
             TAX                 // X = keyword length
             
@@ -695,7 +695,7 @@ unit Tokens
             LDA #'=' Debug.COut();
             LDA #BASICType.WORD
             STA ZP.TOPT
-            Tools.PrintDecimal();
+            Print.Decimal();
             Debug.Space();
 #endif
         }
@@ -728,7 +728,7 @@ unit Tokens
             LDA #'=' Debug.COut();
             LDA #BASICType.WORD
             STA ZP.TOPT
-            Tools.PrintDecimal();
+            Print.Decimal();
             Debug.NL();
 #endif
         }

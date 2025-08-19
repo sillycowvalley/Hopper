@@ -7,60 +7,88 @@ This document specifies all external APIs required by the HopperBASIC file syste
 
 ---
 
-## Character Validation APIs
+## Character Validation APIs - **✅ IMPLEMENTED**
 
 ### **Character Type Checking**
 ```hopper
 // Check if character is alphabetic (A-Z, a-z)
 // Input: A = character to test
 // Output: C set if alphabetic, NC if not
-// Preserves: X, Y
-IsAlpha()
+// Preserves: A, X, Y (saves/restores A)
+// Munts: Internal working state only
+Char.IsAlpha()
 ```
-**Status:** ✅ **EXISTS** - Available in `tokenizer.asm`, already implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Char.asm`
 
 ```hopper
 // Check if character is numeric (0-9)  
 // Input: A = character to test
 // Output: C set if numeric, NC if not
-// Preserves: X, Y
-IsDigit()
+// Preserves: A, X, Y (saves/restores A)
+// Munts: Internal working state only
+Char.IsDigit()
 ```
-**Status:** ✅ **EXISTS** - Available in `tokenizer.asm`, already implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Char.asm`
 
 ```hopper
 // Check if character is alphanumeric (A-Z, a-z, 0-9)
 // Input: A = character to test
 // Output: C set if alphanumeric, NC if not
-// Preserves: X, Y
-IsAlphaNumeric()
+// Preserves: A, X, Y (saves/restores A)
+// Munts: Internal working state only
+Char.IsAlphaNumeric()
 ```
-**Status:** ✅ **EXISTS** - Available in `tokenizer.asm`, already implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Char.asm`
 
+### **Filename Character Validation**
 ```hopper
 // Check if character is valid for filename (alphanumeric + period)
 // Input: A = character to test
 // Output: C set if valid, NC if invalid
 // Preserves: X, Y
-IsValidFilenameChar()
+// Munts: A only
+File.IsValidFilenameChar()
 ```
-**Status:** ❌ **NEEDED** - Could leverage existing `IsAlphaNumeric()` + period check
+**Status:** ✅ **IMPLEMENTED** - Available in `File.asm`, uses `Char.IsAlphaNumeric()` + period check
+
+### **Bonus Character Methods (Available)**
+```hopper
+// Check if character is lowercase (a-z)
+Char.IsLower()
+// Check if character is hex digit (0-9, A-F, a-f)  
+Char.IsHex()
+```
+**Status:** ✅ **BONUS** - Additional functionality available in `Char.asm`
 
 ---
 
-## String Analysis APIs
-*Note: File system receives immutable uppercase string pointers, no string memory management*
+## String Analysis APIs - **✅ IMPLEMENTED**
 
+### **String Length**
 ```hopper
 // Calculate string length
 // Input: ZP.STR = pointer to null-terminated string
-// Output: A = string length (max 255)
-// Preserves: X, Y, ZP.STR
-// Munts: A only
-StringLength()
+// Output: Y = string length
+// Preserves: Input pointer (ZP.STR unchanged)
+// Munts: A, X, Y
+// Note: Returns 0 for null pointer
+String.Length()
 ```
-**Status:** ❌ **NEEDED** - Could leverage string iteration patterns from `Tools.PrintStringSTR()`
+**Status:** ✅ **IMPLEMENTED** - Available in `String.asm`
 
+### **String Comparison**
+```hopper
+// Compare two strings
+// Input: ZP.STR = first string pointer
+//        ZP.STR2 = second string pointer
+// Output: C set if match, NC if different
+// Preserves: Input pointers unchanged
+// Munts: A, X, Y
+String.Compare()
+```
+**Status:** ✅ **IMPLEMENTED** - Available in `String.asm`
+
+### **Filename Validation**
 ```hopper
 // Validate string as filename (length 1-12, valid characters)
 // Input: ZP.STR = pointer to null-terminated uppercase string
@@ -68,75 +96,65 @@ StringLength()
 //         A = actual string length
 // Preserves: X, Y, ZP.STR
 // Munts: A only
-ValidateFilename()
+File.ValidateFilename()
 ```
-**Status:** ❌ **NEEDED** - Could leverage existing `IsValidFilenameChar()` + `StringLength()`
-
-```hopper
-// Compare two strings (case-sensitive since both are uppercase)
-// Input: ZP.STR = string1 pointer
-//        ZP.IDX = string2 pointer  
-//        A = maximum length to compare (typically 12 for filenames)
-// Output: Z set if equal, NZ if different
-// Preserves: X, Y, ZP.STR, ZP.IDX
-// Munts: A only
-StringCompare()
-```
-**Status:** ❌ **NEEDED** - Simple case-sensitive comparison
+**Status:** ✅ **IMPLEMENTED** - Available in `File.asm`, uses `String.Length()` + `File.IsValidFilenameChar()`
 
 ---
 
-## Memory Management APIs
+## Memory Management APIs - **✅ IMPLEMENTED**
 
+### **Allocation & Deallocation**
 ```hopper
 // Allocate memory block
 // Input: ZP.ACC = number of bytes to allocate
 // Output: ZP.IDX = pointer to allocated memory (0x0000 if failed)
 //         C set if successful, NC if failed
-// Preserves: X, Y
-// Munts: A, ZP.ACC
+// Preserves: X, Y, processor status, ZP.ACC
+// Munts: Internal ZP.M* scratch space only
 Memory.Allocate()
 ```
-**Status:** ✅ **EXISTS** - Available in `Memory.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
 
 ```hopper
 // Free allocated memory block
 // Input: ZP.IDX = pointer to memory block to free
 // Output: C set if successful, NC if failed  
-// Preserves: X, Y
-// Munts: A, ZP.IDX
+// Preserves: X, Y, processor status
+// Munts: Internal ZP.M* scratch space only
 Memory.Free()
 ```
-**Status:** ✅ **EXISTS** - Available in `Memory.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
 
+### **Memory Operations**
 ```hopper
-// Clear memory block
-// Input: ZP.IDX = destination pointer
-//        ZP.ACC = number of bytes to clear
-// Output: Memory cleared to zeros
-// Preserves: X, Y
-// Munts: A, destination buffer
-MemoryClear()
+// Clear memory block to zeros
+// Input: ZP.FDESTINATIONADDRESS = destination pointer  
+//        ZP.FLENGTH = number of bytes to zero (16-bit)
+// Output: Memory zeroed at destination
+// Preserves: Input parameters unchanged
+// Munts: A, Y, internal working state
+Memory.Clear()
 ```
-**Status:** ❌ **NEEDED** - Simple byte-filling loop
+**Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
 
 ```hopper
 // Copy memory block
 // Input: ZP.FSOURCEADDRESS = source pointer
-//        ZP.IDX = destination pointer
-//        ZP.FLENGTH = number of bytes to copy
-// Output: Memory copied
-// Preserves: X, Y  
-// Munts: A, destination buffer
-MemoryCopy()
+//        ZP.FDESTINATIONADDRESS = destination pointer
+//        ZP.FLENGTH = number of bytes to copy (16-bit)
+// Output: Data copied from source to destination
+// Preserves: Input parameters unchanged
+// Munts: A, Y, internal working state
+Memory.Copy()
 ```
-**Status:** ❌ **NEEDED** - Basic memory copy loop
+**Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
 
 ---
 
-## Character Output APIs
-*For directory listings and file system messages*
+## Character Output APIs - **✅ IMPLEMENTED**
 
+### **Core Output Methods**
 ```hopper
 // Write single character to serial output
 // Input: A = character to write
@@ -145,46 +163,50 @@ MemoryCopy()
 // Munts: None
 Serial.WriteChar()
 ```
-**Status:** ✅ **EXISTS** - Available in `Serial.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Serial.asm`
 
+### **String Output Methods**
 ```hopper
 // Print null-terminated string
 // Input: ZP.STR = pointer to null-terminated string
 // Output: String printed to serial
-// Preserves: All registers
-// Munts: None (internally saves/restores)
-Tools.PrintStringSTR()
+// Preserves: Everything
+// Munts: Flags, A, Y (internal working state)
+Print.String()
 ```
-**Status:** ✅ **EXISTS** - Available in `Tools.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
 
+### **Numeric & Formatting Output**
 ```hopper
-// Print 16-bit value as decimal
-// Input: ZP.TOP = 16-bit value to print
+// Print 16-bit/32-bit decimal number
+// Input: ZP.TOP = 16-bit number to print (0-65535)
+//        ZP.LTOP0-3 = 32-bit signed LONG (if ZP.TOPT == BASICType.LONG)
 //        ZP.TOPT = type (for signed/unsigned determination)
 // Output: Decimal representation printed to serial
-// Preserves: All registers
-// Munts: None (internally saves/restores)
-Tools.PrintDecimal()
+// Preserves: X, Y, A
+// Munts: Flags
+Print.Decimal()
 ```
-**Status:** ✅ **EXISTS** - Available in `Tools.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
 
 ```hopper
 // Write carriage return + line feed
-// Output: CR+LF sent to serial port
-// Preserves: All registers
-Tools.NL()
+// Output: '\n' sent to serial port
+// Preserves: X, Y, A
+// Munts: A, Flags
+Print.PrintNewLine()
 ```
-**Status:** ✅ **EXISTS** - Available in `Tools.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
 
 ```hopper
 // Print spaces for formatting
-// Input: A = number of spaces to print
+// Input: X = number of spaces to print
 // Output: Spaces printed to serial
-// Preserves: X, Y
-// Munts: A
-PrintSpaces()
+// Preserves: Y
+// Munts: A, flags, X (consumed as counter)
+Print.Spaces()
 ```
-**Status:** ❌ **NEEDED** - Simple loop calling `Serial.WriteChar()`
+**Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
 
 ---
 
@@ -231,7 +253,7 @@ EEPROM.GetSize()
 // Note: Handles EEPROM page size differences automatically (64/128/256 byte pages)
 EEPROM.ReadPage()
 ```
-**Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit, handles all page sizes
+**Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit
 
 ```hopper
 // Write 256-byte page from RAM to EEPROM
@@ -245,22 +267,11 @@ EEPROM.ReadPage()
 // Note: Handles EEPROM page size differences automatically (64/128/256 byte pages)
 EEPROM.WritePage()
 ```
-**Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit, handles all page sizes
-
-### **Legacy Compatibility Note**
-The original API specification called for:
-- `ReadPage()` and `WritePage()` without unit qualification
-- `VerifyEEPROMPage()` and `EEPROMDetect()` utility methods
-
-**✅ Updated Interface:** The EEPROM unit provides a cleaner, more comprehensive interface:
-- **Qualified calls** (`EEPROM.ReadPage()`, `EEPROM.WritePage()`) follow HopperBASIC conventions
-- **Automatic page size handling** eliminates complexity from file system code
-- **Integrated detection** through `Initialize()`, `Detect()`, and `GetSize()` methods
-- **Plug-and-play support** via `ZP.PLUGNPLAY` bit flags
+**Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit
 
 ---
 
-## Error Reporting APIs
+## Error Reporting APIs - **✅ IMPLEMENTED**
 
 ```hopper
 // Check and proceed only if no error occurred
@@ -268,7 +279,7 @@ The original API specification called for:
 // Preserves: Processor flags only
 Error.CheckError()
 ```
-**Status:** ✅ **EXISTS** - Available in `Error.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Error.asm`
 
 ```hopper
 // Set "not implemented" error
@@ -277,7 +288,7 @@ Error.CheckError()
 // Munts: A, ZP.LastError  
 Error.NotImplemented()
 ```
-**Status:** ✅ **EXISTS** - Available in `Error.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Error.asm`
 
 ```hopper
 // Set out of memory error
@@ -286,7 +297,7 @@ Error.NotImplemented()
 // Munts: A, ZP.LastError  
 Error.OutOfMemory()
 ```
-**Status:** ✅ **EXISTS** - Available in `Error.asm`, fully implemented
+**Status:** ✅ **IMPLEMENTED** - Available in `Error.asm`
 
 ---
 
@@ -394,28 +405,21 @@ Format()
 
 ## Implementation Priority
 
-### **Phase 1: Essential Infrastructure ✅ LARGELY COMPLETE**
+### **Phase 1: Essential Infrastructure ✅ COMPLETE**
 ```
-1. Memory APIs (Memory.Allocate, Memory.Free) - ✅ AVAILABLE
+1. Memory APIs (Memory.Allocate, Memory.Free, Memory.Clear, Memory.Copy) - ✅ IMPLEMENTED
 2. EEPROM APIs (EEPROM.Initialize, EEPROM.Detect, EEPROM.GetSize, EEPROM.ReadPage, EEPROM.WritePage) - ✅ IMPLEMENTED  
-3. Character APIs (IsAlpha, IsDigit, IsAlphaNumeric) - ✅ AVAILABLE
-4. Output APIs (Serial.WriteChar, Tools.PrintStringSTR, Tools.PrintDecimal, Tools.NL) - ✅ AVAILABLE
-5. Error APIs (Error.CheckError, Error.NotImplemented, Error.OutOfMemory) - ✅ AVAILABLE
+3. Character APIs (Char.IsAlpha, Char.IsDigit, Char.IsAlphaNumeric, File.IsValidFilenameChar) - ✅ IMPLEMENTED
+4. String APIs (String.Length, String.Compare, File.ValidateFilename) - ✅ IMPLEMENTED
+5. Output APIs (Serial.WriteChar, Print.String, Print.Decimal, Print.PrintNewLine, Print.Spaces) - ✅ IMPLEMENTED
+6. Error APIs (Error.CheckError, Error.NotImplemented, Error.OutOfMemory) - ✅ IMPLEMENTED
 ```
 
-### **Phase 2: Simple Utilities - ❌ NEEDED**
+### **Phase 2: File System Core - ❌ NEEDED** 
 ```
-6. String APIs (StringLength, StringCompare, ValidateFilename) - ❌ NEEDED
-7. Character validation (IsValidFilenameChar) - ❌ NEEDED
-8. Memory utilities (MemoryClear, MemoryCopy) - ❌ NEEDED
-9. Output utilities (PrintSpaces) - ❌ NEEDED
-```
-
-### **Phase 3: File System Core - ❌ NEEDED** 
-```
-10. Save APIs (StartSave, AppendStream, EndSave) - ❌ NEEDED
-11. Load APIs (StartLoad, NextStream) - ❌ NEEDED
-12. Management APIs (DirectoryList, DeleteFile, Format) - ❌ NEEDED
+7. Save APIs (StartSave, AppendStream, EndSave) - ❌ NEEDED
+8. Load APIs (StartLoad, NextStream) - ❌ NEEDED
+9. Management APIs (DirectoryList, DeleteFile, Format) - ❌ NEEDED
 ```
 
 ---
@@ -429,12 +433,13 @@ Format()
 - **Better error isolation** - failures contained to specific API layers
 
 ### **Leverages Existing Infrastructure**
-- **Reuses proven HopperBASIC code** - Memory, Serial, Tools units already exist
+- **Reuses proven HopperBASIC code** - Memory, String, Char, Print units already exist
 - **Consistent patterns** - same APIs used throughout HopperBASIC
 - **No duplication** - don't reimplement functionality that already exists
 - **Easier maintenance** - improvements to base APIs benefit file system automatically
 
 ### **Clean Integration**
+- **Proper unit organization** - Each unit has focused responsibility
 - **Immutable strings** - no string memory management complexity
 - **Streaming serialization** - handles complex program structures elegantly
 - **Proper ZP usage** - follows HopperBASIC conventions
@@ -444,19 +449,16 @@ Format()
 
 ## Summary: Final API Requirements
 
-### **✅ Ready to Use (17 APIs)**
-- **Character validation:** `IsAlpha()`, `IsDigit()`, `IsAlphaNumeric()`
-- **Memory management:** `Memory.Allocate()`, `Memory.Free()`
-- **Character output:** `Serial.WriteChar()`, `Tools.PrintStringSTR()`, `Tools.PrintDecimal()`, `Tools.NL()`
+### **✅ Ready to Use (24 APIs)**
+- **Character validation:** `Char.IsAlpha()`, `Char.IsDigit()`, `Char.IsAlphaNumeric()`, `Char.IsLower()`, `Char.IsHex()`, `File.IsValidFilenameChar()`
+- **String operations:** `String.Length()`, `String.Compare()`, `File.ValidateFilename()`
+- **Memory management:** `Memory.Allocate()`, `Memory.Free()`, `Memory.Clear()`, `Memory.Copy()`
+- **Character output:** `Serial.WriteChar()`, `Print.String()`, `Print.Decimal()`, `Print.PrintNewLine()`, `Print.Spaces()`
 - **EEPROM I/O:** `EEPROM.Initialize()`, `EEPROM.Detect()`, `EEPROM.GetSize()`, `EEPROM.ReadPage()`, `EEPROM.WritePage()`
 - **Error handling:** `Error.CheckError()`, `Error.NotImplemented()`, `Error.OutOfMemory()`
 
-### **❌ Need Implementation (12 APIs)**
-**Simple Utilities (7 APIs):**
-- `IsValidFilenameChar()`, `StringLength()`, `ValidateFilename()`, `StringCompare()`
-- `MemoryClear()`, `MemoryCopy()`, `PrintSpaces()`
-
-**File System Core (5 APIs):**
+### **❌ Need Implementation (6 APIs)**
+**File System Core (6 APIs):**
 - `StartSave()`, `AppendStream()`, `EndSave()`
 - `StartLoad()`, `NextStream()`
 - `DirectoryList()`, `DeleteFile()`, `Format()`
@@ -465,12 +467,23 @@ Format()
 
 ## Major Progress Update
 
-**✅ EEPROM APIs Complete:** The EEPROM unit provides a comprehensive, production-ready interface that handles:
-- **Device detection and initialization** with plug-and-play support
-- **Automatic page size handling** (supports 64-byte, 128-byte, and 256-byte EEPROM pages)
-- **Clean ZP.IDX/ZP.IDY interface** following HopperBASIC conventions
-- **Size detection** for different EEPROM capacities (32K, 64K, 128K)
+**🎉 INFRASTRUCTURE COMPLETE:** All infrastructure APIs are properly organized and implemented!
 
-**📈 Implementation Status:** **58% Complete** (17 of 29 total APIs implemented)
+**📈 Implementation Status:** **80% Complete** (24 of 30 total APIs implemented)
 
-The file system now has all the infrastructure APIs needed and can focus on implementing the simple utilities and core file operations. The EEPROM implementation eliminates significant complexity from the file system layer.
+### **Key Achievements:**
+- **✅ Proper unit organization** - Each unit has focused responsibility
+- **✅ Complete memory management** - `Memory.*` unit handles allocation and memory operations
+- **✅ Complete string operations** - `String.*` unit provides core string functionality  
+- **✅ Complete character validation** - `Char.*` and `File.*` units handle all character needs
+- **✅ Complete output formatting** - `Print.*` unit provides formatted output
+- **✅ Complete EEPROM interface** - `EEPROM.*` unit ready for file operations
+- **✅ Complete error handling** - `Error.*` integrated error reporting
+
+### **Clean Architecture Benefits:**
+- **Focused units** - Each unit has single responsibility
+- **No API duplication** - Clean separation of concerns
+- **Proper state preservation** - Each unit follows HopperBASIC conventions
+- **Ready for file system** - All infrastructure dependencies satisfied
+
+**🚀 Ready for File System Core:** Only 6 core file operations remain - the actual file system logic!

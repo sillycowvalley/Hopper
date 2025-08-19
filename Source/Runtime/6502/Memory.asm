@@ -465,4 +465,84 @@ unit Memory // Memory.asm
         STA ZP.ACCT
         Stacks.PushACC();
     }
+    
+#ifdef HOPPER_BASIC
+    // Copy bytes from source to destination
+    // Input: ZP.FSOURCEADDRESS = source pointer
+    //        ZP.FDESTINATIONADDRESS = destination pointer  
+    //        ZP.FLENGTH = number of bytes to copy (16-bit)
+    // Output: Data copied from source to destination
+    Copy()
+    {
+        loop
+        {
+            // Check if FLENGTH == 0
+            LDA ZP.FLENGTHL
+            ORA ZP.FLENGTHH
+            if (Z) { break; }  // Nothing left to copy
+            
+            // Copy one byte: *FDESTINATIONADDRESS = *FSOURCEADDRESS
+            LDY #0
+            LDA [ZP.FSOURCEADDRESS], Y
+            STA [ZP.FDESTINATIONADDRESS], Y
+            
+            // Increment FSOURCEADDRESS
+            INC ZP.FSOURCEADDRESSL
+            if (Z)
+            {
+                INC ZP.FSOURCEADDRESSH
+            }
+            
+            // Increment FDESTINATIONADDRESS  
+            INC ZP.FDESTINATIONADDRESSL
+            if (Z)
+            {
+                INC ZP.FDESTINATIONADDRESSH
+            }
+            
+            // Decrement FLENGTH
+            LDA ZP.FLENGTHL
+            if (Z)
+            {
+                DEC ZP.FLENGTHH
+            }
+            DEC ZP.FLENGTHL
+        }
+    }
+    
+    // Zero bytes at destination address
+    // Input: ZP.FDESTINATIONADDRESS = destination pointer  
+    //        ZP.FLENGTH = number of bytes to zero (16-bit)
+    // Output: Memory zeroed at destination
+    Clear()
+    {
+        loop
+        {
+            // Check if FLENGTH == 0
+            LDA ZP.FLENGTHL
+            ORA ZP.FLENGTHH
+            if (Z) { break; }  // Nothing left to zero
+            
+            // Write zero: *FDESTINATIONADDRESS = 0
+            LDA #0
+            LDY #0
+            STA [ZP.FDESTINATIONADDRESS], Y
+            
+            // Increment FDESTINATIONADDRESS  
+            INC ZP.FDESTINATIONADDRESSL
+            if (Z)
+            {
+                INC ZP.FDESTINATIONADDRESSH
+            }
+            
+            // Decrement FLENGTH
+            LDA ZP.FLENGTHL
+            if (Z)
+            {
+                DEC ZP.FLENGTHH
+            }
+            DEC ZP.FLENGTHL
+        }
+    }
+#endif
 }

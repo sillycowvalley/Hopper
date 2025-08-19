@@ -530,7 +530,7 @@ unit Objects
             INC ZP.FLENGTHH
         }
         
-        Tools.CopyBytes(); // FSOURCEADDRESS=src, FDESTINATIONADDRESS=dst, FLENGTH=count
+        Memory.Copy(); // FSOURCEADDRESS=src, FDESTINATIONADDRESS=dst, FLENGTH=count
         
         PLY
         PLX

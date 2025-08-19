@@ -570,8 +570,19 @@ unit BASICSysCalls
                     CMP # BASICType.STRING
                     if (Z)
                     {
-                        // Get string length using helper
-                        Tools.StringLengthTOP();  // Input: string ptr in ZP.TOP, Output: length in ZP.TOP, preserves Y
+                        PHY
+                        
+                        LDA ZP.TOPL
+                        STA ZP.STRL
+                        LDA ZP.TOPH
+                        STA ZP.STRH
+                        String.Length();
+                        STY ZP.TOPL
+                        STZ ZP.TOPH
+                        LDA # BASICType.BYTE
+                        STA ZP.TOPT
+                        
+                        PLY
                     }
                     else
                     {

@@ -30,7 +30,7 @@ unit BufferManager // BufferManager.asm
         STA ZP.FLENGTHH
         LDA #(Limits.OpCodeBufferSize %256)
         STA ZP.FLENGTHL
-        Tools.ZeroBytes();
+        Memory.Clear();
 #endif    
 
     }
@@ -55,7 +55,7 @@ unit BufferManager // BufferManager.asm
         STA ZP.FLENGTHH
         LDA #(Limits.OpCodeBufferSize %256)
         STA ZP.FLENGTHL
-        Tools.ZeroBytes();
+        Memory.Clear();
 #endif    
         
         loop
@@ -122,7 +122,7 @@ unit BufferManager // BufferManager.asm
         STA ZP.FLENGTHH
         LDA #(Limits.TokenizerBufferSize %256)
         STA ZP.FLENGTHL
-        Tools.ZeroBytes();
+        Memory.Clear();
 #endif    
     }
     ResetInputBuffer()
@@ -139,7 +139,7 @@ unit BufferManager // BufferManager.asm
         STA ZP.FLENGTHH
         LDA #(Limits.BasicInputSize %256)
         STA ZP.FLENGTHL
-        Tools.ZeroBytes();
+        Memory.Clear();
 #endif    
         PLP
     }

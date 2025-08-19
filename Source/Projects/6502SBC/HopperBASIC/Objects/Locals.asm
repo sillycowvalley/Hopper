@@ -599,7 +599,7 @@ unit Locals
         STZ ZP.FLENGTHH
         
         // Copy the string using Tools.CopyBytes
-        Tools.CopyBytes();
+        Memory.Copy();
     }
     
     // Internal helper: Compare local names

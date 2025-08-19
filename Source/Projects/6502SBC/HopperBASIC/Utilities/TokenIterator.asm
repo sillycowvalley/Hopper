@@ -381,7 +381,7 @@ unit TokenIterator // TokenIterator.asm
         STA ZP.TOKERRORFLAG
         
         LDX #9
-        Tools.Spaces();
+        Print.Spaces();
             
         LDA #( Messages.ErrorMarker % 256)
         STA ZP.STRL
@@ -390,7 +390,7 @@ unit TokenIterator // TokenIterator.asm
         Tools.PrintStringSTR();
         
         LDX #3
-        Tools.Spaces();
+        Print.Spaces();
         
         // Print the error message
         LDA #'?'

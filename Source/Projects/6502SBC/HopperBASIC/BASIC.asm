@@ -40,19 +40,26 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Time"
     uses "/Source/Runtime/6502/Parallel"
     
+    uses "./Utilities/Print"
+    uses "./Utilities/Tools"
+    uses "./Utilities/BufferManager"
+    
+    uses "./Objects/Char"
+    uses "./Objects/Long"
+    uses "./Objects/String"
+    
     uses "./Objects/Table"
     uses "./Objects/Objects"
     uses "./Objects/Variables"
     uses "./Objects/Locals"
     uses "./Objects/Functions"
     uses "./Objects/Array"
-    uses "./Objects/Long"
+    
     
 #ifdef HASEEPROM    
     uses "./Files/EEPROM"
+    uses "./Files/File"
 #endif
-    uses "./Utilities/Tools"
-    uses "./Utilities/BufferManager"
     uses "Tokenizer"
     uses "FunctionDeclaration.asm"
     uses "Statement"

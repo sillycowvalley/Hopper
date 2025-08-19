@@ -332,7 +332,7 @@ unit BASICTypes // BASICTypes.asm
             }
             default:
             {
-                Tools.PrintDecimal(); // Numeric types
+                Print.Decimal(); // Numeric types
             }
         }
         

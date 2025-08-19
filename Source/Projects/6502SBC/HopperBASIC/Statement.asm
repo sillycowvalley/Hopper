@@ -1082,8 +1082,29 @@ unit Statement // Statement.asm
             LDA ZP.IDXH
             STA ZP.FDESTINATIONADDRESSH
             
+            
+            // Save the input parameters that we'll modify during copying
+            LDA ZP.FDESTINATIONADDRESSL
+            PHA
+            LDA ZP.FDESTINATIONADDRESSH
+            PHA
+            LDA ZP.FLENGTHL
+            PHA
+            LDA ZP.FLENGTHH
+            PHA
+            
             // Copy the token stream
-            Tools.CopyBytes();
+            Memory.Copy();
+            
+            // Restore the input parameters in reverse order
+            PLA
+            STA ZP.FLENGTHH
+            PLA
+            STA ZP.FLENGTHL
+            PLA
+            STA ZP.FDESTINATIONADDRESSH
+            PLA
+            STA ZP.FDESTINATIONADDRESSL
             
             // ADD: Append EOF after the copied tokens
             // FDESTINATIONADDRESS points to start, add FLENGTH to get to end

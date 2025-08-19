@@ -822,7 +822,7 @@ unit Variables
             STA ZP.FLENGTHH
             
             // Copy string including null terminator
-            Tools.CopyBytes();
+            Memory.Copy();
             
             SEC // Success
             break;

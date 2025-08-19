@@ -994,7 +994,7 @@ unit Functions
             STA ZP.FLENGTHH
             
             // Copy opcodes to permanent storage
-            Tools.CopyBytes();
+            Memory.Copy();
             
             // Restore function node address 
             PLA
