@@ -7,7 +7,9 @@ unit EEPROM
     // Returns: ZP.PLUGNPLAY with device status bits set
     Initialize()
     {
-        // Clear the I2C input buffer (1 page = 256 bytes)
+        STZ ZP.PLUGNPLAY
+        
+        // Clear I2C buffer
         LDA #0
         STA IDXL
         LDA # (I2CInBuffer >> 8)
@@ -15,16 +17,13 @@ unit EEPROM
         LDX # 1
         Utilities.ClearPages();
         
-        // Initialize device detection register
         STZ ZP.PLUGNPLAY
-        
-        // Scan for Serial EEPROM (address 0x50) 
         LDA # I2C.SerialEEPROMAddress
         I2C.Scan();
-        if (Z) // Z flag set means device responded (ACK received)
+        if (Z)
         {
-            SMB1 ZP.PLUGNPLAY  // Set bit 1: EEPROM present
-        }
+            SMB1 ZP.PLUGNPLAY
+        }     
     }
     
     // Test if EEPROM is present and responding
@@ -80,8 +79,11 @@ unit EEPROM
     //       For 64-byte EEPROMs: calls copyPageToEEPROM() four times
     WritePage()
     {
-        // IDX contains the source address
-        // IDY contains the destination address (in EEPROM)
+        PHA
+        LDA ZP.TOPL
+        PHA
+        LDA ZP.TOPH
+        PHA
         
         // copy a 256 byte 6502 page:
         SerialEEPROM.copyPageToEEPROM();
@@ -90,6 +92,19 @@ unit EEPROM
         SerialEEPROM.copyPageToEEPROM();
         SerialEEPROM.copyPageToEEPROM();
 #endif
+        // Proper EEPROM write completion delay
+        // EEPROM write operations need 5-10ms to complete
+        LDA #10          // 10 milliseconds delay
+        STA ZP.TOPL
+        LDA #0
+        STA ZP.TOPH
+        Time.DelayTOP(); // Proper timer-based delay
+        
+        PLA
+        STA ZP.TOPH
+        PLA
+        STA ZP.TOPL
+        PLA
     }
     
     // Read single 256-byte page from EEPROM to RAM

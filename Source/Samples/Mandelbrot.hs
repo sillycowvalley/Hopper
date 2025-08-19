@@ -1,7 +1,8 @@
 program Mandelbrot
 {
     //uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Boards/PiPico2"
+    //uses "/Source/Library/Boards/PiPico2"
+    uses "/Source/Library/Boards/Hopper6502"
         
     Hopper()
     {
@@ -9,7 +10,7 @@ program Mandelbrot
         //ClockSpeed = RPClockSpeed.Default;
         //ClockSpeed = RPClockSpeed.Overclock300;
         
-        IO.Clear();
+        //IO.Clear();
         IO.WriteLn();
         
         // https://www.dos4ever.com/SCMP/NIBL.html

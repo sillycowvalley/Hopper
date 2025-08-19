@@ -11,8 +11,9 @@ program EEPROMTest
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/Parallel"
-    uses "/Source/Runtime/6502/Time"
     uses "/Source/Runtime/6502/Utilities"
+    uses "/Source/Runtime/6502/I2C"
+    uses "/Source/Runtime/6502/Time"
     
     uses "./Files/EEPROM"
     uses "./Utilities/Print"
@@ -148,6 +149,7 @@ program EEPROMTest
     
     // Test single EEPROM operation
     // Input: ZP.TOP = EEPROM address, ZP.ACC = test pattern
+    // Complete fixed testEEPROMOperation with proper EEPROM write delays
     testEEPROMOperation()
     {
         // Print test message
@@ -174,6 +176,12 @@ program EEPROMTest
         STA ZP.STRH
         printString();
         
+        // SAVE the EEPROM address before any operations that might change ZP.TOP
+        LDA ZP.TOPL
+        PHA              // Save EEPROM address low
+        LDA ZP.TOPH
+        PHA              // Save EEPROM address high
+        
         // Fill write buffer with test pattern
         LDA ZP.ACCL
         fillWriteBuffer();
@@ -187,21 +195,29 @@ program EEPROMTest
         LDA #WriteBuffer / 256
         STA ZP.IDXH
         
-        LDA ZP.TOPL
-        STA ZP.IDYL  
-        LDA ZP.TOPH
-        STA ZP.IDYH
+        // Restore EEPROM address for write
+        PLA
+        STA ZP.IDYH      // Restore EEPROM address high
+        PLA
+        STA ZP.IDYL      // Restore EEPROM address low
+        
+        // Save EEPROM address again (WritePage may modify IDY)
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
         
         // Write page to EEPROM
         EEPROM.WritePage();
         
-        // Brief delay to ensure write completion
-        LDX #100
-        loop
-        {
-            DEX
-            if (Z) { break; }
-        }
+        // CRITICAL FIX: Proper EEPROM write completion delay
+        // EEPROM write operations need 5-10ms to complete
+        // Use timer-based delay, not CPU loop
+        LDA #10          // 10 milliseconds delay
+        STA ZP.TOPL
+        LDA #0
+        STA ZP.TOPH
+        Time.DelayTOP(); // Proper timer-based delay
         
         // Set up addresses for EEPROM read
         LDA #ReadBuffer % 256
@@ -209,10 +225,11 @@ program EEPROMTest
         LDA #ReadBuffer / 256  
         STA ZP.IDXH
         
-        LDA ZP.TOPL
-        STA ZP.IDYL
-        LDA ZP.TOPH
-        STA ZP.IDYH
+        // Restore EEPROM address for read (ZP.TOP was overwritten by DelayTOP)
+        PLA
+        STA ZP.IDYH      // Restore EEPROM address high
+        PLA
+        STA ZP.IDYL      // Restore EEPROM address low
         
         // Read page from EEPROM
         EEPROM.ReadPage();
@@ -306,26 +323,39 @@ program EEPROMTest
         SMB0 ZP.SerialBreakFlag
     }
     
-    // Main entry point
-    Hopper()
+    Initialize()
     {
+        // Clear Zero Page
+        LDX #0
+        loop
+        {
+            CPX # ZP.ACIADATA // don't write to ACIA data register
+            if (NZ) 
+            {
+                STZ 0x00, X
+            }
+            DEX
+            if (Z) { break; }
+        } 
+        
+        // Clear serial buffer
+        LDA # 0
+        STA IDXL
+        LDA # (SerialInBuffer >> 8)
+        STA IDXH
+        LDX # 1
+        Utilities.ClearPages();
+        
         Serial.Initialize();
         Parallel.Initialize();
         
-        // Set I2C pins to idle state (both high/input)
-        // SCL = bit 0, SDA = bit 1 of Port B
+    }
+    
+    // Main entry point
+    Hopper()
+    {
+        Initialize();
         
-        // Set both SCL and SDA as inputs (high impedance = pulled high)
-        RMB0 ZP.DDRB  // SCL as input (pulled high by external resistor)
-        RMB1 ZP.DDRB  // SDA as input (pulled high by external resistor)
-        
-        // Ensure PORT register bits are low for when pins become outputs
-        RMB0 ZP.PORTB // SCL output value = 0 (when DDR makes it output)
-        RMB1 ZP.PORTB // SDA output value = 0 (when DDR makes it output)
-        
-        // Initialize I2C buffer pointers
-        STZ ZP.I2CInWritePtr
-        STZ ZP.I2CInReadPtr
         
         LDA #(msgStarting % 256)
         STA ZP.STRL
@@ -339,6 +369,7 @@ program EEPROMTest
         LDA #(msgInitializing / 256)
         STA ZP.STRH
         printString();
+        
         EEPROM.Initialize();
         
         // Test EEPROM detection
