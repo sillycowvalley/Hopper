@@ -1,0 +1,310 @@
+#include "system.tc"
+func char tolower(char c);
+
+// Internal function to compare strings lexicographically with optional length and case insensitivity
+func int _compare_strings(const char[] str1, const char[] str2, word n, bool caseInsensitive) {
+    word i = 0;
+    char c1;
+    char c2;
+    while (i < n && str1[i] != '\0' && str2[i] != '\0') {
+        c1 = caseInsensitive ? tolower(str1[i]) : str1[i];
+        c2 = caseInsensitive ? tolower(str2[i]) : str2[i];
+        if (c1 != c2) {
+            return (c1 as int) - (c2 as int);
+        }
+        i++;
+    }
+    if (i == n) {
+        return 0;
+    }
+    return (str1[i] as int) - (str2[i] as int);
+}
+
+// Calculate the length of a string
+func word strlen(const char[] str) {
+    word len = 0;
+    while (str[len] != '\0') {
+        len++;
+    }
+    return len;
+}
+
+// Copy a string from source to destination
+func char[] strcpy(char[] dest, const char[] src) {
+    word i = 0;
+    while (src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    dest[i] = '\0'; // Null-terminate the destination string
+    return dest;
+}
+
+// Copy up to n characters from source to destination
+func char[] strncpy(char[] dest, const char[] src, word n) {
+    word i = 0;
+    while (i < n && src[i] != '\0') {
+        dest[i] = src[i];
+        i++;
+    }
+    while (i < n) {
+        dest[i] = '\0'; // Null-padding if src is shorter than n
+        i++;
+    }
+    return dest;
+}
+
+// Concatenate up to n characters from source string to the destination string
+func char[] strncat(char[] dest, const char[] src, word n) {
+    word dest_len = strlen(dest);
+    word i = 0;
+    while (i < n && src[i] != '\0') {
+        dest[dest_len + i] = src[i];
+        i++;
+    }
+    dest[dest_len + i] = '\0'; // Null-terminate the resulting string
+    return dest;
+}
+
+// Concatenate source string to the destination string
+func char[] strcat(char[] dest, const char[] src) {
+    return strncat(dest, src, strlen(src));
+}
+
+// Compare two strings lexicographically
+func int strcmp(const char[] str1, const char[] str2) {
+    return _compare_strings(str1, str2, 0xFFFF, false);
+}
+
+// Compare up to n characters of two strings lexicographically
+func int strncmp(const char[] str1, const char[] str2, word n) {
+    return _compare_strings(str1, str2, n, false);
+}
+
+// Compare up to n characters of two strings lexicographically (case insensitive)
+func int strnicmp(const char[] str1, const char[] str2, word n) {
+    return _compare_strings(str1, str2, n, true);
+}
+
+// Compare two strings lexicographically (case insensitive)
+func int stricmp(const char[] str1, const char[] str2) {
+    return _compare_strings(str1, str2, 0xFFFF, true);
+}
+
+// Find the first occurrence of a character in a string
+func char[] strchr(const char[] str, char c) {
+    word i = 0;
+    while (str[i] != '\0') {
+        if (str[i] == c) {
+            return str + i;
+        }
+        i++;
+    }
+    return null; // Null if the character is not found
+}
+
+// Find the last occurrence of a character in a string
+func char[] strrchr(const char[] str, char c) {
+    word i = strlen(str);
+    while (i != 0) {
+        if (str[i - 1] == c) {
+            return str + i - 1;
+        }
+        i--;
+    }
+    return null; // Null if the character is not found
+}
+
+// Find the first occurrence of a substring in a string
+func char[] strstr(const char[] haystack, const char[] needle) {
+    word h_len = strlen(haystack);
+    word n_len = strlen(needle);
+    word i;
+    word j;
+    if (n_len == 0) {
+        return haystack; // An empty needle is found at the start of haystack
+    }
+    for (i = 0; i <= h_len - n_len; i++) {
+        j = 0;
+        while (j < n_len && haystack[i + j] == needle[j]) {
+            j++;
+        }
+        if (j == n_len) {
+            return haystack + i;
+        }
+    }
+    return null; // Null if the substring is not found
+}
+
+// Duplicate a string
+func char[] strdup(const char[] str) {
+    word len = strlen(str);
+    char[] new_str = malloc(len + 1) as char[];
+    if (new_str != null) {
+        strcpy(new_str, str);
+    }
+    return new_str;
+}
+
+// Tokenize a string
+char[] next_token;
+func char[] strtok(char[] str, const char[] delimiters) {
+    if (str != null) {
+        next_token = str;
+    }
+    
+    if (next_token == null) {
+        return null;
+    }
+    
+    // Skip initial delimiters
+    while (next_token[0] != '\0' && strchr(delimiters, next_token[0]) != null) {
+        next_token++;
+    }
+    if (next_token[0] == '\0') {
+        next_token = null;
+        return null;
+    }
+    // Start of the token
+    char[] token = next_token;
+    // Find the end of the token
+    while (next_token[0] != '\0' && strchr(delimiters, next_token[0]) == null) {
+        next_token++;
+    }
+    if (next_token[0] != '\0') {
+        next_token[0] = '\0';
+        next_token++;
+    } else {
+        next_token = null;
+    }
+    return token;
+}
+//
+// Check if a character is an uppercase letter
+func bool isupper(char c) {
+    return c >= 'A' && c <= 'Z';
+}
+
+// Check if a character is a lowercase letter
+func bool islower(char c) {
+    return c >= 'a' && c <= 'z';
+}
+
+func bool isdigit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+func bool isalpha(char c) {
+    return isupper(c) || islower(c);
+}
+
+func bool isalnum(char c) {
+    return isdigit(c) || isalpha(c);
+}
+
+func bool isspace(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
+}
+
+func char toupper(char c) {
+    if (islower(c)) {
+        return c - ('a' - 'A');
+    }
+    return c;
+}
+
+func char tolower(char c) {
+    if (isupper(c)) {
+        return c + ('a' - 'A');
+    }
+    return c;
+}
+
+// Copy n bytes from source to destination, allowing for overlapping memory areas
+func byte[] memmove(byte[] dest, const byte[] src, word n) {
+    word i;
+    if (src < dest && dest < src + n) {
+        for (i = n; i != 0; i--) {
+            dest[i - 1] = src[i - 1];
+        }
+    } else {
+        for (i = 0; i < n; i++) {
+            dest[i] = src[i];
+        }
+    }
+    return dest;
+}
+    
+// Copy n bytes from source to destination
+func byte[] memcpy(byte[] dest, const byte[] src, word n) {
+    return memmove(dest, src, n);
+}
+
+
+// Compare the first n bytes of two memory areas
+func int memcmp(const byte[] ptr1, const byte[] ptr2, word n) {
+    word i;
+    for (i = 0; i < n; i++) {
+        if (ptr1[i] != ptr2[i]) {
+            return (ptr1[i] as int) - (ptr2[i] as int);
+        }
+    }
+    return 0;
+}
+
+// Fill the first n bytes of the memory area with a specified value
+func byte[] memset(byte[] ptr, byte value, word n) {
+    word i;
+    for (i = 0; i < n; i++) {
+        ptr[i] = value;
+    }
+    return ptr;
+}
+
+// Convert an integer to a string
+// Convert an integer to a string
+func char[] itoa(int ivalue, char[] str, byte base) {
+    char[] digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    char[33] buffer; // Maximum length for an int in base 2 + null terminator
+    bool isNegative;
+    word i;
+    word j;
+    word value;
+    
+    if (ivalue == 0) {
+        str[0] = '0';
+        str[1] = '\0';
+        return str;
+    }
+
+    // Handle negative numbers for base 10
+    if (ivalue < 0 && base == 10) {
+        isNegative = true;
+        ivalue = -ivalue;
+    }
+
+    value = ivalue as word;
+    
+    // Process individual digits
+    while (value != 0) {
+        buffer[i++] = digits[value % base];
+        value /= base;
+    }
+    
+    // If the number is negative, append '-'
+    if (isNegative) {
+        buffer[i++] = '-';
+    }
+    
+    // Null-terminate the string
+    buffer[i] = '\0';
+    
+    // Reverse the string
+    for (j = 0; j < i; j++) {
+        str[j] = buffer[i - j - 1];
+    }
+    str[i] = '\0';
+    
+    return str;
+}
+
