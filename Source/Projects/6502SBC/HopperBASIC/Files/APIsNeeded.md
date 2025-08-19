@@ -3,7 +3,7 @@
 
 ## Overview
 
-This document specifies all external APIs required by the HopperBASIC file system. By implementing these utilities outside the file system, we can significantly reduce the complexity of the core file system code and leverage existing HopperBASIC infrastructure.
+This document specifies all external APIs required by the HopperBASIC file system. By leveraging existing HopperBASIC infrastructure and implementing focused file-specific utilities, we minimize the complexity of the core file system code while maintaining full integration with the BASIC runtime.
 
 ---
 
@@ -16,132 +16,127 @@ This document specifies all external APIs required by the HopperBASIC file syste
 // Output: C set if alphabetic, NC if not
 // Preserves: X, Y
 IsAlpha()
+```
+**Status:** ✅ **EXISTS** - Available in `tokenizer.asm`, already implemented
 
+```hopper
 // Check if character is numeric (0-9)  
 // Input: A = character to test
 // Output: C set if numeric, NC if not
 // Preserves: X, Y
 IsDigit()
+```
+**Status:** ✅ **EXISTS** - Available in `tokenizer.asm`, already implemented
 
+```hopper
 // Check if character is alphanumeric (A-Z, a-z, 0-9)
 // Input: A = character to test
 // Output: C set if alphanumeric, NC if not
 // Preserves: X, Y
 IsAlphaNumeric()
+```
+**Status:** ✅ **EXISTS** - Available in `tokenizer.asm`, already implemented
 
+```hopper
 // Check if character is valid for filename (alphanumeric + period)
 // Input: A = character to test
 // Output: C set if valid, NC if invalid
 // Preserves: X, Y
 IsValidFilenameChar()
 ```
-
-### **Character Conversion**
-```hopper
-// Convert character to lowercase
-// Input: A = character to convert
-// Output: A = lowercase character (unchanged if not alphabetic)
-// Preserves: X, Y, flags
-ToLowercase()
-
-// Convert character to uppercase  
-// Input: A = character to convert
-// Output: A = uppercase character (unchanged if not alphabetic)
-// Preserves: X, Y, flags
-ToUppercase()
-```
+**Status:** ❌ **NEEDED** - Could leverage existing `IsAlphaNumeric()` + period check
 
 ---
 
-## String Manipulation APIs
+## String Analysis APIs
+*Note: File system receives immutable uppercase string pointers, no string memory management*
 
-### **String Properties**
 ```hopper
 // Calculate string length
-// Input: ZP.IDXL/H = pointer to null-terminated string
-// Output: ZP.ACCL/H = string length (16-bit)
-// Preserves: X, Y
-// Munts: A, ZP.ACC
+// Input: ZP.STR = pointer to null-terminated string
+// Output: A = string length (max 255)
+// Preserves: X, Y, ZP.STR
+// Munts: A only
 StringLength()
+```
+**Status:** ❌ **NEEDED** - Could leverage string iteration patterns from `Tools.PrintStringSTR()`
 
+```hopper
 // Validate string as filename (length 1-12, valid characters)
-// Input: ZP.IDXL/H = pointer to null-terminated string
+// Input: ZP.STR = pointer to null-terminated uppercase string
 // Output: C set if valid filename, NC if invalid
-//         ZP.ACCL = actual string length
-// Preserves: X, Y
-// Munts: A, ZP.ACC, ZP.TOP
+//         A = actual string length
+// Preserves: X, Y, ZP.STR
+// Munts: A only
 ValidateFilename()
 ```
+**Status:** ❌ **NEEDED** - Could leverage existing `IsValidFilenameChar()` + `StringLength()`
 
-### **String Operations**
 ```hopper
-// Copy null-terminated string
-// Input: ZP.IDXL/H = source string pointer
-//        ZP.IDYL/H = destination buffer pointer
-// Output: C set if successful, NC if failed
-// Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT
-StringCopy()
-
-// Compare two strings (case-insensitive, length-limited)
-// Input: ZP.IDXL/H = string1 pointer
-//        ZP.IDYL/H = string2 pointer  
-//        ZP.ACCL = maximum length to compare
+// Compare two strings (case-sensitive since both are uppercase)
+// Input: ZP.STR = string1 pointer
+//        ZP.IDX = string2 pointer  
+//        A = maximum length to compare (typically 12 for filenames)
 // Output: Z set if equal, NZ if different
-// Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT
+// Preserves: X, Y, ZP.STR, ZP.IDX
+// Munts: A only
 StringCompare()
-
-// Clear memory block
-// Input: ZP.IDXL/H = destination pointer
-//        ZP.ACCL/H = number of bytes to clear
-// Output: Memory cleared to zeros
-// Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT
-MemoryClear()
-
-// Copy memory block
-// Input: ZP.FSOURCEADDRESSL/H = source pointer
-//        ZP.FDESTINATIONADDRESSL/H = destination pointer
-//        ZP.FLENGTHL/H = number of bytes to copy
-// Output: Memory copied
-// Preserves: X, Y  
-// Munts: A, ZP.TOP, ZP.NEXT
-MemoryCopy()
 ```
+**Status:** ❌ **NEEDED** - Simple case-sensitive comparison
 
 ---
 
 ## Memory Management APIs
 
-### **Dynamic Allocation**
 ```hopper
 // Allocate memory block
-// Input: ZP.ACCL/H = number of bytes to allocate
-// Output: ZP.IDXL/H = pointer to allocated memory (0x0000 if failed)
+// Input: ZP.ACC = number of bytes to allocate
+// Output: ZP.IDX = pointer to allocated memory (0x0000 if failed)
 //         C set if successful, NC if failed
 // Preserves: X, Y
-// Munts: A, ZP.ACC, ZP.TOP, ZP.NEXT
+// Munts: A, ZP.ACC
 Memory.Allocate()
+```
+**Status:** ✅ **EXISTS** - Available in `Memory.asm`, fully implemented
 
+```hopper
 // Free allocated memory block
-// Input: ZP.IDXL/H = pointer to memory block to free
+// Input: ZP.IDX = pointer to memory block to free
 // Output: C set if successful, NC if failed  
 // Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT, ZP.IDX
+// Munts: A, ZP.IDX
 Memory.Free()
-
-// Get available heap space
-// Output: ZP.ACCL/H = bytes of free heap space
-// Preserves: All registers
-HeapAvailable()
 ```
+**Status:** ✅ **EXISTS** - Available in `Memory.asm`, fully implemented
+
+```hopper
+// Clear memory block
+// Input: ZP.IDX = destination pointer
+//        ZP.ACC = number of bytes to clear
+// Output: Memory cleared to zeros
+// Preserves: X, Y
+// Munts: A, destination buffer
+MemoryClear()
+```
+**Status:** ❌ **NEEDED** - Simple byte-filling loop
+
+```hopper
+// Copy memory block
+// Input: ZP.FSOURCEADDRESS = source pointer
+//        ZP.IDX = destination pointer
+//        ZP.FLENGTH = number of bytes to copy
+// Output: Memory copied
+// Preserves: X, Y  
+// Munts: A, destination buffer
+MemoryCopy()
+```
+**Status:** ❌ **NEEDED** - Basic memory copy loop
 
 ---
 
-## Serial I/O APIs
+## Character Output APIs
+*For directory listings and file system messages*
 
-### **Character Output**
 ```hopper
 // Write single character to serial output
 // Input: A = character to write
@@ -149,53 +144,39 @@ HeapAvailable()
 // Preserves: X, Y, A
 // Munts: None
 Serial.WriteChar()
+```
+**Status:** ✅ **EXISTS** - Available in `Serial.asm`, fully implemented
 
+```hopper
+// Print null-terminated string
+// Input: ZP.STR = pointer to null-terminated string
+// Output: String printed to serial
+// Preserves: All registers
+// Munts: None (internally saves/restores)
+Tools.PrintStringSTR()
+```
+**Status:** ✅ **EXISTS** - Available in `Tools.asm`, fully implemented
+
+```hopper
+// Print 16-bit value as decimal
+// Input: ZP.TOP = 16-bit value to print
+//        ZP.TOPT = type (for signed/unsigned determination)
+// Output: Decimal representation printed to serial
+// Preserves: All registers
+// Munts: None (internally saves/restores)
+Tools.PrintDecimal()
+```
+**Status:** ✅ **EXISTS** - Available in `Tools.asm`, fully implemented
+
+```hopper
 // Write carriage return + line feed
 // Output: CR+LF sent to serial port
 // Preserves: All registers
-Serial.NewLine()
+Tools.NL()
 ```
+**Status:** ✅ **EXISTS** - Available in `Tools.asm`, fully implemented
 
-### **String Output**
 ```hopper
-// Print null-terminated string
-// Input: ZP.TOPL/H = pointer to null-terminated string
-// Output: String printed to serial
-// Preserves: All registers
-// Munts: None (internally saves/restores)
-Tools.PrintStringTOP()
-
-// Print null-terminated string  
-// Input: ZP.NEXTL/H = pointer to null-terminated string
-// Output: String printed to serial
-// Preserves: All registers
-// Munts: None (internally saves/restores)
-Tools.PrintStringNEXT()
-
-// Print null-terminated string
-// Input: ZP.IDYL/H = pointer to null-terminated string  
-// Output: String printed to serial
-// Preserves: All registers
-// Munts: None (internally saves/restores)
-Tools.PrintStringIDY()
-```
-
-### **Numeric Output**
-```hopper
-// Print 16-bit value as decimal
-// Input: ZP.TOPL/H = 16-bit value to print
-// Output: Decimal representation printed to serial
-// Preserves: All registers
-// Munts: None (internally saves/restores)
-Tools.PrintDecimalWord()
-
-// Print byte value as decimal
-// Input: A = byte value to print  
-// Output: Decimal representation printed to serial
-// Preserves: X, Y, A
-// Munts: None
-Tools.PrintDecimalByte()
-
 // Print spaces for formatting
 // Input: A = number of spaces to print
 // Output: Spaces printed to serial
@@ -203,190 +184,189 @@ Tools.PrintDecimalByte()
 // Munts: A
 PrintSpaces()
 ```
-
----
-
-## User Input APIs
-
-### **Character Input**
-```hopper
-// Wait for and read single character from serial
-// Output: A = character received
-// Preserves: X, Y
-// Munts: A
-Serial.WaitForChar()
-
-// Check if character is available (non-blocking)
-// Output: Z set if no character available, NZ if character ready
-//         A = character if available (undefined if Z set)
-// Preserves: X, Y
-Serial.IsAvailable()
-```
-
-### **User Prompts**
-```hopper
-// Display message and get Y/N confirmation
-// Input: ZP.TOPL/H = pointer to prompt message
-// Output: C set if user confirmed (Y/y), NC if cancelled (anything else)
-// Preserves: X, Y
-// Munts: A, ZP.ACC, ZP.TOP, ZP.NEXT
-PromptYesNo()
-
-// Wait for Y or N keypress (case insensitive)
-// Output: A = 'Y' or 'N' (normalized to uppercase)
-//         C set if Y, NC if N
-// Preserves: X, Y
-// Munts: A
-WaitForYesNo()
-```
+**Status:** ❌ **NEEDED** - Simple loop calling `Serial.WriteChar()`
 
 ---
 
 ## EEPROM I/O APIs
 
-### **Page-Level Operations**
 ```hopper
 // Read 256-byte page from EEPROM
-// Input: ZP.FSOURCEADDRESSL/H = EEPROM address (page-aligned)
-//        ZP.FDESTINATIONADDRESSL/H = buffer to receive data
+// Input: ZP.IDY = EEPROM source address (page-aligned)
+//        ZP.IDX = RAM destination address (page-aligned)
 // Output: C set if successful, NC if I2C error
+//         ZP.IDY advanced by 256 bytes
+//         ZP.IDX advanced by 256 bytes
 // Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT, working registers
-ReadEEPROMPage()
+// Munts: A, working registers
+ReadPage()
+```
+**Status:** ✅ **EXISTS** - Available in Storage unit, fully implemented
 
+```hopper
 // Write 256-byte page to EEPROM
-// Input: ZP.FDESTINATIONADDRESSL/H = EEPROM address (page-aligned)  
-//        ZP.FSOURCEADDRESSL/H = buffer containing data to write
+// Input: ZP.IDX = RAM source address (page-aligned)  
+//        ZP.IDY = EEPROM destination address (page-aligned)
 // Output: C set if successful, NC if I2C error
+//         ZP.IDX advanced by 256 bytes
+//         ZP.IDY advanced by 256 bytes
 // Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT, working registers
-WriteEEPROMPage()
+// Munts: A, working registers
+WritePage()
+```
+**Status:** ✅ **EXISTS** - Available in Storage unit, fully implemented
 
+```hopper
 // Verify EEPROM page matches buffer
-// Input: ZP.FSOURCEADDRESSL/H = EEPROM address (page-aligned)
-//        ZP.FDESTINATIONADDRESSL/H = buffer to compare against
+// Input: ZP.IDY = EEPROM address (page-aligned)
+//        ZP.IDX = buffer to compare against
 // Output: C set if match, NC if different or I2C error
 // Preserves: X, Y
-// Munts: A, ZP.TOP, ZP.NEXT, working registers  
+// Munts: A, working registers  
 VerifyEEPROMPage()
 ```
+**Status:** ❌ **NEEDED** - Could leverage existing `ReadPage()` + memory comparison
 
-### **I2C Status**
 ```hopper
 // Test if EEPROM is present and responding
 // Output: C set if EEPROM detected, NC if not present
 // Preserves: All registers
 // Munts: None (internally saves/restores)
 EEPROMDetect()
-
-// Get EEPROM capacity information
-// Output: ZP.ACCL/H = total capacity in pages (typically 256)
-// Preserves: X, Y
-// Munts: A, ZP.ACC
-EEPROMCapacity()
 ```
+**Status:** ❌ **NEEDED** - Could leverage existing I2C infrastructure
 
 ---
 
 ## Error Reporting APIs
 
-### **Error Integration**
 ```hopper
-// Set error code and display message
-// Input: A = error code (from FileSystemErrors enum)
-// Output: Error message displayed, ZP.LastError updated
+// Check and proceed only if no error occurred
+// Output: C set if no error, NC if error occurred
+// Preserves: Processor flags only
+Error.CheckError()
+```
+**Status:** ✅ **EXISTS** - Available in `Error.asm`, fully implemented
+
+```hopper
+// Set "not implemented" error
+// Output: Error message set
 // Preserves: X, Y
-// Munts: A, ZP.LastError, ZP.TOP, ZP.NEXT
-Error.FileSystemError()
+// Munts: A, ZP.LastError  
+Error.NotImplemented()
+```
+**Status:** ✅ **EXISTS** - Available in `Error.asm`, fully implemented
 
-// Set generic "not implemented" error
-// Output: Error message displayed
-// Preserves: X, Y  
-// Munts: A, ZP.LastError
-Error.TODO()
-
+```hopper
 // Set out of memory error
-// Output: Error message displayed
+// Output: Error message set
 // Preserves: X, Y
 // Munts: A, ZP.LastError  
 Error.OutOfMemory()
-
-// Check and print any pending error
-// Output: Error printed if ZP.LastError != 0
-// Preserves: All registers if no error
-// Munts: Various if error present
-Error.CheckAndPrint()
 ```
+**Status:** ✅ **EXISTS** - Available in `Error.asm`, fully implemented
 
 ---
 
-## Buffer Management APIs
+## Program Serialization APIs
+*For saving/loading tokenized BASIC programs*
 
-### **Buffer Allocation**
+### **Save Operations**
 ```hopper
-// Get pointer to primary file system buffer (256 bytes)
-// Output: ZP.IDXL/H = pointer to FunctionOpCodeBuffer[0-255]
-// Preserves: All registers
-// Munts: ZP.IDX
-GetPrimaryBuffer()
-
-// Get pointer to secondary file system buffer (256 bytes)  
-// Output: ZP.IDYL/H = pointer to FunctionOpCodeBuffer[256-511]
-// Preserves: All registers except ZP.IDY
-// Munts: ZP.IDY
-GetSecondaryBuffer()
-
-// Verify buffers are available (not in use by compiler)
-// Output: C set if buffers available, NC if in use
-// Preserves: All registers
-BuffersAvailable()
+// Start saving a program to EEPROM
+// Input: ZP.STR = pointer to filename (null-terminated, uppercase, 1-12 chars)
+// Output: C set if file created successfully, NC if error
+//         File system ready to receive token streams
+// Preserves: X, Y
+// Munts: A, file system state
+StartSave()
 ```
+**Status:** ❌ **NEEDED** - File system core functionality
 
----
-
-## BASIC Integration APIs
-
-### **Tokenizer Integration**
 ```hopper
-// Get current program size in TokenizerBuffer
-// Output: ZP.ACCL/H = program size in bytes
+// Append token stream to current save operation
+// Input: ZP.FSOURCEADDRESS = pointer to token stream
+//        ZP.FLENGTH = length of token stream in bytes
+// Output: C set if data written successfully, NC if error
 // Preserves: X, Y
-// Munts: A, ZP.ACC
-GetCurrentProgramSize()
-
-// Get pointer to current program in TokenizerBuffer
-// Output: ZP.IDXL/H = pointer to tokenized program
-// Preserves: X, Y
-// Munts: ZP.IDX
-GetCurrentProgramPointer()
-
-// Clear current program (equivalent to NEW command)
-// Output: Program cleared, system reset to ready state
-// Preserves: X, Y
-// Munts: Various system state
-ExecuteNewCommand()
-
-// Load program from buffer into BASIC system
-// Input: ZP.IDXL/H = pointer to tokenized program
-//        ZP.ACCL/H = program size in bytes
-// Output: C set if loaded successfully, NC if error
-// Preserves: X, Y
-// Munts: Various system state
-LoadProgramFromBuffer()
+// Munts: A, file system state
+// Note: First token indicates object type (Token.FUNC, Token.BEGIN, Token.CONST, Token.VAR, etc.)
+AppendStream()
 ```
+**Status:** ❌ **NEEDED** - File system core functionality
 
-### **State Management**
 ```hopper
-// Check if BASIC is ready for file operations
-// Output: C set if ready, NC if busy (compiling/executing)
-// Preserves: All registers
-BASICReady()
-
-// Set BASIC to ready state after file operation
-// Output: BASIC prompt displayed, system ready for input
-// Preserves: All registers
-BASICReadyPrompt()
+// Complete save operation and close file
+// Output: C set if file saved successfully, NC if error
+// Preserves: X, Y
+// Munts: A, file system state
+EndSave()
 ```
+**Status:** ❌ **NEEDED** - File system core functionality
+
+### **Load Operations**
+```hopper
+// Start loading a program from EEPROM
+// Input: ZP.STR = pointer to filename (null-terminated, uppercase)
+//        ZP.IDX = pointer to working buffer
+//        ZP.FLENGTH = length of working buffer in bytes
+// Output: C set if file opened successfully, NC if error (file not found)
+//         File system ready to return token streams
+// Preserves: X, Y
+// Munts: A, file system state
+StartLoad()
+```
+**Status:** ❌ **NEEDED** - File system core functionality
+
+```hopper
+// Get next token stream from current load operation
+// Output: C set if stream available, NC if end of file
+//         ZP.FSOURCEADDRESS = pointer to token stream (if C set)
+//         ZP.FLENGTH = length of token stream in bytes (if C set)
+//         First token indicates object type
+// Preserves: X, Y
+// Munts: A, file system state
+// Note: Caller must process/copy stream before next call
+NextStream()
+```
+**Status:** ❌ **NEEDED** - File system core functionality
+
+### **File Management Operations**
+```hopper
+// List all files in directory
+// Input: ZP.IDX = pointer to working buffer
+//        ZP.FLENGTH = length of working buffer in bytes
+// Output: File list printed to serial, C set if successful
+// Preserves: X, Y
+// Munts: A, working buffer
+DirectoryList()
+```
+**Status:** ❌ **NEEDED** - File system core functionality
+
+```hopper
+// Delete a file
+// Input: ZP.STR = pointer to filename (null-terminated, uppercase)
+//        ZP.IDX = pointer to working buffer
+//        ZP.FLENGTH = length of working buffer in bytes
+// Output: C set if file deleted successfully, NC if error (file not found)
+// Preserves: X, Y
+// Munts: A, file system state, working buffer
+DeleteFile()
+```
+**Status:** ❌ **NEEDED** - File system core functionality
+
+```hopper
+// Format EEPROM and initialize empty file system
+// Input: ZP.IDX = pointer to working buffer
+//        ZP.FLENGTH = length of working buffer in bytes
+// Output: C set if format successful, NC if error
+//         All existing files destroyed, file system reset
+// Preserves: X, Y
+// Munts: A, entire EEPROM contents, working buffer
+// Note: User confirmation already handled by Console before calling
+Format()
+```
+**Status:** ❌ **NEEDED** - File system core functionality
 
 ---
 
@@ -394,26 +374,25 @@ BASICReadyPrompt()
 
 ### **Phase 1: Essential Infrastructure**
 ```
-1. Memory APIs (Memory.Allocate, Memory.Free) - CRITICAL
-2. EEPROM APIs (ReadEEPROMPage, WriteEEPROMPage) - CRITICAL  
-3. String APIs (StringLength, StringCopy, StringCompare) - CRITICAL
-4. Character APIs (IsAlphaNumeric, ToLowercase, IsValidFilenameChar) - HIGH
-5. Error APIs (Error.FileSystemError, Error.TODO) - HIGH
+1. Memory APIs (Memory.Allocate, Memory.Free) - ✅ AVAILABLE
+2. EEPROM APIs (ReadPage, WritePage) - ✅ AVAILABLE  
+3. String APIs (StringLength, StringCompare, ValidateFilename) - ❌ NEEDED
+4. Character APIs (IsValidFilenameChar) - ❌ NEEDED
+5. Error APIs (Error.CheckError, Error.NotImplemented) - ✅ AVAILABLE
 ```
 
-### **Phase 2: User Interface** 
+### **Phase 2: File System Core** 
 ```
-6. Serial Output APIs (Serial.WriteChar, Tools.PrintStringTOP) - HIGH
-7. Numeric Output APIs (Tools.PrintDecimalWord, PrintSpaces) - HIGH
-8. User Input APIs (Serial.WaitForChar, PromptYesNo) - HIGH
-9. Buffer Management APIs (GetPrimaryBuffer, GetSecondaryBuffer) - MEDIUM
+6. Save APIs (StartSave, AppendStream, EndSave) - ❌ NEEDED
+7. Load APIs (StartLoad, NextStream) - ❌ NEEDED
+8. Management APIs (DirectoryList, DeleteFile, Format) - ❌ NEEDED
+9. EEPROM Utilities (VerifyEEPROMPage, EEPROMDetect) - ❌ NEEDED
 ```
 
-### **Phase 3: BASIC Integration**
+### **Phase 3: Supporting Utilities**
 ```
-10. Tokenizer APIs (GetCurrentProgramSize, LoadProgramFromBuffer) - MEDIUM
-11. State Management APIs (BASICReady, BASICReadyPrompt) - MEDIUM  
-12. Advanced EEPROM APIs (VerifyEEPROMPage, EEPROMDetect) - LOW
+10. Memory Utilities (MemoryClear, MemoryCopy) - ❌ NEEDED
+11. Output APIs (PrintSpaces) - ❌ NEEDED
 ```
 
 ---
@@ -432,18 +411,35 @@ BASICReadyPrompt()
 - **No duplication** - don't reimplement functionality that already exists
 - **Easier maintenance** - improvements to base APIs benefit file system automatically
 
-### **Development Efficiency**
-- **Parallel development** - different developers can work on different API sets
-- **Incremental testing** - test each API set before building file system
-- **Clear requirements** - well-defined interfaces reduce integration issues
-- **Easier debugging** - can test file system with mock implementations
+### **Clean Integration**
+- **Immutable strings** - no string memory management complexity
+- **Streaming serialization** - handles complex program structures elegantly
+- **Proper ZP usage** - follows HopperBASIC conventions
+- **Console separation** - user interaction handled by Console unit
 
 ---
 
-## Conclusion
+## Summary: Final API Requirements
 
-This comprehensive API specification provides everything needed to implement a robust file system while minimizing the actual file system code. By implementing these external APIs first, the core file system becomes much simpler and more focused on its primary responsibility: managing files on EEPROM.
+### **✅ Ready to Use (12 APIs)**
+- Character validation: `IsAlpha()`, `IsDigit()`, `IsAlphaNumeric()`
+- Memory management: `Memory.Allocate()`, `Memory.Free()`
+- Character output: `Serial.WriteChar()`, `Tools.PrintStringSTR()`, `Tools.PrintDecimal()`, `Tools.NL()`
+- EEPROM I/O: `ReadPage()`, `WritePage()`
+- Error handling: `Error.CheckError()`, `Error.NotImplemented()`, `Error.OutOfMemory()`
 
-Many of these APIs likely already exist in HopperBASIC (Memory, Serial, Tools, Error) and just need to be verified or slightly extended. The remaining APIs are straightforward utility functions that can be implemented and tested independently.
+### **❌ Need Implementation (14 APIs)**
+**Simple Utilities (7 APIs):**
+- `IsValidFilenameChar()`, `StringLength()`, `ValidateFilename()`, `StringCompare()`
+- `MemoryClear()`, `MemoryCopy()`, `PrintSpaces()`
 
-This approach ensures the file system is built on a solid foundation of tested, reliable utilities rather than trying to implement everything within the file system itself.
+**EEPROM Utilities (2 APIs):**
+- `VerifyEEPROMPage()`, `EEPROMDetect()`
+
+**File System Core (5 APIs):**
+- `StartSave()`, `AppendStream()`, `EndSave()`
+- `StartLoad()`, `NextStream()`
+- `DirectoryList()`, `DeleteFile()`, `Format()`
+
+
+

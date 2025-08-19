@@ -344,7 +344,10 @@ unit ZP // ZeroPage.asm
     const byte PEEPOPERANDS         = M8;  // operands for replacement instruction for the current pattern
     
     
-    
+    // File System: I2C for EEPROM:
+    const byte OutB                 = 0x8A;
+    const byte InB                  = 0x8B;
+    const byte LastAck              = 0x8C;
     
     // 0x84-0xEB: Available (104 bytes!)
 

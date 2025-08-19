@@ -15,8 +15,8 @@ program HopperBASIC
     
     #define CPU_65C02S
     #define HOPPER_BASIC
-    //#define ROM_48K
-    #define ROM_32K
+    #define ROM_48K
+    //#define ROM_32K
     
     uses "./Definitions/ZeroPage"
     uses "./Definitions/Limits"
@@ -36,6 +36,9 @@ program HopperBASIC
     uses "/Source/Runtime/6502/Stacks"
     uses "/Source/Runtime/6502/Time"
     uses "/Source/Runtime/6502/Parallel"
+    
+    uses "/Source/Runtime/6502/I2C"
+    uses "/Source/Runtime/6502/Devices/SerialEEPROM"
     
     uses "./Objects/Table"
     uses "./Objects/Objects"
@@ -210,5 +213,9 @@ program HopperBASIC
         
         // Enter the main interpreter loop
         interpreterLoop();
+        
+        // to include EEPROM code
+        ReadPage();
+        WritePage();
     }
 }
