@@ -1,591 +1,405 @@
-# HopperBASIC File System Architecture (Complete Specification)
+# HopperBASIC File System Architecture
 **Document Type: System Architecture Specification**
 
 ## Overview
 
-This document provides the complete architecture for HopperBASIC's file system, designed for simple and reliable program storage on I2C EEPROM. The system uses a **single root directory** (no subdirectories) and integrates seamlessly with existing HopperBASIC infrastructure.
+This document specifies the low-level file system architecture for HopperBASIC's EEPROM storage. The system provides **storage engine functionality only** - all user interface, command parsing, and BASIC integration is handled by existing HopperBASIC infrastructure.
 
 ---
 
 ## Design Philosophy
 
-### **Simplicity First**
-- **Root directory only** (no subdirectories or folder hierarchy)
-- Fixed 16-byte file descriptors
-- 256-byte page-aligned storage
-- Linear chain allocation (no complex tree structures)
+### **Storage Engine Focus**
+- **Pure storage mechanics** - no user interface or command parsing
+- **Simple FAT-based allocation** using 256-byte sectors
+- **Fixed single directory** (no subdirectories)
+- **Stream-based I/O** for efficient program save/load
 
-### **BASIC-Centric**
-- Optimized for program save/load operations
-- Simple filename validation (8.3 style, max 12 characters)
-- Integration with existing BASIC error handling
-- Reuse existing string/character utilities
-
-### **Safety and Robustness**
-- All operations are transactional
-- FORMAT command requires explicit confirmation
-- Clear error paths with specific messages
-- Defensive programming against corruption
-- Graceful degradation when EEPROM fills up
+### **Integration Strategy**
+- **Reuse existing APIs** for string handling, memory management, I/O
+- **Leverage existing error handling** through HopperBASIC Error unit
+- **Use existing ZP conventions** for parameter passing
+- **Clean separation** between storage and user interface
 
 ---
 
 ## On-Disk Structure
 
-### **EEPROM Memory Map**
+### **EEPROM Memory Map (256 sectors × 256 bytes = 64KB)**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Page 0: Chain Block (File Allocation Table)                │
+│ Sector 0: File Allocation Table (FAT)                       │
 ├─────────────────────────────────────────────────────────────┤
-│ Page 1: Root Directory Block 1                             │
-│ Page 2: Root Directory Block 2 (if root directory expands) │
-│ Page N: Root Directory Block N (root directory chain)      │
+│ Sector 1: Root Directory (16 files × 16 bytes = 256 bytes)  │
 ├─────────────────────────────────────────────────────────────┤
-│ Page M: File Data Blocks (allocated via Chain Block)       │
-│ Page M+1: File Data Blocks                                 │
+│ Sector 2: File Data                                         │
+│ Sector 3: File Data                                         │
 │ ...                                                         │
-│ Page 255: File Data Blocks                                 │
+│ Sector 255: File Data                                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### **Chain Block Structure (Page 0) - File Allocation Table**
+### **Sector 0: File Allocation Table (FAT)**
 ```
-Byte Layout:
-┌──────┬─────────────────────────────────────────────────────────┐
-│ 0    │ Reserved (value = 1, marks page 0 as system)           │
-│ 1    │ Reserved (value = 1, marks page 1 as system)           │
-│ 2    │ Block 2 status: 0=free, 1=end-of-chain, 2-255=next    │
-│ 3    │ Block 3 status: 0=free, 1=end-of-chain, 2-255=next    │
-│ ...  │ ...                                                     │
-│ 255  │ Block 255 status: 0=free, 1=end-of-chain, 2-255=next  │
-└──────┴─────────────────────────────────────────────────────────┘
+Byte Layout (256 bytes, one per sector):
+┌──────┬─────────────────────────────────────────────────────┐
+│ 0    │ Reserved (always 1 - marks sector 0 as system)      │
+│ 1    │ Reserved (always 1 - marks sector 1 as system)      │
+│ 2    │ Sector 2 status: 0=free, 1=end-of-chain, 2-255=next│
+│ 3    │ Sector 3 status: 0=free, 1=end-of-chain, 2-255=next│
+│ ...  │ ...                                                 │
+│ 255  │ Sector 255 status: 0=free, 1=end-of-chain, 2-255=next│
+└──────┴─────────────────────────────────────────────────────┘
 
-Chain Block Values:
-  0     = Free block (available for allocation)
-  1     = End of chain marker (last block in file)
-  2-255 = Next block number in chain
+FAT Values:
+  0     = Free sector (available for allocation)
+  1     = End of chain marker (last sector in file)
+  2-255 = Next sector number in chain
 ```
 
-### **Root Directory Structure (Pages 1+)**
+### **Sector 1: Root Directory**
 ```
-Root Directory Page Layout (256 bytes):
-┌──────────────────────────────────────────────────────────────┐
+Directory Layout (256 bytes):
+┌─────────────────────────────────────────────────────────────┐
 │ File Entry 0  (bytes 0-15)   - 16 bytes                     │
 │ File Entry 1  (bytes 16-31)  - 16 bytes                     │
 │ File Entry 2  (bytes 32-47)  - 16 bytes                     │
-│ ...                                                          │
+│ ...                                                         │
 │ File Entry 15 (bytes 240-255) - 16 bytes                    │
-└──────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────┘
 
-Total: 16 file entries per root directory page
-Root directory can span multiple pages using chain system
-All files are stored in this single root directory
+Total: 16 file entries (fixed maximum)
 ```
 
 ### **File Entry Structure (16 bytes)**
 ```
-File Descriptor Layout:
-┌────────┬────────────────────────────────────────────────────────┐
-│ Offset │ Description                                            │
-├────────┼────────────────────────────────────────────────────────┤
-│ 0-11   │ Filename (null-terminated, max 12 characters)         │
-│        │ Examples: "HELLO.BAS", "GAME", "DATA.TXT"              │
-├────────┼────────────────────────────────────────────────────────┤
-│ 12     │ File Type and Name Length                              │
-│        │ Bits 0-3: Actual filename length (1-12)               │
-│        │ Bits 4-7: File type (0x0 = file, 0x1 = reserved)      │
-├────────┼────────────────────────────────────────────────────────┤
-│ 13     │ Start Block Number                                     │
-│        │ 0     = Invalid/corrupted entry                        │
-│        │ 1     = Empty file (no data blocks allocated)          │
-│        │ 2-255 = First block of file data                       │
-├────────┼────────────────────────────────────────────────────────┤
-│ 14     │ File Size Low Byte (LSB)                               │
-│ 15     │ File Size High Byte (MSB)                              │
-│        │ Maximum file size: 65535 bytes                         │
-└────────┴────────────────────────────────────────────────────────┘
+File Entry Layout:
+┌────────┬─────────────────────────────────────────────────────┐
+│ Offset │ Description                                         │
+├────────┼─────────────────────────────────────────────────────┤
+│ 0-1    │ File Length (16-bit LSB first)                      │
+│        │ 0x0000 = empty/deleted entry                        │
+│        │ 0x0001-0xFFFF = file size in bytes                  │
+├────────┼─────────────────────────────────────────────────────┤
+│ 2      │ Start Sector Number                                 │
+│        │ 0 = invalid (used with length=0 for empty)          │
+│        │ 2-255 = first sector of file data                   │
+├────────┼─────────────────────────────────────────────────────┤
+│ 3-15   │ Filename (up to 13 characters)                      │
+│        │ Valid chars: A-Z, 0-9, . (ASCII 0x30-0x39,         │
+│        │              0x41-0x5A, 0x2E)                       │
+│        │ High bit set on LAST character                      │
+│        │ Unused bytes after last char = undefined            │
+└────────┴─────────────────────────────────────────────────────┘
 
 Empty Entry Detection:
-  - filename[0] == 0x00 indicates unused entry slot
-  - Used for root directory compaction and free slot detection
+  - fileLength == 0x0000 indicates unused entry slot
+  - startSector == 0 confirms empty entry
 ```
 
-### **File Data Storage**
+### **File Data Chain Example**
 ```
-File Data Chain Example:
-┌─────────────────────────────────────────────────────────────┐
-│ File: "HELLO.BAS" (450 bytes)                               │
-│ Start Block: 15                                             │
-│                                                             │
-│ Block 15: First 256 bytes of file data                     │
-│ Chain[15] = 23 (points to next block)                      │
-│                                                             │
-│ Block 23: Next 194 bytes of file data + padding            │
-│ Chain[23] = 1 (end of chain marker)                        │
-└─────────────────────────────────────────────────────────────┘
+File: "HELLO.BAS" (450 bytes)
+Directory Entry: startSector = 15, fileLength = 450
+
+FAT Chain:
+  FAT[15] = 23    ← Points to next sector
+  FAT[23] = 1     ← End of chain marker
+
+Data Storage:
+  Sector 15: Bytes 0-255 of file data
+  Sector 23: Bytes 256-449 of file data + padding
 ```
 
 ---
 
-## Zero Page Allocation (Reusing Existing Infrastructure)
+## Zero Page Usage
 
-### **Memory Operations (0x5F-0x64)**
+### **File System Operations (Reusing Existing Allocations)**
 ```
-ZP.FSOURCEADDRESS (0x5F-0x60):     Source buffer/EEPROM address
-  - EEPROM page addresses for readPage/writePage
-  - Source buffer addresses for memory operations
+ZP.FSOURCEADDRESS (0x5F-0x60):     Source buffer/sector address
+  - Sector addresses for EEPROM operations
+  - Source buffer addresses for data transfers
   
-ZP.FDESTINATIONADDRESS (0x61-0x62): Destination buffer/EEPROM address  
+ZP.FDESTINATIONADDRESS (0x61-0x62): Destination buffer/sector address  
   - Target buffer addresses for EEPROM reads
-  - Destination addresses for memory copies
+  - Destination addresses for data copies
   
-ZP.FLENGTH (0x63-0x64):            Transfer length/operation count
-  - Byte counts for memory operations
-  - File sizes and transfer lengths
+ZP.FLENGTH (0x63-0x64):            Transfer length/byte counts
+  - Data transfer lengths
+  - File sizes and remaining bytes
+
+ZP.LCURRENT (0x65-0x66):   Current sector/directory entry pointer
+  - Current sector number during chain following
+  - Current file entry offset during directory operations
+  
+ZP.LHEAD (0x67-0x68):      File start sector/directory position
+  - File start sector number
+  - Directory entry base address
+  
+ZP.LPREVIOUS (0x6B-0x6C):  Previous sector in chain
+  - For chain manipulation and deallocation
+  - Directory entry management
+  
+ZP.LNEXT (0x6D-0x6E):      Next sector in chain
+  - Next sector number in file chain
+  - Chain traversal state
 ```
 
-### **List/Chain Traversal (0x65-0x6E)**
-```
-ZP.LCURRENT (0x65-0x66):   Current block/root directory entry pointer
-  - Current block number during chain following
-  - Current file entry pointer during root directory searches
-  
-ZP.LHEAD (0x67-0x68):      Chain head/root directory start pointer
-  - File start block number
-  - Root directory page start pointer (always page 1)
-  
-ZP.LPREVIOUS (0x6B-0x6C):  Previous block in chain
-  - For chain manipulation and compaction
-  - Root directory entry management
-  
-ZP.LNEXT (0x6D-0x6E):      Next block in chain
-  - Next block number in file chain
-  - Next root directory page in chain
-```
-
-### **File System Specific (0x69-0x6A)**
+### **File System Status (Existing Allocations)**
 ```
 ZP.FSIGN (0x69):           File operation flags/status
   - Bit 0: Read/Write mode flag
-  - Bit 1: File exists flag
-  - Bit 2: Root directory full flag
+  - Bit 1: File open flag
+  - Bit 2: End of file flag
   - Bit 3: Operation success flag
   
-ZP.LHEADX (0x6A):          Extended operation code/file handle index
-  - File handle index (0-15)
-  - Operation mode codes
+ZP.LHEADX (0x6A):          File handle/operation workspace
+  - Current file handle index (0-15)
   - Temporary calculation workspace
 ```
 
 ---
 
-## Buffer Management Strategy
+## Public API Specification
 
-### **FunctionOpCodeBuffer Allocation (512 bytes)**
+### **Save Operations**
+```hopper
+// Create new file for writing (or overwrite existing)
+// Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+// Output: C set if successful, NC if error (disk full, invalid name)
+// Preserves: X, Y
+// Munts: A, file system state
+StartSave()
+
+// Write data chunk to current save file
+// Input: ZP.FSOURCEADDRESS = pointer to data
+//        ZP.FLENGTH = number of bytes to write
+// Output: C set if successful, NC if error (disk full)
+// Preserves: X, Y
+// Munts: A, file system state
+AppendStream()
+
+// Close and finalize current save file
+// Output: C set if successful, NC if error
+// Preserves: X, Y  
+// Munts: A, file system state
+EndSave()
 ```
-Memory Layout:
-┌─────────────────────────────────────────────────────────────┐
-│ Buffer A: FunctionOpCodeBuffer[0-255]                       │
-│ Primary EEPROM page buffer                                  │
-│ - Root directory page reads/writes                          │
-│ - File data page operations                                 │
-│ - Chain block operations                                    │
-├─────────────────────────────────────────────────────────────┤
-│ Buffer B: FunctionOpCodeBuffer[256-511]                     │
-│ Secondary EEPROM page buffer                                │
-│ - Backup/comparison operations                              │
-│ - Multi-page operations                                     │
-│ - Root directory compaction workspace                       │
-└─────────────────────────────────────────────────────────────┘
+
+### **Load Operations**
+```hopper
+// Open file for reading
+// Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+// Output: C set if successful, NC if error (file not found)
+//         File ready for reading via NextStream()
+// Preserves: X, Y
+// Munts: A, file system state
+StartLoad()
+
+// Read next chunk of data from current load file
+// Output: C set if data available, NC if end of file
+//         ZP.FSOURCEADDRESS = pointer to data buffer (if C set)
+//         ZP.FLENGTH = number of bytes available (if C set)
+// Preserves: X, Y
+// Munts: A, file system state
+// Note: Caller must process data before next call
+NextStream()
 ```
 
-### **Buffer Usage Patterns**
-```
-Root Directory Operations:
-  Buffer A: Current root directory page
-  Buffer B: Next root directory page (for chain following)
+### **File Management Operations**
+```hopper
+// List all files to serial output
+// Output: C set if successful, file list printed to serial
+// Preserves: X, Y
+// Munts: A
+DirectoryList()
 
-File I/O Operations:
-  Buffer A: Current file data page
-  Buffer B: Chain block (for navigation)
+// Delete specified file
+// Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+// Output: C set if successful, NC if error (file not found)
+// Preserves: X, Y
+// Munts: A, file system state
+DeleteFile()
 
-Root Directory Compaction:
-  Buffer A: Target page (receiving moved entries)
-  Buffer B: Source page (entries being moved)
-
-Format Operation:
-  Buffer A: Initialization workspace
-  Buffer B: Verification buffer
+// Initialize empty file system
+// Output: C set if successful, NC if error
+//         All existing files destroyed, file system reset
+// Preserves: X, Y
+// Munts: A, entire EEPROM contents
+Format()
 ```
 
 ---
 
-## BASIC Command Integration
+## Core Storage Operations
 
-### **Complete Command Set**
-```
-SAVE "filename"    → Save current program to EEPROM
-LOAD "filename"    → Load program from EEPROM and run NEW first
-DIR                → List all files with sizes and free space
-DEL "filename"     → Delete file with confirmation prompt
-FORMAT             → Format file system with safety prompt
-```
-
-### **Command Parsing Integration**
+### **FAT Management**
 ```hopper
-enum Token {
-    // Existing BASIC tokens...
-    SAVE = 0x91,
-    LOAD = 0x92, 
-    DIR  = 0x93,
-    DEL  = 0x94,
-    FORMAT = 0x95
-}
+// Internal operations for sector allocation
+sectorAllocate() → sectorNumber     // Find free sector
+sectorFree(sectorNumber)            // Mark sector as free
+chainFollow(sectorNumber) → nextSector // Get next in chain
+chainAppend(lastSector, newSector)  // Extend file chain
+chainDeallocate(startSector)        // Free entire chain
 ```
 
-### **Safety Prompts**
-
-#### **FORMAT Command Safety Protocol**
-```
-User Input:  FORMAT
-System:      "FORMAT will erase all files. Are you sure? (Y/N)"
-User Input:  Y or y
-System:      "Formatting..."
-             [performs format operation]
-             "Format complete"
-
-User Input:  FORMAT  
-System:      "FORMAT will erase all files. Are you sure? (Y/N)"
-User Input:  N or n (or anything else)
-System:      "Format cancelled"
+### **Directory Management**
+```hopper
+// Internal operations for file entries
+findFileEntry(filename) → entryOffset   // Locate file in directory
+findFreeEntry() → entryOffset           // Find unused directory slot
+createFileEntry(filename, startSector, length) // Add new file
+removeFileEntry(entryOffset)             // Clear directory entry
+validateFilename(filename) → valid       // Check filename format
 ```
 
-#### **DEL Command Confirmation**
-```
-User Input:  DEL "HELLO.BAS"
-System:      "Delete HELLO.BAS? (Y/N)"
-User Input:  Y or y
-System:      "File deleted"
-
-User Input:  DEL "HELLO.BAS"
-System:      "Delete HELLO.BAS? (Y/N)" 
-User Input:  N or n (or anything else)
-System:      "Delete cancelled"
-```
-
-#### **File Overwrite Protection**
-```
-User Input:  SAVE "EXISTING.BAS"
-System:      "File exists. Overwrite? (Y/N)"
-User Input:  Y or y
-System:      [overwrites file]
-             "Program saved"
-
-User Input:  SAVE "EXISTING.BAS"
-System:      "File exists. Overwrite? (Y/N)"
-User Input:  N or n (or anything else)  
-System:      "Save cancelled"
+### **Sector I/O**
+```hopper
+// Internal operations for EEPROM access
+readSector(sectorNum, buffer)       // Read 256-byte sector
+writeSector(sectorNum, buffer)      // Write 256-byte sector
+readFAT()                          // Load FAT into memory
+writeFAT()                         // Save FAT to EEPROM
+readDirectory()                    // Load directory into memory
+writeDirectory()                   // Save directory to EEPROM
 ```
 
 ---
 
-## Operation Flow Architecture
+## File System Capacity and Performance
 
-### **File Save Operation (SAVE "filename")**
+### **Storage Limits**
 ```
-1. Validate filename (length 1-12, valid characters)
-2. Tokenize current program → TokenizerBuffer
-3. Search root directory for existing file
-4. If file exists → prompt "File exists. Overwrite? (Y/N)"
-5. If confirmed or new file:
-   a. Allocate/reuse file descriptor in root directory
-   b. Allocate data blocks via chain system
-   c. Write tokenized program to EEPROM blocks
-   d. Update file descriptor with size and start block
-   e. Write updated root directory to EEPROM
-6. Report "Program saved" or error message
-```
+Total EEPROM: 256 sectors × 256 bytes = 65,536 bytes (64KB)
+System overhead: 2 sectors (FAT + directory) = 512 bytes
+Available for files: 254 sectors = 65,024 bytes
 
-### **File Load Operation (LOAD "filename")**
-```
-1. Validate filename format
-2. Execute NEW command (clear current program)
-3. Search root directory for specified file
-4. If file found:
-   a. Read file data blocks following chain
-   b. Load data into TokenizerBuffer
-   c. Validate token structure
-   d. Set up program state for execution
-5. Report "Program loaded" or error message
+Maximum files: 16 (limited by directory size)
+Maximum file size: 65,024 bytes (all data sectors)
+Filename length: 1-13 characters (A-Z, 0-9, .)
+
+Typical BASIC program: 1-10KB
+Expected usage: 10-15 programs easily fit
 ```
 
-### **File List Operation (DIR)**
+### **Allocation Strategy**
 ```
-1. Print header: "Files:"
-2. Read root directory pages following chain
-3. For each valid file descriptor:
-   a. Extract filename and file size
-   b. Format and print: "  FILENAME.BAS    1234 bytes"
-4. Calculate and display totals:
-   a. Count total files
-   b. Calculate used space
-   c. Calculate free space
-5. Print footer: "X file(s), Y bytes used, Z bytes free"
+File allocation: First-fit algorithm
+- Scan FAT[2..255] for first free sector (FAT[i] == 0)
+- Allocate sectors on-demand as file grows
+- No pre-allocation or clustering
+
+File deallocation: Chain following
+- Start from file's startSector
+- Follow FAT chain marking each sector free
+- No defragmentation needed (all sectors equal)
+
+Directory management: Linear scan
+- 16 entries maximum, linear search acceptable
+- File creation/deletion compacts directory
 ```
 
-### **File Delete Operation (DEL "filename")**
+### **Buffer Strategy**
 ```
-1. Validate filename format
-2. Search root directory for file
-3. If file found:
-   a. Prompt "Delete FILENAME? (Y/N)"
-   b. If confirmed:
-      - Follow file chain and mark all blocks as free (0)
-      - Clear file descriptor (set filename[0] = 0)
-      - Compact root directory if needed
-      - Report "File deleted"
-   c. If cancelled: "Delete cancelled"
-4. If not found: "FILE NOT FOUND"
-```
+Working buffers: Use existing FunctionOpCodeBuffer (512 bytes)
+- Buffer A (0-255): Primary sector buffer for file I/O
+- Buffer B (256-511): FAT/directory operations
 
-### **Format Operation (FORMAT)**
-```
-1. Display safety prompt: "FORMAT will erase all files. Are you sure? (Y/N)"
-2. Wait for user input
-3. If confirmed (Y/y):
-   a. Print "Formatting..."
-   b. Initialize chain block:
-      - chainBlock[0] = 1 (reserved)
-      - chainBlock[1] = 1 (reserved) 
-      - chainBlock[2-255] = 0 (free)
-   c. Initialize empty root directory (all zeros)
-   d. Write chain block and root directory to EEPROM
-   e. Print "Format complete"
-4. If cancelled: "Format cancelled"
+No additional memory allocation required
+All operations use existing HopperBASIC buffer infrastructure
 ```
 
 ---
 
-## API Architecture
+## Error Integration
 
-### **Core File Operations**
+### **File System Error Conditions**
 ```hopper
-// File handle management
-FileOpen(filename, mode) → handle     // Returns file handle or null
-FileClose(handle) → status            // Always succeeds
-FileRead(handle, buffer, count) → bytes_read
-FileWrite(handle, buffer, count) → bytes_written
-FileSeek(handle, position) → status   // Future enhancement
-FileSize(handle) → size              // Get file size
-
-// Root directory operations  
-RootDirFormat() → status             // Format file system
-RootDirList() → file_count           // List all files
-RootDirFind(filename) → descriptor_ptr // Find file descriptor
-RootDirDelete(filename) → status     // Delete file
-RootDirCompact() → status           // Defragment root directory
-
-// Block-level operations
-BlockRead(block_num, buffer) → status
-BlockWrite(block_num, buffer) → status
-BlockAllocate() → block_num          // Find free block
-BlockFree(block_num) → status        // Mark block as free
-ChainFollow(block_num) → next_block  // Get next in chain
+// Error conditions reported via existing Error unit
+DISK_FULL        // No free sectors available
+FILE_NOT_FOUND   // Requested file does not exist
+INVALID_FILENAME // Filename format invalid
+DIRECTORY_FULL   // No free directory entries (16 files max)
+EEPROM_ERROR     // I2C communication failure
+CORRUPTED_FS     // File system corruption detected
 ```
 
-### **Integration Functions**
+### **Error Reporting Pattern**
 ```hopper
-// BASIC command implementations
-BasicSave(filename) → status         // SAVE command
-BasicLoad(filename) → status         // LOAD command  
-BasicDir() → status                  // DIR command
-BasicDelete(filename) → status       // DEL command
-BasicFormat() → status               // FORMAT command
-
-// Utility functions
-ValidateFilename(filename) → valid   // Check filename format
-PromptYesNo(message) → confirmed     // Get Y/N confirmation
-FormatFileSize(size, buffer)         // Format size for display
-```
-
----
-
-## Error Handling Integration
-
-### **File System Error Codes**
-```hopper
-enum FileSystemErrors {
-    FileNotFound = 0x30,        // File does not exist
-    DiskFull = 0x31,           // No free blocks available
-    InvalidFilename = 0x32,     // Filename format invalid
-    FileExists = 0x33,         // File already exists (overwrite prompt)
-    EEPROMError = 0x34,        // I2C communication failure
-    CorruptedFS = 0x35,        // File system corruption detected
-    RootDirFull = 0x36,        // No free root directory entries
-    InvalidHandle = 0x37       // File handle is invalid
-}
-```
-
-### **Error Message Table**
-```
-Error Code → User Message
-0x30 → "FILE NOT FOUND"
-0x31 → "DISK FULL"
-0x32 → "INVALID FILENAME"
-0x33 → "FILE EXISTS" (handled via prompt)
-0x34 → "EEPROM ERROR" 
-0x35 → "CORRUPTED FILE SYSTEM"
-0x36 → "ROOT DIRECTORY FULL"
-0x37 → "INVALID FILE HANDLE"
-```
-
-### **Error Integration Pattern**
-```hopper
-FileSystemError(errorCode)
+// All file system functions use existing error infrastructure
+fileOperation()
 {
-    LDA errorCode
-    STA ZP.LastError
-    Error.CheckAndPrint();
-    CLC  // Signal error to caller
+    // ... operation logic ...
+    if (errorCondition)
+    {
+        // Set appropriate error code in ZP.LastError
+        Error.SetSpecificError();
+        CLC  // Signal failure to caller
+        return;
+    }
+    SEC  // Signal success
 }
 ```
 
 ---
 
-## Implementation Phases
+## Implementation Dependencies
 
-### **Phase 1: Foundation Infrastructure (Week 1)**
+### **Required External APIs (All Available)**
 ```
-Components:
-1. EEPROM I/O wrapper functions using FSOURCE/FDESTINATION/FLENGTH
-2. Chain block manipulation using LCURRENT/LNEXT traversal patterns
-3. Buffer management for FunctionOpCodeBuffer dual-page operations
-4. Basic error handling integration with existing Error.asm
+EEPROM Operations:
+✅ EEPROM.ReadPage()   - Read 256-byte sector
+✅ EEPROM.WritePage()  - Write 256-byte sector
 
-Deliverables:
-- BlockRead()/BlockWrite() functions working
-- Chain allocation/deallocation working
-- Buffer allocation/cleanup working
-- Error reporting integrated
+Memory Operations:
+✅ Memory.Clear()      - Zero memory blocks
+✅ Memory.Copy()       - Copy memory blocks
 
-Testing:
-- Read/write known patterns to EEPROM
-- Test chain allocation edge cases
-- Verify buffer management doesn't leak
-- Test error path cleanup
-```
+String Operations:
+✅ String.Compare()    - Compare filenames
+✅ String.Length()     - Get filename length
 
-### **Phase 2: Root Directory System (Week 2)**
-```
-Components:
-5. Root directory initialization (FORMAT command implementation)
-6. Root directory search algorithms using chain traversal
-7. File descriptor management (add/delete/update)
-8. Root directory compaction and defragmentation
+Character Operations:
+✅ Char.IsAlpha()      - Validate filename chars
+✅ Char.IsDigit()      - Validate filename chars
 
-Deliverables:
-- FORMAT command working with safety prompts
-- File search by name working
-- Root directory entry manipulation working
-- Root directory compaction working
+Output Operations:
+✅ Print.String()      - Directory listing output
+✅ Print.Decimal()     - File size output
+✅ Serial.WriteChar()  - Character output
 
-Testing:
-- Format and verify empty file system
-- Test root directory spanning multiple pages
-- Test file descriptor lifecycle
-- Test root directory compaction edge cases
+Error Operations:
+✅ Error.CheckError()  - Error status checking
 ```
 
-### **Phase 3: File Operations (Week 3)**
+### **Buffer Requirements**
 ```
-Components:
-9. File creation and deletion operations
-10. File data I/O with automatic chain following
-11. File handle management and validation
-12. Data integrity checking and validation
+Primary Buffer: FunctionOpCodeBuffer[0-255]
+- Sector read/write operations
+- File data streaming
+- FAT operations
 
-Deliverables:
-- File create/delete working
-- File read/write with chaining working
-- File handle lifecycle working
-- Data validation working
+Secondary Buffer: FunctionOpCodeBuffer[256-511]  
+- Directory operations
+- Multi-sector operations
+- Temporary workspace
 
-Testing:
-- Create files of various sizes
-- Test file spanning multiple blocks
-- Test file deletion and space reclamation
-- Test data integrity across power cycles
-```
-
-### **Phase 4: BASIC Integration (Week 4)**
-```
-Components:
-13. SAVE/LOAD command parsing and token integration
-14. DIR command with formatted output and statistics
-15. DEL command with confirmation prompts
-16. FORMAT command with comprehensive safety checks
-17. Complete error message integration and user experience
-
-Deliverables:
-- All BASIC commands working
-- User-friendly prompts and confirmations
-- Comprehensive error handling
-- Performance optimization
-
-Testing:
-- Test complete SAVE/LOAD/DIR/DEL workflows
-- Test all error conditions and recovery
-- Test user experience with prompts
-- Performance testing with various file sizes
-```
-
----
-
-## File System Capacity and Limits
-
-### **Storage Capacity**
-```
-Total EEPROM: 256 pages × 256 bytes = 65,536 bytes (64KB)
-Reserved: 2 pages (chain block + 1 root directory page) = 512 bytes
-Available for files: 254 pages = 65,024 bytes
-
-Maximum files: Limited by root directory space
-- 16 entries per root directory page
-- Root directory can span multiple pages via chaining
-- Practical limit: ~200 files (depends on filename lengths)
-
-Maximum file size: 65,535 bytes (16-bit size field)
-Typical BASIC program: 1-10KB (file system very suitable)
-```
-
-### **Performance Characteristics**
-```
-File Access Times (estimated):
-- Root directory search: 1-3 EEPROM page reads
-- Small file read: 2-4 EEPROM page reads  
-- Large file read: Linear with file size
-- File write: Linear with file size + root directory update
-- File listing: Linear with number of files
-
-EEPROM Write Cycles:
-- Typical EEPROM: 1,000,000 write cycles per page
-- File system design minimizes writes to same pages
-- Expected lifetime: Many years of normal use
+No additional memory allocation required
 ```
 
 ---
 
 ## Conclusion
 
-This complete architecture provides a robust, efficient file system that integrates seamlessly with HopperBASIC's existing infrastructure. The design uses a **simple single root directory** approach while leveraging proven patterns from the existing codebase.
+This streamlined file system provides robust EEPROM storage with a clean API that integrates seamlessly with existing HopperBASIC infrastructure. The design focuses purely on storage mechanics, leaving all user interface and language integration to the existing Console and Error units.
 
 Key benefits:
-- **Simple single root directory** - no complex hierarchy to manage
-- **Zero additional memory allocation** through smart reuse of existing buffers
-- **Familiar development patterns** using established zero page conventions
-- **Comprehensive safety features** with user confirmations for destructive operations
-- **Robust error handling** integrated with existing BASIC error systems
-- **Scalable implementation** through well-defined phases
-- **Efficient storage** optimized for BASIC program storage and retrieval
+- **Simple FAT-based allocation** with predictable performance
+- **Fixed 16-file directory** eliminates complex directory management
+- **Stream-based I/O** efficiently handles variable-size BASIC programs
+- **Zero additional memory overhead** through buffer reuse
+- **Clean API separation** between storage engine and user interface
+- **Robust error handling** via existing HopperBASIC error infrastructure
 
-The file system provides everything needed for practical BASIC program development: save your programs, load them back, organize them with file listings, and manage storage space through file deletion and formatting - all within a simple, flat file structure that's easy to understand and maintain.
+The file system provides exactly what HopperBASIC needs: reliable program storage and retrieval with a simple, focused API that handles the low-level details while integrating cleanly with the existing runtime system.
