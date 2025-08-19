@@ -303,7 +303,23 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
+LDA #'a' Debug.COut();        
+        LoadTestDataOne();
         
+        LDA #(FunctionOpCodeBuffer / 256)
+        STA File.SectorSourceH
+        LDA #(FunctionOpCodeBuffer % 256)
+        STA File.SectorSourceL
+LDA #'b' COut();        
+        STY File.TransferLengthL
+        STZ File.TransferLengthH
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+LDA #'c' COut(); 
+/*
         LoadTestDataOne();
         
         LDA #(FunctionOpCodeBuffer / 256)
@@ -318,26 +334,14 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
-        
-        LoadTestDataOne();
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA File.SectorSourceH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA File.SectorSourceL
-        
-        STY File.TransferLengthL
-        STZ File.TransferLengthH
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
+        */
+LDA #'d' COut();
         EndSave();
         if (NC)
         {
             Error.CheckAndPrint();
         }
+LDA #'e' COut();
         
 LDA #1 // reload after file one
 File.DumpDriveState();
@@ -357,7 +361,7 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
-        
+LDA #'f' COut();
         LoadTestDataOne();
         
         LDA #(FunctionOpCodeBuffer / 256)
@@ -372,18 +376,20 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
+LDA #'g' COut();
         EndSave();
         if (NC)
         {
             Error.CheckAndPrint();
         }
+LDA #'h' COut();
 
 LDA #1 // reload after file two
 File.DumpDriveState();
 File.DumpFileState();
 
 
-
+/*
 Print.NewLine();        
 LDA #(FATBuffer / 256)
 Debug.DumpPage();
@@ -393,7 +399,7 @@ Print.NewLine();
 LDA #(DirectoryBuffer / 256)
 Debug.DumpPage();
 Print.NewLine();        
-
+*/
 
 
         

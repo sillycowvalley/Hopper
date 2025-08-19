@@ -22,14 +22,15 @@ unit File
     const byte FilePositionL        = ZP.LHEADL;               //    "
     const byte FilePositionH        = ZP.LHEADH;               //    "
     
-    const byte SectorPosition       = ZP.LHEADX;               // Byte position within current sector (0-255)
-    const byte FileSystemFlags      = ZP.FSIGN;                // Operation mode and status flags
     
     const byte NextFileSector       = ZP.LNEXTL;               // Next sector in chain (from FAT)
     
     // Additional ZP aliases needed for AppendStream
     const byte BytesRemainingL      = ZP.M0;                   // 16-bit: bytes left to copy
     const byte BytesRemainingH      = ZP.M1;
+    
+    const byte SectorPositionL      = ZP.M2;                   // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
+    const byte SectorPositionH      = ZP.M3;
     
     // Check if character is valid for filename (alphanumeric + period)
     // Input: A = character to test
@@ -180,13 +181,14 @@ unit File
             writeFilenameToDirectory();
             
             // Allocate first sector for file data
-            allocateFirstSector();
+            allocateFirstFreeSector(); // -> Y
             if (NC)
             {
                 Error.EEPROMFull(); BIT ZP.EmulatorPCL
                 break;
             }
-            // FileStartSector and CurrentFileSector now set
+            STY FileStartSector
+            STY CurrentFileSector
             
             // Update directory entry with start sector
             updateDirectoryStartSector();
@@ -299,26 +301,23 @@ unit File
                 // Copy one byte from source to file data buffer
                 LDY #0
                 LDA [SectorSource], Y
-                LDY SectorPosition
+                LDY SectorPositionL
                 STA FileDataBuffer, Y
                 
                 // Update source pointer
                 INC SectorSourceL
                 if (Z) { INC SectorSourceH }
                 
-LDA #' ' Debug.COut(); LDA #'P' Debug.COut(); LDA SectorPosition Debug.HOut();                 
+                // Update sector position (16-bit increment)
+                INC SectorPositionL
+                if (Z) { INC SectorPositionH }
                 
-                // Update sector position
-                INC SectorPosition
-                if (Z) // Wrapped to 0 = sector full (256 bytes)
+                // Check if sector full (256 bytes = 0x0100)
+                LDA SectorPositionH
+                if (NZ) // High byte non-zero means >= 256
                 {
-LDA #'+' Debug.COut();                     
                     flushAndAllocateNext();
                     if (NC) { Error.EEPROMFull(); BIT ZP.EmulatorPCL break; }
-                }
-                else
-                {
-LDA #'-' Debug.COut();                 
                 }
                 
                 // Decrement 16-bit remaining count  
@@ -360,15 +359,16 @@ LDA #'-' Debug.COut();
             LDA CurrentFileSector
             writeSector();
             
-            // Allocate next sector (reuse allocation logic from allocateFirstSector)
-            allocateNextSector();
+            // Allocate next sector
+            allocateFirstFreeSector(); // -> Y
             if (NC) 
             { 
                 // Disk full
                 Error.EEPROMFull(); BIT ZP.EmulatorPCL
                 break; 
             }
-            // NextFileSector now contains new sector number
+            STY NextFileSector
+            
             
             // Link in FAT chain: FATBuffer[CurrentFileSector] = NextFileSector
             LDY CurrentFileSector
@@ -378,7 +378,8 @@ LDA #'-' Debug.COut();
             // Move to new sector
             LDA NextFileSector
             STA CurrentFileSector
-            STZ SectorPosition       // Reset to start of new sector
+            STZ SectorPositionL       // Reset to start of new sector
+            STZ SectorPositionH
             
             // Clear new file data buffer using existing function
             clearFileDataBuffer();
@@ -391,37 +392,31 @@ LDA #'-' Debug.COut();
         PLX
     }
     
-    // Allocate next free sector (reuse logic from allocateFirstSector)
+    // Allocate first free sector from FAT
     // Output: C set if sector allocated, NC if disk full
-    //         NextFileSector = allocated sector number if successful
-    // Munts: A, Y  
-    allocateNextSector()
+    //         Y = next sector number to allocated
+    // Munts: A, Y
+    allocateFirstFreeSector()
     {
         LDY #2                   // Start from sector 2 (skip FAT and directory)
         loop
         {
             LDA FATBuffer, Y
-            if (Z)               // Free sector found
+            if (Z)                // Free sector found
             {
-                // Mark sector as end-of-chain (will be updated when next sector allocated)
+                // Mark sector as end-of-chain (initial single sector file)
                 LDA #1
                 STA FATBuffer, Y
-                
-                // Set next file sector
-                STY NextFileSector
-                
                 SEC
-                return;
+                break;
             }
-            
-            
             INY
-            if (Z)               // Y wrapped to 0 - checked all sectors  
+            if (Z)                // Y wrapped to 0 - checked all sectors
             {
-                CLC              // Disk full
-                return;
+                CLC               // Disk full
+                break;
             }
-        }
+        } // single exit
     }
     
     // Close and finalize current save file
@@ -436,7 +431,8 @@ LDA #'-' Debug.COut();
         loop // Single exit
         {
             // Write final sector if it has data
-            LDA SectorPosition
+            LDA SectorPositionL
+            ORA SectorPositionH
             if (NZ)
             {
                 LDA CurrentFileSector
@@ -446,7 +442,7 @@ LDA #'-' Debug.COut();
             // Update directory entry with final file length
             // Calculate directory entry offset: CurrentFileEntry * 16
             LDA CurrentFileEntry
-            ASL ASL ASL ASL              // * 16
+            ASL A ASL A ASL A ASL A      // * 16
             TAY                          // Y = directory entry offset
             
             // Set file length (FilePosition)
@@ -458,9 +454,6 @@ LDA #'-' Debug.COut();
             // Flush metadata to EEPROM
             writeFAT();
             writeDirectory();
-            
-            // Clear file system state
-            STZ FileSystemFlags
             
             SEC // Success
             break;
@@ -611,41 +604,7 @@ LDA #'-' Debug.COut();
         PLA
     }
     
-    // Allocate first free sector from FAT
-    // Output: C set if sector allocated, NC if disk full
-    //         FileStartSector and CurrentFileSector = allocated sector number
-    // Munts: A, Y
-    allocateFirstSector()
-    {
-        LDY #2                   // Start from sector 2 (skip FAT and directory)
-        
-        loop
-        {
-            LDA FATBuffer, Y
-            if (Z)                // Free sector found
-            {
-                // Mark sector as end-of-chain (initial single sector file)
-                LDA #1
-                STA FATBuffer, Y
-                
-                // Set file state
-                STY FileStartSector
-                STY CurrentFileSector
-                
-                SEC
-                break;
-            }
-            
-            INY
-            if (Z)                // Y wrapped to 0 - checked all sectors
-            {
-LDA #'c' Debug.COut();                
-                CLC               // Disk full
-                break;
-            }
-LDA #'d' Debug.COut();                
-        } // single exit
-    }
+    
     
     // Initialize file state for save operation
     // Munts: A
@@ -654,11 +613,8 @@ LDA #'d' Debug.COut();
         // Clear file position counters
         STZ FilePosition         // FilePositionL
         STZ FilePosition + 1     // FilePositionH
-        STZ SectorPosition       // Byte position within current sector
-        
-        // Set operation mode flags
-        LDA #0b00000011          // Bit 0: save mode, Bit 1: file open
-        STA FileSystemFlags
+        STZ SectorPositionL      // Byte position within current sector
+        STZ SectorPositionH
         
         // Clear next sector (will be allocated when needed)
         STZ NextFileSector
@@ -839,7 +795,6 @@ LDA #'d' Debug.COut();
     const string nextSectorLabel     = "NextFileSector: ";
     const string filePositionLabel   = "FilePosition: ";
     const string sectorPositionLabel = "SectorPosition: ";
-    const string flagsLabel          = "FileSystemFlags: ";
     
     // Dump directory entries (assumes directory loaded in DirectoryBuffer)
     dumpDirectoryEntries()
@@ -1166,71 +1121,19 @@ LDA #'d' Debug.COut();
         Print.Hex();
         Print.NewLine();
         
-        // SectorPosition
+        // SectorPosition (16-bit)
         LDA #(sectorPositionLabel % 256)
         STA ZP.STRL
         LDA #(sectorPositionLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA SectorPosition
+        LDA SectorPositionL
+        STA ZP.TOPL
+        LDA SectorPositionH  
+        STA ZP.TOPH
+        LDA #0
+        STA ZP.TOPT
         Print.Hex();
-        Print.NewLine();
-        
-        // FileSystemFlags (binary representation)
-        LDA #(flagsLabel % 256)
-        STA ZP.STRL
-        LDA #(flagsLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        LDA FileSystemFlags
-        Print.Hex();
-        LDA #' '
-        Print.Char();
-        LDA #'('
-        Print.Char();
-        
-        // Print flag meanings
-        LDA FileSystemFlags
-        AND #0b00000001
-        if (NZ)
-        {
-            LDA #'S'               // Save mode
-            Print.Char();
-        }
-        else
-        {
-            LDA #'L'               // Load mode
-            Print.Char();
-        }
-        
-        LDA FileSystemFlags
-        AND #0b00000010
-        if (NZ)
-        {
-            LDA #'O'               // Open
-            Print.Char();
-        }
-        else
-        {
-            LDA #'C'               // Closed
-            Print.Char();
-        }
-        
-        LDA FileSystemFlags
-        AND #0b00000100
-        if (NZ)
-        {
-            LDA #'E'               // EOF
-            Print.Char();
-        }
-        else
-        {
-            LDA #'-'               // Not EOF
-            Print.Char();
-        }
-        
-        LDA #')'
-        Print.Char();
         Print.NewLine();
         
         SEC                        // Always successful
