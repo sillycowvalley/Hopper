@@ -7,6 +7,85 @@ This document specifies the low-level file system architecture for HopperBASIC's
 
 ---
 
+## Usage Examples
+
+### **File Save Operation State Flow**
+```hopper
+StartSave("HELLO.BAS"):
+- Load FAT into FATBuffer (cached for entire operation)
+- Find free directory entry: CurrentFileEntry = 3
+- Allocate first sector: FileStartSector = 45, CurrentFileSector = 45
+- Initialize state: FilePosition = 0, SectorPosition = 0
+- Set flags: FileSystemFlags = 0b00000011 (save mode + file open)
+
+AppendStream(data, 100 bytes):
+- Copy data to FileDataBuffer[SectorPosition..SectorPosition+100]
+- Update counters: SectorPosition += 100, FilePosition += 100
+- No sector write needed yet (buffer not full)
+
+AppendStream(data, 200 bytes):
+- Copy 156 bytes to fill FileDataBuffer[100..255]
+- Write FileDataBuffer to CurrentFileSector (45)
+- Allocate new sector from FATBuffer: NextFileSector = 78
+- Link sectors: FATBuffer[45] = 78, FATDirty = 1
+- Copy remaining 44 bytes to FileDataBuffer[0..43]
+- Update state: CurrentFileSector = 78, SectorPosition = 44
+
+EndSave():
+- Write final FileDataBuffer to CurrentFileSector if dirty
+- Mark final sector: FATBuffer[78] = 1 (end of chain)
+- Update directory entry: startSector=45, fileLength=344
+- Flush cached data: write FATBuffer to sector 0, directory to sector 1
+- Clear state: FileSystemFlags = 0, FATDirty = 0, DirectoryDirty = 0
+```
+
+### **File Load Operation State Flow**
+```hopper
+StartLoad("HELLO.BAS"):
+- Load FAT into FATBuffer (cached for entire operation)
+- Search directory: CurrentFileEntry = 3, FileStartSector = 45
+- Initialize state: CurrentFileSector = 45, FileBytesRemaining = 344
+- Set flags: FileSystemFlags = 0b00000010 (load mode + file open)
+- Read first sector into FileDataBuffer
+
+NextStream() - First call:
+- Return pointer: FileDataBuffer + SectorPosition (0)
+- Return length: min(256, FileBytesRemaining) = 256
+- Update state: SectorPosition = 256, FileBytesRemaining = 88
+
+NextStream() - Second call:
+- Follow chain: NextFileSector = FATBuffer[45] = 78
+- Read sector 78 into FileDataBuffer, CurrentFileSector = 78
+- Return pointer: FileDataBuffer + 0
+- Return length: min(256, FileBytesRemaining) = 88
+- Update state: FileBytesRemaining = 0, FileSystemFlags |= 0b00000100 (EOF)
+
+NextStream() - Third call:
+- Check FileBytesRemaining = 0: return NC (end of file)
+```
+
+### **Directory Operations**
+```hopper
+DirectoryList():
+- Read directory sector into WorkingSectorBuffer
+- For each 16-byte entry in WorkingSectorBuffer[0..255]:
+  - Check fileLength != 0 (entry in use)
+  - Parse filename: scan bytes until high bit found
+  - Print filename and fileLength to serial
+- No FAT operations needed, single sector read
+
+DeleteFile("HELLO.BAS"):
+- Read directory into WorkingSectorBuffer, find CurrentFileEntry = 3
+- Load FAT into FATBuffer
+- Follow chain starting from FileStartSector = 45:
+  - FATBuffer[45] = 78 → FATBuffer[78] = 1 (end)
+  - Mark free: FATBuffer[45] = 0, FATBuffer[78] = 0
+- Clear directory entry: WorkingSectorBuffer[48..63] = zeros
+- Write updates: FATBuffer to sector 0, WorkingSectorBuffer to sector 1
+```
+
+---
+
 ## Design Philosophy
 
 ### **Storage Engine Focus**
@@ -115,48 +194,61 @@ Data Storage:
 
 ## Zero Page Usage
 
-### **File System Operations (Reusing Existing Allocations)**
+### **Core File State (Reusing ZP.F/L Allocations)**
 ```
-ZP.FSOURCEADDRESS (0x5F-0x60):     Source buffer/sector address
-  - Sector addresses for EEPROM operations
-  - Source buffer addresses for data transfers
-  
-ZP.FDESTINATIONADDRESS (0x61-0x62): Destination buffer/sector address  
-  - Target buffer addresses for EEPROM reads
-  - Destination addresses for data copies
-  
-ZP.FLENGTH (0x63-0x64):            Transfer length/byte counts
-  - Data transfer lengths
-  - File sizes and remaining bytes
+const byte CurrentFileEntry     = ZP.LCURRENT;      // (0x65) Directory entry index (0-15)
+const byte CurrentFileSector    = ZP.LCURRENTH;     // (0x66) Current sector number in file
 
-ZP.LCURRENT (0x65-0x66):   Current sector/directory entry pointer
-  - Current sector number during chain following
-  - Current file entry offset during directory operations
-  
-ZP.LHEAD (0x67-0x68):      File start sector/directory position
-  - File start sector number
-  - Directory entry base address
-  
-ZP.LPREVIOUS (0x6B-0x6C):  Previous sector in chain
-  - For chain manipulation and deallocation
-  - Directory entry management
-  
-ZP.LNEXT (0x6D-0x6E):      Next sector in chain
-  - Next sector number in file chain
-  - Chain traversal state
+const byte FilePosition         = ZP.LHEAD;         // (0x67-0x68) Current byte position in file (16-bit)
+const byte FilePositionL        = ZP.LHEADL;        // (0x67)
+const byte FilePositionH        = ZP.LHEADH;        // (0x68)
+
+const byte FileBytesRemaining   = ZP.LPREVIOUS;     // (0x6B-0x6C) Bytes left to read/write (16-bit)
+const byte FileBytesRemainingL  = ZP.LPREVIOUSL;    // (0x6B)
+const byte FileBytesRemainingH  = ZP.LPREVIOUSH;    // (0x6C)
+
+const byte SectorPosition       = ZP.LHEADX;        // (0x6A) Byte position within current sector (0-255)
+const byte NextFileSector       = ZP.LNEXTL;        // (0x6D) Next sector in chain (from FAT)
+const byte FileStartSector      = ZP.LNEXTH;        // (0x6E) First sector of current file
+
+const byte FileSystemFlags      = ZP.FSIGN;         // (0x69) Operation mode and status flags
+// Bit 0: Operation mode (0=load, 1=save)
+// Bit 1: File is open flag
+// Bit 2: End of file reached
+// Bit 3: FAT modified (needs flush)
+
+const byte SectorSourceL        = ZP.FSOURCEADDRESSL;      // (0x5F) Source address for sector ops  
+const byte SectorSourceH        = ZP.FSOURCEADDRESSH;     // (0x60)
+const byte SectorDestL          = ZP.FDESTINATIONADDRESSL; // (0x61) Destination address for sector ops
+const byte SectorDestH          = ZP.FDESTINATIONADDRESSH;// (0x62)
+const byte TransferLength       = ZP.FLENGTHL;             // (0x63-0x64) Bytes to transfer
+const byte TransferLengthL      = ZP.FLENGTHL;             // (0x63)
+const byte TransferLengthH      = ZP.FLENGTHH;             // (0x64)
 ```
 
-### **File System Status (Existing Allocations)**
+### **Extended File System State (Using ZP.M Allocations)**
 ```
-ZP.FSIGN (0x69):           File operation flags/status
-  - Bit 0: Read/Write mode flag
-  - Bit 1: File open flag
-  - Bit 2: End of file flag
-  - Bit 3: Operation success flag
-  
-ZP.LHEADX (0x6A):          File handle/operation workspace
-  - Current file handle index (0-15)
-  - Temporary calculation workspace
+const byte DirectoryDirty       = ZP.M1;           // Directory needs write-back (0=clean, 1=dirty)
+const byte FATDirty            = ZP.M2;           // FAT needs write-back (0=clean, 1=dirty)
+const byte LastAllocatedSector  = ZP.M3;           // Last sector allocated (optimization hint)
+
+const byte StreamBytesAvailable = ZP.M4;           // Bytes available in current NextStream() call
+const byte StreamMode          = ZP.M5;           // 0=none, 1=save, 2=load
+const byte PendingSectorWrite  = ZP.M6;           // Sector number waiting to be written (0=none)
+
+const byte FreeSectorCount     = ZP.M7;           // Cache of free sectors (0=unknown, recalculate)
+const byte OpenFileCount       = ZP.M8;           // Number of files in directory (0-16)
+
+const byte TempSector          = ZP.M9;           // Temporary sector number for operations
+const byte TempByte1           = ZP.M10;          // General temporary storage
+const byte TempByte2           = ZP.M11;          // General temporary storage
+
+// Future expansion (5 slots available)
+const byte Reserved1           = ZP.M12;          // Available for future features
+const byte Reserved2           = ZP.M13;          // Available for future features  
+const byte Reserved3           = ZP.M14;          // Available for future features
+const byte Reserved4           = ZP.M15;          // Available for future features
+const byte Reserved5           = ZP.M16;          // Available for future features
 ```
 
 ---
