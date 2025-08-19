@@ -294,7 +294,8 @@ Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char();
         STA ZP.STRH
         LDA #(TestFileOne % 256)
         STA ZP.STRL
-Print.NewLine(); Print.String();        
+Print.NewLine(); Print.String();  LDA #':' Print.Char();      
+Print.NewLine(); 
 Print.NewLine(); 
         
         File.StartSave();
@@ -338,12 +339,17 @@ Print.NewLine();
             Error.CheckAndPrint();
         }
         
-        /*
+LDA #1 // reload after file one
+File.DumpDriveState();
+File.DumpFileState();        
+        
+        
         LDA #(TestFileTwo / 256)
         STA ZP.STRH
         LDA #(TestFileTwo % 256)
         STA ZP.STRL
-Print.NewLine(); Print.String();        
+Print.NewLine(); Print.String();  LDA #':' Print.Char();      
+Print.NewLine(); 
 Print.NewLine(); 
         
         File.StartSave();
@@ -372,29 +378,24 @@ Print.NewLine();
             Error.CheckAndPrint();
         }
 
-LDA #0 // don't load
+LDA #1 // reload after file two
 File.DumpDriveState();
 File.DumpFileState();
-*/
 
 
-/*
+
 Print.NewLine();        
 LDA #(FATBuffer / 256)
 Debug.DumpPage();
 Print.NewLine();        
 
 Print.NewLine();        
-LDA #(FileDataBuffer / 256)
+LDA #(DirectoryBuffer / 256)
 Debug.DumpPage();
 Print.NewLine();        
-*/
 
-Print.NewLine();
-Print.NewLine();
 
-LDA #1 // load
-File.DumpDriveState();
+
         
         LDA #(msgComplete % 256)
         STA ZP.STRL
