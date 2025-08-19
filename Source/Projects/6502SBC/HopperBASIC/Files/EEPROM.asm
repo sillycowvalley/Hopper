@@ -36,7 +36,7 @@ unit EEPROM
         if (BBS1, ZP.PLUGNPLAY) // Test bit 1
         {
             SEC  // Set C flag (C = EEPROM present)
-            return
+            return;
         }
         CLC      // Clear C flag (NC = no EEPROM)
     }

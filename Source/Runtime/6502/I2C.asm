@@ -16,6 +16,8 @@ unit I2C
     Scan()
     {
         // I2C address in A
+        LDA #1
+        STA ZP.LastAck
         ASL                // always 'write'
         STA ZP.OutB        // Save addr + r/w bit
         Start();
