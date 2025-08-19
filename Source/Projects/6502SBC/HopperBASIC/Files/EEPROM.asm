@@ -4,7 +4,7 @@ unit EEPROM
     uses "/Source/Runtime/6502/Devices/SerialEEPROM"
     
     // I2C and EEPROM initialization for Hopper BASIC
-    // Returns: ZP.PLUGNPLAY with device status bits set
+    // Returns: ZP.PLUGNPLAY with device status bits set, C for success, NC for failure to find EEPROM
     Initialize()
     {
         STZ ZP.PLUGNPLAY
@@ -19,7 +19,12 @@ unit EEPROM
         if (Z)
         {
             SMB1 ZP.PLUGNPLAY
+            SEC
         }     
+        else
+        {
+            CLC
+        }
     }
     
     // Test if EEPROM is present and responding

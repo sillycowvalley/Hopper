@@ -32,6 +32,7 @@ program EEPROMTest
     uses "./Objects/Table"
     uses "./Objects/Objects"
     uses "./Objects/String"
+    uses "./Objects/Char"
     
     uses "./Utilities/Print"
     uses "./Utilities/Tools"
@@ -121,8 +122,10 @@ program EEPROMTest
         // Copy string including null terminator
         Memory.Copy();
         
+        /*
         LDA #0x10
         DumpPage();       
+        */
     }
     
     LoadTestDataTwo()
@@ -168,18 +171,17 @@ program EEPROMTest
         // Copy string including null terminator
         Memory.Copy();
         
+        /*
         LDA #0x10
         DumpPage();
         LDA #0x11
         DumpPage();
+        */
     }
     
     // Main entry point
     Hopper()
     {
-        LoadTestDataOne();
-        LoadTestDataTwo();
-        
         
         Initialize();
         
@@ -273,12 +275,43 @@ program EEPROMTest
         {
 Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char(); 
         }
+        /*
         File.DumpDriveState();
         if (NC)
         {
-Print.NewLine(); LDA #'D' Print.Char(); LDA #'!' Print.Char(); 
+            Error.CheckAndPrint();
         }
-               
+        */
+        
+        //LoadTestDataOne();
+        //LoadTestDataTwo();
+        
+        LDA #(TestFileOne / 256)
+        STA ZP.STRH
+        LDA #(TestFileOne % 256)
+        STA ZP.STRL
+Debug.NL(); Print.String();        
+Debug.NL(); 
+        
+        File.StartSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+File.DumpDriveState();
+File.DumpFileState();
+
+Debug.NL();        
+LDA #(FATBuffer / 256)
+Debug.DumpPage();
+Debug.NL();        
+
+Debug.NL();        
+LDA #(FileDataBuffer / 256)
+Debug.DumpPage();
+Debug.NL();        
+        
         LDA #(msgComplete % 256)
         STA ZP.STRL
         LDA #(msgComplete / 256)

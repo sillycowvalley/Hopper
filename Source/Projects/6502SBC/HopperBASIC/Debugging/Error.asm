@@ -76,8 +76,12 @@ unit Error // ErrorID.asm
         
         // Table 2 (bits 6-5 = 10): Additional words (0x40-0x5F)
         EXPRESSION = 0x40,  // "EXPRESSION"
+        FILENAME   = 0x41,  // "FILENAME"
+        DIRECTORY  = 0x42,  // "DIRECTORY"
+        FULL       = 0x43,  // "FULL"
+        EEPROM     = 0x44,  // "EEPROM"
         
-        // Tables 2 & 3 available for future expansion (0x41-0x7F)
+        // Tables 2 & 3 available for future expansion (0x45-0x7F)
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -120,6 +124,10 @@ unit Error // ErrorID.asm
     // Table 2: Additional words (0x40-0x5F)
     const byte[] errorWordsTable2 = {
         10, ErrorWord.EXPRESSION, 'E', 'X', 'P', 'R', 'E', 'S', 'S', 'I', 'O', 'N',
+        8,  ErrorWord.FILENAME,   'F', 'I', 'L', 'E', 'N', 'A', 'M', 'E',
+        9,  ErrorWord.DIRECTORY,  'D', 'I', 'R', 'E', 'C', 'T', 'O', 'R', 'Y',
+        4,  ErrorWord.FULL,       'F', 'U', 'L', 'L',
+        6,  ErrorWord.EEPROM,     'E', 'E', 'P', 'R', 'O', 'M',
         0  // End marker
     };
     
@@ -204,6 +212,11 @@ unit Error // ErrorID.asm
         ForIteratorLocal,
         RangeError,
         ExpectedRightBracket,
+        InvalidFilename,
+        DirectoryFull,
+        EEPROMFull,
+        FileExists,
+        EEPROMError,
     }
     
     const byte[] errorMessages = {
@@ -226,29 +239,34 @@ unit Error // ErrorID.asm
         2, ErrorID.UndefinedIdentifier,        ErrorWord.UNDEFINED, ErrorWord.IDENTIFIER,
         2, ErrorID.ConstantExpected,           Token.CONST, ErrorWord.EXPECTED,
         3, ErrorID.ConstantExpressionExpected, Token.CONST, ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
-        2, ErrorID.IllegalIdentifier,         ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
-        2, ErrorID.IllegalAssignment,         ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
-        2, ErrorID.IllegalCharacter,          ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
+        2, ErrorID.ExpectedThen,               Token.THEN, ErrorWord.EXPECTED,
+        2, ErrorID.IllegalIdentifier,          ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
+        2, ErrorID.IllegalAssignment,          ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
+        2, ErrorID.IllegalCharacter,           ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
         2, ErrorID.InvalidOperator,            ErrorWord.INVALID, ErrorWord.OPERATOR,
         2, ErrorID.BufferOverflow,             ErrorWord.BUFFER, ErrorWord.OVERFLOW,
-        2, ErrorID.ExpectedRightParen,        ErrorWord.RPAREN, ErrorWord.EXPECTED,
-        2, ErrorID.ExpectedLeftParen,         ErrorWord.LPAREN, ErrorWord.EXPECTED,
-        2, ErrorID.ExpectedEqual,             ErrorWord.EQUALS, ErrorWord.EXPECTED,
-        6, ErrorID.UnexpectedEOL,             ErrorWord.UNEXPECTED, ErrorWord.END, ErrorWord.OF, ErrorWord.LINE, ErrorWord.IN, ErrorWord.LITERAL,
-        2, ErrorID.ExpectedExpression,        ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedRightParen,         ErrorWord.RPAREN, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedLeftParen,          ErrorWord.LPAREN, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedEqual,              ErrorWord.EQUALS, ErrorWord.EXPECTED,
+        6, ErrorID.UnexpectedEOL,              ErrorWord.UNEXPECTED, ErrorWord.END, ErrorWord.OF, ErrorWord.LINE, ErrorWord.IN, ErrorWord.LITERAL,
+        2, ErrorID.ExpectedExpression,         ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
         3, ErrorID.InvalidBitValue,            ErrorWord.INVALID, Token.BIT, ErrorWord.VALUE,
-        4, ErrorID.IllegalInFunctionMode,     ErrorWord.ILLEGAL, ErrorWord.IN, Token.FUNC, ErrorWord.MODE,
-        3, ErrorID.OnlyAtConsole,             ErrorWord.ONLY, ErrorWord.AT, ErrorWord.CONSOLE,
-        2, ErrorID.HeapCorrupt,               ErrorWord.HEAP, ErrorWord.CORRUPT,
-        2, ErrorID.CannotRollback,            ErrorWord.CANNOT, ErrorWord.ROLLBACK,
-        1, ErrorID.Break,                     ErrorWord.BREAK,
-        3, ErrorID.LateDeclaration,           ErrorWord.NO, ErrorWord.MORE, ErrorWord.LOCALS,
-        2, ErrorID.MissingNext,               ErrorWord.MISSING, Token.NEXT,
-        2, ErrorID.NextMismatch,              Token.NEXT, ErrorWord.MISMATCH,
-        5, ErrorID.ForIteratorLocal,          Token.FOR, ErrorWord.ITERATOR, ErrorWord.MUST, ErrorWord.BE, ErrorWord.LOCAL,
-        4, ErrorID.RangeError,                ErrorWord.VALUE, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
-        2, ErrorID.ExpectedRightBracket,      ErrorWord.RBRACKET, ErrorWord.EXPECTED,
-        2, ErrorID.ExpectedThen,              Token.THEN, ErrorWord.EXPECTED,
+        4, ErrorID.IllegalInFunctionMode,      ErrorWord.ILLEGAL, ErrorWord.IN, Token.FUNC, ErrorWord.MODE,
+        3, ErrorID.OnlyAtConsole,              ErrorWord.ONLY, ErrorWord.AT, ErrorWord.CONSOLE,
+        2, ErrorID.HeapCorrupt,                ErrorWord.HEAP, ErrorWord.CORRUPT,
+        2, ErrorID.CannotRollback,             ErrorWord.CANNOT, ErrorWord.ROLLBACK,
+        1, ErrorID.Break,                      ErrorWord.BREAK,
+        3, ErrorID.LateDeclaration,            ErrorWord.NO, ErrorWord.MORE, ErrorWord.LOCALS,
+        2, ErrorID.MissingNext,                ErrorWord.MISSING, Token.NEXT,
+        2, ErrorID.NextMismatch,               Token.NEXT, ErrorWord.MISMATCH,
+        5, ErrorID.ForIteratorLocal,           Token.FOR, ErrorWord.ITERATOR, ErrorWord.MUST, ErrorWord.BE, ErrorWord.LOCAL,
+        4, ErrorID.RangeError,                 ErrorWord.VALUE, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
+        2, ErrorID.ExpectedRightBracket,       ErrorWord.RBRACKET, ErrorWord.EXPECTED,
+        2, ErrorID.InvalidFilename,            ErrorWord.INVALID, ErrorWord.FILENAME,
+        2, ErrorID.DirectoryFull,              ErrorWord.DIRECTORY, ErrorWord.FULL,
+        2, ErrorID.EEPROMFull,                 ErrorWord.EEPROM, ErrorWord.FULL,
+        2, ErrorID.FileExists,                 ErrorWord.FILE, ErrorWord.EXISTS,
+        2, ErrorID.EEPROMError,                ErrorWord.EEPROM, ErrorWord.ERROR,
         
         0  // End marker
     };
@@ -673,9 +691,45 @@ unit Error // ErrorID.asm
         STA ZP.LastError
         CLC
     }
+    
     ExpectedThen()
     {
         LDA #ErrorID.ExpectedThen
+        STA ZP.LastError
+        CLC
+    }
+
+    InvalidFilename()
+    {
+        LDA #ErrorID.InvalidFilename
+        STA ZP.LastError
+        CLC
+    }
+
+    DirectoryFull()
+    {
+        LDA #ErrorID.DirectoryFull
+        STA ZP.LastError
+        CLC
+    }
+
+    EEPROMFull()
+    {
+        LDA #ErrorID.EEPROMFull
+        STA ZP.LastError
+        CLC
+    }
+
+    FileExists()
+    {
+        LDA #ErrorID.FileExists
+        STA ZP.LastError
+        CLC
+    }
+
+    EEPROMError()
+    {
+        LDA #ErrorID.EEPROMError
         STA ZP.LastError
         CLC
     }
@@ -840,6 +894,10 @@ unit Error // ErrorID.asm
             
             // Check for HeapCorrupt
             CMP #ErrorID.HeapCorrupt
+            if (Z) { SEC break; } // Fatal
+
+            // Check for EEPROMError
+            CMP #ErrorID.EEPROMError
             if (Z) { SEC break; } // Fatal
             
             // Not a fatal error

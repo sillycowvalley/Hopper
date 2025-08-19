@@ -6,10 +6,26 @@ unit File
     const uint FATBuffer            = Address.FileSystemBuffers + 512;  // [512-767]
     
     // File System Zero Page Variables (aliases to existing slots)
+    const byte SectorDest           = ZP.FDESTINATIONADDRESS;
     const byte SectorDestL          = ZP.FDESTINATIONADDRESSL; // Destination address for sector ops
     const byte SectorDestH          = ZP.FDESTINATIONADDRESSH;
+    
+    const byte TransferLength       = ZP.FLENGTH;
     const byte TransferLengthL      = ZP.FLENGTHL;             // Bytes to transfer (LSB)
     const byte TransferLengthH      = ZP.FLENGTHH;             // Bytes to transfer (MSB)
+    
+    const byte CurrentFileSector    = ZP.LCURRENTH;            // Current sector number in file
+    const byte FileStartSector      = ZP.LNEXTH;               // First sector of current file
+    const byte CurrentFileEntry     = ZP.LCURRENTL;            // Directory entry index (0-15)
+    
+    const byte FilePosition         = ZP.LHEADL;               // Current byte position in file (16-bit)
+    const byte FilePositionL        = ZP.LHEADL;               //    "
+    const byte FilePositionH        = ZP.LHEADH;               //    "
+    
+    const byte SectorPosition       = ZP.LHEADX;               // Byte position within current sector (0-255)
+    const byte FileSystemFlags      = ZP.FSIGN;                // Operation mode and status flags
+    
+    const byte NextFileSector       = ZP.LNEXTL;               // Next sector in chain (from FAT)
 
     // Check if character is valid for filename (alphanumeric + period)
     // Input: A = character to test
@@ -46,62 +62,32 @@ unit File
     // Input: ZP.STR = pointer to null-terminated uppercase string
     // Output: C set if valid filename, NC if invalid
     //         A = actual string length
-    // Preserves: X, Y, ZP.STR
-    // Munts: A only
+    // Preserves: X, ZP.STR
+    // Munts: A, Y only
     ValidateFilename()
     {
-        PHY
+        String.Length();  // Returns length in Y
         
-        loop // single exit block
+        loop
         {
-            // Get string length
-            LDX ZP.STRL
-            LDY ZP.STRH
-            String.Length();  // Returns length in A
+            // Check length bounds
+            CPY # 0
+            if (Z) { CLC break; }  // Invalid - empty
+            CPY # 13
+            if (C){ CLC break; }   // Invalid - too long  
             
-            // Check length bounds (1-12 characters)
-            if (Z)  // Length is 0
-            {
-                CLC  // Invalid - empty filename
-                break;
-            }
-            
-            CMP #13
-            if (C)  // Length >= 13
-            {
-                CLC  // Invalid - filename too long
-                break;
-            }
-            
-            // Length is valid (1-12), now check each character
-            // Save length for return value
-            PHA  // Save length on stack
-            
+            // Check each character
             LDY #0
-            loop  // Character validation loop
+            loop
             {
                 LDA [ZP.STR], Y
-                if (Z) { break; }  // End of string - all characters valid
-                
+                if (Z)  { SEC break; }// Valid - reached end
                 IsValidFilenameChar();
-                if (NC)
-                {
-                    // Invalid character found
-                    PLA  // Restore length to A
-                    CLC  // Invalid filename
-                    break;  // Exit both loops
-                }
-                
+                if (NC){ CLC break; } // Invalid character
                 INY
             }
-            
-            // If we get here, all characters were valid
-            PLA  // Restore length to A
-            SEC  // Valid filename
             break;
         } // single exit
-        
-        PLY
     }
     
     // List all files in directory
@@ -126,13 +112,10 @@ unit File
     // Format EEPROM and initialize empty file system
     // Output: C set if format successful, NC if error
     //         All existing files destroyed, file system reset
-    // Preserves: X, Y
-    // Munts: A, entire EEPROM contents
+    // Munts: A, X, Y, entire EEPROM contents
     // Note: User confirmation already handled by Console before calling
     Format()
     {
-        PHX
-        PHY
         loop
         {
             // Clear and initialize FAT
@@ -154,39 +137,274 @@ unit File
             SEC
             break;
         } // single exit
-        PLY
-        PLX
+    }
+    
+    
+    // Create new file for writing (or overwrite existing)
+    // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+    // Output: C set if successful, NC if error
+    // Munts: A, X, Y, file system state
+    StartSave()
+    {
+        loop // Single exit for cleanup
+        {
+            // Validate filename format
+            File.ValidateFilename();
+            if (NC)
+            {
+                Error.InvalidFilename(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            // Load directory and FAT into buffers
+            loadDirectory();
+            loadFAT();
+            
+            // Find free directory entry (or existing file to overwrite)
+            findFreeDirectoryEntry();
+            if (NC)
+            {
+                Error.DirectoryFull(); BIT ZP.EmulatorPCL
+                break;
+            }
+            // CurrentFileEntry now contains entry index (0-15)
+            
+            // Allocate first sector for file data
+            allocateFirstSector();
+            if (NC)
+            {
+                Error.EEPROMFull(); BIT ZP.EmulatorPCL
+                break;
+            }
+            // FileStartSector and CurrentFileSector now set
+            
+            // Initialize file state for save operation
+            initializeSaveState();
+            
+            // Clear file data buffer
+            clearFileDataBuffer();
+            
+            // Success - file ready for AppendStream calls
+            SEC
+            break;
+        }
+        
     }
     
     //==============================================================================
-    // WORKER FUNCTIONS (commonly used operations)
+    // HELPER METHODS for StartSave
     //==============================================================================
+    
+    // Find free directory entry (or existing file to overwrite)
+    // Output: C set if entry found, NC if directory full
+    //         CurrentFileEntry = entry index (0-15) if found
+    // Munts: A, Y
+    findFreeDirectoryEntry()
+    {
+        LDY #0                   // Directory entry index (0, 1, 2, ..., 15)
+        
+        loop
+        {
+            // Calculate byte offset: Y * 16
+            TYA
+            ASL ASL ASL ASL      // Y * 16 = directory entry offset
+            TAX                  // X = byte offset in directory
+            
+            // Check if entry is free (fileLength == 0)
+            LDA WorkingSectorBuffer + 0, X  // Length LSB
+            ORA WorkingSectorBuffer + 1, X  // Length MSB
+            if (Z)
+            {
+                // Found free entry
+                STY CurrentFileEntry
+                SEC
+                return;
+            }
+            
+            // Check if filename matches (for overwrite)
+            checkFilenameMatch();
+            if (C)
+            {
+                // Found existing file - overwrite it
+                STY CurrentFileEntry
+                SEC
+                return;
+            }
+            
+            INY
+            CPY #16              // 16 entries maximum
+            if (Z)
+            {
+                // Directory full
+                CLC
+                return;
+            }
+        }
+    }
+    
+    // Check if current directory entry filename matches ZP.STR
+    // Input: X = directory entry byte offset, ZP.STR = filename to match
+    // Output: C set if match, NC if no match
+    // Preserves: X, Y
+    // Munts: A
+    checkFilenameMatch()
+    {
+        PHA
+        PHY
+        
+        // Point to filename field in directory entry (offset +3)
+        TXA
+        CLC
+        ADC #3
+        TAY                      // Y = filename start in WorkingSectorBuffer
+        
+        LDY #0                   // Index into ZP.STR filename
+        LDX #3                   // Index into directory filename field
+        
+        loop
+        {
+            // Get character from input filename
+            LDA [ZP.STR], Y
+            if (Z)                // End of input filename
+            {
+                // Check if directory filename also ends here
+                TXA
+                CLC
+                ADC CurrentFileEntry
+                ASL ASL ASL ASL      // * 16 for entry offset
+                CLC
+                ADC #3               // + 3 for filename field
+                TAX
+                LDA WorkingSectorBuffer, X
+                if (MI)              // High bit set = last char
+                {
+                    SEC              // Perfect match
+                }
+                else
+                {
+                    CLC              // Input ended but directory name continues
+                }
+                break;
+            }
+            
+            // Get character from directory filename
+            TXA
+            CLC
+            ADC CurrentFileEntry
+            ASL ASL ASL ASL          // * 16 for entry offset  
+            TAX
+            LDA WorkingSectorBuffer, X
+            AND #0x7F                // Clear high bit for comparison
+            
+            // Compare characters
+            CMP [ZP.STR], Y
+            if (NZ)
+            {
+                CLC                  // No match
+                break;
+            }
+            
+            // Check if this was last character in directory name
+            LDA WorkingSectorBuffer, X
+            if (MI)                  // High bit set = last character
+            {
+                // Directory name ended, check if input also ends
+                INY
+                LDA [ZP.STR], Y
+                if (Z)
+                {
+                    SEC              // Perfect match
+                }
+                else
+                {
+                    CLC              // Directory ended but input continues  
+                }
+                break;
+            }
+            
+            INY                      // Next character
+            INX
+            CPX #16                  // Max filename length (13 + 3 header bytes)
+            if (Z)
+            {
+                CLC                  // Filename too long - no match
+                break;
+            }
+        }
+        
+        PLY
+        PLA
+    }
+    
+    // Allocate first free sector from FAT
+    // Output: C set if sector allocated, NC if disk full
+    //         FileStartSector and CurrentFileSector = allocated sector number
+    // Munts: A, Y
+    allocateFirstSector()
+    {
+        LDY #2                   // Start from sector 2 (skip FAT and directory)
+        
+        loop
+        {
+            LDA FATBuffer, Y
+            if (Z)                // Free sector found
+            {
+                // Mark sector as end-of-chain (initial single sector file)
+                LDA #1
+                STA FATBuffer, Y
+                
+                // Set file state
+                STY FileStartSector
+                STY CurrentFileSector
+                
+                SEC
+                break;
+            }
+            
+            INY
+            if (Z)                // Y wrapped to 0 - checked all sectors
+            {
+                CLC               // Disk full
+                break;
+            }
+        } // single exit
+    }
+    
+    // Initialize file state for save operation
+    // Munts: A
+    initializeSaveState()
+    {
+        // Clear file position counters
+        STZ FilePosition         // FilePositionL
+        STZ FilePosition + 1     // FilePositionH
+        STZ SectorPosition       // Byte position within current sector
+        
+        // Set operation mode flags
+        LDA #0b00000011          // Bit 0: save mode, Bit 1: file open
+        STA FileSystemFlags
+        
+        // Clear next sector (will be allocated when needed)
+        STZ NextFileSector
+    }
+    
+    // Clear file data buffer to all zeros
+    clearFileDataBuffer()
+    {
+        LDA #(FileDataBuffer / 256) // MSB - assume page aligned
+        Memory.ClearPage();
+    }
     
     // Clear FAT buffer to all zeros
     clearFATBuffer()
     {
-        LDA #(FATBuffer % 256)
-        STA SectorDestL
-        LDA #(FATBuffer / 256)
-        STA SectorDestH
-        LDA #0
-        STA TransferLengthL
-        LDA #1                    // 256 bytes (1 page)
-        STA TransferLengthH
-        Memory.Clear();
+        LDA #(FATBuffer / 256) // MSB - assume page aligned
+        Memory.ClearPage();
     }
     
     // Clear directory buffer to all zeros  
     clearDirectoryBuffer()
     {
-        LDA #(WorkingSectorBuffer % 256)
-        STA SectorDestL
-        LDA #(WorkingSectorBuffer / 256)
-        STA SectorDestH
-        LDA #0
-        STA TransferLengthL
-        LDA #1                    // 256 bytes (1 page)
-        STA TransferLengthH
+        LDA #(WorkingSectorBuffer / 256) // MSB - assume page aligned
         Memory.Clear();
     }
     
@@ -314,6 +532,15 @@ unit File
     const string freeLabel   = "Free sectors: ";
     const string usedLabel   = "Used sectors: ";
     const string endLabel    = "End-of-chain: ";
+    
+    const string fileStateHeader     = "=== FILE STATE ===";
+    const string currentEntryLabel   = "CurrentFileEntry: ";  
+    const string startSectorLabel    = "FileStartSector: ";
+    const string currentSectorLabel  = "CurrentFileSector: ";
+    const string nextSectorLabel     = "NextFileSector: ";
+    const string filePositionLabel   = "FilePosition: ";
+    const string sectorPositionLabel = "SectorPosition: ";
+    const string flagsLabel          = "FileSystemFlags: ";
     
     // Dump directory entries (assumes directory loaded in WorkingSectorBuffer)
     dumpDirectoryEntries()
@@ -570,5 +797,151 @@ unit File
         STA ZP.TOPT
         Print.Decimal();
     }
+    
+    // Dump current file operation state (ZP variables)
+    // Output: File state printed to serial, C set if successful  
+    // Preserves: X, Y
+    // Munts: A
+    DumpFileState()
+    {
+        PHX
+        PHY
+        
+        // Print header
+        LDA #(fileStateHeader % 256)
+        STA ZP.STRL
+        LDA #(fileStateHeader / 256)
+        STA ZP.STRH
+        Print.String();
+        Print.NewLine();
+        
+        // CurrentFileEntry
+        LDA #(currentEntryLabel % 256)
+        STA ZP.STRL
+        LDA #(currentEntryLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA CurrentFileEntry
+        Print.Hex();
+        Print.NewLine();
+        
+        // FileStartSector  
+        LDA #(startSectorLabel % 256)
+        STA ZP.STRL
+        LDA #(startSectorLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA FileStartSector
+        Print.Hex();
+        Print.NewLine();
+        
+        // CurrentFileSector
+        LDA #(currentSectorLabel % 256)
+        STA ZP.STRL
+        LDA #(currentSectorLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA CurrentFileSector
+        Print.Hex();
+        Print.NewLine();
+        
+        // NextFileSector
+        LDA #(nextSectorLabel % 256)
+        STA ZP.STRL
+        LDA #(nextSectorLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA NextFileSector
+        Print.Hex();
+        Print.NewLine();
+        
+        // FilePosition (16-bit)
+        LDA #(filePositionLabel % 256)
+        STA ZP.STRL
+        LDA #(filePositionLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA FilePosition         // FilePositionL
+        STA ZP.TOPL
+        LDA FilePosition + 1     // FilePositionH  
+        STA ZP.TOPH
+        LDA #0
+        STA ZP.TOPT
+        Print.Hex();
+        Print.NewLine();
+        
+        // SectorPosition
+        LDA #(sectorPositionLabel % 256)
+        STA ZP.STRL
+        LDA #(sectorPositionLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA SectorPosition
+        Print.Hex();
+        Print.NewLine();
+        
+        // FileSystemFlags (binary representation)
+        LDA #(flagsLabel % 256)
+        STA ZP.STRL
+        LDA #(flagsLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA FileSystemFlags
+        Print.Hex();
+        LDA #' '
+        Print.Char();
+        LDA #'('
+        Print.Char();
+        
+        // Print flag meanings
+        LDA FileSystemFlags
+        AND #0b00000001
+        if (NZ)
+        {
+            LDA #'S'               // Save mode
+            Print.Char();
+        }
+        else
+        {
+            LDA #'L'               // Load mode
+            Print.Char();
+        }
+        
+        LDA FileSystemFlags
+        AND #0b00000010
+        if (NZ)
+        {
+            LDA #'O'               // Open
+            Print.Char();
+        }
+        else
+        {
+            LDA #'C'               // Closed
+            Print.Char();
+        }
+        
+        LDA FileSystemFlags
+        AND #0b00000100
+        if (NZ)
+        {
+            LDA #'E'               // EOF
+            Print.Char();
+        }
+        else
+        {
+            LDA #'-'               // Not EOF
+            Print.Char();
+        }
+        
+        LDA #')'
+        Print.Char();
+        Print.NewLine();
+        
+        SEC                        // Always successful
+        
+        PLY
+        PLX
+    }
+    
 //#endif
 }
