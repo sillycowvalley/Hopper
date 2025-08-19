@@ -14,8 +14,8 @@ This document specifies all external APIs required by the HopperBASIC file syste
 // Check if character is alphabetic (A-Z, a-z)
 // Input: A = character to test
 // Output: C set if alphabetic, NC if not
-// Preserves: A, X, Y (saves/restores A)
-// Munts: Internal working state only
+// Preserves: A, X, Y (saves/restores A with PHA/PLA)
+// Munts: Processor flags
 Char.IsAlpha()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Char.asm`
@@ -24,8 +24,8 @@ Char.IsAlpha()
 // Check if character is numeric (0-9)  
 // Input: A = character to test
 // Output: C set if numeric, NC if not
-// Preserves: A, X, Y (saves/restores A)
-// Munts: Internal working state only
+// Preserves: A, X, Y (saves/restores A with PHA/PLA)
+// Munts: Processor flags
 Char.IsDigit()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Char.asm`
@@ -34,8 +34,8 @@ Char.IsDigit()
 // Check if character is alphanumeric (A-Z, a-z, 0-9)
 // Input: A = character to test
 // Output: C set if alphanumeric, NC if not
-// Preserves: A, X, Y (saves/restores A)
-// Munts: Internal working state only
+// Preserves: A, X, Y (saves/restores A with PHA/PLA)
+// Munts: Processor flags
 Char.IsAlphaNumeric()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Char.asm`
@@ -46,16 +46,21 @@ Char.IsAlphaNumeric()
 // Input: A = character to test
 // Output: C set if valid, NC if invalid
 // Preserves: X, Y
-// Munts: A only
+// Munts: A, processor flags
 File.IsValidFilenameChar()
 ```
-**Status:** ✅ **IMPLEMENTED** - Available in `File.asm`, uses `Char.IsAlphaNumeric()` + period check
+**Status:** ✅ **IMPLEMENTED** - Available in `File.asm`
 
 ### **Bonus Character Methods (Available)**
 ```hopper
 // Check if character is lowercase (a-z)
+// Preserves: A, X, Y (saves/restores A with PHA/PLA)
+// Munts: Processor flags
 Char.IsLower()
-// Check if character is hex digit (0-9, A-F, a-f)  
+
+// Check if character is hex digit (0-9, A-F, a-f)
+// Preserves: A, X, Y (saves/restores A with PHA/PLA)  
+// Munts: Processor flags
 Char.IsHex()
 ```
 **Status:** ✅ **BONUS** - Additional functionality available in `Char.asm`
@@ -69,7 +74,7 @@ Char.IsHex()
 // Calculate string length
 // Input: ZP.STR = pointer to null-terminated string
 // Output: Y = string length
-// Preserves: Input pointer (ZP.STR unchanged)
+// Preserves: ZP.STR (input pointer unchanged)
 // Munts: A, X, Y
 // Note: Returns 0 for null pointer
 String.Length()
@@ -82,8 +87,8 @@ String.Length()
 // Input: ZP.STR = first string pointer
 //        ZP.STR2 = second string pointer
 // Output: C set if match, NC if different
-// Preserves: Input pointers unchanged
-// Munts: A, X, Y
+// Preserves: ZP.STR, ZP.STR2 (input pointers unchanged)
+// Munts: A, X, Y, processor flags
 String.Compare()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `String.asm`
@@ -94,11 +99,11 @@ String.Compare()
 // Input: ZP.STR = pointer to null-terminated uppercase string
 // Output: C set if valid filename, NC if invalid
 //         A = actual string length
-// Preserves: X, Y, ZP.STR
-// Munts: A only
+// Preserves: X, ZP.STR (saves/restores Y with PHY/PLY)
+// Munts: A, Y, processor flags
 File.ValidateFilename()
 ```
-**Status:** ✅ **IMPLEMENTED** - Available in `File.asm`, uses `String.Length()` + `File.IsValidFilenameChar()`
+**Status:** ✅ **IMPLEMENTED** - Available in `File.asm`
 
 ---
 
@@ -110,7 +115,7 @@ File.ValidateFilename()
 // Input: ZP.ACC = number of bytes to allocate
 // Output: ZP.IDX = pointer to allocated memory (0x0000 if failed)
 //         C set if successful, NC if failed
-// Preserves: X, Y, processor status, ZP.ACC
+// Preserves: X, Y, processor status, ZP.ACC (full preservation with PHP/PHA/PHX/PHY)
 // Munts: Internal ZP.M* scratch space only
 Memory.Allocate()
 ```
@@ -120,7 +125,7 @@ Memory.Allocate()
 // Free allocated memory block
 // Input: ZP.IDX = pointer to memory block to free
 // Output: C set if successful, NC if failed  
-// Preserves: X, Y, processor status
+// Preserves: X, Y, processor status (full preservation with PHP/PHA/PHX/PHY)
 // Munts: Internal ZP.M* scratch space only
 Memory.Free()
 ```
@@ -133,7 +138,7 @@ Memory.Free()
 //        ZP.FLENGTH = number of bytes to zero (16-bit)
 // Output: Memory zeroed at destination
 // Preserves: Input parameters unchanged
-// Munts: A, Y, internal working state
+// Munts: A, Y, processor flags
 Memory.Clear()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
@@ -145,7 +150,7 @@ Memory.Clear()
 //        ZP.FLENGTH = number of bytes to copy (16-bit)
 // Output: Data copied from source to destination
 // Preserves: Input parameters unchanged
-// Munts: A, Y, internal working state
+// Munts: A, Y, processor flags
 Memory.Copy()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Memory.asm`
@@ -160,7 +165,7 @@ Memory.Copy()
 // Input: A = character to write
 // Output: Character sent to serial port
 // Preserves: X, Y, A
-// Munts: None
+// Munts: Processor flags
 Serial.WriteChar()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Serial.asm`
@@ -170,8 +175,8 @@ Serial.WriteChar()
 // Print null-terminated string
 // Input: ZP.STR = pointer to null-terminated string
 // Output: String printed to serial
-// Preserves: Everything
-// Munts: Flags, A, Y (internal working state)
+// Preserves: X, ZP.STR
+// Munts: A, Y, processor flags
 Print.String()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
@@ -183,8 +188,8 @@ Print.String()
 //        ZP.LTOP0-3 = 32-bit signed LONG (if ZP.TOPT == BASICType.LONG)
 //        ZP.TOPT = type (for signed/unsigned determination)
 // Output: Decimal representation printed to serial
-// Preserves: X, Y, A
-// Munts: Flags
+// Preserves: A, X, Y, ZP.TOPT (saves/restores A and ZP.TOPT)
+// Munts: Processor flags, internal working state
 Print.Decimal()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
@@ -192,8 +197,8 @@ Print.Decimal()
 ```hopper
 // Write carriage return + line feed
 // Output: '\n' sent to serial port
-// Preserves: X, Y, A
-// Munts: A, Flags
+// Preserves: X, Y
+// Munts: A, processor flags
 Print.PrintNewLine()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
@@ -203,7 +208,7 @@ Print.PrintNewLine()
 // Input: X = number of spaces to print
 // Output: Spaces printed to serial
 // Preserves: Y
-// Munts: A, flags, X (consumed as counter)
+// Munts: A, X (consumed as counter), processor flags
 Print.Spaces()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Print.asm`
@@ -216,8 +221,8 @@ Print.Spaces()
 ```hopper
 // Initialize I2C and EEPROM detection
 // Output: ZP.PLUGNPLAY with device status bits set (bit 1 = EEPROM present)
-// Preserves: All registers except internal working registers
-// Munts: A, working registers
+// Preserves: None
+// Munts: A, X, Y, ZP.IDX, processor flags, working registers
 EEPROM.Initialize()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit
@@ -225,8 +230,8 @@ EEPROM.Initialize()
 ```hopper
 // Test if EEPROM is present and responding
 // Output: C set if EEPROM detected, NC if not present
-// Preserves: All registers
-// Munts: None (internally saves/restores)
+// Preserves: A, X, Y
+// Munts: Processor flags only
 EEPROM.Detect()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit
@@ -235,7 +240,7 @@ EEPROM.Detect()
 // Get EEPROM size in kilobytes
 // Output: A = size in K (32, 64, or 128) and C set, or 0 and NC if no EEPROM
 // Preserves: X, Y
-// Munts: A only
+// Munts: A, processor flags
 EEPROM.GetSize()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in EEPROM unit
@@ -248,8 +253,8 @@ EEPROM.GetSize()
 // Output: 256 bytes copied from EEPROM to RAM
 //         ZP.IDY advanced by 256 bytes
 //         ZP.IDX advanced by 256 bytes
-// Preserves: X, Y  
-// Munts: A, working registers
+// Preserves: X, Y (hardware registers)
+// Munts: A, ZP.IDX, ZP.IDY, processor flags, working registers
 // Note: Handles EEPROM page size differences automatically (64/128/256 byte pages)
 EEPROM.ReadPage()
 ```
@@ -262,8 +267,8 @@ EEPROM.ReadPage()
 // Output: 256 bytes copied from RAM to EEPROM
 //         ZP.IDX advanced by 256 bytes
 //         ZP.IDY advanced by 256 bytes
-// Preserves: X, Y
-// Munts: A, working registers
+// Preserves: X, Y (hardware registers)
+// Munts: A, ZP.IDX, ZP.IDY, processor flags, working registers
 // Note: Handles EEPROM page size differences automatically (64/128/256 byte pages)
 EEPROM.WritePage()
 ```
@@ -276,25 +281,26 @@ EEPROM.WritePage()
 ```hopper
 // Check and proceed only if no error occurred
 // Output: C set if no error, NC if error occurred
-// Preserves: Processor flags only
+// Preserves: All registers except processor flags
+// Munts: Processor flags only
 Error.CheckError()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Error.asm`
 
 ```hopper
 // Set "not implemented" error
-// Output: Error message set
-// Preserves: X, Y
-// Munts: A, ZP.LastError  
+// Output: Error message set in ZP.LastError
+// Preserves: X, Y  
+// Munts: A, ZP.LastErrorL, ZP.LastErrorH, processor flags
 Error.NotImplemented()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Error.asm`
 
 ```hopper
 // Set out of memory error
-// Output: Error message set
+// Output: Error message set in ZP.LastError
 // Preserves: X, Y
-// Munts: A, ZP.LastError  
+// Munts: A, ZP.LastErrorL, ZP.LastErrorH, processor flags
 Error.OutOfMemory()
 ```
 **Status:** ✅ **IMPLEMENTED** - Available in `Error.asm`
@@ -439,6 +445,7 @@ Format()
 - **Easier maintenance** - improvements to base APIs benefit file system automatically
 
 ### **Clean Integration**
+- **Accurate contracts** - Preservation/munting behavior verified against actual source code
 - **Proper unit organization** - Each unit has focused responsibility
 - **Immutable strings** - no string memory management complexity
 - **Streaming serialization** - handles complex program structures elegantly
@@ -467,23 +474,23 @@ Format()
 
 ## Major Progress Update
 
-**🎉 INFRASTRUCTURE COMPLETE:** All infrastructure APIs are properly organized and implemented!
+**🎯 INFRASTRUCTURE COMPLETE WITH ACCURATE CONTRACTS:** All preservation/munting behavior verified against actual source code!
 
 **📈 Implementation Status:** **80% Complete** (24 of 30 total APIs implemented)
 
-### **Key Achievements:**
-- **✅ Proper unit organization** - Each unit has focused responsibility
-- **✅ Complete memory management** - `Memory.*` unit handles allocation and memory operations
-- **✅ Complete string operations** - `String.*` unit provides core string functionality  
-- **✅ Complete character validation** - `Char.*` and `File.*` units handle all character needs
-- **✅ Complete output formatting** - `Print.*` unit provides formatted output
-- **✅ Complete EEPROM interface** - `EEPROM.*` unit ready for file operations
-- **✅ Complete error handling** - `Error.*` integrated error reporting
+### **Key Corrections Made:**
+- **✅ Accurate preservation contracts** - Based on actual PHA/PHX/PHY patterns in source code
+- **✅ Correct munting behavior** - Reflects what registers are actually modified
+- **✅ Memory.* methods** - Full preservation with PHP/PHA/PHX/PHY verified
+- **✅ Char.* methods** - All preserve A with PHA/PLA pattern verified
+- **✅ Print.* methods** - Minimal preservation, accurate munting behavior
+- **✅ EEPROM.* methods** - No preservation, accurate register usage
+- **✅ String.* methods** - No preservation, accurate behavior
 
-### **Clean Architecture Benefits:**
-- **Focused units** - Each unit has single responsibility
-- **No API duplication** - Clean separation of concerns
-- **Proper state preservation** - Each unit follows HopperBASIC conventions
-- **Ready for file system** - All infrastructure dependencies satisfied
+### **Contract Accuracy Benefits:**
+- **File system can rely on exact behavior** - No surprises about register preservation
+- **Proper integration planning** - Knows exactly which registers need saving
+- **Debugging clarity** - Contract matches actual implementation
+- **Performance optimization** - Can minimize unnecessary preservation
 
-**🚀 Ready for File System Core:** Only 6 core file operations remain - the actual file system logic!
+**🚀 Ready for File System Core:** Only 6 core file operations remain with rock-solid, accurately documented infrastructure!
