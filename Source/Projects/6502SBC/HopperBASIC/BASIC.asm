@@ -5,8 +5,8 @@ program HopperBASIC
     #define BASICLONG // include LONG type
         
     //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    #define DEBUG
-    #define TRACE  // Compiler and Executor call tree walks
+    //#define DEBUG
+    //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEEXE // instructions in Executor
 
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
@@ -15,7 +15,8 @@ program HopperBASIC
     
     #define CPU_65C02S
     #define HOPPER_BASIC
-    #define ROM_48K
+    //#define ROM_48K
+    #define ROM_32K
     
     uses "./Definitions/ZeroPage"
     uses "./Definitions/Limits"
@@ -191,10 +192,7 @@ program HopperBASIC
     NMI()
     {
         // Hardware break - could be used for BASIC BREAK functionality
-        INC ZP.SerialBreakFlag
-        
-        // Set exit state to break out of interpreter loop
-        States.SetExiting();
+        SMB0 ZP.SerialBreakFlag
     }
     
     // Main entry point

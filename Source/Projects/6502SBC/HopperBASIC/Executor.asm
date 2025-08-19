@@ -231,6 +231,15 @@ unit Executor // Executor.asm
                 }
                 PLP
 #endif
+                if (BBS0, ZP.SerialBreakFlag) 
+                {
+                    RMB0 ZP.SerialBreakFlag   // Clear the BREAK flag
+                    Error.Break();            // "BREAK" error message
+                    States.SetFailure();
+                    CLC
+                    break;
+                }
+                
                 // Shortcut to Mushrooms:
                 LDA ZP.LastError
                 if (Z)
@@ -263,15 +272,6 @@ unit Executor // Executor.asm
                     // State.Exiting or State.Return - successful completion
                     SEC
                     break;  // Exit with C (from CanContinue)
-                }
-                // State.Success - continue executing
-                LDA ZP.SerialBreakFlag
-                if (NZ) 
-                {
-                    Error.Break();  // "BREAK" error message
-                    States.SetFailure();
-                    CLC
-                    break;
                 }
                 // State.Success - get another opcode ..
            } // loop

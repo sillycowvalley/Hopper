@@ -76,6 +76,18 @@ program Term
         return success;
     }
     string keyboardBuffer;
+    /*
+    AppendClipboard()
+    {
+        keyboardBuffer = keyboardBuffer + Clipboard.GetText();
+    }
+    */
+    AppendClipboard()
+    {
+        string clipText = Clipboard.GetText();
+        clipText = clipText.Replace("\r\n", "\n");
+        keyboardBuffer = keyboardBuffer + clipText;
+    }
     
     Hopper()
     {
@@ -112,7 +124,7 @@ program Term
                     {
                        if (Clipboard.HasText)
                        {
-                           keyboardBuffer = keyboardBuffer + Clipboard.GetText();
+                           AppendClipboard();
                            continue;
                        }
                     }
