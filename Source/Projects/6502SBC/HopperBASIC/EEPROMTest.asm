@@ -467,6 +467,23 @@ Debug.NL(); Print.String();
             loop {  }   
         }
         
+        LDA #(TestFileThree / 256)
+        STA ZP.STRH
+        LDA #(TestFileThree % 256)
+        STA ZP.STRL
+Debug.NL(); Print.String();        
+        DeleteFile();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+            
+            LDA #1
+            DumpDriveState();
+            loop {  }   
+        }
+        
+        AddFileThree();
+        
         
         DirectoryList();
         if (NC)

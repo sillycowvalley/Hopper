@@ -509,6 +509,81 @@ unit File
         
         loop
         {
+            // Check for empty input (illegal filename)
+            LDA [ZP.STR], Y
+            if (Z)
+            {
+                CLC                  // Empty filename - immediate fail
+                break;
+            }
+            
+            // Check directory high bit first (primary branch)
+            LDA DirectoryBuffer, X
+            if (MI)                  // High bit set - last directory character
+            {
+                // Last character handler
+                AND #0x7F            // Clear high bit
+                CMP [ZP.STR], Y      // Compare with input character
+                if (NZ)
+                {
+                    CLC              // Characters don't match
+                    break;
+                }
+                
+                // Characters match - check if input also ends here
+                INY
+                LDA [ZP.STR], Y
+                if (Z)
+                {
+                    SEC              // Perfect match - both end together
+                }
+                else
+                {
+                    CLC              // Directory ended but input continues
+                }
+                break;
+            }
+            
+            // Normal comparison path (no high bit)
+            AND #0x7F                // Clear any high bit (paranoia)
+            CMP [ZP.STR], Y          // Compare with input character
+            if (NZ)
+            {
+                CLC                  // No match
+                break;
+            }
+            
+            // Characters match - advance both pointers
+            INY
+            INX
+        }
+        
+        PLY
+        PLX
+    }
+    
+    
+    // Compare filename in directory entry with input filename
+    // Input: X = directory entry byte offset, ZP.STR = filename to match
+    // Output: C set if match, NC if no match
+    // Preserves: X, Y
+    // Munts: A
+    /*
+    compareFilenames()
+    {
+        PHX
+        PHY
+        
+        // Point to filename field in directory entry (offset +3)
+        TXA
+        CLC
+        ADC #3
+        TAX                      // X = filename field start in DirectoryBuffer
+        
+        LDY #0                   // Index into input filename
+        
+        loop
+        {
             // Get character from input filename
             LDA [ZP.STR], Y
             if (Z)                // End of input filename
@@ -570,6 +645,7 @@ unit File
         PLY
         PLX
     }
+    */
     
     // Get start sector from current directory entry
     // Input: CurrentFileEntry = directory entry index
