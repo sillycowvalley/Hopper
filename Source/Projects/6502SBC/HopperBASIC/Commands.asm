@@ -982,7 +982,7 @@ unit Commands
     CmdDir()
     {
 #ifdef HASEEPROM 
-        File.DirectoryList();
+        File.List();
 #else
         TODO(); BIT ZP.EmulatorPCL
 #endif 

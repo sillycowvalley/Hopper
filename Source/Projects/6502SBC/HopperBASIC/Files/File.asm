@@ -346,7 +346,7 @@ unit File
     // Output: Directory listing printed to serial, C set if successful
     // Preserves: X, Y
     // Munts: A, file system buffers
-    DirectoryList()
+    List()
     {
         PHX
         PHY
@@ -355,7 +355,11 @@ unit File
         {
             // Load directory from EEPROM
             loadDirectory();
-            
+NewLine();  
+LDA #(dirListHeader / 256)
+Hex();
+LDA #(dirListHeader % 256)           
+Hex();      
             // Print header
             LDA #(dirListHeader % 256)
             STA ZP.STRL
@@ -1535,6 +1539,8 @@ Debug.NL();
         STA ZP.IDXH
         
         EEPROM.ReadPage();
+        
+        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
     // Write FATBuffer to EEPROM sector 0
@@ -1546,6 +1552,8 @@ Debug.NL();
         STA ZP.IDXH
         
         EEPROM.WritePage();
+        
+        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
     // Load directory from EEPROM sector 1 into DirectoryBuffer
@@ -1561,6 +1569,8 @@ Debug.NL();
         STA ZP.IDXH
 
         EEPROM.ReadPage();
+        
+        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
     // Write DirectoryBuffer to EEPROM sector 1
@@ -1573,6 +1583,8 @@ Debug.NL();
         STA ZP.IDXH
         
         EEPROM.WritePage();
+        
+        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
     // Read arbitrary sector into FileDataBuffer
@@ -1587,6 +1599,8 @@ Debug.NL();
         STA ZP.IDXH
         
         EEPROM.ReadPage();
+        
+        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
     // Write FileDataBuffer to arbitrary sector
@@ -1598,6 +1612,8 @@ Debug.NL();
         LDA #(FileDataBuffer / 256) // RAM address MSB = FileDataBuffer (must be page aligned)
         STA ZP.IDXH
         EEPROM.WritePage();
+        
+        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
 
 #ifdef DEBUG

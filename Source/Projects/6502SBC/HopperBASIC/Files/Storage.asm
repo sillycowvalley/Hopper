@@ -1,6 +1,6 @@
 unit Storage
 {
-    const string zeroString = "0";
+    uses "File"
     
     // Save current program state to EEPROM file
     // Input: ZP.STR = filename
@@ -12,7 +12,7 @@ unit Storage
             // 1. Create file using File.StartSave()
             File.StartSave(); // Input: ZP.STR = filename
             if (NC) { break; }
-            
+
             // 2. Save all constants first
             saveConstants();
             if (NC) { break; }
@@ -200,10 +200,6 @@ unit Storage
         }
     }
     
-    
-    
-    
-    
     // Save all functions to file
     // Output: C set if successful, NC on error
     saveFunctions()
@@ -246,7 +242,6 @@ unit Storage
     appendStringToBuffer()
     {
         PHY
-        
         LDY #0
         loop
         {
@@ -275,11 +270,9 @@ unit Storage
             // Check for null terminator
             LDA [ZP.TOP], Y
             if (Z) { SEC break; } // Success - null terminator written
-            
             INY
             // TODO: Add buffer overflow check here if needed
         }
-        
         PLY
     }
     
@@ -472,10 +465,15 @@ unit Storage
     // Output: flushes Variables or Functions token stream to file
     writeTokenStream()
     {
-        LDA ZP.IDYL
-        STA ZP.XIDL
+        // EEPROM.WritePage munts IDX and IDY
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDXL
+        PHA
         LDA ZP.IDYH
-        STA ZP.XIDH
+        PHA
+        LDA ZP.IDYL
+        PHA
         
         STZ File.TransferLengthL
         STZ File.TransferLengthH
@@ -488,16 +486,29 @@ unit Storage
             {
                 INC File.TransferLengthH
             }
-            LDA [ZP.XID]          // Check for EOF
+            LDA [ZP.IDY]          // Check for EOF
             CMP #Token.EOF  
             if (Z) { break; }
-            INC ZP.XIDL           // Advance to next token
+            INC ZP.IDYL           // Advance to next token
             if (Z)
             {
-                INC ZP.XIDH
+                INC ZP.IDYH
             }
         }
-        flushTokenBuffer();
+        LDA ZP.IDYL
+        STA File.SectorSourceL
+        LDA ZP.IDYH
+        STA File.SectorSourceH
+        File.AppendStream(); 
+        
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDXL
+        PLA
+        STA ZP.IDXH
     }
     
     // Append single token to TokenizerBuffer and update position
@@ -506,6 +517,7 @@ unit Storage
     // Uses: ZP.TokenBufferContentLength as write position
     appendTokenToBuffer()
     {
+        PHA
         // Calculate write position: TokenBuffer + ContentLength
         CLC
         LDA ZP.TokenBufferL
@@ -514,6 +526,7 @@ unit Storage
         LDA ZP.TokenBufferH  
         ADC ZP.TokenBufferContentLengthH
         STA ZP.XIDH
+        PLA
         STA [ZP.XID]                       // Write token
         INC ZP.TokenBufferContentLengthL   // Increment content length
         if (Z)
@@ -539,6 +552,16 @@ unit Storage
     
     flushTokenBuffer()
     {
+        // EEPROM.WritePage munts IDX and IDY
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        
         LDA ZP.TokenBufferContentLengthL
         STA File.TransferLengthL
         LDA ZP.TokenBufferContentLengthH
@@ -547,6 +570,15 @@ unit Storage
         
         STZ ZP.TokenBufferContentLengthL
         STZ ZP.TokenBufferContentLengthH
+        
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDXL
+        PLA
+        STA ZP.IDXH
     }
             
     
