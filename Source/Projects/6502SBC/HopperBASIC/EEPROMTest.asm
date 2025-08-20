@@ -352,9 +352,8 @@ Print.NewLine();
         
 LDA #1 // reload after file one
 File.DumpDriveState();
-//File.DumpFileState();        
+File.DumpFileState();        
         
-        /*
         LDA #(TestFileTwo / 256)
         STA ZP.STRH
         LDA #(TestFileTwo % 256)
@@ -388,11 +387,10 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
-*/
 
-//LDA #1 // reload after file two
-//File.DumpDriveState();
-//File.DumpFileState();
+LDA #1 // reload after file two
+File.DumpDriveState();
+File.DumpFileState();
 
 
 /*
@@ -407,7 +405,11 @@ Debug.DumpPage();
 Print.NewLine();        
 */
 
-
+        DirectoryList();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
         
         LDA #(msgComplete % 256)
         STA ZP.STRL
