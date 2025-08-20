@@ -1555,7 +1555,11 @@ PHA LDA #'S' Debug.COut(); LDA DirectoryBuffer + 2, X Debug.HOut(); Debug.NL(); 
         Print.NewLine();
     }
     
-    // Print per-file sector allocation details
+    // Print sector allocation info for all files
+    // Input: None (uses DirectoryBuffer and FATBuffer)
+    // Output: Per-file sector allocation printed to serial
+    // Munts: A, X, Y
+    // Note: Iterates through directory entries, calls printFileSectorInfo() for each used entry
     printPerFileSectorAllocation()
     {
         LDY #0                   // Directory entry offset
@@ -1583,7 +1587,12 @@ PHA LDA #'S' Debug.COut(); LDA DirectoryBuffer + 2, X Debug.HOut(); Debug.NL(); 
     }
     
     // Print sector allocation info for one file
-    // Input: X = directory entry byte offset
+    // Input: X = directory entry offset (0, 16, 32...)
+    // Output: One line printed: "  Sector XX: FILENAME.EXT (size bytes, N sectors)"
+    // Preserves: None
+    // Munts: A, X, Y, ZP.TOP registers
+    // Note: Converts entry index to byte offset internally for DirectoryBuffer access
+    //       Calls printFilenameFromDirectory() and printFileSizeFromDirectory()
     printFileSectorInfo()
     {
         PHX
@@ -1606,13 +1615,10 @@ PHA LDA #'S' Debug.COut(); LDA DirectoryBuffer + 2, X Debug.HOut(); Debug.NL(); 
         Print.Char();
         
         // Print filename
-        // Convert byte offset back to entry index
-        PHY
-        TYA                      // X = byte offset (0, 16, 32, ...)  
-        LSR A LSR A LSR A LSR A  // Divide by 16 to get entry index (0, 1, 2, ...)
-        TAY                      // Y = directory entry index
-        printFilenameFromDirectory(); // Expects Y = entry offset
-        PLY
+        //TYA
+        //ASL A ASL A ASL A ASL A
+        TXA TAY // X -> A
+        printFilenameFromDirectory(); // Expects Y = entry offset (0, 16, 32...)
         
         LDA #' '
         Print.Char();
@@ -1620,7 +1626,7 @@ PHA LDA #'S' Debug.COut(); LDA DirectoryBuffer + 2, X Debug.HOut(); Debug.NL(); 
         Print.Char();
         
         // Print file size
-        printFileSizeFromDirectory();
+        printFileSizeFromDirectory(); // Expects Y = entry offset (0, 16, 32...)
         
         LDA #(bytesLabel % 256)
         STA ZP.STRL
