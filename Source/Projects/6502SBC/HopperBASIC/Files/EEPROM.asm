@@ -98,7 +98,7 @@ unit EEPROM
         SerialEEPROM.copyPageToEEPROM();
         SerialEEPROM.copyPageToEEPROM();
 #endif
-        // TODO : copyPageToEEPROM already has a built in 5 ms delay
+        // TODO : copyPageToEEPROM already has a built in 5 ms delay (test without this delay)
         
         // Proper EEPROM write completion delay
         // EEPROM write operations need 5-10ms to complete

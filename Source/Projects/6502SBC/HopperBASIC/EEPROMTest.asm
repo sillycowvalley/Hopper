@@ -89,14 +89,24 @@ program EEPROMTest
         
     }
     
-    const string TestFileOne = "FILEONE.BAS";
-    const string TestDataOne = 
-"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
+    const string TestFileOne   = "FILEONE.BAS";
+    const string TestFileTwo   = "FILETWO.BAS";
+    const string TestFileThree = "FILETRI.BAS";
     
-    const string TestFileTwo = "FILETWO.BAS";
-    const string TestDataTwo = 
-"Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
-     
+    // 238 including '\0;
+    const string TestDataOne = "00000 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
+    
+    // 11 including '\0;
+    //const string TestDataOne = "0123456789";
+    
+    
+    // 219 including '\0;
+    const string TestDataTwo = "@@@@@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
+    
+    // 27 including '\0'
+    //const string TestDataTwo = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+    
     
     LoadTestDataOne()
     {
@@ -105,16 +115,13 @@ program EEPROMTest
         LDA # (TestDataOne % 256)
         STA ZP.STRL
         String.Length(); // -> Y
+//Debug.NL(); Print.String();
 
-        PHY
-           
         // Set up copy parameters
         LDA ZP.STRH
         STA ZP.FSOURCEADDRESSH
         LDA ZP.STRL
         STA ZP.FSOURCEADDRESSL
-        
-
         
         LDA #(FunctionOpCodeBuffer / 256)
         STA ZP.FDESTINATIONADDRESSH
@@ -124,15 +131,35 @@ program EEPROMTest
         STY ZP.FLENGTHL
         INC ZP.FLENGTHL // '\0' terminator
         STZ ZP.FLENGTHH
+        
+        LDA ZP.FLENGTHL
+        PHA
+        LDA ZP.FLENGTHH
+        PHA
             
         // Copy string including null terminator
         Memory.Copy();
         
-        /*
-        LDA #0x10
-        DumpPage();       
-        */
-        PLY
+        
+        LDA #(FunctionOpCodeBuffer / 256)
+        STA File.SectorSourceH
+        LDA #(FunctionOpCodeBuffer % 256)
+        STA File.SectorSourceL
+        
+        PLA
+        STA File.TransferLengthH
+        PLA
+        STA File.TransferLengthL
+        
+        LDA File.TransferLengthH 
+        STA ZP.TOPH
+        LDA File.TransferLengthL
+        STA ZP.TOPL
+        LDA # BASICType.WORD
+        STA ZP.TOPT
+        
+//Debug.NL(); LDA #'1' COut(); LDA #':' COut(); Space(); Print.Decimal();
+        
     }
     
     LoadTestDataTwo()
@@ -142,6 +169,7 @@ program EEPROMTest
         LDA # (TestDataTwo % 256)
         STA ZP.STRL
         String.Length(); // -> Y
+//Debug.NL(); Print.String();
         
         // set destination once
         LDA #(FunctionOpCodeBuffer / 256)
@@ -159,11 +187,12 @@ program EEPROMTest
         STY ZP.FLENGTHL
         INC ZP.FLENGTHL // '\0' terminator
         STZ ZP.FLENGTHH
-            
+        LDA ZP.FLENGTHL
+        PHA // Y + 1
+        PHA // Y + 1
+        
         // Copy string including null terminator
-        PHY
         Memory.Copy();
-        PLY
         
         // use source again:
         LDA ZP.STRH
@@ -171,19 +200,145 @@ program EEPROMTest
         LDA ZP.STRL
         STA ZP.FSOURCEADDRESSL
         
-        STY ZP.FLENGTHL
-        INC ZP.FLENGTHL // '\0' terminator
+        PLA // Y + 1 (already includes '\0')
+        STA ZP.FLENGTHL
         STZ ZP.FLENGTHH
+        
+        LDA ZP.FLENGTHL
+        PHA
+        LDA ZP.FLENGTHH
+        PHA
             
         // Copy string including null terminator
         Memory.Copy();
         
-        /*
-        LDA #0x10
-        DumpPage();
-        LDA #0x11
-        DumpPage();
-        */
+        PLA
+        STA File.TransferLengthH
+        PLA
+        STA File.TransferLengthL
+
+        PLA // Y + 1
+        CLC
+        ADC File.TransferLengthL
+        STA File.TransferLengthL
+        LDA File.TransferLengthH
+        ADC #0
+        STA File.TransferLengthH
+        
+        LDA #(FunctionOpCodeBuffer / 256)
+        STA File.SectorSourceH
+        LDA #(FunctionOpCodeBuffer % 256)
+        STA File.SectorSourceL
+        
+        LDA File.TransferLengthH 
+        STA ZP.TOPH
+        LDA File.TransferLengthL
+        STA ZP.TOPL
+        LDA # BASICType.WORD
+        STA ZP.TOPT
+        
+//Debug.NL(); LDA #'2' COut(); LDA #':' COut(); Space(); Print.Decimal();        
+
+    }
+    
+    AddFileOne()
+    {
+        
+        LDA #(TestFileOne / 256)
+        STA ZP.STRH
+        LDA #(TestFileOne % 256)
+        STA ZP.STRL
+Debug.NL(); Print.String();        
+        
+        File.StartSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        LoadTestDataOne();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        LoadTestDataOne();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        EndSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+    }
+    
+    AddFileTwo()
+    {
+        LDA #(TestFileTwo / 256)
+        STA ZP.STRH
+        LDA #(TestFileTwo % 256)
+        STA ZP.STRL
+Debug.NL(); Print.String();
+
+        File.StartSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        LoadTestDataOne();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        EndSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+    }
+    
+    AddFileThree()
+    {
+        LDA #(TestFileThree / 256)
+        STA ZP.STRH
+        LDA #(TestFileThree % 256)
+        STA ZP.STRL
+Debug.NL(); Print.String();
+
+        File.StartSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        LoadTestDataTwo();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+        LoadTestDataOne();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+        LoadTestDataTwo();
+        File.AppendStream();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        
+        EndSave();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
     }
     
     // Main entry point
@@ -282,130 +437,46 @@ program EEPROMTest
         {
 Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char(); 
         }
-//LDA #1 // load
-//File.DumpDriveState();
-        /*
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        */
         
-        //LoadTestDataOne();
-        //LoadTestDataTwo();
         
-        LDA #(TestFileOne / 256)
-        STA ZP.STRH
-        LDA #(TestFileOne % 256)
-        STA ZP.STRL
-//Print.NewLine(); Print.String();  LDA #':' Print.Char();      
-//Print.NewLine(); 
-//Print.NewLine(); 
+        AddFileOne();
+        AddFileTwo();
+        AddFileThree();
         
-        File.StartSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-
-        LoadTestDataOne();
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA File.SectorSourceH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA File.SectorSourceL
-
-        STY File.TransferLengthL
-        STZ File.TransferLengthH
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-
-        LoadTestDataOne();
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA File.SectorSourceH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA File.SectorSourceL
-        
-        STY File.TransferLengthL
-        STZ File.TransferLengthH
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-
-
-        EndSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-
-        
-//LDA #1 // reload after file one
-//File.DumpDriveState();
-//File.DumpFileState();        
-        
-        LDA #(TestFileTwo / 256)
-        STA ZP.STRH
-        LDA #(TestFileTwo % 256)
-        STA ZP.STRL
-//Print.NewLine(); Print.String();  LDA #':' Print.Char();      
-//Print.NewLine(); 
-//Print.NewLine(); 
-        
-        File.StartSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        LoadTestDataOne();
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA File.SectorSourceH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA File.SectorSourceL
-        
-        STY File.TransferLengthL
-        STZ File.TransferLengthH
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-
-        EndSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-
-//LDA #1 // reload after file two
-//File.DumpDriveState();
-//File.DumpFileState();
-
-
-/*
-Print.NewLine();        
-LDA #(FATBuffer / 256)
-Debug.DumpPage();
-Print.NewLine();        
-
-Print.NewLine();        
-LDA #(DirectoryBuffer / 256)
-Debug.DumpPage();
-Print.NewLine();        
-*/
-
         DirectoryList();
         if (NC)
         {
             Error.CheckAndPrint();
         }
+        LDA #1
+        DumpDriveState();
+        
+        
+        LDA #(TestFileTwo / 256)
+        STA ZP.STRH
+        LDA #(TestFileTwo % 256)
+        STA ZP.STRL
+Debug.NL(); Print.String();        
+        DeleteFile();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+            
+            LDA #1
+            DumpDriveState();
+            loop {  }   
+        }
+        
+        
+        DirectoryList();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        LDA #1
+        DumpDriveState();
+        
+        
         
         LDA #(msgComplete % 256)
         STA ZP.STRL
