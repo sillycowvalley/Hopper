@@ -33,6 +33,8 @@ unit File
     const byte SectorPositionL      = ZP.M6;                   // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
     const byte SectorPositionH      = ZP.M7;
     
+    const byte StreamBytesAvailable = ZP.M8;                   // used only within NextStream()
+    
     
     const string dirListHeader       = "FILES:";
     const string noFilesMsg          = "No files found.";
@@ -445,6 +447,271 @@ unit File
         PLY
         PLX
     }
+    
+    
+    
+    
+    // Open file for reading
+    // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+    // Output: C set if successful, NC if error (file not found)
+    //         File ready for reading via NextStream()
+    // Preserves: X, Y
+    // Munts: A, file system state
+    StartLoad()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit for cleanup
+        {
+            // Validate filename format
+            ValidateFilename();
+            if (NC)
+            {
+                Error.InvalidFilename(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            // Load directory and FAT from EEPROM
+            loadDirectory();
+            loadFAT();
+/*
+Debug.NL(); 
+LDA # (FATBuffer / 256)
+DumpPage();
+Debug.NL();   
+                                    
+Debug.NL();
+LDA # (DirectoryBuffer / 256)
+DumpPage();
+Debug.NL();                                    
+*/          
+            // Find the file in directory
+            findFileInDirectory();
+            if (NC)
+            {
+                Error.FileNotFound(); BIT ZP.EmulatorPCL
+                break;
+            }
+            // CurrentFileEntry now contains the directory entry index
+            
+            // Get start sector from directory entry
+            getFileStartSector(); // -> FileStartSector
+            
+            // Get file length from directory entry
+            getFileLength(); // -> BytesRemainingL/H
+            
+            // Initialize load state
+            STZ SectorPositionL
+            STZ SectorPositionH
+            
+            // Read first sector into FileDataBuffer
+            LDA FileStartSector
+            readSector();
+            LDA FileStartSector
+            STA CurrentFileSector
+            
+            
+            // Success - file ready for NextStream() calls
+            SEC
+            break;
+        }
+        
+        PLY
+        PLX
+    }
+    
+    // Read next chunk of data from current load file
+    // Output: C set if data available, NC if end of file
+    //         SectorSource = pointer to data buffer (if C set)
+    //         TransferLength = number of bytes available (if C set)
+    // Preserves: X, Y
+    // Munts: A, file system state
+    // Note: Caller must process data before next call
+    NextStream()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Check if any bytes remaining in file
+            LDA BytesRemainingL
+            ORA BytesRemainingH
+            if (Z)
+            {
+                States.SetSuccess();
+                CLC  // End of file
+                break;
+            }
+            
+            // If SectorPosition >= 256, advance to next sector
+            LDA SectorPositionH
+            if (NZ)
+            {
+                advanceToNextSector();
+                if (NC)
+                {
+                    States.SetFailure();
+                    Error.EEPROMError(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                continue;
+            }
+            
+            // Calculate available bytes in sector: 256 - SectorPosition
+            SEC
+            LDA #0
+            SBC SectorPositionL
+            STA TransferLengthL
+            LDA #1
+            SBC #0
+            STA TransferLengthH
+            
+            // Use minimum of (available, remaining)
+            // 16-bit compare: TransferLength vs BytesRemaining
+            LDA BytesRemainingH
+            CMP TransferLengthH
+            if (C)  // BytesRemaining >= TransferLength
+            {
+                if (Z)  // High bytes equal, compare low
+                {
+                    LDA BytesRemainingL
+                    CMP TransferLengthL
+                    if (C)  // BytesRemaining >= TransferLength
+                    {
+                        // Keep TransferLength (smaller or equal)
+                    }
+                    else
+                    {
+                        // Use BytesRemaining (smaller)
+                        LDA BytesRemainingL
+                        STA TransferLengthL
+                        LDA BytesRemainingH
+                        STA TransferLengthH
+                    }
+                }
+                // else BytesRemaining > TransferLength, keep TransferLength
+            }
+            else
+            {
+                // BytesRemaining < TransferLength, use BytesRemaining
+                LDA BytesRemainingL
+                STA TransferLengthL
+                LDA BytesRemainingH
+                STA TransferLengthH
+            }
+            
+            // Set pointer to data
+            LDA #(FileDataBuffer % 256)
+            CLC
+            ADC SectorPositionL
+            STA SectorSourceL
+            LDA #(FileDataBuffer / 256)
+            ADC #0
+            STA SectorSourceH
+            
+            // Update counters
+            updateStreamPosition();
+            
+        
+     
+//Debug.NL(); LDA #'R' COut(); LDA #':' COut(); LDA BytesRemainingH HOut(); LDA BytesRemainingL HOut(); Space();
+//            LDA #'T' COut(); LDA #':' COut(); LDA TransferLengthH HOut(); LDA TransferLengthL HOut();           
+//Debug.NL();             
+            States.SetSuccess();
+            SEC  // Success
+            break;
+        }
+        
+        PLY
+        PLX
+    }
+              
+
+    
+    
+    // Get file length from current directory entry
+    // Input: CurrentFileEntry = directory entry index
+    // Output: BytesRemainingL/H = file length (16-bit)
+    // Munts: A, Y
+    getFileLength()
+    {
+        // Calculate directory entry offset: CurrentFileEntry * 16
+        LDA CurrentFileEntry
+        ASL A ASL A ASL A ASL A                 // * 16
+        TAY                                     // Y = directory entry offset
+        
+        // Read file length from directory entry (bytes 0-1)
+        LDA DirectoryBuffer + 0, Y              // Length LSB
+        STA BytesRemainingL
+        LDA DirectoryBuffer + 1, Y              // Length MSB
+        STA BytesRemainingH
+    }
+    
+    // Advance to next sector in FAT chain
+    // Output: C set if successful, NC if end of chain or error
+    // Munts: A, Y, file system state
+    advanceToNextSector()
+    {
+        loop // Single exit
+        {
+            // Get next sector from FAT
+            LDY CurrentFileSector
+            LDA FATBuffer, Y
+            STA NextFileSector
+            
+            // Check for end of chain
+            CMP #1                              // 1 = end-of-chain marker
+            if (Z)
+            {
+                // Reached end of file chain
+                CLC
+                break;
+            }
+            
+            // Update current sector and reset position
+            LDA NextFileSector
+            STA CurrentFileSector
+            
+            // Read next sector
+            readSector();
+            
+            STZ SectorPositionL
+            STZ SectorPositionH
+            
+            // Success
+            SEC
+            break;
+        }
+    }
+    
+    // Update position counters after NextStream() call
+    // Input: TransferLength = bytes being returned to caller
+    // Output: SectorPosition and BytesRemaining updated
+    // Munts: A
+    updateStreamPosition()
+    {
+        // Update sector position (16-bit addition)
+        CLC
+        LDA SectorPositionL
+        ADC TransferLengthL
+        STA SectorPositionL
+        LDA SectorPositionH
+        ADC TransferLengthH
+        STA SectorPositionH
+        
+        // Update file bytes remaining (16-bit subtraction)
+        SEC
+        LDA BytesRemainingL
+        SBC TransferLengthL
+        STA BytesRemainingL
+        LDA BytesRemainingH
+        SBC TransferLengthH
+        STA BytesRemainingH
+    }
+    
+    
     
     // Find file in directory by filename
     // Input: ZP.STR = filename to find
@@ -878,8 +1145,7 @@ unit File
         STA ZP.TOPL
         LDA DirectoryBuffer + 1, Y  // Length MSB
         STA ZP.TOPH
-        LDA #0
-        STA ZP.TOPT
+        STZ ZP.TOPT
         Print.Decimal();
     }
     
@@ -891,9 +1157,8 @@ unit File
         // Print file count
         LDA TransferLengthL
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         
         // Print " files, "
@@ -908,8 +1173,7 @@ unit File
         STA ZP.TOPL
         LDA TransferLengthH
         STA ZP.TOPH
-        LDA #0
-        STA ZP.TOPT
+        STZ ZP.TOPT
         Print.Decimal();
         
         // Print " bytes used"
@@ -1595,9 +1859,8 @@ unit File
         Print.String();
         LDA TransferLengthL
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
         
@@ -1609,9 +1872,8 @@ unit File
         Print.String();
         LDA TransferLengthH
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
         
@@ -1623,9 +1885,8 @@ unit File
         Print.String();
         LDA TransferLength + 1
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
     }
@@ -1842,9 +2103,8 @@ unit File
         // File count already in TransferLengthL
         LDA TransferLengthL
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         
         LDA #'/'
@@ -1852,9 +2112,8 @@ unit File
         
         LDA #16                  // Max directory entries
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         
         Print.NewLine();
@@ -1981,9 +2240,8 @@ unit File
         LDA DirectoryBuffer + 1, X  // Size high  
         ADC #0                      // Add carry
         STA ZP.TOPL                 // Result is sectors used
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         
         LDA #(sectorsLabel % 256)
@@ -2025,9 +2283,8 @@ unit File
         
         LDA SectorPositionL
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         
         LDA #'/'
@@ -2035,9 +2292,8 @@ unit File
         
         LDA #254                 // Total usable sectors (256 - 2 system)
         STA ZP.TOPL
-        LDA #0
-        STA ZP.TOPH
-        STA ZP.TOPT
+        STZ ZP.TOPH
+        STZ ZP.TOPT
         Print.Decimal();
         
         Print.NewLine();

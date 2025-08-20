@@ -71,7 +71,7 @@ unit Print
     }
     
     // Print 16-bit decimal number with no leading zeros
-    // Input: ZP.TOPT for type (typically BASICType.WORD or BASICType.INT for signed)
+    // Input: ZP.TOPT for type (typically BASICType.WORD or BASICType.INT for signed), 0 = BASICType.WORD
     //        ZP.TOP0-1  = 16-bit number to print (0-65535)
     //        ZP.LTOP0-3 = 32 bit signed LONG (if ZP.TOPT == BASICType.LONG)
     // Output: Decimal number printed to serial
@@ -81,6 +81,11 @@ unit Print
     {
         PHA
         LDA ZP.TOPT
+        if (Z)
+        {
+            LDA # BASICType.WORD // good default
+            STA ZP.TOPT
+        }
         PHA
         
         loop

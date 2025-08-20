@@ -93,15 +93,15 @@ program EEPROMTest
     const string TestFileTwo   = "FILETWO.BAS";
     const string TestFileThree = "FILETRI.BAS";
     
-    // 238 including '\0;
-    const string TestDataOne = "00000 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
+    // 242 including '\0;
+    const string TestDataOne = "00000 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. END";
     
     // 11 including '\0;
     //const string TestDataOne = "0123456789";
     
     
-    // 219 including '\0;
-    const string TestDataTwo = "@@@@@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
+    // 223 including '\0;
+    const string TestDataTwo = "@@@@@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. END";
     
     // 27 including '\0'
     //const string TestDataTwo = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -340,6 +340,67 @@ Debug.NL(); Print.String();
             Error.CheckAndPrint();
         }
     }
+    LoadAndDisplay()
+    {
+        
+        
+        
+Debug.NL(); Print.String();
+Debug.NL();         
+        File.StartLoad();
+        if (C)
+        {
+            loop
+            {
+                File.NextStream();
+                if (NC) 
+                { 
+                    States.IsFailure();
+                    if (C)
+                    {
+                        Error.CheckAndPrint();
+                    }
+                    break;
+                }
+                
+                // Set up pointer to returned data
+                LDA SectorSourceL
+                STA ZP.IDXL
+                LDA SectorSourceH  
+                STA ZP.IDXH
+                
+                // Use TransferLength as countdown (we're allowed to munt it)
+                loop
+                {
+                    // Check if done (16-bit zero test)
+                    LDA TransferLengthL
+                    ORA TransferLengthH
+                    if (Z) { break; }
+                    
+                    // Print character
+                    LDY #0
+                    LDA [ZP.IDX], Y
+                    Debug.Printable();
+                    
+                    // Increment pointer
+                    INC ZP.IDXL
+                    if (Z) { INC ZP.IDXH }
+                    
+                    // Decrement count (16-bit)
+                    LDA TransferLengthL
+                    if (Z) 
+                    {
+                        DEC TransferLengthH 
+                    }
+                    DEC TransferLengthL
+                }     
+            } // loop
+        }
+        else
+        {
+            Error.CheckAndPrint();
+        }
+    }
     
     // Main entry point
     Hopper()
@@ -451,7 +512,7 @@ Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char();
         LDA #1
         DumpDriveState();
         
-        
+        /*
         LDA #(TestFileTwo / 256)
         STA ZP.STRH
         LDA #(TestFileTwo % 256)
@@ -483,7 +544,7 @@ Debug.NL(); Print.String();
         }
         
         AddFileThree();
-        
+        */
         
         DirectoryList();
         if (NC)
@@ -493,7 +554,24 @@ Debug.NL(); Print.String();
         LDA #1
         DumpDriveState();
         
+        LDA #(TestFileOne / 256)
+        STA ZP.STRH
+        LDA #(TestFileOne % 256)
+        STA ZP.STRL
+        LoadAndDisplay();
         
+        LDA #(TestFileTwo / 256)
+        STA ZP.STRH
+        LDA #(TestFileTwo % 256)
+        STA ZP.STRL
+        LoadAndDisplay();
+
+        
+        LDA #(TestFileThree / 256)
+        STA ZP.STRH
+        LDA #(TestFileThree % 256)
+        STA ZP.STRL
+        LoadAndDisplay();
         
         LDA #(msgComplete % 256)
         STA ZP.STRL
