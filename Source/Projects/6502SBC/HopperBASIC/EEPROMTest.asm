@@ -491,6 +491,12 @@ Debug.NL();
             Print.String();
         }
         
+        DirectoryList();
+        if (NC)
+        {
+            Error.CheckAndPrint();
+        }
+        return;
         
         
         File.Format();

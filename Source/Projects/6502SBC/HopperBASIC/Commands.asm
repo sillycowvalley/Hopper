@@ -57,8 +57,7 @@ unit Commands
         STA ZP.TOPL
         LDA ZP.ACCH
         STA ZP.TOPH
-        LDA #BASICType.WORD
-        STA ZP.TOPT
+        STZ ZP.TOPT
         Print.Decimal();
         
         LDA #(Messages.BytesMsg % 256)
@@ -66,6 +65,34 @@ unit Commands
         LDA #(Messages.BytesMsg / 256)
         STA ZP.STRH
         Tools.PrintStringSTR();
+        
+        
+#ifdef HASEEPROM
+        EEPROM.Detect();
+        if (C)  // Set C (detected)
+        {
+            LDA # ErrorWord.EEPROM
+            Error.PrintWord();
+            LDA #':' Print.Char();
+            LDA #' ' Print.Char();
+            EEPROM.GetSize(); // A -> number of K
+            STA ZP.TOPL
+            STZ ZP.TOPH
+            STZ ZP.TOPT
+            Print.Decimal();
+            LDA #'K' Print.Char();
+            LDA #',' Print.Char();
+            LDA #' ' Print.Char();
+            File.GetAvailable(); // TOP -> number of B
+            Print.Decimal();
+            LDA #(Messages.BytesMsg % 256)
+            STA ZP.STRL
+            LDA #(Messages.BytesMsg / 256)
+            STA ZP.STRH
+            Print.String();
+        }
+#endif                
+        SEC
     }
     
     // ============================================================================
@@ -948,4 +975,109 @@ unit Commands
         PLX
         PLA
     }
+    
+    // Execute DIR command - list files in EEPROM
+    // Input: None
+    // Output: Directory listing printed to serial
+    CmdDir()
+    {
+        File.DirectoryList();
+    }
+    
+    // Execute DEL command - delete file from EEPROM
+    // Input: ZP.STR = filename pointer
+    // Output: File deleted or error message
+    CmdDel()
+    {
+        File.DeleteFile(); // Input: ZP.STR
+    }
+    
+    // Execute SAVE command - save current program to EEPROM
+    // Input: ZP.STR = filename pointer  
+    // Output: Program saved or error message
+    CmdSave()
+    {
+        Storage.SaveProgram(); // Input: ZP.STR
+    }
+    
+    // Execute LOAD command - load program from EEPROM
+    // Input: ZP.STR = filename pointer
+    // Output: Program loaded or error message  
+    CmdLoad()
+    {
+        Storage.LoadProgram(); // Input: ZP.STR
+    }
+    
+    // Execute FORMAT command - format EEPROM file system with confirmation
+    // Input: None  
+    // Output: File system formatted or cancelled
+    CmdFormat()
+    {
+        confirmDestructiveAction();
+        if (C)
+        {
+            File.Format();
+            CheckAndPrint();
+        }
+        // If NC, user cancelled - no action needed (no error)
+    }
+    
+    // Prompt user for Y/N confirmation on destructive operations
+    // Input: None
+    // Output: C set if user confirms (Y/y), NC if user cancels (N/n)
+    // Preserves: X, Y
+    // Munts: A
+    confirmDestructiveAction()
+    {
+        PHA
+        PHX
+        PHY
+        
+        loop // Single exit pattern
+        {
+            // Display warning message
+            LDA #(Messages.FormatWarning % 256)
+            STA ZP.STRL
+            LDA #(Messages.FormatWarning / 256)
+            STA ZP.STRH
+            Tools.PrintStringSTR();
+            
+            loop // Input validation loop
+            {
+                // Read single character response
+                Serial.WaitForChar();
+                
+                PHA
+                // Echo the character
+                Serial.WriteChar();
+                Print.NewLine();
+                PLA
+                switch (A)
+                {
+                    case 'Y':
+                    case 'y':
+                    { SEC break; }
+                    case 'N':
+                    case 'n':
+                    { CLC break; }
+                    default:
+                    {
+                        // Invalid input - ask again
+                        LDA #(Messages.InvalidResponse % 256)
+                        STA ZP.STRL
+                        LDA #(Messages.InvalidResponse / 256)
+                        STA ZP.STRH
+                        Tools.PrintStringSTR();
+                    }
+                }
+            }
+            
+            break; // Exit outer loop with C set appropriately
+        }
+        
+        PLY
+        PLX
+        PLA
+    }
+    
 }

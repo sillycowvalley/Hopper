@@ -504,13 +504,35 @@ unit Console // Console.asm
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 
-                // File operations - TODO
                 case Token.SAVE:
+                {
+                    parseSave();
+                    CheckError();
+                    if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+                }
                 case Token.LOAD:
+                {
+                    parseLoad();
+                    CheckError();
+                    if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+                }
                 case Token.DIR:
+                {
+                    parseDir();
+                    CheckError();
+                    if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+                }
                 case Token.DEL:
                 {
-                    TODO(); BIT ZP.EmulatorPCL
+                    parseDel();
+                    CheckError();
+                    if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+                }
+                case Token.FORMAT:
+                {
+                    parseFormat();
+                    CheckError();
+                    if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
                 }
                 
                 // ========== BASIC LANGUAGE RUN ==========
@@ -632,6 +654,161 @@ unit Console // Console.asm
     // Console Command Parsing Helpers
     // These parse arguments and call the Commands unit implementations
     // ========================================================================
+    
+    // Parse and execute SAVE command with string filename
+    parseSave()
+    {
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Console.FunctionModeError();
+        }
+        else
+        {
+            loop // Single exit
+            {
+                Tokenizer.NextToken(); // consume 'SAVE'
+                CheckError();
+                if (NC) { break; }
+                
+                // Expect string literal filename
+                LDA ZP.CurrentToken
+                CMP #Token.IDENTIFIER
+                if (NZ)
+                {
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                Tokenizer.GetTokenString(); // Result in ZP.TOP
+                LDA ZP.TOPL
+                STA ZP.STRL
+                LDA ZP.TOPH
+                STA ZP.STRH
+                
+                Tokenizer.NextToken(); // consume string
+                validateEndOfCommand();
+                CheckError();
+                if (C) { Commands.CmdSave(); } // Uses ZP.STR
+                break;
+            }
+        }
+    }    
+    
+    // Parse and execute LOAD command with string filename
+    parseLoad()
+    {
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Console.FunctionModeError();
+        }
+        else
+        {
+            loop // Single exit
+            {
+                Tokenizer.NextToken(); // consume 'LOAD'
+                CheckError();
+                if (NC) { break; }
+                
+                // Expect string literal filename
+                LDA ZP.CurrentToken
+                CMP #Token.IDENTIFIER
+                if (NZ)
+                {
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                Tokenizer.GetTokenString(); // Result in ZP.TOP
+                LDA ZP.TOPL
+                STA ZP.STRL
+                LDA ZP.TOPH
+                STA ZP.STRH
+                
+                Tokenizer.NextToken(); // consume string
+                validateEndOfCommand();
+                CheckError();
+                if (C) { Commands.CmdLoad(); } // Uses ZP.STR
+                break;
+            }
+        }
+    }   
+    
+    // Parse and execute DIR command (no arguments)
+    parseDir()
+    {
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Console.FunctionModeError();
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'DIR'
+            validateEndOfCommand();
+            CheckError();
+            if (C) { Commands.CmdDir(); }
+        }
+    }
+    
+    // Parse and execute DEL command with string filename
+    parseDel()
+    {
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Console.FunctionModeError();
+        }
+        else
+        {
+            loop // Single exit
+            {
+                Tokenizer.NextToken(); // consume 'DEL'
+                CheckError();
+                if (NC) { break; }
+                
+                // Expect string literal filename
+                LDA ZP.CurrentToken
+                CMP #Token.IDENTIFIER
+                if (NZ)
+                {
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    break;
+                }
+                
+                Tokenizer.GetTokenString(); // Result in ZP.TOP
+                LDA ZP.TOPL
+                STA ZP.STRL
+                LDA ZP.TOPH
+                STA ZP.STRH
+                
+                Tokenizer.NextToken(); // consume string
+                validateEndOfCommand();
+                CheckError();
+                if (C) { Commands.CmdDel(); } // Uses ZP.STR
+                break;
+            }
+        }
+    }  
+    
+    // Parse and execute FORMAT command (no arguments)
+    parseFormat()
+    {
+        Statement.IsCaptureModeOn();
+        if (C)
+        {
+            Console.FunctionModeError();
+        }
+        else
+        {
+            Tokenizer.NextToken(); // consume 'FORMAT'
+            validateEndOfCommand();
+            CheckError();
+            if (C) { Commands.CmdFormat(); }
+        }
+    }
+    
     
     // Parse and execute NEW command
     parseNew()

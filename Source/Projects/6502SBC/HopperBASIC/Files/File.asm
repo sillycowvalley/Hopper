@@ -127,6 +127,51 @@ unit File
         PLY
     }
     
+    // Get available free space in bytes
+    // Output: TOPH:TOPL = free bytes (16-bit)
+    //         C set if successful, NC if error accessing FAT
+    // Preserves: X, Y  
+    // Munts: A
+    GetAvailable()
+    {
+        PHX
+        PHY
+        
+        loop // Single exit for cleanup
+        {
+            // Load FAT from EEPROM
+            loadFAT();
+            
+            // Count free sectors
+            LDY #2                   // Start from sector 2 (skip FAT and directory)
+            STZ ZP.TOPH      // Free sector count
+            
+            loop
+            {
+                LDA FATBuffer, Y
+                if (Z)
+                {
+                    INC ZP.TOPH  // Count free sectors
+                }
+                
+                INY
+                if (Z) { break; }    // Y wrapped to 0 - all sectors checked
+            }
+            
+            // Convert sectors to bytes: free_sectors * 256
+            // Since each sector is 256 bytes, free_sectors becomes the high byte
+            STZ ZP.TOPL
+            STZ ZP.TOPT
+            // Ready for Print.Decimal() ..
+            
+            SEC                      // Success
+            break;
+        }
+        
+        PLY
+        PLX
+    }
+    
     // Format EEPROM with empty file system
     // Output: C set if successful, NC if error
     // Munts: A, X, Y, all file system buffers

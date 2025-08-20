@@ -23,6 +23,10 @@ unit Messages // Messages.asm
     
     const string ErrorMarker = "<------";
     
+    const string FormatWarning = "FORMAT will erase all files. Continue (Y/N)? ";
+    const string InvalidResponse = "Please enter Y or N: ";
+    
+    
     // Print OK message
     // Input: None
     // Output: "OK\n" printed to serial
