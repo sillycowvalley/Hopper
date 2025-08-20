@@ -90,10 +90,12 @@ program EEPROMTest
     }
     
     const string TestFileOne = "FILEONE.BAS";
-    const string TestDataOne = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
+    const string TestDataOne = 
+"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.";
     
     const string TestFileTwo = "FILETWO.BAS";
-    const string TestDataTwo = "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
+    const string TestDataTwo = 
+"Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum";
      
     
     LoadTestDataOne()
@@ -103,7 +105,9 @@ program EEPROMTest
         LDA # (TestDataOne % 256)
         STA ZP.STRL
         String.Length(); // -> Y
-        
+
+Debug.NL(); LDA #'L' COut(); TYA HOut();
+                
         PHY
            
         // Set up copy parameters
@@ -111,6 +115,8 @@ program EEPROMTest
         STA ZP.FSOURCEADDRESSH
         LDA ZP.STRL
         STA ZP.FSOURCEADDRESSL
+        
+
         
         LDA #(FunctionOpCodeBuffer / 256)
         STA ZP.FDESTINATIONADDRESSH
@@ -138,6 +144,8 @@ program EEPROMTest
         LDA # (TestDataTwo % 256)
         STA ZP.STRL
         String.Length(); // -> Y
+        
+Debug.NL(); LDA #'L' COut(); TYA HOut();
         
         // set destination once
         LDA #(FunctionOpCodeBuffer / 256)
@@ -303,14 +311,14 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
-LDA #'a' Debug.COut();        
+
         LoadTestDataOne();
         
         LDA #(FunctionOpCodeBuffer / 256)
         STA File.SectorSourceH
         LDA #(FunctionOpCodeBuffer % 256)
         STA File.SectorSourceL
-LDA #'b' COut();        
+
         STY File.TransferLengthL
         STZ File.TransferLengthH
         File.AppendStream();
@@ -318,8 +326,7 @@ LDA #'b' COut();
         {
             Error.CheckAndPrint();
         }
-LDA #'c' COut(); 
-/*
+
         LoadTestDataOne();
         
         LDA #(FunctionOpCodeBuffer / 256)
@@ -334,20 +341,20 @@ LDA #'c' COut();
         {
             Error.CheckAndPrint();
         }
-        */
-LDA #'d' COut();
+
+
         EndSave();
         if (NC)
         {
             Error.CheckAndPrint();
         }
-LDA #'e' COut();
+
         
 LDA #1 // reload after file one
 File.DumpDriveState();
-File.DumpFileState();        
+//File.DumpFileState();        
         
-        
+        /*
         LDA #(TestFileTwo / 256)
         STA ZP.STRH
         LDA #(TestFileTwo % 256)
@@ -361,7 +368,6 @@ Print.NewLine();
         {
             Error.CheckAndPrint();
         }
-LDA #'f' COut();
         LoadTestDataOne();
         
         LDA #(FunctionOpCodeBuffer / 256)
@@ -376,17 +382,17 @@ LDA #'f' COut();
         {
             Error.CheckAndPrint();
         }
-LDA #'g' COut();
+
         EndSave();
         if (NC)
         {
             Error.CheckAndPrint();
         }
-LDA #'h' COut();
+*/
 
-LDA #1 // reload after file two
-File.DumpDriveState();
-File.DumpFileState();
+//LDA #1 // reload after file two
+//File.DumpDriveState();
+//File.DumpFileState();
 
 
 /*

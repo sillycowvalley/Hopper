@@ -134,7 +134,7 @@ unit SerialEEPROM
     // Output: One page copied from RAM to EEPROM
     //         ZP.IDX advanced by serialPageSize bytes
     //         ZP.IDY advanced by serialPageSize bytes
-    // Modifies: ZP.OutB (I2C operations), ZP.TOP (timing delay), X (byte counter)
+    // Modifies: ZP.OutB (I2C operations), ZP.TOP and TARGET0-3 (timing delay), X (byte counter), IDX and IDY
     //          A, X, Y (preserved via stack)
     // Note: Includes 5ms delay after write per EEPROM timing requirements
     //       EEPROM write operations require page-aligned addresses for optimal performance

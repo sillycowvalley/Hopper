@@ -1,0 +1,198 @@
+FILE UNIT CALL GRAPH
+====================
+
+PUBLIC INTERFACE METHODS (Entry Points)
+========================================
+
+Format()
+├── clearFATBuffer()
+│   └── Memory.ClearPage()
+├── clearDirectoryBuffer()
+│   └── Memory.ClearPage()
+├── clearFileDataBuffer()
+│   └── Memory.ClearPage()
+├── writeFAT()
+│   └── EEPROM.WritePage()
+└── writeDirectory()
+    └── EEPROM.WritePage()
+
+StartSave()
+├── ValidateFilename()
+│   └── IsValidFilenameChar()
+│       └── Char.IsAlphaNumeric()
+├── loadDirectory()
+│   └── EEPROM.ReadPage()
+├── loadFAT()
+│   └── EEPROM.ReadPage()
+├── findFreeDirectoryEntry()
+│   └── checkFilenameMatch()
+├── writeFilenameToDirectory()
+├── allocateFirstFreeSector()
+├── updateDirectoryStartSector()
+├── initializeSaveState()
+├── clearFileDataBuffer()
+│   └── Memory.ClearPage()
+└── Error handling:
+    ├── Error.InvalidFilename()
+    ├── Error.DirectoryFull()
+    └── Error.EEPROMFull()
+
+AppendStream()
+├── flushAndAllocateNext()
+│   ├── writeSector()
+│   │   └── EEPROM.WritePage()
+│   ├── allocateFirstFreeSector()
+│   ├── clearFileDataBuffer()
+│   │   └── Memory.ClearPage()
+│   └── Error.EEPROMFull()
+├── Debug.COut()
+├── Debug.HOut()
+└── Error.EEPROMFull()
+
+EndSave()
+├── writeSector()
+│   └── EEPROM.WritePage()
+├── writeFAT()
+│   └── EEPROM.WritePage()
+└── writeDirectory()
+    └── EEPROM.WritePage()
+
+ValidateFilename() [Standalone public method]
+└── IsValidFilenameChar()
+    └── Char.IsAlphaNumeric()
+
+IsValidFilenameChar() [Standalone public method]
+└── Char.IsAlphaNumeric()
+
+DumpDriveState() [Debug method]
+├── loadFAT()
+│   └── EEPROM.ReadPage()
+├── loadDirectory()
+│   └── EEPROM.ReadPage()
+├── dumpDirectoryEntries()
+│   ├── printFilenameFromDirectory()
+│   │   └── Print.Char()
+│   ├── printFileSizeFromDirectory()
+│   │   └── Print.Decimal()
+│   ├── Print.Char()
+│   ├── Print.Hex()
+│   ├── Print.Spaces()
+│   └── Print.NewLine()
+├── dumpFATMap()
+│   ├── Print.String()
+│   ├── Print.NewLine()
+│   ├── Print.Char()
+│   └── Print.Hex()
+├── dumpSectorStats()
+│   ├── Print.String()
+│   ├── Print.NewLine()
+│   └── Print.Decimal()
+├── Print.String()
+└── Print.NewLine()
+
+DumpFileState() [Debug method]
+├── Print.String()
+├── Print.NewLine()
+├── Print.Hex()
+└── Print.Char()
+
+
+PRIVATE HELPER METHODS (Internal Implementation)
+===============================================
+
+Buffer Management:
+  clearFATBuffer() → Memory.ClearPage()
+  clearDirectoryBuffer() → Memory.ClearPage()
+  clearFileDataBuffer() → Memory.ClearPage()
+
+I/O Operations:
+  loadFAT() → EEPROM.ReadPage()
+  loadDirectory() → EEPROM.ReadPage()
+  writeFAT() → EEPROM.WritePage()
+  writeDirectory() → EEPROM.WritePage()
+  readSector() → EEPROM.ReadPage()
+  writeSector() → EEPROM.WritePage()
+
+Directory Operations:
+  writeFilenameToDirectory()
+  updateDirectoryStartSector()
+  findFreeDirectoryEntry() → checkFilenameMatch()
+  checkFilenameMatch()
+
+Sector Management:
+  allocateFirstFreeSector()
+  flushAndAllocateNext() → writeSector() → EEPROM.WritePage()
+                        → allocateFirstFreeSector()
+                        → clearFileDataBuffer() → Memory.ClearPage()
+
+File State:
+  initializeSaveState()
+
+Debug Helpers:
+  dumpDirectoryEntries() → printFilenameFromDirectory() → Print.Char()
+                        → printFileSizeFromDirectory() → Print.Decimal()
+                        → Print.Char(), Print.Hex(), Print.Spaces(), Print.NewLine()
+  
+  dumpFATMap() → Print.String(), Print.NewLine(), Print.Char(), Print.Hex()
+  
+  dumpSectorStats() → Print.String(), Print.NewLine(), Print.Decimal()
+  
+  printFilenameFromDirectory() → Print.Char()
+  printFileSizeFromDirectory() → Print.Decimal()
+
+
+EXTERNAL DEPENDENCIES
+=====================
+
+EEPROM Unit:
+  ├── ReadPage() - Read 256 bytes from EEPROM to RAM
+  └── WritePage() - Write 256 bytes from RAM to EEPROM
+
+Memory Unit:
+  └── ClearPage() - Zero out 256-byte page
+
+Char Unit:
+  └── IsAlphaNumeric() - Character validation
+
+Error Unit:
+  ├── InvalidFilename()
+  ├── DirectoryFull()
+  └── EEPROMFull()
+
+Debug Unit:
+  ├── COut() - Character debug output
+  └── HOut() - Hex debug output
+
+Print Unit:
+  ├── String() - Print null-terminated string
+  ├── NewLine() - Print newline
+  ├── Char() - Print single character
+  ├── Hex() - Print hex value
+  ├── Decimal() - Print decimal value
+  └── Spaces() - Print spaces
+
+
+CALL FLOW PATTERNS
+==================
+
+File Creation Flow:
+StartSave() → ValidateFilename() → Load metadata → Find/allocate → Initialize
+
+File Writing Flow:
+AppendStream() → Buffer data → Check sector full → Flush if needed → Allocate next
+
+File Completion Flow:
+EndSave() → Flush final sector → Update metadata → Write to EEPROM
+
+Debug Flow:
+DumpXXX() → Load data → Format output → Print results
+
+
+CRITICAL PATHS
+==============
+
+1. EEPROM I/O: All persistence goes through EEPROM.ReadPage()/WritePage()
+2. Buffer Management: All buffers cleared via Memory.ClearPage()
+3. Error Handling: Multiple error paths with specific error types
+4. Debug Output: Heavy use of Print unit for diagnostics
+5. Validation: Filename validation through Char.IsAlphaNumeric()

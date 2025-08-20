@@ -74,7 +74,8 @@ unit EEPROM
     // Output: 256 bytes copied from RAM to EEPROM
     //         ZP.IDX advanced by 256 bytes
     //         ZP.IDY advanced by 256 bytes
-    // Modifies: All registers used by copyPageToEEPROM()
+    // Modifies: IDY, All registers used by copyPageToEEPROM():
+    //           ZP.OutB (I2C operations), ZP.TOP and TARGET0-3 (timing delay), X (byte counter), IDX and IDY
     // Note: High-level interface that handles EEPROM page size differences automatically
     //       For 128-byte EEPROMs: calls copyPageToEEPROM() twice
     //       For 64-byte EEPROMs: calls copyPageToEEPROM() four times
@@ -97,6 +98,8 @@ unit EEPROM
         SerialEEPROM.copyPageToEEPROM();
         SerialEEPROM.copyPageToEEPROM();
 #endif
+        // TODO : copyPageToEEPROM already has a built in 5 ms delay
+        
         // Proper EEPROM write completion delay
         // EEPROM write operations need 5-10ms to complete
         LDA #10          // 10 milliseconds delay

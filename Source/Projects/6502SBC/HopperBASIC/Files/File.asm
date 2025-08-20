@@ -26,11 +26,12 @@ unit File
     const byte NextFileSector       = ZP.LNEXTL;               // Next sector in chain (from FAT)
     
     // Additional ZP aliases needed for AppendStream
-    const byte BytesRemainingL      = ZP.M0;                   // 16-bit: bytes left to copy
-    const byte BytesRemainingH      = ZP.M1;
+    // WARNINGL ZP.M0 - ZP.M3 are used by Time.Delay() (TARGET0-3)
+    const byte BytesRemainingL      = ZP.M4;                   // 16-bit: bytes left to copy
+    const byte BytesRemainingH      = ZP.M5;
     
-    const byte SectorPositionL      = ZP.M2;                   // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
-    const byte SectorPositionH      = ZP.M3;
+    const byte SectorPositionL      = ZP.M6;                   // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
+    const byte SectorPositionH      = ZP.M7;
     
     // Check if character is valid for filename (alphanumeric + period)
     // Input: A = character to test
@@ -280,6 +281,8 @@ unit File
         PHX
         PHY
         
+Debug.NL(); LDA #'{' COut(); Space(); LDA CurrentFileSector HOut(); LDA #':' COut(); LDA SectorPositionH HOut(); LDA SectorPositionL HOut(); Space(); LDA TransferLengthH HOut(); LDA TransferLengthL HOut(); 
+
         loop // Single exit
         {
             // Copy input parameters to working variables
@@ -295,6 +298,7 @@ unit File
                 ORA BytesRemainingH
                 if (Z)
                 { 
+LDA #'}' COut();
                     SEC break; // Set C - success
                 }
                 
@@ -316,22 +320,24 @@ unit File
                 LDA SectorPositionH
                 if (NZ) // High byte non-zero means >= 256
                 {
+                    
+Debug.NL(); LDA #'F' COut(); Space(); LDA SectorPositionH HOut(); LDA SectorPositionL HOut(); Space(); LDA CurrentFileSector HOut();
+                    
                     flushAndAllocateNext();
+Debug.NL(); LDA #'B' COut(); Space(); LDA BytesRemainingH HOut(); LDA BytesRemainingL HOut();
+
                     if (NC) { Error.EEPROMFull(); BIT ZP.EmulatorPCL break; }
                 }
                 
                 // Decrement 16-bit remaining count  
                 LDA BytesRemainingL
-                if (NZ)
-                {
-                    DEC BytesRemainingL
-                }
-                else
+                if (Z)
                 {
                     DEC BytesRemainingH
-                    LDA #0xFF
-                    STA BytesRemainingL
                 }
+                DEC BytesRemainingL
+                
+Space(); LDA BytesRemainingL HOut();
                 
                 // Update FilePosition (16-bit)
                 INC FilePositionL
@@ -340,6 +346,7 @@ unit File
             
             break;
         }
+
         
         PLY
         PLX
@@ -363,17 +370,20 @@ unit File
             allocateFirstFreeSector(); // -> Y
             if (NC) 
             { 
+LDA #'!' COut(); Space();
                 // Disk full
                 Error.EEPROMFull(); BIT ZP.EmulatorPCL
                 break; 
             }
             STY NextFileSector
-            
+LDA #'>' COut(); TYA HOut(); Space();
             
             // Link in FAT chain: FATBuffer[CurrentFileSector] = NextFileSector
             LDY CurrentFileSector
             LDA NextFileSector
             STA FATBuffer, Y
+            
+TYA HOut(); Space(); LDA NextFileSector HOut(); Space();
             
             // Move to new sector
             LDA NextFileSector
@@ -381,8 +391,12 @@ unit File
             STZ SectorPositionL       // Reset to start of new sector
             STZ SectorPositionH
             
+LDA CurrentFileSector HOut(); Space();            
+            
             // Clear new file data buffer using existing function
             clearFileDataBuffer();
+            
+LDA CurrentFileSector HOut(); Space();
             
             SEC // Success
             break;
@@ -398,9 +412,11 @@ unit File
     // Munts: A, Y
     allocateFirstFreeSector()
     {
+LDA #'<' COut();
         LDY #2                   // Start from sector 2 (skip FAT and directory)
         loop
         {
+TYA HOut(); Space();            
             LDA FATBuffer, Y
             if (Z)                // Free sector found
             {
@@ -408,11 +424,20 @@ unit File
                 LDA #1
                 STA FATBuffer, Y
                 SEC
+LDA #'>' COut();
                 break;
             }
             INY
             if (Z)                // Y wrapped to 0 - checked all sectors
             {
+LDA #'!' COut(); LDA #'>' COut();
+                CLC               // Disk full
+                break;
+            }
+            CPY #8
+            if (Z)                // Y got too 8, exit
+            {
+LDA #'?' COut(); LDA #'>' COut();
                 CLC               // Disk full
                 break;
             }
