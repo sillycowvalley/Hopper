@@ -89,9 +89,9 @@ program EEPROMTest
         
     }
     
-    const string TestFileOne   = "FILEONE.BAS";
-    const string TestFileTwo   = "FILETWO.BAS";
-    const string TestFileThree = "FILETRI.BAS";
+    const string TestFileOne   = "FIRSTFILE";
+    const string TestFileTwo   = "SECONDFILE";
+    const string TestFileThree = "THIRDFILE";
     
     // 242 including '\0;
     const string TestDataOne = "00000 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. END";
@@ -490,14 +490,14 @@ Debug.NL();
             STA ZP.STRH
             Print.String();
         }
-        
+        /*
         DirectoryList();
         if (NC)
         {
             Error.CheckAndPrint();
         }
         return;
-        
+        */
         
         File.Format();
         if (NC)
@@ -557,6 +557,7 @@ Debug.NL(); Print.String();
         {
             Error.CheckAndPrint();
         }
+        /*
         LDA #1
         DumpDriveState();
         
@@ -584,7 +585,6 @@ Debug.NL(); Print.String();
         LDA #(msgComplete / 256)
         STA ZP.STRH
         Print.String();
-        
-        loop { }
+        */
     }
 }

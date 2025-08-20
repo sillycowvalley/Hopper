@@ -42,37 +42,6 @@ unit File
     const string filesLabel          = " files, ";
     const string bytesUsedLabel      = " bytes used";
     
-    // Check if character is valid for filename (alphanumeric + period)
-    // Input: A = character to test
-    // Output: C set if valid, NC if invalid
-    // Preserves: X, Y
-    // Munts: A only
-    IsValidFilenameChar()
-    {
-        loop // single exit block
-        {
-            // First check if it's alphanumeric
-            Char.IsAlphaNumeric();
-            if (C)
-            {
-                SEC  // Valid alphanumeric character
-                break;
-            }
-            
-            // Not alphanumeric, check if it's a period
-            CMP #'.'
-            if (Z)
-            {
-                SEC  // Valid period character
-                break;
-            }
-            
-            // Invalid character
-            CLC
-            break;
-        }
-    }
-    
     // Validate filename format (alphanumeric + period, 1-13 chars)
     // Input: ZP.STR = pointer to null-terminated filename
     // Output: C set if valid, NC if invalid  
@@ -101,7 +70,7 @@ unit File
                 if (Z) { break; }  // End of string
                 
                 // Check if character is valid
-                IsValidFilenameChar();
+                Char.IsAlphaNumeric();
                 if (NC)
                 {
                     CLC  // Invalid character found
@@ -388,7 +357,6 @@ unit File
             loadDirectory();
             
             // Print header
-            Print.NewLine();
             LDA #(dirListHeader % 256)
             STA ZP.STRL
             LDA #(dirListHeader / 256)
@@ -414,8 +382,6 @@ unit File
             {
                 // Print each file entry
                 printAllFileEntries();
-                
-                Print.NewLine();
                 
                 // Print summary
                 printDirectorySummary();
@@ -1128,6 +1094,9 @@ Debug.NL();
         
         TXA
         TAY
+        
+        LDX #4
+        Print.Spaces();
         
         printFilenameFromDirectory(); // Uses Y = filename start offset
         

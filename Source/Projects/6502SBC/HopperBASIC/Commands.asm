@@ -981,7 +981,11 @@ unit Commands
     // Output: Directory listing printed to serial
     CmdDir()
     {
+#ifdef HASEEPROM 
         File.DirectoryList();
+#else
+        TODO(); BIT ZP.EmulatorPCL
+#endif 
     }
     
     // Execute DEL command - delete file from EEPROM
@@ -989,7 +993,11 @@ unit Commands
     // Output: File deleted or error message
     CmdDel()
     {
+#ifdef HASEEPROM 
         File.DeleteFile(); // Input: ZP.STR
+#else
+        TODO(); BIT ZP.EmulatorPCL
+#endif 
     }
     
     // Execute SAVE command - save current program to EEPROM
@@ -997,7 +1005,11 @@ unit Commands
     // Output: Program saved or error message
     CmdSave()
     {
+#ifdef HASEEPROM        
         Storage.SaveProgram(); // Input: ZP.STR
+#else
+        TODO(); BIT ZP.EmulatorPCL
+#endif        
     }
     
     // Execute LOAD command - load program from EEPROM
@@ -1005,7 +1017,11 @@ unit Commands
     // Output: Program loaded or error message  
     CmdLoad()
     {
+#ifdef HASEEPROM        
         Storage.LoadProgram(); // Input: ZP.STR
+#else
+        TODO(); BIT ZP.EmulatorPCL
+#endif                
     }
     
     // Execute FORMAT command - format EEPROM file system with confirmation
@@ -1013,6 +1029,7 @@ unit Commands
     // Output: File system formatted or cancelled
     CmdFormat()
     {
+#ifdef HASEEPROM 
         confirmDestructiveAction();
         if (C)
         {
@@ -1020,6 +1037,9 @@ unit Commands
             CheckAndPrint();
         }
         // If NC, user cancelled - no action needed (no error)
+#else
+        TODO(); BIT ZP.EmulatorPCL
+#endif        
     }
     
     // Prompt user for Y/N confirmation on destructive operations

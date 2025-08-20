@@ -218,6 +218,53 @@ unit BASICTypes // BASICTypes.asm
         }
     }
     
+    // Convert BASICType base type to corresponding Token
+    // Input: A = BASICType base type (e.g., BASICType.INT)
+    // Output: A = corresponding Token (e.g., Token.INT)
+    ToToken()
+    {
+        switch (A)
+        {
+            case BASICType.INT:
+            {
+                LDA #Token.INT
+            }
+            case BASICType.WORD:
+            {
+                LDA #Token.WORD
+            }
+            case BASICType.BYTE:
+            {
+                LDA #Token.BYTE
+            }
+            case BASICType.CHAR:
+            {
+                LDA #Token.CHAR
+            }
+            case BASICType.STRING:
+            {
+                LDA #Token.STRING
+            }
+            case BASICType.BIT:
+            {
+                LDA #Token.BIT
+            }
+            case BASICType.VAR:
+            {
+                LDA #Token.VAR
+            }
+            case BASICType.LONG:
+            {
+                LDA #Token.LONG
+            }
+            default:
+            {
+                // Unknown type - default to INT
+                LDA #Token.INT
+            }
+        }
+    }
+    
     // Print variable value with proper type formatting
     // Input: ZP.TOP = value, ZP.TOPT = type, C =  quote strings, NC = no quotes
     // Output: Value printed to serial (TRUE/FALSE for BIT, numeric for others)
