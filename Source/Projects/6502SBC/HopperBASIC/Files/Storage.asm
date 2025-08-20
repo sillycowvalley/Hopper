@@ -95,7 +95,7 @@ unit Storage
         {
             // Get type and name
             Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
-            Variables.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
+            
             
             // Type token (extract base type)
             LDA ZP.ACCT
@@ -106,7 +106,9 @@ unit Storage
             // IDENTIFIER token and name
             LDA #Token.IDENTIFIER
             appendTokenToBuffer();  // uses XID
-            appendStringToBuffer(); // Input: ZP.TOP = name pointer, uses XID
+            
+            Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
+            appendStringToBuffer(); // Input: ZP.STR = name pointer, uses XID
             if (NC) { break; }
             
             // Check if this is an array
@@ -213,10 +215,9 @@ unit Storage
                 if (NC) { break; } // No more functions
                 
                 // Check if this is the main program ("$MAIN") or regular function
-                Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
-                
+                Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
                 // Compare with "$MAIN" to determine format
-                LDA [TOP]
+                LDA [ZP.STR]
                 CMP #'$'
                 if (Z)
                 {
@@ -237,17 +238,21 @@ unit Storage
     }
     
     // Append null-terminated string to TokenizerBuffer as inline data
-    // Input: ZP.TOP = string pointer
+    // Input: ZP.STR = string pointer
     // Output: C set if successful, NC if buffer overflow
     appendStringToBuffer()
     {
+
         PHY
+        
+Debug.NL(); LDA #'"' COut(); 
+        
         LDY #0
         loop
         {
             // Get character from string
-            LDA [ZP.TOP], Y
-            
+            LDA [ZP.STR], Y
+Printable();
             // Calculate write position: TokenBuffer + ContentLength
             CLC
             LDA ZP.TokenBufferL
@@ -268,11 +273,12 @@ unit Storage
             }
             
             // Check for null terminator
-            LDA [ZP.TOP], Y
+            LDA [ZP.STR], Y
             if (Z) { SEC break; } // Success - null terminator written
             INY
             // TODO: Add buffer overflow check here if needed
         }
+LDA #'"' COut();
         PLY
     }
     
@@ -292,6 +298,8 @@ unit Storage
             }
             // Iterate through arguments
             LDX #0 // Argument counter for comma separation
+            
+            IterateStart();
             loop
             {
                 if (NC) { SEC break; } // No more arguments
@@ -315,7 +323,14 @@ unit Storage
                     
                     // Get argument name and append it
                     Locals.GetName(); // Input: ZP.IDY, Output: ZP.TOP = name pointer
-                    appendStringToBuffer(); // Input: ZP.TOP
+                    LDA ZP.TOPL
+                    STA ZP.STRL
+                    LDA ZP.TOPH
+                    STA ZP.STRH
+                    
+LDA #'a' COut();                    
+                    appendStringToBuffer(); // Input: ZP.STR
+LDA #'b' COut();                    
                     if (NC) { CLC break; } // Propagate error
                     INX // Increment argument counter
                 }
@@ -391,8 +406,10 @@ unit Storage
             LDA #Token.IDENTIFIER
             appendTokenToBuffer();
             
-            Functions.GetName(); // Input: ZP.IDX, Output: ZP.TOP = name pointer
-            appendStringToBuffer(); // Input: ZP.TOP = string pointer
+            Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
+LDA #'c' COut();
+            appendStringToBuffer(); // Input: ZP.STR = string pointer
+LDA #'d' COut();
             if (NC) { break; }
             
             // LPAREN
@@ -429,7 +446,9 @@ unit Storage
     // Output: C set if successful, NC on error  
     streamFunctionBody()
     {
+Debug.NL(); XOut();        
         Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
+YOut();        
         LDA ZP.IDYL
         ORA ZP.IDYH
         if (Z)
@@ -471,8 +490,10 @@ unit Storage
         LDA ZP.IDXL
         PHA
         LDA ZP.IDYH
+        STA ZP.XIDH
         PHA
         LDA ZP.IDYL
+        STA ZP.XIDL
         PHA
         
         STZ File.TransferLengthL
@@ -486,13 +507,13 @@ unit Storage
             {
                 INC File.TransferLengthH
             }
-            LDA [ZP.IDY]          // Check for EOF
+            LDA [ZP.XID]          // Check for EOF
             CMP #Token.EOF  
             if (Z) { break; }
-            INC ZP.IDYL           // Advance to next token
+            INC ZP.XIDL           // Advance to next token
             if (Z)
             {
-                INC ZP.IDYH
+                INC ZP.XIDH
             }
         }
         LDA ZP.IDYL
@@ -533,6 +554,10 @@ unit Storage
         {
             INC ZP.TokenBufferContentLengthH
         }
+Debug.NL(); HOut(); Space(); LDA ZP.TokenBufferContentLengthH HOut(); LDA ZP.TokenBufferContentLengthL HOut();
+        
+        
+        
     }
     
     // Reset TokenizerBuffer and get its address/prepare for writing

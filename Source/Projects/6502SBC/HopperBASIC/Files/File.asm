@@ -346,7 +346,7 @@ unit File
     // Output: Directory listing printed to serial, C set if successful
     // Preserves: X, Y
     // Munts: A, file system buffers
-    List()
+    Dir()
     {
         PHX
         PHY
@@ -355,11 +355,6 @@ unit File
         {
             // Load directory from EEPROM
             loadDirectory();
-NewLine();  
-LDA #(dirListHeader / 256)
-Hex();
-LDA #(dirListHeader % 256)           
-Hex();      
             // Print header
             LDA #(dirListHeader % 256)
             STA ZP.STRL
