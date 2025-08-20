@@ -223,18 +223,6 @@ unit File
     {
         PHX
         PHY
-/*        
-Debug.NL(); LDA #'<' COut(); Space();
-LDY #0
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-LDA [SectorSource], Y INY HOut();
-*/      
         loop // Single exit
         {
             // Copy input parameters to working variables
@@ -290,18 +278,6 @@ LDA [SectorSource], Y INY HOut();
             
             break;
         }
-/*        
-Debug.NL(); LDA #'>' COut(); Space();
-LDA FileDataBuffer + 0 HOut();
-LDA FileDataBuffer + 1 HOut();
-LDA FileDataBuffer + 2 HOut();
-LDA FileDataBuffer + 3 HOut();
-LDA FileDataBuffer + 4 HOut();
-LDA FileDataBuffer + 5 HOut();
-LDA FileDataBuffer + 6 HOut();
-LDA FileDataBuffer + 7 HOut();                
-*/
-        
         PLY
         PLX
     }
@@ -411,6 +387,11 @@ LDA FileDataBuffer + 7 HOut();
         PLX
     }
     
+    
+    
+    
+    
+    
     // Delete file from EEPROM file system
     // Input: ZP.STR = pointer to filename (null-terminated)
     // Output: C set if successful, NC if error
@@ -487,7 +468,7 @@ LDA FileDataBuffer + 7 HOut();
             if (NZ)
             {
                 // Entry is in use, check filename match
-                checkFilenameMatch(); // Uses X = dir entry offset, ZP.STR = filename
+                compareFilenames(); // Uses X = dir entry offset, ZP.STR = filename
                 if (C)
                 {
                     // Found the file
@@ -508,6 +489,88 @@ LDA FileDataBuffer + 7 HOut();
         }
     }
     
+    // Compare filename in directory entry with input filename
+    // Input: X = directory entry byte offset, ZP.STR = filename to match
+    // Output: C set if match, NC if no match
+    // Preserves: X, Y
+    // Munts: A
+    compareFilenames()
+    {
+        PHX
+        PHY
+        
+        // Point to filename field in directory entry (offset +3)
+        TXA
+        CLC
+        ADC #3
+        TAX                      // X = filename field start in DirectoryBuffer
+        
+        LDY #0                   // Index into input filename
+        
+        loop
+        {
+            // Get character from input filename
+            LDA [ZP.STR], Y
+            if (Z)                // End of input filename
+            {
+                // Input filename ended - check if directory filename also ends here
+                LDA DirectoryBuffer, X
+                if (MI)              // High bit set = last char in directory
+                {
+                    SEC              // Perfect match
+                }
+                else
+                {
+                    CLC              // Input ended but directory continues
+                }
+                break;
+            }
+            
+            // Get character from directory filename and clear high bit for comparison
+            LDA DirectoryBuffer, X
+            AND #0x7F                // Clear high bit for comparison
+            
+            // Compare characters
+            CMP [ZP.STR], Y
+            if (NZ)
+            {
+                CLC                  // No match
+                break;
+            }
+            
+            LDA DirectoryBuffer, X
+            // Check if this was the last character in directory filename
+            if (MI)                  // High bit set = last character
+            {
+                // Directory filename ended - check if input also ends
+                INY
+                LDA [ZP.STR], Y
+                if (Z)
+                {
+                    SEC              // Perfect match
+                }
+                else
+                {
+                    CLC              // Directory ended but input continues
+                }
+                break;
+            }
+            
+            // Move to next character
+            INY
+            INX
+            CPY #13                  // Max filename length check
+            if (Z)
+            {
+                CLC                  // Filename too long - no match
+                break;
+            }
+        }
+        
+        PLY
+        PLX
+    }
+    
     // Get start sector from current directory entry
     // Input: CurrentFileEntry = directory entry index
     // Output: FileStartSector = start sector number
@@ -516,7 +579,7 @@ LDA FileDataBuffer + 7 HOut();
     {
         // Calculate directory entry offset: CurrentFileEntry * 16 + 2 (start sector field)
         LDA CurrentFileEntry
-        ASL A ASL A ASL A ASL    // * 16
+        ASL ASL ASL ASL          // * 16
         CLC
         ADC #2                   // + 2 for start sector field offset
         TAY                      // Y = start sector field offset
@@ -569,7 +632,7 @@ LDA FileDataBuffer + 7 HOut();
     {
         // Calculate directory entry offset: CurrentFileEntry * 16
         LDA CurrentFileEntry
-        ASL A ASL A ASL A ASL A  // * 16
+        ASL ASL ASL ASL          // * 16
         TAX                      // X = directory entry start offset
         
         // Clear 16 bytes of directory entry
@@ -585,6 +648,12 @@ LDA FileDataBuffer + 7 HOut();
             break;
         }
     }
+    
+    
+    
+    
+    
+    
     
     // Count files and calculate total bytes used
     // Output: TransferLengthL = file count
@@ -1174,17 +1243,6 @@ LDA FileDataBuffer + 7 HOut();
         
         LDA #(FileDataBuffer / 256) // RAM address MSB = FileDataBuffer (must be page aligned)
         STA ZP.IDXH
-/*        
-Debug.NL(); LDA #'W' COut(); Space(); XOut(); YOut(); Space();
-LDA FileDataBuffer + 0 HOut();
-LDA FileDataBuffer + 1 HOut();
-LDA FileDataBuffer + 2 HOut();
-LDA FileDataBuffer + 3 HOut();
-LDA FileDataBuffer + 4 HOut();
-LDA FileDataBuffer + 5 HOut();
-LDA FileDataBuffer + 6 HOut();
-LDA FileDataBuffer + 7 HOut();
-*/      
         EEPROM.WritePage();
     }
 
@@ -1317,11 +1375,9 @@ LDA FileDataBuffer + 7 HOut();
                 printFilenameFromDirectory();
                 
                 // Print file info
-                LDX #1
-                Print.Spaces();      // Single space
+                LDA #' ' Print.Char();
                 printFileSizeFromDirectory();
-                LDA #' '
-                Print.Char();
+                LDA #' ' Print.Char();
                 LDA #'@'
                 Print.Char();
                 LDA DirectoryBuffer + 2, Y  // Start sector
