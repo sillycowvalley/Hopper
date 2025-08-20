@@ -178,6 +178,11 @@ unit Debug // Debug.asm
         PLA PLP
     }
     
+    // Print character if printable, otherwise print '.'
+    // Input: A = character to test and print
+    // Output: Character or '.' printed to serial  
+    // Preserves: A
+    // Munts: None
     Printable()
     {
         Tools.IsPrintable();

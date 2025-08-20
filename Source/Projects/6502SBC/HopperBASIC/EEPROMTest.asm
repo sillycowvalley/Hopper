@@ -106,8 +106,6 @@ program EEPROMTest
         STA ZP.STRL
         String.Length(); // -> Y
 
-Debug.NL(); LDA #'L' COut(); TYA HOut();
-                
         PHY
            
         // Set up copy parameters
@@ -144,8 +142,6 @@ Debug.NL(); LDA #'L' COut(); TYA HOut();
         LDA # (TestDataTwo % 256)
         STA ZP.STRL
         String.Length(); // -> Y
-        
-Debug.NL(); LDA #'L' COut(); TYA HOut();
         
         // set destination once
         LDA #(FunctionOpCodeBuffer / 256)
@@ -286,8 +282,8 @@ Debug.NL(); LDA #'L' COut(); TYA HOut();
         {
 Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char(); 
         }
-        LDA #1 // load
-        File.DumpDriveState();
+//LDA #1 // load
+//File.DumpDriveState();
         /*
         if (NC)
         {
@@ -302,9 +298,9 @@ Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char();
         STA ZP.STRH
         LDA #(TestFileOne % 256)
         STA ZP.STRL
-Print.NewLine(); Print.String();  LDA #':' Print.Char();      
-Print.NewLine(); 
-Print.NewLine(); 
+//Print.NewLine(); Print.String();  LDA #':' Print.Char();      
+//Print.NewLine(); 
+//Print.NewLine(); 
         
         File.StartSave();
         if (NC)
@@ -350,17 +346,17 @@ Print.NewLine();
         }
 
         
-LDA #1 // reload after file one
-File.DumpDriveState();
-File.DumpFileState();        
+//LDA #1 // reload after file one
+//File.DumpDriveState();
+//File.DumpFileState();        
         
         LDA #(TestFileTwo / 256)
         STA ZP.STRH
         LDA #(TestFileTwo % 256)
         STA ZP.STRL
-Print.NewLine(); Print.String();  LDA #':' Print.Char();      
-Print.NewLine(); 
-Print.NewLine(); 
+//Print.NewLine(); Print.String();  LDA #':' Print.Char();      
+//Print.NewLine(); 
+//Print.NewLine(); 
         
         File.StartSave();
         if (NC)
@@ -388,9 +384,9 @@ Print.NewLine();
             Error.CheckAndPrint();
         }
 
-LDA #1 // reload after file two
-File.DumpDriveState();
-File.DumpFileState();
+//LDA #1 // reload after file two
+//File.DumpDriveState();
+//File.DumpFileState();
 
 
 /*

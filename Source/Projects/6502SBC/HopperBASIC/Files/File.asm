@@ -472,10 +472,7 @@ unit File
         PHY
         PHX
         
-        // Print filename (from offset X+3)
         TXA
-        CLC
-        ADC #3                   // Offset to filename field
         TAY
         
         printFilenameFromDirectory(); // Uses Y = filename start offset
@@ -486,8 +483,8 @@ unit File
         Print.Spaces();
         
         // Print file size
-        PLX                      // Restore directory entry offset
-        printFileSizeFromDirectory(); // Uses X = directory entry offset
+        // Y already has directory entry offset 
+        printFileSizeFromDirectory(); // Uses Y = directory entry offset
         
         LDA #(bytesLabel % 256)
         STA ZP.STRL
@@ -497,7 +494,51 @@ unit File
         
         Print.NewLine();
         
+        PLX
         PLY
+    }
+    
+    // Print filename from current directory entry 
+    // Input: Y = directory entry byte offset (0, 16, 32, 48, ...)
+    // Output: Filename printed to serial
+    // Preserves: Y
+    // Munts: A
+    printFilenameFromDirectory()
+    {
+        PHY
+        TYA
+        CLC
+        ADC #3                   // Offset to filename field
+        TAY
+        
+        loop
+        {
+            LDA DirectoryBuffer, Y
+            
+            PHA                      // Save character
+            AND #0x7F                // Clear high bit
+            Print.Char();            // Print character
+            PLA                      // Restore character
+            
+            if (MI) { break; }       // High bit set = last character
+            INY
+        } // single exit
+        PLY
+    }
+    
+    // Print file size from current directory entry
+    // Input: Y = directory entry byte offset (0, 16, 32, 48, ...)  
+    // Output: File size printed to serial as decimal
+    // Munts: A, ZP.TOPL, ZP.TOPH, ZP.TOPT
+    printFileSizeFromDirectory()
+    {
+        LDA DirectoryBuffer + 0, Y  // Length LSB
+        STA ZP.TOPL
+        LDA DirectoryBuffer + 1, Y  // Length MSB
+        STA ZP.TOPH
+        LDA #0
+        STA ZP.TOPT
+        Print.Decimal();
     }
     
     // Print directory summary: "3 files, 2373 bytes used"
@@ -865,6 +906,9 @@ unit File
     }
     
     // Load FAT from EEPROM sector 0 into FATBuffer
+    // Input: None
+    // Output: FATBuffer loaded with FAT data
+    // Munts: A, EEPROM operation registers
     loadFAT()
     {
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
@@ -888,6 +932,9 @@ unit File
     }
     
     // Load directory from EEPROM sector 1 into DirectoryBuffer
+    // Input: None
+    // Output: DirectoryBuffer loaded with directory data
+    // Munts: A, EEPROM operation registers
     loadDirectory()
     {
         LDA #1                           // EEPROM address MSB = sector 1  (must be page aligned)
@@ -912,7 +959,9 @@ unit File
     }
     
     // Read arbitrary sector into FileDataBuffer
-    // Input: A = sector number
+    // Input: A = sector number (0-255)
+    // Output: 256 bytes copied from EEPROM to FileDataBuffer
+    // Munts: A, EEPROM operation registers
     readSector()
     {
         STA ZP.IDYH                 // EEPROM address MSB = sector number (must be page aligned)
@@ -1022,8 +1071,8 @@ unit File
     const string debugHeader         = "--- DEBUG INFO ---";
     const string dirUtilLabel        = "Dir entries used: ";
     const string fatAllocLabel       = "FAT allocation:";
-    const string sector0Label        = "  Sector 0: FAT";
-    const string sector1Label        = "  Sector 1: Directory";
+    const string sector0Label        = "  Sector 00: FAT";
+    const string sector1Label        = "  Sector 01: Directory";
     const string sectorLabel         = "  Sector ";
     const string sectorsLabel        = " sectors)";
     const string freeSectorsLabel    = "Free sectors: ";
@@ -1245,42 +1294,7 @@ unit File
         Print.NewLine();
     }
     
-    // Print filename from current directory entry (Y = entry offset)
-    printFilenameFromDirectory()
-    {
-        PHY
-        TYA
-        CLC
-        ADC #3                   // Offset to filename field
-        TAY
         
-        loop
-        {
-            LDA DirectoryBuffer, Y
-            
-            PHA                      // Save character
-            AND #0x7F                // Clear high bit
-            Print.Char();            // Print character
-            PLA                      // Restore character
-            
-            if (MI) { break; }       // High bit set = last character
-            INY
-        } // single exit
-        PLY
-    }
-    
-    // Print file size from current directory entry (Y = entry offset)
-    printFileSizeFromDirectory()
-    {
-        LDA DirectoryBuffer + 0, Y  // Length LSB
-        STA ZP.TOPL
-        LDA DirectoryBuffer + 1, Y  // Length MSB
-        STA ZP.TOPH
-        LDA #0
-        STA ZP.TOPT
-        Print.Decimal();
-    }
-    
     // Dump current file operation state (ZP variables)
     // Output: File state printed to serial, C set if successful  
     // Preserves: X, Y
@@ -1384,15 +1398,18 @@ unit File
         
         // Read file's first sector
         LDA DirectoryBuffer + 2, X  // Start sector at offset +2
+PHA LDA #'S' Debug.COut(); LDA DirectoryBuffer + 2, X Debug.HOut(); Debug.NL(); PLA
+        
         readSector();               // Load sector into FileDataBuffer
         
         // Print first 16 bytes
-        printHexDumpLine(); // Offset 0x0000
+        STZ SectorPositionL     // Set to 0 for first line
+        printHexDumpLine();     // Offset 0x0000
         
         // Print second 16 bytes  
         LDA #16
         STA SectorPositionL     // Use as offset counter
-        printHexDumpLine(); // Offset 0x0010
+        printHexDumpLine();     // Offset 0x0010
         
         PLY
         PLX
@@ -1407,25 +1424,9 @@ unit File
         LDX #4
         Print.Spaces();
         
-        // Print address (0000: or 0010:)
-        LDA #'0'
-        Print.Char();
-        Print.Char();
+        // Print address (00: or 10:)
         LDA SectorPositionL
-        if (Z)
-        {
-            LDA #'0'
-            Print.Char();
-            LDA #'0'
-            Print.Char();
-        }
-        else
-        {
-            LDA #'1'
-            Print.Char();
-            LDA #'0'
-            Print.Char();
-        }
+        Print.Hex();             // Prints 00 or 10
         LDA #':'
         Print.Char();
         LDA #' '
@@ -1460,25 +1461,7 @@ unit File
         loop
         {
             LDA FileDataBuffer, X
-            CMP #32                  // Printable range 32-126
-            if (NC)
-            {
-                CMP #127
-                if (C)
-                {
-                    Print.Char();        // Printable character
-                }
-                else
-                {
-                    LDA #'.'
-                    Print.Char();        // Non-printable
-                }
-            }
-            else
-            {
-                LDA #'.'
-                Print.Char();            // Non-printable
-            }
+            Debug.Printable();   
             
             INX
             INY
@@ -1579,10 +1562,10 @@ unit File
         
         loop
         {
-            // Calculate byte offset: Y * 16
+            // Convert entry index to byte offset
             TYA
-            ASL ASL ASL ASL      // Y * 16 = directory entry offset
-            TAX                  // X = byte offset in directory
+            ASL A ASL A ASL A ASL A  // Y * 16 = directory entry offset
+            TAX                      // X = byte offset in directory
             
             // Check if entry is in use
             LDA DirectoryBuffer + 0, X  // Length LSB
@@ -1623,11 +1606,13 @@ unit File
         Print.Char();
         
         // Print filename
-        TXA
-        CLC
-        ADC #3                   // Offset to filename
-        TAY
-        printFilenameFromDirectory();
+        // Convert byte offset back to entry index
+        PHY
+        TYA                      // X = byte offset (0, 16, 32, ...)  
+        LSR A LSR A LSR A LSR A  // Divide by 16 to get entry index (0, 1, 2, ...)
+        TAY                      // Y = directory entry index
+        printFilenameFromDirectory(); // Expects Y = entry offset
+        PLY
         
         LDA #' '
         Print.Char();
