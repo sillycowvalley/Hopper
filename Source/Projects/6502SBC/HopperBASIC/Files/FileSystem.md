@@ -16,7 +16,7 @@ StartSave("HELLO.BAS"):
 - Find free directory entry: CurrentFileEntry = 3
 - Allocate first sector: FileStartSector = 45, CurrentFileSector = 45
 - Initialize state: FilePosition = 0, SectorPosition = 0
-- Set flags: FileSystemFlags = 0b00000011 (save mode + file open)
+- Clear file data buffer
 
 AppendStream(data, 100 bytes):
 - Copy data to FileDataBuffer[SectorPosition..SectorPosition+100]
@@ -27,7 +27,7 @@ AppendStream(data, 200 bytes):
 - Copy 156 bytes to fill FileDataBuffer[100..255]
 - Write FileDataBuffer to CurrentFileSector (45)
 - Allocate new sector from FATBuffer: NextFileSector = 78
-- Link sectors: FATBuffer[45] = 78, FATDirty = 1
+- Link sectors: FATBuffer[45] = 78
 - Copy remaining 44 bytes to FileDataBuffer[0..43]
 - Update state: CurrentFileSector = 78, SectorPosition = 44
 
@@ -36,7 +36,6 @@ EndSave():
 - Mark final sector: FATBuffer[78] = 1 (end of chain)
 - Update directory entry: startSector=45, fileLength=344
 - Flush cached data: write FATBuffer to sector 0, directory to sector 1
-- Clear state: FileSystemFlags = 0, FATDirty = 0, DirectoryDirty = 0
 ```
 
 ### **File Load Operation State Flow**
@@ -44,44 +43,45 @@ EndSave():
 StartLoad("HELLO.BAS"):
 - Load FAT into FATBuffer (cached for entire operation)
 - Search directory: CurrentFileEntry = 3, FileStartSector = 45
-- Initialize state: CurrentFileSector = 45, FileBytesRemaining = 344
-- Set flags: FileSystemFlags = 0b00000010 (load mode + file open)
+- Initialize state: CurrentFileSector = 45, BytesRemaining = 344
 - Read first sector into FileDataBuffer
 
 NextStream() - First call:
-- Return pointer: FileDataBuffer + SectorPosition (0)
-- Return length: min(256, FileBytesRemaining) = 256
-- Update state: SectorPosition = 256, FileBytesRemaining = 88
+- Return pointer: SectorSource = FileDataBuffer + SectorPosition (0)
+- Return length: TransferLength = min(256, BytesRemaining) = 256
+- Update state: SectorPosition = 256, BytesRemaining = 88
 
 NextStream() - Second call:
+- SectorPosition >= 256, advance to next sector
 - Follow chain: NextFileSector = FATBuffer[45] = 78
 - Read sector 78 into FileDataBuffer, CurrentFileSector = 78
-- Return pointer: FileDataBuffer + 0
-- Return length: min(256, FileBytesRemaining) = 88
-- Update state: FileBytesRemaining = 0, FileSystemFlags |= 0b00000100 (EOF)
+- Reset SectorPosition = 0
+- Return pointer: SectorSource = FileDataBuffer + 0
+- Return length: TransferLength = min(256, BytesRemaining) = 88
+- Update state: BytesRemaining = 0
 
 NextStream() - Third call:
-- Check FileBytesRemaining = 0: return NC (end of file)
+- Check BytesRemaining = 0: return NC (end of file)
 ```
 
 ### **Directory Operations**
 ```hopper
 DirectoryList():
-- Read directory sector into WorkingSectorBuffer
-- For each 16-byte entry in WorkingSectorBuffer[0..255]:
+- Read directory sector into DirectoryBuffer
+- For each 16-byte entry in DirectoryBuffer[0..255]:
   - Check fileLength != 0 (entry in use)
   - Parse filename: scan bytes until high bit found
   - Print filename and fileLength to serial
 - No FAT operations needed, single sector read
 
 DeleteFile("HELLO.BAS"):
-- Read directory into WorkingSectorBuffer, find CurrentFileEntry = 3
+- Read directory into DirectoryBuffer, find CurrentFileEntry = 3
 - Load FAT into FATBuffer
 - Follow chain starting from FileStartSector = 45:
   - FATBuffer[45] = 78 → FATBuffer[78] = 1 (end)
   - Mark free: FATBuffer[45] = 0, FATBuffer[78] = 0
-- Clear directory entry: WorkingSectorBuffer[48..63] = zeros
-- Write updates: FATBuffer to sector 0, WorkingSectorBuffer to sector 1
+- Clear directory entry: DirectoryBuffer[48..63] = zeros
+- Write updates: FATBuffer to sector 0, DirectoryBuffer to sector 1
 ```
 
 ---
@@ -121,14 +121,14 @@ DeleteFile("HELLO.BAS"):
 ### **Sector 0: File Allocation Table (FAT)**
 ```
 Byte Layout (256 bytes, one per sector):
-┌──────┬─────────────────────────────────────────────────────┐
+┌──────┬───────────────────────────────────────────────────────┐
 │ 0    │ Reserved (always 1 - marks sector 0 as system)      │
 │ 1    │ Reserved (always 1 - marks sector 1 as system)      │
 │ 2    │ Sector 2 status: 0=free, 1=end-of-chain, 2-255=next│
 │ 3    │ Sector 3 status: 0=free, 1=end-of-chain, 2-255=next│
 │ ...  │ ...                                                 │
 │ 255  │ Sector 255 status: 0=free, 1=end-of-chain, 2-255=next│
-└──────┴─────────────────────────────────────────────────────┘
+└──────┴───────────────────────────────────────────────────────┘
 
 FAT Values:
   0     = Free sector (available for allocation)
@@ -194,61 +194,32 @@ Data Storage:
 
 ## Zero Page Usage
 
-### **Core File State (Reusing ZP.F/L Allocations)**
+### **Core File State (Reusing Existing ZP Allocations)**
 ```
-const byte CurrentFileEntry     = ZP.LCURRENT;      // (0x65) Directory entry index (0-15)
-const byte CurrentFileSector    = ZP.LCURRENTH;     // (0x66) Current sector number in file
+const byte CurrentFileEntry     = ZP.LCURRENTL;     // Directory entry index (0-15)
+const byte CurrentFileSector    = ZP.LCURRENTH;     // Current sector number in file
 
-const byte FilePosition         = ZP.LHEAD;         // (0x67-0x68) Current byte position in file (16-bit)
-const byte FilePositionL        = ZP.LHEADL;        // (0x67)
-const byte FilePositionH        = ZP.LHEADH;        // (0x68)
+const byte FilePositionL        = ZP.LHEADL;        // Current byte position in file (16-bit LSB)
+const byte FilePositionH        = ZP.LHEADH;        // Current byte position in file (16-bit MSB)
 
-const byte FileBytesRemaining   = ZP.LPREVIOUS;     // (0x6B-0x6C) Bytes left to read/write (16-bit)
-const byte FileBytesRemainingL  = ZP.LPREVIOUSL;    // (0x6B)
-const byte FileBytesRemainingH  = ZP.LPREVIOUSH;    // (0x6C)
+const byte NextFileSector       = ZP.LNEXTL;        // Next sector in chain (from FAT)
+const byte FileStartSector      = ZP.LNEXTH;        // First sector of current file
 
-const byte SectorPosition       = ZP.LHEADX;        // (0x6A) Byte position within current sector (0-255)
-const byte NextFileSector       = ZP.LNEXTL;        // (0x6D) Next sector in chain (from FAT)
-const byte FileStartSector      = ZP.LNEXTH;        // (0x6E) First sector of current file
-
-const byte FileSystemFlags      = ZP.FSIGN;         // (0x69) Operation mode and status flags
-// Bit 0: Operation mode (0=load, 1=save)
-// Bit 1: File is open flag
-// Bit 2: End of file reached
-// Bit 3: FAT modified (needs flush)
-
-const byte SectorSourceL        = ZP.FSOURCEADDRESSL;      // (0x5F) Source address for sector ops  
-const byte SectorSourceH        = ZP.FSOURCEADDRESSH;     // (0x60)
-const byte SectorDestL          = ZP.FDESTINATIONADDRESSL; // (0x61) Destination address for sector ops
-const byte SectorDestH          = ZP.FDESTINATIONADDRESSH;// (0x62)
-const byte TransferLength       = ZP.FLENGTHL;             // (0x63-0x64) Bytes to transfer
-const byte TransferLengthL      = ZP.FLENGTHL;             // (0x63)
-const byte TransferLengthH      = ZP.FLENGTHH;             // (0x64)
+const byte SectorSourceL        = ZP.FSOURCEADDRESSL;      // Source/destination address for I/O ops  
+const byte SectorSourceH        = ZP.FSOURCEADDRESSH;     
+const byte TransferLengthL      = ZP.FLENGTHL;             // Bytes to transfer (LSB)
+const byte TransferLengthH      = ZP.FLENGTHH;             // Bytes to transfer (MSB)
 ```
 
 ### **Extended File System State (Using ZP.M Allocations)**
 ```
-const byte DirectoryDirty       = ZP.M1;           // Directory needs write-back (0=clean, 1=dirty)
-const byte FATDirty            = ZP.M2;           // FAT needs write-back (0=clean, 1=dirty)
-const byte LastAllocatedSector  = ZP.M3;           // Last sector allocated (optimization hint)
+const byte BytesRemainingL      = ZP.M4;                   // 16-bit: bytes left to copy/read
+const byte BytesRemainingH      = ZP.M5;
 
-const byte StreamBytesAvailable = ZP.M4;           // Bytes available in current NextStream() call
-const byte StreamMode          = ZP.M5;           // 0=none, 1=save, 2=load
-const byte PendingSectorWrite  = ZP.M6;           // Sector number waiting to be written (0=none)
+const byte SectorPositionL      = ZP.M6;                   // Byte position within current sector (0-255)
+const byte SectorPositionH      = ZP.M7;                   // High byte for 16-bit sector position
 
-const byte FreeSectorCount     = ZP.M7;           // Cache of free sectors (0=unknown, recalculate)
-const byte OpenFileCount       = ZP.M8;           // Number of files in directory (0-16)
-
-const byte TempSector          = ZP.M9;           // Temporary sector number for operations
-const byte TempByte1           = ZP.M10;          // General temporary storage
-const byte TempByte2           = ZP.M11;          // General temporary storage
-
-// Future expansion (5 slots available)
-const byte Reserved1           = ZP.M12;          // Available for future features
-const byte Reserved2           = ZP.M13;          // Available for future features  
-const byte Reserved3           = ZP.M14;          // Available for future features
-const byte Reserved4           = ZP.M15;          // Available for future features
-const byte Reserved5           = ZP.M16;          // Available for future features
+// Note: Additional ZP.M8-M16 slots available for future expansion
 ```
 
 ---
@@ -265,8 +236,8 @@ const byte Reserved5           = ZP.M16;          // Available for future featur
 StartSave()
 
 // Write data chunk to current save file
-// Input: ZP.FSOURCEADDRESS = pointer to data
-//        ZP.FLENGTH = number of bytes to write
+// Input: SectorSource = pointer to data
+//        TransferLength = number of bytes to write
 // Output: C set if successful, NC if error (disk full)
 // Preserves: X, Y
 // Munts: A, file system state
@@ -291,8 +262,8 @@ StartLoad()
 
 // Read next chunk of data from current load file
 // Output: C set if data available, NC if end of file
-//         ZP.FSOURCEADDRESS = pointer to data buffer (if C set)
-//         ZP.FLENGTH = number of bytes available (if C set)
+//         SectorSource = pointer to data buffer (if C set)
+//         TransferLength = number of bytes available (if C set)
 // Preserves: X, Y
 // Munts: A, file system state
 // Note: Caller must process data before next call
@@ -329,32 +300,32 @@ Format()
 ### **FAT Management**
 ```hopper
 // Internal operations for sector allocation
-sectorAllocate() → sectorNumber     // Find free sector
-sectorFree(sectorNumber)            // Mark sector as free
-chainFollow(sectorNumber) → nextSector // Get next in chain
-chainAppend(lastSector, newSector)  // Extend file chain
-chainDeallocate(startSector)        // Free entire chain
+allocateFirstFreeSector() → sectorNumber     // Find free sector
+sectorFree(sectorNumber)                    // Mark sector as free
+chainFollow(sectorNumber) → nextSector      // Get next in chain
+chainAppend(lastSector, newSector)         // Extend file chain
+freeFileSectorChain(startSector)           // Free entire chain
 ```
 
 ### **Directory Management**
 ```hopper
 // Internal operations for file entries
-findFileEntry(filename) → entryOffset   // Locate file in directory
-findFreeEntry() → entryOffset           // Find unused directory slot
-createFileEntry(filename, startSector, length) // Add new file
-removeFileEntry(entryOffset)             // Clear directory entry
-validateFilename(filename) → valid       // Check filename format
+findFileInDirectory(filename) → entryIndex    // Locate file in directory
+findFreeDirectoryEntry() → entryIndex         // Find unused directory slot
+writeFilenameToDirectory()                    // Store filename in entry
+clearDirectoryEntry(entryIndex)              // Clear directory entry
+ValidateFilename(filename) → valid           // Check filename format
 ```
 
 ### **Sector I/O**
 ```hopper
 // Internal operations for EEPROM access
-readSector(sectorNum, buffer)       // Read 256-byte sector
-writeSector(sectorNum, buffer)      // Write 256-byte sector
-readFAT()                          // Load FAT into memory
-writeFAT()                         // Save FAT to EEPROM
-readDirectory()                    // Load directory into memory
-writeDirectory()                   // Save directory to EEPROM
+readSector(sectorNum)                      // Read 256-byte sector to FileDataBuffer
+writeSector(sectorNum)                     // Write FileDataBuffer to 256-byte sector
+loadFAT()                                  // Load FAT into FATBuffer
+writeFAT()                                 // Save FATBuffer to EEPROM
+loadDirectory()                            // Load directory into DirectoryBuffer
+writeDirectory()                           // Save DirectoryBuffer to EEPROM
 ```
 
 ---
@@ -389,7 +360,7 @@ File deallocation: Chain following
 
 Directory management: Linear scan
 - 16 entries maximum, linear search acceptable
-- File creation/deletion compacts directory
+- File creation/deletion leaves entries in place
 ```
 
 ### **Buffer Strategy**
@@ -400,17 +371,20 @@ FileDataBuffer (256 bytes):
 - Current file sector being read/written
 - Streaming I/O operations (AppendStream/NextStream)
 - File content buffering during save/load
+- Address: Address.FileSystemBuffers (0-255)
 
-WorkingSectorBuffer (256 bytes):  
+DirectoryBuffer (256 bytes):  
 - Directory sector operations
 - Temporary sector I/O during multi-step operations
 - General workspace for file system metadata
+- Address: Address.FileSystemBuffers + 256 (256-511)
 
 FATBuffer (256 bytes):
 - Dedicated FAT caching (major performance improvement)
 - Loaded once per file operation, flushed on completion
 - Eliminates repeated sector 0 reads
 - Enables atomic FAT updates
+- Address: Address.FileSystemBuffers + 512 (512-767)
 
 Benefits:
 - FAT stays resident throughout operations
@@ -419,7 +393,6 @@ Benefits:
 - Clean separation of concerns
 ```
 
-
 ---
 
 ## Error Integration
@@ -427,12 +400,11 @@ Benefits:
 ### **File System Error Conditions**
 ```hopper
 // Error conditions reported via existing Error unit
-DISK_FULL        // No free sectors available
-FILE_NOT_FOUND   // Requested file does not exist
-INVALID_FILENAME // Filename format invalid
-DIRECTORY_FULL   // No free directory entries (16 files max)
-EEPROM_ERROR     // I2C communication failure
-CORRUPTED_FS     // File system corruption detected
+InvalidFilename     // Filename format invalid
+FileNotFound        // Requested file does not exist
+DirectoryFull       // No free directory entries (16 files max)
+EEPROMFull          // No free sectors available
+EEPROMError         // I2C communication failure
 ```
 
 ### **Error Reporting Pattern**
@@ -443,8 +415,8 @@ fileOperation()
     // ... operation logic ...
     if (errorCondition)
     {
-        // Set appropriate error code in ZP.LastError
-        Error.SetSpecificError();
+        // Set appropriate error code via Error unit
+        Error.InvalidFilename(); BIT ZP.EmulatorPCL
         CLC  // Signal failure to caller
         return;
     }
@@ -463,39 +435,63 @@ EEPROM Operations:
 ✅ EEPROM.WritePage()  - Write 256-byte sector
 
 Memory Operations:
-✅ Memory.Clear()      - Zero memory blocks
-✅ Memory.Copy()       - Copy memory blocks
-
-String Operations:
-✅ String.Compare()    - Compare filenames
-✅ String.Length()     - Get filename length
+✅ Memory.ClearPage()  - Zero 256-byte page
 
 Character Operations:
-✅ Char.IsAlpha()      - Validate filename chars
-✅ Char.IsDigit()      - Validate filename chars
+✅ Char.IsAlphaNumeric() - Validate filename chars
 
 Output Operations:
 ✅ Print.String()      - Directory listing output
 ✅ Print.Decimal()     - File size output
-✅ Serial.WriteChar()  - Character output
+✅ Print.Char()        - Character output
 
 Error Operations:
-✅ Error.CheckError()  - Error status checking
+✅ Error.InvalidFilename(), Error.FileNotFound(), etc.
 ```
 
 ### **Buffer Requirements**
 ```
-Primary Buffer: FunctionOpCodeBuffer[0-255]
-- Sector read/write operations
-- File data streaming
-- FAT operations
+File System Buffers: Address.FileSystemBuffers (768 bytes total)
+- FileDataBuffer:    [0-255]     - File content I/O
+- DirectoryBuffer:   [256-511]   - Directory operations  
+- FATBuffer:         [512-767]   - FAT caching
 
-Secondary Buffer: FunctionOpCodeBuffer[256-511]  
-- Directory operations
-- Multi-sector operations
-- Temporary workspace
+No additional memory allocation required beyond these fixed buffers
+```
 
-No additional memory allocation required
+---
+
+## Critical Implementation Notes
+
+### **EEPROM Page Alignment Requirement**
+The file system depends on **strict page alignment** for EEPROM operations. All sector I/O must ensure:
+```hopper
+// CRITICAL: Low bytes must be zero for page operations
+STZ ZP.IDYL    // EEPROM address low byte = 0
+STZ ZP.IDXL    // RAM address low byte = 0
+```
+
+### **16-bit Arithmetic Considerations**
+Special care is required for 16-bit values due to 6502 limitations:
+- **256-byte transfers:** TransferLength = 0x0100 (not 0x00)
+- **Sector position overflow:** SectorPositionH != 0 indicates sector boundary
+- **Byte remaining calculations:** Proper 16-bit subtraction required
+
+### **Stream-based I/O Pattern**
+```hopper
+// Typical load operation:
+File.StartLoad();
+if (C)
+{
+    loop
+    {
+        File.NextStream();
+        if (NC) { break; }  // End of file
+        
+        // Process TransferLength bytes at SectorSource
+        // ... user code processes data ...
+    }
+}
 ```
 
 ---
