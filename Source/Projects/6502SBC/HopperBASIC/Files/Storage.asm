@@ -100,13 +100,13 @@ unit Storage
             // Type token (extract base type)
             LDA ZP.ACCT
             AND #BASICType.TYPEMASK
-            BASICTypes.ToToken(); // Input: A = base type, Output: A = token value
-            appendTokenToBuffer();
+            BASICTypes.ToToken();  // Input: A = base type, Output: A = token value
+            appendTokenToBuffer(); // uses XID
             
             // IDENTIFIER token and name
             LDA #Token.IDENTIFIER
-            appendTokenToBuffer();
-            appendStringToBuffer(); // Input: ZP.TOP = name pointer
+            appendTokenToBuffer();  // uses XID
+            appendStringToBuffer(); // Input: ZP.TOP = name pointer, uses XID
             if (NC) { break; }
             
             // Check if this is an array
@@ -130,11 +130,7 @@ unit Storage
                 appendTokenToBuffer();
                 
                 // Stream header first
-                LDA ZP.TokenBufferContentLengthL
-                STA File.TransferLengthL
-                LDA ZP.TokenBufferContentLengthH
-                STA File.TransferLengthH
-                File.AppendStream();
+                flushTokenBuffer();
                 if (NC) { break; }
                 
                 // Stream initialization tokens directly (includes EOF)
@@ -142,17 +138,8 @@ unit Storage
                 STA ZP.IDYL
                 LDA ZP.ACCH
                 STA ZP.IDYH
-                measureTokenStreamLength(); // Input: ZP.IDY, Output: ZP.FLENGTH
-                
-                LDA ZP.ACCL
-                STA File.SectorSourceL
-                LDA ZP.ACCH
-                STA File.SectorSourceH
-                LDA ZP.FLENGTHL
-                STA File.TransferLengthL
-                LDA ZP.FLENGTHH
-                STA File.TransferLengthH
-                File.AppendStream();
+                writeTokenStream(); // Input: ZP.IDY
+                               
                 if (NC) { break; }
             }
             else
@@ -161,11 +148,7 @@ unit Storage
                 LDA #Token.EOF
                 appendTokenToBuffer();
                 
-                LDA ZP.TokenBufferContentLengthL
-                STA File.TransferLengthL
-                LDA ZP.TokenBufferContentLengthH
-                STA File.TransferLengthH
-                File.AppendStream();
+                flushTokenBuffer();
                 if (NC) { break; }
             }
             
@@ -186,11 +169,7 @@ unit Storage
             appendTokenToBuffer();
             
             // Stream header with LBRACKET
-            LDA ZP.TokenBufferContentLengthL
-            STA File.TransferLengthL
-            LDA ZP.TokenBufferContentLengthH
-            STA File.TransferLengthH
-            File.AppendStream();
+            flushTokenBuffer();
             if (NC) { break; }
             
             // Get dimension tokens (same as initialization tokens for arrays)
@@ -204,17 +183,7 @@ unit Storage
                 STA ZP.IDYL
                 LDA ZP.ACCH
                 STA ZP.IDYH
-                measureTokenStreamLength(); // Input: ZP.IDY, Output: ZP.FLENGTH
-                
-                LDA ZP.ACCL
-                STA File.SectorSourceL
-                LDA ZP.ACCH
-                STA File.SectorSourceH
-                LDA ZP.FLENGTHL
-                STA File.TransferLengthL
-                LDA ZP.FLENGTHH
-                STA File.TransferLengthH
-                File.AppendStream();
+                writeTokenStream(); // Input: ZP.IDY
                 if (NC) { break; }
             }
             
@@ -223,11 +192,7 @@ unit Storage
             LDA #Token.RBRACKET
             appendTokenToBuffer();
             
-            LDA ZP.TokenBufferContentLengthL
-            STA File.TransferLengthL
-            LDA ZP.TokenBufferContentLengthH
-            STA File.TransferLengthH
-            File.AppendStream();
+            flushTokenBuffer();
             if (NC) { break; }
             
             SEC // Success
@@ -280,7 +245,6 @@ unit Storage
     // Output: C set if successful, NC if buffer overflow
     appendStringToBuffer()
     {
-        PHA
         PHY
         
         LDY #0
@@ -293,16 +257,13 @@ unit Storage
             CLC
             LDA ZP.TokenBufferL
             ADC ZP.TokenBufferContentLengthL
-            STA ZP.IDXL
+            STA ZP.XIDL
             LDA ZP.TokenBufferH  
             ADC ZP.TokenBufferContentLengthH
-            STA ZP.IDXH
+            STA ZP.XIDH
             
             // Write character to buffer
-            PHY
-            LDY #0
-            STA [ZP.IDX], Y
-            PLY
+            STA [ZP.XID]
             
             // Increment content length
             INC ZP.TokenBufferContentLengthL
@@ -320,7 +281,6 @@ unit Storage
         }
         
         PLY
-        PLA
     }
     
     // Append function arguments to TokenizerBuffer
@@ -328,10 +288,7 @@ unit Storage
     // Output: C set if successful, NC on error
     appendArgumentsToBuffer()
     {
-        PHA
         PHX
-        PHY
-        
         loop // Single exit block
         {
             LDA ZP.IDYL
@@ -340,49 +297,40 @@ unit Storage
             {
                 SEC break; // No arguments - success
             }
-            
             // Iterate through arguments
             LDX #0 // Argument counter for comma separation
             loop
             {
                 if (NC) { SEC break; } // No more arguments
-                
                 // Check if this is really an argument (not a local variable)
                 Locals.GetType(); // Input: ZP.IDY, Output: ZP.ACCT = symbolType|dataType
                 LDA ZP.ACCT
-                AND #SymbolType.MASK
-                CMP #SymbolType.ARGUMENT
+                AND # SymbolType.MASK
+                CMP # SymbolType.ARGUMENT
                 if (Z)
                 {
                     // Add comma separator if not first argument
                     CPX #0
                     if (NZ)
                     {
-                        LDA #Token.COMMA
+                        LDA # Token.COMMA
                         appendTokenToBuffer();
                     }
-                    
                     // Add IDENTIFIER token
-                    LDA #Token.IDENTIFIER
+                    LDA # Token.IDENTIFIER
                     appendTokenToBuffer();
                     
                     // Get argument name and append it
                     Locals.GetName(); // Input: ZP.IDY, Output: ZP.TOP = name pointer
                     appendStringToBuffer(); // Input: ZP.TOP
                     if (NC) { CLC break; } // Propagate error
-                    
                     INX // Increment argument counter
                 }
-                
                 Locals.IterateNext(); // Input: ZP.IDY = current, Output: ZP.IDY = next
             }
-            
             break;
         }
-        
-        PLY
         PLX
-        PLA
     }
     
     // Stream a function to file
@@ -390,10 +338,6 @@ unit Storage
     // Output: C set if successful, NC on error
     streamFunction()
     {
-        PHA
-        PHX
-        PHY
-        
         loop // Single exit block
         {
             // Write function header
@@ -411,10 +355,6 @@ unit Storage
             SEC // Success
             break;
         }
-        
-        PLY
-        PLX
-        PLA
     }
     
     // Stream main program to file
@@ -422,10 +362,6 @@ unit Storage
     // Output: C set if successful, NC on error
     streamMainProgram()
     {
-        PHA
-        PHX
-        PHY
-        
         loop // Single exit block
         {
             // Write main program header
@@ -443,10 +379,6 @@ unit Storage
             SEC // Success
             break;
         }
-        
-        PLY
-        PLX
-        PLA
     }
     
     // Stream function header: FUNC IDENTIFIER "name" LPAREN <args> RPAREN
@@ -484,31 +416,19 @@ unit Storage
             appendTokenToBuffer();
             
             // Stream header to file
-            LDA ZP.TokenBufferContentLengthL
-            STA File.TransferLengthL
-            LDA ZP.TokenBufferContentLengthH
-            STA File.TransferLengthH
-            
-            File.AppendStream();
+            flushTokenBuffer();
             break; // Return result from AppendStream
         }
     }
     
     // Stream main program header: BEGIN
-    // Input: ZP.IDX = main program function node
     // Output: C set if successful, NC on error
     streamMainHeader()
     {
         prepareTokenBuffer();
         LDA #Token.BEGIN
         appendTokenToBuffer();
-        
-        LDA ZP.TokenBufferContentLengthL
-        STA File.TransferLengthL
-        LDA ZP.TokenBufferContentLengthH
-        STA File.TransferLengthH
-        
-        File.AppendStream();
+        flushTokenBuffer();
     }
     
     // Stream function body tokens directly from memory
@@ -524,105 +444,60 @@ unit Storage
             SEC // No body - success
             return;
         }
-        
-        // Measure token stream length
-        measureTokenStreamLength(); // Input: ZP.IDY, Output: ZP.FLENGTH
-        
-        // Set up for streaming function body directly
-        LDA ZP.IDYL
-        STA File.SectorSourceL
-        LDA ZP.IDYH  
-        STA File.SectorSourceH
-        
-        LDA ZP.FLENGTHL
-        STA File.TransferLengthL
-        LDA ZP.FLENGTHH
-        STA File.TransferLengthH
-        
-        File.AppendStream();
+        writeTokenStream(); // Input: ZP.IDY
     }
     
     // Stream function footer: ENDFUNC
-    // Input: ZP.IDX = function node
     // Output: C set if successful, NC on error
     streamFunctionFooter()
     {
         prepareTokenBuffer();
         LDA #Token.ENDFUNC
         appendTokenToBuffer();
-        
-        LDA ZP.TokenBufferContentLengthL
-        STA File.TransferLengthL
-        LDA ZP.TokenBufferContentLengthH
-        STA File.TransferLengthH
-        
-        File.AppendStream();
+        flushTokenBuffer();
     }
     
     // Stream main program footer: END
-    // Input: ZP.IDX = main program function node
     // Output: C set if successful, NC on error
     streamMainFooter()
     {
         prepareTokenBuffer();
         LDA #Token.END
         appendTokenToBuffer();
-        
-        LDA ZP.TokenBufferContentLengthL
-        STA File.TransferLengthL
-        LDA ZP.TokenBufferContentLengthH
-        STA File.TransferLengthH
-        
-        File.AppendStream();
+        flushTokenBuffer();
     }
-    
-    // Check if function name starts with '
     
     // Measure length of token stream until EOF
     // Input: ZP.IDY = token stream pointer
-    // Output: ZP.FLENGTH = length of token stream (including EOF)
-    // Preserves: ZP.IDY (input pointer unchanged)
-    measureTokenStreamLength()
+    // Output: flushes Variables or Functions token stream to file
+    writeTokenStream()
     {
-        PHA
-        
-        // Save original pointer
         LDA ZP.IDYL
-        PHA
+        STA ZP.XIDL
         LDA ZP.IDYH
-        PHA
+        STA ZP.XIDH
         
-        STZ ZP.FLENGTHL
-        STZ ZP.FLENGTHH
+        STZ File.TransferLengthL
+        STZ File.TransferLengthH
         
         loop
         {
             // Increment length counter
-            INC ZP.FLENGTHL
+            INC File.TransferLengthL
             if (Z)
             {
-                INC ZP.FLENGTHH
+                INC File.TransferLengthH
             }
-            
-            // Check for EOF
-            LDA [ZP.IDY]
+            LDA [ZP.XID]          // Check for EOF
             CMP #Token.EOF  
             if (Z) { break; }
-            
-            // Advance to next token
-            INC ZP.IDYL
+            INC ZP.XIDL           // Advance to next token
             if (Z)
             {
-                INC ZP.IDYH
+                INC ZP.XIDH
             }
         }
-        
-        // Restore original pointer
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        PLA
+        flushTokenBuffer();
     }
     
     // Append single token to TokenizerBuffer and update position
@@ -631,27 +506,20 @@ unit Storage
     // Uses: ZP.TokenBufferContentLength as write position
     appendTokenToBuffer()
     {
-        PHY
         // Calculate write position: TokenBuffer + ContentLength
         CLC
         LDA ZP.TokenBufferL
         ADC ZP.TokenBufferContentLengthL
-        STA ZP.IDXL
+        STA ZP.XIDL
         LDA ZP.TokenBufferH  
         ADC ZP.TokenBufferContentLengthH
-        STA ZP.IDXH
-        
-        // Write token
-        LDY #0
-        STA [ZP.IDX], Y
-        
-        // Increment content length
-        INC ZP.TokenBufferContentLengthL
+        STA ZP.XIDH
+        STA [ZP.XID]                       // Write token
+        INC ZP.TokenBufferContentLengthL   // Increment content length
         if (Z)
         {
             INC ZP.TokenBufferContentLengthH
         }
-        PLY
     }
     
     // Reset TokenizerBuffer and get its address/prepare for writing
@@ -659,7 +527,8 @@ unit Storage
     prepareTokenBuffer()
     {
         // Reset the tokenizer buffer for our use
-        BufferManager.ResetTokenizerBuffer();
+        STZ ZP.TokenBufferContentLengthL
+        STZ ZP.TokenBufferContentLengthH
         
         // Set up SectorSource to point to TokenizerBuffer for File.AppendStream
         LDA ZP.TokenBufferL
@@ -667,6 +536,19 @@ unit Storage
         LDA ZP.TokenBufferH
         STA File.SectorSourceH
     }
+    
+    flushTokenBuffer()
+    {
+        LDA ZP.TokenBufferContentLengthL
+        STA File.TransferLengthL
+        LDA ZP.TokenBufferContentLengthH
+        STA File.TransferLengthH
+        File.AppendStream(); // C or NC ->
+        
+        STZ ZP.TokenBufferContentLengthL
+        STZ ZP.TokenBufferContentLengthH
+    }
+            
     
      
     // Load program from EEPROM file  
