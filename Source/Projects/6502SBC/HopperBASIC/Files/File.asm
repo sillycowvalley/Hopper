@@ -44,6 +44,7 @@ unit File
     
 #ifdef TRACEFILE
     // Trace string constants
+    const string fileExistsTrace = "FileExists";
     const string validateFilenameTrace = "ValidateName";
     const string getAvailableTrace = "GetAvailable";
     const string formatTrace = "Format";
@@ -584,22 +585,26 @@ unit File
     
     
     
+
     
-    // Open file for reading
+
+
+    // Check if file exists in directory
     // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
-    // Output: C set if successful, NC if error (file not found)
-    //         File ready for reading via NextStream()
+    // Output: C set if file exists, NC if file not found
+    //         CurrentFileEntry = directory entry index if found
     // Preserves: X, Y
-    // Munts: A, file system state
-    StartLoad()
+    // Munts: A, file system buffers  
+    // Note: Throws error if filename format is invalid
+    Exists()
     {
-#ifdef TRACEFILE
-        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+    #ifdef TRACEFILE
+        LDA #(fileExistsTrace % 256) STA ZP.TraceMessageL LDA #(fileExistsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
         PHX
         PHY
         
-        // preserve the file name in case you are just being used to verify the file exists
+        // preserve the file name
         LDA ZP.STRL
         PHA
         LDA ZP.STRH
@@ -621,6 +626,47 @@ unit File
             
             // Find the file in directory
             findFileInDirectory();
+            // Returns C if found (with CurrentFileEntry set), NC if not found
+            break;
+        }
+        
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        
+        PLY
+        PLX
+    #ifdef TRACEFILE
+        LDA #(fileExistsTrace % 256) STA ZP.TraceMessageL LDA #(fileExistsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    
+    // Refactored StartLoad method:
+    // Open file for reading
+    // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+    // Output: C set if successful, NC if error (file not found)
+    //         File ready for reading via NextStream()
+    // Preserves: X, Y
+    // Munts: A, file system state
+    StartLoad()
+    {
+    #ifdef TRACEFILE
+        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        PHX
+        PHY
+        
+        // preserve the file name in case you are just being used to verify the file exists
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
+        
+        loop // Single exit for cleanup
+        {
+            // Check if file exists (validates filename and loads metadata)
+            File.Exists();
             if (NC)
             {
                 Error.FileNotFound(); BIT ZP.EmulatorPCL
@@ -644,7 +690,6 @@ unit File
             LDA FileStartSector
             STA CurrentFileSector
             
-            
             // Success - file ready for NextStream() calls
             SEC
             break;
@@ -657,9 +702,9 @@ unit File
         
         PLY
         PLX
-#ifdef TRACEFILE
+    #ifdef TRACEFILE
         LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+    #endif
     }
     
     // Read next chunk of data from current load file

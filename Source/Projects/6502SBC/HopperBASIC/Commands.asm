@@ -1008,7 +1008,7 @@ unit Commands
 #ifdef HASEEPROM      
         loop
         {
-            StartLoad(); // preserves ZP.STR
+            File.Exists(); // preserves ZP.STR
             if (C)
             {
                 // file exits
@@ -1024,11 +1024,6 @@ unit Commands
                     // cancelled
                     break;
                 }
-            }
-            else
-            {
-                // clear the error
-                Error.ClearError();
             }
             Storage.SaveProgram(); // Input: ZP.STR
             break;
