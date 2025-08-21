@@ -16,6 +16,7 @@ program EEPROMTest
     uses "./Definitions/BASICTypes"
     uses "./Definitions/Tokens"
     uses "./Definitions/States"
+    uses "./Definitions/Messages"
     
     uses "./Debugging/Error"
     uses "./Debugging/Debug"
@@ -43,6 +44,7 @@ program EEPROMTest
     
     uses "./Utilities/Print"
     uses "./Utilities/Tools"
+    
     
     
      // String constants for test output
@@ -103,7 +105,8 @@ program EEPROMTest
         
     }
     
-    const string TestFileSieve  = "SIEVE";
+    const string TestFileSieve  = "TEST";
+    //const string TestFileSieve  = "SIEVE";
     const string TestFileNone   = "NONE";
     
     LoadAndDisplay()
@@ -262,8 +265,8 @@ Debug.NL();
         
         File.DumpDriveState();
         
-        //SMB2 ZP.FLAGS  // TROFF on
-        RMB2 ZP.FLAGS  // TROFF off
+        //SMB2 ZP.FLAGS  // TRON
+        RMB2 ZP.FLAGS  // TROFF
         
         
         LDA #(TestFileSieve % 256)
@@ -300,6 +303,8 @@ Debug.NL(); Print.String();
     
     DumpBuffers()
     {
+        PHP
+        
 Debug.NL();
 Debug.NL(); HOut(); // last token
 Debug.NL(); LDA LoadBufferIndexH HOut(); LDA LoadBufferIndexL HOut(); Space(); 
@@ -315,6 +320,7 @@ Debug.NL();
         
         Debug.DumpHeap();
         
+        PLP
     }
     
     // Combined buffer: TokenizerBuffer (512) + FunctionOpCodeBuffer (512) = 1024 bytes  
@@ -362,6 +368,7 @@ Debug.NL();
             // Bit 1 - set if we've seen CONST
             // Bit 2 - set if we're in $MAIN
             
+            // 4. parse and build objects
             loop
             {
                 nextToken();
@@ -369,6 +376,8 @@ Debug.NL();
                 {
                     case Token.FUNC:
                     {
+                        SMB2 ZP.FLAGS  // TRON
+                        
                         parseFunctionHeader();
                         if (NC) { break; }
                         parseFunctionOrMain();
@@ -376,6 +385,10 @@ Debug.NL();
                     }
                     case Token.BEGIN:
                     {
+                        SMB2 ZP.FLAGS  // TRON
+                        
+                        parseMainHeader();   
+                        if (NC) { break; }
                         SMB2 LoaderFlags
                         parseFunctionOrMain();
                         if (NC) { break; }
@@ -402,14 +415,23 @@ Debug.NL();
                     }
                     default:
                     {
+                        DumpBuffers();
                         TODO(); BIT ZP.EmulatorPCL CLC // what's this?
                         break;
                     }
                 } // switch
             } // loop
             break;
-        }
+        } // single exit
+        
+        // 5. initialize the global variables and constants
+        DumpBuffers();
+        
+        // Console.InitializeGlobals(); // TODO
+        
+        RMB2 ZP.FLAGS  // TROFF
     }
+    
     nextToken()
     {
         LDA [LoadBufferIndex]
@@ -423,14 +445,23 @@ Debug.NL();
         {
             INC LoadBufferIndexH
         }
-    }        
+    }
+    peekToken()
+    {
+        LDA [LoadBufferIndex]
+    }
+
+    const string parseIdentifierTrace = "parseIdentifier";        
     parseIdentifier()
     {
+#ifdef TRACEFILE
+        LDA #(parseIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(parseIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         loop
         {
             nextToken();
             CMP # Token.IDENTIFIER
-            if (NZ) { Error.InternalError(); BIT ZP.EmulatorPCL SEC break; } // IDENTIFIER expected
+            if (NZ) { Error.InternalError(); BIT ZP.EmulatorPCL CLC break; } // IDENTIFIER expected
             
             LDA LoadBufferIndexL
             STA ZP.STRL
@@ -439,7 +470,7 @@ Debug.NL();
             
             nextToken();
             Char.IsAlpha();
-            if (NC) { Error.InternalError(); BIT ZP.EmulatorPCL break; } // <alpha> expected
+            if (NC) { Error.InternalError(); BIT ZP.EmulatorPCL CLC break; } // <alpha> expected
             loop
             {
                 nextToken();
@@ -451,15 +482,27 @@ Debug.NL();
                     break; 
                 }
                 Char.IsAlphaNumeric();
-                if (NC) {  Error.InternalError(); BIT ZP.EmulatorPCL break; } // <alphanumeric> expected
+                if (NC) {  Error.InternalError(); BIT ZP.EmulatorPCL CLC break; } // <alphanumeric> expected
             }
             break;
         } // single exit
+#ifdef TRACEFILE
+        PHP PHA LDA #(parseIdentifierTrace % 256) STA ZP.TraceMessageL LDA #(parseIdentifierTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
     }
     
     // terminator in ZP.ACCL
+    const string parseTokenStreamTrace = "parseTokenStream";
     parseTokenStream() // -> IDY
     {
+#ifdef TRACEFILE
+        LDA #(parseTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(parseTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         loop
         {
             LDA LoadBufferIndexL
@@ -472,7 +515,7 @@ Debug.NL();
                 CMP ZP.ACCL
                 if (Z) { break; }
             }
-            // LoadBufferIndex - 1 = EOE
+            // LoadBufferIndex - 1 = terminator : EOE, RBRACKET ..
             SEC
             LDA LoadBufferIndexL
             SBC # 1
@@ -481,7 +524,7 @@ Debug.NL();
             SBC # 0
             STA ZP.FLENGTHH
             LDA # Token.EOF
-            STA [ZP.FLENGTH] // patch EOE -> EOF       
+            STA [ZP.FLENGTH] // patch terminator -> EOF       
             
             SEC 
             LDA ZP.FLENGTHL
@@ -512,11 +555,24 @@ Debug.NL();
             SEC
             break;
         } // single exit
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+#ifdef TRACEFILE
+        PHP PHA LDA #(parseTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(parseTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
     }               
     
     // A is type Token
+    const string parseVariableOrConstTrace = "parseVariableOrConst";
     parseVariableOrConst()
     {
+#ifdef TRACEFILE
+        PHA LDA #(parseVariableOrConstTrace % 256) STA ZP.TraceMessageL LDA #(parseVariableOrConstTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+#endif
         loop
         {
             TAX
@@ -535,12 +591,8 @@ Debug.NL();
             // name
             parseIdentifier();
             if (NC) { break; }
-            LDA ZP.STRL
-            STA ZP.TOPL
-            LDA ZP.STRH
-            STA ZP.TOPH
             
-            // initial value
+             // initial value
             STZ ZP.NEXTL
             STZ ZP.NEXTH
             
@@ -558,24 +610,31 @@ Debug.NL();
                     LDA # Token.RBRACKET // terminator
                     STA ZP.ACCL
                     parseTokenStream(); // -> IDY
-                    if (NC) { DumpBuffers(); break; }
+                    if (NC) { break; }
+
                     nextToken();
-                    CMP # Token.RBRACKET
-                    if (NC) { DumpBuffers(); Error.InternalError(); BIT ZP.EmulatorPCL break; } // <type> expected
+                    CMP # Token.EOE // RBRACKET already converted to EOF
+                    if (NC) { Error.InternalError(); BIT ZP.EmulatorPCL break; } // <type> expected
+
+                    LDA ZP.ACCT
+                    ORA # BASICType.ARRAY
+                    STA ZP.ACCT
                     
-DumpBuffers();
-TODO(); BIT ZP.EmulatorPCL
+                    // place holder size for array until it is initialized
+                    LDA #10
+                    STA ZP.NEXTL
                     CLC
-                    break;   
                 }
                 case Token.EOE:
                 {
                     // no initializer stream
                     STZ ZP.IDYL
                     STZ ZP.IDYH
+                    
                     LDA ZP.ACCT
-                    AND # BASICType.STRING
-                    if (NZ)
+                    AND # BASICType.TYPEMASK
+                    CMP # BASICType.STRING
+                    if (Z)
                     {
                         // STRING default: allocate copy of EmptyString
                         LDA #(Variables.EmptyString % 256)
@@ -600,45 +659,191 @@ TODO(); BIT ZP.EmulatorPCL
                     LDA # Token.EOE // terminator
                     STA ZP.ACCL
                     parseTokenStream(); // -> IDY
-                    if (NC) { DumpBuffers(); break; }
+                    if (NC) { break; }
                 }
                 default:
                 {
                     TODO(); BIT ZP.EmulatorPCL CLC // what's this?
                     break;
                 }
-                
             } // switch
+
             RMB1 LoaderFlags
+            
+            // name from IDENTIFIER
+            LDA ZP.STRL
+            STA ZP.TOPL
+            LDA ZP.STRH
+            STA ZP.TOPH
+            
             Variables.Declare(); // -> C or NC
+            CheckError();
+            if (NC)
+            {
+                 Error.InternalError(); BIT ZP.EmulatorPCL CLC // what's this?
+            }
             break;
         } // single exit
+#ifdef TRACEFILE
+        PHP PHA LDA #(parseVariableOrConstTrace % 256) STA ZP.TraceMessageL LDA #(parseVariableOrConstTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
     }
     
+    const string parseMainHeaderTrace = "parseMainHeader";
+    parseMainHeader()
+    {
+#ifdef TRACEFILE
+        LDA #(parseMainHeaderTrace % 256) STA ZP.TraceMessageL LDA #(parseMainHeaderTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
+        {
+            // argument list:
+            STZ ZP.NEXTL
+            STZ ZP.NEXTH
+            
+            LDA #(Messages.BeginFunctionName % 256)
+            STA ZP.TOPL
+            LDA #(Messages.BeginFunctionName / 256)
+            STA ZP.TOPH
+Debug.NL(); PrintStringTOP();
+                        
+            STZ ZP.IDYL
+            STZ ZP.IDYH
+            Functions.Declare();
+            CheckError();
+Debug.NL(); XOut();
+            break;
+        } // single exit
+#ifdef TRACEFILE
+        PHP PHA LDA #(parseMainHeaderTrace % 256) STA ZP.TraceMessageL LDA #(parseMainHeaderTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
+    }             
+    
+    const string parseFunctionHeaderTrace = "parseFunctionHeader";
     parseFunctionHeader()
     {
-        DumpBuffers();
-        TODO(); BIT ZP.EmulatorPCL
-        CLC
+#ifdef TRACEFILE
+        LDA #(parseFunctionHeaderTrace % 256) STA ZP.TraceMessageL LDA #(parseFunctionHeaderTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        loop
+        {
+            // name
+            parseIdentifier();
+            if (NC) { break; }
+            
+            // name from IDENTIFIER
+            LDA ZP.STRL
+            STA ZP.TOPL
+            LDA ZP.STRH
+            STA ZP.TOPH
+Debug.NL(); Print.String();
+            
+            // create argument list in ZP.NEXT
+            STZ ZP.NEXTL
+            STZ ZP.NEXTH
+            
+            STZ ZP.IDYL
+            STZ ZP.IDYH
+            Functions.Declare();
+            CheckError(); 
+            if (NC) { break; }
+Debug.NL(); XOut();                       
+            nextToken();
+            CMP # Token.LPAREN
+            if (NZ) { Error.InternalError(); BIT ZP.EmulatorPCL break; } // ( expected
+            loop
+            {
+Debug.NL(); LDA #'a' COut(); Space();
+                
+                peekToken();
+HOut();                
+                CMP # Token.RPAREN
+                if (Z)
+                {
+                    nextToken(); // consume )
+                    break;
+                }
+                CMP # Token.COMMA
+                if (Z)
+                {
+                    nextToken(); // consume ,
+                }
+Debug.NL(); LDA #'b' COut(); 
+
+                // argument
+                parseIdentifier();
+                
+                // argument from IDENTIFIER
+                LDA ZP.STRL
+                STA ZP.TOPL
+                LDA ZP.STRH
+                STA ZP.TOPH
+                
+Debug.NL(); XOut();
+                LDA #SymbolType.ARGUMENT
+                ORA #BASICType.VAR 
+                STA ZP.SymbolType // argument for Locals.Add()
+                Locals.Add();
+                CheckError();
+                if (NC) { break; }
+            }
+            if (NC) { break; }
+                        
+            break;
+        }
+#ifdef TRACEFILE
+        PHP PHA LDA #(parseFunctionHeaderTrace % 256) STA ZP.TraceMessageL LDA #(parseFunctionHeaderTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
     }
+
+    const string parseFunctionOrMainTrace = "parseFunctionOrMain";
     parseFunctionOrMain()
     {
-        if (BBR0, LoaderFlags) // have not seen EOF yet
+#ifdef TRACEFILE
+        LDA #(parseFunctionOrMainTrace % 256) STA ZP.TraceMessageL LDA #(parseFunctionOrMainTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
+        loop
         {
-            slideWindow();
+Debug.NL(); XOut();
+            if (BBR0, LoaderFlags) // have not seen EOF yet
+            {
+                slideWindow();
+                if (NC) { break; }
+            }
+            
+Debug.NL(); XOut();            
+
+            // create function token stream in IDY
+            LDA # Token.EOE // terminator
+            STA ZP.ACCL
+            parseTokenStream(); // -> IDY
+            if (NC) { break; }
+            
+Debug.NL(); XOut(); YOut();
+            Functions.SetBody();
+            break;
         }
-        DumpBuffers();
-        TODO(); BIT ZP.EmulatorPCL
-        CLC
+        RMB2 LoaderFlags
         
-        //RMB2 LoaderFlags
-        //SEC
+#ifdef TRACEFILE
+        PHP PHA LDA #(parseFunctionOrMainTrace % 256) STA ZP.TraceMessageL LDA #(parseFunctionOrMainTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
     }
     
     // 1. Move the remaining content to the front of the buffer
     // 2. Try to fill buffer with >= 512 bytes of data
+    const string slideWindowTrace = "slideWindow";
     slideWindow() 
     {
+#ifdef TRACEFILE
+        LDA #(slideWindowTrace % 256) STA ZP.TraceMessageL LDA #(slideWindowTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         // slide
         LDA #(LoadBuffer % 256)
         STA ZP.FDESTINATIONADDRESSL
@@ -678,8 +883,8 @@ TODO(); BIT ZP.EmulatorPCL
         // fill
         loop
         {
-            if (BBS0, LoaderFlags)       { break; } // no more data to read
-            if (BBS0, LoadBufferLengthH) { break; } // current data >= 512 bytes
+            if (BBS0, LoaderFlags)       { SEC break; } // no more data to read
+            if (BBS0, LoadBufferLengthH) { SEC break; } // current data >= 512 bytes
             File.NextStream();
             if (NC) 
             { 
@@ -687,18 +892,32 @@ TODO(); BIT ZP.EmulatorPCL
                 if (C)
                 {
                     // no content, end of file
+                    SEC
                     SMB0 LoaderFlags
                 }
                 break; 
             }
             appendSectorToBuffer();
         }
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+#ifdef TRACEFILE
+        PHP LDA #(slideWindowTrace % 256) STA ZP.TraceMessageL LDA #(slideWindowTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLP
+#endif
     }
     
     // Set up 1024-byte sliding window buffer and configure TokenIterator
     // Output: C set if successful, NC if file empty or error
+    const string setupSlidingWindowBufferTrace = "setupSlidingWindowBuffer";
     setupSlidingWindowBuffer()
     {
+#ifdef TRACEFILE
+        LDA #(setupSlidingWindowBufferTrace % 256) STA ZP.TraceMessageL LDA #(setupSlidingWindowBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Initialize buffer state
         STZ LoadBufferPosL
         STZ LoadBufferPosH
@@ -736,13 +955,20 @@ TODO(); BIT ZP.EmulatorPCL
         if (Z) { CLC return; } // Empty file
         
         SEC // Success
+#ifdef TRACEFILE
+        PHP PHA LDA #(setupSlidingWindowBufferTrace % 256) STA ZP.TraceMessageL LDA #(setupSlidingWindowBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA PLP
+#endif
     }
     
     // Append current sector to load buffer
     // Input: File.NextStream() result available
     // Output: Data appended, LoadContent updated
+    const string appendSectorToBufferTrace = "appendSectorToBuffer";
     appendSectorToBuffer()
     {
+#ifdef TRACEFILE
+        LDA #(appendSectorToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendSectorToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Calculate destination: LoadBuffer + LoadContent
         CLC
         LDA #(LoadBuffer % 256)
@@ -777,6 +1003,9 @@ TODO(); BIT ZP.EmulatorPCL
         LDA LoadBufferLengthH
         ADC File.TransferLengthH
         STA LoadBufferLengthH
+#ifdef TRACEFILE
+        LDA #(appendSectorToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendSectorToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     

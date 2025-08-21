@@ -1135,14 +1135,14 @@ unit Console // Console.asm
         PLA
     }
     
-        // Initialize all global variables with their declared values
+    // Initialize all global variables with their declared values
     // Called before executing $MAIN to ensure consistent state
     // Input: None
     // Output: All variables initialized to their declared values
     //         C set if successful, NC if error during initialization
     // Munts: Token buffer, all execution-related ZP variables
     const string initGlobsTrace = "initGlobs";
-    initializeGlobals()
+    InitializeGlobals()
     {
         PHA
         PHX
@@ -1387,7 +1387,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'RUN'
             
-            initializeGlobals();
+            InitializeGlobals();
                                     
             loop // Single exit block
             {

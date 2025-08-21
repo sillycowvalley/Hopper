@@ -42,6 +42,7 @@ unit Variables
             
             if (C)  // Symbol already exists
             {
+LDA #'h' COut();
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }
@@ -102,6 +103,10 @@ unit Variables
     //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
             
             Objects.Add();
+            if (NC)
+            {
+                States.SetFailure();
+            }
             
             LDA ZP.ACCT
             AND # BASICType.TYPEMASK
@@ -115,8 +120,10 @@ unit Variables
                 STA ZP.TOPL
             }
             // set by Objects.Add() - C for success, NC for failure
-            if (NC)
+            States.IsFailure();
+            if (C)
             {
+                CLC
                 break;
             }
             LDA ZP.ACCT
@@ -139,7 +146,7 @@ unit Variables
         } // end of single exit block
 
 #ifdef TRACE
-       LDA #(strDeclare % 256) STA ZP.TraceMessageL LDA #(strDeclare / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHP LDA #(strDeclare % 256) STA ZP.TraceMessageL LDA #(strDeclare / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLP
 #endif
 
         PLY

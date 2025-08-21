@@ -35,11 +35,11 @@ unit BASICTypes // BASICTypes.asm
         PHX
         TAX
         
-        AND #SymbolType.MASK
+        AND # SymbolType.MASK
         if (NZ)
         {
             TXA
-            AND #SymbolType.VARIABLE
+            AND # SymbolType.VARIABLE
             if (NZ)
             {
                 LDA # Token.VAR
@@ -47,7 +47,7 @@ unit BASICTypes // BASICTypes.asm
                 LDA #'|' COut();
             }
             TXA
-            AND #SymbolType.CONSTANT
+            AND # SymbolType.CONSTANT
             if (NZ)
             {
                 LDA # Token.CONST
@@ -166,47 +166,47 @@ unit BASICTypes // BASICTypes.asm
     {
         switch (X)
         {
-            case #Token.INT:
+            case Token.INT:
             {
                 LDA # BASICType.INT
                 SEC
             }
-            case #Token.WORD:
+            case Token.WORD:
             {
                 LDA # BASICType.WORD
                 SEC
             }
-            case #Token.BYTE:
+            case Token.BYTE:
             {
                 LDA # BASICType.BYTE
                 SEC
             }
-            case #Token.CHAR:
+            case Token.CHAR:
             {
                 LDA # BASICType.CHAR
                 SEC
             }
-            case #Token.BIT:
+            case Token.BIT:
             {
                 LDA # BASICType.BIT
                 SEC
             }
-            case #Token.STRING:
+            case Token.STRING:
             {
                 LDA # BASICType.STRING
                 SEC
             }
-            case #Token.VAR:
+            case Token.VAR:
             {
                 LDA # BASICType.VAR
                 SEC
             }
-            case #Token.ARRAY:
+            case Token.ARRAY:
             {
                 LDA # BASICType.ARRAY
                 SEC
             }
-            case #Token.LONG:
+            case Token.LONG:
             {
                 LDA # BASICType.LONG
                 SEC
