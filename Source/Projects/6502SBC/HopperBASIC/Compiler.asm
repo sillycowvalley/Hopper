@@ -1159,7 +1159,7 @@ unit Compiler // Compiler.asm
                     loop
                     {
                         // Compile argument expression
-                        compileComparison(); // Use full expression compilation
+                        compileComparison(); // Use full expression compilation : TODO : should be compileExpressionTree() !!!
                         CheckError();
                         if (NC) 
                         { 
@@ -2863,6 +2863,7 @@ unit Compiler // Compiler.asm
                    if (NC) { States.SetFailure(); break; }
                    
                    // For function calls as statements, discard the return value
+                   LDA #0x01  // Decrement by 1 position
                    Emit.DecSp();
                    CheckError();
                    if (NC) { States.SetFailure(); break; }

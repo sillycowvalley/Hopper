@@ -2481,10 +2481,11 @@ unit Executor // Executor.asm
             }
             LDA ZP.TOPL
             STA Address.ValueStackLSB, Y
-            // TODO : why?
+            
+            // Store back as WORD type : perhaps only if it was implicit or VAR? (consider a local or global INT -  we're changing its type)
             //LDA #(BASICType.WORD | BASICType.VAR)
             //STA Address.TypeStackLSB, Y
-                        
+            
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
             CLC
