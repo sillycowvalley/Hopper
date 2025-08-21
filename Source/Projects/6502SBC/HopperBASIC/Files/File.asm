@@ -6,34 +6,34 @@ unit File
     const uint FATBuffer            = Address.FileSystemBuffers + 512;  // [512-767]
     
     // File System Zero Page Variables (aliases to existing slots)
-    const byte SectorSource         = ZP.FSOURCEADDRESS;       // for use with LDX [SectorSource], Y for example
-    const byte SectorSourceL        = ZP.FSOURCEADDRESSL;      // Source address for sector ops
-    const byte SectorSourceH        = ZP.FSOURCEADDRESSH;     
+    const byte SectorSource         = ZP.FS0;                  // for use with LDX [SectorSource], Y for example
+    const byte SectorSourceL        = ZP.FS0;                  // Source address for sector ops
+    const byte SectorSourceH        = ZP.FS1;     
     
-    const byte TransferLength       = ZP.FLENGTH;              // for use with LDX [TransferLength], Y for example
-    const byte TransferLengthL      = ZP.FLENGTHL;             // Bytes to transfer (LSB)
-    const byte TransferLengthH      = ZP.FLENGTHH;             // Bytes to transfer (MSB)
+    const byte TransferLength       = ZP.FS2;                  // for use with LDX [TransferLength], Y for example
+    const byte TransferLengthL      = ZP.FS2;                  // Bytes to transfer (LSB)
+    const byte TransferLengthH      = ZP.FS3;                  // Bytes to transfer (MSB)
     
-    const byte CurrentFileSector    = ZP.LCURRENTH;            // Current sector number in file
-    const byte FileStartSector      = ZP.LNEXTH;               // First sector of current file
-    const byte CurrentFileEntry     = ZP.LCURRENTL;            // Directory entry index (0-15)
+    const byte CurrentFileSector    = ZP.FS4;                  // Current sector number in file
+    const byte FileStartSector      = ZP.FS5;                  // First sector of current file
+    const byte CurrentFileEntry     = ZP.FS6;                  // Directory entry index (0-15)
     
-    const byte FilePosition         = ZP.LHEADL;               // Current byte position in file (16-bit)
-    const byte FilePositionL        = ZP.LHEADL;               //    "
-    const byte FilePositionH        = ZP.LHEADH;               //    "
+    const byte FilePosition         = ZP.FS7;                  // Current byte position in file (16-bit)
+    const byte FilePositionL        = ZP.FS8;                  //    "
+    const byte FilePositionH        = ZP.FS9;                  //    "
     
     
-    const byte NextFileSector       = ZP.LNEXTL;               // Next sector in chain (from FAT)
+    const byte NextFileSector       = ZP.FS10;                // Next sector in chain (from FAT)
     
     // Additional ZP aliases needed for AppendStream
     // WARNINGL ZP.M0 - ZP.M3 are used by Time.Delay() (TARGET0-3)
-    const byte BytesRemainingL      = ZP.M4;                   // 16-bit: bytes left to copy
-    const byte BytesRemainingH      = ZP.M5;
+    const byte BytesRemainingL      = ZP.FS11;                // 16-bit: bytes left to copy
+    const byte BytesRemainingH      = ZP.FS12;
     
-    const byte SectorPositionL      = ZP.M6;                   // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
-    const byte SectorPositionH      = ZP.M7;
+    const byte SectorPositionL      = ZP.FS13;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
+    const byte SectorPositionH      = ZP.FS14;
     
-    const byte StreamBytesAvailable = ZP.M8;                   // used only within NextStream()
+    const byte StreamBytesAvailable = ZP.FS15;                // used only within NextStream()
     
     
     const string dirListHeader       = "FILES:";
@@ -330,8 +330,6 @@ unit File
         PHX
         PHY
         
-Print.NewLine(); LDA File.SectorSourceH   Print.Hex(); LDA File.SectorSourceL   Print.Hex();             
-Print.NewLine(); LDA File.TransferLengthH Print.Hex(); LDA File.TransferLengthL Print.Hex();            
         loop // Single exit
         {
             // Copy input parameters to working variables
@@ -620,17 +618,7 @@ Print.NewLine(); LDA File.TransferLengthH Print.Hex(); LDA File.TransferLengthL 
             // Load directory and FAT from EEPROM
             loadDirectory();
             loadFAT();
-/*
-Debug.NL(); 
-LDA # (FATBuffer / 256)
-DumpPage();
-Debug.NL();   
-                                    
-Debug.NL();
-LDA # (DirectoryBuffer / 256)
-DumpPage();
-Debug.NL();                                    
-*/          
+            
             // Find the file in directory
             findFileInDirectory();
             if (NC)
@@ -769,12 +757,7 @@ Debug.NL();
             
             // Update counters
             updateStreamPosition();
-            
-        
      
-//Debug.NL(); LDA #'R' COut(); LDA #':' COut(); LDA BytesRemainingH HOut(); LDA BytesRemainingL HOut(); Space();
-//            LDA #'T' COut(); LDA #':' COut(); LDA TransferLengthH HOut(); LDA TransferLengthL HOut();           
-//Debug.NL();             
             States.SetSuccess();
             SEC  // Success
             break;
@@ -810,7 +793,7 @@ Debug.NL();
         LDA DirectoryBuffer + 1, Y              // Length MSB
         STA BytesRemainingH
 #ifdef TRACEFILE
-        LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        PHA LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
     
@@ -1915,7 +1898,7 @@ Debug.NL();
     readSector()
     {
 #ifdef TRACEFILE
-        LDA #(readSectorTrace % 256) STA ZP.TraceMessageL LDA #(readSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(readSectorTrace % 256) STA ZP.TraceMessageL LDA #(readSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         STA ZP.IDYH                 // EEPROM address MSB = sector number (must be page aligned)
         
@@ -1935,7 +1918,7 @@ Debug.NL();
     writeSector()
     {
 #ifdef TRACEFILE
-        LDA #(writeSectorTrace % 256) STA ZP.TraceMessageL LDA #(writeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(writeSectorTrace % 256) STA ZP.TraceMessageL LDA #(writeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         STA ZP.IDYH                 // EEPROM address MSB = sector number (must be page aligned)
         
@@ -1958,7 +1941,7 @@ Debug.NL();
     DumpDriveState()
     {
 #ifdef TRACEFILE
-        LDA #(dumpDriveStateTrace % 256) STA ZP.TraceMessageL LDA #(dumpDriveStateTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(dumpDriveStateTrace % 256) STA ZP.TraceMessageL LDA #(dumpDriveStateTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         PHX
         PHY
@@ -2393,14 +2376,38 @@ Debug.NL();
         LDA DirectoryBuffer + 2, X  // Start sector at offset +2
         readSector();               // Load sector into FileDataBuffer
         
-        // Print first 16 bytes
         STZ SectorPositionL     // Set to 0 for first line
-        printHexDumpLine();     // Offset 0x0000
+        printHexDumpLine();
         
-        // Print second 16 bytes  
-        LDA #16
+        LDA # 0x10
         STA SectorPositionL     // Use as offset counter
-        printHexDumpLine();     // Offset 0x0010
+        printHexDumpLine();
+        
+        LDA # 0x20
+        STA SectorPositionL     // Use as offset counter
+        printHexDumpLine();
+        
+        LDA # 0x30
+        STA SectorPositionL     // Use as offset counter
+        printHexDumpLine();
+        
+        LDA # 0x40
+        STA SectorPositionL     // Use as offset counter
+        printHexDumpLine();
+        
+        LDA # 0x50
+        STA SectorPositionL     // Use as offset counter
+        printHexDumpLine();
+        
+        LDA # 0x60
+        STA SectorPositionL     // Use as offset counter
+        printHexDumpLine();
+        
+        LDA # 0x70
+        STA SectorPositionL     // Use as offset counter
+        printHexDumpLine();
+        
+        
         
         PLY
         PLX
@@ -2418,7 +2425,7 @@ Debug.NL();
         LDA #(printHexDumpLineTrace % 256) STA ZP.TraceMessageL LDA #(printHexDumpLineTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         // Print 4-space indentation
-        LDX #4
+        LDX #8
         Print.Spaces();
         
         // Print address (00: or 10:)

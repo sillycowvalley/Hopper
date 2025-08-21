@@ -12,6 +12,9 @@ unit Storage
         LDA #(saveProgramTrace % 256) STA ZP.TraceMessageL LDA #(saveProgramTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
+        // 0. setup our use of TokenBuffer
+        prepareTokenBuffer();
+        
         loop // Single exit block
         {
             // 1. Create file using File.StartSave()
@@ -26,14 +29,18 @@ unit Storage
             saveVariables();
             if (NC) { break; }
             
+            
             // 4. Save all functions (including main program under "$MAIN")
             saveFunctions();
             if (NC) { break; }
-            
-            // 5. Finalize file
+
+            // 5. flush TokenBuffer to EEPROM
+            flushTokenBuffer();
+
+            // 6. Finalize file
             File.EndSave();
             if (NC) { break; }
-            
+                                    
             // Success
             SEC
             break;
@@ -61,10 +68,10 @@ unit Storage
             {
                 if (NC) { break; } // No more constants
                 // Stream this constant to file
-                prepareTokenBuffer();
+                
                 // CONST token (only difference from variables)
                 LDA #Token.CONST
-                appendTokenToBuffer();
+                appendByteToBuffer();
                 // Use shared variable/constant streaming logic
                 streamVariableOrConstant(); // Input: ZP.IDX = constant node
                 if (NC) { CLC break; } // Propagate error
@@ -95,8 +102,6 @@ unit Storage
             loop
             {
                 if (NC) { break; } // No more variables
-                // Stream this variable to file
-                prepareTokenBuffer();
                 // No CONST token for variables - go straight to shared logic
                 streamVariableOrConstant(); // Input: ZP.IDX = variable node
                 if (NC) { CLC break; } // Propagate error
@@ -126,67 +131,59 @@ unit Storage
             // Get type and name
             Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType
             
-            
             // Type token (extract base type)
             LDA ZP.ACCT
-            AND #BASICType.TYPEMASK
+            AND # BASICType.VAR
+            if (Z) // not VAR type
+            {
+                LDA ZP.ACCT
+                AND # BASICType.TYPEMASK
+            }
             BASICTypes.ToToken();  // Input: A = base type, Output: A = token value
-            appendTokenToBuffer(); // uses XID
+            appendByteToBuffer(); // uses XID
             
             // IDENTIFIER token and name
             LDA #Token.IDENTIFIER
-            appendTokenToBuffer();  // uses XID
-            
+            appendByteToBuffer();  // uses XID
+
             Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
             appendStringToBuffer(); // Input: ZP.STR = name pointer, uses XID
             if (NC) { break; }
             
             // Check if this is an array
             LDA ZP.ACCT
-            AND #BASICType.ARRAY
+            AND # BASICType.ARRAY
             if (NZ) // Is an array
             {
                 // Arrays use their token stream for dimension expression
                 streamArrayDeclaration(); // Input: ZP.IDX = variable node
                 if (NC) { break; }
             }
-            
-            // Check if has initialization tokens
-            Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.NEXT = tokens pointer or null
-Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Print.Char(); LDA ZP.NEXTH Print.Hex(); LDA ZP.NEXTL Print.Hex();
-            
-            LDA ZP.NEXTL
-            ORA ZP.NEXTH
-            if (NZ) // Has initialization/dimension tokens
-            {
-                // EQUALS token
-                LDA #Token.EQUALS
-                appendTokenToBuffer();
-                
-                // Stream header first
-                flushTokenBuffer();
-                if (NC) { break; }
-                
-                // Stream initialization tokens directly (includes EOF)
-                Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.ACC = tokens pointer or null
-Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Print.Char(); LDA ZP.NEXTH Print.Hex(); LDA ZP.NEXTL Print.Hex();
-                LDA ZP.NEXTL
-                STA ZP.IDYL
-                LDA ZP.NEXTH
-                STA ZP.IDYH
-                writeTokenStream(); // Input: ZP.IDY
-                               
-                if (NC) { break; }
-            }
             else
             {
-                // No initialization - add EOF and stream
-                LDA #Token.EOF
-                appendTokenToBuffer();
-                
-                flushTokenBuffer();
-                if (NC) { break; }
+                // Check if has initialization tokens
+                Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.NEXT = tokens pointer or null
+                LDA ZP.NEXTL
+                ORA ZP.NEXTH
+                if (NZ) // Has initialization/dimension tokens
+                {
+                    // EQUALS token
+                    LDA #Token.EQUALS
+                    appendByteToBuffer();
+                    
+                    // Stream initialization tokens directly (includes EOF which is stripped)
+                    Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.ACC = tokens pointer or null
+                    LDA ZP.NEXTL
+                    STA ZP.IDYL
+                    LDA ZP.NEXTH
+                    STA ZP.IDYH
+                    writeTokenStream(); // Input: ZP.IDY
+                    if (NC) { break; }
+                }
             }
+            //  add EOF and stream
+            LDA # Token.EOF
+            appendByteToBuffer();
             
             SEC // Success
             break;
@@ -211,11 +208,7 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
         {
             // LBRACKET token
             LDA #Token.LBRACKET
-            appendTokenToBuffer();
-            
-            // Stream header with LBRACKET
-            flushTokenBuffer();
-            if (NC) { break; }
+            appendByteToBuffer();
             
             // Get dimension tokens (same as initialization tokens for arrays)
             Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.NEXT = tokens pointer
@@ -233,11 +226,8 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
             }
             
             // RBRACKET token
-            prepareTokenBuffer();
             LDA #Token.RBRACKET
-            appendTokenToBuffer();
-            
-            flushTokenBuffer();
+            appendByteToBuffer();
             if (NC) { break; }
             
             SEC // Success
@@ -279,7 +269,7 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
                 {
                     streamFunction(); // Input: ZP.IDX = function node
                 }
-                if (NC) { CLC break; } // Propagate error
+                if (NC) { break; }
                 
                 Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
@@ -302,35 +292,13 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
 #ifdef TRACEFILE
         LDA #(appendStringToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendStringToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-
         PHY
-        
-//Debug.NL(); LDA #'"' COut(); 
-        
         LDY #0
         loop
         {
             // Get character from string
             LDA [ZP.STR], Y
-//Printable();
-            // Calculate write position: TokenBuffer + ContentLength
-            CLC
-            LDA ZP.TokenBufferL
-            ADC ZP.TokenBufferContentLengthL
-            STA ZP.XIDL
-            LDA ZP.TokenBufferH  
-            ADC ZP.TokenBufferContentLengthH
-            STA ZP.XIDH
-            
-            // Write character to buffer
-            STA [ZP.XID]
-            
-            // Increment content length
-            INC ZP.TokenBufferContentLengthL
-            if (Z)
-            {
-                INC ZP.TokenBufferContentLengthH
-            }
+            appendByteToBuffer(); // A ->
             
             // Check for null terminator
             LDA [ZP.STR], Y
@@ -338,7 +306,6 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
             INY
             // TODO: Add buffer overflow check here if needed
         }
-//LDA #'"' COut();
         PLY
 
 #ifdef TRACEFILE
@@ -367,8 +334,7 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
             }
             // Iterate through arguments
             LDX #0 // Argument counter for comma separation
-            
-            IterateStart();
+            Locals.IterateStart(); // IDX -> IDY
             loop
             {
                 if (NC) { SEC break; } // No more arguments
@@ -384,26 +350,19 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #' ' Prin
                     if (NZ)
                     {
                         LDA # Token.COMMA
-                        appendTokenToBuffer();
+                        appendByteToBuffer();
                     }
                     // Add IDENTIFIER token
                     LDA # Token.IDENTIFIER
-                    appendTokenToBuffer();
-                    
+                    appendByteToBuffer();
                     // Get argument name and append it
-                    Locals.GetName(); // Input: ZP.IDY, Output: ZP.TOP = name pointer
-                    LDA ZP.TOPL
-                    STA ZP.STRL
-                    LDA ZP.TOPH
-                    STA ZP.STRH
-                    
-LDA #'a' COut();                    
+                    Locals.GetName(); // Input: ZP.IDY, Output: ZP.STR = name pointer
                     appendStringToBuffer(); // Input: ZP.STR
-LDA #'b' COut();                    
+
                     if (NC) { CLC break; } // Propagate error
                     INX // Increment argument counter
                 }
-                Locals.IterateNext(); // Input: ZP.IDY = current, Output: ZP.IDY = next
+                Locals.IterateNext(); // Input: ZP.IDY = current, Output: ZP.IDY = next, munts ZP.LCURRENT
             }
             break;
         }
@@ -492,37 +451,31 @@ LDA #'b' COut();
 
         loop // Single exit block
         {
-            prepareTokenBuffer();
-            
             // FUNC token
             LDA #Token.FUNC
-            appendTokenToBuffer();
+            appendByteToBuffer();
             
             // IDENTIFIER and function name
             LDA #Token.IDENTIFIER
-            appendTokenToBuffer();
+            appendByteToBuffer();
             
             Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-LDA #'c' COut();
             appendStringToBuffer(); // Input: ZP.STR = string pointer
-LDA #'d' COut();
             if (NC) { break; }
             
             // LPAREN
             LDA #Token.LPAREN
-            appendTokenToBuffer();
-            
+            appendByteToBuffer();
+
             // Function arguments
             Functions.GetArguments(); // Input: ZP.IDX, Output: ZP.IDY = args list or null
             appendArgumentsToBuffer(); // Input: ZP.IDY = arguments list
             if (NC) { break; }
-            
+                        
             // RPAREN
             LDA #Token.RPAREN
-            appendTokenToBuffer();
+            appendByteToBuffer();
             
-            // Stream header to file
-            flushTokenBuffer();
             break; // Return result from AppendStream
         }
 
@@ -539,12 +492,8 @@ LDA #'d' COut();
 #ifdef TRACEFILE
         LDA #(streamMainHeaderTrace % 256) STA ZP.TraceMessageL LDA #(streamMainHeaderTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-
-        prepareTokenBuffer();
         LDA #Token.BEGIN
-        appendTokenToBuffer();
-        flushTokenBuffer();
-
+        appendByteToBuffer();
 #ifdef TRACEFILE
         LDA #(streamMainHeaderTrace % 256) STA ZP.TraceMessageL LDA #(streamMainHeaderTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -560,9 +509,7 @@ LDA #'d' COut();
         LDA #(streamFunctionBodyTrace % 256) STA ZP.TraceMessageL LDA #(streamFunctionBodyTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-//Debug.NL(); XOut();        
         Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
-//YOut();        
         LDA ZP.IDYL
         ORA ZP.IDYH
         if (Z)
@@ -589,10 +536,8 @@ LDA #'d' COut();
         LDA #(streamFunctionFooterTrace % 256) STA ZP.TraceMessageL LDA #(streamFunctionFooterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 
-        prepareTokenBuffer();
         LDA #Token.ENDFUNC
-        appendTokenToBuffer();
-        flushTokenBuffer();
+        appendByteToBuffer();
 
 #ifdef TRACEFILE
         LDA #(streamFunctionFooterTrace % 256) STA ZP.TraceMessageL LDA #(streamFunctionFooterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -608,10 +553,8 @@ LDA #'d' COut();
         LDA #(streamMainFooterTrace % 256) STA ZP.TraceMessageL LDA #(streamMainFooterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
 
-        prepareTokenBuffer();
         LDA #Token.END
-        appendTokenToBuffer();
-        flushTokenBuffer();
+        appendByteToBuffer();
 
 #ifdef TRACEFILE
         LDA #(streamMainFooterTrace % 256) STA ZP.TraceMessageL LDA #(streamMainFooterTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -640,35 +583,36 @@ LDA #'d' COut();
         STA ZP.XIDL
         PHA
         
+        flushTokenBuffer(); // flush what we have in TokenBuffer before switching to Variable or Function token stream        
         STZ File.TransferLengthL
         STZ File.TransferLengthH
         
-Print.NewLine(); LDA ZP.IDYH Print.Hex(); LDA ZP.IDYL Print.Hex();     
-
         loop
         {
+            LDA [ZP.XID]          // Check for EOF
+            CMP # Token.EOF
+            if (Z) { break; } // Don't include EOF
+            
             // Increment length counter
             INC File.TransferLengthL
             if (Z)
             {
                 INC File.TransferLengthH
             }
-            LDA [ZP.XID]          // Check for EOF
-            CMP #Token.EOF  
-            if (Z) { break; }
             INC ZP.XIDL           // Advance to next token
             if (Z)
             {
                 INC ZP.XIDH
             }
         }
-Print.NewLine(); LDA File.TransferLengthH Print.Hex(); LDA File.TransferLengthL Print.Hex();     
         
         LDA ZP.IDYL
         STA File.SectorSourceL
         LDA ZP.IDYH
         STA File.SectorSourceH
         File.AppendStream(); 
+        
+        prepareTokenBuffer(); // switch back to our use of TokenBuffer, reseting to length = 0
         
         PLA
         STA ZP.IDYL
@@ -688,15 +632,12 @@ Print.NewLine(); LDA File.TransferLengthH Print.Hex(); LDA File.TransferLengthL 
     // Input: A = token value
     // Output: Token written to buffer, position advanced
     // Uses: ZP.TokenBufferContentLength as write position
-    const string appendTokenToBufferTrace = "appTok";
-    appendTokenToBuffer()
+    const string appendByteToBufferTrace = "appByte";
+    appendByteToBuffer()
     {
 #ifdef TRACEFILE
-        PHA
-        LDA #(appendTokenToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendTokenToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-        PLA
+        PHA LDA #(appendByteToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendByteToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
-
         PHA
         // Calculate write position: TokenBuffer + ContentLength
         CLC
@@ -713,10 +654,11 @@ Print.NewLine(); LDA File.TransferLengthH Print.Hex(); LDA File.TransferLengthL 
         {
             INC ZP.TokenBufferContentLengthH
         }
-//Debug.NL(); HOut(); Space(); LDA ZP.TokenBufferContentLengthH HOut(); LDA ZP.TokenBufferContentLengthL HOut();
-
+        
+        SEC // all good (TODO : buffer overflow)
+        
 #ifdef TRACEFILE
-        LDA #(appendTokenToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendTokenToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+        LDA #(appendByteToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendByteToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
     

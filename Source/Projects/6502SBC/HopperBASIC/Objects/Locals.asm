@@ -236,7 +236,7 @@ unit Locals
     
     // Get local name pointer from local node
     // Input: ZP.IDY = local node address
-    // Output: ZP.TOP = local name pointer
+    // Output: ZP.STR = local name pointer
     // Munts: -
     GetName()
     {

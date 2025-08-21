@@ -350,6 +350,26 @@ unit ZP // ZeroPage.asm
     const byte LastAck              = 0x8C;
     const byte PLUGNPLAY            = 0x8D;
     
+    // File unit:
+    const byte FS0                  = 0x8E;
+    const byte FS1                  = 0x8F;
+    const byte FS2                  = 0x90;
+    const byte FS3                  = 0x91;
+    const byte FS4                  = 0x92;
+    const byte FS5                  = 0x93;
+    const byte FS6                  = 0x94;
+    const byte FS7                  = 0x95;
+    const byte FS8                  = 0x96;
+    const byte FS9                  = 0x97;
+    const byte FS10                 = 0x98;
+    const byte FS11                 = 0x99;
+    const byte FS12                 = 0x9A;
+    const byte FS13                 = 0x9B;
+    const byte FS14                 = 0x9C;
+    const byte FS15                 = 0x9D;
+    
+    
+    
     // 0x84-0xEB: Available (104 bytes!)
 
     // HARDWARE I/O (IMMOVABLE - Platform Hardware Addresses)

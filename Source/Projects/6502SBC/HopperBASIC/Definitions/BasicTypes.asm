@@ -220,9 +220,10 @@ unit BASICTypes // BASICTypes.asm
     
     // Convert BASICType base type to corresponding Token
     // Input: A = BASICType base type (e.g., BASICType.INT)
-    // Output: A = corresponding Token (e.g., Token.INT)
+    // Output: A = corresponding Token (e.g., Token.INT), C if success, NC if not
     ToToken()
     {
+        SEC
         switch (A)
         {
             case BASICType.INT:
@@ -253,14 +254,18 @@ unit BASICTypes // BASICTypes.asm
             {
                 LDA #Token.VAR
             }
+            case BASICType.ARRAY:
+            {
+                LDA #Token.ARRAY
+            }
             case BASICType.LONG:
             {
                 LDA #Token.LONG
             }
             default:
             {
-                // Unknown type - default to INT
-                LDA #Token.INT
+                // Unknown type
+                CLC
             }
         }
     }

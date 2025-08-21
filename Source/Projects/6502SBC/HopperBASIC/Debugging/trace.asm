@@ -75,6 +75,12 @@ unit Trace // Trace.asm
         PHX
         PHY
         
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
+        
+        
 #ifdef TRACESP        
         // capture current stack pointer
         TSX
@@ -82,6 +88,7 @@ unit Trace // Trace.asm
 #endif
         
         PrintIndent();
+        
         
         // Print method name from ZP.TraceMessage
         LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); LDA #' ' Print.Char(); LDA #'{' Print.Char(); 
@@ -130,6 +137,11 @@ unit Trace // Trace.asm
         // Increase indentation
         INC ZP.TraceIndent
         
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        
         PLY
         PLX
         PLA
@@ -153,6 +165,11 @@ unit Trace // Trace.asm
         PHA
         PHX
         PHY
+        
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
         
 #ifdef TRACESP
         // capture current stack pointer
@@ -211,6 +228,11 @@ unit Trace // Trace.asm
         
         
         Print.NewLine();
+        
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
         
         PLY
         PLX
