@@ -33,6 +33,10 @@ unit Storage
             // 4. Save all functions (including main program under "$MAIN")
             saveFunctions();
             if (NC) { break; }
+            
+            //  add EOF and stream
+            LDA # Token.EOF
+            appendByteToBuffer();
 
             // 5. flush TokenBuffer to EEPROM
             flushTokenBuffer();
@@ -181,8 +185,8 @@ unit Storage
                     if (NC) { break; }
                 }
             }
-            //  add EOF and stream
-            LDA # Token.EOF
+            //  add EOE and stream
+            LDA # Token.EOE
             appendByteToBuffer();
             
             SEC // Success
@@ -270,6 +274,10 @@ unit Storage
                     streamFunction(); // Input: ZP.IDX = function node
                 }
                 if (NC) { break; }
+                
+                //  add EOE and stream
+                LDA # Token.EOE
+                appendByteToBuffer();
                 
                 Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
@@ -474,6 +482,10 @@ unit Storage
                         
             // RPAREN
             LDA #Token.RPAREN
+            appendByteToBuffer();
+            
+            //  add EOL and stream
+            LDA # Token.EOL
             appendByteToBuffer();
             
             break; // Return result from AppendStream

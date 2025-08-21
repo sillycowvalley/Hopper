@@ -35,221 +35,223 @@ unit Tokens
         TROFF    = 0x93,
         REM      = 0x94,
         COMMENT  = 0x95,
-        EOL      = 0x96,
         
         // Type declarations
-        INT      = 0x97,
-        WORD     = 0x98,
-        BIT      = 0x99,
-        BYTE     = 0x9A,
-        LONG     = 0x9B,
-        STRING   = 0x9C,
-        CHAR     = 0x9D,
-        VAR      = 0x9E,
-        CONST    = 0x9F,
+        INT      = 0x96,
+        WORD     = 0x97,
+        BIT      = 0x98,
+        BYTE     = 0x99,
+        LONG     = 0x9A,
+        STRING   = 0x9B,
+        CHAR     = 0x9C,
+        VAR      = 0x9D,
+        CONST    = 0x9E,
         
         // Language keywords
-        PRINT    = 0xA0,
-        INPUT    = 0xA1,
-        IF       = 0xA2,
-        THEN     = 0xA3,
-        ELSE     = 0xA4,
-        ENDIF    = 0xA5,
-        FUNC     = 0xA6,
-        ENDFUNC  = 0xA7,
-        RETURN   = 0xA8,
-        BEGIN    = 0xA9,
-        END      = 0xAA,
-        FOR      = 0xAB,
-        TO       = 0xAC,
-        STEP     = 0xAD,
-        NEXT     = 0xAE,
-        WHILE    = 0xAF,
-        WEND     = 0xB0,
-        DO       = 0xB1,
-        UNTIL    = 0xB2,
-        BREAK    = 0xB3,
-        CONTINUE = 0xB4,
-        CONT     = 0xB5,
-        GOSUB    = 0xB6,
-        GOTO     = 0xB7,
-        ARRAY    = 0xB8,
-        AND      = 0xB9,
-        OR       = 0xBA,
-        NOT      = 0xBB,
-        MOD      = 0xBC,
-        TRUE     = 0xBD,
-        FALSE    = 0xBE,
-        REPEAT   = 0xBF,
-        STOP     = 0xC0,
+        PRINT    = 0x9F,
+        INPUT    = 0xA0,
+        IF       = 0xA1,
+        THEN     = 0xA2,
+        ELSE     = 0xA3,
+        ENDIF    = 0xA4,
+        FUNC     = 0xA5,
+        ENDFUNC  = 0xA6,
+        RETURN   = 0xA7,
+        BEGIN    = 0xA8,
+        END      = 0xA9,
+        FOR      = 0xAA,
+        TO       = 0xAB,
+        STEP     = 0xAC,
+        NEXT     = 0xAD,
+        WHILE    = 0xAE,
+        WEND     = 0xAF,
+        DO       = 0xB0,
+        UNTIL    = 0xB1,
+        BREAK    = 0xB2,
+        CONTINUE = 0xB3,
+        CONT     = 0xB4,
+        GOSUB    = 0xB5,
+        GOTO     = 0xB6,
+        ARRAY    = 0xB7,
+        AND      = 0xB8,
+        OR       = 0xB9,
+        NOT      = 0xBA,
+        MOD      = 0xBB,
+        TRUE     = 0xBC,
+        FALSE    = 0xBD,
+        REPEAT   = 0xBE,
+        STOP     = 0xBF,
         
         // Built-in functions
-        ABS      = 0xC1,
-        MILLIS   = 0xC2,
-        PEEK     = 0xC3,
-        POKE     = 0xC4,
-        RND      = 0xC5,
-        SECONDS  = 0xC6,
-        DELAY    = 0xC7,
-        CLS      = 0xC8,
+        ABS      = 0xC0,
+        MILLIS   = 0xC1,
+        PEEK     = 0xC2,
+        POKE     = 0xC3,
+        RND      = 0xC4,
+        SECONDS  = 0xC5,
+        DELAY    = 0xC6,
+        CLS      = 0xC7,
         
         // Character/String functions
-        ASC      = 0xC9,
-        CHR      = 0xCA,
-        LEN      = 0xCB,
+        ASC      = 0xC8,
+        CHR      = 0xC9,
+        LEN      = 0xCA,
         
         // Hardware I/O functions
-        PINMODE  = 0xCC,
-        READ     = 0xCD,
-        WRITE    = 0xCE,
+        PINMODE  = 0xCB,
+        READ     = 0xCC,
+        WRITE    = 0xCD,
         
-        lastKeyword = 0xCE,
+        lastKeyword = 0xCD,
         
-        // Literals and identifiers  
-        NUMBER     = 0xCF,
-        STRINGLIT  = 0xD0,
-        CHARLIT    = 0xD1,
-        IDENTIFIER = 0xD2,
+        // Literals and identifiers
+        NUMBER     = 0xCE,
+        STRINGLIT  = 0xCF,
+        CHARLIT    = 0xD0,
+        IDENTIFIER = 0xD1,
         
-        // Special punctuation (no inline data)
-        EOF      = 0xD3,
-        COLON    = 0xD4,
-        COMMA    = 0xD5,
-        SEMICOLON = 0xD6,
+        // Stream/File control tokens
+        EOF      = 0xD2,
+        EOL      = 0xD3,
+        EOE      = 0xD4,
+        
+        // Basic punctuation
+        COLON    = 0xD5,
+        COMMA    = 0xD6,
+        SEMICOLON = 0xD7,
         
         // Basic operators
-        EQUALS   = 0xD7,
-        PLUS     = 0xD8,
-        MINUS    = 0xD9,
-        LPAREN   = 0xDA,
-        RPAREN   = 0xDB,
+        EQUALS   = 0xD8,
+        PLUS     = 0xD9,
+        MINUS    = 0xDA,
+        LPAREN   = 0xDB,
+        RPAREN   = 0xDC,
         
-        // Additional comparison operators
-        NOTEQUAL = 0xDC,
-        LT       = 0xDD,
-        GT       = 0xDE,
-        LE       = 0xDF,
-        GE       = 0xE0,
+        // Additional comparison operators (moved down by 1 from 0xDC-0xE0)
+        NOTEQUAL = 0xDD,
+        LT       = 0xDE,
+        GT       = 0xDF,
+        LE       = 0xE0,
+        GE       = 0xE1,
         
         // Arithmetic operators
-        MULTIPLY = 0xE1,
-        DIVIDE   = 0xE2,
+        MULTIPLY = 0xE2,
+        DIVIDE   = 0xE3,
         
         // Bitwise operators
-        BITWISE_AND = 0xE3,
-        BITWISE_OR  = 0xE4,
+        BITWISE_AND = 0xE4,
+        BITWISE_OR  = 0xE5,
         
         // Array and string operators
-        LBRACKET = 0xE5,
-        RBRACKET = 0xE6,
-        LBRACE   = 0xE7,
-        RBRACE   = 0xE8,
+        LBRACKET = 0xE6,
+        RBRACKET = 0xE7,
+        LBRACE   = 0xE8,
+        RBRACE   = 0xE9,
     }
         
-        // Keywords A-H (first character < 'I') - Reorganized by frequency
-    // WARNING: Monitor table size with validator - aiming for balanced distribution
+    // Keywords A-H (first character < 'I')
     const byte[] keywordsAH = {
         // VERY FREQUENT (Rank 1-10)
-        3, Token.FOR, 'F', 'O', 'R',             // Rank 3 - FOR/NEXT loops
-        4, Token.GOTO, 'G', 'O', 'T', 'O',       // Rank 8 - Jump to line
-        5, Token.GOSUB, 'G', 'O', 'S', 'U', 'B', // Rank 9 - Subroutine call
-        3, Token.END, 'E', 'N', 'D',             // Rank 10 - Program termination
+        3, Token.FOR, 'F', 'O', 'R',             // Rank 3 - FOR/NEXT loops (0xAA)
+        4, Token.GOTO, 'G', 'O', 'T', 'O',       // Rank 8 - Jump to line (0xB6)
+        5, Token.GOSUB, 'G', 'O', 'S', 'U', 'B', // Rank 9 - Subroutine call (0xB5)
+        3, Token.END, 'E', 'N', 'D',             // Rank 10 - Program termination (0xA9)
         
         // FREQUENT (Rank 11-20)
-        3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND
-        3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value
-        4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch
-        2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops
-        3, Token.CHR, 'C', 'H', 'R',             // Rank 16 - Character conversion
-        3, Token.ASC, 'A', 'S', 'C',             // Rank 17 - ASCII conversion
+        3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND (0xB8)
+        3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value (0xC0)
+        4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch (0xA3)
+        2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops (0xB0)
+        3, Token.CHR, 'C', 'H', 'R',             // Rank 16 - Character conversion (0xC9)
+        3, Token.ASC, 'A', 'S', 'C',             // Rank 17 - ASCII conversion (0xC8)
         
         // MODERATE (Rank 21-30)
-        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Rank 19 - End IF block
-        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Rank 20 - Clear screen/variables
-        3, Token.CLS, 'C', 'L', 'S',             // Rank 21 - Clear screen
-        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Rank 23 - Boolean constant
-        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // Rank 24 - HopperBASIC data type
-        3, Token.BIT, 'B', 'I', 'T',             // Rank 25 - HopperBASIC data type
-        4, Token.CHAR, 'C', 'H', 'A', 'R',       // Rank 26 - Character type
-        4, Token.FUNC, 'F', 'U', 'N', 'C',       // Rank 28 - Function declaration
-        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // Rank 29 - Constant declaration
-        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Rank 30 - Timing function
-        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Rank 31 - End function
-        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // Rank 32 - Main program start
+        5, Token.ENDIF, 'E', 'N', 'D', 'I', 'F', // Rank 19 - End IF block (0xA4)
+        5, Token.CLEAR, 'C', 'L', 'E', 'A', 'R', // Rank 20 - Clear screen/variables (0x83)
+        3, Token.CLS, 'C', 'L', 'S',             // Rank 21 - Clear screen (0xC7)
+        5, Token.FALSE, 'F', 'A', 'L', 'S', 'E', // Rank 23 - Boolean constant (0xBD)
+        4, Token.BYTE, 'B', 'Y', 'T', 'E',       // Rank 24 - HopperBASIC data type (0x99)
+        3, Token.BIT, 'B', 'I', 'T',             // Rank 25 - HopperBASIC data type (0x98)
+        4, Token.CHAR, 'C', 'H', 'A', 'R',       // Rank 26 - Character type (0x9C)
+        4, Token.FUNC, 'F', 'U', 'N', 'C',       // Rank 28 - Function declaration (0xA5)
+        5, Token.CONST, 'C', 'O', 'N', 'S', 'T', // Rank 29 - Constant declaration (0x9E)
+        5, Token.DELAY, 'D', 'E', 'L', 'A', 'Y', // Rank 30 - Timing function (0xC6)
+        7, Token.ENDFUNC, 'E', 'N', 'D', 'F', 'U', 'N', 'C', // Rank 31 - End function (0xA6)
+        5, Token.BEGIN, 'B', 'E', 'G', 'I', 'N', // Rank 32 - Main program start (0xA8)
         
         // INFREQUENT (Everything else alphabetically)
-        5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration
-        5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control
-        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command
-        3, Token.BYE, 'B', 'Y', 'E',             // Exit interpreter
-        4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break
-        8, Token.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Loop control
-        4, Token.DASM, 'D', 'A', 'S', 'M',       // Disassemble function
-        3, Token.DEL, 'D', 'E', 'L',             // Delete file
-        3, Token.DIR, 'D', 'I', 'R',             // Directory listing
-        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump
-        6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol
-        6, Token.FORMAT, 'F', 'O', 'R', 'M', 'A', 'T', // Format file system
-        5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions
-        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command
+        5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration (0xB7)
+        5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control (0xB2)
+        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command (0x8E)
+        3, Token.BYE, 'B', 'Y', 'E',             // Exit interpreter (0x91)
+        4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break (0xB4)
+        8, Token.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Loop control (0xB3)
+        4, Token.DASM, 'D', 'A', 'S', 'M',       // Disassemble function (0x90)
+        3, Token.DEL, 'D', 'E', 'L',             // Delete file (0x8A)
+        3, Token.DIR, 'D', 'I', 'R',             // Directory listing (0x89)
+        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump (0x8F)
+        6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol (0x86)
+        6, Token.FORMAT, 'F', 'O', 'R', 'M', 'A', 'T', // Format file system (0x8B)
+        5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions (0x85)
+        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command (0x8D)
         
         0  // End marker
     };
 
-    // Keywords I-Z (first character >= 'I') - Reorganized by frequency  
+    // Keywords I-Z (first character >= 'I')
     const byte[] keywordsIZ = {
         // VERY FREQUENT (Rank 1-10)
-        5, Token.PRINT, 'P', 'R', 'I', 'N', 'T', // Rank 1 - Output data
-        4, Token.NEXT, 'N', 'E', 'X', 'T',       // Rank 2 - FOR/NEXT loops
-        4, Token.THEN, 'T', 'H', 'E', 'N',       // Rank 3 - IF/THEN conditionals
-        2, Token.IF, 'I', 'F',                   // Rank 4 - Conditionals  
-        3, Token.INT, 'I', 'N', 'T',             // Rank 5 - Common numeric type
-        3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic
+        5, Token.PRINT, 'P', 'R', 'I', 'N', 'T', // Rank 1 - Output data (0x9F)
+        4, Token.NEXT, 'N', 'E', 'X', 'T',       // Rank 2 - FOR/NEXT loops (0xAD)
+        4, Token.THEN, 'T', 'H', 'E', 'N',       // Rank 3 - IF/THEN conditionals (0xA2)
+        2, Token.IF, 'I', 'F',                   // Rank 4 - Conditionals (0xA1)
+        3, Token.INT, 'I', 'N', 'T',             // Rank 5 - Common numeric type (0x96)
+        3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic (0xBB)
         
         // FREQUENT (Rank 11-20)
-        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input
-        3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length
-        3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type
-        4, Token.LONG, 'L', 'O', 'N', 'G',       // New 32-bit type
+        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
+        3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length (0xCA)
+        3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type (0x9D)
+        4, Token.LONG, 'L', 'O', 'N', 'G',       // New 32-bit type (0x9A)
 
         // MODERATE (Rank 21-30)
-        5, Token.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops
-        4, Token.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops
-        4, Token.STEP, 'S', 'T', 'E', 'P',       // Rank 18 - FOR loop increment
-        4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 22 - Display program
-        3, Token.RND, 'R', 'N', 'D',             // Rank 24 - Random number generation
-        4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 27 - Load from storage
+        5, Token.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops (0xAE)
+        4, Token.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops (0xAF)
+        4, Token.STEP, 'S', 'T', 'E', 'P',       // Rank 18 - FOR loop increment (0xAC)
+        4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 22 - Display program (0x81)
+        3, Token.RND, 'R', 'N', 'D',             // Rank 24 - Random number generation (0xC4)
+        4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 27 - Load from storage (0x88)
         
         // INFREQUENT (Everything else - HopperBASIC specific and console commands)
-        4, Token.WORD, 'W', 'O', 'R', 'D',       // HopperBASIC data type
-        6, Token.STRING, 'S', 'T', 'R', 'I', 'N', 'G', // HopperBASIC data type
-        6, Token.RETURN, 'R', 'E', 'T', 'U', 'R', 'N', // HopperBASIC structured programming
-        3, Token.NOT, 'N', 'O', 'T',             // Logic operator
-        2, Token.OR, 'O', 'R',                   // Logic operator
-        4, Token.TRUE, 'T', 'R', 'U', 'E',       // Logic constant
-        2, Token.TO, 'T', 'O',                   // Control flow extras
-        5, Token.UNTIL, 'U', 'N', 'T', 'I', 'L', // Control flow extras
+        4, Token.WORD, 'W', 'O', 'R', 'D',       // HopperBASIC data type (0x97)
+        6, Token.STRING, 'S', 'T', 'R', 'I', 'N', 'G', // HopperBASIC data type (0x9B)
+        6, Token.RETURN, 'R', 'E', 'T', 'U', 'R', 'N', // HopperBASIC structured programming (0xA7)
+        3, Token.NOT, 'N', 'O', 'T',             // Logic operator (0xBA)
+        2, Token.OR, 'O', 'R',                   // Logic operator (0xB9)
+        4, Token.TRUE, 'T', 'R', 'U', 'E',       // Logic constant (0xBC)
+        2, Token.TO, 'T', 'O',                   // Control flow extras (0xAB)
+        5, Token.UNTIL, 'U', 'N', 'T', 'I', 'L', // Control flow extras (0xB1)
         
         // Console commands (all infrequent)
-        3, Token.NEW, 'N', 'E', 'W',             // Console command
-        3, Token.RUN, 'R', 'U', 'N',             // Console command
-        3, Token.MEM, 'M', 'E', 'M',             // Console command
-        4, Token.SAVE, 'S', 'A', 'V', 'E',       // File operation
-        4, Token.VARS, 'V', 'A', 'R', 'S',       // Console command
-        3, Token.REM, 'R', 'E', 'M',             // Comment (infrequent in programs)
-        4, Token.TRON, 'T', 'R', 'O', 'N',       // Debug command
-        5, Token.TROFF, 'T', 'R', 'O', 'F', 'F', // Debug command
+        3, Token.NEW, 'N', 'E', 'W',             // Console command (0x80)
+        3, Token.RUN, 'R', 'U', 'N',             // Console command (0x82)
+        3, Token.MEM, 'M', 'E', 'M',             // Console command (0x8C)
+        4, Token.SAVE, 'S', 'A', 'V', 'E',       // File operation (0x87)
+        4, Token.VARS, 'V', 'A', 'R', 'S',       // Console command (0x84)
+        3, Token.REM, 'R', 'E', 'M',             // Comment (infrequent in programs) (0x94)
+        4, Token.TRON, 'T', 'R', 'O', 'N',       // Debug command (0x92)
+        5, Token.TROFF, 'T', 'R', 'O', 'F', 'F', // Debug command (0x93)
         
         // Built-in functions (all infrequent)
-        6, Token.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function
-        4, Token.PEEK, 'P', 'E', 'E', 'K',       // Built-in function
-        4, Token.POKE, 'P', 'O', 'K', 'E',       // Built-in function
-        7, Token.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function
+        6, Token.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function (0xC1)
+        4, Token.PEEK, 'P', 'E', 'E', 'K',       // Built-in function (0xC2)
+        4, Token.POKE, 'P', 'O', 'K', 'E',       // Built-in function (0xC3)
+        7, Token.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function (0xC5)
         
         // Hardware I/O functions
-        7, Token.PINMODE, 'P', 'I', 'N', 'M', 'O', 'D', 'E', // Configure pin direction
-        4, Token.READ, 'R', 'E', 'A', 'D',       // Digital input
-        5, Token.WRITE, 'W', 'R', 'I', 'T', 'E', // Digital output
+        7, Token.PINMODE, 'P', 'I', 'N', 'M', 'O', 'D', 'E', // Configure pin direction (0xCB)
+        4, Token.READ, 'R', 'E', 'A', 'D',       // Digital input (0xCC)
+        5, Token.WRITE, 'W', 'R', 'I', 'T', 'E', // Digital output (0xCD)
         
         0  // End marker
     };
