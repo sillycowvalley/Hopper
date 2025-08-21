@@ -32,9 +32,9 @@ unit Address // MemoryMap.asm
     
     const uint TokenizerBuffer         = BasicProcessBuffer    + Limits.BasicProcessBufferSize;        // 512 bytes - tokenized line storage
     
-    const uint REPLOpCodeBuffer        = TokenizerBuffer  + Limits.TokenizerBufferSize;                // 512 bytes - compiled REPL line OpCode storage
-
-    const uint FunctionOpCodeBuffer    = REPLOpCodeBuffer + Limits.OpCodeBufferSize;                   // 512 bytes - JIT compiled BASIC function opcodes
+    const uint FunctionOpCodeBuffer    = TokenizerBuffer + Limits.TokenizerBufferSize;                 // 512 bytes - JIT compiled BASIC function opcodes
+    
+    const uint REPLOpCodeBuffer        = FunctionOpCodeBuffer  + Limits.OpCodeBufferSize;              // 512 bytes - compiled REPL line OpCode storage
     
 #ifdef HASEEPROM    
     const uint FileSystemBuffers       = FunctionOpCodeBuffer     + Limits.OpCodeBufferSize;          // 768 bytes - file system buffers (may be shared or smaller in future)
