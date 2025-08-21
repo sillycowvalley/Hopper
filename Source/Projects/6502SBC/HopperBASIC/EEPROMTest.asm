@@ -1,11 +1,12 @@
 program EEPROMTest
 {
     
-    #define ROM_32K
+    #define ROM_48K
     #define CPU_65C02S
     #define HOPPER_BASIC
     
     #define HASEEPROM
+    #define TRACEFILE
     
     #define DEBUG
     
@@ -18,6 +19,7 @@ program EEPROMTest
     
     uses "./Debugging/Error"
     uses "./Debugging/Debug"
+    uses "./Debugging/Trace"
     
     uses "/Source/Runtime/6502/Serial"
     uses "/Source/Runtime/6502/Parallel"
@@ -25,6 +27,7 @@ program EEPROMTest
     uses "/Source/Runtime/6502/I2C"
     uses "/Source/Runtime/6502/Time"
     uses "/Source/Runtime/6502/Memory"
+    uses "/Source/Runtime/6502/Stacks"
     
     uses "./Files/EEPROM"
     uses "./Files/File"
@@ -33,10 +36,13 @@ program EEPROMTest
     uses "./Objects/Objects"
     uses "./Objects/String"
     uses "./Objects/Char"
+    uses "./Objects/Long"
+    uses "./Objects/Variables"
+    uses "./Objects/Functions"
+    uses "./Objects/Array"
     
     uses "./Utilities/Print"
     uses "./Utilities/Tools"
-    uses "./Objects/Long"
     
     
      // String constants for test output
@@ -50,7 +56,7 @@ program EEPROMTest
     const string msgSize             = "EEPROM Size: ";
     const string msgKBytes           = "K bytes\n\n";
     const string msgUnknown          = "Unknown\n\n";
-    const string msgComplete         = "\n=== EEPROM Test Complete ===\n";
+    const string msgComplete         = "\n=== Test Complete ===\n";
     
     // Interrupt handlers
     IRQ()
@@ -80,6 +86,10 @@ program EEPROMTest
             if (Z) { break; }
         } 
         
+        Error.ClearError();
+        States.SetSuccess();
+        Trace.Initialize(); 
+        
         // Clear serial buffer
         LDA # (SerialInBuffer >> 8)
         Memory.ClearPage();
@@ -87,264 +97,17 @@ program EEPROMTest
         Serial.Initialize();
         Parallel.Initialize();
         
-    }
-    
-    const string TestFileOne   = "FIRSTFILE";
-    const string TestFileTwo   = "SECONDFILE";
-    const string TestFileThree = "THIRDFILE";
-    
-    // 242 including '\0;
-    const string TestDataOne = "00000 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. END";
-    
-    // 11 including '\0;
-    //const string TestDataOne = "0123456789";
-    
-    
-    // 223 including '\0;
-    const string TestDataTwo = "@@@@@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. END";
-    
-    // 27 including '\0'
-    //const string TestDataTwo = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    
-    
-    LoadTestDataOne()
-    {
-        LDA # (TestDataOne / 256)
-        STA ZP.STRH
-        LDA # (TestDataOne % 256)
-        STA ZP.STRL
-        String.Length(); // -> Y
-//Debug.NL(); Print.String();
-
-        // Set up copy parameters
-        LDA ZP.STRH
-        STA ZP.FSOURCEADDRESSH
-        LDA ZP.STRL
-        STA ZP.FSOURCEADDRESSL
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA ZP.FDESTINATIONADDRESSH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA ZP.FDESTINATIONADDRESSL
-        
-        STY ZP.FLENGTHL
-        INC ZP.FLENGTHL // '\0' terminator
-        STZ ZP.FLENGTHH
-        
-        LDA ZP.FLENGTHL
-        PHA
-        LDA ZP.FLENGTHH
-        PHA
-            
-        // Copy string including null terminator
-        Memory.Copy();
-        
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA File.SectorSourceH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA File.SectorSourceL
-        
-        PLA
-        STA File.TransferLengthH
-        PLA
-        STA File.TransferLengthL
-        
-        LDA File.TransferLengthH 
-        STA ZP.TOPH
-        LDA File.TransferLengthL
-        STA ZP.TOPL
-        LDA # BASICType.WORD
-        STA ZP.TOPT
-        
-//Debug.NL(); LDA #'1' COut(); LDA #':' COut(); Space(); Print.Decimal();
+        // Initialize Hopper VM runtime components
+        Memory.InitializeHeapSize();
+        Stacks.Initialize();
         
     }
     
-    LoadTestDataTwo()
-    {
-        LDA # (TestDataTwo / 256)
-        STA ZP.STRH
-        LDA # (TestDataTwo % 256)
-        STA ZP.STRL
-        String.Length(); // -> Y
-//Debug.NL(); Print.String();
-        
-        // set destination once
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA ZP.FDESTINATIONADDRESSH
-        
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA ZP.FDESTINATIONADDRESSL
-        
-        // use source once:         
-        LDA ZP.STRH
-        STA ZP.FSOURCEADDRESSH
-        LDA ZP.STRL
-        STA ZP.FSOURCEADDRESSL
-        
-        STY ZP.FLENGTHL
-        INC ZP.FLENGTHL // '\0' terminator
-        STZ ZP.FLENGTHH
-        LDA ZP.FLENGTHL
-        PHA // Y + 1
-        PHA // Y + 1
-        
-        // Copy string including null terminator
-        Memory.Copy();
-        
-        // use source again:
-        LDA ZP.STRH
-        STA ZP.FSOURCEADDRESSH
-        LDA ZP.STRL
-        STA ZP.FSOURCEADDRESSL
-        
-        PLA // Y + 1 (already includes '\0')
-        STA ZP.FLENGTHL
-        STZ ZP.FLENGTHH
-        
-        LDA ZP.FLENGTHL
-        PHA
-        LDA ZP.FLENGTHH
-        PHA
-            
-        // Copy string including null terminator
-        Memory.Copy();
-        
-        PLA
-        STA File.TransferLengthH
-        PLA
-        STA File.TransferLengthL
-
-        PLA // Y + 1
-        CLC
-        ADC File.TransferLengthL
-        STA File.TransferLengthL
-        LDA File.TransferLengthH
-        ADC #0
-        STA File.TransferLengthH
-        
-        LDA #(FunctionOpCodeBuffer / 256)
-        STA File.SectorSourceH
-        LDA #(FunctionOpCodeBuffer % 256)
-        STA File.SectorSourceL
-        
-        LDA File.TransferLengthH 
-        STA ZP.TOPH
-        LDA File.TransferLengthL
-        STA ZP.TOPL
-        LDA # BASICType.WORD
-        STA ZP.TOPT
-        
-//Debug.NL(); LDA #'2' COut(); LDA #':' COut(); Space(); Print.Decimal();        
-
-    }
+    const string TestFileSieve  = "SIEVE";
+    const string TestFileNone   = "NONE";
     
-    AddFileOne()
-    {
-        
-        LDA #(TestFileOne / 256)
-        STA ZP.STRH
-        LDA #(TestFileOne % 256)
-        STA ZP.STRL
-Debug.NL(); Print.String();        
-        
-        File.StartSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        LoadTestDataOne();
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        LoadTestDataOne();
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        EndSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-    }
-    
-    AddFileTwo()
-    {
-        LDA #(TestFileTwo / 256)
-        STA ZP.STRH
-        LDA #(TestFileTwo % 256)
-        STA ZP.STRL
-Debug.NL(); Print.String();
-
-        File.StartSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        LoadTestDataOne();
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        EndSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-    }
-    
-    AddFileThree()
-    {
-        LDA #(TestFileThree / 256)
-        STA ZP.STRH
-        LDA #(TestFileThree % 256)
-        STA ZP.STRL
-Debug.NL(); Print.String();
-
-        File.StartSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        LoadTestDataTwo();
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        
-        LoadTestDataOne();
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        
-        LoadTestDataTwo();
-        File.AppendStream();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        
-        EndSave();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-    }
     LoadAndDisplay()
     {
-        
-        
-        
 Debug.NL(); Print.String();
 Debug.NL();         
         File.StartLoad();
@@ -352,6 +115,7 @@ Debug.NL();
         {
             loop
             {
+Debug.NL();                
                 File.NextStream();
                 if (NC) 
                 { 
@@ -490,101 +254,532 @@ Debug.NL();
             STA ZP.STRH
             Print.String();
         }
-        /*
-        DirectoryList();
+        File.Dir();
         if (NC)
         {
             Error.CheckAndPrint();
         }
-        return;
-        */
         
-        File.Format();
-        if (NC)
-        {
-Print.NewLine(); LDA #'F' Print.Char(); LDA #'!' Print.Char(); 
-        }
+        File.DumpDriveState();
+        
+        //SMB2 ZP.FLAGS  // TROFF on
+        RMB2 ZP.FLAGS  // TROFF off
         
         
-        AddFileOne();
-        AddFileTwo();
-        AddFileThree();
-        
-        DirectoryList();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-        }
-        LDA #1
-        DumpDriveState();
-        
-        /*
-        LDA #(TestFileTwo / 256)
-        STA ZP.STRH
-        LDA #(TestFileTwo % 256)
+        LDA #(TestFileSieve % 256)
         STA ZP.STRL
-Debug.NL(); Print.String();        
-        DeleteFile();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-            
-            LDA #1
-            DumpDriveState();
-            loop {  }   
-        }
-        
-        LDA #(TestFileThree / 256)
+        LDA #(TestFileSieve / 256)
         STA ZP.STRH
-        LDA #(TestFileThree % 256)
-        STA ZP.STRL
-Debug.NL(); Print.String();        
-        DeleteFile();
-        if (NC)
-        {
-            Error.CheckAndPrint();
-            
-            LDA #1
-            DumpDriveState();
-            loop {  }   
-        }
-        
-        AddFileThree();
-        */
-        
-        DirectoryList();
+        Print.String();
+        LoadProgram();
         if (NC)
         {
             Error.CheckAndPrint();
         }
-        /*
-        LDA #1
-        DumpDriveState();
         
-        LDA #(TestFileOne / 256)
-        STA ZP.STRH
-        LDA #(TestFileOne % 256)
-        STA ZP.STRL
-        LoadAndDisplay();
         
-        LDA #(TestFileTwo / 256)
-        STA ZP.STRH
-        LDA #(TestFileTwo % 256)
-        STA ZP.STRL
-        LoadAndDisplay();
+        
 
-        
-        LDA #(TestFileThree / 256)
-        STA ZP.STRH
-        LDA #(TestFileThree % 256)
+        // To make EEPROM.WritePage be included in the build:
+        LDA #(TestFileNone % 256)
         STA ZP.STRL
-        LoadAndDisplay();
+        LDA #(TestFileNone / 256)
+        STA ZP.STRH
+        File.Delete();
         
         LDA #(msgComplete % 256)
         STA ZP.STRL
         LDA #(msgComplete / 256)
         STA ZP.STRH
-        Print.String();
-        */
+Debug.NL(); Print.String();        
+        
+        
+       
+        loop { }
     }
+    
+    DumpBuffers()
+    {
+Debug.NL();
+Debug.NL(); HOut(); // last token
+Debug.NL(); LDA LoadBufferIndexH HOut(); LDA LoadBufferIndexL HOut(); Space(); 
+            LDA LoadBufferPosH HOut(); LDA LoadBufferPosL HOut(); Space(); 
+            LDA LoadBufferLengthH HOut(); LDA LoadBufferLengthL HOut(); Space();
+Debug.NL();            
+
+        LDA #(LoadBuffer / 256)
+        Debug.DumpPage();
+        
+        LDA #(LoadBuffer / 256 + 1)
+        Debug.DumpPage();
+        
+        Debug.DumpHeap();
+        
+    }
+    
+    // Combined buffer: TokenizerBuffer (512) + FunctionOpCodeBuffer (512) = 1024 bytes  
+    const uint LoadBuffer     = Address.TokenizerBuffer;
+    const uint LoadBufferSize = Limits.TokenizerBufferSize + Limits.OpCodeBufferSize;
+    const uint RefillTrigger = 128;  // Refill when current position passes this point (at the end of the current token)
+    
+    // ZP slots ZP.SS0..ZP.SS9 available
+    const byte LoadBufferPos     = ZP.SS0; // 0..(LoadBufferLength-1)
+    const byte LoadBufferPosL    = ZP.SS0;
+    const byte LoadBufferPosH    = ZP.SS1;
+    
+    const byte LoadBufferIndex   = ZP.SS2; // (LoadBuffer + LoadBufferPos)
+    const byte LoadBufferIndexL  = ZP.SS2;
+    const byte LoadBufferIndexH  = ZP.SS3;
+    
+    const byte LoadBufferLength  = ZP.SS4; // 0..1024
+    const byte LoadBufferLengthL = ZP.SS4;
+    const byte LoadBufferLengthH = ZP.SS5;
+    
+    const byte LoaderFlags       = ZP.SS6;
+    
+    
+    // Load program from EEPROM file
+    // Input: ZP.STR = filename
+    // Output: C set if successful, program state restored
+    LoadProgram()
+    {
+        loop // Single exit block
+        {
+            // 1. Clear current program state (like NEW)
+            Variables.Clear();
+            Functions.Clear();
+            
+            // 2. Open file for reading
+            File.StartLoad(); // Input: ZP.STR = filename
+            if (NC) { break; }
+            
+            // 3. Set up sliding window buffer and TokenIterator
+            setupSlidingWindowBuffer();
+            if (NC) { break; }
+            
+            STZ LoaderFlags
+            // Bit 0 - set if no more data to read
+            // Bit 1 - set if we've seen CONST
+            // Bit 2 - set if we're in $MAIN
+            
+            loop
+            {
+                nextToken();
+                switch (A)
+                {
+                    case Token.FUNC:
+                    {
+                        parseFunctionHeader();
+                        if (NC) { break; }
+                        parseFunctionOrMain();
+                        if (NC) { break; }
+                    }
+                    case Token.BEGIN:
+                    {
+                        SMB2 LoaderFlags
+                        parseFunctionOrMain();
+                        if (NC) { break; }
+                    }
+                    case Token.CONST:
+                    {
+                        SMB1 LoaderFlags
+                    }
+                    case Token.VAR:
+                    case Token.BIT:
+                    case Token.INT:
+                    case Token.BYTE:
+                    case Token.WORD:
+                    case Token.CHAR:
+                    case Token.STRING:
+                    {
+                        parseVariableOrConst();
+                        if (NC) { break; }
+                    }
+                    case Token.EOF:
+                    {
+                        SEC
+                        break;
+                    }
+                    default:
+                    {
+                        TODO(); BIT ZP.EmulatorPCL CLC // what's this?
+                        break;
+                    }
+                } // switch
+            } // loop
+            break;
+        }
+    }
+    nextToken()
+    {
+        LDA [LoadBufferIndex]
+        INC LoadBufferPosL
+        if (Z)
+        {
+            INC LoadBufferPosH
+        }
+        INC LoadBufferIndexL
+        if (Z)
+        {
+            INC LoadBufferIndexH
+        }
+    }        
+    parseIdentifier()
+    {
+        loop
+        {
+            nextToken();
+            CMP # Token.IDENTIFIER
+            if (NZ) { Error.InternalError(); BIT ZP.EmulatorPCL SEC break; } // IDENTIFIER expected
+            
+            LDA LoadBufferIndexL
+            STA ZP.STRL
+            LDA LoadBufferIndexH
+            STA ZP.STRH
+            
+            nextToken();
+            Char.IsAlpha();
+            if (NC) { Error.InternalError(); BIT ZP.EmulatorPCL break; } // <alpha> expected
+            loop
+            {
+                nextToken();
+                CMP #0
+                if (Z)
+                {
+                    // null terminator
+                    SEC 
+                    break; 
+                }
+                Char.IsAlphaNumeric();
+                if (NC) {  Error.InternalError(); BIT ZP.EmulatorPCL break; } // <alphanumeric> expected
+            }
+            break;
+        } // single exit
+    }
+    
+    // terminator in ZP.ACCL
+    parseTokenStream() // -> IDY
+    {
+        loop
+        {
+            LDA LoadBufferIndexL
+            STA ZP.FSOURCEADDRESSL
+            LDA LoadBufferIndexH
+            STA ZP.FSOURCEADDRESSH
+            loop
+            {
+                nextToken();
+                CMP ZP.ACCL
+                if (Z) { break; }
+            }
+            // LoadBufferIndex - 1 = EOE
+            SEC
+            LDA LoadBufferIndexL
+            SBC # 1
+            STA ZP.FLENGTHL
+            LDA LoadBufferIndexH
+            SBC # 0
+            STA ZP.FLENGTHH
+            LDA # Token.EOF
+            STA [ZP.FLENGTH] // patch EOE -> EOF       
+            
+            SEC 
+            LDA ZP.FLENGTHL
+            SBC ZP.FSOURCEADDRESSL
+            STA ZP.FLENGTHL
+            LDA ZP.FLENGTHH
+            SBC ZP.FSOURCEADDRESSH
+            STA ZP.FLENGTHH
+            
+            IncLENGTH();
+            
+            LDA ZP.FLENGTHL
+            STA ZP.ACCL
+            LDA ZP.FLENGTHH
+            STA ZP.ACCH
+            
+            Memory.Allocate();
+            
+            LDA ZP.IDXL
+            STA ZP.FDESTINATIONADDRESSL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.FDESTINATIONADDRESSH
+            STA ZP.IDYH
+            
+            Memory.Copy();
+            
+            SEC
+            break;
+        } // single exit
+    }               
+    
+    // A is type Token
+    parseVariableOrConst()
+    {
+        loop
+        {
+            TAX
+            BASICTypes.FromToken(); // X -> A
+            if (NC) { Error.InternalError(); BIT ZP.EmulatorPCL break; } // <type> expected
+            if (BBS1, LoaderFlags)
+            {
+                ORA # SymbolType.CONSTANT
+            }
+            else
+            {
+                ORA # SymbolType.VARIABLE
+            }
+            STA ZP.ACCT
+            
+            // name
+            parseIdentifier();
+            if (NC) { break; }
+            LDA ZP.STRL
+            STA ZP.TOPL
+            LDA ZP.STRH
+            STA ZP.TOPH
+            
+            // initial value
+            STZ ZP.NEXTL
+            STZ ZP.NEXTH
+            
+            nextToken();
+            CMP # Token.EOL
+            if (Z)
+            {
+                nextToken();
+            }
+            switch (A)
+            {
+                case Token.LBRACKET:
+                {
+                    // not EOE, create dimension stream in IDY
+                    LDA # Token.RBRACKET // terminator
+                    STA ZP.ACCL
+                    parseTokenStream(); // -> IDY
+                    if (NC) { DumpBuffers(); break; }
+                    nextToken();
+                    CMP # Token.RBRACKET
+                    if (NC) { DumpBuffers(); Error.InternalError(); BIT ZP.EmulatorPCL break; } // <type> expected
+                    
+DumpBuffers();
+TODO(); BIT ZP.EmulatorPCL
+                    CLC
+                    break;   
+                }
+                case Token.EOE:
+                {
+                    // no initializer stream
+                    STZ ZP.IDYL
+                    STZ ZP.IDYH
+                    LDA ZP.ACCT
+                    AND # BASICType.STRING
+                    if (NZ)
+                    {
+                        // STRING default: allocate copy of EmptyString
+                        LDA #(Variables.EmptyString % 256)
+                        STA ZP.TOPL
+                        LDA #(Variables.EmptyString / 256)
+                        STA ZP.TOPH
+                        
+                        Variables.AllocateAndCopyString(); // Input: ZP.TOP = source, Output: ZP.IDY = allocated copy
+                        CheckError();
+                        if (NC) { break; } // allocation failed
+                        
+                        // Use allocated copy as the variable value
+                        LDA ZP.IDYL
+                        STA ZP.NEXTL
+                        LDA ZP.IDYH
+                        STA ZP.NEXTH
+                    }
+                }
+                case Token.EQUALS:
+                {
+                    // not EOE or ARRAY: create new initializer stream in IDY
+                    LDA # Token.EOE // terminator
+                    STA ZP.ACCL
+                    parseTokenStream(); // -> IDY
+                    if (NC) { DumpBuffers(); break; }
+                }
+                default:
+                {
+                    TODO(); BIT ZP.EmulatorPCL CLC // what's this?
+                    break;
+                }
+                
+            } // switch
+            RMB1 LoaderFlags
+            Variables.Declare(); // -> C or NC
+            break;
+        } // single exit
+    }
+    
+    parseFunctionHeader()
+    {
+        DumpBuffers();
+        TODO(); BIT ZP.EmulatorPCL
+        CLC
+    }
+    parseFunctionOrMain()
+    {
+        if (BBR0, LoaderFlags) // have not seen EOF yet
+        {
+            slideWindow();
+        }
+        DumpBuffers();
+        TODO(); BIT ZP.EmulatorPCL
+        CLC
+        
+        //RMB2 LoaderFlags
+        //SEC
+    }
+    
+    // 1. Move the remaining content to the front of the buffer
+    // 2. Try to fill buffer with >= 512 bytes of data
+    slideWindow() 
+    {
+        // slide
+        LDA #(LoadBuffer % 256)
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(LoadBuffer / 256) 
+        STA ZP.FDESTINATIONADDRESSH
+        
+        CLC
+        LDA ZP.FDESTINATIONADDRESSL
+        ADC LoadBufferPosL
+        STA ZP.FSOURCEADDRESSL
+        LDA ZP.FDESTINATIONADDRESSH
+        ADC LoadBufferPosH
+        STA ZP.FSOURCEADDRESSH
+        
+        SEC
+        LDA LoadBufferLengthL
+        SBC LoadBufferPosL
+        STA LoadBufferLengthL
+        LDA LoadBufferLengthH
+        SBC LoadBufferPosH
+        STA LoadBufferLengthH
+        
+        LDA #(LoadBuffer % 256)
+        STA LoadBufferIndexL
+        LDA #(LoadBuffer / 256)
+        STA LoadBufferIndexH
+        STZ LoadBufferPosL
+        STZ LoadBufferPosH
+        
+        LDA LoadBufferLengthL
+        STA ZP.FLENGTHL
+        LDA LoadBufferLengthH
+        STA ZP.FLENGTHH
+        
+        Memory.Copy();
+        
+        // fill
+        loop
+        {
+            if (BBS0, LoaderFlags)       { break; } // no more data to read
+            if (BBS0, LoadBufferLengthH) { break; } // current data >= 512 bytes
+            File.NextStream();
+            if (NC) 
+            { 
+                States.IsSuccess();
+                if (C)
+                {
+                    // no content, end of file
+                    SMB0 LoaderFlags
+                }
+                break; 
+            }
+            appendSectorToBuffer();
+        }
+    }
+    
+    // Set up 1024-byte sliding window buffer and configure TokenIterator
+    // Output: C set if successful, NC if file empty or error
+    setupSlidingWindowBuffer()
+    {
+        // Initialize buffer state
+        STZ LoadBufferPosL
+        STZ LoadBufferPosH
+        STZ LoadBufferLengthL
+        STZ LoadBufferLengthH
+        LDA #(LoadBuffer % 256)
+        STA LoadBufferIndexL
+        LDA #(LoadBuffer / 256)
+        STA LoadBufferIndexH
+        
+        // Load up first sectors to fill buffer
+        LDX #1 // #4
+        loop
+        {
+            File.NextStream();
+            if (NC) 
+            { 
+                States.IsSuccess();
+                if (C)
+                { 
+                    // no content, end of file
+                    SMB0 LoaderFlags
+                }
+                break; 
+            }
+            appendSectorToBuffer();
+            
+            DEX
+            if (Z) { break; } // Buffer full
+        }
+        
+        // Check if we loaded any data
+        LDA LoadBufferLengthL
+        ORA LoadBufferLengthH
+        if (Z) { CLC return; } // Empty file
+        
+        SEC // Success
+    }
+    
+    // Append current sector to load buffer
+    // Input: File.NextStream() result available
+    // Output: Data appended, LoadContent updated
+    appendSectorToBuffer()
+    {
+        // Calculate destination: LoadBuffer + LoadContent
+        CLC
+        LDA #(LoadBuffer % 256)
+        ADC LoadBufferLengthL
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(LoadBuffer / 256) 
+        ADC LoadBufferLengthH
+        STA ZP.FDESTINATIONADDRESSH
+        
+        // Source = FileDataBuffer
+        LDA #(File.FileDataBuffer % 256)
+        STA ZP.FSOURCEADDRESSL
+        LDA #(File.FileDataBuffer / 256)
+        STA ZP.FSOURCEADDRESSH
+        
+        // Length = File.TransferLength
+        LDA File.TransferLengthL
+        STA ZP.FLENGTHL
+        LDA File.TransferLengthH
+        STA ZP.FLENGTHH
+        
+        // Input: ZP.FSOURCEADDRESS = source pointer
+        //        ZP.FDESTINATIONADDRESS = destination pointer  
+        //        ZP.FLENGTH = number of bytes to copy (16-bit)
+        Memory.Copy();
+        
+        // Update buffer content length (16-bit add)
+        CLC
+        LDA LoadBufferLengthL
+        ADC File.TransferLengthL
+        STA LoadBufferLengthL
+        LDA LoadBufferLengthH
+        ADC File.TransferLengthH
+        STA LoadBufferLengthH
+    }
+    
+    
+    
+    
 }
