@@ -327,7 +327,7 @@ unit Commands
     CmdDump()  { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
 #endif
 
-#if defined(TRACE) || defined(TRACEEXE)
+#if defined(TRACE) || defined(TRACEEXE)  || defined(TRACEFILE)
     // Execute TRON command - enable trace
     // Input: None
     // Output: Trace enabled (bit 2 of ZP.FLAGS set)
@@ -994,7 +994,7 @@ unit Commands
     CmdDel()
     {
 #ifdef HASEEPROM 
-        File.DeleteFile(); // Input: ZP.STR
+        File.Delete(); // Input: ZP.STR
 #else
         TODO(); BIT ZP.EmulatorPCL
 #endif 
@@ -1005,8 +1005,34 @@ unit Commands
     // Output: Program saved or error message
     CmdSave()
     {
-#ifdef HASEEPROM        
-        Storage.SaveProgram(); // Input: ZP.STR
+#ifdef HASEEPROM      
+        loop
+        {
+            StartLoad(); // preserves ZP.STR
+            if (C)
+            {
+                // file exits
+                LDX #2 // Messages.OverwriteWarning
+                confirmDestructiveAction(); // preserves ZP.STR
+                if (C)
+                {
+                    // confirmed
+                    File.Delete(); // preserves ZP.STR
+                }
+                else
+                {
+                    // cancelled
+                    break;
+                }
+            }
+            else
+            {
+                // clear the error
+                Error.ClearError();
+            }
+            Storage.SaveProgram(); // Input: ZP.STR
+            break;
+        }
 #else
         TODO(); BIT ZP.EmulatorPCL
 #endif        
@@ -1030,6 +1056,7 @@ unit Commands
     CmdFormat()
     {
 #ifdef HASEEPROM 
+        LDX #1 // Messages.FormatWarning
         confirmDestructiveAction();
         if (C)
         {
@@ -1043,7 +1070,7 @@ unit Commands
     }
     
     // Prompt user for Y/N confirmation on destructive operations
-    // Input: None
+    // Input: X for warning #
     // Output: C set if user confirms (Y/y), NC if user cancels (N/n)
     // Preserves: X, Y
     // Munts: A
@@ -1053,13 +1080,31 @@ unit Commands
         PHX
         PHY
         
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
+        
         loop // Single exit pattern
         {
             // Display warning message
-            LDA #(Messages.FormatWarning % 256)
-            STA ZP.STRL
-            LDA #(Messages.FormatWarning / 256)
-            STA ZP.STRH
+            switch (X)
+            {
+                case 1: // FORMAT
+                {
+                    LDA #(Messages.FormatWarning % 256)
+                    STA ZP.STRL
+                    LDA #(Messages.FormatWarning / 256)
+                    STA ZP.STRH
+                }
+                case 2: // SAVE
+                {
+                    LDA #(Messages.OverwriteWarning % 256)
+                    STA ZP.STRL
+                    LDA #(Messages.OverwriteWarning / 256)
+                    STA ZP.STRH
+                }
+            }
             Tools.PrintStringSTR();
             
             loop // Input validation loop
@@ -1094,6 +1139,11 @@ unit Commands
             
             break; // Exit outer loop with C set appropriately
         }
+        
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
         
         PLY
         PLX

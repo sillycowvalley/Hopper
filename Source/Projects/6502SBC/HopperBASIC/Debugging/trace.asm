@@ -4,7 +4,7 @@ unit Trace // Trace.asm
     
     IsTracing()
     {
-#if defined(TRACE) || defined(TRACEEXE)
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)
         if (BBS2, ZP.FLAGS)
         {
             SEC  // Bit 2 is set - tracing enabled
@@ -18,7 +18,7 @@ unit Trace // Trace.asm
 #endif
     }
 
-#if defined(DEBUG) || defined(TRACE)
+#if defined(DEBUG) || defined(TRACE) || defined(TRACEFILE)
     // Shared utilities (needed by Debug unit too)
     // Print current indentation level using spaces
     // Input: ZP.TraceIndent = current depth
@@ -35,7 +35,7 @@ unit Trace // Trace.asm
             CPX #0
             if (Z) { break; }
             
-            Debug.Space(); Debug.Space();
+            LDA #' ' Print.Char(); Print.Char();
             
             DEX
         }
@@ -45,7 +45,7 @@ unit Trace // Trace.asm
     }
 #endif
 
-#ifdef TRACE
+#if defined(TRACE) || defined(TRACEFILE)
     const string convergenceMarker = " <- CONVERGENCE";
     const string endBrace = "} // ";
 
@@ -84,10 +84,11 @@ unit Trace // Trace.asm
         PrintIndent();
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); LDA #'{' Debug.COut(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); LDA #' ' Print.Char(); LDA #'{' Print.Char(); 
         
+#ifdef TRACE
         Debug.ValidateHeap();
-      
+#endif
 #ifdef TRACESP  
         LDA #' ' Debug.COut();
         LDA #'S' Debug.COut(); 
@@ -98,32 +99,33 @@ unit Trace // Trace.asm
         States.IsSuccess();
         if (NC)
         {
-            LDA #' ' Debug.COut(); States.PrintState();
+            LDA #' ' Print.Char(); States.PrintState();
         }
         
         LDA ZP.LastError
         if (NZ)
         {
-            LDA #' ' Debug.COut(); 
-            LDA #'(' Debug.COut(); 
+            LDA #' ' Print.Char(); 
+            LDA #'(' Print.Char(); 
             LDA ZP.LastError Error.PrintError();
-            LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
+            LDA #')' Print.Char();  LDA #' ' Print.Char(); 
             PLP
             if (NC)
             {
-                LDA #'N' Debug.COut(); LDA #'C' Debug.COut(); 
+                LDA #'N' Print.Char();  LDA #'C' Print.Char();
                 CLC
             }
             PHP
-            
+#ifdef TRACE            
             Error.IsFatal();
             if (C)
             {
                 LDA # 0x05 Debug.Crash(); // fail on CheckError in MethodEntry()
             }
+#endif            
         }
         
-        Debug.NL();
+        Print.NewLine();
         
         // Increase indentation
         INC ZP.TraceIndent
@@ -160,15 +162,15 @@ unit Trace // Trace.asm
         
         // Decrease indentation first
         DEC ZP.TraceIndent
-
+#ifdef TRACE
         Debug.ValidateHeap();
-
+#endif
         PrintIndent();
         
         LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Tools.PrintStringSTR(); // ' } // '
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); Debug.Space(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); LDA #' ' Print.Char();
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();
@@ -180,34 +182,35 @@ unit Trace // Trace.asm
         States.IsSuccess();
         if (NC)
         {
-            LDA #' ' Debug.COut(); States.PrintState();
+            LDA #' ' Print.Char(); States.PrintState();
         }
         
         LDA ZP.LastError
         if (NZ)
         {
-            LDA #' ' Debug.COut(); 
-            LDA #'(' Debug.COut(); 
+            LDA #' ' Print.Char(); 
+            LDA #'(' Print.Char(); 
             LDA ZP.LastError Error.PrintError();
-            LDA #')' Debug.COut(); LDA #' ' Debug.COut(); 
+            LDA #')' Print.Char(); LDA #' ' Print.Char(); 
             PLP
             if (NC)
             {
-                LDA #'N' Debug.COut(); LDA #'C' Debug.COut(); 
+                LDA #'N' Print.Char(); LDA #'C' Print.Char(); 
                 CLC
             }
             PHP
-            
+#ifdef TRACE            
             Error.IsFatal();
             if (C)
             {
                 LDA # 0x06 Debug.Crash(); // fail on CheckError in MethodExit()
             }
+#endif
         }
         
         
         
-        Debug.NL();
+        Print.NewLine();
         
         PLY
         PLX

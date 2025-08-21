@@ -42,6 +42,63 @@ unit File
     const string filesLabel          = " files, ";
     const string bytesUsedLabel      = " bytes used";
     
+#ifdef TRACEFILE
+    // Trace string constants
+    const string validateFilenameTrace = "ValidateName";
+    const string getAvailableTrace = "GetAvailable";
+    const string formatTrace = "Format";
+    const string startSaveTrace = "StartSave";
+    const string appendStreamTrace = "AppendStream";
+    const string endSaveTrace = "EndSave";
+    const string dirTrace = "Dir";
+    const string deleteFileTrace = "Delete";
+    const string startLoadTrace = "StartLoad";
+    const string nextStreamTrace = "NextStream";
+    const string getFileLengthTrace = "getFileLen";
+    const string advanceToNextSectorTrace = "advanceNext";
+    const string updateStreamPositionTrace = "updateStream";
+    const string findFileInDirectoryTrace = "findFile";
+    const string compareFilenamesTrace = "compareNames";
+    const string getFileStartSectorTrace = "getStartSec";
+    const string freeFileSectorChainTrace = "freeSectors";
+    const string clearDirectoryEntryTrace = "clearDirEnt";
+    const string countFilesAndBytesTrace = "countFiles";
+    const string printAllFileEntriesTrace = "printFiles";
+    const string printFileEntryTrace = "printEntry";
+    const string printFilenameFromDirectoryTrace = "printName";
+    const string printFileSizeFromDirectoryTrace = "printSize";
+    const string printDirectorySummaryTrace = "printSummary";
+    const string writeFilenameToDirectoryTrace = "writeName";
+    const string updateDirectoryStartSectorTrace = "updateDir";
+    const string flushAndAllocateNextTrace = "flushAlloc";
+    const string allocateFirstFreeSectorTrace = "allocSector";
+    const string findFreeDirectoryEntryTrace = "findFreeDir";
+    const string checkFilenameMatchTrace = "checkMatch";
+    const string initializeSaveStateTrace = "initSave";
+    const string clearFileDataBufferTrace = "clearData";
+    const string clearFATBufferTrace = "clearFAT";
+    const string clearDirectoryBufferTrace = "clearDir";
+    const string loadFATTrace = "loadFAT";
+    const string writeFATTrace = "writeFAT";
+    const string loadDirectoryTrace = "loadDir";
+    const string writeDirectoryTrace = "writeDir";
+    const string readSectorTrace = "readSector";
+    const string writeSectorTrace = "writeSector";
+    const string dumpDriveStateTrace = "DumpDrive";
+    const string dumpDirectoryEntriesTrace = "dumpDirEnt";
+    const string dumpFATMapTrace = "dumpFAT";
+    const string dumpSectorStatsTrace = "dumpStats";
+    const string dumpFileStateTrace = "DumpFile";
+    const string printFileHexDumpTrace = "printHex";
+    const string printHexDumpLineTrace = "printHexLine";
+    const string printDebugDiagnosticsTrace = "printDebug";
+    const string printDirectoryUtilizationTrace = "printDirUtil";
+    const string printFATAllocationSummaryTrace = "printFATSum";
+    const string printPerFileSectorAllocationTrace = "printPerFile";
+    const string printFileSectorInfoTrace = "printSecInfo";
+    const string printFreeSpaceSummaryTrace = "printFree";
+#endif
+    
     // Validate filename format (alphanumeric + period, 1-13 chars)
     // Input: ZP.STR = pointer to null-terminated filename
     // Output: C set if valid, NC if invalid  
@@ -49,6 +106,9 @@ unit File
     // Munts: A
     ValidateFilename()
     {
+#ifdef TRACEFILE
+        LDA #(validateFilenameTrace % 256) STA ZP.TraceMessageL LDA #(validateFilenameTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHY
         
         loop // single exit block
@@ -75,6 +135,9 @@ unit File
                 {
                     CLC  // Invalid character found
                     PLY
+#ifdef TRACEFILE
+                    LDA #(validateFilenameTrace % 256) STA ZP.TraceMessageL LDA #(validateFilenameTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                     return;
                 }
                 
@@ -84,6 +147,9 @@ unit File
                 {
                     CLC  // Filename too long
                     PLY
+#ifdef TRACEFILE
+                    LDA #(validateFilenameTrace % 256) STA ZP.TraceMessageL LDA #(validateFilenameTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                     return;
                 }
             }
@@ -94,6 +160,9 @@ unit File
         }
         
         PLY
+#ifdef TRACEFILE
+        LDA #(validateFilenameTrace % 256) STA ZP.TraceMessageL LDA #(validateFilenameTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Get available free space in bytes
@@ -103,6 +172,9 @@ unit File
     // Munts: A
     GetAvailable()
     {
+#ifdef TRACEFILE
+        LDA #(getAvailableTrace % 256) STA ZP.TraceMessageL LDA #(getAvailableTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -139,6 +211,9 @@ unit File
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(getAvailableTrace % 256) STA ZP.TraceMessageL LDA #(getAvailableTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Format EEPROM with empty file system
@@ -146,6 +221,9 @@ unit File
     // Munts: A, X, Y, all file system buffers
     Format()
     {
+#ifdef TRACEFILE
+        LDA #(formatTrace % 256) STA ZP.TraceMessageL LDA #(formatTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         loop // Single exit for cleanup
         {
             // Clear all file system buffers
@@ -169,6 +247,9 @@ unit File
             SEC
             break;
         } // single exit
+#ifdef TRACEFILE
+        LDA #(formatTrace % 256) STA ZP.TraceMessageL LDA #(formatTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -178,6 +259,9 @@ unit File
     // Munts: A, X, Y, file system state
     StartSave()
     {
+#ifdef TRACEFILE
+        LDA #(startSaveTrace % 256) STA ZP.TraceMessageL LDA #(startSaveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         loop // Single exit for cleanup
         {
             // Validate filename format
@@ -227,6 +311,9 @@ unit File
             SEC
             break;
         }
+#ifdef TRACEFILE
+        LDA #(startSaveTrace % 256) STA ZP.TraceMessageL LDA #(startSaveTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Write data chunk to current save file  
@@ -237,8 +324,14 @@ unit File
     // Munts: A, file system state  
     AppendStream()
     {
+#ifdef TRACEFILE
+        LDA #(appendStreamTrace % 256) STA ZP.TraceMessageL LDA #(appendStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
+        
+Print.NewLine(); LDA File.SectorSourceH   Print.Hex(); LDA File.SectorSourceL   Print.Hex();             
+Print.NewLine(); LDA File.TransferLengthH Print.Hex(); LDA File.TransferLengthL Print.Hex();            
         loop // Single exit
         {
             // Copy input parameters to working variables
@@ -296,6 +389,9 @@ unit File
         }
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(appendStreamTrace % 256) STA ZP.TraceMessageL LDA #(appendStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Close and finalize current save file
@@ -304,6 +400,9 @@ unit File
     // Munts: A, file system state
     EndSave()
     {
+#ifdef TRACEFILE
+        LDA #(endSaveTrace % 256) STA ZP.TraceMessageL LDA #(endSaveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -340,6 +439,9 @@ unit File
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(endSaveTrace % 256) STA ZP.TraceMessageL LDA #(endSaveTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // List all files in directory with optional debug info
@@ -348,6 +450,9 @@ unit File
     // Munts: A, file system buffers
     Dir()
     {
+#ifdef TRACEFILE
+        LDA #(dirTrace % 256) STA ZP.TraceMessageL LDA #(dirTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -397,6 +502,9 @@ unit File
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(dirTrace % 256) STA ZP.TraceMessageL LDA #(dirTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -409,10 +517,19 @@ unit File
     // Output: C set if successful, NC if error
     // Preserves: X, Y
     // Munts: A, file system buffers
-    DeleteFile()
+    Delete()
     {
+#ifdef TRACEFILE
+        LDA #(deleteFileTrace % 256) STA ZP.TraceMessageL LDA #(deleteFileTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
+        
+        // preserve the file name in case this is part of SAVE
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
         
         loop // Single exit for cleanup
         {
@@ -454,8 +571,17 @@ unit File
             break;
         }
         
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        
+        
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(deleteFileTrace % 256) STA ZP.TraceMessageL LDA #(deleteFileTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -469,8 +595,17 @@ unit File
     // Munts: A, file system state
     StartLoad()
     {
+#ifdef TRACEFILE
+        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
+        
+        // preserve the file name in case you are just being used to verify the file exists
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
         
         loop // Single exit for cleanup
         {
@@ -527,8 +662,16 @@ Debug.NL();
             break;
         }
         
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Read next chunk of data from current load file
@@ -540,6 +683,9 @@ Debug.NL();
     // Note: Caller must process data before next call
     NextStream()
     {
+#ifdef TRACEFILE
+        LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -636,6 +782,9 @@ Debug.NL();
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
               
 
@@ -647,6 +796,9 @@ Debug.NL();
     // Munts: A, Y
     getFileLength()
     {
+#ifdef TRACEFILE
+        LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Calculate directory entry offset: CurrentFileEntry * 16
         LDA CurrentFileEntry
         ASL A ASL A ASL A ASL A                 // * 16
@@ -657,6 +809,9 @@ Debug.NL();
         STA BytesRemainingL
         LDA DirectoryBuffer + 1, Y              // Length MSB
         STA BytesRemainingH
+#ifdef TRACEFILE
+        LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Advance to next sector in FAT chain
@@ -664,6 +819,9 @@ Debug.NL();
     // Munts: A, Y, file system state
     advanceToNextSector()
     {
+#ifdef TRACEFILE
+        LDA #(advanceToNextSectorTrace % 256) STA ZP.TraceMessageL LDA #(advanceToNextSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         loop // Single exit
         {
             // Get next sector from FAT
@@ -694,6 +852,9 @@ Debug.NL();
             SEC
             break;
         }
+#ifdef TRACEFILE
+        LDA #(advanceToNextSectorTrace % 256) STA ZP.TraceMessageL LDA #(advanceToNextSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Update position counters after NextStream() call
@@ -702,6 +863,9 @@ Debug.NL();
     // Munts: A
     updateStreamPosition()
     {
+#ifdef TRACEFILE
+        LDA #(updateStreamPositionTrace % 256) STA ZP.TraceMessageL LDA #(updateStreamPositionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Update sector position (16-bit addition)
         CLC
         LDA SectorPositionL
@@ -719,6 +883,9 @@ Debug.NL();
         LDA BytesRemainingH
         SBC TransferLengthH
         STA BytesRemainingH
+#ifdef TRACEFILE
+        LDA #(updateStreamPositionTrace % 256) STA ZP.TraceMessageL LDA #(updateStreamPositionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -730,6 +897,9 @@ Debug.NL();
     // Munts: A, Y
     findFileInDirectory()
     {
+#ifdef TRACEFILE
+        LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDY #0                   // Directory entry index (0-15)
         
         loop
@@ -751,6 +921,9 @@ Debug.NL();
                     // Found the file
                     STY CurrentFileEntry
                     SEC
+#ifdef TRACEFILE
+                    LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                     return;
                 }
             }
@@ -761,6 +934,9 @@ Debug.NL();
             {
                 // Not found
                 CLC
+#ifdef TRACEFILE
+                LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                 return;
             }
         }
@@ -773,6 +949,9 @@ Debug.NL();
     // Munts: A
     compareFilenames()
     {
+#ifdef TRACEFILE
+        LDA #(compareFilenamesTrace % 256) STA ZP.TraceMessageL LDA #(compareFilenamesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -837,6 +1016,9 @@ Debug.NL();
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(compareFilenamesTrace % 256) STA ZP.TraceMessageL LDA #(compareFilenamesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -930,6 +1112,9 @@ Debug.NL();
     // Munts: A, Y
     getFileStartSector()
     {
+#ifdef TRACEFILE
+        LDA #(getFileStartSectorTrace % 256) STA ZP.TraceMessageL LDA #(getFileStartSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Calculate directory entry offset: CurrentFileEntry * 16 + 2 (start sector field)
         LDA CurrentFileEntry
         ASL ASL ASL ASL          // * 16
@@ -940,6 +1125,9 @@ Debug.NL();
         // Read start sector from directory entry
         LDA DirectoryBuffer, Y
         STA FileStartSector
+#ifdef TRACEFILE
+        LDA #(getFileStartSectorTrace % 256) STA ZP.TraceMessageL LDA #(getFileStartSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Free all sectors in file's FAT chain
@@ -948,6 +1136,9 @@ Debug.NL();
     // Munts: A, CurrentFileSector, NextFileSector
     freeFileSectorChain()
     {
+#ifdef TRACEFILE
+        LDA #(freeFileSectorChainTrace % 256) STA ZP.TraceMessageL LDA #(freeFileSectorChainTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA FileStartSector
         STA CurrentFileSector
         
@@ -975,6 +1166,9 @@ Debug.NL();
             LDA NextFileSector
             STA CurrentFileSector
         }
+#ifdef TRACEFILE
+        LDA #(freeFileSectorChainTrace % 256) STA ZP.TraceMessageL LDA #(freeFileSectorChainTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Clear directory entry for deleted file
@@ -983,6 +1177,9 @@ Debug.NL();
     // Munts: A, X, Y
     clearDirectoryEntry()
     {
+#ifdef TRACEFILE
+        LDA #(clearDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(clearDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Calculate directory entry offset: CurrentFileEntry * 16
         LDA CurrentFileEntry
         ASL ASL ASL ASL          // * 16
@@ -1000,6 +1197,9 @@ Debug.NL();
             if (NZ) { continue; }
             break;
         }
+#ifdef TRACEFILE
+        LDA #(clearDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(clearDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -1014,6 +1214,9 @@ Debug.NL();
     // Munts: A, Y
     countFilesAndBytes()
     {
+#ifdef TRACEFILE
+        LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         STZ TransferLengthL      // File count
         STZ TransferLengthH      // Total bytes high
         STZ BytesRemainingL      // Total bytes low
@@ -1048,12 +1251,18 @@ Debug.NL();
             CPY #16              // 16 entries maximum
             if (Z) { break; }
         }
+#ifdef TRACEFILE
+        LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print all file entries with optional debug info
     // Munts: A, X, Y
     printAllFileEntries()
     {
+#ifdef TRACEFILE
+        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDY #0                   // Directory entry offset
         
         loop
@@ -1081,6 +1290,9 @@ Debug.NL();
             CPY #16              // 16 entries maximum
             if (Z) { break; }
         }
+#ifdef TRACEFILE
+        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print single file entry: "FILENAME.EXT    1234 bytes"
@@ -1088,6 +1300,9 @@ Debug.NL();
     // Munts: A, Y
     printFileEntry()
     {
+#ifdef TRACEFILE
+        LDA #(printFileEntryTrace % 256) STA ZP.TraceMessageL LDA #(printFileEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHY
         PHX
         
@@ -1118,6 +1333,9 @@ Debug.NL();
         
         PLX
         PLY
+#ifdef TRACEFILE
+        LDA #(printFileEntryTrace % 256) STA ZP.TraceMessageL LDA #(printFileEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print filename from current directory entry 
@@ -1127,6 +1345,9 @@ Debug.NL();
     // Munts: A
     printFilenameFromDirectory()
     {
+#ifdef TRACEFILE
+        LDA #(printFilenameFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFilenameFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHY
         TYA
         CLC
@@ -1146,6 +1367,9 @@ Debug.NL();
             INY
         } // single exit
         PLY
+#ifdef TRACEFILE
+        LDA #(printFilenameFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFilenameFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print file size from current directory entry
@@ -1154,12 +1378,18 @@ Debug.NL();
     // Munts: A, ZP.TOPL, ZP.TOPH, ZP.TOPT
     printFileSizeFromDirectory()
     {
+#ifdef TRACEFILE
+        LDA #(printFileSizeFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFileSizeFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA DirectoryBuffer + 0, Y  // Length LSB
         STA ZP.TOPL
         LDA DirectoryBuffer + 1, Y  // Length MSB
         STA ZP.TOPH
         STZ ZP.TOPT
         Print.Decimal();
+#ifdef TRACEFILE
+        LDA #(printFileSizeFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFileSizeFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print directory summary: "3 files, 2373 bytes used"
@@ -1167,6 +1397,9 @@ Debug.NL();
     // Munts: A
     printDirectorySummary()
     {
+#ifdef TRACEFILE
+        LDA #(printDirectorySummaryTrace % 256) STA ZP.TraceMessageL LDA #(printDirectorySummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Print file count
         LDA TransferLengthL
         STA ZP.TOPL
@@ -1197,6 +1430,9 @@ Debug.NL();
         Print.String();
         
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(printDirectorySummaryTrace % 256) STA ZP.TraceMessageL LDA #(printDirectorySummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Write filename to directory entry
@@ -1204,6 +1440,9 @@ Debug.NL();
     // Munts: A, X, Y
     writeFilenameToDirectory()
     {
+#ifdef TRACEFILE
+        LDA #(writeFilenameToDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeFilenameToDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHY
         
         // Calculate directory entry offset: CurrentFileEntry * 16 + 3 (filename field)
@@ -1244,6 +1483,9 @@ Debug.NL();
         }
         
         PLY
+#ifdef TRACEFILE
+        LDA #(writeFilenameToDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeFilenameToDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Update directory entry with start sector
@@ -1251,6 +1493,9 @@ Debug.NL();
     // Munts: A, Y
     updateDirectoryStartSector()
     {
+#ifdef TRACEFILE
+        LDA #(updateDirectoryStartSectorTrace % 256) STA ZP.TraceMessageL LDA #(updateDirectoryStartSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Calculate directory entry offset: CurrentFileEntry * 16 + 2 (start sector field)
         LDA CurrentFileEntry
         ASL ASL ASL ASL          // * 16
@@ -1261,6 +1506,9 @@ Debug.NL();
         // Write start sector to directory entry
         LDA FileStartSector
         STA DirectoryBuffer, Y
+#ifdef TRACEFILE
+        LDA #(updateDirectoryStartSectorTrace % 256) STA ZP.TraceMessageL LDA #(updateDirectoryStartSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -1270,6 +1518,9 @@ Debug.NL();
     // Munts: A, Y, file system state
     flushAndAllocateNext()
     {
+#ifdef TRACEFILE
+        LDA #(flushAndAllocateNextTrace % 256) STA ZP.TraceMessageL LDA #(flushAndAllocateNextTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -1309,6 +1560,9 @@ Debug.NL();
         
         PLY  
         PLX
+#ifdef TRACEFILE
+        LDA #(flushAndAllocateNextTrace % 256) STA ZP.TraceMessageL LDA #(flushAndAllocateNextTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Allocate first free sector from FAT
@@ -1317,6 +1571,9 @@ Debug.NL();
     // Munts: A, Y
     allocateFirstFreeSector()
     {
+#ifdef TRACEFILE
+        LDA #(allocateFirstFreeSectorTrace % 256) STA ZP.TraceMessageL LDA #(allocateFirstFreeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDY #2                   // Start from sector 2 (skip FAT and directory)
         loop
         {
@@ -1336,6 +1593,9 @@ Debug.NL();
                 break;
             }
         } // single exit
+#ifdef TRACEFILE
+        LDA #(allocateFirstFreeSectorTrace % 256) STA ZP.TraceMessageL LDA #(allocateFirstFreeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -1346,6 +1606,9 @@ Debug.NL();
     // Munts: A, Y
     findFreeDirectoryEntry()
     {
+#ifdef TRACEFILE
+        LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDY #0                   // Directory entry index (0, 1, 2, ..., 15)
         
         loop
@@ -1363,6 +1626,9 @@ Debug.NL();
                 // Found free entry
                 STY CurrentFileEntry
                 SEC
+#ifdef TRACEFILE
+                LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                 return;
             }
             
@@ -1373,6 +1639,9 @@ Debug.NL();
                 // Found existing file - overwrite it
                 STY CurrentFileEntry
                 SEC
+#ifdef TRACEFILE
+                LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                 return;
             }
             
@@ -1382,6 +1651,9 @@ Debug.NL();
             {
                 // Directory full
                 CLC
+#ifdef TRACEFILE
+                LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
                 return;
             }
         }
@@ -1394,6 +1666,9 @@ Debug.NL();
     // Munts: A
     checkFilenameMatch()
     {
+#ifdef TRACEFILE
+        LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHA
         PHY
         
@@ -1479,6 +1754,9 @@ Debug.NL();
         
         PLY
         PLA
+#ifdef TRACEFILE
+        LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     
@@ -1487,6 +1765,9 @@ Debug.NL();
     // Munts: A
     initializeSaveState()
     {
+#ifdef TRACEFILE
+        LDA #(initializeSaveStateTrace % 256) STA ZP.TraceMessageL LDA #(initializeSaveStateTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Clear file position counters
         STZ FilePosition         // FilePositionL
         STZ FilePosition + 1     // FilePositionH
@@ -1495,30 +1776,51 @@ Debug.NL();
         
         // Clear next sector (will be allocated when needed)
         STZ NextFileSector
+#ifdef TRACEFILE
+        LDA #(initializeSaveStateTrace % 256) STA ZP.TraceMessageL LDA #(initializeSaveStateTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // TODO : inline
     // Clear file data buffer to all zeros
     clearFileDataBuffer()
     {
+#ifdef TRACEFILE
+        LDA #(clearFileDataBufferTrace % 256) STA ZP.TraceMessageL LDA #(clearFileDataBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(FileDataBuffer / 256) // MSB - assume page aligned
         Memory.ClearPage();
+#ifdef TRACEFILE
+        LDA #(clearFileDataBufferTrace % 256) STA ZP.TraceMessageL LDA #(clearFileDataBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // TODO : inline
     // Clear FAT buffer to all zeros
     clearFATBuffer()
     {
+#ifdef TRACEFILE
+        LDA #(clearFATBufferTrace % 256) STA ZP.TraceMessageL LDA #(clearFATBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(FATBuffer / 256) // MSB - assume page aligned
         Memory.ClearPage();
+#ifdef TRACEFILE
+        LDA #(clearFATBufferTrace % 256) STA ZP.TraceMessageL LDA #(clearFATBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // TODO : inline
     // Clear directory buffer to all zeros  
     clearDirectoryBuffer()
     {
+#ifdef TRACEFILE
+        LDA #(clearDirectoryBufferTrace % 256) STA ZP.TraceMessageL LDA #(clearDirectoryBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(DirectoryBuffer / 256) // MSB - assume page aligned
         Memory.ClearPage();
+#ifdef TRACEFILE
+        LDA #(clearDirectoryBufferTrace % 256) STA ZP.TraceMessageL LDA #(clearDirectoryBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Load FAT from EEPROM sector 0 into FATBuffer
@@ -1527,6 +1829,9 @@ Debug.NL();
     // Munts: A, EEPROM operation registers
     loadFAT()
     {
+#ifdef TRACEFILE
+        LDA #(loadFATTrace % 256) STA ZP.TraceMessageL LDA #(loadFATTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
         STZ ZP.IDYL
         
@@ -1536,11 +1841,17 @@ Debug.NL();
         EEPROM.ReadPage();
         
         BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+#ifdef TRACEFILE
+        LDA #(loadFATTrace % 256) STA ZP.TraceMessageL LDA #(loadFATTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Write FATBuffer to EEPROM sector 0
     writeFAT()
     {
+#ifdef TRACEFILE
+        LDA #(writeFATTrace % 256) STA ZP.TraceMessageL LDA #(writeFATTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
         
         LDA #(FATBuffer / 256)   // RAM address MSB = FATBuffer (must be page aligned)
@@ -1549,6 +1860,9 @@ Debug.NL();
         EEPROM.WritePage();
         
         BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+#ifdef TRACEFILE
+        LDA #(writeFATTrace % 256) STA ZP.TraceMessageL LDA #(writeFATTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Load directory from EEPROM sector 1 into DirectoryBuffer
@@ -1557,6 +1871,9 @@ Debug.NL();
     // Munts: A, EEPROM operation registers
     loadDirectory()
     {
+#ifdef TRACEFILE
+        LDA #(loadDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(loadDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #1                           // EEPROM address MSB = sector 1  (must be page aligned)
         STA ZP.IDYH              
         
@@ -1566,11 +1883,17 @@ Debug.NL();
         EEPROM.ReadPage();
         
         BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+#ifdef TRACEFILE
+        LDA #(loadDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(loadDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Write DirectoryBuffer to EEPROM sector 1
     writeDirectory()
     {
+#ifdef TRACEFILE
+        LDA #(writeDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #1                           // EEPROM address MSB = sector 1  (must be page aligned)
         STA ZP.IDYH             
         
@@ -1580,6 +1903,9 @@ Debug.NL();
         EEPROM.WritePage();
         
         BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+#ifdef TRACEFILE
+        LDA #(writeDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Read arbitrary sector into FileDataBuffer
@@ -1588,6 +1914,9 @@ Debug.NL();
     // Munts: A, EEPROM operation registers
     readSector()
     {
+#ifdef TRACEFILE
+        LDA #(readSectorTrace % 256) STA ZP.TraceMessageL LDA #(readSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         STA ZP.IDYH                 // EEPROM address MSB = sector number (must be page aligned)
         
         LDA #(FileDataBuffer / 256) // RAM address MSB = FileDataBuffer (must be page aligned)
@@ -1596,12 +1925,18 @@ Debug.NL();
         EEPROM.ReadPage();
         
         BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+#ifdef TRACEFILE
+        LDA #(readSectorTrace % 256) STA ZP.TraceMessageL LDA #(readSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Write FileDataBuffer to arbitrary sector
     // Input: A = sector number
     writeSector()
     {
+#ifdef TRACEFILE
+        LDA #(writeSectorTrace % 256) STA ZP.TraceMessageL LDA #(writeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         STA ZP.IDYH                 // EEPROM address MSB = sector number (must be page aligned)
         
         LDA #(FileDataBuffer / 256) // RAM address MSB = FileDataBuffer (must be page aligned)
@@ -1609,6 +1944,9 @@ Debug.NL();
         EEPROM.WritePage();
         
         BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+#ifdef TRACEFILE
+        LDA #(writeSectorTrace % 256) STA ZP.TraceMessageL LDA #(writeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
 
 #ifdef DEBUG
@@ -1619,6 +1957,9 @@ Debug.NL();
     // Munts: A
     DumpDriveState()
     {
+#ifdef TRACEFILE
+        LDA #(dumpDriveStateTrace % 256) STA ZP.TraceMessageL LDA #(dumpDriveStateTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         loop
@@ -1671,6 +2012,9 @@ Debug.NL();
         } // single exit
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(dumpDriveStateTrace % 256) STA ZP.TraceMessageL LDA #(dumpDriveStateTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     //==============================================================================
@@ -1707,6 +2051,9 @@ Debug.NL();
     // Dump directory entries (assumes directory loaded in DirectoryBuffer)
     dumpDirectoryEntries()
     {
+#ifdef TRACEFILE
+        LDA #(dumpDirectoryEntriesTrace % 256) STA ZP.TraceMessageL LDA #(dumpDirectoryEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(dirHeader % 256)
         STA ZP.STRL
         LDA #(dirHeader / 256)
@@ -1763,11 +2110,17 @@ Debug.NL();
         }
         
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(dumpDirectoryEntriesTrace % 256) STA ZP.TraceMessageL LDA #(dumpDirectoryEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Dump FAT allocation map
     dumpFATMap()
     {
+#ifdef TRACEFILE
+        LDA #(dumpFATMapTrace % 256) STA ZP.TraceMessageL LDA #(dumpFATMapTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(fatHeader % 256)
         STA ZP.STRL
         LDA #(fatHeader / 256)
@@ -1833,11 +2186,17 @@ Debug.NL();
         }
         
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(dumpFATMapTrace % 256) STA ZP.TraceMessageL LDA #(dumpFATMapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Calculate and dump sector statistics
     dumpSectorStats()
     {
+#ifdef TRACEFILE
+        LDA #(dumpSectorStatsTrace % 256) STA ZP.TraceMessageL LDA #(dumpSectorStatsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         LDA #(statsHeader % 256)
         STA ZP.STRL
         LDA #(statsHeader / 256)
@@ -1914,6 +2273,9 @@ Debug.NL();
         STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(dumpSectorStatsTrace % 256) STA ZP.TraceMessageL LDA #(dumpSectorStatsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
         
@@ -1923,6 +2285,9 @@ Debug.NL();
     // Munts: A
     DumpFileState()
     {
+#ifdef TRACEFILE
+        LDA #(dumpFileStateTrace % 256) STA ZP.TraceMessageL LDA #(dumpFileStateTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -2008,6 +2373,9 @@ Debug.NL();
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(dumpFileStateTrace % 256) STA ZP.TraceMessageL LDA #(dumpFileStateTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print hex dump of first 32 bytes of file
@@ -2015,6 +2383,9 @@ Debug.NL();
     // Munts: A, Y
     printFileHexDump()
     {
+#ifdef TRACEFILE
+        LDA #(printFileHexDumpTrace % 256) STA ZP.TraceMessageL LDA #(printFileHexDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -2033,6 +2404,9 @@ Debug.NL();
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(printFileHexDumpTrace % 256) STA ZP.TraceMessageL LDA #(printFileHexDumpTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print one line of hex dump (16 bytes)
@@ -2040,6 +2414,9 @@ Debug.NL();
     // Munts: A, X, Y
     printHexDumpLine()
     {
+#ifdef TRACEFILE
+        LDA #(printHexDumpLineTrace % 256) STA ZP.TraceMessageL LDA #(printHexDumpLineTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Print 4-space indentation
         LDX #4
         Print.Spaces();
@@ -2090,11 +2467,17 @@ Debug.NL();
         }
         
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(printHexDumpLineTrace % 256) STA ZP.TraceMessageL LDA #(printHexDumpLineTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     // Print detailed diagnostic information
     // Munts: A, X, Y
     printDebugDiagnostics()
     {
+#ifdef TRACEFILE
+        LDA #(printDebugDiagnosticsTrace % 256) STA ZP.TraceMessageL LDA #(printDebugDiagnosticsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         // Print debug header
         LDA #(debugHeader % 256)
         STA ZP.STRL
@@ -2114,11 +2497,17 @@ Debug.NL();
         
         // Free space summary
         printFreeSpaceSummary();
+#ifdef TRACEFILE
+        LDA #(printDebugDiagnosticsTrace % 256) STA ZP.TraceMessageL LDA #(printDebugDiagnosticsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print directory slot utilization
     printDirectoryUtilization()
     {
+#ifdef TRACEFILE
+        LDA #(printDirectoryUtilizationTrace % 256) STA ZP.TraceMessageL LDA #(printDirectoryUtilizationTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(dirUtilLabel % 256)
         STA ZP.STRL
         LDA #(dirUtilLabel / 256)
@@ -2142,11 +2531,17 @@ Debug.NL();
         Print.Decimal();
         
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(printDirectoryUtilizationTrace % 256) STA ZP.TraceMessageL LDA #(printDirectoryUtilizationTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print FAT allocation summary
     printFATAllocationSummary()
     {
+#ifdef TRACEFILE
+        LDA #(printFATAllocationSummaryTrace % 256) STA ZP.TraceMessageL LDA #(printFATAllocationSummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDA #(fatAllocLabel % 256)
         STA ZP.STRL
         LDA #(fatAllocLabel / 256)
@@ -2171,6 +2566,9 @@ Debug.NL();
         STA ZP.STRH
         Print.String();
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(printFATAllocationSummaryTrace % 256) STA ZP.TraceMessageL LDA #(printFATAllocationSummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print sector allocation info for all files
@@ -2180,6 +2578,9 @@ Debug.NL();
     // Note: Iterates through directory entries, calls printFileSectorInfo() for each used entry
     printPerFileSectorAllocation()
     {
+#ifdef TRACEFILE
+        LDA #(printPerFileSectorAllocationTrace % 256) STA ZP.TraceMessageL LDA #(printPerFileSectorAllocationTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         LDY #0                   // Directory entry offset
         
         loop
@@ -2202,6 +2603,9 @@ Debug.NL();
             CPY #16
             if (Z) { break; }
         }
+#ifdef TRACEFILE
+        LDA #(printPerFileSectorAllocationTrace % 256) STA ZP.TraceMessageL LDA #(printPerFileSectorAllocationTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print sector allocation info for one file
@@ -2213,6 +2617,9 @@ Debug.NL();
     //       Calls printFilenameFromDirectory() and printFileSizeFromDirectory()
     printFileSectorInfo()
     {
+#ifdef TRACEFILE
+        LDA #(printFileSectorInfoTrace % 256) STA ZP.TraceMessageL LDA #(printFileSectorInfoTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
         PHX
         PHY
         
@@ -2279,11 +2686,17 @@ Debug.NL();
         
         PLY
         PLX
+#ifdef TRACEFILE
+        LDA #(printFileSectorInfoTrace % 256) STA ZP.TraceMessageL LDA #(printFileSectorInfoTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
     // Print free space summary
     printFreeSpaceSummary()
     {
+#ifdef TRACEFILE
+        LDA #(printFreeSpaceSummaryTrace % 256) STA ZP.TraceMessageL LDA #(printFreeSpaceSummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
         // Count free sectors
         LDY #2                   // Start from sector 2 (skip system)
         STZ SectorPositionL      // Free sector count
@@ -2322,6 +2735,9 @@ Debug.NL();
         Print.Decimal();
         
         Print.NewLine();
+#ifdef TRACEFILE
+        LDA #(printFreeSpaceSummaryTrace % 256) STA ZP.TraceMessageL LDA #(printFreeSpaceSummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
     }
     
 #endif

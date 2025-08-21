@@ -1045,7 +1045,7 @@ unit Console // Console.asm
     parseDasm()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
 #endif
 
-#if defined(TRACE) || defined(TRACEEXE)
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)
     // Parse and execute TRON command
     parseTron()
     {
