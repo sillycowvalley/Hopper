@@ -208,56 +208,50 @@ unit Table // Table.asm
                 break; 
             }
             
-            // Special case: deleting first node
+            // Check if we're deleting the first node
             LDA ZP.LCURRENTL
             CMP ZP.IDXL
-            if (NZ)
+            if (Z)
             {
-                // Not the first node, jump to general case
-                JMP deleteGeneralCase
+                LDA ZP.LCURRENTH
+                CMP ZP.IDXH
+                if (Z)
+                {
+                    // Special case: deleting first node
+                    // Update list head VALUE from the next pointer from first node (could be null)
+                    LDX ZP.LHEADX
+                    LDY #0
+                    LDA [ZP.LCURRENT], Y
+                    STA 0x00, X
+                    INY
+                    LDA [ZP.LCURRENT], Y
+                    STA 0x01, X
+                    
+                    // Free the node - restore IDX temporarily for Memory.Free
+                    PLA
+                    STA ZP.ACCH
+                    PLA
+                    STA ZP.ACCL
+                    PLA
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    
+                    Memory.Free(); // Clean API - preserves everything except flags
+                    
+                    // Push dummy values back for consistent exit
+                    LDA #0
+                    PHA
+                    PHA
+                    PHA
+                    PHA
+                    
+                    SEC  // Success
+                    break;
+                }
             }
             
-            LDA ZP.LCURRENTH
-            CMP ZP.IDXH
-            if (NZ)
-            {
-                // Not the first node, jump to general case
-                JMP deleteGeneralCase
-            }
-            
-            // Update list head VALUE from the next pointer from first node (could be null)
-            LDX ZP.LHEADX
-            LDY #0
-            LDA [ZP.LCURRENT], Y
-            STA 0x00, X
-            INY
-            LDA [ZP.LCURRENT], Y
-            STA 0x01, X
-            
-            // Free the node - restore IDX temporarily for Memory.Free
-            PLA
-            STA ZP.ACCH
-            PLA
-            STA ZP.ACCL
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
-            Memory.Free(); // Clean API - preserves everything except flags
-            
-            // Push dummy values back for consistent exit
-            LDA #0
-            PHA
-            PHA
-            PHA
-            PHA
-            
-            SEC  // Success
-            break;
-            
-        deleteGeneralCase:
-            // General case: walk the list
+            // General case: walk the list to find the node
             STZ ZP.LPREVIOUSL
             STZ ZP.LPREVIOUSH
             
@@ -269,7 +263,7 @@ unit Table // Table.asm
                 if (Z) 
                 { 
                     CLC  // Node not found
-                    JMP deleteExit
+                    break; // exits inner loop, which will break outer loop
                 }
                 
                 LDY #0
@@ -282,54 +276,47 @@ unit Table // Table.asm
                 // Check if LCURRENT is the node to delete
                 LDA ZP.LCURRENTL
                 CMP ZP.IDXL
-                if (NZ)
+                if (Z)
                 {
-                    // Not this node, continue searching
-                    JMP deleteNotFound
+                    LDA ZP.LCURRENTH
+                    CMP ZP.IDXH
+                    if (Z)
+                    {
+                        // Found the node to delete
+                        // Update previous node's next pointer to skip deleted node
+                        LDY #0
+                        LDA ZP.LNEXTL
+                        STA [ZP.LPREVIOUS], Y
+                        INY
+                        LDA ZP.LNEXTH
+                        STA [ZP.LPREVIOUS], Y
+                        
+                        // Free the node - restore IDX temporarily for Memory.Free
+                        PLA
+                        STA ZP.ACCH
+                        PLA
+                        STA ZP.ACCL
+                        PLA
+                        STA ZP.IDXH
+                        PLA
+                        STA ZP.IDXL
+                        
+                        Memory.Free(); // Clean API - preserves everything except flags
+                        
+                        // Push dummy values back for consistent exit
+                        LDA #0
+                        PHA
+                        PHA
+                        PHA
+                        PHA
+                        
+                        SEC  // Success
+                        break; // exits inner loop with success flag set
+                    }
                 }
                 
-                LDA ZP.LCURRENTH
-                CMP ZP.IDXH
-                if (NZ)
-                {
-                    // Not this node, continue searching
-                    JMP deleteNotFound
-                }
-                
-                // Found the node to delete
-                // Update previous node's next pointer to skip deleted node
-                LDY #0
-                LDA ZP.LNEXTL
-                STA [ZP.LPREVIOUS], Y
-                INY
-                LDA ZP.LNEXTH
-                STA [ZP.LPREVIOUS], Y
-                
-                // Free the node - restore IDX temporarily for Memory.Free
-                PLA
-                STA ZP.ACCH
-                PLA
-                STA ZP.ACCL
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
-                
-                Memory.Free(); // Clean API - preserves everything except flags
-                
-                // Push dummy values back for consistent exit
-                LDA #0
-                PHA
-                PHA
-                PHA
-                PHA
-                
-                SEC  // Success
-                JMP deleteExit
-                
-            deleteNotFound:
-                // Move forward: 
-                // LPREVIOUS <- LCURRENT
+                // Not this node, continue searching
+                // Move forward: LPREVIOUS <- LCURRENT
                 LDA ZP.LCURRENTL
                 STA ZP.LPREVIOUSL
                 LDA ZP.LCURRENTH
@@ -340,9 +327,9 @@ unit Table // Table.asm
                 STA ZP.LCURRENTL
                 LDA ZP.LNEXTH
                 STA ZP.LCURRENTH
-            } // loop
+            } // inner loop
             
-        deleteExit:
+            // Break out of outer loop (whether success or failure)
             break;
         } // end of single exit block
         
@@ -356,7 +343,7 @@ unit Table // Table.asm
         PLA
         STA ZP.IDXL
         
-        PLY
+        PLY    
         PLX
         PLA
     }
