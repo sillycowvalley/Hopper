@@ -493,6 +493,9 @@ unit File
 #ifdef DEBUG
             Print.NewLine();
             printDebugDiagnostics();
+            
+            Print.NewLine();
+            DumpDriveState();
 #endif
             
             SEC

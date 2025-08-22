@@ -1153,7 +1153,15 @@ unit Console // Console.asm
 #endif
         
         // Start iteration over all variables
-        Variables.IterateVariables();
+        if (BBS3, Storage.LoaderFlags)
+        {
+            Variables.IterateAll();
+        }
+        else
+        {
+            Variables.IterateVariables();
+        }
+        
         // Returns: ZP.IDX = first variable node, C = found, NC = none
         loop // Variable iteration loop
         {
@@ -1387,6 +1395,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'RUN'
             
+            STZ Storage.LoaderFlags // clear Bit 3 
             InitializeGlobals();
                                     
             loop // Single exit block
