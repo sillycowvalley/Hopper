@@ -629,9 +629,6 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                     }
                 }
                 if (NC) { break; }
-                
-                // Now we're at the start of the function body
-                // Save this position as the start of body tokens
             }
             else
             {
@@ -651,20 +648,21 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 Tokenizer.NextToken();
                 CheckError();
                 if (NC) { break; }
-                
-                LDA ZP.CurrentToken
-                CMP #Token.EOL
-                if (NZ)
-                {
-                    // Not EOL - back up tokenizer so we don't skip real body token
-                    DEC ZP.TokenizerPosL
-                    if (Z)
-                    {
-                        DEC ZP.TokenizerPosH
-                    }
-                }
-                // Now positioned at actual body start (past any EOL)
             }
+            
+            // Skip EOL after RPAREN if present (from multi-line capture)
+            LDA ZP.CurrentToken
+            CMP #Token.EOL
+            if (NZ)
+            {
+                // Not EOL - back up tokenizer so we don't skip real body token
+                DEC ZP.TokenizerPosL
+                if (Z)
+                {
+                    DEC ZP.TokenizerPosH
+                }
+            }
+            // Now positioned at actual body start (past any EOL)
             
             // Find the function that was already declared
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = function node

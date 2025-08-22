@@ -1,14 +1,17 @@
 NEW
+CLS
+CONST WORD L = 10
+WORD T
+
+FUNC FOO(C)
+    PRINT C
+ENDFUNC
 
 BEGIN
-    WORD I
-    LONG MS
-    DO
-        MS = MILLIS()
-        PRINT MS
-        DELAY(1000)
-        I = I + 1
-    UNTIL I > 10
+    FOR I = 1 TO L
+        FOO(I)
+        T = T + I
+    NEXT I
+    PRINT "T:", T
 END
 RUN
-DASM

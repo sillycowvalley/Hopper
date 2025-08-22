@@ -623,10 +623,6 @@ Debug.NL();
             LDA #Token.RPAREN
             appendByteToBuffer();
             
-            //  add EOL and stream
-            LDA # Token.EOL
-            appendByteToBuffer();
-            
             break; // Return result from AppendStream
         }
 
