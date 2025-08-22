@@ -8,6 +8,7 @@ program HopperBASIC
     //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     #define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
+    #define TRACEFILE
     //#define TRACEEXE // instructions in Executor
 
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
@@ -15,10 +16,12 @@ program HopperBASIC
     #define CPU_65C02S
     #define HOPPER_BASIC
     
+    
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    #define ROM_32K
+    #define ROM_48K    
+    //#define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"
@@ -59,7 +62,9 @@ program HopperBASIC
 #ifdef HASEEPROM    
     uses "./Files/EEPROM"
     uses "./Files/File"
+    uses "./Files/Storage"
 #endif
+
     uses "Tokenizer"
     uses "FunctionDeclaration.asm"
     uses "Statement"
@@ -67,7 +72,7 @@ program HopperBASIC
     uses "Optimizer"
     
     uses "GPIO"
-    uses "Storage"
+    
     
     uses "Instructions"
     uses "ComparisonInstructions"
@@ -79,6 +84,18 @@ program HopperBASIC
     // Initialize the BASIC system
     InitializeBASIC()
     {
+        // Clear Zero Page
+        LDX #0
+        loop
+        {
+            CPX # ZP.ACIADATA // don't write to ACIA data register
+            if (NZ) 
+            {
+                STZ 0x00, X
+            }
+            DEX
+            if (Z) { break; }
+        } 
 #ifdef DEBUG
         Tokens.ValidateAllKeywordTables();
 #endif
@@ -227,6 +244,5 @@ program HopperBASIC
         
         // Enter the main interpreter loop
         interpreterLoop();
-        
     }
 }

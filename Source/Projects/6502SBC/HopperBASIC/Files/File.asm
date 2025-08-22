@@ -1,9 +1,11 @@
 unit File
 {
     // Buffer allocation (3 x 256 bytes)
-    const uint FileDataBuffer       = Address.FileSystemBuffers;        // [0-255]
+    const uint FATBuffer            = Address.FileSystemBuffers;        // [0-255]
     const uint DirectoryBuffer      = Address.FileSystemBuffers + 256;  // [256-511]  
-    const uint FATBuffer            = Address.FileSystemBuffers + 512;  // [512-767]
+    const uint FileDataBuffer       = Address.FileSystemBuffers + 512;  // [512-767]
+    
+    
     
     // File System Zero Page Variables (aliases to existing slots)
     const byte SectorSource         = ZP.FS0;                  // for use with LDX [SectorSource], Y for example

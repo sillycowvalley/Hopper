@@ -71,7 +71,9 @@ Debug.NL();
             setupSlidingWindowBuffer();
             if (NC) { break; }
             
-            //Storage.dumpBuffers();
+#ifdef DEBUG                        
+            Storage.dumpBuffers();
+#endif
             
             STZ LoaderFlags
             
@@ -122,6 +124,8 @@ Debug.NL();
                         Storage.dumpBuffers();
 #endif
                         TODO(); BIT ZP.EmulatorPCL CLC // what's this?
+                        
+                        loop {  }
                         break;
                     }
                 } // switch
@@ -325,8 +329,7 @@ Debug.NL();
                     if (NC) { break; }
                 }
             }
-            //  add EOE and stream
-            LDA # Token.EOE
+            LDA # Token.EOE //  add EOE and stream after constant or variable
             appendByteToBuffer();
             
             SEC // Success
@@ -414,10 +417,6 @@ Debug.NL();
                     streamFunction(); // Input: ZP.IDX = function node
                 }
                 if (NC) { break; }
-                
-                //  add EOE and stream
-                //LDA # Token.EOE
-                //appendByteToBuffer();
                 
                 Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
