@@ -35,58 +35,40 @@ unit BASICTypes // BASICTypes.asm
         PHX
         TAX
         
-        AND # SymbolType.MASK
-        if (NZ)
+        loop
         {
-            TXA
-            AND # SymbolType.VARIABLE
+            AND # SymbolType.MASK
             if (NZ)
             {
-                LDA # Token.VAR
-                Tokens.PrintKeyword();
-                LDA #'|' Print.Char();
-            }
-            TXA
-            AND # SymbolType.CONSTANT
-            if (NZ)
-            {
-                LDA # Token.CONST
-                Tokens.PrintKeyword();
-                LDA #'|' Print.Char();
-            }
-        }
-        
-        TXA
-        AND # BASICType.VAR
-        if (NZ)
-        {
-            LDA #Token.VAR
-            Tokens.PrintKeyword();
-            TXA
-            AND # BASICType.TYPEMASK
-            if (NZ)
-            {
-                // VAR contains a type
-                LDA #'(' Print.Char();
                 TXA
-                AND # BASICType.TYPEMASK
-                PrintType();
-                LDA #')' Print.Char();
-            }    
-        }
-        else
-        {
+                AND # SymbolType.VARIABLE
+                if (NZ)
+                {
+                    LDA # Token.VAR
+                    Tokens.PrintKeyword(); // preserves X and Y
+                    LDA #'|' Print.Char();
+                }
+                TXA
+                AND # SymbolType.CONSTANT
+                if (NZ)
+                {
+                    LDA # Token.CONST
+                    Tokens.PrintKeyword(); // preserves X and Y
+                    LDA #'|' Print.Char();
+                }
+            }
+            
             TXA
-            AND # BASICType.ARRAY
+            AND # BASICType.VAR
             if (NZ)
             {
-                LDA #Token.ARRAY
-                Tokens.PrintKeyword();
+                LDA #Token.VAR
+                Tokens.PrintKeyword(); // preserves X and Y
                 TXA
                 AND # BASICType.TYPEMASK
                 if (NZ)
                 {
-                    // ARRAY contains elements of type
+                    // VAR contains a type
                     LDA #'(' Print.Char();
                     TXA
                     AND # BASICType.TYPEMASK
@@ -96,67 +78,88 @@ unit BASICTypes // BASICTypes.asm
             }
             else
             {
-                // Convert BasicType to corresponding Token and use keyword table
                 TXA
-                AND # BASICType.TYPEMASK
-                switch (A)
+                AND # BASICType.ARRAY
+                if (NZ)
                 {
-                    case BASICType.INT:
+                    LDA #Token.ARRAY
+                    Tokens.PrintKeyword(); // preserves X and Y
+                    TXA
+                    AND # BASICType.TYPEMASK
+                    if (NZ)
                     {
-                        LDA #Token.INT
-                        Tokens.PrintKeyword();
-                    }
-                    case BASICType.WORD:
+                        // ARRAY contains elements of type
+                        LDA #'(' Print.Char();
+                        TXA
+                        AND # BASICType.TYPEMASK
+                        PrintType();
+                        LDA #')' Print.Char();
+                    }    
+                }
+                else
+                {
+                    // Convert BasicType to corresponding Token and use keyword table
+                    TXA
+                    AND # BASICType.TYPEMASK
+                    if (Z)
                     {
-                        LDA #Token.WORD
-                        Tokens.PrintKeyword();
-                    }
-                    case BASICType.LONG:
-                    {
-#ifdef BASICLONG
-                        LDA #Token.LONG
-                        Tokens.PrintKeyword();
-#else
-                        Error.InternalError(); BIT ZP.EmulatorPCL
-#endif
-                    }
-                    case BASICType.BIT:
-                    {
-                        LDA #Token.BIT
-                        Tokens.PrintKeyword();
-                    }
-                    case BASICType.BYTE:
-                    {
-                        LDA #Token.BYTE
-                        Tokens.PrintKeyword();
-                    }
-                    case BASICType.CHAR:
-                    {
-                        LDA #Token.CHAR
-                        Tokens.PrintKeyword();
-                    }
-                    case BASICType.STRING:
-                    {
-                        LDA #Token.STRING
-                        Tokens.PrintKeyword();
-                    }
-                    case BASICType.VOID:
-                    {
+                        // 0 = BASICType.VOID:
                         LDA #(voidName % 256)
                         STA ZP.STRL
                         LDA #(voidName / 256)
                         STA ZP.STRH
                         Print.String();
                     }
-                    default:
+                    else
                     {
-                        // Unknown type
-                        Serial.HexOut();
+                        switch (A)
+                        {
+                            case BASICType.INT:
+                            {
+                                LDA #Token.INT
+                            }
+                            case BASICType.WORD:
+                            {
+                                LDA #Token.WORD
+                            }
+                            case BASICType.LONG:
+                            {
+        #ifdef BASICLONG
+                                LDA #Token.LONG
+        #else
+                                Error.InternalError(); BIT ZP.EmulatorPCL
+                                break;
+        #endif
+                            }
+                            case BASICType.BIT:
+                            {
+                                LDA #Token.BIT
+                            }
+                            case BASICType.BYTE:
+                            {
+                                LDA #Token.BYTE
+                            }
+                            case BASICType.CHAR:
+                            {
+                                LDA #Token.CHAR
+                            }
+                            case BASICType.STRING:
+                            {
+                                LDA #Token.STRING
+                            }
+                            default:
+                            {
+                                // Unknown type
+                                Error.InternalError(); BIT ZP.EmulatorPCL
+                                break;
+                            }
+                        } // switch
+                        Tokens.PrintKeyword(); // preserves X and Y
                     }
                 }
             }
-        }
-        
+            break;
+        } // single exit
         PLX
         PLA
     }
@@ -223,44 +226,52 @@ unit BASICTypes // BASICTypes.asm
     // Output: A = corresponding Token (e.g., Token.INT), C if success, NC if not
     ToToken()
     {
-        SEC
         switch (A)
         {
             case BASICType.INT:
             {
                 LDA #Token.INT
+                SEC
             }
             case BASICType.WORD:
             {
                 LDA #Token.WORD
+                SEC
             }
             case BASICType.BYTE:
             {
                 LDA #Token.BYTE
+                SEC
             }
             case BASICType.CHAR:
             {
                 LDA #Token.CHAR
+                SEC
             }
             case BASICType.STRING:
             {
                 LDA #Token.STRING
+                SEC
             }
             case BASICType.BIT:
             {
                 LDA #Token.BIT
+                SEC
             }
             case BASICType.VAR:
             {
                 LDA #Token.VAR
+                SEC
             }
             case BASICType.ARRAY:
             {
                 LDA #Token.ARRAY
+                SEC
             }
             case BASICType.LONG:
             {
                 LDA #Token.LONG
+                SEC
             }
             default:
             {

@@ -8,6 +8,10 @@ unit Long
     {
         loop
         {
+            // good default
+            STZ ZP.TOP2
+            STZ ZP.TOP3
+                    
             // Check the current type and convert accordingly
             LDA ZP.TOPT
             AND # BASICType.TYPEMASK
@@ -17,14 +21,10 @@ unit Long
                 {
                     // Zero-extend BYTE: 0x42 -> 0x00000042
                     STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
                 }
                 case BASICType.WORD:
                 {
                     // Zero-extend WORD: 0x1234 -> 0x00001234
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
                 }
                 case BASICType.INT:
                 {
@@ -36,17 +36,9 @@ unit Long
                         STA ZP.TOP2
                         STA ZP.TOP3
                     }
-                    else
-                    {
-                        STZ ZP.TOP2  // Positive: extend with 0x00
-                        STZ ZP.TOP3
-                    }
                 }
                 default:
                 {
-#ifdef DEBUG                    
-//Debug.NL(); TLOut();
-#endif
                     // Unsupported type for LONG conversion
                     Error.TypeMismatch(); BIT ZP.EmulatorPCL
                     CLC

@@ -283,10 +283,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     Equal()
     {
-        PHA
-        PHX
-        PHY
-        
         loop
         {
             // Pop two operands
@@ -414,10 +410,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             Error.TypeMismatch(); BIT ZP.EmulatorPCL
         }
-        
-        PLY
-        PLX
-        PLA
     }
 
     // Not-equal comparison operation (pops two operands, pushes BIT result)
@@ -426,10 +418,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     NotEqual()
     {
-        PHA
-        PHX
-        PHY
-        
         loop
         {
             // Pop two operands
@@ -556,10 +544,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             Error.TypeMismatch(); BIT ZP.EmulatorPCL
         }
-        
-        PLY
-        PLX
-        PLA
     }
     
     // Check types for integer comparison operations
@@ -637,10 +621,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     LessThan()
     {
-        PHA
-        PHX
-        PHY
-        
         loop
         {
             // Pop two operands
@@ -735,10 +715,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 break;
             }
         }
-        
-        PLY
-        PLX
-        PLA
     }    
     
     // Greater-than comparison operation (pops two operands, pushes BIT result)
@@ -747,10 +723,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     GreaterThan()
     {
-        PHA
-        PHX
-        PHY
-        
         loop
         {
             // Pop two operands
@@ -847,10 +819,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 break;
             }
         }
-        
-        PLY
-        PLX
-        PLA
     }    
     
     // Less-than-or-equal comparison operation (pops two operands, pushes BIT result)
@@ -859,10 +827,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     LessEqual()
     {
-        PHA
-        PHX
-        PHY
-        
         loop
         {
             // Pop two operands
@@ -958,10 +922,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 break;
             }
         }
-        
-        PLY
-        PLX
-        PLA
     }
     
     // Greater-than-or-equal comparison operation (pops two operands, pushes BIT result)
@@ -970,10 +930,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
     // Modifies: Stack interface (ZP.TOP, ZP.NEXT, ZP.TOPT, ZP.NEXTT, ZP.SP, stack memory), ZP.LastError on type mismatch
     GreaterEqual()
     {
-        PHA
-        PHX
-        PHY
-        
         loop
         {
             // Pop two operands
@@ -1070,9 +1026,5 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 break;
             }
         }
-        
-        PLY
-        PLX
-        PLA
     }
 }

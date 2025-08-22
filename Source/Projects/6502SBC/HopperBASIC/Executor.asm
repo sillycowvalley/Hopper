@@ -826,11 +826,6 @@ unit Executor // Executor.asm
            // Fetch cleanup count operand (number of locals)
            
            FetchOperandByte();
-           States.CanContinue();
-           if (NC)
-           {
-               break;
-           }
            STA executorOperandL
            
            // Calculate return slot position: BP - (arg_count + 1)
@@ -1241,18 +1236,7 @@ unit Executor // Executor.asm
        {
            // Fetch string pointer (little-endian)
            FetchOperandWord(); // Result in executorOperandL/H
-           CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
-#ifdef DEBUG
-// XIDHERE xS    
-//NL(); LDA #'x' COut(); LDA #'S' COut();
-//Space(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
-//Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
-#endif
+
            // Store pointer in ZP.TOP as STRING value
            CLC
            LDA executorOperandL
@@ -1261,9 +1245,7 @@ unit Executor // Executor.asm
            LDA executorOperandH
            ADC ZP.XIDH
            STA ZP.TOPH
-#ifdef DEBUG
-//Space(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
-#endif    
+
            LDA # BASICType.STRING
            STA ZP.TOPT
            
@@ -1298,14 +1280,7 @@ unit Executor // Executor.asm
        loop
        {
            FetchOperandWord();
-           States.CanContinue();
-           if (NC) { break; }
-#ifdef DEBUG
-// XIDHERE xC        
-//NL(); LDA #'x' COut(); LDA #'C' COut(); LDA #',' COut();
-//Space(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
-//Space(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
-#endif
+           
            CLC
            LDA executorOperandL
            ADC ZP.XIDL
@@ -1313,9 +1288,7 @@ unit Executor // Executor.asm
            LDA executorOperandH
            ADC ZP.XIDH
            STA ZP.TOPH
-#ifdef DEBUG
-//Space(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
-#endif
+
            // 1. resolve Function <index> to function call <address>
            Functions.Find(); // Input: ZP.TOP = name
            if (NC)
@@ -1417,20 +1390,15 @@ unit Executor // Executor.asm
        
        // Fetch 16-bit operand
        FetchOperandWord();
-       States.CanContinue();
-       if (C)
-       {
-           
-           // Store in ZP.TOP as INT value
-           LDA executorOperandL
-           STA ZP.TOPL
-           LDA executorOperandH
-           STA ZP.TOPH
-           LDA # BASICType.INT
-           Stacks.PushTop(); // PushInt: push value and type to stack -> always Success
-           
-           States.SetSuccess();
-       }
+       // Store in ZP.TOP as INT value
+       LDA executorOperandL
+       STA ZP.TOPL
+       LDA executorOperandH
+       STA ZP.TOPH
+       LDA # BASICType.INT
+       Stacks.PushTop(); // PushInt: push value and type to stack -> always Success
+       
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executePushIntTrace % 256) STA ZP.TraceMessageL LDA #(executePushIntTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1447,20 +1415,16 @@ unit Executor // Executor.asm
        
        // Fetch 16-bit operand
        FetchOperandWord();
-       States.CanContinue();
-       if (C)
-       {
-           
-           // Store in ZP.TOP as WORD value
-           LDA executorOperandL
-           STA ZP.TOPL
-           LDA executorOperandH
-           STA ZP.TOPH
-           LDA # BASICType.WORD
-           Stacks.PushTop(); // PushWord: push value and type to stack -> always Success
-           
-           States.SetSuccess();
-       }
+       
+       // Store in ZP.TOP as WORD value
+       LDA executorOperandL
+       STA ZP.TOPL
+       LDA executorOperandH
+       STA ZP.TOPH
+       LDA # BASICType.WORD
+       Stacks.PushTop(); // PushWord: push value and type to stack -> always Success
+       
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executePushWordTrace % 256) STA ZP.TraceMessageL LDA #(executePushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1536,17 +1500,13 @@ unit Executor // Executor.asm
        
        // Fetch signed byte operand
        FetchOperandByte();
-       States.CanContinue();
-       if (C)
-       {
-           // Sign extend byte to word
-           signExtendByteToWord();
-           
-           // Apply offset to PC
-           applySignedOffsetToPC();
-           
-           States.SetSuccess();
-       }
+       // Sign extend byte to word
+       signExtendByteToWord();
+       
+       // Apply offset to PC
+       applySignedOffsetToPC();
+       
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1571,8 +1531,6 @@ unit Executor // Executor.asm
            {
                // Fetch signed byte operand
                FetchOperandByte();
-               States.CanContinue();
-               if (NC) { break; }
                
                // Sign extend byte to word
                signExtendByteToWord();
@@ -1584,8 +1542,6 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandByte();
-               States.CanContinue();
-               if (NC) { break; }
                // Don't apply offset - just continue
            }
            
@@ -1616,8 +1572,6 @@ unit Executor // Executor.asm
            {
                // Fetch signed byte operand
                FetchOperandByte();
-               States.CanContinue();
-               if (NC) { break; }
                
                // Sign extend byte to word
                signExtendByteToWord();
@@ -1629,8 +1583,6 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandByte();
-               States.CanContinue();
-               if (NC) { break; }
                // Don't apply offset - just continue to next instruction
            }
            
@@ -1654,20 +1606,16 @@ unit Executor // Executor.asm
        
        // Fetch 16-bit signed operand
        FetchOperandWord();
-       States.CanContinue();
-       if (C)
-       {
-           // Operand is already in executorOperandL/H, move to ZP.NEXT
-           LDA executorOperandL
-           STA ZP.NEXTL
-           LDA executorOperandH
-           STA ZP.NEXTH
-           
-           // Apply offset to PC
-           applySignedOffsetToPC();
-           
-           States.SetSuccess();
-       }
+       // Operand is already in executorOperandL/H, move to ZP.NEXT
+       LDA executorOperandL
+       STA ZP.NEXTL
+       LDA executorOperandH
+       STA ZP.NEXTH
+       
+       // Apply offset to PC
+       applySignedOffsetToPC();
+       
+       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeJumpWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1792,8 +1740,6 @@ unit Executor // Executor.asm
            {
                // Fetch 16-bit signed operand
                FetchOperandWord();
-               States.CanContinue();
-               if (NC) { break; }
                
                // Operand is already in executorOperandL/H, move to ZP.NEXT
                LDA executorOperandL
@@ -1808,8 +1754,6 @@ unit Executor // Executor.asm
            {
                // Still need to fetch and skip the operand
                FetchOperandWord();
-               States.CanContinue();
-               if (NC) { break; }
                // Don't apply offset - just continue to next instruction
            }
            
@@ -2210,14 +2154,10 @@ unit Executor // Executor.asm
         {
             // Fetch iterator BP offset
             FetchOperandByte(); // Result in A
-            States.CanContinue();
-            if (NC) { break; }
             STA Executor.executorOperandBP  // Save iterator offset
             
             // Fetch forward jump offset (16-bit)
             FetchOperandWord(); // Result in executorOperandL/H
-            States.CanContinue();
-            if (NC) { break; }
             
             // First, get STEP value to check sign
             LDA #0xFF
@@ -2317,14 +2257,10 @@ unit Executor // Executor.asm
         {
             // Fetch iterator BP offset
             FetchOperandByte(); // Result in A
-            States.CanContinue();
-            if (NC) { break; }
             STA Executor.executorOperandBP  // Save iterator offset
             
             // Fetch backward jump offset (16-bit)
             FetchOperandWord(); // Result in executorOperandL/H
-            States.CanContinue();
-            if (NC) { break; }
             
             // Get STEP value
             LDA #0xFF
@@ -3639,15 +3575,11 @@ unit Executor // Executor.asm
         {
             // Fetch target global index (first operand)
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
             
             TAX  // X = target global index
             
             // Fetch source global index (second operand)
             FetchOperandByte();
-            States.CanContinue();
-            if (NC) { break; }
             
             TAY  // Y = source global index
             
@@ -3673,9 +3605,6 @@ unit Executor // Executor.asm
     executePushLong()
     {
 #ifdef BASICLONG        
-        PHA
-        PHX
-        PHY
         
     #ifdef TRACE
         LDA #(executePushLongTrace % 256) STA ZP.TraceMessageL 
@@ -3711,9 +3640,6 @@ unit Executor // Executor.asm
         Trace.MethodExit();
     #endif
         
-        PLY
-        PLX
-        PLA
 #else     
         Error.InternalError(); BIT ZP.EmulatorPCL   
 #endif        
@@ -3728,9 +3654,6 @@ unit Executor // Executor.asm
     executeToLong()
     {
 #ifdef BASICLONG        
-        PHA
-        PHX
-        PHY
         
     #ifdef TRACE
         LDA #(executeToLongTrace % 256) STA ZP.TraceMessageL 
@@ -3763,9 +3686,6 @@ unit Executor // Executor.asm
         Trace.MethodExit();
     #endif
         
-        PLY
-        PLX
-        PLA
 #else     
         Error.InternalError(); BIT ZP.EmulatorPCL   
 #endif        

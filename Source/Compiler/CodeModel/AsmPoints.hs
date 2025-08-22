@@ -2251,6 +2251,31 @@ unit AsmPoints
                     iLengths[iIndex-0] = 1;
                     modified = true;
                 }
+                if ((opCode2 == OpCode.LDA_z) && (opCode0 == OpCode.LDA_z))
+                {
+                    if (iOperands[iIndex-2] == iOperands[iIndex-0])
+                    {
+                        string name = GetName(opCode1);
+                        switch (name)
+                        {
+                            case "STA":
+                            {
+                                iCodes  [iIndex-0] = OpCode.NOP;
+                                iLengths[iIndex-0] = 1;
+                                modified = true;
+                                Print(" Y");
+                            }
+                            case "JSR":
+                            {
+                                // nope
+                            }
+                            default:
+                            {    
+                                Print(" Optimize?" + name);
+                            }
+                        }
+                    }
+                }
             } 
             iIndex++;
         }
