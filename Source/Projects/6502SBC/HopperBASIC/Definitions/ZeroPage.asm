@@ -368,7 +368,7 @@ unit ZP // ZeroPage.asm
     const byte FS13                 = 0x9B;
     const byte FS14                 = 0x9C;
     
-    // Storage unit : Loading
+    // Storage.LoadProgram(), Tokenizer.FindKeyword()
     const byte SS0                  = 0x9D;
     const byte SS1                  = 0x9E;
     const byte SS2                  = 0x9F;
@@ -377,6 +377,13 @@ unit ZP // ZeroPage.asm
     const byte SS5                  = 0xA2;
     const byte SS6                  = 0xA3;
     
+    // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
+    // Shared with Storage.LoadProgram
+    const byte TableIndex           = ZP.SS0;
+    const byte TableIndexL          = ZP.SS0;
+    const byte TableIndexH          = ZP.SS1;
+    const byte KeywordLength        = ZP.SS2;
+    const byte TokenValue           = ZP.SS3;
     
     
     // 0x84-0xEB: Available (104 bytes!)

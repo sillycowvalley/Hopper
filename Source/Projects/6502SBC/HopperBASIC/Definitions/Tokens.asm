@@ -265,44 +265,34 @@ unit Tokens
         PHX
         PHY
         
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
-        
-        
         // Choose table based on first character
         LDA Address.BasicProcessBuffer
         CMP #'I'  // Changed from 'M' to 'I'
         if (C)    // >= 'I', use I-Z table
         {
             LDA #(keywordsIZ % 256)
-            STA ZP.IDYL
+            STA ZP.TableIndexL
             LDA #(keywordsIZ / 256)
-            STA ZP.IDYH
+            STA ZP.TableIndexH
         }
         else      // < 'I', use A-H table
         {
             LDA #(keywordsAH % 256)
-            STA ZP.IDYL
+            STA ZP.TableIndexL
             LDA #(keywordsAH / 256)
-            STA ZP.IDYH
+            STA ZP.TableIndexH
         }
         
         LDY #0  // Start at beginning of keyword table
         loop
         {
-            LDA [ZP.IDY], Y    // Get length of this keyword
-            if (Z) { break; }  // End of table - not found
+            LDA [ZP.TableIndex], Y  // Get length of this keyword
+            if (Z) { break; }       // End of table - not found
             
-            STA ZP.ACCL        // Save keyword length
+            STA ZP.KeywordLength    // Save keyword length
             INY
-            LDA [ZP.IDY], Y    // Get token value
-            STA ZP.ACCH        // Save token value
+            LDA [ZP.TableIndex], Y  // Get token value
+            STA ZP.TokenValue       // Save token value
             INY
             
             // Compare characters
@@ -313,21 +303,10 @@ unit Tokens
                 if (Z)  // Hit null terminator in our identifier
                 {
                     // Check if we've matched the full keyword length
-                    CPX ZP.ACCL
+                    CPX ZP.KeywordLength
                     if (Z)
                     {
-                        LDX ZP.ACCH  // Return token value - exact match!
-                    
-                        PLA
-                        STA ZP.IDYH
-                        PLA
-                        STA ZP.IDYL
-                        PLA
-                        STA ZP.ACCH
-                        PLA
-                        STA ZP.ACCL
-                        
-                        TXA // Return token value
+                        LDA ZP.TokenValue  // Return token value - exact match!
                         
                         PLY
                         PLX
@@ -337,11 +316,11 @@ unit Tokens
                 }
                 
                 // Check if we've exceeded keyword length
-                CPX ZP.ACCL
-                if (Z) { break; }  // Our identifier is longer than keyword
+                CPX ZP.KeywordLength
+                if (Z) { break; }       // Our identifier is longer than keyword
                 
-                CMP [ZP.IDY], Y  // Compare with expected character
-                if (NZ) { break; } // Mismatch
+                CMP [ZP.TableIndex], Y  // Compare with expected character
+                if (NZ) { break; }      // Mismatch
                 
                 INX
                 INY
@@ -350,21 +329,13 @@ unit Tokens
             // Mismatch - skip to next keyword
             loop
             {
-                CPX ZP.ACCL       // Have we reached the end of keyword?
-                if (Z) { break; } // Yes, Y now points to start of next keyword
-                INX               // Move to next character position  
-                INY               // Advance Y to next character
+                CPX ZP.KeywordLength  // Have we reached the end of keyword?
+                if (Z) { break; }     // Yes, Y now points to start of next keyword
+                INX                   // Move to next character position  
+                INY                   // Advance Y to next character
             }
         } // loop
         
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
         
         PLY
         PLX
@@ -380,37 +351,25 @@ unit Tokens
     PrintKeyword()
     {
         
-        PHA  // Save token value
         PHX
         PHY
         
-        TAX
-        
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-        STX ZP.ACCL  // Store target token value
+        STA ZP.TokenValue  // Store target token value
         
         // Load keywords table address into ZP.IDY
         LDA #(keywordsAH % 256)
-        STA ZP.IDYL
+        STA ZP.TableIndexL
         LDA #(keywordsAH / 256)
-        STA ZP.IDYH
+        STA ZP.TableIndexH
         
         PrintKeywordFromTable();
         if (NC)
         {
             // perhaps it is in the other table
             LDA #(keywordsIZ % 256)
-            STA ZP.IDYL
+            STA ZP.TableIndexL
             LDA #(keywordsIZ / 256)
-            STA ZP.IDYH
+            STA ZP.TableIndexH
             PrintKeywordFromTable();
 #ifdef DEBUG
             if (NC)
@@ -421,51 +380,41 @@ unit Tokens
 #endif
         }
         
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        
         PLY
         PLX
-        PLA
     }
 
     // Helper method to search table and print keyword
-    // Input: ZP.ACCL = target token value, ZP.IDY = table address
+    // Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
     // Output: Keyword printed to serial if found, C if found, NC if not
-    // Modifies: A, X, Y (internal use only)
+    // Modifies: A, X, Y, ZP.KeywordLength (internal use only)
     PrintKeywordFromTable()
     {
         LDY #0  // Index into keywords table
         loop
         {
-            LDA [ZP.IDY], Y     // Get length of this keyword
+            LDA [ZP.TableIndex], Y     // Get length of this keyword
             if (Z) 
             { 
                 CLC
                 break; 
             }   // End of table - not found
             
-            STA ZP.ACCH         // Save keyword length
+            STA ZP.KeywordLength       // Save keyword length
             INY
-            LDA [ZP.IDY], Y     // Get token value 
-            CMP ZP.ACCL         // Compare with target
+            LDA [ZP.TableIndex], Y     // Get token value 
+            CMP ZP.TokenValue          // Compare with target
             if (Z)
             {
                 // Found it! Print the keyword
                 INY  // Move to first character
-                LDX ZP.ACCH  // X = character count
+                LDX ZP.KeywordLength   // X = character count
                 loop
                 {
                     CPX #0
                     if (Z) { break; }
                     
-                    LDA [ZP.IDY], Y  // Access character 
+                    LDA [ZP.TableIndex], Y  // Access character 
                     Serial.WriteChar();
                     INY
                     DEX
@@ -476,8 +425,8 @@ unit Tokens
             }
             
             // Skip to next keyword: advance Y by keyword length + 1 (for token byte)
-            INY  // Skip the token value byte first
-            LDX ZP.ACCH  // Then skip the keyword characters
+            INY                   // Skip the token value byte first
+            LDX ZP.KeywordLength  // Then skip the keyword characters
             loop
             {
                 CPX #0

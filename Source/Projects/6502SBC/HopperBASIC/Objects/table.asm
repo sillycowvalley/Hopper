@@ -45,37 +45,40 @@ unit Table // Table.asm
     {
         PHY
         
-        // Check if current node is null
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (Z) 
-        { 
-            CLC  // Already at end
-            PLY
-            return;
-        }
-        
-        // Load next pointer: [IDX] -> IDX
-        LDY #0
-        LDA [ZP.IDX], Y
-        PHA
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-        
-        // Set carry based on whether we found a next node
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (Z)
+        loop
         {
-            CLC  // End of list
-        }
-        else
-        {
-            SEC  // Found next node
-        }
+            // Check if current node is null
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) 
+            { 
+                CLC  // Already at end
+                break;
+            }
+            
+            // Load next pointer: [IDX] -> IDX
+            LDY #0
+            LDA [ZP.IDX], Y
+            PHA
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            // Set carry based on whether we found a next node
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                CLC  // End of list
+            }
+            else
+            {
+                SEC  // Found next node
+            }
+            break;
+        } // single exit
         
         PLY
     }

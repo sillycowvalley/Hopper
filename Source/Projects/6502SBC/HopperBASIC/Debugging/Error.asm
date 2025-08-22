@@ -280,13 +280,6 @@ unit Error // ErrorID.asm
         PHY
         TAX
         
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
-        LDA ZP.ACCL
-        PHA
-        
         TXA
         if (MI)
         {
@@ -301,32 +294,29 @@ unit Error // ErrorID.asm
                 case 0x00:  // Table 0 (0x00-0x1F)
                 {
                     LDA #(errorWordsTable0 % 256)
-                    STA ZP.IDYL
+                    STA ZP.TableIndexL
                     LDA #(errorWordsTable0 / 256)
-                    STA ZP.IDYH
-                    TXA
-                    STA ZP.ACCL
-                    Tokens.PrintKeywordFromTable();// Input: ZP.ACCL = target token value, ZP.IDY = table address
+                    STA ZP.TableIndexH
+                    STX ZP.TokenValue
+                    Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
                 }
                 case 0x20:  // Table 1 (0x20-0x3F)
                 {
                     LDA #(errorWordsTable1 % 256)
-                    STA ZP.IDYL
+                    STA ZP.TableIndexL
                     LDA #(errorWordsTable1 / 256)
-                    STA ZP.IDYH
-                    TXA
-                    STA ZP.ACCL
-                    Tokens.PrintKeywordFromTable();// Input: ZP.ACCL = target token value, ZP.IDY = table address
+                    STA ZP.TableIndexH
+                    STX ZP.TokenValue
+                    Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
                 }
                 case 0x40:  // Table 2 (0x40-0x5F)
                 {
                     LDA #(errorWordsTable2 % 256)
-                    STA ZP.IDYL
+                    STA ZP.TableIndexL
                     LDA #(errorWordsTable2 / 256)
-                    STA ZP.IDYH
-                    TXA
-                    STA ZP.ACCL
-                    Tokens.PrintKeywordFromTable();// Input: ZP.ACCL = target token value, ZP.IDY = table address
+                    STA ZP.TableIndexH
+                    STX ZP.TokenValue
+                    Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
                 }
                 default:
                 {
@@ -334,16 +324,8 @@ unit Error // ErrorID.asm
                 }
             }   
         }
-        PLA
-        STA ZP.ACCL
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        
         PLY
         PLX
-        
     }
     
     // Input A = error ID
