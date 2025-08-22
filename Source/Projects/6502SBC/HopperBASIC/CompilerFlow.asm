@@ -1,6 +1,18 @@
 unit CompilerFlow
 {
 
+    // Save current opcode buffer position to stack
+    // Output: Current position pushed to stack as ZP.TOP
+    // Modifies: ZP.TOPL, ZP.TOPH, stack
+    SaveCurrentPosition()
+    {
+        LDA ZP.OpCodeBufferContentLengthL
+        STA ZP.TOPL
+        LDA ZP.OpCodeBufferContentLengthH
+        STA ZP.TOPH
+        Stacks.PushTop();
+    }
+
     // Compile WHILE...WEND statement
     // Input: ZP.CurrentToken = WHILE token
     // Output: WHILE loop compiled to opcodes with correct relative jumps
@@ -26,22 +38,14 @@ unit CompilerFlow
            }
            
            // Mark loop start position for backward jump (start of condition evaluation)
-           LDA ZP.OpCodeBufferContentLengthL
-           STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentLengthH
-           STA ZP.TOPH
-           Stacks.PushTop();
+           SaveCurrentPosition();
            
            // Compile condition expression (e.g., "I < 10")
            Compiler.CompileFoldedExpressionTree(); // WHILE <expression>
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
-           LDA ZP.OpCodeBufferContentLengthL
-           STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentLengthH
-           STA ZP.TOPH
-           Stacks.PushTop();
+           SaveCurrentPosition();
            
            // Check for compilation errors after consuming all 4 stack slots
            CheckError();
@@ -201,11 +205,7 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Mark loop start position for backward jump
-            LDA ZP.OpCodeBufferContentLengthL
-            STA ZP.TOPL
-            LDA ZP.OpCodeBufferContentLengthH
-            STA ZP.TOPH
-            Stacks.PushTop();
+            SaveCurrentPosition();
             
             CompileStatementBlock();
             CheckError();
@@ -343,11 +343,7 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Save position where JUMPZW operand will be (for patching)
-            LDA ZP.OpCodeBufferContentLengthL
-            STA ZP.TOPL
-            LDA ZP.OpCodeBufferContentLengthH
-            STA ZP.TOPH
-            Stacks.PushTop();
+            SaveCurrentPosition();
             
             
             INC ZP.CompilerTemp  // Track that we pushed a patch position 
@@ -395,11 +391,7 @@ unit CompilerFlow
                 
                 // Save position where JUMPW operand will be (for patching)
                 // This jump skips the ELSE block after THEN executes
-                LDA ZP.OpCodeBufferContentLengthL
-                STA ZP.TOPL
-                LDA ZP.OpCodeBufferContentLengthH
-                STA ZP.TOPH
-                Stacks.PushTop();
+                SaveCurrentPosition();
                 
                 INC ZP.CompilerTemp  // Track that we pushed another patch position (now 2 positions total)
                 
@@ -1183,11 +1175,7 @@ unit CompilerFlow
            }
            
            // Save loop body start position for FORIT's backward jump
-           LDA ZP.OpCodeBufferContentLengthL
-           STA ZP.TOPL
-           LDA ZP.OpCodeBufferContentLengthH
-           STA ZP.TOPH
-           Stacks.PushTop();  // Push loop body start position
+           SaveCurrentPosition();  // Push loop body start position
            
            // Skip any EOL tokens before loop body
            loop
