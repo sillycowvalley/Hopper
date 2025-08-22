@@ -4,28 +4,6 @@ unit Tools // Tools.asm
     // All public methods preserve caller state except for documented outputs
     // Production utilities only - debug functionality moved to Debug.asm
         
-    // Print null-terminated string to serial output
-    // Input: ZP.ACC = pointer to null-terminated string
-    // Output: String printed to serial
-    // Preserves: Everything
-    PrintStringACC()
-    {
-        PHA
-        PHY
-        
-        LDY #0              // Initialize string index
-        loop                // Print each character until null terminator
-        {
-            LDA [ZP.ACC], Y // Load character from string
-            if (Z) { break; } // Exit if null terminator found
-            
-            Serial.WriteChar(); // Print the character
-            INY             // Move to next character
-        }
-        
-        PLY
-        PLA
-    } 
     
     // Input: A - character to test
     // Output: C for yes, NC for no
@@ -47,6 +25,7 @@ unit Tools // Tools.asm
             break;
         } // exit loop
     }
+    /*
     // Print null-terminated string to serial output
     // Input: A - character to print
     // Output: 'A' for printable, 0xXX for unprintable to serial
@@ -78,78 +57,6 @@ unit Tools // Tools.asm
         PLA
     }
     
-    // Print null-terminated string to serial output
-    // Input: ZP.TOP = pointer to null-terminated string
-    // Output: String printed to serial
-    // Preserves: Everything
-    PrintStringTOP()
-    {
-        PHA
-        PHY
-        
-        LDY #0              // Initialize string index
-        
-        loop                // Print each character until null terminator
-        {
-            LDA [ZP.TOP], Y // Load character from string
-            if (Z) { break; } // Exit if null terminator found
-            
-            Serial.WriteChar(); // Print the character
-            INY             // Move to next character
-        }
-        
-        PLY
-        PLA
-    } 
-    
-    // Print null-terminated string to serial output
-    // Input: ZP.NEXT = pointer to null-terminated string
-    // Output: String printed to serial
-    // Preserves: Everything
-    PrintStringNEXT()
-    {
-        PHA
-        PHY
-        
-        LDY #0              // Initialize string index
-        
-        loop                // Print each character until null terminator
-        {
-            LDA [ZP.NEXT], Y // Load character from string
-            if (Z) { break; } // Exit if null terminator found
-            
-            Serial.WriteChar(); // Print the character
-            INY             // Move to next character
-        }
-        
-        PLY
-        PLA
-    }
-    
-    // Print null-terminated string to serial output
-    // Input: ZP.IDY = pointer to null-terminated string
-    // Output: String printed to serial
-    // Preserves: Everything
-    PrintStringIDY()
-    {
-        PHA
-        PHY
-        
-        LDY #0              // Initialize string index
-        
-        loop                // Print each character until null terminator
-        {
-            LDA [ZP.IDY], Y // Load character from string
-            if (Z) { break; } // Exit if null terminator found
-            
-            Serial.WriteChar(); // Print the character
-            INY             // Move to next character
-        }
-        
-        PLY
-        PLA
-    } 
-
     // Write '\n' preserving carry flag
     // Output: '\n' printed to serial
     // Preserves: Everything
@@ -173,7 +80,7 @@ unit Tools // Tools.asm
         Serial.WriteChar();
         PLP  // Pull processor status (restore carry flag)
     }
-    
+    */
     
     // Get string length
     // Input: X = string pointer low byte, Y = string pointer high byte

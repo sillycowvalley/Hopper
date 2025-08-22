@@ -284,7 +284,7 @@ unit TokenIterator // TokenIterator.asm
     printIndentation()
     {
         PHA
-        PHX
+        PHY
         
         loop
         {
@@ -295,28 +295,21 @@ unit TokenIterator // TokenIterator.asm
                 STZ ZP.TOKCOLON  // Reset flag
                 break; // Skip indentation
             }
-            LDX ZP.TOKINDENT
+            LDY ZP.TOKINDENT
             loop
             {
-                CPX #0
+                CPY #0
                 if (Z) { break; }
                 
                 // Print 4 spaces for each indent level
-                LDA #' '
-                Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
+                LDX #4 Print.Spaces();
                 
-                DEX
+                DEY
             }
             break;
         }
         
-        PLX
+        PLY
         PLA
     }
     
@@ -735,8 +728,7 @@ unit TokenIterator // TokenIterator.asm
                 renderOptionalSpace();
                 LDA #Token.REM
                 Tokens.PrintKeyword();
-                LDA #' '
-                Serial.WriteChar();
+                Print.Space();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
                 Print.String();
             }

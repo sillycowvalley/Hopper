@@ -1320,13 +1320,6 @@ unit Executor // Executor.asm
            Functions.Find(); // Input: ZP.TOP = name
            if (NC)
            {
-
-//NL(); LDA executorOperandH HOut(); LDA executorOperandL HOut();
-//NL(); LDA ZP.XIDH HOut(); LDA ZP.XIDL HOut();
-//NL(); LDA ZP.TOPH HOut(); LDA ZP.TOPL HOut();
-//NL(); PrintStringTOP();
-//DumpBuffers();           
-           
                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                States.SetFailure();
                break;

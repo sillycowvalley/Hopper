@@ -370,15 +370,19 @@ unit BASICTypes // BASICTypes.asm
             case BASICType.STRING:
             {
                 PLP
+                LDA ZP.TOPL
+                STA ZP.STRL
+                LDA ZP.TOPH
+                STA ZP.STRH
                 if (C)
                 {
                     LDA #'"' Serial.WriteChar();
-                    Tools.PrintStringTOP();  // Print the actual string content
+                    Print.String();  // Print the actual string content
                     LDA #'"' Serial.WriteChar();
                 }
                 else
                 {
-                    Tools.PrintStringTOP();  // Print the actual string content
+                    Print.String();  // Print the actual string content
                 }
                 PHP
             }

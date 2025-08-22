@@ -702,9 +702,9 @@ Debug.NL();
             STZ ZP.NEXTH
             
             LDA #(Messages.BeginFunctionName % 256)
-            STA ZP.TOPL
+            STA ZP.STRL
             LDA #(Messages.BeginFunctionName / 256)
-            STA ZP.TOPH
+            STA ZP.STRH
 Debug.NL(); PrintStringTOP();
                         
             STZ ZP.IDYL

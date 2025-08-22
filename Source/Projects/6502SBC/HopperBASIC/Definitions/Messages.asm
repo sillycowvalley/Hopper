@@ -36,10 +36,10 @@ unit Messages // Messages.asm
         PHA  // Preserve A register
         
         LDA #(OK % 256)
-        STA ZP.ACCL
+        STA ZP.STRL
         LDA #(OK / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        Print.String();
         
         PLA  // Restore A register
     }
