@@ -880,11 +880,11 @@ unit Functions
                     LDA ZP.TokenizerPosL
                     STA ZP.TOKERRORL
                     
-                    Tools.NL();
+                    Print.NewLine();
                     Commands.DisplayFunctionSignature(); // Input: ZP.IDX = function node
                     TokenIterator.RenderTokenStream();   // Input: ZP.IDY = tokens pointer
                     Commands.DisplayFunctionSuffix();    // Input: ZP.IDX = function node, munts IDY
-                    Tools.NL();
+                    Print.NewLine();
                 }
             }
             break;

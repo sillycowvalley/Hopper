@@ -705,7 +705,7 @@ Debug.NL();
             STA ZP.STRL
             LDA #(Messages.BeginFunctionName / 256)
             STA ZP.STRH
-Debug.NL(); PrintStringTOP();
+Debug.NL(); Print.String();
                         
             STZ ZP.IDYL
             STZ ZP.IDYH

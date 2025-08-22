@@ -4035,7 +4035,7 @@ unit Debug // Debug.asm
         TSX PHX
         PHA
         
-        Tools.NL();
+        Print.NewLine();
         
         LDA #(debugCrashHeader % 256)
         STA ZP.STR
@@ -4045,7 +4045,7 @@ unit Debug // Debug.asm
         
         PLA
         Serial.HexOut();
-        LDA #' ' Tools.COut(); 
+        Print.Space();
         LDA #(regSP % 256)
         STA ZP.STR
         LDA #(regSP / 256)
@@ -4054,12 +4054,11 @@ unit Debug // Debug.asm
         PLA
         Serial.HexOut();
         
-        LDA #' '
-        Tools.COut();
+        Print.Space();
         CheckAndPrint();
 
 #if defined(DEBUG) || defined(TRACE)
-        Tools.NL();
+        Print.NewLine();
         DumpVariables();
         DumpZeroPage();
         DumpBuffers();

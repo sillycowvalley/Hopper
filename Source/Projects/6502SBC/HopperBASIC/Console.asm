@@ -1415,7 +1415,7 @@ unit Console // Console.asm
                     LDA #(Messages.NoMainProgram / 256)
                     STA ZP.STRH
                     Print.String();
-                    Tools.NL();
+                    Print.NewLine();
                     break;
                 }
                 

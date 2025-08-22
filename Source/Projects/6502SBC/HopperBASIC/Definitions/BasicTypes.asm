@@ -44,7 +44,7 @@ unit BASICTypes // BASICTypes.asm
             {
                 LDA # Token.VAR
                 Tokens.PrintKeyword();
-                LDA #'|' COut();
+                LDA #'|' Print.Char();
             }
             TXA
             AND # SymbolType.CONSTANT
@@ -52,7 +52,7 @@ unit BASICTypes // BASICTypes.asm
             {
                 LDA # Token.CONST
                 Tokens.PrintKeyword();
-                LDA #'|' COut();
+                LDA #'|' Print.Char();
             }
         }
         
@@ -67,11 +67,11 @@ unit BASICTypes // BASICTypes.asm
             if (NZ)
             {
                 // VAR contains a type
-                LDA #'(' COut();
+                LDA #'(' Print.Char();
                 TXA
                 AND # BASICType.TYPEMASK
                 PrintType();
-                LDA #')' COut();
+                LDA #')' Print.Char();
             }    
         }
         else
@@ -87,11 +87,11 @@ unit BASICTypes // BASICTypes.asm
                 if (NZ)
                 {
                     // ARRAY contains elements of type
-                    LDA #'(' COut();
+                    LDA #'(' Print.Char();
                     TXA
                     AND # BASICType.TYPEMASK
                     PrintType();
-                    LDA #')' COut();
+                    LDA #')' Print.Char();
                 }    
             }
             else

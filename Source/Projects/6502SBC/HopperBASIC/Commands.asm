@@ -498,7 +498,7 @@ unit Commands
         
         LDA #'>' Serial.WriteChar();
         
-        Tools.NL();
+        Print.NewLine();
         
         // Restore the variable node pointer for iteration to continue!
         PLA
@@ -569,7 +569,7 @@ unit Commands
             SEC
             BASICTypes.PrintValue();
             
-            Tools.NL();
+            Print.NewLine();
         }
         
         PLY
@@ -612,8 +612,7 @@ unit Commands
         // Input: ZP.TOP = value, ZP.TOPT = type, C = quote strings
         SEC
         BASICTypes.PrintValue();
-        
-        Tools.NL();
+        Print.NewLine();
         
         PLY
         PLX
@@ -799,7 +798,7 @@ unit Commands
             LDA #')' Serial.WriteChar();
         }
         
-        Tools.NL();
+        Print.NewLine();
         
         PLA
         STA ZP.IDYL
@@ -828,7 +827,7 @@ unit Commands
             LDA #Token.ENDFUNC
             Tokens.PrintKeyword();
         }
-        Tools.NL();
+        Print.NewLine();
     }
     
     
@@ -876,7 +875,7 @@ unit Commands
         }
             
         DisplayFunctionSuffix();
-        Tools.NL(); // Extra blank line after function
+        Print.NewLine(); // Extra blank line after function
         
         PLY
         PLX

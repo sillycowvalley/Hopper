@@ -438,7 +438,7 @@ unit TokenIterator // TokenIterator.asm
             LDA ZP.TOKCOLON
             if (Z) 
             {
-                Tools.NL();
+                Print.NewLine();
             }
         }
         

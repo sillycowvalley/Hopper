@@ -42,7 +42,6 @@ unit Variables
             
             if (C)  // Symbol already exists
             {
-LDA #'h' COut();
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 break;
             }

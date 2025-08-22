@@ -560,9 +560,9 @@ unit Dasm
                     Serial.WriteChar();
                 }
                 */
-                Tools.NL();  // line break on regular line
+                Print.NewLine();  // line break on regular line
             } // Inner loop
-            Tools.NL(); // line break on exit line
+            Print.NewLine(); // line break on exit line
             break;
         } // Single exit block
         

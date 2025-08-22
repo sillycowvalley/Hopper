@@ -15,7 +15,7 @@ unit Emit
        loop
        {
 #ifdef TRACEJIT
-           Tools.NL(); LDA #'>' Debug.COut();
+           Print.NewLine(); LDA #'>' Debug.COut();
            LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut();
 #endif        
@@ -63,7 +63,7 @@ unit Emit
        loop
        {
 #ifdef TRACEJIT       
-           Tools.NL(); LDA #'>' Debug.COut();
+           Print.NewLine(); LDA #'>' Debug.COut();
            LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
                                   LDA Compiler.compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
@@ -140,7 +140,7 @@ unit Emit
        loop
        {
 #ifdef TRACEJIT       
-           Tools.NL(); LDA #'>' Debug.COut();
+           Print.NewLine(); LDA #'>' Debug.COut();
            LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
                                   LDA Compiler.compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
@@ -232,7 +232,7 @@ unit Emit
        loop
        {
 #ifdef TRACEJIT       
-           Tools.NL(); LDA #'>' Debug.COut();
+           Print.NewLine(); LDA #'>' Debug.COut();
            LDA ZP.XPCH Debug.HOut(); LDA ZP.XPCL Debug.HOut();
            LDA #' ' Debug.COut(); LDA Compiler.compilerOpCode Debug.HOut(); LDA #' ' Debug.COut(); 
                                   LDA Compiler.compilerOperand1 Debug.HOut(); LDA #' ' Debug.COut();
