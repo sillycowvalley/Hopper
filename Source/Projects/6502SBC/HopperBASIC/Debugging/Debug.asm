@@ -2337,14 +2337,13 @@ unit Debug // Debug.asm
                 LDA #'?'
                 Serial.WriteChar(); // '?' prefix
                 LDA ZP.LastErrorL
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA ZP.LastErrorH
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                Print.String();
                 
                 // 6502 PC
-                LDA #' '
-                Serial.WriteChar();
+                Print.Space();
                 LDA #'('
                 Serial.WriteChar();
                 LDA #'0'

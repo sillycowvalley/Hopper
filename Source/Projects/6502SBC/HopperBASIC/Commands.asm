@@ -74,7 +74,7 @@ unit Commands
             LDA # ErrorWord.EEPROM
             Error.PrintWord();
             LDA #':' Print.Char();
-            LDA #' ' Print.Char();
+            Print.Space();
             EEPROM.GetSize(); // A -> number of K
             STA ZP.TOPL
             STZ ZP.TOPH
@@ -82,7 +82,7 @@ unit Commands
             Print.Decimal();
             LDA #'K' Print.Char();
             LDA #',' Print.Char();
-            LDA #' ' Print.Char();
+            Print.Space();
             File.GetAvailable(); // TOP -> number of B
             Print.Decimal();
             LDA #(Messages.BytesMsg % 256)
@@ -398,7 +398,7 @@ unit Commands
         AND # BASICType.TYPEMASK
         BASICTypes.PrintType();
         
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         
         // Print variable name
         Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
@@ -427,9 +427,9 @@ unit Commands
         Print.Decimal();
         
         LDA #']' Serial.WriteChar();
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         LDA #'=' Serial.WriteChar();
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         
         // Print array contents
         LDA #'<' Serial.WriteChar();
@@ -460,7 +460,7 @@ unit Commands
                 if (NC)  // 10 < count means more than 10 elements
                 {
                     LDA #',' Serial.WriteChar();
-                    LDA #' ' Serial.WriteChar();
+                    Print.Space();
                     LDA #'.' Serial.WriteChar();
                     LDA #'.' Serial.WriteChar();
                     LDA #'.' Serial.WriteChar();
@@ -481,7 +481,7 @@ unit Commands
             if (NZ)
             {
                 LDA #',' Serial.WriteChar();
-                LDA #' ' Serial.WriteChar();
+                Print.Space();
             }
             
             // Get element at index X
@@ -552,15 +552,15 @@ unit Commands
                 BASICTypes.PrintType();
             }
             
-            LDA #' ' Serial.WriteChar();
+            Print.Space();
             
             // Print variable name
             Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
             Print.String();
             
-            LDA #' ' Serial.WriteChar();
+            Print.Space();
             LDA #'=' Serial.WriteChar();
-            LDA #' ' Serial.WriteChar();
+            Print.Space();
             
             // Get and print current value (this needs fresh call to get value)
             Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
@@ -588,7 +588,7 @@ unit Commands
         // Print CONST keyword
         LDA #Token.CONST
         Tokens.PrintKeyword();
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         
         // Get constant type
         Variables.GetType(); // Input: ZP.IDX, Output: ACCT = type
@@ -596,15 +596,15 @@ unit Commands
         LDA ZP.ACCT
         AND # BASICType.MASK
         BASICTypes.PrintType(); // Input: A = dataType
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         
         // Print constant name
         Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
         Print.String();
         
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         LDA #'=' Serial.WriteChar();
-        LDA #' ' Serial.WriteChar();
+        Print.Space();
         
         // Get and print current value
         Variables.GetValue(); // ZP.TOP = value, ZP.TOPT = dataType
@@ -787,7 +787,7 @@ unit Commands
             // Display as FUNC name(args)
             LDA #Token.FUNC
             Tokens.PrintKeyword();
-            LDA #' ' Serial.WriteChar();
+            Print.Space();
             
             Print.String();
             LDA #'(' Serial.WriteChar();
@@ -915,8 +915,7 @@ unit Commands
                         // we've already seen arguments - print comma separator
                         LDA #','
                         Serial.WriteChar();
-                        LDA #' '
-                        Serial.WriteChar();
+                        Print.Space();
                     }
                     // Get and print argument name
                     Locals.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer

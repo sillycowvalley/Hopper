@@ -1424,8 +1424,7 @@ unit Tokenizer // Tokenizer.asm
             // Function capture mode
             LDA #'*'
             Serial.WriteChar();
-            LDA #' '
-            Serial.WriteChar();
+            Print.Space();
         }
         
         LDX #0  // Buffer position
@@ -1453,8 +1452,7 @@ unit Tokenizer // Tokenizer.asm
                     DEX
                     LDA #0x08   // Backspace
                     Serial.WriteChar();
-                    LDA #' '    // Space
-                    Serial.WriteChar();
+                    Print.Space();
                     LDA #0x08   // Backspace
                     Serial.WriteChar();
                     continue;

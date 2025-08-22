@@ -366,8 +366,7 @@ unit Error // ErrorID.asm
                     CPX #0
                     if (Z) { break; }  // Don't add space after last word
                     
-                    LDA #' '
-                    Serial.WriteChar();
+                    Print.Space();
                 }
                 break;  // Done printing
             }

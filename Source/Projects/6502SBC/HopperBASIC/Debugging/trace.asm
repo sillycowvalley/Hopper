@@ -35,7 +35,7 @@ unit Trace // Trace.asm
             CPX #0
             if (Z) { break; }
             
-            LDA #' ' Print.Char(); Print.Char();
+            Print.Space(); Print.Char();
             
             DEX
         }
@@ -91,7 +91,7 @@ unit Trace // Trace.asm
         
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Print.String(); LDA #' ' Print.Char(); LDA #'{' Print.Char(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Print.String(); Print.Space(); LDA #'{' Print.Char(); 
         
 #ifdef TRACE
         Debug.ValidateHeap();
@@ -106,16 +106,16 @@ unit Trace // Trace.asm
         States.IsSuccess();
         if (NC)
         {
-            LDA #' ' Print.Char(); States.PrintState();
+            Print.Space(); States.PrintState();
         }
         
         LDA ZP.LastError
         if (NZ)
         {
-            LDA #' ' Print.Char(); 
+            Print.Space(); 
             LDA #'(' Print.Char(); 
             LDA ZP.LastError Error.PrintError();
-            LDA #')' Print.Char();  LDA #' ' Print.Char(); 
+            LDA #')' Print.Char();  Print.Space(); 
             PLP
             if (NC)
             {
@@ -187,7 +187,7 @@ unit Trace // Trace.asm
         LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Print.String(); // ' } // '
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Print.String(); LDA #' ' Print.Char();
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Print.String(); Print.Space();
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();
@@ -199,16 +199,16 @@ unit Trace // Trace.asm
         States.IsSuccess();
         if (NC)
         {
-            LDA #' ' Print.Char(); States.PrintState();
+            Print.Space(); States.PrintState();
         }
         
         LDA ZP.LastError
         if (NZ)
         {
-            LDA #' ' Print.Char(); 
+            Print.Space(); 
             LDA #'(' Print.Char(); 
             LDA ZP.LastError Error.PrintError();
-            LDA #')' Print.Char(); LDA #' ' Print.Char(); 
+            LDA #')' Print.Char(); Print.Space(); 
             PLP
             if (NC)
             {

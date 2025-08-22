@@ -175,13 +175,6 @@ unit States // States.asm
     {
         PHP
         PHA
-        PHX
-        PHY
-        
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
         
         LDA ZP.SystemState
         switch (A)
@@ -189,49 +182,37 @@ unit States // States.asm
             case State.Success:
             {
                 LDA #(stateSuccess % 256)
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA #(stateSuccess / 256)
-                STA ZP.ACCH
             }
             case State.Failure:
             {
                 LDA #(stateFailure % 256)
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA #(stateFailure / 256)
-                STA ZP.ACCH
             }
             case State.Exiting:
             {
                 LDA #(stateExiting % 256)
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA #(stateExiting / 256)
-                STA ZP.ACCH
             }
             case State.Return:
             {
                 LDA #(stateReturn % 256)
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA #(stateReturn / 256)
-                STA ZP.ACCH
             }
             default:
             {
                 LDA #(stateUnknown % 256)
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA #(stateUnknown / 256)
-                STA ZP.ACCH
             }
         }
+        STA ZP.STRH
+        Print.String();
         
-        Tools.PrintStringACC();
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
-        PLY
-        PLX
         PLA
         PLP
     }

@@ -2115,16 +2115,15 @@ unit File
                 Print.Char();
                 LDA #':'
                 Print.Char();
-                LDA #' '
-                Print.Char();
+                Print.Space();
                 
                 // Print filename (scan until high bit found)
                 printFilenameFromDirectory();
                 
                 // Print file info
-                LDA #' ' Print.Char();
+                Print.Space();
                 printFileSizeFromDirectory();
-                LDA #' ' Print.Char();
+                Print.Space();
                 LDA #'@'
                 Print.Char();
                 LDA DirectoryBuffer + 2, Y  // Start sector
@@ -2179,8 +2178,7 @@ unit File
                 Print.Hex();
                 LDA #':'
                 Print.Char();
-                LDA #' '
-                Print.Char();
+                Print.Space();
             }
             
             // Print FAT entry status
@@ -2485,8 +2483,7 @@ unit File
         Print.Hex();             // Prints 00 or 10
         LDA #':'
         Print.Char();
-        LDA #' '
-        Print.Char();
+        Print.Space();
         
         // Print 16 hex bytes
         LDX SectorPositionL      // Starting offset
@@ -2496,8 +2493,7 @@ unit File
         {
             LDA FileDataBuffer, X
             Print.Hex();
-            LDA #' '
-            Print.Char();
+            Print.Space();
             
             INX
             INY
@@ -2506,9 +2502,7 @@ unit File
         }
         
         // Double space before ASCII
-        LDA #' '
-        Print.Char();
-        Print.Char();
+        LDX #2 Print.Spaces();
         
         // Print ASCII representation
         LDX SectorPositionL      // Starting offset
@@ -2695,8 +2689,7 @@ unit File
         
         LDA #':'
         Print.Char();
-        LDA #' '
-        Print.Char();
+        Print.Space();
         
         // Print filename
         //TYA
@@ -2704,8 +2697,7 @@ unit File
         TXA TAY // X -> A
         printFilenameFromDirectory(); // Expects Y = entry offset (0, 16, 32...)
         
-        LDA #' '
-        Print.Char();
+        Print.Space();
         LDA #'('
         Print.Char();
         
@@ -2721,8 +2713,7 @@ unit File
         // Calculate and print sector count
         LDA #','
         Print.Char();
-        LDA #' '
-        Print.Char();
+        Print.Space();
         
         // Calculate sectors used: (filesize + 255) / 256
         LDA DirectoryBuffer + 0, X  // Size low
@@ -2743,10 +2734,8 @@ unit File
         
         
         // Print FAT chain:
-        LDA #' '
-        Print.Char();
-        LDA #' '
-        Print.Char();
+        LDX #2
+        Print.Spaces();
         
         // Start walking the FAT chain
         LDA DirectoryBuffer + 2, X  // Get start sector
@@ -2775,14 +2764,12 @@ unit File
             if (Z) { break; }       // End of chain reached
             
             // Print arrow to next sector
-            LDA #' '
-            Print.Char();
+            Print.Space();
             LDA #'-'
             Print.Char();
             LDA #'>'
             Print.Char();
-            LDA #' '
-            Print.Char();
+            Print.Space();
             
             // Move to next sector
             LDA NextFileSector

@@ -51,6 +51,16 @@ unit Print
         Serial.WriteChar();
     }
     
+    // Print space character
+    // Input: None
+    // Output: Newline printed to serial
+    // Munts: A
+    Space()
+    {
+        LDA #' ' 
+        Serial.WriteChar();
+    }
+    
     // Print specified number of space characters
     // Input: X = number of spaces to print
     // Output: X space characters printed to serial

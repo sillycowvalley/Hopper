@@ -139,10 +139,10 @@ program HopperBASIC
     {
         // Welcome message
         LDA #(Messages.Welcome % 256)
-        STA ZP.ACCL
+        STA ZP.STRL
         LDA #(Messages.Welcome / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        Print.String();
         
         Commands.CmdMem();
     }
@@ -152,10 +152,10 @@ program HopperBASIC
     {
         // Show initial ready prompt
         LDA #(Messages.ReadyPrompt % 256)
-        STA ZP.ACCL
+        STA ZP.STRL
         LDA #(Messages.ReadyPrompt / 256)
-        STA ZP.ACCH
-        Tools.PrintStringACC();
+        STA ZP.STRH
+        Print.String();
         
         loop
         {
@@ -184,8 +184,7 @@ program HopperBASIC
                 // Empty line - just show prompt, no READY
                 LDA #'>'
                 Serial.WriteChar();
-                LDA #' '
-                Serial.WriteChar();
+                Print.Space();
                 continue; 
             }
             
@@ -208,10 +207,10 @@ program HopperBASIC
             if (C)
             {
                 LDA #(Messages.ReadyPrompt % 256)
-                STA ZP.ACCL
+                STA ZP.STRL
                 LDA #(Messages.ReadyPrompt / 256)
-                STA ZP.ACCH
-                Tools.PrintStringACC();
+                STA ZP.STRH
+                Print.String();
             }
         }
     }

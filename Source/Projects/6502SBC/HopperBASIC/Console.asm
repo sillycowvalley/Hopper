@@ -1411,10 +1411,10 @@ unit Console // Console.asm
                 {
                     // No main program defined
                     LDA #(Messages.NoMainProgram % 256)
-                    STA ZP.ACCL
+                    STA ZP.STRL
                     LDA #(Messages.NoMainProgram / 256)
-                    STA ZP.ACCH
-                    Tools.PrintStringACC();
+                    STA ZP.STRH
+                    Print.String();
                     Tools.NL();
                     break;
                 }
