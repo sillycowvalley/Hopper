@@ -382,9 +382,19 @@ unit Tokenizer // Tokenizer.asm
         // Line has content - process normally
         LDX #0  // Reset position in input buffer
         
+        RMB6 ZP.CompilerFlags
+        
         SEC
         loop
         {
+            if (BBS6, CompilerFlags)
+            {
+                RMB6 ZP.CompilerFlags
+                appendToTokenBuffer();
+                CheckError();
+                if (NC) { return; }
+                INX
+            }
             skipWhitespace();  // Updates X
             CPX ZP.BasicInputLength
             if (Z) { break; }  // End of input
@@ -396,114 +406,128 @@ unit Tokenizer // Tokenizer.asm
                 case ':':
                 {
                     LDA #Token.COLON
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case ',':
                 {
                     LDA #Token.COMMA
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case ';':
                 {
                     LDA #Token.SEMICOLON
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '=':
                 {
                     LDA #Token.EQUALS
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '+':
                 {
                     LDA #Token.PLUS
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '-':
                 {
                     LDA #Token.MINUS
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '*':
                 {
                     LDA #Token.MULTIPLY
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '/':
                 {
                     LDA #Token.DIVIDE
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '&':
                 {
                     LDA #Token.BITWISE_AND
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '|':
                 {
                     LDA #Token.BITWISE_OR
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '(':
                 {
                     LDA #Token.LPAREN
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case ')':
                 {
                     LDA #Token.RPAREN
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '[':
                 {
                     LDA #Token.LBRACKET
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case ']':
                 {
                     LDA #Token.RBRACKET
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX
                 }
                 case '<':
                 {
@@ -517,30 +541,33 @@ unit Tokenizer // Tokenizer.asm
                         if (Z)
                         {
                             LDA #Token.LE
-                            appendToTokenBuffer();
-                            CheckError();
-                            if (NC) { return; }
-                            INX  // Skip both '<' and '='
+                            SMB6 ZP.CompilerFlags
+                            //appendToTokenBuffer();
+                            //CheckError();
+                            //if (NC) { return; }
+                            //INX  // Skip both '<' and '='
                             continue;
                         }
                         CMP #'>'
                         if (Z)
                         {
                             LDA #Token.NOTEQUAL
-                            appendToTokenBuffer();
-                            CheckError();
-                            if (NC) { return; }
-                            INX  // Skip both '<' and '>'
+                            SMB6 ZP.CompilerFlags
+                            //appendToTokenBuffer();
+                            //CheckError();
+                            //if (NC) { return; }
+                            //INX  // Skip both '<' and '>'
                             continue;
                         }
                     }
                     // Just '<'
                     DEX  // Back up to point at '<'
                     LDA #Token.LT
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX  // Move past '<'
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX  // Move past '<'
                 }
                 case '>':
                 {
@@ -554,20 +581,22 @@ unit Tokenizer // Tokenizer.asm
                         if (Z)
                         {
                             LDA #Token.GE
-                            appendToTokenBuffer();
-                            CheckError();
-                            if (NC) { return; }
-                            INX  // Skip both '>' and '='
+                            SMB6 ZP.CompilerFlags
+                            //appendToTokenBuffer();
+                            //CheckError();
+                            //if (NC) { return; }
+                            //INX  // Skip both '>' and '='
                             continue;
                         }
                     }
                     // Just '>'
                     DEX  // Back up to point at '>'
                     LDA #Token.GT
-                    appendToTokenBuffer();
-                    CheckError();
-                    if (NC) { return; }
-                    INX  // Move past '>'
+                    SMB6 ZP.CompilerFlags
+                    //appendToTokenBuffer();
+                    //CheckError();
+                    //if (NC) { return; }
+                    //INX  // Move past '>'
                 }
                 case '"':
                 {
@@ -683,6 +712,7 @@ unit Tokenizer // Tokenizer.asm
                     }
                     
                     INX  // Skip closing quote
+                    // EXCEPTION
                 }
                 case '!':
                 {
@@ -714,6 +744,7 @@ unit Tokenizer // Tokenizer.asm
                     if (NC) { return; }
                     
                     // X is already at end of input, continue will break out of main loop
+                    // EXCEPTION
                 }
                 default:
                 {
@@ -729,9 +760,9 @@ unit Tokenizer // Tokenizer.asm
                         {
                             LDA Address.BasicInputBuffer, X
                             CMP #'x'
-                            if (Z) { scanHexNumber(); continue; }
+                            if (Z) { scanHexNumber(); continue; } // EXCEPTION
                             CMP #'X'  
-                            if (Z) { scanHexNumber(); continue; }
+                            if (Z) { scanHexNumber(); continue; } // EXCEPTION
                         }
                         DEX  // Back up, not hex
                         LDA Address.BasicInputBuffer, X
@@ -859,7 +890,7 @@ unit Tokenizer // Tokenizer.asm
                             if (NC) { return; }
                             
                             // X is already at end of input, continue will break out of main loop
-                            continue;
+                            continue; // EXCEPTION
                         }
                         
                         // Regular keyword processing
@@ -895,6 +926,7 @@ unit Tokenizer // Tokenizer.asm
                             INY
                         } // loop
                     }
+                    // EXCEPTION
                 } // default
             } // switch
         } // loop

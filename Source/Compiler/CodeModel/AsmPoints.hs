@@ -1515,9 +1515,9 @@ unit AsmPoints
                         default:
                         {
                             // TODO
-                            //string currentMethodName = Code.GetMethodName(currentMethod);
-                            //string callMethodName = Code.GetMethodName(callMethodIndex);
-                            //PrintLn(" " + currentMethodName + "->" + callMethodName + ":" + (opCodes.Count).ToString());
+                            string currentMethodName = Code.GetMethodName(currentMethod);
+                            string callMethodName = Code.GetMethodName(callMethodIndex);
+                            PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + (opCodes.Count).ToString());
                         }
                     }
                 }
@@ -2404,7 +2404,6 @@ unit AsmPoints
                     iCodes   [iIndex-0] = OpCode.NOP;
                     iLengths [iIndex-0] = 1;
                     modified = true;
-                    Print(" A");
                 }
                 if  ((opCode0 == OpCode.BCC_e) && (opCode1 == OpCode.CLC))
                 {
