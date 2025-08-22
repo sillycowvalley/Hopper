@@ -51,7 +51,7 @@ unit Commands
         STA ZP.STRL
         LDA #(Messages.MemoryMsg / 256)
         STA ZP.STRH
-        Tools.PrintStringSTR();
+        Print.String();
         
         LDA ZP.ACCL
         STA ZP.TOPL
@@ -64,7 +64,7 @@ unit Commands
         STA ZP.STRL
         LDA #(Messages.BytesMsg / 256)
         STA ZP.STRH
-        Tools.PrintStringSTR();
+        Print.String();
         
         
 #ifdef HASEEPROM
@@ -402,7 +402,7 @@ unit Commands
         
         // Print variable name
         Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-        Tools.PrintStringSTR();
+        Print.String();
         
         // Save array pointer in IDX for Array APIs
         LDA ZP.TOPL
@@ -556,7 +556,7 @@ unit Commands
             
             // Print variable name
             Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-            Tools.PrintStringSTR();
+            Print.String();
             
             LDA #' ' Serial.WriteChar();
             LDA #'=' Serial.WriteChar();
@@ -600,7 +600,7 @@ unit Commands
         
         // Print constant name
         Variables.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-        Tools.PrintStringSTR();
+        Print.String();
         
         LDA #' ' Serial.WriteChar();
         LDA #'=' Serial.WriteChar();
@@ -789,7 +789,7 @@ unit Commands
             Tokens.PrintKeyword();
             LDA #' ' Serial.WriteChar();
             
-            Tools.PrintStringSTR();
+            Print.String();
             LDA #'(' Serial.WriteChar();
             
             // Display arguments
@@ -920,7 +920,7 @@ unit Commands
                     }
                     // Get and print argument name
                     Locals.GetName(); // Input: ZP.IDY = argument node, Output: ZP.STR = name pointer
-                    Tools.PrintStringSTR();
+                    Print.String();
                     INX
                 }
                 // Check if there's another argument
@@ -1100,7 +1100,7 @@ unit Commands
                     STA ZP.STRH
                 }
             }
-            Tools.PrintStringSTR();
+            Print.String();
             
             loop // Input validation loop
             {
@@ -1127,7 +1127,7 @@ unit Commands
                         STA ZP.STRL
                         LDA #(Messages.InvalidResponse / 256)
                         STA ZP.STRH
-                        Tools.PrintStringSTR();
+                        Print.String();
                     }
                 }
             }

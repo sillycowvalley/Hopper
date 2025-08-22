@@ -1957,7 +1957,7 @@ unit Debug // Debug.asm
         {
             space();
             LDA #'(' cOut();
-            Tools.PrintStringSTR();  // Keep this - STR already set by findFunctionByAddress
+            Print.String();  // Keep this - STR already set by findFunctionByAddress
             LDA #')' cOut();
         }
         
@@ -2025,7 +2025,7 @@ unit Debug // Debug.asm
             {
                 space();
                 LDA #'(' cOut();
-                Tools.PrintStringSTR();  // Keep this - STR already set by findFunctionByAddress
+                Print.String();  // Keep this - STR already set by findFunctionByAddress
                 LDA #')' cOut();
             }
             
@@ -4042,7 +4042,7 @@ unit Debug // Debug.asm
         STA ZP.STR
         LDA #(debugCrashHeader / 256)
         STA ZP.STRH
-        Tools.PrintStringSTR();
+        Print.String();
         
         PLA
         Serial.HexOut();
@@ -4051,7 +4051,7 @@ unit Debug // Debug.asm
         STA ZP.STR
         LDA #(regSP / 256)
         STA ZP.STRH
-        Tools.PrintStringSTR();
+        Print.String();
         PLA
         Serial.HexOut();
         

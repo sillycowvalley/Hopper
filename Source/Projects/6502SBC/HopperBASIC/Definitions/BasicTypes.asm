@@ -146,7 +146,7 @@ unit BASICTypes // BASICTypes.asm
                         STA ZP.STRL
                         LDA #(voidName / 256)
                         STA ZP.STRH
-                        PrintStringSTR();
+                        Print.String();
                     }
                     default:
                     {

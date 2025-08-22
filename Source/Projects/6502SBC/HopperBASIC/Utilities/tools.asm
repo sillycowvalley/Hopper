@@ -3,21 +3,6 @@ unit Tools // Tools.asm
     // API Status: Clean
     // All public methods preserve caller state except for documented outputs
     // Production utilities only - debug functionality moved to Debug.asm
- 
-    // Print null-terminated string to serial output
-    // Input: ZP.STR = pointer to null-terminated string
-    // Output: String printed to serial
-    // Preserves: Everything
-    PrintStringSTR()
-    {
-        PHA
-        PHY
-        
-        Print.String();
-        
-        PLY
-        PLA
-    } 
         
     // Print null-terminated string to serial output
     // Input: ZP.ACC = pointer to null-terminated string

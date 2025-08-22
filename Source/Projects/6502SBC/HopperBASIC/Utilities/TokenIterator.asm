@@ -387,7 +387,7 @@ unit TokenIterator // TokenIterator.asm
         STA ZP.STRL
         LDA #( Messages.ErrorMarker / 256)
         STA ZP.STRH
-        Tools.PrintStringSTR();
+        Print.String();
         
         LDX #3
         Print.Spaces();
@@ -700,13 +700,13 @@ unit TokenIterator // TokenIterator.asm
             {
                 renderOptionalSpace();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to number string
-                Tools.PrintStringSTR();
+                Print.String();
             }
             case Token.IDENTIFIER:
             {
                 renderOptionalSpace();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to identifier string
-                Tools.PrintStringSTR();
+                Print.String();
             }
             case Token.STRINGLIT:
             {
@@ -714,7 +714,7 @@ unit TokenIterator // TokenIterator.asm
                 LDA #'"'
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to string content
-                Tools.PrintStringSTR();
+                Print.String();
                 LDA #'"'
                 Serial.WriteChar();
             }
@@ -738,7 +738,7 @@ unit TokenIterator // TokenIterator.asm
                 LDA #' '
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
-                Tools.PrintStringSTR();
+                Print.String();
             }
             case Token.COMMENT:
             {
@@ -746,7 +746,7 @@ unit TokenIterator // TokenIterator.asm
                 LDA #'!'
                 Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to comment text
-                Tools.PrintStringSTR();
+                Print.String();
             }
             case Token.TRUE:
             {

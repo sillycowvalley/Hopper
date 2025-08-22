@@ -48,7 +48,7 @@ unit BASICSysCalls
                     STA ZP.STRL
                     LDA #(PrintValue / 256)
                     STA ZP.STRH
-                    Tools.PrintStringSTR();
+                    Print.String();
                     LDA #0                    
                 }
                 case SysCallType.PrintChar: // PRINTCHAR
@@ -57,7 +57,7 @@ unit BASICSysCalls
                     STA ZP.STRL
                     LDA #(PrintChar / 256)
                     STA ZP.STRH
-                    Tools.PrintStringSTR();
+                    Print.String();
                     LDA #0
                 } 
                 case SysCallType.Abs:     { LDA #Token.ABS     }  // ABS

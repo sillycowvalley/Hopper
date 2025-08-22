@@ -3,9 +3,9 @@ unit Print
     // Print null-terminated string
     // Input: ZP.STR = pointer to string
     // Output: String printed to serial
-    // Munts: A
     String()
     {
+        PHA
         PHY
         LDY #0              // Initialize string index
         
@@ -18,6 +18,7 @@ unit Print
             INY             // Move to next character
         }
         PLY
+        PLA
     }
     
     // Write single character to serial output

@@ -136,7 +136,7 @@ unit Dasm
                 }
                 
                 OpCodes.ToString(); // X = opcode, returns ZP.STR
-                Space(); Space(); Tools.PrintStringSTR();
+                Space(); Space(); Print.String();
                 LDY # 13 // pad to width
                 loop
                 {
@@ -212,7 +212,7 @@ unit Dasm
                                 //LDA ZP.ACCH
                                 //STA ZP.IDXH
                                 //Variables.GetName();
-                                //Tools.PrintStringSTR();
+                                //Print.String();
                                 LDA #')' COut();
                                  
                             }
@@ -332,7 +332,7 @@ unit Dasm
                                 {
                                     Functions.GetName();
                                     LDA #'(' COut();
-                                    PrintStringSTR();
+                                    Print.String();
                                     LDA #')' COut();
                                 }
                             }
@@ -374,7 +374,7 @@ unit Dasm
                                 STA ZP.IDXH
                                 Functions.GetName();
                                 LDA #'(' COut();
-                                PrintStringSTR();
+                                Print.String();
                                 LDA #')' COut();
                             }
                             case OpCode.PUSHCSTRING:

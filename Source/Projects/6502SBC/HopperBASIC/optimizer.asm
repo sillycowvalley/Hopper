@@ -86,7 +86,7 @@ unit Optimizer
         CPX # OpCode.INVALID
         if (NZ)
         {
-            Space(); OpCodes.ToString(); PrintStringSTR(); 
+            Space(); OpCodes.ToString(); Print.String(); 
             TXA
             AND #0xC0
             CMP #0x40
@@ -99,7 +99,7 @@ unit Optimizer
         CPX # OpCode.INVALID
         if (NZ)
         {
-            Space(); OpCodes.ToString(); PrintStringSTR(); 
+            Space(); OpCodes.ToString(); Print.String(); 
             TXA
             AND #0xC0
             CMP #0x40
@@ -112,7 +112,7 @@ unit Optimizer
         CPX # OpCode.INVALID
         if (NZ)
         {
-            Space(); OpCodes.ToString(); PrintStringSTR(); 
+            Space(); OpCodes.ToString(); Print.String(); 
             TXA
             AND #0xC0
             CMP #0x40
@@ -125,7 +125,7 @@ unit Optimizer
         CPX # OpCode.INVALID
         if (NZ)
         {
-            Space(); OpCodes.ToString(); PrintStringSTR(); 
+            Space(); OpCodes.ToString(); Print.String(); 
             TXA
             AND #0xC0
             CMP #0x40

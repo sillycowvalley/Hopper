@@ -91,7 +91,7 @@ unit Trace // Trace.asm
         
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); LDA #' ' Print.Char(); LDA #'{' Print.Char(); 
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Print.String(); LDA #' ' Print.Char(); LDA #'{' Print.Char(); 
         
 #ifdef TRACE
         Debug.ValidateHeap();
@@ -184,10 +184,10 @@ unit Trace // Trace.asm
 #endif
         PrintIndent();
         
-        LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Tools.PrintStringSTR(); // ' } // '
+        LDA #(endBrace % 256) STA ZP.STRL LDA #(endBrace / 256) STA ZP.STRH Print.String(); // ' } // '
         
         // Print method name from ZP.TraceMessage
-        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Tools.PrintStringSTR(); LDA #' ' Print.Char();
+        LDA ZP.TraceMessageL STA ZP.STRL LDA ZP.TraceMessageH STA ZP.STRH Print.String(); LDA #' ' Print.Char();
         
 #ifdef TRACESP
         LDA #' ' Debug.COut();
@@ -248,7 +248,7 @@ unit Trace // Trace.asm
     {
         PHA
         
-        LDA #(convergenceMarker % 256) STA ZP.STRL LDA #(convergenceMarker / 256) STA ZP.STRH Tools.PrintStringSTR();
+        LDA #(convergenceMarker % 256) STA ZP.STRL LDA #(convergenceMarker / 256) STA ZP.STRH Print.String();
         
         PLA
     }

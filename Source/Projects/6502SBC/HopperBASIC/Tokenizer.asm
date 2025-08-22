@@ -1266,7 +1266,7 @@ unit Tokenizer // Tokenizer.asm
 //STA ZP.STRL        
 //LDA ZP.IDXH
 //STA ZP.STRH
-//Debug.NL(); PrintStringSTR();
+//Debug.NL(); Print.String();
                 
         LDY #0  // Index into the number string
         

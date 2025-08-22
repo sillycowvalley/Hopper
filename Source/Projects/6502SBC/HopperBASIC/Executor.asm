@@ -417,7 +417,7 @@ unit Executor // Executor.asm
        if (C)
        {
             PHA PHX
-            NL(); DecPC(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); IncPC(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); PrintStringSTR();Space(); 
+            NL(); DecPC(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); IncPC(); Space(); TYA TAX HOut(); Space(); OpCodes.ToString(); Print.String();Space(); 
             PLX PLA
        }
        PLP
