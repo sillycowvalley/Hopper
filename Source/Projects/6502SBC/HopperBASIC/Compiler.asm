@@ -1838,10 +1838,10 @@ unit Compiler // Compiler.asm
            if (NC) { States.SetFailure(); break; }
            
            //Save the function node address for argument lookups
-            LDA ZP.IDXL
-            STA compilerSavedNodeAddrL
-            LDA ZP.IDXH
-            STA compilerSavedNodeAddrH
+           LDA ZP.IDXL
+           STA compilerSavedNodeAddrL
+           LDA ZP.IDXH
+           STA compilerSavedNodeAddrH
            
            // Reset tokenizer to start of function body
            STZ ZP.TokenizerPosL

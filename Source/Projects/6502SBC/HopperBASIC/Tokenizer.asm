@@ -299,7 +299,6 @@ unit Tokenizer // Tokenizer.asm
             {
                 INC ZP.TOPH
             }
-            
             INY
         }
         
@@ -308,14 +307,14 @@ unit Tokenizer // Tokenizer.asm
         if (MI)
         {
             LDA #BASICType.WORD   // 32768-65535
-            STA ZP.TOPT
         }
         else
         {
             LDA #BASICType.INT    // 0-32767
-            STA ZP.TOPT
         }
+        STA ZP.TOPT
     }
+    
     
     
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
@@ -383,6 +382,7 @@ unit Tokenizer // Tokenizer.asm
         // Line has content - process normally
         LDX #0  // Reset position in input buffer
         
+        SEC
         loop
         {
             skipWhitespace();  // Updates X
@@ -895,9 +895,9 @@ unit Tokenizer // Tokenizer.asm
                             INY
                         } // loop
                     }
-                }
-            }
-        }
+                } // default
+            } // switch
+        } // loop
         
         // Add EOL token only for lines with content
         LDA #Token.EOL

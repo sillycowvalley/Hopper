@@ -48,6 +48,16 @@ unit AsmPoints
     OpCode opcodeRTI;
     OpCode opcodeJMPIndex;
     
+    OpCode GetOpcodeiJMP()
+    {
+        return opcodeiJMP;
+    }
+    OpCode GetOpcodeRTS()
+    {
+        return opcodeRTS;
+    }
+    
+    
     
     bool walkVerbose;   
     WalkVerbose(uint iIndex, WalkStats searchFor, WalkStats searchAgainst, uint pointLimit)
@@ -444,7 +454,10 @@ unit AsmPoints
     {
         return Flags.Target == (iFlags[iIndex] & Flags.Target);
     }    
-    
+    uint GetLengthAt(uint index)
+    {
+        return iLengths[index];
+    }
     uint GetInstructionCount()
     {
         return iCodes.Count;
@@ -460,10 +473,6 @@ unit AsmPoints
         return iOperands[index];
     }
     
-    OpCode GetOpcodeiJMP()
-    {
-        return opcodeiJMP;
-    }
     Reset()
     {
         opcodeNOP  = Asm6502.GetNOPInstruction();
@@ -1441,6 +1450,83 @@ unit AsmPoints
         return modified;
     }
     
+    bool OptimizeInlineSmallMethods(<uint, <OpCode> > smallMethodOpCodes, <uint, <uint> > smallMethodOperands, <uint, <uint> > smallMethodLengths)
+    {
+        if (iCodes.Count < 1)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode = iCodes[iIndex];
+            if (opCode == opcodeCALL)
+            {
+                uint callMethodIndex = iOperands[iIndex];
+                if (smallMethodOpCodes.Contains(callMethodIndex))
+                {
+                    <OpCode> opCodes  = smallMethodOpCodes [callMethodIndex];
+                    <uint>   operands = smallMethodOperands[callMethodIndex];
+                    <uint>   lengths  = smallMethodLengths [callMethodIndex];
+                    
+                    switch(opCodes.Count)
+                    {
+                        case 0:
+                        {
+                            iCodes[iIndex]   = OpCode.NOP;
+                            iLengths[iIndex] = 1;
+                            modified = true;
+                            continue;
+                        }
+                        case 1:
+                        {
+                            string currentMethodName = Code.GetMethodName(currentMethod);
+                            string callMethodName = Code.GetMethodName(callMethodIndex);
+                            string name = Asm6502.GetName(opCodes[0]);
+                            switch (name)
+                            {
+                                case "LDA":
+                                case "STA":
+                                case "CLC":
+                                {
+                                    iCodes[iIndex]    = opCodes[0];
+                                    iLengths[iIndex]  = lengths[0];
+                                    iOperands[iIndex] = operands[0];
+                                    modified = true;
+                                    //PrintLn(" " + currentMethodName + "->" + callMethodName + ":" + Asm6502.GetName(opCodes[0]));
+                                    continue;
+                                }
+                                case "iJMP":
+                                {
+                                    // will be caught by OptimizeiJMPOnlyCallsInMethod
+                                }
+                                default:
+                                {    
+                                    PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + Asm6502.GetName(opCodes[0]));
+                                }
+                            }
+                        }
+                        default:
+                        {
+                            // TODO
+                            //string currentMethodName = Code.GetMethodName(currentMethod);
+                            //string callMethodName = Code.GetMethodName(callMethodIndex);
+                            //PrintLn(" " + currentMethodName + "->" + callMethodName + ":" + (opCodes.Count).ToString());
+                        }
+                    }
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    
     // iJMP-only method call optimization: replace calls to iJMP-only methods with direct iJMP
     bool OptimizeiJMPOnlyCallsInMethod(<uint,uint> ijmpOnlyMethods)
     {
@@ -2284,6 +2370,119 @@ unit AsmPoints
                 }       
             }
             iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizeCLCBCS()
+    {
+        if (iCodes.Count < 2)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 1;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
+            if (!IsTargetOfJumps(iIndex) )
+            {
+                if  ((opCode0 == OpCode.BCS_e) && (opCode1 == OpCode.CLC))
+                {
+                    // CLC
+                    // BCS
+                    
+                    // tempting ..
+                    //iCodes   [iIndex-1] = OpCode.NOP;
+                    //iLengths [iIndex-1] = 1;
+                    
+                    iCodes   [iIndex-0] = OpCode.NOP;
+                    iLengths [iIndex-0] = 1;
+                    modified = true;
+                    Print(" A");
+                }
+                if  ((opCode0 == OpCode.BCC_e) && (opCode1 == OpCode.CLC))
+                {
+                    // CLC
+                    // BCC
+                    
+                    // tempting ..
+                    //iCodes   [iIndex-1] = OpCode.NOP;
+                    //iLengths [iIndex-1] = 1;
+                    
+                    iCodes   [iIndex-0] = OpCode.BRA_e;
+                    iLengths [iIndex-0] = 1;
+                    modified = true;
+                    Print(" B");
+                }
+                if  ((opCode0 == OpCode.BCC_e) && (opCode1 == OpCode.SEC))
+                {
+                    // SEC
+                    // BCC
+                    
+                    // tempting ..
+                    //iCodes   [iIndex-1] = OpCode.NOP;
+                    //iLengths [iIndex-1] = 1;
+                    
+                    iCodes   [iIndex-0] = OpCode.NOP;
+                    iLengths [iIndex-0] = 1;
+                    modified = true;
+                    Print(" C");
+                }
+                if  ((opCode0 == OpCode.BCS_e) && (opCode1 == OpCode.SEC))
+                {
+                    // SEC
+                    // BCS
+                    
+                    // tempting ..
+                    //iCodes   [iIndex-1] = OpCode.NOP;
+                    //iLengths [iIndex-1] = 1;
+                    
+                    iCodes   [iIndex-0] = OpCode.BRA_e;
+                    iLengths [iIndex-0] = 1;
+                    modified = true;
+                    Print(" D");
+                }
+            }
+            iIndex++;
+        } // loop
+        return modified;
+    }
+    bool OptimizeHunt()
+    {
+        if (iCodes.Count < 3)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 2;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode2 = iCodes[iIndex-2];
+            OpCode opCode1 = iCodes[iIndex-1];
+            OpCode opCode0 = iCodes[iIndex];
+            if (!IsTargetOfJumps(iIndex) )
+            {
+                if (!IsTargetOfJumps(iIndex-1))
+                {
+                    if ((opCode2 == OpCode.PHA) && (opCode0 == OpCode.PLA))
+                    {
+                        string name = GetName(opCode1);
+                        Print(" " + name);
+                    }
+                }
+            }
+           iIndex++;
         } // loop
         return modified;
     }

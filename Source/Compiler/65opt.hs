@@ -194,24 +194,51 @@ program Optimize
         }
     }
     
-
-    <uint,uint> GatheriJMPOnlyIntel()
+    <uint, uint>      ijmpOnlyMethods;       // <methodIndex, targetMethodIndex>
+    <uint, <OpCode> > smallMethodOpCodes;    // <methodIndex, <OpCode>>
+    <uint, <uint> >   smallMethodOperands;   // <methodIndex, <uint>>
+    <uint, <uint> >   smallMethodLengths;    // <methodIndex, <uint>>
+    
+    GatherSmallMethodsIntel()
     {
-        <uint,uint> ijmpOnlyMethods; // <methodIndex, targetMethodIndex>
         <uint> indices = Code.GetMethodIndices();
         foreach (var methodIndex in indices)
         {
-            uint size = AsmPoints.Load(methodIndex, "gathering iJMP intel");
-            
+            uint size         = AsmPoints.Load(methodIndex, "gathering iJMP intel");
+            uint instructions = AsmPoints.GetInstructionCount();
             // Check if method contains only a single iJMP instruction
-            if ((AsmPoints.GetInstructionCount() == 1) && 
+            if ((instructions == 1) && 
                 (AsmPoints.GetInstructionAt(0) == AsmPoints.GetOpcodeiJMP()))
             {
                 uint   targetMethodIndex = AsmPoints.GetOperandAt(0);
                 ijmpOnlyMethods[methodIndex] = targetMethodIndex;
             }
+            if (size <= 4) // including RTS
+            {
+                if (AsmPoints.GetInstructionAt(instructions-1) == AsmPoints.GetOpcodeRTS())
+                {
+                    //string smallMethodName = Code.GetMethodName(methodIndex);
+                    //Print(" " + smallMethodName + "[" + size.ToString() + "]");
+                    <OpCode> codes;
+                    <uint> operands;
+                    <uint> lengths;
+                    for (uint i=0; i < instructions-1; i++)
+                    {
+                        OpCode opCode = AsmPoints.GetInstructionAt(i);
+                        codes.Append(opCode);
+                        uint operand  = AsmPoints.GetOperandAt(i);
+                        operands.Append(operand);
+                        uint length   = AsmPoints.GetLengthAt(i);
+                        lengths.Append(length);
+                        //string name = Asm6502.GetName(opCode);
+                        //Print("," + name);
+                    }
+                    smallMethodOpCodes [methodIndex] = codes;
+                    smallMethodOperands[methodIndex] = operands;
+                    smallMethodLengths [methodIndex] = lengths;
+                }
+            }
         }
-        return ijmpOnlyMethods;
     }
     
     bool Optimize(uint pass, ref long codeBefore, ref long codeAfter)
@@ -229,11 +256,16 @@ program Optimize
         }
         codeAfter = 0;
         
-        // Gather intel about iJMP-only methods (pass 2+)
-        <uint,uint> ijmpOnlyMethods;
+        // Gather intel about:
+        // - iJMP-only method
+        // - methods <= 4 bytes long
+        ijmpOnlyMethods.Clear();
+        smallMethodOpCodes.Clear();
+        smallMethodOperands.Clear();
+        smallMethodLengths.Clear();
         if (pass > 0)
         {
-            ijmpOnlyMethods = GatheriJMPOnlyIntel();
+            GatherSmallMethodsIntel();
         }
         
         AsmPoints.Reset(); 
@@ -334,7 +366,22 @@ program Optimize
                     modified = true;
                 }
             }
+            if (smallMethodOpCodes.Count > 0)
+            {
+                if (AsmPoints.OptimizeInlineSmallMethods(smallMethodOpCodes, smallMethodOperands, smallMethodLengths))
+                {
+                    modified = true;
+                }
+            }
             if (AsmPoints.OptimizeCMP())
+            {
+                modified = true;
+            }
+            if (AsmPoints.OptimizeCLCBCS())
+            {
+                modified = true;
+            }
+            if (false && AsmPoints.OptimizeHunt())
             {
                 modified = true;
             }
