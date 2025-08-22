@@ -1875,7 +1875,7 @@ unit File
         
         EEPROM.ReadPage();
         
-        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
 #ifdef TRACEFILE
         LDA #(loadFATTrace % 256) STA ZP.TraceMessageL LDA #(loadFATTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1894,7 +1894,7 @@ unit File
         
         EEPROM.WritePage();
         
-        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
 #ifdef TRACEFILE
         LDA #(writeFATTrace % 256) STA ZP.TraceMessageL LDA #(writeFATTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1917,7 +1917,7 @@ unit File
 
         EEPROM.ReadPage();
         
-        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
 #ifdef TRACEFILE
         LDA #(loadDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(loadDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1937,7 +1937,7 @@ unit File
         
         EEPROM.WritePage();
         
-        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
 #ifdef TRACEFILE
         LDA #(writeDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1959,7 +1959,7 @@ unit File
         
         EEPROM.ReadPage();
         
-        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
 #ifdef TRACEFILE
         LDA #(readSectorTrace % 256) STA ZP.TraceMessageL LDA #(readSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1978,7 +1978,7 @@ unit File
         STA ZP.IDXH
         EEPROM.WritePage();
         
-        BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
+        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
 #ifdef TRACEFILE
         LDA #(writeSectorTrace % 256) STA ZP.TraceMessageL LDA #(writeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

@@ -443,8 +443,27 @@ unit AsmPoints
     bool IsTargetOfJumps(uint iIndex)
     {
         return Flags.Target == (iFlags[iIndex] & Flags.Target);
+    }    
+    
+    uint GetInstructionCount()
+    {
+        return iCodes.Count;
     }
     
+    OpCode GetInstructionAt(uint index)
+    {
+        return iCodes[index];
+    }
+    
+    uint GetOperandAt(uint index)
+    {
+        return iOperands[index];
+    }
+    
+    OpCode GetOpcodeiJMP()
+    {
+        return opcodeiJMP;
+    }
     Reset()
     {
         opcodeNOP  = Asm6502.GetNOPInstruction();
@@ -1407,12 +1426,62 @@ unit AsmPoints
             {
                 if (!IsTargetOfJumps(iIndex))
                 {
-                    iCodes.SetItem(iIndex-1, opcodeiJMP);
-                    modified = true;
+                    uint iTarget1 = iOperands[iIndex-1];
+                    
+                    string targetMethodName = Code.GetMethodName(iTarget1);
+                    if (!targetMethodName.StartsWith("EEPROM.")) // because of the emulator ..
+                    {
+                        iCodes.SetItem(iIndex-1, opcodeiJMP);
+                        modified = true;
+                    }
                 }
             }
             iIndex++;
         } // loop
+        return modified;
+    }
+    
+    // iJMP-only method call optimization: replace calls to iJMP-only methods with direct iJMP
+    bool OptimizeiJMPOnlyCallsInMethod(<uint,uint> ijmpOnlyMethods)
+    {
+        if (iCodes.Count < 1)
+        {
+            return false;
+        }
+        
+        bool modified = false;
+        uint iIndex = 0;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            OpCode opCode = iCodes[iIndex];
+            if ((opCode == opcodeCALL) || (opCode == opcodeiJMP))
+            {
+                uint callMethodIndex = iOperands[iIndex];
+                
+                // Check if this method is an iJMP-only method
+                if (ijmpOnlyMethods.Contains(callMethodIndex))
+                {
+                    uint targetMethodIndex = ijmpOnlyMethods[callMethodIndex];
+                    
+                    // Replace with what the method actually does: iJMP to target
+                    //iCodes.SetItem(iIndex, opcodeiJMP);
+                    iOperands.SetItem(iIndex, targetMethodIndex);
+                    modified = true;
+                    
+                    /*
+                    string currentMethodName = Code.GetMethodName(currentMethod);
+                    string callMethodName = Code.GetMethodName(callMethodIndex);
+                    string targetMethodName = Code.GetMethodName(targetMethodIndex);
+                    PrintLn(currentMethodName + ": " + callMethodName + ":" + Asm6502.ToString(opCode) + "->" + targetMethodName);
+                    */
+                }
+            }
+            iIndex++;
+        }
         return modified;
     }
     
@@ -2135,59 +2204,84 @@ unit AsmPoints
     // is redundant if checking Z or V. They all set the Z and V flags. C is a different story.
     bool OptimizeCMP()
     {
-        if (iCodes.Count < 2)
+        if (iCodes.Count < 3)
         {
             return false;
         }
         
         bool modified = false;
-        uint iIndex = 1;
+        uint iIndex = 2;
         loop
         {
             if (iIndex >= iCodes.Count)
             {
                 break;
             }
+            OpCode opCode2 = iCodes[iIndex-2];
             OpCode opCode1 = iCodes[iIndex-1];
             OpCode opCode0 = iCodes[iIndex];
             if (!IsTargetOfJumps(iIndex) )
             {
-                if ((opCode0 == OpCode.CMP_n) && (iOperands[iIndex] == 0))
+                if (!IsTargetOfJumps(iIndex-1) )
                 {
-                    string name = GetName(opCode1);
-                    switch (name)
+                    if  ((opCode0 == OpCode.BEQ_e) || (opCode0 == OpCode.BNE_e)|| (opCode0 == OpCode.BMI_e) || (opCode0 == OpCode.BPL_e))
                     {
-                        case "LDA":
-                        case "LDX":
-                        case "LDY":
-                        case "INC":
-                        case "INX":
-                        case "INY":
-                        case "DEC":
-                        case "DEX":
-                        case "DEY":
-                        case "AND":
-                        case "ORA":
-                        case "EOR":
-                        case "ASL":
-                        case "LSR":
-                        case "ROL":
-                        case "ROR":
-                        case "PLA":
-                        case "PLX":
-                        case "SBC":
-                        case "TAX":
-                        case "TXA":
-                        case "TAY":
-                        case "TYA":
-                        case "TSX":
+                        string name = GetName(opCode2);
+                        if ((opCode1 == OpCode.CMP_n) && (iOperands[iIndex-1] == 0))
                         {
-                            // TODO : this only works if we only care about Z and V (not C)
-                            Print(" " + name + "->" + "CMP #0");
+                            switch (name)
+                            {
+                                case "LDA":
+                                case "PLA":
+                                case "TXA":
+                                case "TYA":
+                                case "INC":
+                                case "DEC":
+                                case "AND":
+                                case "ORA":
+                                case "EOR":
+                                {
+                                    iCodes   [iIndex-1] = OpCode.NOP;
+                                    iLengths [iIndex-1] = 1;
+                                    modified = true;
+                                }
+                            }
+                        }
+                        else if ((opCode1 == OpCode.CPX_n) && (iOperands[iIndex-1] == 0))
+                        {
+                            switch (name)
+                            {
+                                case "LDX":
+                                case "PLX":
+                                case "TAX":
+                                case "TSX":
+                                case "INX":
+                                case "DEX":
+                                {
+                                    iCodes   [iIndex-1] = OpCode.NOP;
+                                    iLengths [iIndex-1] = 1;
+                                    modified = true;
+                                }
+                            }
+                        }
+                        else if ((opCode1 == OpCode.CPY_n) && (iOperands[iIndex-1] == 0))
+                        {
+                            switch (name)
+                            {
+                                case "LDY":
+                                case "PLY":
+                                case "TAY":
+                                case "INY":
+                                case "DEY":
+                                {
+                                    iCodes   [iIndex-1] = OpCode.NOP;
+                                    iLengths [iIndex-1] = 1;
+                                    modified = true;
+                                }
+                            }
                         }
                     }
-                }
-                
+                }       
             }
             iIndex++;
         } // loop

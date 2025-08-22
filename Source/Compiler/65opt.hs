@@ -194,6 +194,26 @@ program Optimize
         }
     }
     
+
+    <uint,uint> GatheriJMPOnlyIntel()
+    {
+        <uint,uint> ijmpOnlyMethods; // <methodIndex, targetMethodIndex>
+        <uint> indices = Code.GetMethodIndices();
+        foreach (var methodIndex in indices)
+        {
+            uint size = AsmPoints.Load(methodIndex, "gathering iJMP intel");
+            
+            // Check if method contains only a single iJMP instruction
+            if ((AsmPoints.GetInstructionCount() == 1) && 
+                (AsmPoints.GetInstructionAt(0) == AsmPoints.GetOpcodeiJMP()))
+            {
+                uint   targetMethodIndex = AsmPoints.GetOperandAt(0);
+                ijmpOnlyMethods[methodIndex] = targetMethodIndex;
+            }
+        }
+        return ijmpOnlyMethods;
+    }
+    
     bool Optimize(uint pass, ref long codeBefore, ref long codeAfter)
     {
         //PrintLn("Optimize: " + pass.ToString());
@@ -208,6 +228,13 @@ program Optimize
             methodsWalked[index] = false;
         }
         codeAfter = 0;
+        
+        // Gather intel about iJMP-only methods (pass 2+)
+        <uint,uint> ijmpOnlyMethods;
+        if (pass > 0)
+        {
+            ijmpOnlyMethods = GatheriJMPOnlyIntel();
+        }
         
         AsmPoints.Reset(); 
         
@@ -300,10 +327,17 @@ program Optimize
                     modified = true;
                 }
             }
-            //if (AsmPoints.OptimizeCMP())
-            //{
-            //    modified = true;
-            //}
+            if (ijmpOnlyMethods.Count > 0)
+            {
+                if (AsmPoints.OptimizeiJMPOnlyCallsInMethod(ijmpOnlyMethods))
+                {
+                    modified = true;
+                }
+            }
+            if (AsmPoints.OptimizeCMP())
+            {
+                modified = true;
+            }
             
             if (IsTiggerC && (pass > 1))
             {
