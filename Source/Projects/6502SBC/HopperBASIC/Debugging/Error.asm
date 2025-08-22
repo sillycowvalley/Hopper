@@ -405,53 +405,52 @@ unit Error // ErrorID.asm
          CLC  // Indicate error occurred
     }
     
+    commonError()
+    {
+        STA ZP.LastError
+        CLC
+    }
+    
     SyntaxError() 
     { 
         LDA #ErrorID.SyntaxError
-        STA ZP.LastError
-        CLC
+        commonError();        
     }
 
     InternalError() 
     { 
         LDA #ErrorID.InternalError
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     TODO() 
     { 
         LDA #ErrorID.NotImplemented
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ExpectedRightBracket()
     {
         LDA #ErrorID.ExpectedRightBracket
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     RangeError()
     {
         LDA #ErrorID.RangeError
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     Break()
     {
         LDA #ErrorID.Break
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     LateDeclaration()
     {
         LDA #ErrorID.LateDeclaration
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ForIteratorLocal()
@@ -464,274 +463,235 @@ unit Error // ErrorID.asm
     CannotRollback()
     {
         LDA #ErrorID.CannotRollback
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     HeapCorruptError()
     {
         LDA #ErrorID.HeapCorrupt
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     OnlyInDebug() 
     { 
         LDA #ErrorID.OnlyInDebug
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     OnlyInTrace() 
     { 
         LDA #ErrorID.OnlyInTrace
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     OnlyAtConsole() 
     { 
         LDA #ErrorID.OnlyAtConsole
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     TypeMismatch() 
     { 
         LDA #ErrorID.TypeMismatch
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     FunctionExists() 
     { 
         LDA #ErrorID.FunctionExists
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ConstantExists() 
     { 
         LDA #ErrorID.ConstantExists
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     VariableExists() 
     { 
         LDA #ErrorID.VariableExists
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     OutOfMemory() 
     { 
         LDA #ErrorID.OutOfMemory
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     FileNotFound() 
     { 
         LDA #ErrorID.FileNotFound
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     NextWithoutFor() 
     { 
         LDA #ErrorID.NextWithoutFor
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     MissingNext() 
     { 
         LDA #ErrorID.MissingNext
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     NextMismatch() 
     { 
         LDA #ErrorID.NextMismatch
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     DivisionByZero() 
     { 
         LDA #ErrorID.DivisionByZero
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     NumericOverflow() 
     { 
         LDA #ErrorID.NumericOverflow
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     StringTooLong() 
     { 
         LDA #ErrorID.StringTooLong
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     BadIndex() 
     { 
         LDA #ErrorID.BadIndex
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     UndefinedIdentifier() 
     { 
         LDA #ErrorID.UndefinedIdentifier
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ConstantExpected() 
     { 
         LDA #ErrorID.ConstantExpected
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ConstantExpressionExpected() 
     { 
         LDA #ErrorID.ConstantExpressionExpected
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     IllegalCharacter()
     { 
         LDA #ErrorID.IllegalCharacter
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     IllegalIdentifier() 
     { 
         LDA #ErrorID.IllegalIdentifier
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     IllegalAssignment() 
     { 
         LDA #ErrorID.IllegalAssignment
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     InvalidOperator() 
     { 
         LDA #ErrorID.InvalidOperator
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     BufferOverflow() 
     { 
         LDA #ErrorID.BufferOverflow
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ExpectedEqual() 
     { 
         LDA #ErrorID.ExpectedEqual
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ExpectedRightParen() 
     { 
         LDA #ErrorID.ExpectedRightParen
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ExpectedLeftParen() 
     { 
         LDA #ErrorID.ExpectedLeftParen
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     UnexpectedEOL() 
     { 
         LDA #ErrorID.UnexpectedEOL
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     ExpectedExpression() 
     { 
         LDA #ErrorID.ExpectedExpression
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     InvalidBitValue() 
     { 
         LDA #ErrorID.InvalidBitValue
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     IllegalInFunctionMode() 
     { 
         LDA #ErrorID.IllegalInFunctionMode
-        STA ZP.LastError
-        CLC
+        commonError();
     }
     
     ExpectedThen()
     {
         LDA #ErrorID.ExpectedThen
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     InvalidFilename()
     {
         LDA #ErrorID.InvalidFilename
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     DirectoryFull()
     {
         LDA #ErrorID.DirectoryFull
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     EEPROMFull()
     {
         LDA #ErrorID.EEPROMFull
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     FileExists()
     {
         LDA #ErrorID.FileExists
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     EEPROMError()
     {
         LDA #ErrorID.EEPROMError
-        STA ZP.LastError
-        CLC
+        commonError();
     }
     
     // Clear error state

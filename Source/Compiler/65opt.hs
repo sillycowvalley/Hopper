@@ -366,9 +366,9 @@ program Optimize
                     modified = true;
                 }
             }
-            if (smallMethodOpCodes.Count > 0)
+            if (!IsTiggerC)
             {
-                if (AsmPoints.OptimizeInlineSmallMethods(smallMethodOpCodes, smallMethodOperands, smallMethodLengths))
+                if (AsmPoints.OptimizeTrip65())
                 {
                     modified = true;
                 }
@@ -381,11 +381,18 @@ program Optimize
             {
                 modified = true;
             }
+            if (smallMethodOpCodes.Count > 0)
+            {
+                if (AsmPoints.OptimizeInlineSmallMethods(smallMethodOpCodes, smallMethodOperands, smallMethodLengths))
+                {
+                    modified = true;
+                }
+            }
             if (false && AsmPoints.OptimizeHunt())
             {
                 modified = true;
             }
-            
+                       
             if (IsTiggerC && (pass > 1))
             {
                 // start with peephole style optimizations
@@ -418,6 +425,7 @@ program Optimize
                     modified = true;
                 }
             }
+            
             
             if (!modified)
             {
@@ -617,7 +625,10 @@ program Optimize
                 {
                     if (!Optimize(pass, ref codeBefore, ref codeAfter))
                     {
-                        break;
+                        if (pass >= 3) // at least 4 passes
+                        {
+                            break;
+                        }
                     }
                     pass++;
                 }

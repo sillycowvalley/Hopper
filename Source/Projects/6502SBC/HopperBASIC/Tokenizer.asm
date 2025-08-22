@@ -389,6 +389,7 @@ unit Tokenizer // Tokenizer.asm
         {
             if (BBS6, CompilerFlags)
             {
+                // common code from the switch cases below
                 RMB6 ZP.CompilerFlags
                 appendToTokenBuffer();
                 CheckError();

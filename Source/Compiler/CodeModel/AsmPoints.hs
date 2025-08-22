@@ -1494,6 +1494,7 @@ unit AsmPoints
                                 case "LDA":
                                 case "STA":
                                 case "CLC":
+                                case "STZ":
                                 {
                                     iCodes[iIndex]    = opCodes[0];
                                     iLengths[iIndex]  = lengths[0];
@@ -2219,6 +2220,41 @@ unit AsmPoints
             iIndex++;
         } // loop
         return modified;
+    }
+    
+    bool OptimizeTrip65()
+    {
+        if (iCodes.Count < 3)
+        {
+            return false;
+        }
+        bool modified = false;
+        uint iIndex = 2;
+        loop
+        {
+            if (iIndex >= iCodes.Count)
+            {
+                break;
+            }
+            if (!IsTargetOfJumps(iIndex-1) && !IsTargetOfJumps(iIndex))
+            {
+                OpCode opCode2 = iCodes[iIndex-2];
+                OpCode opCode1 = iCodes[iIndex-1];
+                OpCode opCode0 = iCodes[iIndex];
+                
+                // 3 instructions
+                if ((opCode2 == OpCode.PHA) && (opCode1 == OpCode.STZ_z) && (opCode0 == OpCode.PLA))
+                {
+                    iCodes  [iIndex-2] = OpCode.NOP;
+                    iLengths[iIndex-2] = 1;
+                    iCodes  [iIndex-0] = OpCode.NOP;
+                    iLengths[iIndex-0] = 1;
+                    modified = true;
+                }
+            } 
+            iIndex++;
+        }
+        return modified;   
     }
     
     bool OptimizeTrip()
