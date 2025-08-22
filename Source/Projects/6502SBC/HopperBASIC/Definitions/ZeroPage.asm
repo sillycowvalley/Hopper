@@ -366,21 +366,15 @@ unit ZP // ZeroPage.asm
     const byte FS12                 = 0x9A;
     const byte FS13                 = 0x9B;
     const byte FS14                 = 0x9C;
-    const byte FS15                 = 0x9D;
     
     // Storage unit : Loading
-    const byte SS0                  = 0x9E;
-    const byte SS1                  = 0x9F;
-    const byte SS2                  = 0xA0;
-    const byte SS3                  = 0xA1;
-    const byte SS4                  = 0xA2;
-    const byte SS5                  = 0xA3;
-    const byte SS6                  = 0xA4;
-    const byte SS7                  = 0xA5;
-    const byte SS8                  = 0xA6;
-    const byte SS9                  = 0xA7;
-    
-    
+    const byte SS0                  = 0x9D;
+    const byte SS1                  = 0x9E;
+    const byte SS2                  = 0x9F;
+    const byte SS3                  = 0xA0;
+    const byte SS4                  = 0xA1;
+    const byte SS5                  = 0xA2;
+    const byte SS6                  = 0xA3;
     
     
     

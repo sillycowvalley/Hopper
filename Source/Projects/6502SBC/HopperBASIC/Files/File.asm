@@ -20,22 +20,24 @@ unit File
     const byte FileStartSector      = ZP.FS5;                  // First sector of current file
     const byte CurrentFileEntry     = ZP.FS6;                  // Directory entry index (0-15)
     
-    const byte FilePosition         = ZP.FS7;                  // Current byte position in file (16-bit)
-    const byte FilePositionL        = ZP.FS8;                  //    "
-    const byte FilePositionH        = ZP.FS9;                  //    "
+    const byte FilePosition         = ZP.FS7;                  // Current byte position in file (16-bit), for use with LDA [FilePosition]
+    const byte FilePositionL        = ZP.FS7;                  //    "
+    const byte FilePositionH        = ZP.FS8;                  //    "
     
     
-    const byte NextFileSector       = ZP.FS10;                // Next sector in chain (from FAT)
+    const byte NextFileSector       = ZP.FS9;                  // Next sector in chain (from FAT)
     
     // Additional ZP aliases needed for AppendStream
     // WARNINGL ZP.M0 - ZP.M3 are used by Time.Delay() (TARGET0-3)
-    const byte BytesRemainingL      = ZP.FS11;                // 16-bit: bytes left to copy
-    const byte BytesRemainingH      = ZP.FS12;
+    const byte BytesRemaining       = ZP.FS10;                // for use with LDA [BytesRemaining]
+    const byte BytesRemainingL      = ZP.FS10;                // 16-bit: bytes left to copy
+    const byte BytesRemainingH      = ZP.FS11;
     
-    const byte SectorPositionL      = ZP.FS13;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
-    const byte SectorPositionH      = ZP.FS14;
+    const byte SectorPosition       = ZP.FS12;                // for use with LDA [SectorPosition]
+    const byte SectorPositionL      = ZP.FS12;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
+    const byte SectorPositionH      = ZP.FS13;
     
-    const byte StreamBytesAvailable = ZP.FS15;                // used only within NextStream()
+    const byte StreamBytesAvailable = ZP.FS14;                // used only within NextStream()
     
     
     const string dirListHeader       = "FILES:";
@@ -2738,6 +2740,55 @@ unit File
         LDA #(sectorsLabel / 256)
         STA ZP.STRH
         Print.String();
+        
+        
+        // Print FAT chain:
+        LDA #' '
+        Print.Char();
+        LDA #' '
+        Print.Char();
+        
+        // Start walking the FAT chain
+        LDA DirectoryBuffer + 2, X  // Get start sector
+        STA CurrentFileSector       // Use as chain walker
+        STZ TransferLength          // Count actual sectors in chain
+        
+        loop // Walk FAT chain
+        {
+            // Print current sector in hex
+            LDA #'0'
+            Print.Char();
+            LDA #'x'
+            Print.Char();
+            LDA CurrentFileSector
+            Print.Hex();
+            
+            INC TransferLength      // Count this sector
+            
+            // Get next sector from FAT
+            LDY CurrentFileSector
+            LDA FATBuffer, Y
+            STA NextFileSector
+            
+            // Check if end of chain
+            CMP #1                  // 1 = end-of-chain marker
+            if (Z) { break; }       // End of chain reached
+            
+            // Print arrow to next sector
+            LDA #' '
+            Print.Char();
+            LDA #'-'
+            Print.Char();
+            LDA #'>'
+            Print.Char();
+            LDA #' '
+            Print.Char();
+            
+            // Move to next sector
+            LDA NextFileSector
+            STA CurrentFileSector
+        }
+        
         
         Print.NewLine();
         

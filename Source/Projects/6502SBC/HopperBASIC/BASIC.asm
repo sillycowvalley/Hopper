@@ -5,8 +5,8 @@ program HopperBASIC
     #define BASICLONG // include LONG type
     #define HASEEPROM
         
-    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    #define DEBUG
+    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    //#define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEFILE
     //#define TRACEEXE // instructions in Executor
