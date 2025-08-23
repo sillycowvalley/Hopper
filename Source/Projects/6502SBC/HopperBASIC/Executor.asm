@@ -2038,6 +2038,7 @@ unit Executor // Executor.asm
                 LDA ZP.NEXTT
                 AND # BASICType.TYPEMASK  // Extract LHS data type
                 STA ZP.NEXTT
+                
                 Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
                 if (NC) 
                 { 

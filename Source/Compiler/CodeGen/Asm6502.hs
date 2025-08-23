@@ -1800,11 +1800,14 @@ unit Asm6502
         }
         uint na = NextAddress;
         string nextAddress = na.ToString();
-        string ln = token["line"];
-        if (!debugInfoLineUsed.Contains(ln)) // keep the one with the earliest address
+        if (token.Contains("line"))
         {
-            debugInfo[nextAddress] = ln;       
-            debugInfoLineUsed[ln] = true;
+            string ln = token["line"];
+            if (!debugInfoLineUsed.Contains(ln)) // keep the one with the earliest address
+            {
+                debugInfo[nextAddress] = ln;       
+                debugInfoLineUsed[ln] = true;
+            }
         }
     }
     InsertLabel(string label)

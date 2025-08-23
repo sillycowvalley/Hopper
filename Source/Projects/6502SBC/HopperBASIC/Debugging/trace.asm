@@ -1,10 +1,9 @@
 unit Trace // Trace.asm
 {
     // #define TRACESP (6502 SP for stack balance diagnosis)
-    
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)    
     IsTracing()
     {
-#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)
         if (BBS2, ZP.FLAGS)
         {
             SEC  // Bit 2 is set - tracing enabled
@@ -13,10 +12,13 @@ unit Trace // Trace.asm
         {
             CLC  // Bit 2 is clear - tracing disabled
         }
-#else
-        CLC
-#endif
     }
+#else
+    IsTracing() inline
+    {
+        CLC
+    }
+#endif
 
 #if defined(DEBUG) || defined(TRACE) || defined(TRACEFILE)
     // Shared utilities (needed by Debug unit too)
@@ -53,7 +55,7 @@ unit Trace // Trace.asm
     // Input: None
     // Output: ZP.TraceIndent initialized to 0
     // Preserves: Everything
-    Initialize()
+    Initialize() inline
     {
         STZ ZP.TraceIndent
     }

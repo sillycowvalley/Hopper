@@ -24,7 +24,7 @@ unit States // States.asm
     // Input: A = SystemState value
     // Output: ZP.SystemState updated, A preserved
     // Modifies: ZP.SystemState only
-    SetState()
+    SetState() inline
     {
         STA ZP.SystemState
     }
@@ -143,7 +143,7 @@ unit States // States.asm
         PLA
     }
     
-    SetFailure()
+    SetFailure() inline
     {
         PHA
         LDA #State.Failure  

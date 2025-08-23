@@ -43,6 +43,10 @@ program Assemble
     uint iNMI;
     uint iIRQ;
     
+    uint currentInlineOverload = 0;  // 0 = not in inline method
+    <uint> inlineStack;  // track methods currently being inlined
+    <uint, <byte> > inlineCode;  // precompiled inline method bytecode
+    
     badArguments()
     {
         PrintLn("Invalid arguments for 65ASM:");
@@ -726,21 +730,108 @@ program Assemble
         return success;
     }
     
+    precompileInlineMethods()
+    {
+        // Get all function indices
+        bool success = true;
+        <string> methodNames = Symbols.GetMethodNames();
+        foreach (var methodName in methodNames)
+        {
+            uint fIndex;
+            if (Symbols.GetFunctionIndex(methodName, ref fIndex))
+            {
+                <uint> overloads = Symbols.GetFunctionOverloads(fIndex);
+                foreach (var iOverload in overloads)
+                {
+                    if (Symbols.IsInline(iOverload))
+                    {
+                        success = compileInlineMethod(iOverload);
+                        if (!success)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+            if (!success)
+            {
+                break;
+            }
+        }
+    }
+    
+    bool compileInlineMethod(uint iOverload)
+    {
+        bool success = false;
+        loop
+        {
+            // Validation
+            if (Symbols.IsSysCall(iOverload) || Symbols.IsLibCall(iOverload))
+            {
+                break; // Skip - these can't be inline anyway
+            }
+            
+            // Check for recursive inline calls during pre-compilation
+            if (inlineStack.Contains(iOverload))
+            {
+                Print("Warning: recursive inline method detected during pre-compilation");
+                break;
+            }
+            inlineStack.Append(iOverload);
+            
+            // Setup for inline compilation (no saving needed)
+            <string,string> startToken = Symbols.GetOverloadStart(iOverload);
+            Scanner.Reset(startToken);
+            Parser.Reset();
+            Directives.New();
+            Asm6502.New(); // Fresh instruction stream
+            
+            // This sets currentNamespace correctly
+            Types.SetCurrentMethod(iOverload);  
+            
+            // Set inline context to enforce restrictions
+            currentInlineOverload = iOverload;
+            
+            Parser.Advance(); // load first token ('{')
+            if (!Parser.Check(HopperToken.LBrace))
+            {
+                break; // Not a valid inline method
+            }
+            
+            // Compile the inline method body with restrictions enforced
+            assembleBlock();
+            if (!Parser.HadError)
+            {
+                // Store the compiled bytecode
+                <byte> compiledCode = Asm6502.CurrentStream;
+                inlineCode[iOverload] = compiledCode;
+            }
+            success = true;
+            break;
+        }
+        
+        // Clean up
+        if (inlineStack.Count > 0)
+        {
+            inlineStack.Remove(inlineStack.Count - 1);
+        }
+        currentInlineOverload = 0; // Reset inline context
+        
+        return success;
+    }
+
+    
+    
     bool assembleMethodCall(string methodName)
     {
         bool success = false;
         loop
         {
             Parser.Consume(HopperToken.LParen);
-            if (Parser.HadError)
-            {
-                break;
-            }
+            if (Parser.HadError) { break; }
             Parser.Consume(HopperToken.RParen);
-            if (Parser.HadError)
-            {
-                break;
-            }
+            if (Parser.HadError) { break; }
+            
             string returnType;
             < <string > > arguments;
             if (!methodName.Contains('.'))
@@ -748,20 +839,39 @@ program Assemble
                 methodName = Types.QualifyMethodName(methodName);
             }
             uint iOverload = Types.FindVisibleOverload(methodName, arguments, ref returnType);
-            if (Parser.HadError)
+            if (Parser.HadError) { break; }
+            
+            // Check if this method should be inlined
+            if (Symbols.IsInline(iOverload))
             {
+                // Just emit the pre-compiled bytecode directly!
+                if (inlineCode.Contains(iOverload))
+                {
+                    <byte> compiledCode = inlineCode[iOverload];
+                    foreach (var opcode in compiledCode)
+                    {
+                        Asm6502.AppendCode(opcode);
+                    }
+                    success = true;
+                }
+                else
+                {
+                    Parser.ErrorAtCurrent("inline method not precompiled");
+                }
                 break;
             }
             
-            Symbols.OverloadToCompile(iOverload); // CompileMethodCall(methodName): Setters, function calls, actual method calls
-            Symbols.AddFunctionCall(iOverload);   // CompileMethodCall(methodName)
-            
+            // Normal method call
+            Symbols.OverloadToCompile(iOverload);
+            Symbols.AddFunctionCall(iOverload);
             Asm6502.AddInstructionCALL(iOverload);
             success = true;
             break;
-        } // loop
+        }
         return success;
     }
+    
+    
     bool assembleInstruction6502()
     {
          
@@ -1323,6 +1433,11 @@ program Assemble
                 }
                 else if (tokenString == "return")
                 {
+                    if (currentInlineOverload != 0)
+                    {
+                        Parser.ErrorAtCurrent("'return' not allowed in inline methods");
+                        return false;
+                    }
                     success = assembleReturn();
                 }
                 else if (tokenString == "break")
@@ -1351,6 +1466,11 @@ program Assemble
             }
             case HopperToken.LabelIdentifier:
             {
+                if (currentInlineOverload != 0)
+                {
+                    Parser.ErrorAtCurrent("labels not allowed in inline methods");
+                    return false;
+                }
                 Advance(); // label:
                 string label = (currentToken["lexeme"]).Replace(":", "");
                 if (labelLocations.Contains(label))
@@ -1390,8 +1510,10 @@ program Assemble
                         tokenType = Token.GetType(Parser.CurrentToken);
                         if (tokenType == HopperToken.LParen)
                         {
+DumpPeek("Before method call");
                             // method call
                             success = assembleMethodCall(tokenString);
+DumpCurrent("After method call");
                         }
                         else
                         {
@@ -1789,6 +1911,12 @@ program Assemble
                 Scanner.New();
                 Token.InitializeAssembler(Architecture);
                 
+                // Pre-compile all inline methods
+                precompileInlineMethods();
+                if (Parser.HadError)
+                {
+                    break;
+                }
                 
                 iHopper = mOverloads[0];
                 Symbols.AddFunctionCall(iHopper); // yup, main is called at least once

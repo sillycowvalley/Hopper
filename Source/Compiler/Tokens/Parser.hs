@@ -117,16 +117,20 @@ unit Parser
     }
     DumpCurrent()
     {
-        DumpToken("CurrentToken", currentToken);
+        DumpToken(": CurrentToken", currentToken);
+    }
+    DumpCurrent(string prompt)
+    {
+        DumpToken(prompt + ": CurrentToken", currentToken);
     }    
     DumpPrevious()
     {
         DumpToken("PreviousToken", previousToken);
     }    
-    DumpPeek()
+    DumpPeek(string prompt)
     {
         <string, string> token = Scanner.Peek();
-        DumpToken("PeekToken", token);
+        DumpToken(prompt + ": PeekToken", token);
     }
     Reset()
     {

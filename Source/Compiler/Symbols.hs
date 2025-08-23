@@ -28,6 +28,7 @@ unit Symbols
     <uint, long> fStartPos;
     <uint, uint> fStartLine;
     <uint, string> fSourcePath;
+    <uint, bool> fInline; // track which methods are inline
     
     <uint, byte> fSysCall;
     <uint, byte> fSysCallOverload;
@@ -191,6 +192,10 @@ unit Symbols
         count += cDefinitions.Count;
         count += nameSpaces.Count;
         return count;
+    }
+    <string> GetMethodNames()
+    {
+        return fNames;
     }
     
     string GetNamespace(string sourcePath)
@@ -1491,6 +1496,16 @@ unit Symbols
         return false;
     }
     
+    bool IsInline(uint iOverload)
+    {
+        return fInline.Contains(iOverload);
+    }
+    SetIsInline(uint iOverload, bool isInline)
+    {
+        fInline[iOverload] = true;
+    }
+    
+    
     bool IsSysCall(uint iOverload)
     {
         return fSysCall.Contains(iOverload);
@@ -1665,6 +1680,13 @@ unit Symbols
         {
             overloads = fOverloads[index];
         }
+        
+        // Check if this is an inline method
+        bool isInline = false;
+        if ((blockPos.Count >= 4) && (blockPos[3] == "inline"))
+        {
+            isInline = true;
+        }
     
         loop
         {
@@ -1705,6 +1727,11 @@ unit Symbols
             overloads.Append(iCurrentOverload);
             fArgumentNamesAndTypes[iCurrentOverload] = arguments;
             fReturnTypes[iCurrentOverload] = returnType;
+            
+            if (isInline)
+            {
+                fInline[iCurrentOverload] = true;
+            }
             
             long startPos;
             if (blockPos.Count != 0)
@@ -2287,6 +2314,10 @@ unit Symbols
                         odict["libcall"]  = fLibCall[overload];
                         odict["overload"] = fLibCallOverload[overload];
                     }
+                    if (fInline.Contains(overload) && fInline[overload])
+                    {
+                        odict["inline"] = "true";
+                    }
                     fentry[overload.ToString()] = odict;
                 }
                 fdict[f.key] = fentry;
@@ -2604,6 +2635,12 @@ unit Symbols
                                         }
                                         isLibCall = true;
                                     }
+                                    bool isInline = false;
+                                    if (odict.Contains("inline"))
+                                    {
+                                        string inlineValue = odict["inline"];
+                                        isInline = (inlineValue == "true");
+                                    }
                                     < <string> > arguments;
                                     if (odict.Contains("arguments"))
                                     {
@@ -2644,6 +2681,10 @@ unit Symbols
                                     if (isLibCall)
                                     {
                                         SetLibCall(iOverload, iLibCall, iLibCallOverload);
+                                    }
+                                    if (isInline)
+                                    {
+                                        fInline[iOverload] = true;
                                     }
                                 } // kv3
                             } // kv2
@@ -2722,6 +2763,10 @@ unit Symbols
             else if (IsLibCall(iOverload))
             {
                 overloadsCompiled[iOverload] = true; // libcall : pretend it is already compiled
+            }
+            else if (IsInline(iOverload))
+            {
+                overloadsCompiled[iOverload] = true; // inline : pretend it is already compiled
             }
             else
             {

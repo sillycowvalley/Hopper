@@ -181,7 +181,7 @@ unit Tools // Tools.asm
     
     
     
-    Seconds()
+    Seconds() inline
     {
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
         STA NEXT3

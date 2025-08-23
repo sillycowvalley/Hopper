@@ -280,9 +280,8 @@ unit Error // ErrorID.asm
     {
         PHX
         PHY
-        TAX
         
-        TXA
+        TAX
         if (MI)
         {
             // Input: A = token value (e.g., Token.CONST, Token.INT, etc.)
@@ -290,41 +289,40 @@ unit Error // ErrorID.asm
         }
         else
         {
-            AND #0x60   // Extract bits 6-5 (table selector)
-            switch (A)
+            loop
             {
-                case 0x00:  // Table 0 (0x00-0x1F)
+                AND #0x60   // Extract bits 6-5 (table selector)
+                switch (A)
                 {
-                    LDA #(errorWordsTable0 % 256)
-                    STA ZP.TableIndexL
-                    LDA #(errorWordsTable0 / 256)
-                    STA ZP.TableIndexH
-                    STX ZP.TokenValue
-                    Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
-                }
-                case 0x20:  // Table 1 (0x20-0x3F)
-                {
-                    LDA #(errorWordsTable1 % 256)
-                    STA ZP.TableIndexL
-                    LDA #(errorWordsTable1 / 256)
-                    STA ZP.TableIndexH
-                    STX ZP.TokenValue
-                    Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
-                }
-                case 0x40:  // Table 2 (0x40-0x5F)
-                {
-                    LDA #(errorWordsTable2 % 256)
-                    STA ZP.TableIndexL
-                    LDA #(errorWordsTable2 / 256)
-                    STA ZP.TableIndexH
-                    STX ZP.TokenValue
-                    Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
-                }
-                default:
-                {
-                    CLC  // Tables 2 & 3 not implemented yet
-                }
-            }   
+                    case 0x00:  // Table 0 (0x00-0x1F)
+                    {
+                        LDA #(errorWordsTable0 % 256)
+                        STA ZP.TableIndexL
+                        LDA #(errorWordsTable0 / 256)
+                    }
+                    case 0x20:  // Table 1 (0x20-0x3F)
+                    {
+                        LDA #(errorWordsTable1 % 256)
+                        STA ZP.TableIndexL
+                        LDA #(errorWordsTable1 / 256)
+                    }
+                    case 0x40:  // Table 2 (0x40-0x5F)
+                    {
+                        LDA #(errorWordsTable2 % 256)
+                        STA ZP.TableIndexL
+                        LDA #(errorWordsTable2 / 256)
+                    }
+                    default:
+                    {
+                        CLC  // Tables 2 & 3 not implemented yet
+                        break;
+                    }
+                }   
+                STA ZP.TableIndexH
+                STX ZP.TokenValue
+                Tokens.PrintKeywordFromTable();// Input: ZP.TokenValue = target token value, ZP.TableIndex = table address
+                break;
+            } // single exit
         }
         PLY
         PLX
@@ -443,7 +441,7 @@ unit Error // ErrorID.asm
         CLC
     }
 
-    CannotRollback()
+    CannotRollback() inline
     {
         LDA #ErrorID.CannotRollback
         commonError();
@@ -473,13 +471,13 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    TypeMismatch() 
+    TypeMismatch()
     { 
         LDA #ErrorID.TypeMismatch
         commonError();
     }
 
-    FunctionExists() 
+    FunctionExists() inline
     { 
         LDA #ErrorID.FunctionExists
         commonError();
@@ -641,13 +639,13 @@ unit Error // ErrorID.asm
         commonError();
     }
     
-    ExpectedThen()
+    ExpectedThen() inline
     {
         LDA #ErrorID.ExpectedThen
         commonError();
     }
 
-    ExpectedEndif()
+    ExpectedEndif() inline
     {
         LDA #ErrorID.ExpectedEndif
         commonError();
@@ -659,7 +657,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    DirectoryFull()
+    DirectoryFull() inline
     {
         LDA #ErrorID.DirectoryFull
         commonError();

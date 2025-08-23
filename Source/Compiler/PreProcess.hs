@@ -249,9 +249,21 @@ program PreProcess
       loop
       {
           bool isSystem = false;
+          bool isInline = false;
           if (Parser.CheckKeyword("|system|library|"))
           {
               isSystem = true;
+          }
+          else if (IsAssembly && Parser.CheckKeyword("inline"))
+          {
+              isInline = true;
+              // Advance past "inline" to get to the "{"
+              Parser.Advance();
+              if (!Parser.Check(HopperToken.LBrace))
+              {
+                  Parser.ErrorAtCurrent("'{' expected after 'inline'");
+                  break;
+              }
           }
           else if (!Parser.Check(HopperToken.LBrace))
           {
@@ -269,6 +281,14 @@ program PreProcess
               blockPos.Append("0");
               blockPos.Append(currentToken["line"]);
               blockPos.Append(currentToken["source"]);
+          }
+          else if (isInline)
+          {
+              // inline methods have source code, but marked specially
+              blockPos.Append(pos.ToString());
+              blockPos.Append(currentToken["line"]);
+              blockPos.Append(currentToken["source"]);
+              blockPos.Append("inline"); // add marker for inline
           }
           else
           {
@@ -851,6 +871,18 @@ program PreProcess
             {
                 break;
             }
+            
+            // Inline validation for methods
+            bool isInline = false;
+            if ((blockPos.Count >= 4) && (blockPos[3] == "inline"))
+            {
+                isInline = true;
+                if (isDelegate)
+                {
+                    Parser.ErrorAt(idToken, "delegates cannot be inline");
+                    break;
+                }
+            }
             Symbols.AddMethod(identifier, arguments, blockPos);
             break;
         }
@@ -906,6 +938,32 @@ program PreProcess
             {
                 break;
             }
+            
+            // Validate inline usage
+            bool isInline = false;
+            if ((blockPos.Count >= 4) && (blockPos[3] == "inline"))
+            {
+                isInline = true;
+                
+                // Add inline-specific validations
+                if (isDelegate)
+                {
+                    Parser.ErrorAt(idToken, "delegates cannot be inline");
+                    break;
+                }
+                
+                if (identifier == "Hopper")
+                {
+                    Parser.ErrorAt(idToken, "entry point cannot be inline");
+                    break;
+                }
+                
+                // Could add other restrictions like:
+                // - No recursive calls
+                // - Size limitations
+                // - Parameter count limits
+            }
+            
             Symbols.AddFunction(identifier, arguments, returnTypeString, blockPos);
             break;
         }

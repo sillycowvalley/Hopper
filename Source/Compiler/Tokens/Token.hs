@@ -361,7 +361,9 @@ unit Token
         statementKeywords["while"] = true;
         statementKeywords["friend"] = true;
         
-        statementKeywords["reserve"] = true; // assembly only
+        // assembly only
+        statementKeywords["reserve"] = true; 
+        statementKeywords["inline"] = true; 
     }
     InitializeTiggerC()
     {
