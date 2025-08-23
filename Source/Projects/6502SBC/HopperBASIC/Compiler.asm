@@ -29,11 +29,12 @@ unit Compiler // Compiler.asm
    const uint compilerForIteratorType    = Address.BasicCompilerWorkspace + 13; // 1 byte - type of user or intrinsic for iterator variable
    const uint compilerGlobalIteratorSlot = Address.BasicCompilerWorkspace + 14; // 1 byte - slot of global being shadowed
    const uint compilerForIteratorBP      = Address.BasicCompilerWorkspace + 15; // 1 byte - signed one byte offset, location of for iterator relative to BP (according to Locals.Find)
+   const uint compilerIfClauses          = Address.BasicCompilerWorkspace + 16; // 1 byte - compileIfStatement - single or multiline mode
 #ifdef PEEPHOLE   
-   const uint compilerSetItemObjInstr    = Address.BasicCompilerWorkspace + 16; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem object
-   const uint compilerSetItemObjOffset   = Address.BasicCompilerWorkspace + 17; // 1 byte - offset or address for previous
-   const uint compilerSetItemIndexInstr  = Address.BasicCompilerWorkspace + 18; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem index
-   const uint compilerSetItemIndexOffset = Address.BasicCompilerWorkspace + 19; // 1 byte - offset or address for previous
+   const uint compilerSetItemObjInstr    = Address.BasicCompilerWorkspace + 17; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem object
+   const uint compilerSetItemObjOffset   = Address.BasicCompilerWorkspace + 18; // 1 byte - offset or address for previous
+   const uint compilerSetItemIndexInstr  = Address.BasicCompilerWorkspace + 19; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem index
+   const uint compilerSetItemIndexOffset = Address.BasicCompilerWorkspace + 20; // 1 byte - offset or address for previous
 #endif
    
    // Initialize the opcode buffer for compilation

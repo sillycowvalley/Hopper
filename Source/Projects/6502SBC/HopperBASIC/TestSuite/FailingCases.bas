@@ -1,17 +1,26 @@
-NEW
 CLS
-CONST WORD L = 10
-WORD T
-
-FUNC FOO(C)
-    PRINT C
-ENDFUNC
-
+NEW
 BEGIN
-    FOR I = 1 TO L
-        FOO(I)
-        T = T + I
-    NEXT I
-    PRINT "T:", T
+    WORD X = 10
+    IF X > 5 THEN
+        PRINT "big number"
+        Y = X * 2
+    ELSE
+        PRINT "small number"  
+        Y = X + 1
+    ENDIF
+    IF X > 5 THEN                                      ! Multi-line
+        PRINT "big number"
+        Y = X * 2
+    ELSE
+        PRINT "small number"  
+        Y = X + 1
+    ENDIF
+    
+    IF X > 5 THEN PRINT "big" ENDIF
+    IF X > 5 THEN PRINT "big" ENDIF                    ! Single-line, no ELSE
+    IF X > 5 THEN PRINT "big" ELSE PRINT "small" ENDIF
+    IF X > 5 THEN PRINT "big" ELSE PRINT "small" ENDIF ! Single-line with ELSE  
+    
 END
 RUN

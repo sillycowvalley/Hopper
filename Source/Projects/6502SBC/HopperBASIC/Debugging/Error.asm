@@ -190,6 +190,7 @@ unit Error // ErrorID.asm
         ConstantExpected,
         ConstantExpressionExpected,
         ExpectedThen,
+        ExpectedEndif,
         IllegalIdentifier,
         IllegalAssignment,
         IllegalCharacter,
@@ -240,6 +241,7 @@ unit Error // ErrorID.asm
         2, ErrorID.ConstantExpected,           Token.CONST, ErrorWord.EXPECTED,
         3, ErrorID.ConstantExpressionExpected, Token.CONST, ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
         2, ErrorID.ExpectedThen,               Token.THEN, ErrorWord.EXPECTED,
+        2, ErrorID.ExpectedEndif,              Token.ENDIF, ErrorWord.EXPECTED,
         2, ErrorID.IllegalIdentifier,          ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
         2, ErrorID.IllegalAssignment,          ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
         2, ErrorID.IllegalCharacter,           ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
@@ -642,6 +644,12 @@ unit Error // ErrorID.asm
     ExpectedThen()
     {
         LDA #ErrorID.ExpectedThen
+        commonError();
+    }
+
+    ExpectedEndif()
+    {
+        LDA #ErrorID.ExpectedEndif
         commonError();
     }
 
