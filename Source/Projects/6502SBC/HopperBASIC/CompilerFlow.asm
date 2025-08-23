@@ -367,11 +367,17 @@ unit CompilerFlow
             // Check for ELSE or ENDIF (both valid)
             LDA ZP.CurrentToken
             CMP #Token.ELSE
-            if (Z) { /* handle ELSE case */ }
+            if (Z)
+            {
+                 // handle ELSE case
+            }
             else
             {
                 CMP #Token.ENDIF
-                if (Z) { /* handle ENDIF case */ }
+                if (Z) 
+                {
+                     // handle ENDIF case
+                }
                 else
                 {
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -463,7 +469,11 @@ unit CompilerFlow
                 CMP #Token.ENDIF
                 if (NZ)
                 {
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    CMP #Token.ELSE
+                    if (NZ)
+                    {
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    }
                 }
                               
                 // Check if we exited due to error

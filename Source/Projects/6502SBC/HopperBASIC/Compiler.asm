@@ -1880,8 +1880,9 @@ unit Compiler // Compiler.asm
            {
                 // Emit RETURN with locals cleanup count
                 LDA compilerFuncArgs
-                CLC
-                ADC compilerFuncLocals  // Total slots to clean
+                // SP = BP cleans locals, RETURN cleans arguments
+                //CLC
+                //ADC compilerFuncLocals  // Total slots to clean
                 Emit.Return();  // Pass total count
                 CheckError();
                 if (NC) { States.SetFailure(); break; }
@@ -2249,8 +2250,9 @@ unit Compiler // Compiler.asm
            {
                 // No return value - emit RETURN
                 LDA compilerFuncArgs
-                CLC
-                ADC compilerFuncLocals  // Total slots to clean
+                // SP = BP cleans locals, RETURN cleans arguments
+                //CLC
+                //ADC compilerFuncLocals  // Total slots to clean
                 Emit.Return();  // Pass total count
                 CheckError();
                 if (NC) { States.SetFailure(); break; }
@@ -2265,8 +2267,9 @@ unit Compiler // Compiler.asm
            
            // Emit RETURN with locals cleanup count
            LDA compilerFuncArgs
-           CLC
-           ADC compilerFuncLocals  // Total slots to clean
+           // SP = BP cleans locals, RETURN cleans arguments
+           //CLC
+           //ADC compilerFuncLocals  // Total slots to clean
            Emit.ReturnVal();
            CheckError();
            if (NC) { States.SetFailure(); break; }

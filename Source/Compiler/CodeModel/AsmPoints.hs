@@ -2263,7 +2263,6 @@ unit AsmPoints
                                 iCodes  [iIndex-0] = OpCode.NOP;
                                 iLengths[iIndex-0] = 1;
                                 modified = true;
-                                Print(" Y");
                             }
                             case "JSR":
                             {

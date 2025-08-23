@@ -824,10 +824,10 @@ unit Executor // Executor.asm
        loop
        {
            // Fetch cleanup count operand (number of locals)
-           
+
            FetchOperandByte();
            STA executorOperandL
-           
+                                 
            // Calculate return slot position: BP - (arg_count + 1)
            SEC
            LDA ZP.BP
@@ -837,7 +837,6 @@ unit Executor // Executor.asm
            DEX     
            // X = return slot index // SP-1
            PHX
-           
            
            Stacks.PopBP();
            Stacks.PopXID();
@@ -885,7 +884,7 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(executeReturnTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       LDA BASICType.VOID
+       LDA # BASICType.VOID
        STA ZP.TOPT
        STZ ZP.TOPL
        STZ ZP.TOPH

@@ -2732,10 +2732,8 @@ unit File
         STA ZP.STRH
         Print.String();
         
-        
         // Print FAT chain:
-        LDX #2
-        Print.Spaces();
+        Print.Space();Print.Space();
         
         // Start walking the FAT chain
         LDA DirectoryBuffer + 2, X  // Get start sector
