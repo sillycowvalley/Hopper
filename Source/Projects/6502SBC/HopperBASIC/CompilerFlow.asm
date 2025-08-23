@@ -75,6 +75,38 @@ unit CompilerFlow
         SBC ZP.IDYH    // Subtract current position MSB
         STA ZP.TOPH    // Store backward offset MSB
     }
+    
+    // Add instruction size to position (for calculating position after instruction)
+    // Input: ZP.IDY = current position, A = instruction size in bytes
+    // Output: ZP.IDY = position after instruction
+    // Modifies: ZP.IDYL, ZP.IDYH
+    addInstructionSizeToPosition()
+    {
+        // Add instruction size to current position
+        CLC
+        ADC ZP.IDYL        // Add instruction size to LSB
+        STA ZP.IDYL        // Store updated position LSB
+        LDA ZP.IDYH        // Get MSB
+        ADC #0             // Add carry
+        STA ZP.IDYH        // Store updated position MSB
+    }
+
+    // Subtract instruction size from offset (for PC adjustment in relative jumps)
+    // Input: ZP.NEXT = raw offset, A = instruction size to subtract
+    // Output: ZP.NEXT = PC-adjusted offset  
+    // Modifies: ZP.NEXTL, ZP.NEXTH
+    subtractInstructionSizeFromOffset()
+    {
+        // Subtract instruction size from offset: ZP.NEXT = ZP.NEXT - A
+        STA ZP.ACCL        // Store instruction size temporarily
+        SEC
+        LDA ZP.NEXTL       // Get raw offset LSB
+        SBC ZP.ACCL        // Subtract instruction size
+        STA ZP.NEXTL       // Store adjusted offset LSB
+        LDA ZP.NEXTH       // Get raw offset MSB
+        SBC #0             // Subtract borrow
+        STA ZP.NEXTH       // Store adjusted offset MSB
+    }
 
     // Compile WHILE...WEND statement
     // Input: ZP.CurrentToken = WHILE token
@@ -174,13 +206,8 @@ unit CompilerFlow
            // === BACKWARD JUMP SETUP ===
            // Account for the JUMPW instruction we're about to emit (3 bytes: opcode + 2 operands)
            // This adjusts the current position to be after the JUMPW instruction
-           CLC
-           LDA ZP.IDYL
-           ADC #3         // Add 3 bytes for JUMPW instruction
-           STA ZP.IDYL    // Updated current position LSB
-           LDA ZP.IDYH
-           ADC #0
-           STA ZP.IDYH    // Updated current position MSB
+           LDA #3  // JUMPW instruction size
+           addInstructionSizeToPosition();
            
            // === BACKWARD JUMP OFFSET CALCULATION ===
            // Calculate offset from after JUMPW to loop start (condition evaluation)
@@ -290,13 +317,8 @@ unit CompilerFlow
             
             // Account for the JUMPZW instruction we're about to emit (3 bytes)
             // PC will be at current_position + 3 after fetching JUMPZW
-            CLC
-            LDA ZP.IDYL
-            ADC #3
-            STA ZP.IDYL  // Position after JUMPZW
-            LDA ZP.IDYH
-            ADC #0
-            STA ZP.IDYH
+            LDA #3  // JUMPW instruction size
+            addInstructionSizeToPosition();
             
             // Calculate backward offset: loop_start - position_after_jumpzw
             // This will be negative (jumping backward)
@@ -461,13 +483,8 @@ unit CompilerFlow
                 calculateForwardOffset();
                 
                 // Adjust for PC being 3 bytes past the JUMPZW instruction start
-                SEC
-                LDA ZP.NEXTL
-                SBC #3
-                STA ZP.NEXTL
-                LDA ZP.NEXTH
-                SBC #0
-                STA ZP.NEXTH
+                LDA #3  // JUMPZW instruction size
+                subtractInstructionSizeFromOffset();
                 
                 // Patch the JUMPZW operand
                 LDA #1  // Skip opcode byte
@@ -511,13 +528,8 @@ unit CompilerFlow
                 calculateForwardOffset();
                 
                 // Adjust for PC being 3 bytes past the JUMPW instruction start
-                SEC
-                LDA ZP.NEXTL
-                SBC #3
-                STA ZP.NEXTL
-                LDA ZP.NEXTH
-                SBC #0
-                STA ZP.NEXTH
+                LDA #3  // JUMPZW instruction size
+                subtractInstructionSizeFromOffset();
                 
                 // Patch the JUMPW operand
                 LDA #1  // Skip opcode byte
@@ -563,13 +575,8 @@ unit CompilerFlow
                 calculateForwardOffset();
                 
                 //Adjust for PC being 3 bytes past the JUMPZW instruction
-                SEC
-                LDA ZP.NEXTL
-                SBC #3         
-                STA ZP.NEXTL
-                LDA ZP.NEXTH
-                SBC #0
-                STA ZP.NEXTH
+                LDA #3  // JUMPZW instruction size
+                subtractInstructionSizeFromOffset();
                 
                 // Patch the JUMPZW operand
                 LDA #1  // Skip opcode byte
@@ -1307,13 +1314,8 @@ unit CompilerFlow
                calculateForwardOffset();
                
                // Adjust for PC being 4 bytes past FORCHK when it executes
-               SEC
-               LDA ZP.NEXTL
-               SBC #2
-               STA ZP.NEXTL
-               LDA ZP.NEXTH
-               SBC #0
-               STA ZP.NEXTH
+               LDA #2  // JUMPZW instruction size
+               subtractInstructionSizeFromOffset();
                
                // Calculate absolute address for patching
                LDA #0  // ZP.IDX already points to operand position
