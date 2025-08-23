@@ -218,7 +218,7 @@ FUNC TestByteWordUnsafe()
     PRINT b = w; " ! expect TRUE"
     PRINT b = 255; " ! expect TRUE"
     w = 256
-    PRINT b <> w; " ! expect TRUE (may fail)"
+    PRINT b <> w; " ! expect TRUE"
     w = 0: b = 0
     PRINT b = w; " ! expect TRUE"
 ENDFUNC
@@ -237,9 +237,9 @@ FUNC TestByteIntUnsafe()
     i = 255: b = 255
     PRINT b = i; " ! expect TRUE"
     i = -1
-    PRINT b <> i; " ! expect TRUE (may fail)"
+    PRINT b <> i; " ! expect TRUE"
     i = 256
-    PRINT b <> i; " ! expect TRUE (may fail)"
+    PRINT b <> i; " ! expect TRUE"
 ENDFUNC
 BEGIN
     TestByteIntUnsafe()
@@ -255,11 +255,11 @@ FUNC TestIntWordUnsafe()
     PRINT i = w; " ! expect TRUE"
     w = 32768
     i = -32768
-    PRINT i <> w; " ! expect TRUE (may fail)"
+    PRINT i <> w; " ! expect TRUE"
     i = 0: w = 0
     PRINT i = w; " ! expect TRUE"
     i = -1
-    PRINT i <> w; " ! expect FALSE (may fail)"
+    PRINT i <> w; " ! expect FALSE"
 ENDFUNC
 BEGIN
     TestIntWordUnsafe()

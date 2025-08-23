@@ -107,6 +107,17 @@ unit CompilerFlow
         SBC #0             // Subtract borrow
         STA ZP.NEXTH       // Store adjusted offset MSB
     }
+    
+    // Load current opcode buffer position into ZP.IDY
+    // Output: ZP.IDY = current buffer position
+    // Modifies: ZP.IDYL, ZP.IDYH
+    loadCurrentPosition()
+    {
+        LDA ZP.OpCodeBufferContentLengthL
+        STA ZP.IDYL
+        LDA ZP.OpCodeBufferContentLengthH  
+        STA ZP.IDYH
+    }
 
     // Compile WHILE...WEND statement
     // Input: ZP.CurrentToken = WHILE token
@@ -193,10 +204,7 @@ unit CompilerFlow
            Stacks.PopTop();
            
            // Current position = end of loop body (where JUMPW will be emitted)
-           LDA ZP.OpCodeBufferContentLengthH
-           STA ZP.IDYH  // Current position MSB
-           LDA ZP.OpCodeBufferContentLengthL
-           STA ZP.IDYL  // Current position LSB
+           loadCurrentPosition();
            
            // === FORWARD JUMP OFFSET CALCULATION ===
            // Calculate offset from JUMPZW operand position to loop exit
@@ -310,10 +318,7 @@ unit CompilerFlow
             Stacks.PopTop();
             
             // Current position = where JUMPZW will be emitted
-            LDA ZP.OpCodeBufferContentLengthL
-            STA ZP.IDYL  // Current position LSB
-            LDA ZP.OpCodeBufferContentLengthH
-            STA ZP.IDYH  // Current position MSB
+            loadCurrentPosition();
             
             // Account for the JUMPZW instruction we're about to emit (3 bytes)
             // PC will be at current_position + 3 after fetching JUMPZW
@@ -468,10 +473,7 @@ unit CompilerFlow
                 // It should jump here (start of ELSE block)
                 
                 // Current position = start of ELSE block
-                LDA ZP.OpCodeBufferContentLengthL
-                STA ZP.IDYL  // Current position LSB
-                LDA ZP.OpCodeBufferContentLengthH
-                STA ZP.IDYH  // Current position MSB
+                loadCurrentPosition();
                 
                 // Get saved JUMPZW operand position (but don't pop yet - we have JUMPW position on top)
                 Stacks.PopIDX();
@@ -519,10 +521,7 @@ unit CompilerFlow
                 DEC ZP.CompilerTemp  // We popped one position
                 
                 // Current position = after ENDIF
-                LDA ZP.OpCodeBufferContentLengthL
-                STA ZP.IDYL  // Current position LSB
-                LDA ZP.OpCodeBufferContentLengthH
-                STA ZP.IDYH  // Current position MSB
+                loadCurrentPosition();
                 
                 // Calculate forward offset: current_position - jumpw_operand_position
                 calculateForwardOffset();
@@ -566,10 +565,7 @@ unit CompilerFlow
                 DEC ZP.CompilerTemp  // We popped the position
                 
                 // Current position = after ENDIF
-                LDA ZP.OpCodeBufferContentLengthL
-                STA ZP.IDYL  // Current position LSB
-                LDA ZP.OpCodeBufferContentLengthH
-                STA ZP.IDYH  // Current position MSB
+                loadCurrentPosition();
                 
                 // Calculate forward offset: current_position - jumpzw_operand_position
                 calculateForwardOffset();
@@ -1271,13 +1267,9 @@ unit CompilerFlow
            Stacks.PopTop();  // Get loop body start in ZP.TOP
            
            // Calculate backward jump offset for FORIT
-           CLC
-           LDA ZP.OpCodeBufferContentLengthL
-           ADC #4
-           STA ZP.IDYL
-           LDA ZP.OpCodeBufferContentLengthH
-           ADC #0
-           STA ZP.IDYH
+           loadCurrentPosition();
+           LDA #4  // FORIT instruction size
+           addInstructionSizeToPosition();
            
            // Backward offset = loop_start - position_after_FORIT
            calculateBackwardOffset();
@@ -1305,10 +1297,7 @@ unit CompilerFlow
            
            
                // Current position = after FORIT (exit point)
-               LDA ZP.OpCodeBufferContentLengthL
-               STA ZP.IDYL
-               LDA ZP.OpCodeBufferContentLengthH
-               STA ZP.IDYH
+               loadCurrentPosition();
                
                // Calculate forward offset: exit_point - FORCHK_operand_position
                calculateForwardOffset();
