@@ -17,36 +17,51 @@ ENDFUNC
 **Status:** ACTIVE  
 **Proposed Fix:** Limit FORITF optimization to TO < 254 (BYTE) and TO < 65534 (WORD)
 
-### 2. Single-line IF/THEN/ELSE/ENDIF Not Supported
-**Symptom:** SYNTAX ERROR on single-line IF statements with ELSE clause  
-**Reproduce:**
-```basic
-IF TRUE THEN PRINT "yes" ELSE PRINT "no" ENDIF
-IF x > 5 THEN PRINT "big" ELSE PRINT "small" ENDIF
-```
-**Error:** `?SYNTAX ERROR`  
-**Status:** ACTIVE  
-**Impact:** Major limitation - forces multi-line IF statements only
-**Note:** Simple IF/THEN/ENDIF (without ELSE) works fine
-
-### 3. Multi-line IF/THEN/ELSE/ENDIF Also Fails
-**Symptom:** SYNTAX ERROR even on properly formatted multi-line IF statements  
-**Reproduce:**
-```basic
-IF level > 2 THEN
-    PRINT "big"
-ELSE
-    PRINT "small"
-ENDIF
-```
-**Error:** `?SYNTAX ERROR` on ELSE line  
-**Status:** ACTIVE  
-**Impact:** IF/ELSE constructs completely unusable
-
 ---
 
 ## BUGS
 *Wrong behavior but recoverable*
+
+### 2. String Variable Corruption in Deep Nesting
+**Symptom:** String variables lose content in deeply nested IF statements  
+**Reproduce:**
+```basic
+FUNC TestDeepNesting()
+    INT x = 3
+    STRING path = ""
+    IF x > 0 THEN
+        path = "A"
+        IF x > 1 THEN
+            path = "AB"  ! Note: no concatenation, direct assignment
+            IF x > 2 THEN
+                path = "ABC"
+                IF x > 3 THEN
+                    path = "ABCD"
+                ELSE
+                    path = "ABCE"
+                ENDIF
+            ENDIF
+        ENDIF
+    ENDIF
+    PRINT "path="; path; " ! expect ABCE"
+ENDFUNC
+```
+**Expected:** `path=ABCE`  
+**Actual:** `path=ue`  
+**Status:** ACTIVE  
+**Impact:** String handling unreliable in complex nested contexts
+
+### 3. Colon Statements in Multiline IF Blocks
+**Symptom:** Parser fails when colon-separated statements used in multiline IF context  
+**Reproduce:**
+```basic
+IF x > 5 THEN a = 1 : b = 2 : PRINT "test"
+ELSE a = 3 : b = 4 : PRINT "else"
+ENDIF
+```
+**Error:** `?ENDIF EXPECTED (0xB36F)`  
+**Status:** ACTIVE  
+**Note:** Colon statements work fine outside IF blocks
 
 ### 4. STEP 0 Infinite Loop
 **Symptom:** No error checking for STEP 0  
@@ -59,17 +74,16 @@ NEXT i
 **Status:** ACTIVE  
 **Note:** Classic BASIC compatibility issue - error vs. infinite loop
 
-### 5. Expression Evaluation in Multi-statement Context
-**Symptom:** Incorrect results when chaining statements with colons in IF blocks  
+### 5. PRINT with Inline Comments
+**Symptom:** SYNTAX ERROR when PRINT statement followed by comment  
 **Reproduce:**
 ```basic
-count = 0
-IF TRUE THEN count = count + 1: PRINT "First"; count = count + 1: PRINT "Second" ENDIF
-! Expected: count=2, "FirstSecond"
-! Actual: count=1, "FirstFALSESecond"
+PRINT ! Empty line
+PRINT "text" ! comment
 ```
+**Error:** `?SYNTAX ERROR (0xC25E)`  
 **Status:** ACTIVE  
-**Note:** Expression evaluation appears corrupted in complex statement chains
+**Note:** Comments work fine on separate lines
 
 ### 6. VARS Command Comment Parsing
 **Symptom:** SYNTAX ERROR when VARS followed by comment  
@@ -94,8 +108,17 @@ STRING s = "A"
 PRINT c >= s
 ```
 **Error:** `?INVALID OPERATOR` (should be `?TYPE MISMATCH` for consistency)  
-**Status:** ACTIVE  
-**Note:** Acceptable behavior since STRING doesn't support ordering operators
+**Status:** ACTIVE
+
+### 8. Underscore Identifiers Not Supported
+**Symptom:** Variable names with underscores rejected  
+**Reproduce:**
+```basic
+INT global_counter = 0
+```
+**Error:** `?SYNTAX ERROR (0x9981)`  
+**Status:** WORKING AS DESIGNED  
+**Note:** Aesthetic choice - underscores not allowed in identifiers
 
 ---
 
@@ -119,25 +142,82 @@ PRINT c >= s
 ## WORKING CORRECTLY
 *Features that tested successfully*
 
-### ✅ Simple IF/THEN/ENDIF (No ELSE)
-**Working:** Basic conditional execution without ELSE clause
+### ✅ Complete IF/THEN/ELSE/ENDIF Support
+**Working:** Full conditional execution with ELSE clauses
 ```basic
-IF condition THEN statements ENDIF
+IF condition THEN
+    statements
+ELSE
+    statements  
+ENDIF
 ```
 
-### ✅ Complex Expression Conditions
+### ✅ Nested IF Statements
+**Working:** Complex nested IF/ELSE structures
+```basic
+IF outer_condition THEN
+    IF inner_condition THEN
+        action1
+    ELSE
+        action2
+    ENDIF
+ELSE
+    action3
+ENDIF
+```
+
+### ✅ Multiple Statements in IF Blocks
+**Working:** Multiple statements in both THEN and ELSE blocks
+```basic
+IF condition THEN
+    statement1
+    statement2
+    statement3
+ELSE
+    statement4
+    statement5
+ENDIF
+```
+
+### ✅ Complex Expression Conditions  
 **Working:** Arithmetic, logical, comparison expressions as conditions
 ```basic
 IF a + b = 7 THEN PRINT "works" ENDIF
 IF a < b AND b < c THEN PRINT "chain" ENDIF
 ```
 
-### ✅ All Data Types as Conditions
+### ✅ All Data Types in Conditions
 **Working:** BIT, VAR, comparison results, string equality, char ordering
 ```basic
 IF flag THEN ... ENDIF              ! BIT
 IF s = "HELLO" THEN ... ENDIF       ! STRING equality
 IF c1 < c2 THEN ... ENDIF           ! CHAR ordering
+```
+
+### ✅ Function Calls in Conditions
+**Working:** Both user-defined and built-in functions as conditions
+```basic
+IF IsEven(num) THEN ... ENDIF       ! User function
+IF LEN(text) > 5 THEN ... ENDIF     ! Built-in function
+```
+
+### ✅ Empty IF/ELSE Blocks
+**Working:** Empty THEN or ELSE blocks with just comments
+```basic
+IF flag THEN
+    ! Empty THEN block
+ELSE
+    result = "executed"
+ENDIF
+```
+
+### ✅ RETURN Statements in IF Blocks
+**Working:** Early returns from functions within IF statements
+```basic
+IF condition THEN
+    PRINT "early exit"
+    RETURN value
+ENDIF
 ```
 
 ### ✅ Type Safety in Conditions
@@ -148,6 +228,6 @@ IF string_var = int_var THEN ... ENDIF  ! Correctly errors
 
 ---
 
-*Last Updated: IF statement testing reveals major conditional logic limitations*  
+*Last Updated: Comprehensive IF statement testing reveals robust conditional logic implementation*  
 *Version: Hopper BASIC v2.0*  
-*Critical Issue: IF/ELSE constructs completely non-functional*
+*Major Discovery: IF/ELSE system is fully functional and well-implemented*
