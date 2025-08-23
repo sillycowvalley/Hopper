@@ -14,7 +14,6 @@ unit GPIO
     // Modifies: A, Y
     PinMode()
     {
-        PHA
         PHY
         
         // Determine which port and create bit mask
@@ -87,7 +86,6 @@ unit GPIO
         }
         
         PLY
-        PLA
     }
     
     // Write digital value to pin
@@ -96,7 +94,6 @@ unit GPIO
     // Modifies: A, Y
     PinWrite()
     {
-        PHA
         PHY
         
         // Determine which port and create bit mask
@@ -169,7 +166,6 @@ unit GPIO
         }
         
         PLY
-        PLA
     }
     
     // Read digital value from pin

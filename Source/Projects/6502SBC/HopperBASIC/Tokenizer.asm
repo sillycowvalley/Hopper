@@ -244,7 +244,7 @@ unit Tokenizer // Tokenizer.asm
             
             // Convert hex char to value (0-15)
             LDA [ZP.IDX], Y
-            IsDigit();
+            Char.IsDigit();
             if (C)
             {
                 SEC
@@ -770,7 +770,7 @@ unit Tokenizer // Tokenizer.asm
                     }
                     
                     // Check if it's a decimal number
-                    IsDigit();
+                    Char.IsDigit();
                     if (C)  
                     {
                         // Scan number and store inline in token buffer
@@ -786,7 +786,7 @@ unit Tokenizer // Tokenizer.asm
                             if (Z) { break; }
                             
                             LDA Address.BasicInputBuffer, X
-                            IsDigit();
+                            Char.IsDigit();
                             if (NC) { SEC break; }  // Not a digit
                             
                             appendToTokenBuffer();
@@ -1148,7 +1148,7 @@ unit Tokenizer // Tokenizer.asm
             
             // Check if character is a digit
             LDA [ZP.IDX], Y
-            IsDigit();
+            Char.IsDigit();
             if (NC) // not digit
             {
                 /*
@@ -1291,7 +1291,7 @@ unit Tokenizer // Tokenizer.asm
             
             // Check if character is a digit
             LDA [ZP.IDX], Y
-            IsDigit();
+            Char.IsDigit();
             if (NC) { break; }  // Not a digit
             
             // Convert ASCII to digit value (0-9)

@@ -45,7 +45,7 @@ unit Commands
     // Output: Memory information printed to serial
     CmdMem()
     {
-        Memory.Available(); // Returns available bytes in ZP.ACC
+        Memory.AvailableACC(); // Returns available bytes in ZP.ACC
         
         LDA #(Messages.MemoryMsg % 256)
         STA ZP.STRL

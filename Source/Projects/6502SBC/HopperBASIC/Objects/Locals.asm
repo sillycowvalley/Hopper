@@ -350,26 +350,24 @@ unit Locals
     // Get local count in function's locals list
     // Input: ZP.IDX = function node address
     // Output: ZP.ACCL = local count, C set (always succeeds)
-    // Munts: ZP.LCURRENT, ZP.LNEXT
+    // Munts: ZP.LCURRENT, ZP.LNEXT, A, X, Y
     GetCount()
     {
-        PHA
-        PHX
-        
-        // Get locals list head from function node (IDX preserved)
-        LDY #Objects.snLocals
-        LDA [ZP.IDX], Y
-        STA ZP.LCURRENTL
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.LCURRENTH
+        // NOTE: optimizations in this method are hideous: be careful
         
         STZ ZP.ACCL  // Argument count
         
+        // Get locals list head from function node (IDX preserved)
+        LDY #( Objects.snLocals + 1)
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTH
+        DEY
+        LDA [ZP.IDX], Y
+        STA ZP.LCURRENTL
         loop
         {
             // Check if we've reached end of list
-            LDA ZP.LCURRENTL
+            // LDA ZP.LCURRENTL - pre-loaded on loop entry and continue
             ORA ZP.LCURRENTH
             if (Z) { break; }  // End of list
             
@@ -378,22 +376,13 @@ unit Locals
             // Move to next local (use LCURRENT, not IDX)
             LDY # lnNext
             LDA [ZP.LCURRENT], Y
-            STA ZP.LNEXTL        // Use LNEXT as temp
+            TAX
             INY
             LDA [ZP.LCURRENT], Y
-            STA ZP.LNEXTH
-            
-            // LCURRENT = LNEXT (never touch IDX)
-            LDA ZP.LNEXTL
-            STA ZP.LCURRENTL
-            LDA ZP.LNEXTH
             STA ZP.LCURRENTH
+            STX ZP.LCURRENTL
         }
-        
         SEC  // Always succeeds
-        
-        PLX
-        PLA
         // IDX unchanged!
     }
     
@@ -414,8 +403,7 @@ unit Locals
         STA ZP.IDYH
         
         // Set carry based on result
-        LDA ZP.IDYL
-        ORA ZP.IDYH
+        ORA ZP.IDYL // or with ZP.IDYH from above
         if (Z)
         {
             CLC  // No locals
@@ -435,25 +423,19 @@ unit Locals
     // Munts: ZP.LCURRENT
     IterateNext()
     {
-        PHA
-        
         // Get next pointer from current local node
         LDY # lnNext
         LDA [ZP.IDY], Y
         STA ZP.LCURRENTL
         INY
         LDA [ZP.IDY], Y
-        STA ZP.LCURRENTH
-        
-        // Copy to IDY
-        LDA ZP.LCURRENTL
-        STA ZP.IDYL
-        LDA ZP.LCURRENTH
         STA ZP.IDYH
         
+        LDA ZP.LCURRENTL
+        STA ZP.IDYL
+        
         // Set carry based on result
-        LDA ZP.IDYL
-        ORA ZP.IDYH
+        ORA ZP.IDYH // or with ZP.IDYL from above
         if (Z)
         {
             CLC  // End of locals
@@ -462,8 +444,6 @@ unit Locals
         {
             SEC  // Found next local
         }
-        
-        PLA
     }
     
     // Clear all locals in function's list with proper memory cleanup

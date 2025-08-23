@@ -437,8 +437,7 @@ unit Error // ErrorID.asm
     ForIteratorLocal()
     {
         LDA #ErrorID.ForIteratorLocal
-        STA ZP.LastError
-        CLC
+        commonError();
     }
 
     CannotRollback() inline

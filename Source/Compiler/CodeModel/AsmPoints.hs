@@ -1516,9 +1516,9 @@ unit AsmPoints
                         default:
                         {
                             // TODO
-                            string currentMethodName = Code.GetMethodName(currentMethod);
-                            string callMethodName = Code.GetMethodName(callMethodIndex);
-                            PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + (opCodes.Count).ToString());
+                            // string currentMethodName = Code.GetMethodName(currentMethod);
+                            // string callMethodName = Code.GetMethodName(callMethodIndex);
+                            // PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + (opCodes.Count).ToString());
                         }
                     }
                 }
