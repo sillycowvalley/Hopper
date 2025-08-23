@@ -262,6 +262,7 @@ unit ZP // ZeroPage.asm
     const byte TOKERRORL  = M8;  // Error position low (copy of ACCL)
     const byte TOKERRORH  = M9;  // Error position high (copy of ACCH)
     const byte TOKERRORFLAG = M10; // Flag: error marker printed for this line
+    const byte TOKSINGLEIF = M11;  // Flag: currently in single-line IF (bit 0)
     
     // FUNCTION PARAMETER WORKSPACE
     const byte FSOURCEADDRESS       = 0x5F;  // Source address parameter

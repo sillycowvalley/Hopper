@@ -25,6 +25,7 @@ unit TokenIterator // TokenIterator.asm
             
             STZ ZP.TOKPREV
             
+            
             // Check for null pointer
             LDA ZP.IDYL
             ORA ZP.IDYH
@@ -39,6 +40,7 @@ unit TokenIterator // TokenIterator.asm
             // Initialize position to 0
             STZ ZP.TOKPOSL
             STZ ZP.TOKPOSH
+            
             
             // Load first token
             LDY #0
@@ -244,18 +246,36 @@ unit TokenIterator // TokenIterator.asm
     // Preserves: A, all other registers
     isIndentIncreaseToken()
     {
-        switch (A)
+        loop
         {
-            case Token.FUNC:
-            case Token.IF:
-            case Token.FOR:
-            case Token.WHILE:
-            case Token.BEGIN:
-            case Token.ELSE:
-            { SEC return; }
-        }
-        
-        CLC // Not an indent-increasing token
+            switch (A)
+            {
+                case Token.FUNC:
+                case Token.FOR:
+                case Token.WHILE:
+                case Token.BEGIN:
+                {
+                    SEC
+                    break;
+                }
+                case Token.IF:
+                {
+                    SMB0 ZP.TOKSINGLEIF // entering IF line
+                    SEC
+                    break;
+                }
+                case Token.ELSE:
+                {
+                    if (BBR0, ZP.TOKSINGLEIF) // not in a single line IF
+                    {
+                        SEC
+                        break;
+                    }
+                }
+            }
+            CLC // Not an indent-increasing token
+            break;
+        } // single exit
     }
 
     // Check if token decreases indentation (-4 spaces)
@@ -264,17 +284,24 @@ unit TokenIterator // TokenIterator.asm
     // Preserves: A, all other registers
     isIndentDecreaseToken()
     {
-        switch (A)
+        loop
         {
-            case Token.EOF:
-            case Token.NEXT:
-            case Token.WEND:
-            case Token.ELSE:
-            case Token.UNTIL:
-            case Token.ENDIF:
-            { SEC return; }
-        }
-        CLC // Not an indent-decreasing token
+            switch (A)
+            {
+                case Token.EOF:
+                case Token.NEXT:
+                case Token.WEND:
+                case Token.UNTIL:
+                case Token.ENDIF:
+                case Token.ELSE:
+                {
+                    SEC
+                    break;
+                }
+            }
+            CLC // Not an indent-decreasing token
+            break;
+        } // single exit
     }
 
     // Print current indentation (TOKINDENT * 4 spaces)
@@ -423,6 +450,7 @@ unit TokenIterator // TokenIterator.asm
         STA ZP.TOKINDENT
         STZ ZP.TOKCOLON // not on a COLON line
         STZ ZP.TOKERRORFLAG // error marker not yet printed
+        STZ ZP.TOKSINGLEIF
         
         // Render each statement in the token stream
         loop
@@ -485,6 +513,8 @@ unit TokenIterator // TokenIterator.asm
             CMP #Token.EOL
             if (Z) 
             { 
+                RMB0 ZP.TOKSINGLEIF // no longer in a single like IF (if you were in one)
+                
                 Next(); // Skip EOL and continue
                 SEC // More statements may follow
                 break; 
@@ -524,6 +554,21 @@ unit TokenIterator // TokenIterator.asm
             
             // Render the current token
             renderToken(); // Input: A = token value
+            
+            if (BBS0, ZP.TOKSINGLEIF) // still within IF line?
+            {
+                CMP #Token.ENDIF
+                if (Z)
+                {
+                    // compensate for the IF ++ if we are still on the same line
+                    LDA ZP.TOKINDENT
+                    if (NZ) // Prevent underflow
+                    {
+                        DEC ZP.TOKINDENT
+                    }
+                    RMB0 ZP.TOKSINGLEIF
+                }
+            }
             
             // Advance to next token
             Next();
