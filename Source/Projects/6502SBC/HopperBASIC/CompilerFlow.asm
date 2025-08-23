@@ -30,6 +30,51 @@ unit CompilerFlow
         SBC ZP.IDXH    // Subtract source position MSB
         STA ZP.NEXTH   // Store forward offset MSB
     }
+    
+    // Patch 2-byte word operand in opcode buffer
+    // Input: ZP.IDX = relative position in buffer (instruction start or operand position)
+    //        ZP.NEXT = 16-bit value to patch in
+    //        A = Y offset to operand bytes (0 if ZP.IDX points to operand, 1 if ZP.IDX points to instruction)
+    // Output: Operand patched in buffer
+    // Modifies: ZP.IDX (converts to absolute address), Y
+    patchWordOperand()
+    {
+        TAY  // Save Y offset parameter
+        
+        // Calculate absolute address for patching
+        CLC
+        LDA ZP.OpCodeBufferL
+        ADC ZP.IDXL    // Add relative position
+        STA ZP.IDXL    // Absolute patch address LSB
+        LDA ZP.OpCodeBufferH
+        ADC ZP.IDXH    // Add relative position  
+        STA ZP.IDXH    // Absolute patch address MSB
+        
+        // Patch the operand bytes with value in ZP.NEXT
+        LDA ZP.NEXTL   // Forward offset LSB
+        STA [ZP.IDX], Y   // Patch LSB
+        INY
+        LDA ZP.NEXTH   // Forward offset MSB
+        STA [ZP.IDX], Y   // Patch MSB
+    }
+    
+    // Calculate backward offset between two buffer positions  
+    // Input: ZP.TOP = loop start position (where we want to jump TO)
+    //        ZP.IDY = current position (where we're jumping FROM)
+    // Output: ZP.TOP = backward offset (loop_start - current_position) 
+    // Modifies: ZP.TOPL, ZP.TOPH
+    calculateBackwardOffset()
+    {
+        // Calculate backward offset: loop_start - current_position
+        // This will be negative (jumping backward)
+        SEC
+        LDA ZP.TOPL    // Loop start position LSB
+        SBC ZP.IDYL    // Subtract current position LSB
+        STA ZP.TOPL    // Store backward offset LSB
+        LDA ZP.TOPH    // Loop start position MSB
+        SBC ZP.IDYH    // Subtract current position MSB
+        STA ZP.TOPH    // Store backward offset MSB
+    }
 
     // Compile WHILE...WEND statement
     // Input: ZP.CurrentToken = WHILE token
@@ -140,32 +185,13 @@ unit CompilerFlow
            // === BACKWARD JUMP OFFSET CALCULATION ===
            // Calculate offset from after JUMPW to loop start (condition evaluation)
            // Offset = loop_start - position_after_jumpw
-           SEC
-           LDA ZP.TOPL    // Loop start position LSB
-           SBC ZP.IDYL    // Subtract position after JUMPW LSB
-           STA ZP.TOPL    // Store backward offset LSB
-           LDA ZP.TOPH    // Loop start position MSB
-           SBC ZP.IDYH    // Subtract position after JUMPW MSB
-           STA ZP.TOPH    // Store backward offset MSB
+           calculateBackwardOffset();
            
            // === FORWARD JUMP PATCHING ===
            // Calculate absolute address in opcode buffer for patching
-           CLC
-           LDA ZP.OpCodeBufferL
-           ADC ZP.IDXL    // Add JUMPZW operand position
-           STA ZP.IDXL    // Absolute patch address LSB
-           LDA ZP.OpCodeBufferH
-           ADC ZP.IDXH    // Add JUMPZW operand position
-           STA ZP.IDXH    // Absolute patch address MSB
-
-           // Patch the JUMPZW operand bytes with calculated forward offset
-           LDY #1         // Skip opcode byte, point to first operand byte
-           LDA ZP.NEXTL   // Forward offset LSB
-           STA [ZP.IDX], Y   // Patch LSB
-           INY
-           LDA ZP.NEXTH   // Forward offset MSB
-           STA [ZP.IDX], Y   // Patch MSB
-           
+           LDA #1  // Skip opcode byte
+           patchWordOperand();
+                      
            // === BACKWARD JUMP EMISSION ===
            // Note: When JUMPW executes, PC has already advanced past 
            // the 3-byte instruction, so offset is from position after JUMPW
@@ -274,14 +300,8 @@ unit CompilerFlow
             
             // Calculate backward offset: loop_start - position_after_jumpzw
             // This will be negative (jumping backward)
-            SEC
-            LDA ZP.TOPL  // Loop start LSB
-            SBC ZP.IDYL  // Subtract position after JUMPZW
-            STA ZP.TOPL  // Backward offset LSB
-            LDA ZP.TOPH  // Loop start MSB
-            SBC ZP.IDYH  // Subtract position after JUMPZW
-            STA ZP.TOPH  // Backward offset MSB
-            
+            calculateBackwardOffset();
+                        
             // Emit JUMPZW with backward offset
             // Jump if condition is FALSE (i.e., UNTIL condition not met yet)
             LDA #OpCode.JUMPZW
@@ -450,20 +470,8 @@ unit CompilerFlow
                 STA ZP.NEXTH
                 
                 // Patch the JUMPZW operand
-                CLC
-                LDA ZP.OpCodeBufferL
-                ADC ZP.IDXL    // Add JUMPZW operand position
-                STA ZP.IDXL    // Absolute patch address LSB
-                LDA ZP.OpCodeBufferH
-                ADC ZP.IDXH
-                STA ZP.IDXH    // Absolute patch address MSB
-                
-                LDY #1         // Skip opcode byte, point to first operand byte
-                LDA ZP.NEXTL   // Forward offset LSB
-                STA [ZP.IDX], Y   // Patch LSB
-                INY
-                LDA ZP.NEXTH   // Forward offset MSB
-                STA [ZP.IDX], Y   // Patch MSB
+                LDA #1  // Skip opcode byte
+                patchWordOperand();
                 
                 // Compile ELSE block statements
                 CompileStatementBlock();
@@ -512,20 +520,8 @@ unit CompilerFlow
                 STA ZP.NEXTH
                 
                 // Patch the JUMPW operand
-                CLC
-                LDA ZP.OpCodeBufferL
-                ADC ZP.IDXL    // Add JUMPW operand position
-                STA ZP.IDXL    // Absolute patch address LSB
-                LDA ZP.OpCodeBufferH
-                ADC ZP.IDXH
-                STA ZP.IDXH    // Absolute patch address MSB
-                
-                LDY #1         // Skip opcode byte, point to first operand byte
-                LDA ZP.NEXTL   // Forward offset LSB
-                STA [ZP.IDX], Y   // Patch LSB
-                INY
-                LDA ZP.NEXTH   // Forward offset MSB
-                STA [ZP.IDX], Y   // Patch MSB
+                LDA #1  // Skip opcode byte
+                patchWordOperand();                
                 
                 // Pop and discard the already-patched JUMPZW position
                 DEC ZP.SP
@@ -576,20 +572,8 @@ unit CompilerFlow
                 STA ZP.NEXTH
                 
                 // Patch the JUMPZW operand
-                CLC
-                LDA ZP.OpCodeBufferL
-                ADC ZP.IDXL    // Add JUMPZW operand position
-                STA ZP.IDXL    // Absolute patch address LSB
-                LDA ZP.OpCodeBufferH
-                ADC ZP.IDXH
-                STA ZP.IDXH    // Absolute patch address MSB
-                
-                LDY #1         // Skip opcode byte, point to first operand byte
-                LDA ZP.NEXTL   // Forward offset LSB
-                STA [ZP.IDX], Y   // Patch LSB
-                INY
-                LDA ZP.NEXTH   // Forward offset MSB
-                STA [ZP.IDX], Y   // Patch MSB
+                LDA #1  // Skip opcode byte
+                patchWordOperand();
             }
             
             States.SetSuccess();
@@ -1289,14 +1273,9 @@ unit CompilerFlow
            STA ZP.IDYH
            
            // Backward offset = loop_start - position_after_FORIT
-           SEC
-           LDA ZP.TOPL
-           SBC ZP.IDYL
-           TAX  // Backward offset LSB
-           LDA ZP.TOPH
-           SBC ZP.IDYH
-           TAY  // Backward offset MSB
-           
+           calculateBackwardOffset();
+           LDX ZP.TOPL  // Backward offset LSB
+           LDY ZP.TOPH  // Backward offset MSB
                      
            // Emit appropriate iterator based on optimization constraints
            if (BBS3, ZP.CompilerFlags) // Optimized for FORITF
@@ -1337,21 +1316,8 @@ unit CompilerFlow
                STA ZP.NEXTH
                
                // Calculate absolute address for patching
-               CLC
-               LDA ZP.OpCodeBufferL
-               ADC ZP.IDXL
-               STA ZP.IDXL
-               LDA ZP.OpCodeBufferH
-               ADC ZP.IDXH
-               STA ZP.IDXH
-               
-               // Patch FORCHK operands
-               LDY #0  // Point to first operand byte (forward offset LSB)
-               LDA ZP.NEXTL
-               STA [ZP.IDX], Y
-               INY
-               LDA ZP.NEXTH
-               STA [ZP.IDX], Y
+               LDA #0  // ZP.IDX already points to operand position
+               patchWordOperand();
            }
            
            
