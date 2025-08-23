@@ -4,13 +4,31 @@ unit CompilerFlow
     // Save current opcode buffer position to stack
     // Output: Current position pushed to stack as ZP.TOP
     // Modifies: ZP.TOPL, ZP.TOPH, stack
-    SaveCurrentPosition()
+    saveCurrentPosition()
     {
         LDA ZP.OpCodeBufferContentLengthL
         STA ZP.TOPL
         LDA ZP.OpCodeBufferContentLengthH
         STA ZP.TOPH
-        Stacks.PushTop();
+        LDA # BASICType.WORD
+        Stacks.PushTop(); // type in A
+    }
+    
+    // Calculate forward offset between two buffer positions
+    // Input: ZP.IDY = target position (where we want to jump TO)
+    //        ZP.IDX = source position (where we're jumping FROM) 
+    // Output: ZP.NEXT = forward offset (target - source)
+    // Modifies: ZP.NEXTL, ZP.NEXTH
+    calculateForwardOffset()
+    {
+        // Calculate forward offset: target_position - source_position
+        SEC
+        LDA ZP.IDYL    // Target position LSB
+        SBC ZP.IDXL    // Subtract source position LSB
+        STA ZP.NEXTL   // Store forward offset LSB
+        LDA ZP.IDYH    // Target position MSB
+        SBC ZP.IDXH    // Subtract source position MSB
+        STA ZP.NEXTH   // Store forward offset MSB
     }
 
     // Compile WHILE...WEND statement
@@ -38,14 +56,14 @@ unit CompilerFlow
            }
            
            // Mark loop start position for backward jump (start of condition evaluation)
-           SaveCurrentPosition();
+           saveCurrentPosition();
            
            // Compile condition expression (e.g., "I < 10")
            Compiler.CompileFoldedExpressionTree(); // WHILE <expression>
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
-           SaveCurrentPosition();
+           saveCurrentPosition();
            
            // Check for compilation errors after consuming all 4 stack slots
            CheckError();
@@ -106,13 +124,7 @@ unit CompilerFlow
            // === FORWARD JUMP OFFSET CALCULATION ===
            // Calculate offset from JUMPZW operand position to loop exit
            // Offset = loop_exit - jumpzw_operand_position
-           SEC
-           LDA ZP.IDYL    // Current position (loop exit) LSB
-           SBC ZP.IDXL    // Subtract JUMPZW operand position LSB
-           STA ZP.NEXTL   // Store forward offset LSB
-           LDA ZP.IDYH    // Current position (loop exit) MSB
-           SBC ZP.IDXH    // Subtract JUMPZW operand position MSB
-           STA ZP.NEXTH   // Store forward offset MSB
+           calculateForwardOffset();
            
            // === BACKWARD JUMP SETUP ===
            // Account for the JUMPW instruction we're about to emit (3 bytes: opcode + 2 operands)
@@ -205,7 +217,7 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Mark loop start position for backward jump
-            SaveCurrentPosition();
+            saveCurrentPosition();
             
             CompileStatementBlock();
             CheckError();
@@ -343,7 +355,7 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Save position where JUMPZW operand will be (for patching)
-            SaveCurrentPosition();
+            saveCurrentPosition();
             
             
             INC ZP.CompilerTemp  // Track that we pushed a patch position 
@@ -397,7 +409,7 @@ unit CompilerFlow
                 
                 // Save position where JUMPW operand will be (for patching)
                 // This jump skips the ELSE block after THEN executes
-                SaveCurrentPosition();
+                saveCurrentPosition();
                 
                 INC ZP.CompilerTemp  // Track that we pushed another patch position (now 2 positions total)
                 
@@ -426,13 +438,7 @@ unit CompilerFlow
                 INC ZP.SP
                 
                 // Calculate forward offset: current_position - jumpzw_operand_position
-                SEC
-                LDA ZP.IDYL    // Current position LSB
-                SBC ZP.IDXL    // JUMPZW operand position LSB
-                STA ZP.NEXTL   // Forward offset LSB
-                LDA ZP.IDYH    // Current position MSB
-                SBC ZP.IDXH    // JUMPZW operand position MSB
-                STA ZP.NEXTH   // Forward offset MSB
+                calculateForwardOffset();
                 
                 // Adjust for PC being 3 bytes past the JUMPZW instruction start
                 SEC
@@ -494,13 +500,7 @@ unit CompilerFlow
                 STA ZP.IDYH  // Current position MSB
                 
                 // Calculate forward offset: current_position - jumpw_operand_position
-                SEC
-                LDA ZP.IDYL    // Current position LSB
-                SBC ZP.IDXL    // JUMPW operand position LSB
-                STA ZP.NEXTL   // Forward offset LSB
-                LDA ZP.IDYH    // Current position MSB
-                SBC ZP.IDXH    // JUMPW operand position MSB
-                STA ZP.NEXTH   // Forward offset MSB
+                calculateForwardOffset();
                 
                 // Adjust for PC being 3 bytes past the JUMPW instruction start
                 SEC
@@ -564,13 +564,7 @@ unit CompilerFlow
                 STA ZP.IDYH  // Current position MSB
                 
                 // Calculate forward offset: current_position - jumpzw_operand_position
-                SEC
-                LDA ZP.IDYL    // Current position LSB
-                SBC ZP.IDXL    // JUMPZW operand position LSB
-                STA ZP.NEXTL   // Forward offset LSB
-                LDA ZP.IDYH    // Current position MSB
-                SBC ZP.IDXH    // JUMPZW operand position MSB
-                STA ZP.NEXTH   // Forward offset MSB
+                calculateForwardOffset();
                 
                 //Adjust for PC being 3 bytes past the JUMPZW instruction
                 SEC
@@ -1185,7 +1179,7 @@ unit CompilerFlow
            }
            
            // Save loop body start position for FORIT's backward jump
-           SaveCurrentPosition();  // Push loop body start position
+           saveCurrentPosition();  // Push loop body start position
            
            // Skip any EOL tokens before loop body
            loop
@@ -1331,13 +1325,7 @@ unit CompilerFlow
                STA ZP.IDYH
                
                // Calculate forward offset: exit_point - FORCHK_operand_position
-               SEC
-               LDA ZP.IDYL
-               SBC ZP.IDXL
-               STA ZP.NEXTL
-               LDA ZP.IDYH
-               SBC ZP.IDXH
-               STA ZP.NEXTH
+               calculateForwardOffset();
                
                // Adjust for PC being 4 bytes past FORCHK when it executes
                SEC
