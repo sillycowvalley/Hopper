@@ -34,16 +34,20 @@ unit Allocate
     const byte maNEWHOLESIZE = M12;
     const byte maNEWHOLESIZEL = M12;
     const byte maNEWHOLESIZEH = M13;
+    
+    const byte maIndex = M14;
+    const byte maIndexL = M14;
+    const byte maIndexH = M15;
        
-    // Munts: ZP.FREELIST, ZP.ACCL(size), ZP.IDX (result), ZP.IDY
+    // Munts: A, Y, ZP.FREELIST, ZP.ACCL(size), -> ZP.IDX
     Allocate()
     {
         // size is in ACC
         // return address in IDX
         LDA ZP.FREELISTL
-        STA ZP.IDYL
+        STA maIndexL
         LDA ZP.FREELISTH
-        STA ZP.IDYH
+        STA maIndexH
 
         // size += 2 (space for 'size')
         Utilities.IncACC();
@@ -99,8 +103,8 @@ unit Allocate
         loop
         {
             // available block search loop    
-            LDA ZP.IDYL
-            ORA ZP.IDYH
+            LDA maIndexL
+            ORA maIndexH
             if (Z)
             {
                 break;
@@ -108,48 +112,48 @@ unit Allocate
     
             // read current FreeList
     
-            // [IDY] < ACC
+            // [maIndex] < ACC
             LDY #1
-            LDA [ZP.IDY], Y
+            LDA [maIndex], Y
             CMP ZP.ACCH
             if (Z)
             {
                 DEY
-                LDA [ZP.IDY], Y
+                LDA [maIndex], Y
                 CMP ZP.ACCL
             }
             loop
             {
-                if (NC) { break; } // [IDY] < ACC
-                // [IDY] >= ACC
+                if (NC) { break; } // [maIndex] < ACC
+                // [maIndex] >= ACC
         
                 // (0 != maBESTSIZE) ? 
                 LDA maBESTSIZEL
                 ORA maBESTSIZEH
                 if (NZ)
                 {
-                    // [ZP.IDY] < maBESTSIZE ?
+                    // [maIndex] < maBESTSIZE ?
                     LDY #1
-                    LDA [ZP.IDY], Y
+                    LDA [maIndex], Y
                     CMP maBESTSIZEH
                     if (Z)
                     {
                         DEY
-                        LDA [ZP.IDY], Y
+                        LDA [maIndex], Y
                         CMP maBESTSIZEL
                     }
                     if (C)
                     {
-                        break;  // [ZP.IDY] < maBESTSIZE
+                        break;  // [maIndex] < maBESTSIZE
                     }
                 }
     
                 // first available block
                 //  or
                 // better than what we've seen so far in terms of fit   
-                LDA ZP.IDYL
+                LDA maIndexL
                 STA maBESTL
-                LDA ZP.IDYH
+                LDA maIndexH
                 STA maBESTH
         
                 // bestSize = ReadWord(best);
@@ -196,15 +200,15 @@ unit Allocate
                 }
             }
     
-            // IDY = ReadWord(IDY + 2);
+            // maIndex = ReadWord(maIndex + 2);
             LDY #2
-            LDA [ZP.IDY], Y
+            LDA [maIndex], Y
             PHA
             INY
-            LDA [ZP.IDY], Y
-            STA ZP.IDYH
+            LDA [maIndex], Y
+            STA maIndexH
             PLA
-            STA ZP.IDYL
+            STA maIndexL
         } // loop : available block search
 
         // address = best + 2

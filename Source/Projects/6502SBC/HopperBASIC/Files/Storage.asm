@@ -982,7 +982,7 @@ Debug.NL();
             LDA ZP.FLENGTHH
             STA ZP.ACCH
             
-            Memory.Allocate();
+            Memory.Allocate(); // Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             LDA ZP.IDXL

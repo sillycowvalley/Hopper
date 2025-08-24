@@ -960,7 +960,7 @@ unit Functions
             LDA ZP.OpCodeBufferContentLengthH
             STA ZP.ACCH
             
-            Memory.Allocate(); // copyOpCodesToFunction(): Returns address in ZP.IDX
+            Memory.Allocate(); // copyOpCodesToFunction(): Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Save allocated opcode storage address

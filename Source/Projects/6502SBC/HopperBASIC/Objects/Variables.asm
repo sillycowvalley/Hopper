@@ -794,7 +794,7 @@ unit Variables
             ADC #0  // Add carry
             STA ZP.ACCH
            
-            Memory.Allocate(); // Variables.AllocateAndCopyString(): Returns address in ZP.IDX (temporarily)
+            Memory.Allocate(); // Variables.AllocateAndCopyString(): Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Move allocated pointer to ZP.IDY for return

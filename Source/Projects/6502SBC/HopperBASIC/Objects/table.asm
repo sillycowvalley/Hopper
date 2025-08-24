@@ -57,10 +57,9 @@ unit Table // Table.asm
             }
             
             // Load next pointer: [IDX] -> IDX
-            LDY #0
-            LDA [ZP.IDX], Y
+            LDA [ZP.IDX]
             PHA
-            INY
+            LDY #1
             LDA [ZP.IDX], Y
             STA ZP.IDXH
             PLA
@@ -95,21 +94,16 @@ unit Table // Table.asm
         
         loop // start of single exit block
         {
-            // Save inputs in ZP.Lxx slots (legitimate scratch space)
-            STX ZP.LHEADX           // ZP address of list head pointer
-            
-            Memory.Allocate();      // Table.Add(): Clean API - preserves everything except ZP.IDX, flags
+            Memory.Allocate();       // Table.Add(): Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // IDX->NEXT = null
-            LDY #0
             LDA #0
-            STA [IDX], Y
-            INY
+            STA [IDX]
+            LDY #1
             STA [IDX], Y
             
-            // load first node from head
-            LDX ZP.LHEADX
+            // load first node from head (X)
             LDA 0x00, X             // Get low byte of pointer to first node
             STA ZP.LCURRENTL
             LDA 0x01, X             // Get high byte of pointer to first node
@@ -130,10 +124,10 @@ unit Table // Table.asm
             // we need to walk to find the end
             loop
             {
-                LDY #0
-                LDA [ZP.LCURRENT], Y
+                
+                LDA [ZP.LCURRENT]
                 STA ZP.LNEXTL
-                INY
+                LDY #1
                 LDA [ZP.LCURRENT], Y
                 STA ZP.LNEXTH
             
@@ -141,10 +135,9 @@ unit Table // Table.asm
                 if (Z)
                 {
                     // LCURRENT is the last node so CURRENT-NEXT = IDX
-                    LDY #0
                     LDA ZP.IDXL
-                    STA [ZP.LCURRENT], Y
-                    INY
+                    STA [ZP.LCURRENT]
+                    LDY #1
                     LDA ZP.IDXH
                     STA [ZP.LCURRENT], Y
                     break;
@@ -216,10 +209,9 @@ unit Table // Table.asm
                     // Special case: deleting first node
                     // Update list head VALUE from the next pointer from first node (could be null)
                     LDX ZP.LHEADX
-                    LDY #0
-                    LDA [ZP.LCURRENT], Y
+                    LDA [ZP.LCURRENT]
                     STA 0x00, X
-                    INY
+                    LDY #1
                     LDA [ZP.LCURRENT], Y
                     STA 0x01, X
                     
@@ -262,10 +254,9 @@ unit Table // Table.asm
                     break; // exits inner loop, which will break outer loop
                 }
                 
-                LDY #0
-                LDA [ZP.LCURRENT], Y
+                LDA [ZP.LCURRENT]
                 STA ZP.LNEXTL
-                INY
+                LDY #1
                 LDA [ZP.LCURRENT], Y
                 STA ZP.LNEXTH
                 
@@ -280,10 +271,9 @@ unit Table // Table.asm
                     {
                         // Found the node to delete
                         // Update previous node's next pointer to skip deleted node
-                        LDY #0
                         LDA ZP.LNEXTL
-                        STA [ZP.LPREVIOUS], Y
-                        INY
+                        STA [ZP.LPREVIOUS]
+                        LDY #1
                         LDA ZP.LNEXTH
                         STA [ZP.LPREVIOUS], Y
                         

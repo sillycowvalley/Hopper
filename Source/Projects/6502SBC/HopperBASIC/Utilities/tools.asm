@@ -180,7 +180,7 @@ unit Tools // Tools.asm
             LDA ZP.FLENGTHH
             STA ZP.ACCH
             IncACC(); // for the EOF
-            Memory.Allocate();  // Tools.CreateTokenStream(): Returns address in ZP.IDX
+            Memory.Allocate();  // Tools.CreateTokenStream(): Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Set up copy source = TokenizerBuffer + saved position

@@ -41,7 +41,7 @@ unit Locals
             
             // 1. Allocate and initialize new node
             calculateNodeSize();       // Returns size in ZP.ACC
-            Memory.Allocate();         // Locals.Add(): Returns address in ZP.IDX
+            Memory.Allocate();         // Locals.Add(): Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             LDA ZP.IDXL
@@ -75,10 +75,9 @@ unit Locals
             loop
             {
                 // Check if *LPREVIOUS is NULL (insertion point found)
-                LDY #0
-                LDA [ZP.LPREVIOUS], Y
+                LDA [ZP.LPREVIOUS]
                 STA ZP.LNEXTL
-                INY
+                LDY #1
                 LDA [ZP.LPREVIOUS], Y
                 STA ZP.LNEXTH
                 

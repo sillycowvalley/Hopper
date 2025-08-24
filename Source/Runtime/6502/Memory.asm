@@ -172,26 +172,23 @@ unit Memory // Memory.asm
     // Allocate memory block
     // Input: ZP.ACC = requested size (16-bit) 
     // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
-    // Modifies: ZP.M* scratch space (internal to memory management operations)
+    // Munts: ZP.M*, ZP.FREELIST, ZP.ACCL(size), -> ZP.IDX
     const string memoryAllocate = "Allocate";
     Allocate()
     {
         PHA
-        PHX
         PHY
 
 #ifdef TRACE
         //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-
         LDA ZP.ACCL
         PHA
         LDA ZP.ACCH
         PHA
         
-        Allocate.Allocate(); // -> ZP.IDX
-        
+        Allocate.Allocate(); // Munts: A, Y, ZP.FREELIST, ZP.ACCL(size), -> ZP.IDX
         LDA ZP.IDXL
         ORA ZP.IDXH
         if (Z)
@@ -209,10 +206,8 @@ unit Memory // Memory.asm
 #ifdef TRACE
         //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
-
         
         PLY
-        PLX
         PLA
     }
     

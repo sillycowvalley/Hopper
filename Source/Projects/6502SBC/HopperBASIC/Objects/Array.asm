@@ -116,7 +116,7 @@ unit BASICArray
             STA ACCH
             
             // Allocate memory for array
-            Memory.Allocate();  // Array.New(): Input: ZP.ACC = size, Output: ZP.IDX = address
+            Memory.Allocate();  // Array.New(): Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Initialize allocated memory to zero
