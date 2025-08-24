@@ -845,18 +845,10 @@ unit Variables
     // Free string memory for STRING variable
     // Input: ZP.IDX = variable node address (must be STRING type)
     // Output: C set if successful, NC if error or not a STRING variable  
-    // Modifies: ZP.ACCT, ZP.IDY, ZP.NEXT
-    // Preserves: ZP.IDX (variable node address)
+    // Munts: A
+    // Preserves: ZP.IDX (variable node address), ZP.ACCT, ZP.IDY, ZP.NEXT
     FreeCompoundValue()
     {
-        PHA
-        PHX
-        PHY
-        
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
         LDA ZP.ACCT
         PHA
         LDA ZP.IDYL
@@ -867,17 +859,11 @@ unit Variables
         PHA
         LDA ZP.NEXTH
         PHA
-        LDA ZP.TOPL
-        PHA
-        LDA ZP.TOPH
-        PHA
-        LDA ZP.TOPT
-        PHA
         
         loop // single exit
         {
             // Get variable data
-            Objects.GetData(); // Returns type in ZP.ACCT, value in ZP.IDY
+            Objects.GetData(); // Input: IDX, Returns type in ZP.ACCT, value in ZP.IDY, tokens in ZP.NEXT
             
             // Check if it's a ARRAY variable
             if (BBR5, ZP.ACCT) // Bit 5 - ARRAY
@@ -904,25 +890,8 @@ unit Variables
                 break;
             }
             
-            // Save ZP.IDX (variable node)
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
-            
             // Free the string memory (use different register than IDX)
-            LDA ZP.IDYL
-            STA ZP.IDXL
-            LDA ZP.IDYH
-            STA ZP.IDXH
-            
-            Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
-                   
-            // Restore ZP.IDX (variable node)
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
+            Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
                  
             STZ ZP.IDYL  // Zero out for Objects.SetValue
             STZ ZP.IDYH
@@ -934,12 +903,6 @@ unit Variables
         
                 
         PLA
-        STA ZP.TOPT
-        PLA
-        STA ZP.TOPH
-        PLA
-        STA ZP.TOPL
-        PLA
         STA ZP.NEXTH
         PLA
         STA ZP.NEXTL
@@ -949,14 +912,6 @@ unit Variables
         STA ZP.IDYL
         PLA
         STA ZP.ACCT
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
-        PLY
-        PLX
-        PLA
     }
     
     // Resolve variable or constant by name

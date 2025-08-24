@@ -211,6 +211,7 @@ unit Objects
     // Get symbol data from found node
     // Input: ZP.IDX = symbol node address (from Find)
     // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value/args
+    // Munts: A, ZP.NEXT, ZP.ACCT
     GetData()
     {
         PHY
