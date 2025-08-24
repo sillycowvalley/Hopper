@@ -423,7 +423,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.FLENGTHH
             
             // Create token stream copy
-            Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Tools.CreateTokenStream(); // captureBeginBody() : Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
             CheckError();
             if (NC) { break; }
             
@@ -432,11 +432,6 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.IDXL
             LDA (Statement.stmtObjectPtr + 1)
             STA ZP.IDXH
-            
-            LDA ZP.FDESTINATIONADDRESSL
-            STA ZP.IDYL
-            LDA ZP.FDESTINATIONADDRESSH
-            STA ZP.IDYH
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             CheckError();
@@ -522,7 +517,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.FLENGTHH
             
             // Create token stream copy using existing pattern
-            Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Tools.CreateTokenStream(); // captureFunctionBody(): Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
             CheckError();
             if (NC) { break; }
             
@@ -532,12 +527,6 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.IDXL
             LDA (Statement.stmtObjectPtr + 1)
             STA ZP.IDXH
-            
-            // Function body tokens are in ZP.FDESTINATIONADDRESS
-            LDA ZP.FDESTINATIONADDRESSL
-            STA ZP.IDYL
-            LDA ZP.FDESTINATIONADDRESSH
-            STA ZP.IDYH
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             CheckError();
@@ -749,7 +738,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.FLENGTHH
             
             // Create token stream for function body (without ENDFUNC/END)
-            Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Tools.CreateTokenStream(); // CompletePartialFunction(): Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
             CheckError();
             if (NC) { break; }
             
@@ -758,12 +747,6 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.IDXL
             LDA (Statement.stmtObjectPtr + 1)
             STA ZP.IDXH
-            
-            // Set function body tokens
-            LDA ZP.FDESTINATIONADDRESSL
-            STA ZP.IDYL
-            LDA ZP.FDESTINATIONADDRESSH
-            STA ZP.IDYH
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             CheckError();

@@ -116,7 +116,7 @@ unit BASICArray
             STA ACCH
             
             // Allocate memory for array
-            Memory.Allocate();  // Input: ZP.ACC = size, Output: ZP.IDX = address
+            Memory.Allocate();  // Array.New(): Input: ZP.ACC = size, Output: ZP.IDX = address
             LDA ZP.IDXL
             ORA ZP.IDXH
             if (Z)

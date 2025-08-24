@@ -679,13 +679,13 @@ unit Statement // Statement.asm
                         }
                         DEC ZP.FLENGTHL
                         
-                        Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+                        Tools.CreateTokenStream(); // Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream
-                        LDA ZP.FDESTINATIONADDRESSL
+                        LDA ZP.IDYL
                         STA (stmtTokensPtr + 0)
-                        LDA ZP.FDESTINATIONADDRESSH
+                        LDA ZP.IDYH
                         STA (stmtTokensPtr + 1)
                      
                         // Pop the result into NEXT
@@ -761,13 +761,13 @@ unit Statement // Statement.asm
                         LDA ZP.TokenizerPosH
                         SBC ZP.FSOURCEADDRESSH
                         STA ZP.FLENGTHH  // Length high
-                        Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+                        Tools.CreateTokenStream(); // Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream
-                        LDA ZP.FDESTINATIONADDRESSL
+                        LDA ZP.IDYL
                         STA (stmtTokensPtr + 0)
-                        LDA ZP.FDESTINATIONADDRESSH
+                        LDA ZP.IDYH
                         STA (stmtTokensPtr + 1)
                      
                         // Pop the result into NEXT

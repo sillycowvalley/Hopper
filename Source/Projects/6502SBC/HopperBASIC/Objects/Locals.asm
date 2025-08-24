@@ -41,7 +41,7 @@ unit Locals
             
             // 1. Allocate and initialize new node
             calculateNodeSize();       // Returns size in ZP.ACC
-            Memory.Allocate();         // Returns address in ZP.IDX
+            Memory.Allocate();         // Locals.Add(): Returns address in ZP.IDX
             
             LDA ZP.IDXL
             ORA ZP.IDXH

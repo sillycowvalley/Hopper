@@ -794,7 +794,7 @@ unit Variables
             ADC #0  // Add carry
             STA ZP.ACCH
            
-            Memory.Allocate(); // Returns address in ZP.IDX (temporarily)
+            Memory.Allocate(); // Variables.AllocateAndCopyString(): Returns address in ZP.IDX (temporarily)
            
             LDA ZP.IDXL
             ORA ZP.IDXH

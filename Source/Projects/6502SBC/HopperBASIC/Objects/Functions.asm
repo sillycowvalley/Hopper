@@ -960,7 +960,7 @@ unit Functions
             LDA ZP.OpCodeBufferContentLengthH
             STA ZP.ACCH
             
-            Memory.Allocate(); // Returns address in ZP.IDX
+            Memory.Allocate(); // copyOpCodesToFunction(): Returns address in ZP.IDX
             
             LDA ZP.IDXL
             ORA ZP.IDXH

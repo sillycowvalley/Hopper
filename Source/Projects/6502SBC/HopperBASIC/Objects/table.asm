@@ -98,7 +98,7 @@ unit Table // Table.asm
             // Save inputs in ZP.Lxx slots (legitimate scratch space)
             STX ZP.LHEADX           // ZP address of list head pointer
             
-            Memory.Allocate();      // Clean API - preserves everything except ZP.IDX, flags
+            Memory.Allocate();      // Table.Add(): Clean API - preserves everything except ZP.IDX, flags
             
             LDA ZP.IDXL
             ORA ZP.IDXH

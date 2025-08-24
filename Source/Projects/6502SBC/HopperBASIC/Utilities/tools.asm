@@ -158,7 +158,7 @@ unit Tools // Tools.asm
     // Input: ZP.FSOURCEADDRESS = start position in BasicTokenizerBuffer
     //        ZP.FLENGTH = length of token stream to copy
     // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
-    // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
+    // Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
     // Error: Sets ZP.LastError if memory allocation fails
     const string createTokenStreamTrace = "CreateTokStr";
     CreateTokenStream()
@@ -180,7 +180,7 @@ unit Tools // Tools.asm
             LDA ZP.FLENGTHH
             STA ZP.ACCH
             IncACC(); // for the EOF
-            Memory.Allocate();  // Returns address in ZP.IDX
+            Memory.Allocate();  // Tools.CreateTokenStream(): Returns address in ZP.IDX
             
             LDA ZP.IDXL
             ORA ZP.IDXH
@@ -192,7 +192,7 @@ unit Tools // Tools.asm
                 break;
             }
             
-            // Set up copy: source = TokenizerBuffer + saved position
+            // Set up copy source = TokenizerBuffer + saved position
             CLC
             LDA ZP.TokenBufferL
             ADC ZP.FSOURCEADDRESSL
@@ -201,10 +201,12 @@ unit Tools // Tools.asm
             ADC ZP.FSOURCEADDRESSH
             STA ZP.FSOURCEADDRESSH
             
-            // Destination = allocated memory
+            // Return result and copy destination = allocated memory
             LDA ZP.IDXL
+            STA ZP.IDYL
             STA ZP.FDESTINATIONADDRESSL
             LDA ZP.IDXH
+            STA ZP.IDYH
             STA ZP.FDESTINATIONADDRESSH
             
             // Copy the token stream
@@ -213,12 +215,6 @@ unit Tools // Tools.asm
             // Side Effect: ZP.FDESTINATIONADDRESS points one byte beyond end of Memory.Copy()
             LDA #Token.EOF
             STA [ZP.FDESTINATIONADDRESS] // Write EOF token
-            
-            // Destination = allocated memory
-            LDA ZP.IDXL
-            STA ZP.FDESTINATIONADDRESSL
-            LDA ZP.IDXH
-            STA ZP.FDESTINATIONADDRESSH
             
             SEC
             
