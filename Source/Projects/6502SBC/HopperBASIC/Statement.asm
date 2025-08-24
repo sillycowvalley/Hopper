@@ -1006,7 +1006,7 @@ unit Statement // Statement.asm
             STA ZP.IDXL
             LDA (stmtTokensPtr+1)
             STA ZP.IDXH
-            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+            Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
         }
         LDA (stmtStringPtr+0)
         ORA (stmtStringPtr+1)
@@ -1016,7 +1016,7 @@ unit Statement // Statement.asm
             STA ZP.IDXL
             LDA (stmtStringPtr+1)
             STA ZP.IDXH
-            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+            Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
         }
 
 #ifdef TRACE

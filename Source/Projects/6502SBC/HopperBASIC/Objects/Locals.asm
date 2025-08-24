@@ -441,65 +441,46 @@ unit Locals
     // Clear all locals in function's list with proper memory cleanup
     // Input: ZP.IDX = function node address
     // Output: Function's locals field set to null, all local nodes freed, C set (always succeeds)
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
+    // Munts: A, ZP.IDY, ZP.M*, ZP.NEXT
     Clear()
     {
-        PHA
-        PHX
         PHY
-        
-        // Save function node address since Memory.Free() will munt ZP.IDX
-        LDA ZP.IDXL
-        STA ZP.SymbolTemp0
-        LDA ZP.IDXH
-        STA ZP.SymbolTemp1
         
         loop
         {
             // Get first local from function node (use saved address)
             LDY #Objects.snLocals
-            LDA [ZP.SymbolTemp0], Y
-            STA ZP.IDXL
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
             INY
-            LDA [ZP.SymbolTemp0], Y
-            STA ZP.IDXH
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
             
             // Check if locals list is empty
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z) { break; }
+            ORA ZP.IDYL
+            if (Z) { SEC break; }
             
             // Get next pointer from first local (use IDY instead of IDX)
             LDY # lnNext
-            LDA [ZP.IDX], Y
+            LDA [ZP.IDY], Y
             STA ZP.LNEXTL
             INY
-            LDA [ZP.IDX], Y
+            LDA [ZP.IDY], Y
             STA ZP.LNEXTH
             
             // Store the next pointer as the new head local
             LDY #Objects.snLocals
             LDA ZP.LNEXTL
-            STA [ZP.SymbolTemp0], Y
+            STA [ZP.IDX], Y
             INY
             LDA ZP.LNEXTH
-            STA [ZP.SymbolTemp0], Y
+            STA [ZP.IDX], Y
             
             // Free the current local node
-            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+            Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
+            if (NC) { break; }
         }
-        
-        // Restore function node address for caller
-        LDA ZP.SymbolTemp0
-        STA ZP.IDXL
-        LDA ZP.SymbolTemp1
-        STA ZP.IDXH
-        
-        SEC  // Always succeeds
-        
         PLY
-        PLX
-        PLA
     }
     
     // Internal helper: Calculate required local node size
@@ -730,7 +711,7 @@ unit Locals
                     STA ZP.IDXL
                     LDA ZP.LCURRENTH
                     STA ZP.IDXH
-                    Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+                    Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
                     break;
                 }
                 

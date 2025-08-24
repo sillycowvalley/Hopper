@@ -206,7 +206,7 @@ unit Memory // Memory.asm
 #ifdef TRACE
         //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
-        
+        SEC
         PLY
         PLA
     }
@@ -214,16 +214,10 @@ unit Memory // Memory.asm
     // Free memory block
     // Input: ZP.IDX = address to free (must not be 0x0000)
     // Output: C set (success)
-    // Modifies: ZP.M* scratch space (internal to memory management operations), C on success
-    const string memoryFree = "Free";
+    // Munts:  A, ZP.M* scratch space (internal to memory management operations), C on success
     Free()
     {   
-        PHA
         PHY
-
-#ifdef TRACE
-        //LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
 
 #if defined(DEBUG) || defined(TRACE)
         LDA IDXL
@@ -236,15 +230,30 @@ unit Memory // Memory.asm
         
         Free.Free(); // Munts: ZP.IDX, ZP.FREELIST 
         
-#ifdef TRACE
-        //LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
         
         SEC // success
         
         PLY
-        PLA
     }
+    FreeIDY()
+    {
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        LDA ZP.IDYL
+        STA ZP.IDXL
+        LDA ZP.IDYH
+        STA ZP.IDXH
+        Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+    }
+    
 #else
     Allocate()
     {

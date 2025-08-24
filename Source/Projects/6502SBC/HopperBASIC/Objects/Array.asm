@@ -519,7 +519,7 @@ unit BASICArray
             STA ZP.IDXL
             LDA ZP.TOPH
             STA ZP.IDXH
-            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+            Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
             
             // Input: ZP.ACC = number of elements (16-bit), ZP.ACCT = element type (BASICType enum)
             // Output: ZP.IDX = allocated array pointer, C set if successful, NC if allocation failed

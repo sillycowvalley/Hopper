@@ -291,21 +291,7 @@ unit Functions
             ORA ZP.IDYH
             if (NZ)  // Non-zero tokens pointer
             {
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                
-                LDA ZP.IDYL
-                STA ZP.IDXL
-                LDA ZP.IDYH
-                STA ZP.IDXH
-                Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
-                
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
+                Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
             }
             
             freeOpCodes();
@@ -361,7 +347,7 @@ unit Functions
     
     // Clear all functions
     // Output: Empty function table, C set (always succeeds)
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
+    // Munts: ZP.IDY, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Clear()
     {
         PHA
@@ -374,7 +360,7 @@ unit Functions
         loop
         {
             LDX #ZP.FunctionsList
-            Table.GetFirst();
+            Table.GetFirst(); // -> ZP.IDX
             
             if (NC) { break; }  // No more functions
             
@@ -388,15 +374,11 @@ unit Functions
             ORA ZP.IDYH
             if (NZ)  // Non-zero tokens pointer
             {
-                LDA ZP.IDYL
-                STA ZP.IDXL
-                LDA ZP.IDYH
-                STA ZP.IDXH
-                Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+                Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
                                
                 // Re-establish function node address after Memory.Free munts everything
                 LDX #ZP.FunctionsList
-                Table.GetFirst();
+                Table.GetFirst(); // -> ZP.IDX
             }
             
             // Delete the function node
@@ -434,23 +416,7 @@ unit Functions
         ORA ZP.IDYH
         if (NZ)  // Non-zero tokens pointer
         {
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
-            
-            // Free old tokens
-            LDA ZP.IDYL
-            STA ZP.IDXL
-            LDA ZP.IDYH
-            STA ZP.IDXH
-            Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
-            
-            // Restore function node address
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
+            Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
         }
         
         // Restore new tokens pointer
@@ -472,11 +438,6 @@ unit Functions
     freeOpCodes()
     {
         
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-            
         // clear opCodes stream
         LDY # Objects.snOpCodes
         LDA [ZP.IDX], Y
@@ -489,18 +450,8 @@ unit Functions
         ORA ZP.IDYL
         if (NZ)
         {
-            LDA ZP.IDYL
-            STA ZP.IDXL
-            LDA ZP.IDYH
-            STA ZP.IDXH
-            
-            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+            Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
         }
-        
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
                         
         // set to null
         LDY # Objects.snOpCodes

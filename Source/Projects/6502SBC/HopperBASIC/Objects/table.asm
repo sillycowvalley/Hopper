@@ -225,10 +225,9 @@ unit Table // Table.asm
                     PLA
                     STA ZP.IDXL
                     
-                    Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+                    Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
                     
-                    // Push dummy values back for consistent exit
-                    LDA #0
+                    // Push random value back for stack balance
                     PHA
                     PHA
                     PHA
@@ -285,10 +284,9 @@ unit Table // Table.asm
                         PLA
                         STA ZP.IDXL
                         
-                        Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
+                        Memory.Free(); // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
                         
-                        // Push dummy values back for consistent exit
-                        LDA #0
+                        // Push random value back for stack balance
                         PHA
                         PHA
                         PHA
