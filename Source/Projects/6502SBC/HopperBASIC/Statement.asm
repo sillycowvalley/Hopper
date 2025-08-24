@@ -679,7 +679,7 @@ unit Statement // Statement.asm
                         }
                         DEC ZP.FLENGTHL
                         
-                        CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+                        Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream
@@ -761,7 +761,7 @@ unit Statement // Statement.asm
                         LDA ZP.TokenizerPosH
                         SBC ZP.FSOURCEADDRESSH
                         STA ZP.FLENGTHH  // Length high
-                        CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+                        Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
                         if (NC) { break; } // error exit
                         
                         // Set tokens pointer to the new stream
@@ -1024,126 +1024,5 @@ unit Statement // Statement.asm
 #endif
     }
       
-    // Create token stream from tokenizer buffer slice
-    // Input: ZP.FSOURCEADDRESS = start position in BasicTokenizerBuffer
-    //        ZP.FLENGTH = length of token stream to copy
-    // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
-    // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
-    // Error: Sets ZP.LastError if memory allocation fails
-    const string createTokenStreamTrace = "CreateTokStr";
-    CreateTokenStream()
-    {
-        PHA
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-#ifdef TRACE
-        LDA #(createTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(createTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        
-        loop
-        {
-            // Allocate memory for token stream
-            LDA ZP.FLENGTHL
-            STA ZP.ACCL
-            LDA ZP.FLENGTHH
-            STA ZP.ACCH
-            IncACC(); // for the EOF
-            Memory.Allocate();  // Returns address in ZP.IDX
-            
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                // Allocation failed
-                Error.OutOfMemory(); BIT ZP.EmulatorPCL
-                CLC
-                break;
-            }
-            
-            // Set up copy: source = TokenizerBuffer + saved position
-            CLC
-            LDA ZP.TokenBufferL
-            ADC ZP.FSOURCEADDRESSL
-            STA ZP.FSOURCEADDRESSL
-            LDA ZP.TokenBufferH
-            ADC ZP.FSOURCEADDRESSH
-            STA ZP.FSOURCEADDRESSH
-            
-            // Destination = allocated memory
-            LDA ZP.IDXL
-            STA ZP.FDESTINATIONADDRESSL
-            LDA ZP.IDXH
-            STA ZP.FDESTINATIONADDRESSH
-            
-            
-            // Save the input parameters that we'll modify during copying
-            LDA ZP.FDESTINATIONADDRESSL
-            PHA
-            LDA ZP.FDESTINATIONADDRESSH
-            PHA
-            LDA ZP.FLENGTHL
-            PHA
-            LDA ZP.FLENGTHH
-            PHA
-            
-            // Copy the token stream
-            Memory.Copy();
-            
-            // Restore the input parameters in reverse order
-            PLA
-            STA ZP.FLENGTHH
-            PLA
-            STA ZP.FLENGTHL
-            PLA
-            STA ZP.FDESTINATIONADDRESSH
-            PLA
-            STA ZP.FDESTINATIONADDRESSL
-            
-            // ADD: Append EOF after the copied tokens
-            // FDESTINATIONADDRESS points to start, add FLENGTH to get to end
-            CLC
-            LDA ZP.FDESTINATIONADDRESSL
-            ADC ZP.FLENGTHL
-            STA ZP.ACCL
-            LDA ZP.FDESTINATIONADDRESSH
-            ADC ZP.FLENGTHH
-            STA ZP.ACCH
-            
-            // Write EOF token
-            LDA #Token.EOF
-            LDY #0
-            STA [ZP.ACC], Y
-            
-            // Destination = allocated memory
-            LDA ZP.IDXL
-            STA ZP.FDESTINATIONADDRESSL
-            LDA ZP.IDXH
-            STA ZP.FDESTINATIONADDRESSH
-            
-            SEC
-            
-            break;
-        } // loop    
-        
-#ifdef TRACE
-        LDA #(createTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(createTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        PLA
-        STA ZP.IDXH    
-        PLA
-        STA ZP.IDXL
-        PLA
-    }
+    
 }

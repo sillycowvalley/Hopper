@@ -472,6 +472,8 @@ unit Memory // Memory.asm
     //        ZP.FDESTINATIONADDRESS = destination pointer  
     //        ZP.FLENGTH = number of bytes to copy (16-bit)
     // Output: Data copied from source to destination
+    // Munts: A, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
+    // Side Effect: ZP.FDESTINATIONADDRESS points one byte beyond last byte (used by CreateTokenStream)
     Copy()
     {
         loop
@@ -482,9 +484,8 @@ unit Memory // Memory.asm
             if (Z) { break; }  // Nothing left to copy
             
             // Copy one byte: *FDESTINATIONADDRESS = *FSOURCEADDRESS
-            LDY #0
-            LDA [ZP.FSOURCEADDRESS], Y
-            STA [ZP.FDESTINATIONADDRESS], Y
+            LDA [ZP.FSOURCEADDRESS]
+            STA [ZP.FDESTINATIONADDRESS]
             
             // Increment FSOURCEADDRESS
             INC ZP.FSOURCEADDRESSL

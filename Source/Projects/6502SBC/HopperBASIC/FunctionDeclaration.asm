@@ -423,7 +423,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.FLENGTHH
             
             // Create token stream copy
-            Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
             CheckError();
             if (NC) { break; }
             
@@ -522,7 +522,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.FLENGTHH
             
             // Create token stream copy using existing pattern
-            Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
             CheckError();
             if (NC) { break; }
             
@@ -749,7 +749,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.FLENGTHH
             
             // Create token stream for function body (without ENDFUNC/END)
-            Statement.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
+            Tools.CreateTokenStream(); // Uses ZP.FSOURCEADDRESS, ZP.FLENGTH
             CheckError();
             if (NC) { break; }
             

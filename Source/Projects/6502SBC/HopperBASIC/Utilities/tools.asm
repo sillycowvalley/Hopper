@@ -25,63 +25,7 @@ unit Tools // Tools.asm
             break;
         } // exit loop
     }
-    /*
-    // Print null-terminated string to serial output
-    // Input: A - character to print
-    // Output: 'A' for printable, 0xXX for unprintable to serial
-    // Preserves: Everything
-    PrintChar()
-    {
-        PHA
-        loop
-        {
-            CMP #32
-            if (C)  // >= 32
-            {
-                CMP #127
-                if (NC)  // <= 126
-                {
-                    PHA LDA #'\'' Serial.WriteChar(); PLA
-                    Serial.WriteChar();
-                    LDA #'\'' Serial.WriteChar();
-                    break;
-                }
-            }
-            
-            // Not printable
-            PHA LDA #'0' Serial.WriteChar(); LDA #'x' Serial.WriteChar(); PLA
-            Serial.HexOut();
-            
-            break;
-        } // exit loop   
-        PLA
-    }
-    
-    // Write '\n' preserving carry flag
-    // Output: '\n' printed to serial
-    // Preserves: Everything
-    NL()
-    {
-        PHP  // Push processor status (including carry flag)
-        PHA
-        LDA #'\n' 
-        Serial.WriteChar();
-        PLA
-        PLP  // Pull processor status (restore carry flag)
-    }
-    
-    // Write character preserving carry flag
-    // Input: A = character to output
-    // Output: Character printed to serial
-    // Preserves: Everything
-    COut()
-    {
-        PHP  // Push processor status (including carry flag)
-        Serial.WriteChar();
-        PLP  // Pull processor status (restore carry flag)
-    }
-    */
-    
+        
     // Get string length
     // Input: X = string pointer low byte, Y = string pointer high byte
     // Output: A = string length (not including null terminator)
@@ -207,5 +151,87 @@ unit Tools // Tools.asm
         STA TOPH
         LDA # Types.UInt
         Stacks.PushTop();
+    }
+    
+    
+    // Create token stream from tokenizer buffer slice
+    // Input: ZP.FSOURCEADDRESS = start position in BasicTokenizerBuffer
+    //        ZP.FLENGTH = length of token stream to copy
+    // Output: ZP.FDESTINATIONADDRESS = pointer to allocated token stream copy
+    // Munts: ZP.IDXL, ZP.IDXH, ZP.ACCL, ZP.ACCH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS
+    // Error: Sets ZP.LastError if memory allocation fails
+    const string createTokenStreamTrace = "CreateTokStr";
+    CreateTokenStream()
+    {
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+#ifdef TRACE
+        LDA #(createTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(createTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        
+        loop
+        {
+            // Allocate memory for token stream
+            LDA ZP.FLENGTHL
+            STA ZP.ACCL
+            LDA ZP.FLENGTHH
+            STA ZP.ACCH
+            IncACC(); // for the EOF
+            Memory.Allocate();  // Returns address in ZP.IDX
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)
+            {
+                // Allocation failed
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
+                CLC
+                break;
+            }
+            
+            // Set up copy: source = TokenizerBuffer + saved position
+            CLC
+            LDA ZP.TokenBufferL
+            ADC ZP.FSOURCEADDRESSL
+            STA ZP.FSOURCEADDRESSL
+            LDA ZP.TokenBufferH
+            ADC ZP.FSOURCEADDRESSH
+            STA ZP.FSOURCEADDRESSH
+            
+            // Destination = allocated memory
+            LDA ZP.IDXL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDXH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            // Copy the token stream
+            Memory.Copy(); // Munts: ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
+            
+            // Side Effect: ZP.FDESTINATIONADDRESS points one byte beyond end of Memory.Copy()
+            LDA #Token.EOF
+            STA [ZP.FDESTINATIONADDRESS] // Write EOF token
+            
+            // Destination = allocated memory
+            LDA ZP.IDXL
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDXH
+            STA ZP.FDESTINATIONADDRESSH
+            
+            SEC
+            
+            break;
+        } // loop    
+        
+#ifdef TRACE
+        LDA #(createTokenStreamTrace % 256) STA ZP.TraceMessageL LDA #(createTokenStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+        
+        PLA
+        STA ZP.IDXH    
+        PLA
+        STA ZP.IDXL
     }
 }
