@@ -486,7 +486,7 @@ unit Locals
             STA [ZP.SymbolTemp0], Y
             
             // Free the current local node
-            Memory.Free();       // munts ZP.IDX, ZP.IDY, ZP.ACC, ZP.TOP, ZP.NEXT
+            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
         }
         
         // Restore function node address for caller
@@ -730,9 +730,7 @@ unit Locals
                     STA ZP.IDXL
                     LDA ZP.LCURRENTH
                     STA ZP.IDXH
-                    Memory.Free();
-                    
-                    SEC  // Success
+                    Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
                     break;
                 }
                 

@@ -206,6 +206,8 @@ unit ZP // ZeroPage.asm
     const byte M13                  = 0x5C;  // Multi-use workspace 13
     const byte M14                  = 0x5D;  // Multi-use workspace 14
     const byte M15                  = 0x5E;  // Multi-use workspace 15
+    const byte M16                  = 0x5F;  // Multi-use workspace 16
+    const byte M17                  = 0x60;  // Multi-use workspace 17
     
     // Debug.asm aliases (never calls Memory functions)
     const byte DB0                  = M0;
@@ -265,29 +267,25 @@ unit ZP // ZeroPage.asm
     const byte TOKSINGLEIF = M11;  // Flag: currently in single-line IF (bit 0)
     
     // FUNCTION PARAMETER WORKSPACE
-    const byte FSOURCEADDRESS       = 0x5F;  // Source address parameter
-    const byte FSOURCEADDRESSL      = 0x5F;  // Source low (alias)
-    const byte FSOURCEADDRESSH      = 0x60;  // Source high
+    const byte FSOURCEADDRESS       = 0x61;  // Source address parameter
+    const byte FSOURCEADDRESSL      = 0x61;  // Source low (alias)
+    const byte FSOURCEADDRESSH      = 0x62;  // Source high
     
-    const byte FDESTINATIONADDRESS  = 0x61;  // Destination address parameter
-    const byte FDESTINATIONADDRESSL = 0x61;  // Destination low (alias)
-    const byte FDESTINATIONADDRESSH = 0x62;  // Destination high
+    const byte FDESTINATIONADDRESS  = 0x63;  // Destination address parameter
+    const byte FDESTINATIONADDRESSL = 0x63;  // Destination low (alias)
+    const byte FDESTINATIONADDRESSH = 0x64;  // Destination high
 
-    const byte FLENGTH              = 0x63;  // Length parameter
-    const byte FLENGTHL             = 0x63;  // Length low (alias)
-    const byte FLENGTHH             = 0x64;  // Length high
+    const byte FLENGTH              = 0x65;  // Length parameter
+    const byte FLENGTHL             = 0x65;  // Length low (alias)
+    const byte FLENGTHH             = 0x66;  // Length high
     
-    const byte LCURRENT             = 0x65;  // List current pointer
-    const byte LCURRENTL            = 0x65;  // Current low (alias)
-    const byte LCURRENTH            = 0x66;  // Current high
+    const byte LCURRENT             = 0x67;  // List current pointer
+    const byte LCURRENTL            = 0x67;  // Current low (alias)
+    const byte LCURRENTH            = 0x68;  // Current high
     
-    const byte LHEAD                = 0x67;  // List head pointer
-    const byte LHEADL               = 0x67;  // Head low (alias)
-    const byte LHEADH               = 0x68;  // Head high
-    
-    const byte FSIGN                = 0x69;  // Sign flag for math operations
-    
-    const byte LHEADX               = 0x6A;  // List head extension
+    const byte LHEAD                = 0x69;  // List head pointer
+    const byte LHEADL               = 0x69;  // Head low (alias)
+    const byte LHEADH               = 0x6A;  // Head high
     
     const byte LPREVIOUS            = 0x6B;  // List previous pointer
     const byte LPREVIOUSL           = 0x6B;  // Previous low (alias)
@@ -296,46 +294,52 @@ unit ZP // ZeroPage.asm
     const byte LNEXT                = 0x6D;  // List next pointer
     const byte LNEXTL               = 0x6D;  // Next low (alias)
     const byte LNEXTH               = 0x6E;  // Next high
+    
+    const byte FSIGN                = 0x6F;  // Sign flag for math operations
+    
+    const byte LHEADX               = 0x70;  // List head extension
+    
 
     // MATH WORKSPACE
-    const byte UWIDE0               = 0x6F;  // IntMath 32-bit multiply low
-    const byte UWIDE1               = 0x70;  // IntMath 32-bit multiply
-    const byte UWIDE2               = 0x71;  // IntMath 32-bit multiply
-    const byte UWIDE3               = 0x72;  // IntMath 32-bit multiply high
+    const byte UWIDE0               = 0x71;  // IntMath 32-bit multiply low
+    const byte UWIDE1               = 0x72;  // IntMath 32-bit multiply
+    const byte UWIDE2               = 0x73;  // IntMath 32-bit multiply
+    const byte UWIDE3               = 0x74;  // IntMath 32-bit multiply high
     
-    const byte I2CInWritePtr        = 0x73;  // I2C buffer write pointer
-    const byte I2CInReadPtr         = 0x74;  // I2C buffer read pointer
+    const byte I2CInWritePtr        = 0x75;  // I2C buffer write pointer
+    const byte I2CInReadPtr         = 0x76;  // I2C buffer read pointer
 
-    const byte EmulatorPCL          = 0x75;  // BIT this to capture PC
-    const byte EmulatorPCH          = 0x76;  // Captured PC high byte
+    const byte EmulatorPCL          = 0x77;  // BIT this to capture PC
+    const byte EmulatorPCH          = 0x78;  // Captured PC high byte
     
-    const byte STR                  = 0x7B;  // String pointer
-    const byte STRL                 = 0x7B;  // String low (alias)
-    const byte STRH                 = 0x7C;  // String high
+    const byte STR                  = 0x79;  // String pointer
+    const byte STRL                 = 0x79;  // String low (alias)
+    const byte STRH                 = 0x7A;  // String high
     
-    const byte STR2                 = 0x7D;  // String pointer 2
-    const byte STR2L                = 0x7D;  // String 2 low (alias)
-    const byte STR2H                = 0x7E;  // String 2 high
+    const byte STR2                 = 0x7B;  // String pointer 2
+    const byte STR2L                = 0x7B;  // String 2 low (alias)
+    const byte STR2H                = 0x7C;  // String 2 high
 
     // TODO : move to Compiler section
-    const byte XPC                  = 0x7F;  // Compiler Program counter low
-    const byte XPCL                 = 0x7F;  // Compiler Program counter low (alias)
-    const byte XPCH                 = 0x80;  // Compiler Program counter high
-    const byte CompilerTemp         = 0x81;  // Temporary workspace used by the Compiler
+    const byte XPC                  = 0x7D;  // Compiler Program counter low
+    const byte XPCL                 = 0x7D;  // Compiler Program counter low (alias)
+    const byte XPCH                 = 0x7E;  // Compiler Program counter high
     
-    const byte XID                  = 0x82;  // Executor token buffer pointer Program counter low
-    const byte XIDL                 = 0x82;
-    const byte XIDH                 = 0x83;
+    const byte CompilerTemp         = 0x7F;  // Temporary workspace used by the Compiler
     
-    const byte GVI                  = 0x84;  // Global Variable index (to skip in LoadGlobals | SaveGlobals when (BBS4, ZP.FLAGS)
-    const byte GVIL                 = 0x84;
-    const byte GVIH                 = 0x85;
+    const byte XID                  = 0x80;  // Executor token buffer pointer Program counter low
+    const byte XIDL                 = 0x80;
+    const byte XIDH                 = 0x81;
+    
+    const byte GVI                  = 0x82;  // Global Variable index (to skip in LoadGlobals | SaveGlobals when (BBS4, ZP.FLAGS)
+    const byte GVIL                 = 0x82;
+    const byte GVIH                 = 0x83;
     
     // Optimizer.asm aliases (never calls Memory functions)
-    const byte PEEP3                = 0x86;  // Peephole optimizer : previous instructions
-    const byte PEEP2                = 0x87;
-    const byte PEEP1                = 0x88;
-    const byte PEEP0                = 0x89;
+    const byte PEEP3                = 0x84;  // Peephole optimizer : previous instructions
+    const byte PEEP2                = 0x85;
+    const byte PEEP1                = 0x86;
+    const byte PEEP0                = 0x87;
     const byte PEEPOP0              = M1;  // Peephole optimizer : previous instructions operands
     const byte PEEPOP1              = M2;
     const byte PEEPOP2              = M3;
@@ -347,36 +351,36 @@ unit ZP // ZeroPage.asm
     
     
     // File System: I2C for EEPROM:
-    const byte OutB                 = 0x8A;
-    const byte InB                  = 0x8B;
-    const byte LastAck              = 0x8C;
-    const byte PLUGNPLAY            = 0x8D;
+    const byte OutB                 = 0x88;
+    const byte InB                  = 0x89;
+    const byte LastAck              = 0x8A;
+    const byte PLUGNPLAY            = 0x8B;
     
     // File unit:
-    const byte FS0                  = 0x8E;
-    const byte FS1                  = 0x8F;
-    const byte FS2                  = 0x90;
-    const byte FS3                  = 0x91;
-    const byte FS4                  = 0x92;
-    const byte FS5                  = 0x93;
-    const byte FS6                  = 0x94;
-    const byte FS7                  = 0x95;
-    const byte FS8                  = 0x96;
-    const byte FS9                  = 0x97;
-    const byte FS10                 = 0x98;
-    const byte FS11                 = 0x99;
-    const byte FS12                 = 0x9A;
-    const byte FS13                 = 0x9B;
-    const byte FS14                 = 0x9C;
+    const byte FS0                  = 0x8C;
+    const byte FS1                  = 0x8D;
+    const byte FS2                  = 0x8E;
+    const byte FS3                  = 0x8F;
+    const byte FS4                  = 0x90;
+    const byte FS5                  = 0x91;
+    const byte FS6                  = 0x92;
+    const byte FS7                  = 0x93;
+    const byte FS8                  = 0x94;
+    const byte FS9                  = 0x95;
+    const byte FS10                 = 0x96;
+    const byte FS11                 = 0x97;
+    const byte FS12                 = 0x98;
+    const byte FS13                 = 0x99;
+    const byte FS14                 = 0x9A;
     
     // Storage.LoadProgram(), Tokenizer.FindKeyword()
-    const byte SS0                  = 0x9D;
-    const byte SS1                  = 0x9E;
-    const byte SS2                  = 0x9F;
-    const byte SS3                  = 0xA0;
-    const byte SS4                  = 0xA1;
-    const byte SS5                  = 0xA2;
-    const byte SS6                  = 0xA3;
+    const byte SS0                  = 0x9B;
+    const byte SS1                  = 0x9C;
+    const byte SS2                  = 0x9D;
+    const byte SS3                  = 0x9E;
+    const byte SS4                  = 0x9F;
+    const byte SS5                  = 0xA0;
+    const byte SS6                  = 0xA1;
     
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
     // Shared with Storage.LoadProgram

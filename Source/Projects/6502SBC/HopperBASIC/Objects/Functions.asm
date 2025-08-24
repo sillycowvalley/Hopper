@@ -300,7 +300,7 @@ unit Functions
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                Memory.Free();  // munts ZP.IDX, ZP.IDY, ZP.TOP, ZP.NEXT
+                Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
                 
                 PLA
                 STA ZP.IDXH
@@ -392,7 +392,7 @@ unit Functions
                 STA ZP.IDXL
                 LDA ZP.IDYH
                 STA ZP.IDXH
-                Memory.Free();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
+                Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
                                
                 // Re-establish function node address after Memory.Free munts everything
                 LDX #ZP.FunctionsList
@@ -444,7 +444,7 @@ unit Functions
             STA ZP.IDXL
             LDA ZP.IDYH
             STA ZP.IDXH
-            Memory.Free();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
+            Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
             
             // Restore function node address
             PLA
@@ -494,7 +494,7 @@ unit Functions
             LDA ZP.IDYH
             STA ZP.IDXH
             
-            Memory.Free(); // ZP.IDX
+            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
         }
         
         PLA

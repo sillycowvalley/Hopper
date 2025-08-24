@@ -4,11 +4,7 @@ unit Free
     uses "ZeroPage"
 #endif
     friend Memory, GC, String, List;
-        
-    const byte mfCURRENT = IDYL;
-    const byte mfCURRENTL = IDYL;
-    const byte mfCURRENTH = IDYH;
-      
+
     const byte mfPREVIOUS  = M0;
     const byte mfPREVIOUSL = M0;
     const byte mfPREVIOUSH = M1;
@@ -40,11 +36,6 @@ unit Free
     const byte mfGAPNEXTL = M10;
     const byte mfGAPNEXTH = M11;
 
-    // same as mfCURRENT which is not used again after mfNEXTNEXT is needed
-    const byte mfNEXTNEXT = IDYL;
-    const byte mfNEXTNEXTL = IDYL;
-    const byte mfNEXTNEXTH = IDYH;
-
     // these two size variables share the same slot:
     const byte mfPREVSIZE = M12;
     const byte mfPREVSIZEL = M12;
@@ -58,15 +49,35 @@ unit Free
     const byte mfSIZEH = M15;
 
     const byte mfOFFSET = M15; // used in releaseSP, no need to preserve
-           
+    
+#ifdef HOPPER_BASIC                
+    const byte mfCURRENT = M16;
+    const byte mfCURRENTL = M16;
+    const byte mfCURRENTH = M17;
+    // same as mfCURRENT which is not used again after mfNEXTNEXT is needed
+    const byte mfNEXTNEXT = M16;
+    const byte mfNEXTNEXTL = M16;
+    const byte mfNEXTNEXTH = M17;
+#else
+    const byte mfCURRENT = IDYL;
+    const byte mfCURRENTL = IDYL;
+    const byte mfCURRENTH = IDYH;
+    // same as mfCURRENT which is not used again after mfNEXTNEXT is needed
+    const byte mfNEXTNEXT = IDYL;
+    const byte mfNEXTNEXTL = IDYL;
+    const byte mfNEXTNEXTH = IDYH;    
+#endif     
+         
+    // Input: ZP.IDX  
+    // Munts: A, Y, ZP.IDX, ZP.IDY, ZP.FREELIST 
     Free()
     {
-        // address is in IDX
-        // uses mfCURRENT
+        // address is in ZP.IDX
+        // uses ZP.IDY
 
 #if defined(CHECKED)
-        LDA IDXL
-        ORA IDXH
+        LDA ZP.IDXL
+        ORA ZP.IDXH
         if (Z)
         {
             LDA # 0x0B Diagnostics.die(); // this is a bug (to try to free nullptr)
@@ -74,26 +85,26 @@ unit Free
 #endif
         loop
         {
-            // mfSIZE  = ReadWord(IDX - 2)
+            // mfSIZE  = ReadWord(ZP.IDX - 2)
             
-            // IDY = IDX - 2
+            // mfCURRENT = ZP.IDX - 2 (use mfCURRENT as temp)
             SEC
-            LDA IDXL
+            LDA ZP.IDXL
             SBC # 2
-            STA IDYL
-            LDA IDXH
+            STA mfCURRENTL
+            LDA ZP.IDXH
             SBC # 0
-            STA IDYH
+            STA mfCURRENTH
 #ifdef CPU_65C02S
-            LDA [IDY]
+            LDA [mfCURRENT]
             LDY # 1
 #else
             LDY # 0
-            LDA [IDY], Y
+            LDA [mfCURRENT], Y
             INY
 #endif
             STA mfSIZEL
-            LDA [IDY], Y
+            LDA [mfCURRENT], Y
             STA mfSIZEH
 
             // mfCURRENT = FreeList
@@ -120,18 +131,18 @@ unit Free
                     break; // 0 == current
                 }
         
-                // walk current [mfCURRENT] FreeList till next record beyond address (IDX)
-                // mfCURRENT <= IDX
+                // walk current [mfCURRENT] FreeList till next record beyond address (ZP.IDX)
+                // mfCURRENT <= ZP.IDX
                 LDA mfCURRENTH
-                CMP IDXH
+                CMP ZP.IDXH
                 if (Z)
                 {
                     LDA mfCURRENTL
-                    CMP IDXL
+                    CMP ZP.IDXL
                 }
         
                 // http://6502.org/tutorials/compare_instructions.html
-                if (NZ) // mfCURRENT != IDX (not >)
+                if (NZ) // mfCURRENT != ZP.IDX (not >)
                 {
                     if (C)
                     {
@@ -208,10 +219,10 @@ unit Free
                 break;
             } // loop
     
-            // freeSlot = IDX-2
-            LDA IDXL
+            // freeSlot = ZP.IDX-2
+            LDA ZP.IDXL
             STA mfFREESLOTL
-            LDA IDXH
+            LDA ZP.IDXH
             STA mfFREESLOTH
 
             SEC
@@ -274,23 +285,23 @@ unit Free
 
                     // nextSize = ReadWord(freeList)
 #ifdef CPU_65C02S
-                    LDA [FREELIST]
+                    LDA [ZP.FREELIST]
                     LDY # 1
 #else
                     LDY # 0
-                    LDA [FREELIST], Y
+                    LDA [ZP.FREELIST], Y
                     INY
 #endif
                     STA mfNEXTSIZEL
                     
-                    LDA [FREELIST], Y
+                    LDA [ZP.FREELIST], Y
                     STA mfNEXTSIZEH
                     // nextNext = ReadWord(freeList+2);
                     INY
-                    LDA [FREELIST], Y
+                    LDA [ZP.FREELIST], Y
                     STA mfNEXTNEXTL
                     INY
-                    LDA [FREELIST], Y
+                    LDA [ZP.FREELIST], Y
                     STA mfNEXTNEXTH
 
                     // no gap between freeSlot and freeList so absorb it into freeSlot block

@@ -214,26 +214,17 @@ unit Memory // Memory.asm
     // Free memory block
     // Input: ZP.IDX = address to free (must not be 0x0000)
     // Output: C set (success)
-    // Modifies: ZP.M* scratch space (internal to memory management operations)
+    // Modifies: ZP.M* scratch space (internal to memory management operations), C on success
     const string memoryFree = "Free";
     Free()
     {   
-        PHP  // Push processor status (including carry flag)
         PHA
-        PHX
         PHY
 
 #ifdef TRACE
         //LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        LDA ZP.ACCT
-        PHA
-        
 #if defined(DEBUG) || defined(TRACE)
         LDA IDXL
         ORA IDXH
@@ -243,15 +234,7 @@ unit Memory // Memory.asm
         }
 #endif
         
-        Free.Free();
-        
-        PLA
-        STA ZP.ACCT
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
+        Free.Free(); // Munts: ZP.IDX, ZP.FREELIST 
         
 #ifdef TRACE
         //LDA #(memoryFree % 256) STA ZP.TraceMessageL LDA #(memoryFree / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -260,9 +243,7 @@ unit Memory // Memory.asm
         SEC // success
         
         PLY
-        PLX
         PLA
-        PLP  // Pull processor status (restore carry flag)
     }
 #else
     Allocate()

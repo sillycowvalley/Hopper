@@ -225,7 +225,7 @@ unit Table // Table.asm
                     PLA
                     STA ZP.IDXL
                     
-                    Memory.Free(); // Clean API - preserves everything except flags
+                    Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
                     
                     // Push dummy values back for consistent exit
                     LDA #0
@@ -233,8 +233,6 @@ unit Table // Table.asm
                     PHA
                     PHA
                     PHA
-                    
-                    SEC  // Success
                     break;
                 }
             }
@@ -287,7 +285,7 @@ unit Table // Table.asm
                         PLA
                         STA ZP.IDXL
                         
-                        Memory.Free(); // Clean API - preserves everything except flags
+                        Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
                         
                         // Push dummy values back for consistent exit
                         LDA #0
@@ -295,8 +293,6 @@ unit Table // Table.asm
                         PHA
                         PHA
                         PHA
-                        
-                        SEC  // Success
                         break; // exits inner loop with success flag set
                     }
                 }

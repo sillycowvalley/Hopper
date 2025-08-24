@@ -614,10 +614,8 @@ unit Variables
                 STA ZP.IDXL
                 LDA ZP.SymbolTemp1
                 STA ZP.IDXH
-                Memory.Free();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
+                Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
             }
-            
-            SEC  // Success
             break;
         } // end of single exit block
         
@@ -742,7 +740,7 @@ unit Variables
             ORA ZP.IDXH
             if (NZ)  // Non-zero tokens pointer
             {
-                Memory.Free();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
+                Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
             }
         }
         
@@ -918,7 +916,7 @@ unit Variables
             LDA ZP.IDYH
             STA ZP.IDXH
             
-            Memory.Free(); // munts ZP.IDY, ZP.TOP, ZP.NEXT
+            Memory.Free(); // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
                    
             // Restore ZP.IDX (variable node)
             PLA
