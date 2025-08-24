@@ -35,6 +35,7 @@ unit Allocate
     const byte maNEWHOLESIZEL = M12;
     const byte maNEWHOLESIZEH = M13;
        
+    // Munts: ZP.FREELIST, ZP.ACCL(size), ZP.IDX (result), ZP.IDY
     Allocate()
     {
         // size is in ACC
@@ -49,18 +50,18 @@ unit Allocate
         Utilities.IncACC();
         
         // round size up to the next 8 byte boundary
-        LDA ACCL       // Load the low byte
+        LDA ZP.ACCL    // Load the low byte
         CLC            // Clear carry
         ADC # 0x07     // Add 7
-        STA ACCL       // Store back the low byte
+        STA ZP.ACCL    // Store back the low byte
         
-        LDA ACCH       // Load the high byte
+        LDA ZP.ACCH    // Load the high byte
         ADC # 0        // Add the carry to the high byte
-        STA ACCH       // Store back the high byte
+        STA ZP.ACCH    // Store back the high byte
 
-        LDA ACCL       // Load the adjusted low byte
+        LDA ZP.ACCL    // Load the adjusted low byte
         AND # 0xF8     // Mask out the lower 3 bits
-        STA ACCL       // Store the masked low byte back
+        STA ZP.ACCL    // Store the masked low byte back
 
 
 #ifdef CPU_65C02S
@@ -98,8 +99,8 @@ unit Allocate
         loop
         {
             // available block search loop    
-            LDA IDYL
-            ORA IDYH
+            LDA ZP.IDYL
+            ORA ZP.IDYH
             if (Z)
             {
                 break;
@@ -109,13 +110,13 @@ unit Allocate
     
             // [IDY] < ACC
             LDY #1
-            LDA [IDY], Y
-            CMP ACCH
+            LDA [ZP.IDY], Y
+            CMP ZP.ACCH
             if (Z)
             {
                 DEY
-                LDA [IDY], Y
-                CMP ACCL
+                LDA [ZP.IDY], Y
+                CMP ZP.ACCL
             }
             loop
             {
@@ -127,28 +128,28 @@ unit Allocate
                 ORA maBESTSIZEH
                 if (NZ)
                 {
-                    // [IDY] < maBESTSIZE ?
+                    // [ZP.IDY] < maBESTSIZE ?
                     LDY #1
-                    LDA [IDY], Y
+                    LDA [ZP.IDY], Y
                     CMP maBESTSIZEH
                     if (Z)
                     {
                         DEY
-                        LDA [IDY], Y
+                        LDA [ZP.IDY], Y
                         CMP maBESTSIZEL
                     }
                     if (C)
                     {
-                        break;  // [IDY] < maBESTSIZE
+                        break;  // [ZP.IDY] < maBESTSIZE
                     }
                 }
     
                 // first available block
                 //  or
                 // better than what we've seen so far in terms of fit   
-                LDA IDYL
+                LDA ZP.IDYL
                 STA maBESTL
-                LDA IDYH
+                LDA ZP.IDYH
                 STA maBESTH
         
                 // bestSize = ReadWord(best);
@@ -182,11 +183,11 @@ unit Allocate
             } // loop
     
             LDA maBESTSIZEL
-            CMP ACCL
+            CMP ZP.ACCL
             if (Z)
             {
                 LDA maBESTSIZEH
-                CMP ACCH
+                CMP ZP.ACCH
                 if (Z)
                 {       
                     // maBESTSIZE == ACC
@@ -197,30 +198,30 @@ unit Allocate
     
             // IDY = ReadWord(IDY + 2);
             LDY #2
-            LDA [IDY], Y
+            LDA [ZP.IDY], Y
             PHA
             INY
-            LDA [IDY], Y
-            STA IDYH
+            LDA [ZP.IDY], Y
+            STA ZP.IDYH
             PLA
-            STA IDYL
+            STA ZP.IDYL
         } // loop : available block search
 
         // address = best + 2
         LDA maBESTL
-        STA IDXL
+        STA ZP.IDXL
         LDA maBESTH
-        STA IDXH
+        STA ZP.IDXH
         // IDX += 2
         IncIDX();
         IncIDX();
 
         // maSCRATCH = size+6
         CLC
-        LDA ACCL
+        LDA ZP.ACCL
         ADC #6
         STA maSCRATCHL
-        LDA ACCH
+        LDA ZP.ACCH
         ADC #0
         STA maSCRATCHH
 
@@ -241,7 +242,7 @@ unit Allocate
         
                 // so we now how much to free later
                 // block size includes the size of the size field itself
-                LDA ACCL
+                LDA ZP.ACCL
 #ifdef CPU_65C02S
                 STA [maBEST]
                 LDY # 1
@@ -264,10 +265,10 @@ unit Allocate
         
                 SEC
                 LDA maBESTSIZEL
-                SBC ACCL
+                SBC ZP.ACCL
                 STA maNEWHOLESIZEL
                 LDA maBESTSIZEH
-                SBC ACCH
+                SBC ZP.ACCH
                 STA maNEWHOLESIZEH
      
                 LDA maNEWHOLESIZEL
@@ -357,11 +358,11 @@ unit Allocate
 
             // maBESTSIZE < ACC?
             LDA maBESTSIZEH
-            CMP ACCH
+            CMP ZP.ACCH
             if (Z)
             {
                 LDA maBESTSIZEL
-                CMP ACCL
+                CMP ZP.ACCL
             }
     
             if (NC)
@@ -417,9 +418,9 @@ unit Allocate
                 // WriteWord(freeList+4, 0)// // start of list now so no previous
                 LDA # 0
                 LDY # 4
-                STA [FREELIST], Y
+                STA [ZP.FREELIST], Y
                 INY
-                STA [FREELIST], Y
+                STA [ZP.FREELIST], Y
                 break; // memoryAllocateExit
             }
     
@@ -450,7 +451,7 @@ unit Allocate
         } // memoryAllocateExit
 
 
-        // address in IDX
+        // address in ZP.IDX
 
         // zero initialize
 
@@ -458,21 +459,21 @@ unit Allocate
         DecACCx2();
         
         CLC
-        LDA IDXL
-        ADC ACCL
+        LDA ZP.IDXL
+        ADC ZP.ACCL
         STA maSCRATCHL
-        LDA IDXH
-        ADC ACCH
+        LDA ZP.IDXH
+        ADC ZP.ACCH
         STA maSCRATCHH
 
         loop
         {
             LDA maSCRATCHH
-            CMP IDXH
+            CMP ZP.IDXH
             if (Z)
             {
                 LDA maSCRATCHL
-                CMP IDXL
+                CMP ZP.IDXL
                 if (Z)
                 {
                     break; // done

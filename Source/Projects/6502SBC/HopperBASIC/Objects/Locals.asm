@@ -42,14 +42,7 @@ unit Locals
             // 1. Allocate and initialize new node
             calculateNodeSize();       // Returns size in ZP.ACC
             Memory.Allocate();         // Locals.Add(): Returns address in ZP.IDX
-            
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                CLC  // Allocation failed
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             LDA ZP.IDXL
             STA ZP.LCURRENTL        // New local node

@@ -983,6 +983,7 @@ Debug.NL();
             STA ZP.ACCH
             
             Memory.Allocate();
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             LDA ZP.IDXL
             STA ZP.FDESTINATIONADDRESSL

@@ -117,15 +117,7 @@ unit BASICArray
             
             // Allocate memory for array
             Memory.Allocate();  // Array.New(): Input: ZP.ACC = size, Output: ZP.IDX = address
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                // Allocation failed - return with NC
-                Error.OutOfMemory(); BIT ZP.EmulatorPCL
-                CLC
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Initialize allocated memory to zero
             LDA ZP.IDXL
@@ -532,13 +524,8 @@ unit BASICArray
             // Input: ZP.ACC = number of elements (16-bit), ZP.ACCT = element type (BASICType enum)
             // Output: ZP.IDX = allocated array pointer, C set if successful, NC if allocation failed
             BASICArray.New();
-            if (NC)
-            {
-                // Allocation failed - return with NC
-                Error.OutOfMemory(); BIT ZP.EmulatorPCL
-                CLC
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
+            
             LDA ZP.IDXL
             STA ZP.TOPL
             LDA ZP.IDXH

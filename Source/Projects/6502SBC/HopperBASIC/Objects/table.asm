@@ -99,14 +99,7 @@ unit Table // Table.asm
             STX ZP.LHEADX           // ZP address of list head pointer
             
             Memory.Allocate();      // Table.Add(): Clean API - preserves everything except ZP.IDX, flags
-            
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                CLC  // Allocation failed
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // IDX->NEXT = null
             LDY #0

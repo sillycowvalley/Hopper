@@ -181,16 +181,7 @@ unit Tools // Tools.asm
             STA ZP.ACCH
             IncACC(); // for the EOF
             Memory.Allocate();  // Tools.CreateTokenStream(): Returns address in ZP.IDX
-            
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                // Allocation failed
-                Error.OutOfMemory(); BIT ZP.EmulatorPCL
-                CLC
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Set up copy source = TokenizerBuffer + saved position
             CLC
@@ -201,7 +192,7 @@ unit Tools // Tools.asm
             ADC ZP.FSOURCEADDRESSH
             STA ZP.FSOURCEADDRESSH
             
-            // Return result and copy destination = allocated memory
+            // Allocated memory IDX -> result and copy destination
             LDA ZP.IDXL
             STA ZP.IDYL
             STA ZP.FDESTINATIONADDRESSL

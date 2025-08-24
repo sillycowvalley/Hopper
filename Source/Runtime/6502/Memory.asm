@@ -176,7 +176,6 @@ unit Memory // Memory.asm
     const string memoryAllocate = "Allocate";
     Allocate()
     {
-        PHP  // Push processor status (including carry flag)
         PHA
         PHX
         PHY
@@ -191,7 +190,16 @@ unit Memory // Memory.asm
         LDA ZP.ACCH
         PHA
         
-        Allocate.Allocate();
+        Allocate.Allocate(); // -> ZP.IDX
+        
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (Z)
+        {
+            // Allocation failed
+            Error.OutOfMemory(); BIT ZP.EmulatorPCL
+            CLC
+        }
         
         PLA
         STA ZP.ACCH
@@ -206,7 +214,6 @@ unit Memory // Memory.asm
         PLY
         PLX
         PLA
-        PLP  // Pull processor status (restore carry flag)
     }
     
     // Free memory block

@@ -961,15 +961,7 @@ unit Functions
             STA ZP.ACCH
             
             Memory.Allocate(); // copyOpCodesToFunction(): Returns address in ZP.IDX
-            
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                // Allocation failed
-                Error.OutOfMemory(); BIT ZP.EmulatorPCL
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Save allocated opcode storage address
             LDA ZP.IDXL

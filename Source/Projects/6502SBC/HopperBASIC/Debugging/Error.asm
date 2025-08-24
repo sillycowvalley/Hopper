@@ -494,7 +494,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    OutOfMemory() 
+    OutOfMemory() inline
     { 
         LDA #ErrorID.OutOfMemory
         commonError();

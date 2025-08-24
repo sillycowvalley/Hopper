@@ -795,15 +795,7 @@ unit Variables
             STA ZP.ACCH
            
             Memory.Allocate(); // Variables.AllocateAndCopyString(): Returns address in ZP.IDX (temporarily)
-           
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (Z)
-            {
-                // Allocation failed
-                Error.OutOfMemory(); BIT ZP.EmulatorPCL
-                break;
-            }
+           if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Move allocated pointer to ZP.IDY for return
             LDA ZP.IDXL
