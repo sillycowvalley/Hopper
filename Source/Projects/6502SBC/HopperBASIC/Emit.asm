@@ -334,7 +334,6 @@ unit Emit
             // Check for special common values first
             LDA ZP.TOPT
             AND #BASICType.TYPEMASK
-            
             switch (A)
             {
                 case BASICType.LONG:

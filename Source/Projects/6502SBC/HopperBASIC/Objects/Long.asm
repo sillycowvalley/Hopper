@@ -186,6 +186,10 @@ unit Long
     
     Mod()
     {
+        LDA ZP.NEXT3
+        PHA
+        
+        utilityDoLongSigns();
         DivMod();
         LDA ZP.RESULT0
         STA ZP.NEXT0
@@ -195,6 +199,12 @@ unit Long
         STA ZP.NEXT2
         LDA ZP.RESULT3
         STA ZP.NEXT3
+        
+        PLA // take the sign from the divisor (NEXT)
+        if (MI)
+        {
+            negateLongNEXT(); // NEXT  = -NEXT 
+        }
         Long.PushNext(); 
     }
     Div()
@@ -459,58 +469,96 @@ unit Long
         // #### https://llx.com/Neil/a2/mult.html ####
         // http://www.6502.org/source/integers/32muldiv.htm
         
+        // TODO : optimize for TOP = 1, 2, 4, 8, 16
+        
         // Initialize remainder to 0
         STZ RESULT0
         STZ RESULT1
         STZ RESULT2
         STZ RESULT3
-        LDX #32       // there are 16 bits in N
+
         loop
         {
-            ASL NEXT0    // shift hi bit of N into R
-            ROL NEXT1    // (vacating the lo bit, which will be used for the quotient)
-            ROL NEXT2
-            ROL NEXT3
-            ROL RESULT0
-            ROL RESULT1
-            ROL RESULT2
-            ROL RESULT3
-            
-            SEC           // trial subtraction
-            LDA RESULT0
-            SBC TOP0
-            STA RESULT4
-            LDA RESULT1
-            SBC TOP1
-            STA RESULT5
-            LDA RESULT2
-            SBC TOP2
-            STA RESULT6
-            LDA RESULT3
-            SBC TOP3
-            //STA RESULT7
-            if (C)        // did subtraction succeed?
+            // Check if both operands fit in 16 bits
+            LDA NEXT3
+            ORA TOP3
+            ORA NEXT2  
+            ORA TOP2
+            if (Z)  // All high bytes are zero - use 16-bit division
             {
-                // LDA LRESULT7
-                STA RESULT3  // if yes, save it
-                LDA RESULT6
-                STA RESULT2
-                LDA RESULT5 
-                STA RESULT1
-                LDA RESULT4
-                STA RESULT0
-                INC NEXT0    // and record a 1 in the quotient
+                // Clear upper bytes and initialize remainder
+                STZ NEXT2
+                STZ NEXT3
+                
+                LDX #16       // 16 iterations instead of 32
+                loop
+                {
+                    ASL NEXT0    // shift hi bit of dividend into remainder
+                    ROL NEXT1    
+                    ROL RESULT0
+                    ROL RESULT1
+                    
+                    SEC           // trial subtraction
+                    LDA RESULT0
+                    SBC TOP0
+                    TAY          // temp storage
+                    LDA RESULT1
+                    SBC TOP1
+                    if (C)        // did subtraction succeed?
+                    {
+                        STA RESULT1  // if yes, save it
+                        STY RESULT0
+                        INC NEXT0    // and record a 1 in the quotient
+                    }
+                    DEX
+                    if (Z) { break; }
+                }
+            
+                break; // 16 bit exit
             }
-            DEX
-            if (Z) { break; }
+        
+            LDX #32       // there are 16 bits in N
+            loop
+            {
+                ASL NEXT0    // shift hi bit of N into R
+                ROL NEXT1    // (vacating the lo bit, which will be used for the quotient)
+                ROL NEXT2
+                ROL NEXT3
+                ROL RESULT0
+                ROL RESULT1
+                ROL RESULT2
+                ROL RESULT3
+                
+                SEC           // trial subtraction
+                LDA RESULT0
+                SBC TOP0
+                STA RESULT4
+                LDA RESULT1
+                SBC TOP1
+                STA RESULT5
+                LDA RESULT2
+                SBC TOP2
+                STA RESULT6
+                LDA RESULT3
+                SBC TOP3
+                //STA RESULT7
+                if (C)        // did subtraction succeed?
+                {
+                    // LDA LRESULT7
+                    STA RESULT3  // if yes, save it
+                    LDA RESULT6
+                    STA RESULT2
+                    LDA RESULT5 
+                    STA RESULT1
+                    LDA RESULT4
+                    STA RESULT0
+                    INC NEXT0    // and record a 1 in the quotient
+                }
+                DEX
+                if (Z) { break; }
+            } // loop
+            break; // 32 bit exit
         } // loop
-        CLC
-        LDA #2
-        ADC IDXL
-        STA IDYL
-        LDA #0
-        ADC IDXH
-        STA IDYH
     }
     negateLongTOP()
     {
@@ -571,10 +619,7 @@ unit Long
         PHA
         LDA ZP.TOP3
         PHA
-        
-//Debug.NL(); TLOut();        
-        
-        if (BBS7, ZP.TOP3)       // Negative
+        if (MI)       // Negative
         {
             // Print minus sign
             LDA #'-'
@@ -689,44 +734,110 @@ unit Long
         // https://llx.com/Neil/a2/mult.html
         // http://www.6502.org/source/integers/32muldiv.htm
         
-        LDA # 0x00
-        STA ZP.RESULT4   // Clear upper half of
-        STA ZP.RESULT5   // product
-        STA ZP.RESULT6
-        STA ZP.RESULT7
-        LDX # 32     // set binary count to 32
+        // TODO : optimize for 0, 1, 2, 4, 8, 16
+        STZ ZP.RESULT0
+        STZ ZP.RESULT1
+        STZ ZP.RESULT2
+        STZ ZP.RESULT3
+        
+        STZ ZP.RESULT4   // Clear upper half of
+        STZ ZP.RESULT5   // product
+        STZ ZP.RESULT6
+        STZ ZP.RESULT7
         loop
         {
-            LSR ZP.NEXT3   // shift multiplyer right
-            ROR ZP.NEXT2
-            ROR ZP.NEXT1
-            ROR ZP.NEXT0
-            if (C) // Go rotate right if c = 0
+            // Check if both operands fit in 16 bits
+            LDA ZP.NEXT3
+            ORA ZP.TOP3
+            ORA ZP.NEXT2  
+            ORA ZP.TOP2
+            if (Z)  // All high bytes are zero - use 16-bit multiply
             {
-                LDA ZP.RESULT4   // get upper half of product and add multiplicand to it
-                CLC               
-                ADC ZP.TOP0
-                STA ZP.RESULT4
-                LDA ZP.RESULT5
-                ADC ZP.TOP1
-                STA ZP.RESULT5
-                LDA ZP.RESULT6
-                ADC ZP.TOP2
-                STA ZP.RESULT6
-                LDA ZP.RESULT7
-                ADC ZP.TOP3
+                LDA ZP.NEXT1
+                ORA ZP.TOP1
+                if (Z)
+                {
+                    LDA #0
+                    LDX #8        // Only 8 iterations!
+                    loop
+                    {
+                        LSR ZP.NEXT0
+                        if (C)
+                        {
+                            CLC
+                            ADC ZP.TOP0  // Simple 8-bit add
+                        }
+                        ROR A            // Rotate into result
+                        ROR ZP.RESULT0
+                        DEX
+                        if (Z) { break; }
+                    }
+                    STA ZP.RESULT1   // Upper byte of 16-bit result
+                    break; // 8 bit exit
+                }
+                
+                LDA #0
+                LDX #16                // 16 bits instead of 32
+                loop
+                {
+                    LSR ZP.NEXT1       // shift 16-bit multiplier right
+                    ROR ZP.NEXT0
+                    if (C)             // Go rotate right if c = 0
+                    {
+                        LDA ZP.RESULT2   // get upper half of product and add multiplicand to it
+                        CLC               
+                        ADC ZP.TOP0
+                        STA ZP.RESULT2
+                        LDA ZP.RESULT3
+                        ADC ZP.TOP1
+                    }
+                    ROR A              // rotate partial product
+                    STA ZP.RESULT3     // right
+                    ROR ZP.RESULT2
+                    ROR ZP.RESULT1
+                    ROR ZP.RESULT0
+                    DEX                // decrement bit count and
+                    if (Z) { break; }  // exit loop when 16 bits are done
+                }
+                break; // 16 bit exit
             }
-            ROR A    // rotate partial product
-            STA ZP.RESULT7   // right
-            ROR ZP.RESULT6
-            ROR ZP.RESULT5
-            ROR ZP.RESULT4
-            ROR ZP.RESULT3
-            ROR ZP.RESULT2
-            ROR ZP.RESULT1
-            ROR ZP.RESULT0
-            DEX                // decrement bit count and
-            if (Z) { break; }  // exit loop when 32 bits are done
+            
+            LDA # 0
+            LDX # 32
+            loop
+            {
+                LSR ZP.NEXT3   // shift multiplyer right
+                ROR ZP.NEXT2
+                ROR ZP.NEXT1
+                ROR ZP.NEXT0
+                if (C) // Go rotate right if c = 0
+                {
+                    LDA ZP.RESULT4   // get upper half of product and add multiplicand to it
+                    CLC               
+                    ADC ZP.TOP0
+                    STA ZP.RESULT4
+                    LDA ZP.RESULT5
+                    ADC ZP.TOP1
+                    STA ZP.RESULT5
+                    LDA ZP.RESULT6
+                    ADC ZP.TOP2
+                    STA ZP.RESULT6
+                    LDA ZP.RESULT7
+                    ADC ZP.TOP3
+                }
+                ROR A    // rotate partial product
+                STA ZP.RESULT7   // right
+                ROR ZP.RESULT6
+                ROR ZP.RESULT5
+                ROR ZP.RESULT4
+                ROR ZP.RESULT3
+                ROR ZP.RESULT2
+                ROR ZP.RESULT1
+                ROR ZP.RESULT0
+                DEX                // decrement bit count and
+                if (Z) { break; }  // exit loop when 32 bits are done
+            }
+            break; // 32 bit exit
         }
     }
     

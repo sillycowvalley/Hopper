@@ -772,7 +772,7 @@ unit Error // ErrorID.asm
         Serial.WriteChar(); // '?' prefix
         LDA ZP.LastError
         PrintError();
-#if defined(DEBUG) || defined(TRACE)
+#if !defined(RELEASE)
         // 6502 PC
         LDA #' '
         Serial.WriteChar();

@@ -1,7 +1,7 @@
 unit Storage
 {
     uses "File"
-    
+
     // Combined buffer: TokenizerBuffer (512) + FunctionOpCodeBuffer (512) = 1024 bytes  
     const uint LoadBuffer     = Address.TokenizerBuffer;
     const uint LoadBufferSize = Limits.TokenizerBufferSize + Limits.OpCodeBufferSize;
@@ -43,6 +43,9 @@ Debug.NL();
         Debug.DumpPage();
         
         LDA #(LoadBuffer / 256 + 1)
+        Debug.DumpPage();
+        
+        LDA #(LoadBuffer / 256 + 2)
         Debug.DumpPage();
         
         Debug.DumpHeap();
@@ -946,6 +949,7 @@ Debug.NL();
         
         loop
         {
+            
             LDA LoadBufferIndexL
             STA ZP.FSOURCEADDRESSL
             LDA LoadBufferIndexH
@@ -956,6 +960,7 @@ Debug.NL();
                 CMP ZP.ACCL
                 if (Z) { break; }
             }
+            
             // LoadBufferIndex - 1 = terminator : EOE, RBRACKET, END, ENDFUNC ..
             SEC
             LDA LoadBufferIndexL
@@ -965,7 +970,7 @@ Debug.NL();
             SBC # 0
             STA ZP.FLENGTHH
             LDA # Token.EOF
-            STA [ZP.FLENGTH] // patch terminator -> EOF       
+            STA [ZP.FLENGTH] // patch terminator -> EOF 
             
             SEC 
             LDA ZP.FLENGTHL
@@ -1323,7 +1328,7 @@ Debug.NL();
         loop
         {
             if (BBS0, LoaderFlags)       { SEC break; } // no more data to read
-            if (BBS0, LoadBufferLengthH) { SEC break; } // current data >= 512 bytes
+            if (BBS1, LoadBufferLengthH) { SEC break; } // current data >= 512 bytes
             File.NextStream();
             if (NC) 
             { 
@@ -1367,8 +1372,10 @@ Debug.NL();
         LDA #(LoadBuffer / 256)
         STA LoadBufferIndexH
         
+
+        
         // Load up first sectors to fill buffer
-        LDX #1 // #4
+        LDX #(Limits.FileSystemBufferSize / 256)
         loop
         {
             File.NextStream();
@@ -1408,6 +1415,9 @@ Debug.NL();
 #ifdef TRACEFILE
         LDA #(appendSectorToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendSectorToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+
+
+
         // Calculate destination: LoadBuffer + LoadContent
         CLC
         LDA #(LoadBuffer % 256)
@@ -1442,8 +1452,58 @@ Debug.NL();
         LDA LoadBufferLengthH
         ADC File.TransferLengthH
         STA LoadBufferLengthH
+
+#ifdef DEBUG
+        // Side Effect: ZP.FDESTINATIONADDRESS points one byte beyond last byte (after Memory.Copy())
+        
+        // Input: ZP.FDESTINATIONADDRESS = destination pointer  
+        //        ZP.FLENGTH = number of bytes to zero (16-bit)
+        // Clear()
+        SEC
+        LDA #0
+        SBC ZP.FDESTINATIONADDRESSL
+        STA ZP.FLENGTHL
+        LDA #(LoadBuffer / 256 + 3)
+        SBC ZP.FDESTINATIONADDRESSH
+        STA ZP.FLENGTHH
+        Clear();
+        /*
+        loop
+        {
+            // Check if FLENGTH == 0
+            LDA ZP.FLENGTHL
+            ORA ZP.FLENGTHH
+            if (Z) { break; }  // Nothing left to zero
+            
+            // Write zero: *FDESTINATIONADDRESS = 0
+            LDA #0x55
+            STA [ZP.FDESTINATIONADDRESS]
+            
+            // Increment FDESTINATIONADDRESS  
+            INC ZP.FDESTINATIONADDRESSL
+            if (Z)
+            {
+                INC ZP.FDESTINATIONADDRESSH
+            }
+            
+            // Decrement FLENGTH
+            LDA ZP.FLENGTHL
+            if (Z)
+            {
+                DEC ZP.FLENGTHH
+            }
+            DEC ZP.FLENGTHL
+        }
+        */
+
+//Debug.NL(); LDA #'D' COut();LDA #'>' COut(); LDA ZP.FDESTINATIONADDRESSH HOut(); LDA ZP.FDESTINATIONADDRESSL HOut();          
+//Debug.NL(); LDA #'L' COut();LDA #'>' COut(); LDA ZP.FLENGTHH HOut(); LDA ZP.FLENGTHL HOut();          
+                
+#endif        
+        
 #ifdef TRACEFILE
         LDA #(appendSectorToBufferTrace % 256) STA ZP.TraceMessageL LDA #(appendSectorToBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
+    
 }

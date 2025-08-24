@@ -306,11 +306,13 @@ unit ZP // ZeroPage.asm
     const byte UWIDE2               = 0x73;  // IntMath 32-bit multiply
     const byte UWIDE3               = 0x74;  // IntMath 32-bit multiply high
     
+    // DON'T MOVE THESE WITHOUT UPDATING EMULATOR:
+    const byte EmulatorPCL          = 0x75;  // BIT this to capture PC
+    const byte EmulatorPCH          = 0x76;  // Captured PC high byte
+    
     const byte I2CInWritePtr        = 0x75;  // I2C buffer write pointer
     const byte I2CInReadPtr         = 0x76;  // I2C buffer read pointer
 
-    const byte EmulatorPCL          = 0x77;  // BIT this to capture PC
-    const byte EmulatorPCH          = 0x78;  // Captured PC high byte
     
     const byte STR                  = 0x79;  // String pointer
     const byte STRL                 = 0x79;  // String low (alias)

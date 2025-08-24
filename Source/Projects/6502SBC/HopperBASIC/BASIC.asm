@@ -59,7 +59,7 @@ program HopperBASIC
     uses "./Objects/Array"
     
     
-#ifdef HASEEPROM    
+#ifdef HASEEPROM
     uses "./Files/EEPROM"
     uses "./Files/File"
     uses "./Files/Storage"

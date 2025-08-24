@@ -117,6 +117,7 @@ unit Trace // Trace.asm
             Print.Space(); 
             LDA #'(' Print.Char(); 
             LDA ZP.LastError Error.PrintError();
+            Print.Space(); 
             LDA #')' Print.Char();  Print.Space(); 
             PLP
             if (NC)

@@ -518,8 +518,7 @@ unit Memory // Memory.asm
             
             // Write zero: *FDESTINATIONADDRESS = 0
             LDA #0
-            LDY #0
-            STA [ZP.FDESTINATIONADDRESS], Y
+            STA [ZP.FDESTINATIONADDRESS]
             
             // Increment FDESTINATIONADDRESS  
             INC ZP.FDESTINATIONADDRESSL

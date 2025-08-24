@@ -637,6 +637,7 @@ unit Compiler // Compiler.asm
            } // loop
            break;
        } // loop
+       
 #ifdef TRACE
        LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -728,7 +729,6 @@ unit Compiler // Compiler.asm
            } // loop
            break;
        } // loop
-       
 
 #ifdef TRACE
        LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -842,7 +842,6 @@ unit Compiler // Compiler.asm
            }
            break;
        } // loop
-       
 
 #ifdef TRACE
        LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

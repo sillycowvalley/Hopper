@@ -373,7 +373,7 @@ unit Allocate
             {
                 // maBESTSIZE < ACC
 #if defined(HOPPER_BASIC)
-                LDA #0x03 Debug.Crash(); // Memory allocation failure
+                LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); LDA #0x03 Debug.Crash(); // Memory allocation failure
 #else
                 LDA #0x0C Diagnostics.die(); // Memory allocation failure
 #endif
