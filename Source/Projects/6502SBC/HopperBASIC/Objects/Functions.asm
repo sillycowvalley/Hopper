@@ -129,10 +129,10 @@ unit Functions
     // Get function body tokens
     // Input: ZP.IDX = function node address
     // Output: ZP.IDY = function body tokens pointer, C set (always succeeds)
-    // Munts: -
+    // Munts: A
     GetBody()
     {
-        Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+        Objects.GetTokens();  // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
         SEC  // Always succeeds
     }
     
@@ -286,7 +286,7 @@ unit Functions
             Locals.Clear();  // preserves IDX munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             // Free function body tokens if they exist
-            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
             LDA ZP.IDYL
             ORA ZP.IDYH
             if (NZ)  // Non-zero tokens pointer
@@ -368,17 +368,13 @@ unit Functions
             Locals.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             // Get function body tokens pointer and free it if non-zero
-            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
             
             LDA ZP.IDYL
             ORA ZP.IDYH
             if (NZ)  // Non-zero tokens pointer
             {
                 Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
-                               
-                // Re-establish function node address after Memory.Free munts everything
-                LDX #ZP.FunctionsList
-                Table.GetFirst(); // -> ZP.IDX
             }
             
             // Delete the function node
@@ -396,13 +392,9 @@ unit Functions
     // Set function body tokens
     // Input: ZP.IDX = function node address, ZP.IDY = new function body tokens pointer
     // Output: C set if successful
-    // Munts: ZP.TOP, ZP.NEXT
+    // Munts: A, ZP.TOP, ZP.NEXT
     SetBody()
     {
-        PHA
-        PHX
-        PHY
-        
         // Save new tokens pointer
         LDA ZP.IDYL
         PHA
@@ -410,7 +402,7 @@ unit Functions
         PHA
         
         // Get current tokens pointer to free old allocation
-        Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+        Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
         
         LDA ZP.IDYL
         ORA ZP.IDYH
@@ -426,13 +418,9 @@ unit Functions
         STA ZP.IDYL
         
         // Set new tokens
-        Objects.SetTokens();  // Uses ZP.IDX and ZP.IDY
+        Objects.SetTokens();  // Uses ZP.IDX and ZP.IDY, Munts A
         
         SEC  // Always succeeds
-        
-        PLY
-        PLX
-        PLA
     }
     
     freeOpCodes()

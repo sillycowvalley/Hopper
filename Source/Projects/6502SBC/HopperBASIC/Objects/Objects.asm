@@ -284,6 +284,7 @@ unit Objects
     // Get tokens pointer from symbol node
     // Input: ZP.IDX = symbol node address
     // Output: ZP.IDY = tokens pointer (16-bit)
+    // Munts: A
     GetTokens()
     {
         PHY
@@ -301,9 +302,9 @@ unit Objects
     
     // Set tokens pointer for symbol node
     // Input: ZP.IDX = symbol node address, ZP.IDY = new tokens pointer
+    // Munts: A
     SetTokens()
     {
-        PHA
         PHY
         
         // Store tokens pointer (offset snTokens to snTokens+1)
@@ -315,7 +316,6 @@ unit Objects
         STA [ZP.IDX], Y
         
         PLY
-        PLA
     }
     
     // Destroy entire symbol table

@@ -27,7 +27,7 @@ unit Dasm
         
         loop // Single exit block
         {
-            Objects.GetTokens();
+            Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
             LDA ZP.IDYL
             STA ZP.XIDL 
             LDA ZP.IDYH

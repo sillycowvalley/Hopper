@@ -346,7 +346,7 @@ unit Variables
                     // If the old value was a string, not the same as the new one, we'll free it
                     SEC
                     // STRING variable - need to free old string and allocate new
-                    FreeCompoundValue(); // Free existing string memory, and zero out field in Variable record, preserves IDX, IDY, TOP, ACT
+                    FreeCompoundValue(); // frees node IDX snValue field, munts A
                     CheckError();
                     if (NC) { break; }
                 }
@@ -534,7 +534,7 @@ unit Variables
         LDA ZP.IDYH
         PHA
         
-        Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+        Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
         
         // Copy to ZP.NEXT for consistency with interface
         LDA ZP.IDYL
@@ -585,10 +585,10 @@ unit Variables
             }
             
             // This checks type internally and only frees STRING and ARRAY types (that are not null)
-            FreeCompoundValue(); 
+            FreeCompoundValue(); // frees node IDX snValue field, munts A
             
             // Get tokens pointer before removing symbol
-            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            Objects.GetTokens(); // node address in IDX, -> snTokens pointer in ZP.IDY, Munts: A
             
             // Save tokens pointer for freeing
             LDA ZP.IDYL
@@ -715,33 +715,21 @@ unit Variables
             }
             
             // This checks type internally and only frees STRING and ARRAY types (that are not null)
-            FreeCompoundValue(); 
+            FreeCompoundValue(); // frees node IDX snValue field, munts A
             
             // Get tokens pointer
-            Objects.GetTokens();  // Returns tokens pointer in ZP.IDY
+            Objects.GetTokens(); // node address in IDX, -> snTokens pointer in ZP.IDY, Munts: A
             
-            // Save tokens pointer for later freeing
             LDA ZP.IDYL
-            PHA
-            LDA ZP.IDYH
-            PHA
+            ORA ZP.IDYH
+            if (NZ)  // Non-zero tokens pointer
+            {
+                Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
+            }
             
             // Delete the node from the table
             LDX #ZP.VariablesList
             Table.Delete();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
-            
-            // Restore tokens pointer and free if non-zero
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
-            LDA ZP.IDXL
-            ORA ZP.IDXH
-            if (NZ)  // Non-zero tokens pointer
-            {
-                Memory.Free();  // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
-            }
         }
         
         PLY
@@ -842,7 +830,7 @@ unit Variables
         PLA
     }
 
-    // Free string memory for STRING variable
+    // Free string snValue memory: string for STRING variable, BASICArray for ARRAY variable
     // Input: ZP.IDX = variable node address (must be STRING type)
     // Output: C set if successful, NC if error or not a STRING variable  
     // Munts: A
