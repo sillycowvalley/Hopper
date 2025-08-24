@@ -700,19 +700,13 @@ unit Variables
     // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
     Clear()
     {
-        PHA
         PHX
-        PHY
         
+        LDX #ZP.VariablesList // for Table.GetFirst() and Table.Delete()
         loop
         {
-            LDX #ZP.VariablesList
             Table.GetFirst();
-        
-            if (NC) 
-            { 
-                break; // No more symbols
-            }
+            if (NC) { break; }// No more symbols
             
             // This checks type internally and only frees STRING and ARRAY types (that are not null)
             FreeCompoundValue(); // frees node IDX snValue field, munts A
@@ -726,15 +720,12 @@ unit Variables
             {
                 Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
             }
-            
+
             // Delete the node from the table
-            LDX #ZP.VariablesList
             Table.Delete();  // munts ZP.IDY, ZP.TOP, ZP.NEXT
         }
         
-        PLY
         PLX
-        PLA
         SEC  // Always succeeds
     }
     

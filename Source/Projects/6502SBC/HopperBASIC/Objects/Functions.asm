@@ -157,63 +157,7 @@ unit Functions
         
         PLA
     }
-    
-    // Set arguments list head pointer in function node
-    // Input: ZP.IDX = function node address, ZP.IDY = arguments list head
-    // Output: C set if successful
-    // Munts: ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
-    
-    /* Never Called? SetData used instead?
-    SetArguments()
-    {
-        PHA
-        PHX
-        PHY
         
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
-        
-        loop // start of single exit block
-        {
-            // Clear existing arguments first
-            Locals.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
-            
-            // Restore function node address and new arguments list head
-            PLA
-            STA ZP.IDYH
-            PLA
-            STA ZP.IDYL
-            
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            
-            // Set new arguments list head directly in function node
-            LDY #Objects.snArguments
-            LDA ZP.IDYL
-            STA [ZP.IDX], Y
-            INY
-            LDA ZP.IDYH
-            STA [ZP.IDX], Y
-            
-            SEC  // Success
-            break;
-        } // end of single exit block
-        
-        PLY
-        PLX
-        PLA
-    }
-    */
-    
     // Get arguments list head pointer from function node
     // Input: ZP.IDX = function node address
     // Output: ZP.IDY = arguments list head pointer, C set if has arguments, NC if no arguments
@@ -297,7 +241,7 @@ unit Functions
             freeOpCodes();
             
             LDX #ZP.FunctionsList
-            Objects.Remove();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
+            Objects.Remove();  // remove node IDX, munts: A, ZP.IDX, ZP.L*, ZP.LHEADX, ZP.CURRENT, ZP.PREVIOUS, ZP.LNEXT
             break;
         } // end of single exit block
     
@@ -350,22 +294,19 @@ unit Functions
     // Munts: ZP.IDY, ZP.IDX, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX, ZP.SymbolTemp0, ZP.SymbolTemp1
     Clear()
     {
-        PHA
         PHX
-        PHY
         
         // clear all FUNC opcodes before calling removing functions
         FreeAllOpCodes(); 
         
+        LDX #ZP.FunctionsList // for Table.GetFirst() and Table.Delete()    
         loop
         {
-            LDX #ZP.FunctionsList
             Table.GetFirst(); // -> ZP.IDX
-            
             if (NC) { break; }  // No more functions
             
             // Clear all arguments for this function (NOP if arguments list head pointer is null)
-            Locals.Clear();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
+            Locals.Clear();  // node address in IDX, munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LNEXT, ZP.SymbolTemp0, ZP.SymbolTemp1
             
             // Get function body tokens pointer and free it if non-zero
             Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
@@ -378,15 +319,12 @@ unit Functions
             }
             
             // Delete the function node
-            LDX #ZP.FunctionsList
-            Table.Delete();  // munts ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
-        }
+            Table.Delete(); // remove node IDX, munts: A, ZP.IDX, ZP.L*, ZP.LHEADX, ZP.CURRENT, ZP.PREVIOUS, ZP.LNEXT
+        } // loop
         
         SEC  // Always succeeds
         
-        PLY
         PLX
-        PLA
     }
     
     // Set function body tokens

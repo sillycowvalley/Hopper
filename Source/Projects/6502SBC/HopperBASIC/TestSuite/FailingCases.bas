@@ -2,6 +2,9 @@ CLS
 NEW
 MEM
 
+STRING S = "String"
+CONST WORD C = 100
+
 FUNC FOO(S)
     PRINT S
 ENDFUNC
@@ -14,4 +17,6 @@ RUN
 
 NEW
 MEM
+VARS
+LIST
 

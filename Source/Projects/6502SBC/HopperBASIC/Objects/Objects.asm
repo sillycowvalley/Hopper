@@ -202,10 +202,10 @@ unit Objects
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.IDX = symbol node address (from Find)
     // Output: C set if successful, NC if node not found
-    // Munts: ZP.IDY, ZP.TOP, ZP.NEXT, ZP.LCURRENT, ZP.LPREVIOUS, ZP.LNEXT, ZP.LHEADX
+    // Munts: A, ZP.IDX, ZP.L*, ZP.LHEADX, ZP.CURRENT, ZP.PREVIOUS, ZP.LNEXT
     Remove()
     {
-        Table.Delete();
+        Table.Delete(); // remove node IDX, munts: A, ZP.IDX, ZP.L*, ZP.LHEADX, ZP.CURRENT, ZP.PREVIOUS, ZP.LNEXT
     }
     
     // Get symbol data from found node
