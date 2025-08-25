@@ -2688,9 +2688,9 @@ unit File
         // Print file size
         printFileSizeFromDirectory(); // Expects Y = entry offset (0, 16, 32...)
         
-        LDA #(bytesLabel % 256)
+        LDA #(Messages.BytesLabel % 256)
         STA ZP.STRL
-        LDA #(bytesLabel / 256)
+        LDA #(Messages.BytesLabel / 256)
         STA ZP.STRH
         Print.String();
         

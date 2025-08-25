@@ -329,7 +329,7 @@ unit Error // ErrorID.asm
     }
     
     // Input A = error ID
-    PrintError()
+    Message()
     {
         STA ZP.ACCL  // Store target error ID
                 
@@ -771,7 +771,7 @@ unit Error // ErrorID.asm
         LDA #'?'
         Serial.WriteChar(); // '?' prefix
         LDA ZP.LastError
-        PrintError();
+        Message();
 #if !defined(RELEASE)
         // 6502 PC
         LDA #' '

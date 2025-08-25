@@ -105,12 +105,16 @@ Debug.NL();
                     {
                         SMB1 LoaderFlags
                     }
-                    case Token.VAR:
+                    
+                    // for ARRAY:
                     case Token.BIT:
                     case Token.INT:
                     case Token.BYTE:
                     case Token.WORD:
                     case Token.CHAR:
+                    case Token.LONG:
+                    
+                    case Token.VAR:
                     case Token.STRING:
                     {
                         parseVariableOrConst();

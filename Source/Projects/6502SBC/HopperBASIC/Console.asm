@@ -1153,7 +1153,7 @@ unit Console // Console.asm
 #endif
         
         // Start iteration over all variables
-#ifdef EEPROM        
+#ifdef HASEEPROM        
         if (BBS3, Storage.LoaderFlags)
         {
             Variables.IterateAll();
@@ -1179,8 +1179,8 @@ unit Console // Console.asm
             
             // Get variable name for assignment
             Variables.GetName(); // -> ZP.STR
-            Variables.GetTokens(); // Returns tokens pointer in ZP.NEXT
             
+            Variables.GetTokens(); // Returns tokens pointer in ZP.NEXT
             Variables.GetType(); // -> ZP.ACCT
             
             // Save the current variable node
@@ -1244,8 +1244,6 @@ unit Console // Console.asm
                 
                 Stacks.PopNext(); // newly calculated array dimension
                 
-//Debug.NL(); XOut(); TOut(); NOut();
-
                 // Input:  BASICArray = TOP, desired number of elements = NEXT
                 // Output: BASICArray = TOP (may be the same, may be new - always zeroed out, manages cleanup of previous array)
                 BASICArray.Redimension();
@@ -1260,16 +1258,14 @@ unit Console // Console.asm
                 ORA # BASICType.ARRAY
                 STA ZP.TOPT
                 Variables.SetValue(); // does not free old ARRAY
-            }
+            } // ARRAY
             else
             {
-                
                 // Check if variable has initialization tokens
                 LDA ZP.NEXTL
                 ORA ZP.NEXTH
                 if (Z) 
                 {
-                    
                     LDA ZP.ACCT
                     AND # BASICType.MASK
                     switch (A)
@@ -1399,7 +1395,7 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'RUN'
             
-#ifdef EEPROM            
+#ifdef HASEEPROM
             STZ Storage.LoaderFlags // clear Bit 3 
 #endif
             InitializeGlobals();

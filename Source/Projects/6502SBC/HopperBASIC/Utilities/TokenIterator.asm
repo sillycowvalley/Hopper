@@ -416,7 +416,7 @@ unit TokenIterator // TokenIterator.asm
         LDA #'?'
         Serial.WriteChar(); // '?' prefix
         LDA ZP.LastError
-        Error.PrintError();
+        Error.Message();
              
         PLX
         PLA
