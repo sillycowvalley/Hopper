@@ -40,12 +40,6 @@ unit File
     const byte StreamBytesAvailable = ZP.FS14;                // used only within NextStream()
     
     
-    const string dirListHeader       = "FILES:";
-    const string noFilesMsg          = "No files found.";
-    const string bytesLabel          = " bytes";
-    const string filesLabel          = " files, ";
-    const string bytesUsedLabel      = " bytes used";
-    
 #ifdef TRACEFILE
     // Trace string constants
     const string fileExistsTrace = "FileExists";
@@ -464,9 +458,9 @@ unit File
             // Load directory from EEPROM
             loadDirectory();
             // Print header
-            LDA #(dirListHeader % 256)
+            LDA #(Messages.DirListHeader % 256)
             STA ZP.STRL
-            LDA #(dirListHeader / 256)
+            LDA #(Messages.DirListHeader / 256)
             STA ZP.STRH
             Print.String();
             Print.NewLine();
@@ -478,12 +472,15 @@ unit File
             if (Z)
             {
                 // No files found
-                LDA #(noFilesMsg % 256)
+                /*
+                LDA #(Messages.NoFilesMsg % 256)
                 STA ZP.STRL
-                LDA #(noFilesMsg / 256)
+                LDA #(Messages.NoFilesMsg / 256)
                 STA ZP.STRH
                 Print.String();
                 Print.NewLine();
+                */
+                printDirectorySummary();
             }
             else
             {
@@ -1358,9 +1355,9 @@ unit File
         // Y already has directory entry offset 
         printFileSizeFromDirectory(); // Uses Y = directory entry offset
         
-        LDA #(bytesLabel % 256)
+        LDA #(Messages.BytesLabel % 256)
         STA ZP.STRL
-        LDA #(bytesLabel / 256)
+        LDA #(Messages.BytesLabel / 256)
         STA ZP.STRH
         Print.String();
         
@@ -1443,9 +1440,9 @@ unit File
         Print.Decimal();
         
         // Print " files, "
-        LDA #(filesLabel % 256)
+        LDA #(Messages.FilesLabel % 256)
         STA ZP.STRL
-        LDA #(filesLabel / 256)
+        LDA #(Messages.FilesLabel / 256)
         STA ZP.STRH
         Print.String();
         
@@ -1458,9 +1455,9 @@ unit File
         Print.Decimal();
         
         // Print " bytes used"
-        LDA #(bytesUsedLabel % 256)
+        LDA #(Messages.BytesUsedLabel % 256)
         STA ZP.STRL
-        LDA #(bytesUsedLabel / 256)
+        LDA #(Messages.BytesUsedLabel / 256)
         STA ZP.STRH
         Print.String();
         

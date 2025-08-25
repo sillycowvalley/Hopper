@@ -2317,18 +2317,31 @@ unit Executor // Executor.asm
         
         loop // Single exit block
         {
-            LDA [ZP.PC]
+            LDA [ZP.PC] // -> A
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
             
             // Load iterator value
             CLC
+            // -> A
             ADC ZP.BP
             TAY
             LDA Address.ValueStackLSB, Y
             STA ZP.TOPL
             LDA Address.ValueStackMSB, Y
             STA ZP.TOPH
+            
+             // Increment iterator++ and store back immediately with WORD type
+            INC ZP.TOPL
+            if (Z) 
+            {
+                INC ZP.TOPH 
+                LDA ZP.TOPH
+                STA Address.ValueStackMSB, Y
+            }
+            LDA ZP.TOPL
+            STA Address.ValueStackLSB, Y
+            
             
             // Fetch backward jump offset (16-bit)
             LDA [ZP.PC]
@@ -2340,17 +2353,7 @@ unit Executor // Executor.asm
             STA executorOperandH
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
-
-            // Increment iterator++ and store back immediately with WORD type
-            INC ZP.TOPL
-            if (Z) 
-            {
-                INC ZP.TOPH 
-                LDA ZP.TOPH
-                STA Address.ValueStackMSB, Y
-            }
-            LDA ZP.TOPL
-            STA Address.ValueStackLSB, Y
+            
             
             // Store back as WORD type : perhaps only if it was implicit or VAR? (consider a local or global INT -  we're changing its type)
             //LDA #(BASICType.WORD | BASICType.VAR)

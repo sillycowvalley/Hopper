@@ -34,7 +34,7 @@ unit BASICTypes // BASICTypes.asm
         MASK     = 0x3F,   // Bottom 6 bits total
     }
     
-    const string voidName = "VOID";
+    
     
     
     // Input:   TOP0..3, BYTE, WORD, INT
@@ -242,9 +242,9 @@ unit BASICTypes // BASICTypes.asm
                     if (Z)
                     {
                         // 0 = BASICType.VOID:
-                        LDA #(voidName % 256)
+                        LDA #(Messages.VoidName % 256)
                         STA ZP.STRL
-                        LDA #(voidName / 256)
+                        LDA #(Messages.VoidName / 256)
                         STA ZP.STRH
                         Print.String();
                     }

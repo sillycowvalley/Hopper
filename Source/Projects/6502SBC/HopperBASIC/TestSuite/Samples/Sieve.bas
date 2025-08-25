@@ -45,6 +45,3 @@ BEGIN
     PRINT count, " primes", elapsed, " seconds"
 END
 RUN
-
-! DASM
-

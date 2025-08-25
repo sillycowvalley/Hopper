@@ -6,8 +6,8 @@ unit Messages // Messages.asm
     
     // System messages
     const string Welcome = "\nHopper BASIC v2.0\n";
-    const string MemoryMsg = "Memory: ";
-    const string BytesMsg = " bytes available\n";
+    const string MemoryMsg = "MEMORY: ";
+    const string BytesMsg = " BYTES AVAILABLE\n";
     
     // Status messages
     const string ReadyPrompt = "READY\n> ";
@@ -23,9 +23,18 @@ unit Messages // Messages.asm
     
     const string ErrorMarker = "<------";
     
-    const string FormatWarning    = "FORMAT will erase all files. Continue (Y/N)? ";
-    const string OverwriteWarning = "Overwrite (Y/N)? ";
-    const string InvalidResponse = "Please enter Y or N: ";
+    const string FormatWarning    = "FORMAT WILL ERASE ALL FILES. CONTINUE (Y/N)? ";
+    const string OverwriteWarning = "OVERWRITE (Y/N)? ";
+    const string InvalidResponse = "Y or N: ";
+    
+    const string VoidName = "VOID";
+    
+#ifdef HASEEPROM    
+    const string DirListHeader       = "FILES:";
+    const string BytesLabel          = " BYTES";
+    const string FilesLabel          = " FILES, ";
+    const string BytesUsedLabel      = " BYTES USED";
+#endif
     
     
     // Print OK message
