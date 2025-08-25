@@ -1,6 +1,5 @@
 unit Instructions // Instructions.asm
 {
-    uses "/Source/Runtime/6502/IntMath"
     
     // Instruction implementation for HopperBASIC operations
     // Preserves caller state except for documented outputs:
@@ -28,14 +27,23 @@ unit Instructions // Instructions.asm
         
         loop
         {
-            // Check for VOID type first - never allow VOID assignments
+#ifdef DEBUG            
             LDA ZP.TOPT  // RHS type
-            CMP #BASICType.VOID
-            if (Z)
+            switch (A)
             {
-                CLC  // Incompatible - cannot assign VOID to anything
-                break;
+                case BASICType.CHAR:
+                case BASICType.BIT:
+                case BASICType.STRING:
+                case BASICType.LONG:
+                {
+                }
+                default:
+                {
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
+#endif
             
             LDA ZP.NEXTT
             CMP ZP.TOPT
@@ -52,119 +60,10 @@ unit Instructions // Instructions.asm
                 break;
             }
             
-            
-            // Check if RHS is LONG - allow assignment if value fits in target type
-            
-            if (BBS3, ZP.TOPT) // Bit 3 - LONG
-            {
-                // RHS is LONG - check if value fits in LHS type
-                LDA ZP.NEXTT
-                switch (A)
-                {
-                    case BASICType.BYTE:
-                    {
-                        // LONG ? BYTE: value must be 0-255
-                        LDA ZP.TOP1  // Check bytes 1, 2, 3 are all zero
-                        ORA ZP.TOP2
-                        ORA ZP.TOP3
-                        if (NZ)
-                        {
-                            CLC  // Incompatible - value > 255
-                            break;
-                        }
-                    }
-                    case BASICType.WORD:
-                    {
-                        // LONG ? WORD: value must be 0-65535  
-                        LDA ZP.TOP2  // Check bytes 2, 3 are zero
-                        ORA ZP.TOP3
-                        if (NZ)
-                        {
-                            CLC  // Incompatible - value > 65535
-                            break;
-                        }
-                    }
-                    case BASICType.INT:
-                    {
-                        // LONG ? INT: value must be -32768 to 32767
-                        // Check if high 16 bits are either all 0 (positive) or all 1 (negative)
-                        LDA ZP.TOP2
-                        CMP ZP.TOP3  // Both bytes should be same for valid sign extension
-                        if (NZ)
-                        {
-                            CLC  // Incompatible - not valid sign extension
-                            break;
-                        }
-                        
-                        // Check if sign extension is consistent with bit 15
-                        BIT ZP.TOP1  // Check bit 7 of byte 1 (bit 15 of 16-bit value)
-                        if (MI)       // Negative 16-bit value
-                        {
-                            LDA ZP.TOP2
-                            CMP #0xFF     // High bytes should be 0xFF for negative
-                            if (NZ)
-                            {
-                                CLC  // Incompatible - not properly sign extended
-                                break;
-                            }
-                        }
-                        else          // Positive 16-bit value  
-                        {
-                            LDA ZP.TOP2
-                            if (NZ)       // High bytes should be 0x00 for positive
-                            {
-                                CLC  // Incompatible - value too large
-                                break;
-                            }
-                        }
-                    }
-                    default:
-                    {
-                        CLC  // Incompatible - cannot assign LONG to non-numeric type
-                        break;
-                    }
-                }// switch
-                
-                // if we got this far we are good
-                SEC
-                break;
-            } // RHS = LONG, LHS != LONG
-            
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.BYTE
-            if (Z)
-            {
-                // Special case for BYTE type - only allows values 0-255
-                LDA ZP.TOPH
-                if (NZ)
-                {
-                    CLC  // Incompatible - value > 255
-                    break;
-                }
-                // Value is 0-255, but still need to check type compatibility
-                // Fall through to CheckTypeCompatibility()
-            }
-            
-                       
-            // For all types (including BIT, CHAR and STRING), use general type compatibility checking
-            LDA #5  // Assignment mode
-            CheckTypeCompatibility();
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL
             break;
-        }
-/*
-PHP       
-Debug.NL(); 
-if (C)
-{
-    LDA #'Y' COut();
-}        
-else
-{
-    LDA #'N' COut();
-}
-PLP
-*/
+        } // loop
+        
 #ifdef TRACE
         LDA #(checkRHS % 256) STA ZP.TraceMessageL LDA #(checkRHS / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -172,602 +71,6 @@ PLP
         PLX
         PLA
     }  
-    
-    // Check if two types are compatible for operations
-    // Input: ZP.NEXTT = left operand type, ZP.TOPT = right operand type
-    //        ZP.NEXT  = left value, ZP.TOP = right value (for WORD/INT range check)
-    //        A        = operation mode:
-    //          0 = Equality comparison (=, <>) - BIT types only allowed with other BIT types, result is BIT --- UNUSED!!
-    //          1 = Arithmetic (+, -, *, /, %) - BIT types rejected, result is promoted numeric type
-    //          2 = Bitwise (&, |) - BIT types rejected, result is promoted numeric type
-    //          4 = Logical (AND, OR) - Only BIT types allowed, result is BIT
-    //          5 = Assignment operations : CheckRHSTypeCompatibility() - TODO
-    // Output: C set if compatible, NC set if TYPE MISMATCH
-    //         ZP.NEXTT = operands type (updated based on operation mode and type promotion)
-    // Modifies: processor flags
-    const string checkType = "CheckType";
-    CheckTypeCompatibility()
-    {
-        PHA
-        PHX
-        
-#ifdef TRACE
-        PHA LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
-#endif
-        
-        // Save original ZP.ACCT value
-        LDX ZP.ACCT
-        
-        
-        // Store operation mode in ZP.ACCT for internal use
-        STA ZP.ACCT
-        
-        loop
-        {
-            // super common cases
-            CMP #1 // Arithmetic mode
-            if (Z)
-            {
-                LDA ZP.NEXTT
-                CMP #BASICType.WORD
-                if (Z)
-                {
-                    LDA ZP.TOPT
-                    CMP #BASICType.WORD
-                    if (Z)
-                    {
-                        SEC
-                        break;
-                    }
-                }
-                else
-                {
-                    LDA ZP.NEXTT
-                    CMP #BASICType.BYTE
-                    if (Z)
-                    {
-                        LDA ZP.TOPT
-                        CMP #BASICType.BYTE
-                        if (Z)
-                        {
-                            SEC
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            // Check for VOID type first - never allow VOID in any operations
-            LDA ZP.NEXTT  // Left operand type
-            CMP #BASICType.VOID
-            if (Z)
-            {
-                CLC  // Incompatible - VOID cannot participate in operations
-                break;
-            }
-            
-            LDA ZP.TOPT  // Right operand type
-            CMP #BASICType.VOID
-            if (Z)
-            {
-                CLC  // Incompatible - VOID cannot participate in operations
-                break;
-            }
-        
-            // Mode-specific type restrictions
-            LDA ZP.ACCT
-            switch (A)
-            {
-                case 0: // Equality operations: =, <>
-                {
-                    // Equality: all types allowed, result is BIT
-                }
-                case 1:  // Arithmetic operations: +. -, *, /
-                {
-                    // Arithmetic: reject BIT types
-                    LDA ZP.NEXTT
-                    CMP #BASICType.BIT
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                    CMP #BASICType.CHAR
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                    
-                    LDA ZP.TOPT
-                    CMP #BASICType.BIT
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                    CMP #BASICType.CHAR
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                }
-                case 2: // Bitwise operations: &, |
-                {
-                    // Bitwise: allow all types including BIT but not CHAR
-                    LDA ZP.TOPT
-                    CMP #BASICType.CHAR
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                    LDA ZP.TOPT
-                    CMP #BASICType.CHAR
-                    if (Z)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                }
-                case 4: // Logical operations: AND, OR, NOT
-                {
-                    // Logical: only BIT types allowed
-                    LDA ZP.NEXTT
-                    CMP #BASICType.BIT
-                    if (NZ)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                    LDA ZP.TOPT
-                    CMP #BASICType.BIT
-                    if (NZ)
-                    {
-                        CLC  // Set NC - type mismatch
-                        break;
-                    }
-                    
-                    // Both are BIT - set result type and compatible flag
-                    LDA #BASICType.BIT
-                    STA ZP.NEXTT
-                    SEC  // Set C - compatible
-                    break;
-                }
-                case 5: // Assignment operations
-                {
-                    // TODO
-//Debug.NL(); LDA #'D' COut(); LDA #'Q' COut(); LDA #'?' COut();
-                    
-                }
-                default:
-                {
-                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
-                    CLC
-                    break;
-                }
-            }
-            
-            
-            
-            // Same type check
-            LDA ZP.NEXTT
-            CMP ZP.TOPT
-            if (Z)
-            {
-                // Same types are always compatible
-                //LDA ZP.ACCT
-                SEC  // Set C - compatible
-                break;
-            }
-            
-            // Different types - apply specific compatibility rules and type promotion
-            
-            // Any type + LONG -> LONG (promote to LONG)
-            if (BBS3, ZP.NEXTT) // Bit 3 - LONG
-            {
-                // LHS is LONG - promote RHS to LONG  
-                SEC  // Compatible
-                break;
-            }
-
-            if (BBS3, ZP.TOPT) // Bit 3 - LONG
-            {
-                // RHS is LONG - promote LHS to LONG
-                LDA #BASICType.LONG
-                STA ZP.NEXTT  // Set result type to LONG
-                SEC  // Compatible
-                break;
-            }
-            
-            // BYTE vs INT - always compatible, promotes to INT
-            LDA ZP.NEXTT
-            CMP #BASICType.BYTE
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    LDA #BASICType.INT
-                    STA ZP.NEXTT
-                    //LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            // BYTE vs WORD - always compatible, promotes to WORD
-            LDA ZP.NEXTT
-            CMP #BASICType.BYTE
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BASICType.WORD
-                if (Z)
-                {
-                    LDA #BASICType.WORD
-                    STA ZP.NEXTT  // Promote to WORD for all operations except comparisons
-                    //LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            }
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.INT
-            if (Z)
-            {
-                // INT vs BYTE - always compatible, promotes to INT  
-                LDA ZP.TOPT
-                CMP #BASICType.BYTE
-                if (Z)
-                {
-                    //LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-                // INT vs WORD - runtime compatibility check required
-                CMP #BASICType.WORD
-                if (Z)
-                {
-                    // Check if this is a comparison operation
-                    /* unused
-                    LDA ZP.ACCT
-                    CMP #3  // Ordering comparison
-                    if (Z)
-                    {
-                        // For comparisons: check INT sign to determine promotion direction
-                        BIT ZP.NEXTH  // Check sign bit of INT value (ZP.NEXT)
-                        if (MI)       // Negative INT
-                        {
-                            // INT < 0: promote WORD to INT if WORD = 32767
-                            LDA ZP.TOPH   // Check WORD high byte
-                            CMP #0x80     // Compare with 32768 high byte
-                            if (C)        // WORD = 32768
-                            {
-                                if (Z)    // Exactly 32768?
-                                {
-                                    LDA ZP.TOPL
-                                    if (Z)  // Exactly 32768
-                                    {
-                                        CLC  // Set NC - incompatible
-                                        break;
-                                    }
-                                }
-                                // WORD > 32767
-                                CLC  // Set NC - incompatible
-                                break;
-                            }
-                            // WORD = 32767: promote to INT for signed comparison
-                            LDA #BASICType.INT
-                            STA ZP.NEXTT
-                            SEC  // Set C - compatible
-                            break;
-                        }
-                        else
-                        {
-                            // INT >= 0: promote to WORD for unsigned comparison
-                            LDA #BASICType.WORD
-                            STA ZP.NEXTT
-                            SEC  // Set C - compatible
-                            break;
-                        }
-                    }
-                    */
-                    
-                    // For non-comparison operations: use existing logic
-                    BIT ZP.NEXTH  // Check sign bit of NEXT (INT value)
-                    if (MI)       // Negative INT
-                    {
-                        // For arithmetic operations, promote to signed WORD arithmetic
-                        // The result will be interpreted as a signed 16-bit value
-                        LDA ZP.ACCT
-                        CMP #1  // Arithmetic operation
-                        if (Z)
-                        {
-                            // Allow the operation - arithmetic will handle the sign correctly
-                            LDA #BASICType.WORD  // Promote to WORD type
-                            STA ZP.NEXTT
-                            SEC  // Set C - compatible
-                            break;
-                        }
-                        // For other operations, keep existing rejection logic if needed
-                        CLC  // Set NC - incompatible (for non-arithmetic only)
-                        break;
-                    }
-                    LDA #BASICType.WORD
-                    STA ZP.NEXTT
-                    
-                    // INT is non-negative, compatible with WORD
-                    //LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            } // INT vs WORD
-            
-            
-            
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.WORD
-            if (Z)
-            {
-                // WORD vs BYTE - always compatible, promotes to WORD
-                LDA ZP.TOPT
-                CMP #BASICType.BYTE
-                if (Z)
-                {
-                    // WORD is already the promoted type (no change to ZP.NEXTT needed)
-                    //LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-                // WORD vs INT - runtime compatibility check required
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    // Check if this is a comparison operation
-                    /* unused
-                    LDA ZP.ACCT
-                    CMP #3  // Ordering comparison
-                    if (Z)
-                    {
-                        // For comparisons: check INT sign to determine promotion direction
-                        BIT ZP.TOPH  // Check sign bit of INT value (ZP.TOP)
-                        if (MI)      // Negative INT
-                        {
-                            // INT < 0: promote WORD to INT if WORD = 32767
-                            LDA ZP.NEXTH  // Check WORD high byte
-                            CMP #0x80     // Compare with 32768 high byte
-                            if (C)        // WORD = 32768
-                            {
-                                if (Z)    // Exactly 32768?
-                                {
-                                    LDA ZP.NEXTL
-                                    if (Z)  // Exactly 32768
-                                    {
-                                        CLC  // Set NC - incompatible
-                                        break;
-                                    }
-                                }
-                                // WORD > 32767
-                                CLC  // Set NC - incompatible
-                                break;
-                            }
-                            // WORD = 32767: promote to INT for signed comparison
-                            LDA #BASICType.INT
-                            STA ZP.NEXTT
-                            SEC  // Set C - compatible
-                            break;
-                        }
-                        else
-                        {
-                            // INT >= 0: promote to WORD for unsigned comparison
-                            LDA #BASICType.WORD
-                            STA ZP.NEXTT
-                            SEC  // Set C - compatible
-                            break;
-                        }
-                    }
-                    */
-                    
-                    // For non-comparison operations: use existing logic
-                    BIT ZP.TOPH  // Check sign bit of TOP (INT value)
-                    if (MI)      // Negative INT
-                    {
-                        LDA ZP.ACCT
-                        CMP #1  // Arithmetic operation
-                        if (Z)
-                        {
-                            // Allow the operation - arithmetic will handle the sign correctly
-                            LDA #BASICType.WORD  // Promote to WORD type
-                            STA ZP.NEXTT
-                            SEC  // Set C - compatible
-                            break;
-                        }
-                        
-                        CLC  // Set NC - incompatible (for non-arithmetic only)
-                        break;
-                    }
-                    LDA #BASICType.WORD
-                    STA ZP.NEXTT
-                    
-                    // INT is non-negative, compatible with WORD
-                    //LDA ZP.ACCT
-                    SEC  // Set C - compatible
-                    break;
-                }
-            } // WORD vs INT
-            
-            
-            
-            
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.STRING
-            if (Z)
-            {
-                LDA ZP.TOPT  
-                CMP #BASICType.STRING
-                if (Z)
-                {
-                    // STRING vs STRING - only valid for equality operations
-                    /* unused
-                    LDA ZP.ACCT
-                    if (Z)  // Equality comparison mode
-                    {
-                        LDA #BASICType.BIT  // Result type is BIT
-                        STA ZP.NEXTT
-                        SEC  // Compatible
-                        break;
-                    }
-                    else
-                    {
-                        CLC  // STRING not valid for arithmetic/bitwise/logical
-                        break;
-                    }
-                    */
-                    CLC  // STRING not valid for arithmetic/bitwise/logical
-                    break;
-                }
-                else
-                {
-                    CLC  // STRING with non-STRING is invalid
-                    break;
-                }
-            }
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.CHAR
-            if (Z)
-            {
-                LDA ZP.TOPT  
-                CMP #BASICType.CHAR
-                if (Z)
-                {
-                    // CHAR vs CHAR - valid for equality operations
-                    /* unused
-                    LDA ZP.ACCT
-                    if (Z)  // Equality comparison mode
-                    {
-                        LDA #BASICType.BIT  // Result type is BIT
-                        STA ZP.NEXTT
-                        SEC  // Compatible
-                        break;
-                    }
-                    else
-                    {
-                        CLC  // CHAR not valid for arithmetic/bitwise/logical
-                        break;
-                    }
-                    */
-                    CLC  // CHAR not valid for arithmetic/bitwise/logical
-                }
-                else
-                {
-                    CLC  // CHAR with non-CHAR is invalid
-                    break;
-                }
-            }
-
-            LDA ZP.TOPT
-            CMP #BASICType.STRING
-            if (Z)
-            {
-                LDA ZP.NEXTT
-                CMP #BASICType.STRING
-                if (NZ)
-                {
-                    CLC  // non-STRING with STRING is invalid
-                    break;
-                }
-                // STRING vs STRING already handled above
-            }
-            
-            LDA ZP.TOPT
-            CMP #BASICType.CHAR
-            if (Z)
-            {
-                LDA ZP.NEXTT
-                CMP #BASICType.CHAR
-                if (NZ)
-                {
-                    CLC  // non-CHAR with CHAR is invalid
-                    break;
-                }
-                // CHAR vs STRING CHAR handled above
-            }
-            
-            // Check if either operand is LONG
-            if (BBS3, ZP.NEXTT) // Bit 3 - LONG
-            {
-                // Left operand is LONG - promote right operand and result to LONG
-                LDA ZP.TOPT
-                switch (A)
-                {
-                    case BASICType.BYTE:
-                    case BASICType.WORD:
-                    case BASICType.INT:
-                    case BASICType.LONG:
-                    {
-                        // Compatible numeric types - result is LONG
-                        LDA #BASICType.LONG
-                        STA ZP.NEXTT  // Set result type to LONG
-                        SEC  // Set C - compatible
-                        break;
-                    }
-                    default:
-                    {
-                        CLC  // Set NC - incompatible (non-numeric with LONG)
-                        break;
-                    }
-                }
-            }
-            
-            if (BBS3,  ZP.TOPT) // Bit 3 - LONG
-            {
-                // Right operand is LONG - promote left operand and result to LONG
-                LDA ZP.NEXTT
-                switch (A)
-                {
-                    case BASICType.BYTE:
-                    case BASICType.WORD:
-                    case BASICType.INT:
-                    case BASICType.LONG:
-                    {
-                        // Compatible numeric types - result is LONG
-                        LDA #BASICType.LONG
-                        STA ZP.NEXTT  // Set result type to LONG
-                        SEC  // Set C - compatible
-                        break;
-                    }
-                    default:
-                    {
-                        CLC  // Set NC - incompatible (non-numeric with LONG)
-                        break;
-                    }
-                }
-            }
-            
-            // No other compatibility rules matched
-            CLC  // Set NC - incompatible
-            break;
-        }
-        
-        // Restore original ZP.ACCT
-        //STX ZP.ACCT
-        
-#ifdef TRACE
-        LDA #(checkType % 256) STA ZP.TraceMessageL LDA #(checkType / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-
-        
-        PLX
-        PLA
-    }
-    
-      
        
     // Addition operation (pops two operands, pushes result)
     // Input: Stack contains two operands (right operand on top)
@@ -952,51 +255,8 @@ PLP
             Long.PopTopNextStrict();
             if (NC) { break; }
             
-            LDA #1  // Arithmetic operation
-            CheckTypeCompatibility();
-            
-            if (NC)  // Type mismatch
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-
-            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-            {
-                Long.Mul();
-                if (NC) { break; }
-                SEC
-                break;
-            }
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.INT
-            if (Z)
-            {
-                // INT - handle signed multiplication
-                doSigns();
-                IntMath.MulShared();
-                CheckError();
-                if (NC) { break; }
-                
-                LDA ZP.FSIGN     // load the sign count
-                CMP #1
-                if (Z)           // one negative (not zero or two)
-                {
-                    IntMath.NegateTop(); // TOP = -TOP
-                }
-            }
-            else
-            {
-                // WORD or BYTE - unsigned multiplication
-                IntMath.MulShared();
-                CheckError();
-                if (NC) { break; }
-            }
-            
-            // Push result to stack
-            LDA ZP.NEXTT
-            Stacks.PushTop();
+            Long.Mul();
+            if (NC) { break; }
             SEC
             break;
         }
@@ -1027,65 +287,16 @@ PLP
             // Check for division by zero
             LDA ZP.TOP0
             ORA ZP.TOP1
+            ORA ZP.TOP2
+            ORA ZP.TOP3
             if (Z)  // Divisor is zero
             {
-                if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-                {                
-                    LDA ZP.TOP2
-                    ORA ZP.TOP3
-                    if (Z)  // Divisor is zero
-                    {
-                        Error.DivisionByZero(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                }
-                else
-                {
-                    Error.DivisionByZero(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            
-            LDA #1  // Arithmetic operation
-            CheckTypeCompatibility();
-            
-            if (NC)  // Type mismatch
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 break;
             }
-            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-            {
-                Long.Div();
-                if (NC) { break; }
-                SEC
-                break;
-            }
-            LDA ZP.NEXTT
-            CMP #BASICType.INT
-            if (Z)
-            {
-                // INT - handle signed division
-                doSigns();
-                IntMath.UtilityDiv();
-                
-                LDA ZP.FSIGN     // load the sign count
-                CMP #1
-                if (Z)           // one negative (not zero or two)
-                {
-                    IntMath.NegateNext(); // NEXT = -NEXT
-                }
-            }
-            else
-            {
-                // BYTE or WORD - unsigned division
-                // NEXT = NEXT / TOP
-                IntMath.UtilityDiv();
-            }
             
-            // Push result to stack
-            LDA ZP.NEXTT
-            Stacks.PushNext();
+            Long.Div();
+            if (NC) { break; }
             SEC
             break;
         }
@@ -1112,56 +323,16 @@ PLP
             // Check for division by zero
             LDA ZP.TOP0
             ORA ZP.TOP1
+            ORA ZP.TOP2
+            ORA ZP.TOP3
             if (Z)  // Divisor is zero
             {
-                if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-                {                
-                    LDA ZP.TOP2
-                    ORA ZP.TOP3
-                    if (Z)  // Divisor is zero
-                    {
-                        Error.DivisionByZero(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                }
-                else
-                {
-                    Error.DivisionByZero(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            
-            LDA #1  // Arithmetic operation
-            CheckTypeCompatibility();
-            
-            if (NC)  // Type mismatch
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-
-            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-            {
-                Long.Mod();
-                if (NC) { break; }
-                SEC
+                Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 break;
             }
             
-            LDA ZP.NEXTT
-            CMP #BASICType.INT
-            if (Z)
-            {
-                // INT - handle signed modulo
-                doSigns();
-            }
-            
-            // ACC = NEXT % TOP
-            IntMath.DivMod();
-                
-            LDA ZP.NEXTT
-            STA ZP.ACCT
-            Stacks.PushACC();
+            Long.Mod();
+            if (NC) { break; }
             SEC
             break;
         }
@@ -1186,15 +357,6 @@ PLP
             Long.PopTopNextStrict();
             if (NC) { break; }
             
-            LDA #2  // Bitwise operation (numeric types only)
-            CheckTypeCompatibility();
-            if (NC)  // Type mismatch
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-
-            
             // NEXT & TOP -> NEXT
             LDA ZP.NEXT0
             AND ZP.TOP0
@@ -1202,16 +364,12 @@ PLP
             LDA ZP.NEXT1
             AND ZP.TOP1
             STA ZP.NEXT1
-
-            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-            {
-                LDA ZP.NEXT2
-                AND ZP.TOP2
-                STA ZP.NEXT2
-                LDA ZP.NEXT3
-                AND ZP.TOP3
-                STA ZP.NEXT3
-            }
+            LDA ZP.NEXT2
+            AND ZP.TOP2
+            STA ZP.NEXT2
+            LDA ZP.NEXT3
+            AND ZP.TOP3
+            STA ZP.NEXT3
             
             LDA ZP.NEXTT
             Long.PushNext();
@@ -1240,14 +398,6 @@ PLP
         {
             Long.PopTopNextStrict();
             if (NC) { break; }
-            
-            LDA #2  // Bitwise operation (numeric types only)
-            CheckTypeCompatibility();
-            if (NC)  // Type mismatch
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
 
             // NEXT | TOP -> NEXT
             LDA ZP.NEXT0
@@ -1256,16 +406,12 @@ PLP
             LDA ZP.NEXT1
             ORA ZP.TOP1
             STA ZP.NEXT1
-
-            if (BBS3, ZP.TOPT) // if either is LONG, both will be long
-            {
-                LDA ZP.NEXT2
-                ORA ZP.TOP2
-                STA ZP.NEXT2
-                LDA ZP.NEXT2
-                ORA ZP.TOP2
-                STA ZP.NEXT2
-            }
+            LDA ZP.NEXT2
+            ORA ZP.TOP2
+            STA ZP.NEXT2
+            LDA ZP.NEXT2
+            ORA ZP.TOP2
+            STA ZP.NEXT2
 
             LDA ZP.NEXTT
             Long.PushNext();
@@ -1294,42 +440,26 @@ PLP
         {
             Stacks.PopTopNext();
             
-            LDA #4  // Logical operation (BIT types only)
-            CheckTypeCompatibility();
-            if (NC)  // Type mismatch
+            LDA ZP.TOPT
+            ORA ZP.NEXTT
+            CMP #BASICType.BIT
+            if (NZ)
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
-
             
             // Logical AND: both operands must be non-zero for result to be 1
             LDX #0  // Assume result is 0 (false)
             
             // Check if left operand is non-zero
-            LDA ZP.NEXTL
-            ORA ZP.NEXTH
-            if (Z) 
+            LDA ZP.NEXT0
+            AND ZP.TOP0
+            if (NZ) 
             { 
-                // Left is 0, result is 0
-                Stacks.PushX();
-                SEC
-                break;
+                LDX #1
             }
             
-            // Left is non-zero, check right operand
-            LDA ZP.TOPL
-            ORA ZP.TOPH
-            if (Z) 
-            { 
-                // Right is 0, result is 0
-                Stacks.PushX();
-                SEC
-                break;
-            }
-            
-            // Both are non-zero, result is 1
-            LDX #1
             Stacks.PushX();
             SEC
             break;
@@ -1355,40 +485,26 @@ PLP
         {
             Stacks.PopTopNext();
             
-            LDA #4  // Logical operation (BIT types only)
-            CheckTypeCompatibility();
-            
-            if (NC)  // Type mismatch
+            LDA ZP.TOPT
+            ORA ZP.NEXTT
+            CMP #BASICType.BIT
+            if (NZ)
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             
-            // Logical OR: result is 1 if either operand is non-zero
+            // Logical OR: both operands must be non-zero for result to be 1
             LDX #0  // Assume result is 0 (false)
             
             // Check if left operand is non-zero
-            LDA ZP.NEXTL
-            ORA ZP.NEXTH
+            LDA ZP.NEXT0
+            ORA ZP.TOP0
             if (NZ) 
             { 
-                // Left is non-zero, result is 1
-                LDX #1
-                Stacks.PushX();
-                SEC
-                break;
-            }
-            
-            // Left is 0, check right operand
-            LDA ZP.TOPL
-            ORA ZP.TOPH
-            if (NZ) 
-            { 
-                // Right is non-zero, result is 1
                 LDX #1
             }
             
-            // Push result (X = 0 if both were 0, X = 1 if either was non-zero)
             Stacks.PushX();
             SEC
             break;

@@ -150,9 +150,21 @@ unit CompilerFlow
             if (NC) { States.SetFailure(); break; }
             
             // Compile condition expression (e.g., "X > 10")
-            Compiler.CompileFoldedExpressionTree();
+            Compiler.CompileFoldedExpressionTree(); // IF <expression>
             CheckError();
             if (NC) { States.SetFailure(); break; }
+            
+            if (BBS0, ZP.CompilerFlags)
+            {
+                LDA # ZP.TOPT
+                CMP # BASICType.BIT
+                if (NZ)
+                {
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+            }
             
             // Expect THEN token
             LDA ZP.CurrentToken
@@ -412,6 +424,18 @@ unit CompilerFlow
            CheckError();
            if (NC) { States.SetFailure(); break; }
            
+           if (BBS0, ZP.CompilerFlags)
+           {
+               LDA # ZP.TOPT
+               CMP # BASICType.BIT
+               if (NZ)
+               {
+                   Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
+                   break;
+               }
+           }
+           
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
            saveCurrentPosition();
@@ -576,6 +600,18 @@ unit CompilerFlow
             CheckError();
             if (NC) { States.SetFailure(); break; }
             
+            if (BBS0, ZP.CompilerFlags)
+            {
+                LDA # ZP.TOPT
+                CMP # BASICType.BIT
+                if (NZ)
+                {
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    States.SetFailure();
+                    break;
+                }
+            }
+            
             // === BACKWARD JUMP CALCULATION ===
             // Pop loop start position
             Stacks.PopTop();
@@ -685,10 +721,13 @@ unit CompilerFlow
            PHA
            
            // Compilation state flags: 
-           //     BIT0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
-           //     BIT1 - we own the implicit variable - used by CompileForStatement
-           //     BIT2 - we used a global for our implicit variable - used by CompileForStatement
-           //     BIT3 - we're creating FORITF (rather than FORCHK & FORIT)
+           //     BIT 0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
+           //     BIT 1 - we own the implicit variable - used by CompileForStatement
+           //     BIT 2 - we used a global for our implicit variable - used by CompileForStatement
+           //     BIT 3 - we're creating FORITF (rather than FORCHK & FORIT)
+           //     BIT 4 - as "array assignment" flag
+           //     BIT 5 - in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
+           //     BIT 6 - used in Tokenizer.TokenizeLineWithMode()
            
            STZ  ZP.CompilerFlags
            SMB3 ZP.CompilerFlags // assume we can optimize to use FORITF until proven otherwize
@@ -885,10 +924,22 @@ unit CompilerFlow
            Compiler.CompileFoldedExpressionTree();  // Compile FROM expression
            CheckError();
            if (NC) { States.SetFailure(); break; }
+           
+           if (BBS0, ZP.CompilerFlags)
+           {
+               LDA # ZP.TOPT
+               CMP # BASICType.LONG
+               if (NZ)
+               {
+                   Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
+                   break;
+               }
+           }
 
            // push 2 copies
-           Long.PushTop(); // FROM integral value
-           Long.PushTop();
+           Long.PushTopStrict(); // FROM integral value
+           Long.PushTopStrict();
            if (BBR0, ZP.CompilerFlags)
            {
                RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
@@ -921,6 +972,18 @@ unit CompilerFlow
            Compiler.CompileFoldedExpressionTree();  // Compile TO expression (leaves on stack)
            CheckError();
            if (NC) { States.SetFailure(); break; }
+           
+           if (BBS0, ZP.CompilerFlags)
+           {
+               LDA # ZP.TOPT
+               CMP # BASICType.LONG
+               if (NZ)
+               {
+                   Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
+                   break;
+               }
+           }
 
            LDA ZP.TOPT
            PHA
@@ -960,7 +1023,7 @@ unit CompilerFlow
            if (NC) { States.SetFailure(); break; }
            
            LDA ZP.TOPT
-           Long.PushTop(); // TO integeral value
+           Long.PushTopStrict(); // TO integeral value
            if (BBR0, ZP.CompilerFlags) // TO is not constant expression
            {
                RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
@@ -983,6 +1046,18 @@ unit CompilerFlow
                Compiler.CompileFoldedExpressionTree();  // Compile STEP expression (leaves on stack)
                CheckError();
                if (NC) { States.SetFailure(); break; }
+               
+               if (BBS0, ZP.CompilerFlags)
+               {
+                   LDA # ZP.TOPT
+                   CMP # BASICType.LONG
+                   if (NZ)
+                   {
+                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                       break;
+                   }
+               }
                
                // placeholder slot
                LDA Compiler.compilerSavedNodeAddrL
@@ -1191,7 +1266,7 @@ unit CompilerFlow
                    STZ ZP.TOP3
                    LDA # BASICType.LONG
                    STA ZP.TOPT
-                   Long.PushTop(); // 1 + push 1 = 2
+                   Long.PushTopStrict(); // 1 + push 1 = 2
                    
                    // FROM >= 0
                    ComparisonInstructions.GreaterEqual();  // FROM >= 0   2 - pops 2, + pushes 1 = 1

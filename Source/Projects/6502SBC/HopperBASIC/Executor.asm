@@ -1876,14 +1876,7 @@ unit Executor // Executor.asm
                 LDA Address.ValueStackB3, X
                 STA ZP.TOP3
             }
-            else
-            {
-                if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
-                {
-                    Error.InternalError(); BIT ZP.EmulatorPCL
-                    // Long.TopToLong(); // RHS -> LONG
-                }
-            }
+            
             
             // Check if variable has VAR bit set
             if (BBS4, ZP.NEXTT) // Bit 4 - VAR
@@ -1894,27 +1887,11 @@ unit Executor // Executor.asm
                 STA Address.TypeStack, Y
             }
             else
-            {   // Non-VAR variable - use normal type checking
-                LDA ZP.NEXTT
-                
-                // VAR slots should never be popped directly but there is a special case for
-                // global shadow variables in FOR iterators (where we are popping and actual
-                // variable slot rather than stack data). Regular stack data should NEVER have
-                // VAR (so most of the time this should be a NOP)
-                LDA Address.TypeStackLSB, X
-                AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
-                STA ZP.TOPT 
-                
-                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
-                if (NC) 
-                { 
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    States.SetFailure();
-                    break; 
-                }
-                // keep LHS type when writing back
-                LDA ZP.NEXTT
-                STA Address.TypeStackLSB, Y
+            {   
+                // all globals should be VAR
+                Error.InternalError(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break; 
             }
             
             LDA ZP.TOP0
@@ -2001,14 +1978,6 @@ unit Executor // Executor.asm
                 LDA Address.ValueStackB3, X
                 STA ZP.TOP3
             }
-            else
-            {
-                if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
-                {
-                    Error.InternalError(); BIT ZP.EmulatorPCL
-                    // Long.TopToLong(); // RHS -> LONG
-                }
-            }
             // Check if variable has VAR bit set
             if (BBS4, ZP.NEXTT) // Bit 4 - VAR
             {
@@ -2018,19 +1987,13 @@ unit Executor // Executor.asm
                 STA Address.TypeStack, Y
             }
             else
-            {   // Check type compatibility for assignment
-                LDA ZP.NEXTT
-                AND # BASICType.TYPEMASK  // Extract LHS data type
-                STA ZP.NEXTT
-                
-                Instructions.CheckRHSTypeCompatibility(); // Input: ZP.NEXTT = LHS type, ZP.TOPT = RHS type
-                if (NC) 
-                { 
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    States.SetFailure();
-                    break; 
-                }
+            {
+                // why not?! all locals should be VAR now
+                Error.InternalError(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
             }
+            
             LDA ZP.TOP0
             STA Address.ValueStackB0, Y
             LDA ZP.TOP1
@@ -3587,7 +3550,7 @@ unit Executor // Executor.asm
         {
             LDA # BASICType.LONG
             STA ZP.TOPT
-            Long.PushTop();
+            Long.PushTopStrict();
             if (NC) { break; }
             
             LDA #State.Success

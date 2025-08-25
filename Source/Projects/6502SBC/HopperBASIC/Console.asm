@@ -1294,6 +1294,7 @@ unit Console // Console.asm
                             }
                             else
                             {
+Debug.NL(); LDA #'@' COut();
                                 // No initialization tokens - use default value 0
                                 LDA #Token.NUMBER
                                 Tokenizer.appendToTokenBuffer();

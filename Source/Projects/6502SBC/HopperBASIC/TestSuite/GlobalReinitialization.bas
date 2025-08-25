@@ -1,223 +1,249 @@
 NEW
-! Test INT re-initialization
-INT i = -100
-INT i2
+! ================================================================
+! GLOBAL VARIABLE RE-INITIALIZATION TEST SUITE
+!
+! Tests that global variables reset to their original declared
+! values when RUN is executed, regardless of modifications made
+! between declaration and RUN.
+!
+! Key behaviors tested:
+! - VAR declarations with type inference reset to original values
+! - Uninitialized variables reset to type defaults
+! - CONST values remain unchanged (immutable)
+! - VAR type changes reset to original type
+! - Arrays reset to default values
+! - Type compatibility enforcement
+! ================================================================
 
-! Modify before RUN
-i = 999
-i2 = -5555
+! Test 1: LONG variable re-initialization
+VAR longVar = 42
+VAR longVar2
+
+! Modify before RUN to test reset behavior
+longVar = 999
+longVar2 = -5555
 
 BEGIN
-    PRINT "=== INT Test ==="
-    PRINT "i="; i; " ! expect -100"
-    PRINT "i2="; i2; " ! expect 0"
-    ! Now modify inside
-    i = 777
-    i2 = -999
-    PRINT "Modified to 777 and -999"
+    PRINT "1. LONG test:"
+    PRINT "longVar="; longVar; " expect 42"
+    PRINT "longVar2="; longVar2; " expect 0"
 END
-
 RUN
 
 NEW
-! Test WORD re-initialization  
-WORD w = 5000
-WORD w2
+! Test 2: CHAR variable re-initialization  
+VAR charVar = 'A'
+VAR charVar2
 
 ! Modify before RUN
-w = 12345
-w2 = 65535
+charVar = 'Z'
+charVar2 = 'Q'
 
 BEGIN
-    PRINT "=== WORD Test ==="
-    PRINT "w="; w; " ! expect 5000"
-    PRINT "w2="; w2; " ! expect 0"
-    ! Now modify inside
-    w = 30000
-    w2 = 40000
-    PRINT "Modified to 30000 and 40000"
+    PRINT "2. CHAR test:"
+    PRINT "charVar="; charVar; " expect A"
+    PRINT "charVar2="; charVar2; " expect NUL"
 END
-
 RUN
 
 NEW
-! Test BIT re-initialization
-BIT b = TRUE
-BIT b2
+! Test 3: BIT variable re-initialization
+VAR bitVar = TRUE
+VAR bitVar2
 
 ! Modify before RUN
-b = FALSE
-b2 = TRUE
+bitVar = FALSE
+bitVar2 = TRUE
 
 BEGIN
-    PRINT "=== BIT Test ==="
-    PRINT "b="; b; " ! expect TRUE"
-    PRINT "b2="; b2; " ! expect FALSE"
-    ! Now modify inside
-    b = FALSE
-    b2 = TRUE
-    PRINT "Modified to FALSE and TRUE"
+    PRINT "3. BIT test:"
+    PRINT "bitVar="; bitVar; " expect TRUE"
+    PRINT "bitVar2="; bitVar2; " expect FALSE"
 END
-
 RUN
 
 NEW
-! Test BYTE re-initialization
-BYTE by = 255
-BYTE by2
+! Test 4: STRING variable re-initialization
+VAR stringVar = "HELLO"
+VAR stringVar2
 
 ! Modify before RUN
-by = 128
-by2 = 200
+stringVar = "CHANGED"
+stringVar2 = "MODIFIED"
 
 BEGIN
-    PRINT "=== BYTE Test ==="
-    PRINT "by="; by; " ! expect 255"
-    PRINT "by2="; by2; " ! expect 0"
-    ! Now modify inside
-    by = 100
-    by2 = 150
-    PRINT "Modified to 100 and 150"
+    PRINT "4. STRING test:"
+    PRINT "stringVar="; stringVar; " expect HELLO"
+    PRINT "stringVar2="; stringVar2; " expect empty"
 END
-
 RUN
 
 NEW
-! Test CHAR re-initialization
-CHAR c = 'A'
-CHAR c2
-
-! Modify before RUN
-c = 'Z'
-c2 = 'Q'
+! Test 5: CONST immutability (should never change)
+CONST longConst = 100
+CONST charConst = 'K'
+CONST bitConst = TRUE
+CONST stringConst = "CONSTANT"
 
 BEGIN
-    PRINT "=== CHAR Test ==="
-    PRINT "c="; c; " ! expect A"
-    PRINT "c2="; c2; " ! expect NUL/space"
-    ! Now modify inside
-    c = 'X'
-    c2 = 'Y'
-    PRINT "Modified to X and Y"
+    PRINT "5. CONST test:"
+    PRINT "longConst="; longConst
+    PRINT "charConst="; charConst
+    PRINT "bitConst="; bitConst
+    PRINT "stringConst="; stringConst
 END
-
 RUN
 
 NEW
-! Test STRING re-initialization
-STRING s = "HELLO"
-STRING s2
+! Test 6: VAR type changes reset to original type
+VAR flexVar = 42
 
-! Modify before RUN
-s = "CHANGED"
-s2 = "MODIFIED"
+! Change type before RUN
+flexVar = "STRING NOW"
 
 BEGIN
-    PRINT "=== STRING Test ==="
-    PRINT "s="; s; " ! expect HELLO"
-    PRINT "s2="; s2; " ! expect empty"
-    ! Now modify inside
-    s = "FINAL"
-    s2 = "TEST"
-    PRINT "Modified to FINAL and TEST"
+    PRINT "6. VAR type change:"
+    PRINT "flexVar="; flexVar; " expect 42"
 END
-
 RUN
 
 NEW
-! Test VAR re-initialization
-VAR v = 42
-VAR v2
+! Test 7: BIT array re-initialization
+BIT bitArray[3]
 
 ! Modify before RUN
-v = "VARSTRING"
-v2 = FALSE
+bitArray[0] = TRUE
+bitArray[1] = TRUE
 
 BEGIN
-    PRINT "=== VAR Test ==="
-    PRINT "v="; v; " ! expect 42"
-    PRINT "v2="; v2; " ! expect 0"
-    ! Now modify inside
-    v = TRUE
-    v2 = 999
-    PRINT "Modified to TRUE and 999"
+    PRINT "7. BIT array:"
+    PRINT "bitArray[0]="; bitArray[0]; " expect FALSE"
+    PRINT "bitArray[1]="; bitArray[1]; " expect FALSE"
 END
-
 RUN
 
 NEW
+! Test 8: CHAR array re-initialization
+CHAR charArray[3]
 
-! We got this far, now try the kitchen sink
-
-
-! Test global re-initialization for all types
-! Declare initialized globals (will reset to these values on RUN)
-INT i = -100
-WORD w = 5000
-BIT b = TRUE
-BYTE by = 255
-CHAR c = 'A'
-STRING s = "HELLO"
-VAR v = 42
-
-! Declare uninitialized globals (will reset to type defaults on RUN)
-INT i2
-WORD w2
-BIT b2
-BYTE by2
-CHAR c2
-STRING s2
-VAR v2
-
-! Modify all globals before RUN
-i = 999
-w = 12345
-b = FALSE
-by = 128
-c = 'Z'
-s = "CHANGED"
-v = "VARSTRING"
-i2 = -5555
-w2 = 65535
-b2 = TRUE
-by2 = 200
-c2 = 'Q'
-s2 = "MODIFIED"
-v2 = FALSE
+! Modify before RUN
+charArray[0] = 'A'
+charArray[1] = 'B'
 
 BEGIN
-    PRINT "=== After RUN (globals re-initialized) ==="
-    PRINT "Initialized globals (expect original values):"
-    PRINT "i="; i; " ! expect -100"
-    PRINT "w="; w; " ! expect 5000"
-    PRINT "b="; b; " ! expect TRUE"
-    PRINT "by="; by; " ! expect 255"
-    PRINT "c="; c; " ! expect 'A'"
-    PRINT "s="; s; " ! expect HELLO"
-    PRINT "v="; v; " ! expect 42"
-    PRINT
-    PRINT "Uninitialized globals (expect type defaults):"
-    PRINT "i2="; i2; " ! expect 0"
-    PRINT "w2="; w2; " ! expect 0"
-    PRINT "b2="; b2; " ! expect FALSE"
-    PRINT "by2="; by2; " ! expect 0"
-    PRINT "c2="; c2; " ! expect NUL char (may show as space)"
-    PRINT "s2="; s2; " ! expect empty string"
-    PRINT "v2="; v2; " ! expect 0 (default VAR type)"
-    PRINT
-    PRINT "Now modifying inside BEGIN/END..."
-    i = 777
-    b = FALSE
-    i2 = -999
-    b2 = TRUE
+    PRINT "8. CHAR array:"
+    PRINT "charArray[0]="; charArray[0]; " expect NUL"
+    PRINT "charArray[1]="; charArray[1]; " expect NUL"
 END
-
 RUN
 
-! verify final values:
+NEW
+! Test 9: INT array re-initialization
+INT intArray[3]
 
+! Modify before RUN
+intArray[0] = 1000
+intArray[1] = -500
+
+BEGIN
+    PRINT "9. INT array:"
+    PRINT "intArray[0]="; intArray[0]; " expect 0"
+    PRINT "intArray[1]="; intArray[1]; " expect 0"
+END
+RUN
+
+NEW
+! Test 10: Type compatibility verification
+VAR longNum = 1000000
+VAR character = 'Z'
+VAR boolean = FALSE
+VAR text = "TEST"
+
+CONST maxValue = 2147483647
+CONST letter = 'A'
+CONST flag = TRUE
+CONST message = "HELLO"
+
+! Modify before RUN
+longNum = -999999
+character = 'Q'
+boolean = TRUE
+text = "MODIFIED"
+
+BEGIN
+    PRINT "10. Type compatibility:"
+    PRINT "longNum="; longNum; " expect 1000000"
+    PRINT "character="; character; " expect Z"
+    PRINT "boolean="; boolean; " expect FALSE"
+    PRINT "text="; text; " expect TEST"
+    
+    ! Test assignments work
+    longNum = maxValue
+    character = letter
+    boolean = flag
+    text = message
+    PRINT "Assignments successful"
+END
+RUN
+
+NEW
+! Test 11: Array operations with LONG indices
+BIT flags[5]
+CHAR letters[3]
+INT numbers[4]
+
+BEGIN
+    PRINT "11. Array operations:"
+    VAR index = 2
+    flags[index] = TRUE
+    letters[index] = 'M'
+    numbers[index] = 999
+    
+    PRINT "flags[2]="; flags[2]
+    PRINT "letters[2]="; letters[2]
+    PRINT "numbers[2]="; numbers[2]
+END
+RUN
+
+NEW
+! Test 12: LONG arithmetic (32-bit)
+VAR bigNum = 1000000
+
+BEGIN
+    PRINT "12. Large arithmetic:"
+    bigNum = bigNum * 2000
+    PRINT "1000000 * 2000 ="; bigNum
+END
+RUN
+
+NEW
+! Test 13: Complex type interactions
+VAR longVar = 42
+VAR charVar = 'A'
+VAR bitVar = TRUE
+VAR stringVar = "TEST"
+
+! Modify all before RUN
+longVar = 999
+charVar = 'Z'
+bitVar = FALSE
+stringVar = "CHANGED"
+
+BEGIN
+    PRINT "13. All types reset:"
+    PRINT "LONG:"; longVar; " CHAR:"; charVar
+    PRINT "BIT:"; bitVar; " STRING:"; stringVar
+    
+    ! Modify inside BEGIN/END
+    longVar = 777
+    charVar = 'X'
+    bitVar = FALSE
+    stringVar = "FINAL"
+    PRINT "Modified successfully"
+END
+RUN
+
+! Final verification
 VARS
-
-NEW
 MEM
-
+NEW

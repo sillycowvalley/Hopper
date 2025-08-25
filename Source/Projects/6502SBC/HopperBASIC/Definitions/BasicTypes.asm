@@ -1,5 +1,16 @@
 unit BASICTypes // BASICTypes.asm
 {
+    // Symbol types: only top 2 bits
+    flags SymbolType
+    {
+        VARIABLE = 0x40,   // Mutable values
+        CONSTANT = 0x80,   // Immutable values  
+        ARGUMENT = 0x40,   // Function parameters (negative BP offset)
+        LOCAL    = 0x80,   // Local variables (positive BP offset)
+        
+        MASK     = 0xC0,   // Top 2 bits only
+    }
+    
     enum BASICType
     {
         VOID     = 0x00, // Hopper VM Types.Undefined (function return type indicating no return value (internal))

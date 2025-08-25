@@ -144,6 +144,8 @@ unit Tokenizer // Tokenizer.asm
             {
                 if (NZ)  // ContentSizeH > LimitH (not equal)
                 {
+Debug.NL(); LDA #'1' COut();LDA #':' COut(); LDA ZP.TokenBufferContentLengthH HOut(); LDA ZP.TokenBufferContentLengthL HOut();
+
                     Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;
@@ -153,6 +155,8 @@ unit Tokenizer // Tokenizer.asm
                 CMP #(Limits.TokenizerBufferSize & 0xFF) 
                 if (C)  // ContentSizeL >= LimitL  
                 {
+Debug.NL(); LDA #'2' COut();LDA #':' COut(); LDA ZP.TokenBufferContentLengthH HOut(); LDA ZP.TokenBufferContentLengthL HOut();
+
                     Error.BufferOverflow(); BIT ZP.EmulatorPCL
                     CLC
                     break;

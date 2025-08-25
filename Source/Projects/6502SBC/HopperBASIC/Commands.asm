@@ -587,7 +587,7 @@ unit Commands
         // Print CONST keyword
         LDA #Token.CONST
         Tokens.PrintKeyword();
-        Print.Space();
+        LDA #'(' Print.Char();        
         
         // Get constant type
         Variables.GetType(); // Input: ZP.IDX, Output: ACCT = type
@@ -595,6 +595,7 @@ unit Commands
         LDA ZP.ACCT
         AND # BASICType.MASK
         BASICTypes.PrintType(); // Input: A = dataType
+        LDA #')' Print.Char();
         Print.Space();
         
         // Print constant name

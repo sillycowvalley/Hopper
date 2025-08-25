@@ -65,6 +65,13 @@ unit Compiler // Compiler.asm
        
        // Clear compiler flags
        STZ ZP.CompilerFlags
+       //     BIT 0 - the current expression being evaluated is numeric (INT|WORD|BYTE) and constant - used by compileExpressionTree()
+       //     BIT 1 - we own the implicit variable - used by CompileForStatement
+       //     BIT 2 - we used a global for our implicit variable - used by CompileForStatement
+       //     BIT 3 - we're creating FORITF (rather than FORCHK & FORIT)
+       //     BIT 4 - as "array assignment" flag
+       //     BIT 5 - in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
+       //     BIT 6 - used in Tokenizer.TokenizeLineWithMode()
        
        // Reset to global scope
        STZ Compiler.compilerSavedNodeAddrL
@@ -253,6 +260,7 @@ unit Compiler // Compiler.asm
                     
                     // Emit single constant opcode based on value and type
                     Emit.OptimizedConstant();
+                    
                     break;
                 }
             }
@@ -1307,10 +1315,9 @@ unit Compiler // Compiler.asm
            {
                case Token.TRUE:
                {
-                   RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-
                    // Emit PUSHBIT with value 1
                    LDA #1
+                   STA ZP.TOP0
                    Emit.PushBit();
                    CheckError();
                    if (NC) { break; }
@@ -1318,14 +1325,24 @@ unit Compiler // Compiler.asm
                    // Get next token
                    Tokenizer.NextToken();
                    CheckError();
+                   
+                   if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
+                   {
+                       STZ ZP.TOP1
+                       STZ ZP.TOP2
+                       STZ ZP.TOP3
+                       LDA #BASICType.BIT
+                       STA ZP.TOPT
+                       Long.PushTop();
+                   }
+                   
                    break;
                }
                case Token.FALSE:
                {
-                   RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
-                   
                    // Emit PUSHBIT with value 0
                    LDA #0
+                   STA ZP.TOP0
                    Emit.PushBit();
                    CheckError();
                    if (NC) { break; }
@@ -1333,6 +1350,17 @@ unit Compiler // Compiler.asm
                    // Get next token
                    Tokenizer.NextToken();
                    CheckError();
+                   
+                   if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
+                   {
+                       STZ ZP.TOP1
+                       STZ ZP.TOP2
+                       STZ ZP.TOP3
+                       LDA #BASICType.BIT
+                       STA ZP.TOPT
+                       Long.PushTop();
+                   }
+                   
                    break;
                }
                case Token.NUMBER:
@@ -1442,7 +1470,7 @@ unit Compiler // Compiler.asm
                }
                case Token.STRINGLIT:
                {
-                   RMB0 ZP.CompilerFlags // constant expression: STRING: not an integral constant expression
+                   RMB0 ZP.CompilerFlags // constant expression: STRINGLIT: not an integral constant expression
                    
                    // OFFSET : compiling STRINGLIT
                    // Emit PUSHCSTRING with pointer to string content from token stream
@@ -1458,11 +1486,11 @@ unit Compiler // Compiler.asm
                    // Get next token
                    Tokenizer.NextToken();
                    CheckError();
+                   
                    break;
                }
                case Token.CHARLIT:
                 {
-                    RMB0 ZP.CompilerFlags // constant expression: CHAR: not an integral constant expression
                     
                     // The character byte is stored inline after the CHARLIT token
                     
@@ -1478,6 +1506,7 @@ unit Compiler // Compiler.asm
                     // Get the character value
                     LDY #0
                     LDA [ZP.IDX], Y
+                    STA ZP.TOP0
                     
                     Emit.PushChar();
                     CheckError();
@@ -1486,6 +1515,16 @@ unit Compiler // Compiler.asm
                     // Get next token
                     Tokenizer.NextToken();
                     CheckError();
+                    
+                    if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
+                    {
+                        STZ ZP.TOP1
+                        STZ ZP.TOP2
+                        STZ ZP.TOP3
+                        LDA #BASICType.CHAR
+                        STA ZP.TOPT
+                        Long.PushTop();
+                    }
                     break;
                 }
                
@@ -2086,16 +2125,16 @@ unit Compiler // Compiler.asm
                case Token.INT:
                case Token.WORD:
                case Token.BYTE:
-               {
-                   TODO(); BIT ZP.EmulatorPCL // LONG
-                   States.SetFailure();
-                   break;   
-               }
                case Token.CHAR:
                case Token.BIT:
                case Token.STRING:
-               case Token.VAR:
                case Token.LONG:
+               {
+                   Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                   States.SetFailure();
+                   break;   
+               }
+               case Token.VAR:
                {
                    // Check if we've already seen flow altering statements
                     LDA compilerCanDeclareLocals

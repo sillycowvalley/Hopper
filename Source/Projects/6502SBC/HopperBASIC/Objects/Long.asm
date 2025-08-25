@@ -10,6 +10,32 @@ unit Long
             LDY ZP.SP                    // Current stack pointer
             LDA ZP.TOPT
             
+            STA TypeStack, Y           // Store type
+            LDA ZP.TOP0
+            STA ValueStackB0,Y          // Store byte 0 (LSB)
+            LDA ZP.TOP1  
+            STA ValueStackB1,Y          // Store byte 1
+            
+            LDA ZP.TOP2
+            STA ValueStackB2,Y         // Store byte 2
+            LDA ZP.TOP3
+            STA ValueStackB3,Y         // Store byte 3 (MSB)
+            
+            INC ZP.SP                    // Advance stack pointer
+            
+            SEC
+            break;
+        }
+    }
+    
+    // type in ZP.TOPT
+    PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
+    {
+        loop
+        {
+            LDY ZP.SP                    // Current stack pointer
+            LDA ZP.TOPT
+            
             if (BBR3, ZP.TOPT)
             {
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL

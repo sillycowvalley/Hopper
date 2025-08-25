@@ -328,7 +328,6 @@ unit Emit
         LDA #(emitOptimizedConstantTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
     #endif
-        
         loop
         {
             // Check for special common values first
@@ -338,8 +337,6 @@ unit Emit
             {
                 case BASICType.LONG:
                 {
-                    RMB0 ZP.CompilerFlags // constant expression: LONG: not ideal for constant folding
-                    
                     LDA ZP.TOP0
                     STA Compiler.compilerOperand1
                     LDA ZP.TOP1  
@@ -383,14 +380,14 @@ unit Emit
                 
                 case BASICType.CHAR:
                 {
-                    LDA ZP.TOPL
+                    LDA ZP.TOP0
                     Emit.PushChar();
                     break;
                 }
                 
                 case BASICType.BIT:
                 {
-                    LDA ZP.TOPL
+                    LDA ZP.TOP0
                     Emit.PushBit();
                     break;
                 }
@@ -404,7 +401,7 @@ unit Emit
                 }
             }
             break;
-        }
+        } // single exit
         
     #ifdef TRACE
         LDA #(emitOptimizedConstantTrace % 256) STA ZP.TraceMessageL 

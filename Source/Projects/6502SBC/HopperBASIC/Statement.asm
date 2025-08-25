@@ -219,6 +219,14 @@ unit Statement // Statement.asm
             CheckError();
             if (NC) { States.SetFailure(); break; }
             
+            if (BBS0, ZP.CompilerFlags)
+            {
+                // no need to execute - we already have the result
+                Long.PushTop();
+                States.SetSuccess();
+                break;
+            }
+            
             // Emit HALT for REPL
             Emit.Halt();
             CheckError();
@@ -376,23 +384,30 @@ unit Statement // Statement.asm
             {
                 executeConstantDeclaration();
             }
+            
+            // array types
             case Token.INT:
             case Token.WORD:
             case Token.BYTE:
             case Token.BIT:
             case Token.CHAR:
-            case Token.STRING:
+            
+            // inferred variable type
             case Token.VAR: 
-            case Token.LONG:
             {
                 executeVariableDeclaration();
+            }
+            
+            case Token.STRING:
+            case Token.LONG:
+            {
+                Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
             }
             
             default:
             {
                 // Unexpected token for statement
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
-                CLC  // Error
             }
         } // switch
         
@@ -452,10 +467,6 @@ unit Statement // Statement.asm
                 break; // error exit
             }
             
-            // we want a constant expression
-            LDA #1
-            SetIsConstant();
-            
             LDA #SymbolType.CONSTANT
             STA stmtSymbol
             processSingleSymbolDeclaration();
@@ -504,53 +515,85 @@ unit Statement // Statement.asm
             STZ (stmtStringPtr + 0)
             STZ (stmtStringPtr + 1)
 
-            LDX ZP.CurrentToken
+            // current token can be:
+            // - BYTE, BIT, CHAR, WORD, INT if it is an ARRAY
+            // - VAR if it is a variable
+            // - EQUAL if it is a constant
+            STZ stmtType
             
             // Output: C set if token is a type keyword, NC if not a type keyword, A = BASICType
             BASICTypes.FromToken();
-            if (NC)
+            if (C)
             {
-                // expecting INT WORD BYTE CHAR BIT STRING
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
-                CLC break;
-            }
-            
-            // Check if this is a VAR type declaration
-            CMP #BASICType.VAR
-            if (Z)
-            {
-                // VAR type starts untyped but will adopt type from initialization
-                // Keep as pure VAR for now, will be updated later
-                STA stmtType
-            }
-            
-            
-            STA stmtType // LHS type
-            
-            LDA stmtSymbol
-            CMP #SymbolType.CONSTANT
-            if (Z)
-            {
-                LDA stmtType
                 switch (A)
                 {
+                    case BASICType.CHAR:
+                    case BASICType.BIT:
+                    case BASICType.BYTE:
                     case BASICType.WORD:
                     case BASICType.INT:
-                    case BASICType.BYTE:
                     {
-                        TODO(); BIT ZP.EmulatorPCL // LONG
-                        CLC break;
+                        // ARRAY type?
+                        STA stmtType // LHS type
+                        
+                        LDA stmtSymbol
+                        CMP #SymbolType.CONSTANT
+                        if (Z)
+                        {
+                            Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                        }
+                        
+                        // advance to the IDENTIFIER
+                        Tokenizer.NextToken();                      
+                        CheckError();
+                        if (NC) { break; } // error exit
+                        
+                    }
+                    case BASICType.VAR:
+                    {
+                        // variable type
+                        ORA # BASICType.LONG // good default until assignment says otherwise
+                        STA stmtType // LHS type
+                        
+                        LDA stmtSymbol
+                        CMP #SymbolType.CONSTANT
+                        if (Z)
+                        {
+                            Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                        }
+                        
+                        // advance to the IDENTIFIER
+                        Tokenizer.NextToken();                      
+                        CheckError();
+                        if (NC) { break; } // error exit
+                    }
+                    default:
+                    {
+                        // must be a constant, type defined by inference later
+                        LDA # BASICType.VOID
+                        STA stmtType
+                        
+                        LDA stmtSymbol
+                        CMP #SymbolType.CONSTANT
+                        if (NZ)
+                        {
+                            Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                        }
+                        TAX
+                        CMP #Token.EQUALS
+                        if (NZ)
+                        {
+                            Error.ExpectedEqual(); BIT ZP.EmulatorPCL
+                        }
+                        
                     }
                 }
             }
             
-            Tokenizer.NextToken();
-            CheckError();
-            if (NC) { break; } // error exit
+            LDX ZP.CurrentToken // IDENTIFIER token
             
             // Check that we have an identifier
             LDA ZP.CurrentToken
-            
             CMP # Token.IDENTIFIER
             if (NZ)
             {
@@ -569,7 +612,7 @@ unit Statement // Statement.asm
             
             // Get the identifier string
             Tokenizer.GetTokenString();  // Returns pointer in ZP.TOP
-            
+           
             loop
             {
                 // Save name pointer
@@ -587,7 +630,7 @@ unit Statement // Statement.asm
                     CLC  // Error
                     break;
                 }
-                // if it already exists, check type compatibility before replacing
+                // if it already exists, check type compatibility before replacing: const for const, var for var
                 STZ ZP.SymbolIteratorFilter // constant or variable
                 Variables.Find(); // ZP.IDX = symbol node address
                 if (C)
@@ -741,6 +784,20 @@ unit Statement // Statement.asm
                     }
                     case Token.EQUALS:
                     {
+                        LDA stmtType
+                        AND # BASICType.TYPEMASK
+                        switch (A)
+                        {
+                            case BASICType.CHAR:
+                            case BASICType.BYTE:
+                            case BASICType.INT:
+                            case BASICType.WORD:
+                            {
+                                Error.IllegalIdentifier(); BIT ZP.EmulatorPCL // not an ARRAY anymore
+                                break;
+                            }
+                        }
+                        
                         // Save tokenizer position before expression
                         LDA ZP.TokenizerPosL
                         PHA
@@ -782,22 +839,26 @@ unit Statement // Statement.asm
                         STA (stmtTokensPtr + 0)
                         LDA ZP.IDYH
                         STA (stmtTokensPtr + 1)
-                     
-                        // Pop the result into NEXT
-                        Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
-                        
-                        LDA stmtSymbol
-                        CMP #SymbolType.CONSTANT
-                        if (Z)
+
+                        Long.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
+
+                        if (BBR0, ZP.CompilerFlags) // constant expression:  was constant expression, the folded value is on VM stack
                         {
-                            IsConstant();
-                            if (NC)
+                            LDA stmtSymbol
+                            CMP #SymbolType.CONSTANT
+                            if (Z)
                             {
-                                Error.ConstantExpressionExpected(); BIT ZP.EmulatorPCL
-                                CLC
-                                break; // error exit
+                                LDA ZP.TOPT
+                                CMP #BASICType.STRING // constant expression of sorts
+                                if (NZ)
+                                {
+                                    Error.ConstantExpressionExpected(); BIT ZP.EmulatorPCL
+                                    break; // error exit
+                                }
                             }
                         }
+                        
+                        
                         INC declInitializer
                         SEC
                     }
@@ -815,59 +876,34 @@ unit Statement // Statement.asm
                         }
                         
                         LDA stmtType
-                        CMP #BASICType.VAR  // Check if pure VAR (not VAR with underlying type)
-                        if (Z)  // Pure VAR variable without initialization
+                        AND # BASICType.TYPEMASK
+                        switch (A)
                         {
-                            STZ ZP.NEXT0
-                            STZ ZP.NEXT1
-                            STZ ZP.NEXT2
-                            STZ ZP.NEXT3
-                            
-                            // Default VAR to LONG with value 0
-                            LDA # (BASICType.VAR | BASICType.LONG)
-                            STA stmtType
-                            LDA #BASICType.LONG
-                            STA ZP.NEXTT
-                            
-                            SEC  // Success
-                            break;
+                            case BASICType.CHAR:
+                            case BASICType.BYTE:
+                            case BASICType.INT:
+                            case BASICType.WORD:
+                            {
+                                Error.IllegalIdentifier(); BIT ZP.EmulatorPCL // not an ARRAY anymore
+                                break;
+                            }
                         }
                         
-                        LDA stmtType
-                        CMP # BASICType.STRING
-                        if (Z)
-                        {
-                            // STRING default: allocate copy of EmptyString
-                            LDA #(Variables.EmptyString % 256)
-                            STA ZP.TOPL
-                            LDA #(Variables.EmptyString / 256)
-                            STA ZP.TOPH
-                            
-                            Variables.AllocateAndCopyString(); // Input: ZP.TOP = source, Output: ZP.IDY = allocated copy
-                            CheckError();
-                            if (NC) { break; } // allocation failed
-                            
-                            // Track allocated string for cleanup
-                            LDA ZP.IDYL
-                            STA (stmtStringPtr + 0)
-                            LDA ZP.IDYH
-                            STA (stmtStringPtr + 1)
-                           
-                            // Use allocated copy as the default value
-                            LDA ZP.IDYL
-                            STA ZP.NEXTL
-                            LDA ZP.IDYH
-                            STA ZP.NEXTH
-                        }
-                        else
-                        {
-                            // Other types default: 0 (INT->0, BIT->FALSE, WORD->0, BYTE->0, CHAR->0)
-                            STZ ZP.NEXTL
-                            STZ ZP.NEXTH
-                        }
+                        // Pure VAR variable without initialization
+                        STZ ZP.NEXT0
+                        STZ ZP.NEXT1
+                        STZ ZP.NEXT2
+                        STZ ZP.NEXT3
+                        
+                        // Default VAR to LONG with value 0
+                        LDA #BASICType.LONG
+                        STA ZP.NEXTT
+                        
                         // no expression tokens
                         STZ ZP.IDXH
                         STZ ZP.IDXL
+                        
+                        SEC  // Success
                     }
                     default:
                     {
@@ -877,31 +913,14 @@ unit Statement // Statement.asm
                     }
                 } // switch
                 
-                LDA stmtType
-                AND #BASICType.ARRAY
-                if (Z)
-                {
-                    LDA stmtType
-                    switch (A)
-                    {
-                        case BASICType.WORD:
-                        case BASICType.INT:
-                        case BASICType.BYTE:
-                        {
-                            TODO(); BIT ZP.EmulatorPCL // LONG
-                            CLC break;
-                        }
-                    }
-                }
-                
                 SEC  // Success
                 break;
             }
-            // Now restore name pointer to TOP
+            // Now restore name IDENTIFIER pointer to TOP
             PLA
-            STA ZP.TOPH
+            STA ZP.TOP1
             PLA
-            STA ZP.TOPL
+            STA ZP.TOP0
             break;
         } // loop
         
@@ -911,73 +930,26 @@ unit Statement // Statement.asm
             {
                 break; // error exit
             }
-            LDA ZP.TOPL
-            PHA
-            LDA ZP.TOPH
-            PHA
-            LDA ZP.NEXTL
-            PHA
-            LDA ZP.NEXTH
-            PHA
-            
+                     
             LDA declInitializer // did we have "= <expression>"?
             if (NZ)
             {
-                LDA ZP.NEXTL
-                STA ZP.TOPL
-                LDA ZP.NEXTH
-                STA ZP.TOPH
-                LDA ZP.NEXTT
-                STA ZP.TOPT
+                // ARRAY : stmtType is correct
+                // VAR   : stmtType is correct
                 
-                // Check if this is a VAR variable
-                LDA stmtType
-                AND # BASICType.VAR
-                if (NZ)  // VAR variable - skip type checking
+                LDA stmtSymbol
+                AND # SymbolType.CONSTANT
+                if (NZ)
                 {
-                    SEC  // Always compatible
+                    // CONSTANT: infer type from type of initializer expression
+                    LDA ZP.NEXTT
+                    STA stmtType
                 }
-                else  // Non-VAR variable - check type compatibility
-                {
-                    LDA stmtType
-                    AND # BASICType.ARRAY
-                    if (NZ)
-                    {
-
-                        LDA stmtType
-                        STA ZP.NEXTT // element type for array: ARRAY(<type>)
-                        SEC
-                    }
-                    else
-                    {    
-                        LDA stmtType
-                        STA ZP.NEXTT // LHS type (element type for array)
-                        
-                        // RHS in TOP
-                        // LHS type in NEXTT
-                        CheckRHSTypeCompatibility();
-                    }
-                }
+                SEC
             }
             else
             {
                 SEC // absent RHS is ok, default to INT -> 0, BIT -> FALSE, STRING -> empty
-            }
-            
-            PLA
-            STA ZP.NEXTH
-            PLA 
-            STA ZP.NEXTL
-            PLA
-            STA ZP.TOPH
-            PLA 
-            STA ZP.TOPL
-            
-
-            if (NC)
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
             }
             
             // For VAR variables, update type based on initialization
@@ -1001,6 +973,8 @@ unit Statement // Statement.asm
             STA ZP.IDYL
             LDA (stmtTokensPtr+1)
             STA ZP.IDYH
+            
+Debug.NL(); NLOut(); Space(); YOut();
             
             // Call Variables.Declare
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),

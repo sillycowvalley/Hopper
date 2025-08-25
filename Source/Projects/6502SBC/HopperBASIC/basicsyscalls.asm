@@ -605,7 +605,7 @@ unit BASICSysCalls
            if (NZ) 
            {
                // type in ZP.TOPT
-               Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
+               Long.PushTopStrict(); // Push return value from ZP.TOP0..ZP.TOP3
                if (NC) { break; }
                
            }
