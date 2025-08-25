@@ -457,39 +457,26 @@ unit File
         {
             // Load directory from EEPROM
             loadDirectory();
-            // Print header
-            LDA #(Messages.DirListHeader % 256)
-            STA ZP.STRL
-            LDA #(Messages.DirListHeader / 256)
-            STA ZP.STRH
-            Print.String();
-            Print.NewLine();
             
             // Count files and calculate total bytes
             countFilesAndBytes(); // -> TransferLengthL = file count, TransferLengthH/BytesRemainingL = total bytes
             
             LDA TransferLengthL
-            if (Z)
+            if (NZ)
             {
-                // No files found
-                /*
-                LDA #(Messages.NoFilesMsg % 256)
+                // Print header
+                LDA #(Messages.DirListHeader % 256)
                 STA ZP.STRL
-                LDA #(Messages.NoFilesMsg / 256)
+                LDA #(Messages.DirListHeader / 256)
                 STA ZP.STRH
                 Print.String();
                 Print.NewLine();
-                */
-                printDirectorySummary();
-            }
-            else
-            {
+                
                 // Print each file entry
                 printAllFileEntries();
-                
-                // Print summary
-                printDirectorySummary();
             }
+            // Print summary
+            printDirectorySummary();
             
 #ifdef DEBUG
             Print.NewLine();
