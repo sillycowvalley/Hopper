@@ -1,281 +1,7 @@
 unit ComparisonInstructions // ComparisonInstructions.asm
 {
     
-    // Signed 16-bit comparison of NEXT vs TOP
-    // Input: ZP.NEXT, ZP.TOP (16-bit signed values)
-    // Output: ZP.ACC = comparison result (0=NEXT<TOP, 1=NEXT==TOP, 2=NEXT>TOP)
-    // Modifies: ZP.ACC, processor flags
-    doSignedCompare()
-    {
-        PHA
-        
-        LDA ZP.NEXTH
-        CMP ZP.TOPH
-        if (Z)
-        {
-            // High bytes equal, compare low bytes unsigned
-            LDA ZP.NEXTL
-            CMP ZP.TOPL
-            if (Z)
-            {
-                LDA #1      // NEXT == TOP
-                STA ZP.ACC
-            }
-            else if (C)
-            {
-                LDA #2      // NEXT > TOP
-                STA ZP.ACC
-            }
-            else
-            {
-                LDA #0      // NEXT < TOP
-                STA ZP.ACC
-            }
-        }
-        else
-        {
-            // High bytes different - signed comparison needed
-            PHP             // Save comparison flags
-            LDA ZP.NEXTH    // Get NEXT high byte
-            EOR ZP.TOPH     // XOR with TOP high byte to check if signs differ
-            if (MI)         // Signs differ
-            {
-                BIT ZP.NEXTH
-                if (MI)     // NEXT is negative, TOP is positive
-                {
-                    LDA #0  // NEXT < TOP (negative < positive)
-                }
-                else        // NEXT is positive, TOP is negative
-                {
-                    LDA #2  // NEXT > TOP (positive > negative)
-                }
-                STA ZP.ACC
-                PLP             // Clean up stack if we didn't use it
-            }
-            else
-            {
-                // Same signs, use the original comparison result
-                PLP         // Restore comparison flags
-                if (C)      // NEXT >= TOP (unsigned when same signs)
-                {
-                    LDA #2  // NEXT > TOP
-                }
-                else
-                {
-                    LDA #0  // NEXT < TOP
-                }
-                STA ZP.ACC
-            }
-        }
-        PLA
-    }
     
-    // Unsigned 16-bit comparison of NEXT vs TOP
-    // Input: ZP.NEXT, ZP.TOP (16-bit unsigned values)
-    // Output: ZP.ACC = comparison result (0=NEXT<TOP, 1=NEXT==TOP, 2=NEXT>TOP)
-    // Modifies: ZP.ACC, processor flags
-    doUnsignedCompare()
-    {
-        PHA
-        
-        LDA ZP.NEXTH
-        CMP ZP.TOPH
-        if (Z)
-        {
-            // High bytes equal, compare low bytes
-            LDA ZP.NEXTL
-            CMP ZP.TOPL
-            if (Z)
-            {
-                LDA #1      // NEXT == TOP
-                STA ZP.ACC
-            }
-            else if (C)
-            {
-                LDA #2      // NEXT > TOP
-                STA ZP.ACC
-            }
-            else
-            {
-                LDA #0      // NEXT < TOP
-                STA ZP.ACC
-            }
-        }
-        else
-        {
-            // High bytes different
-            if (C)
-            {
-                LDA #2      // NEXT > TOP
-                STA ZP.ACC
-            }
-            else
-            {
-                LDA #0      // NEXT < TOP
-                STA ZP.ACC
-            }
-        }
-        
-        PLA
-    }
-
-    // Check if BIT types are allowed for comparison operation (same for STRING and CHAR types)
-    // Input: ZP.NEXTT and ZP.TOPT (operand types), A = permission level (1=not allowed, 2=allowed if both BIT)
-    // Output: C set if allowed, C clear if not allowed
-    checkBITandCHARTypes()
-    {
-        loop
-        {
-            SEC // assume ok (in case not BIT types)
-            
-            CMP # 1 // BIT not allowed at all, CHAR allowed if both CHAR
-            if (Z)
-            {
-                LDA ZP.NEXTT
-                CMP # BASICType.BIT
-                if (Z)
-                {
-                    CLC
-                    break;    
-                } 
-                CMP # BASICType.STRING
-                if (Z)
-                {
-                    CLC
-                    break;    
-                } 
-                
-                LDA ZP.TOPT
-                CMP # BASICType.BIT
-                if (Z)
-                {   
-                    CLC
-                    break;
-                }
-                CMP # BASICType.STRING
-                if (Z)
-                {   
-                    CLC
-                    break;
-                }
-                
-                LDA ZP.NEXTT
-                CMP # BASICType.CHAR
-                if (Z)
-                {
-                    LDA ZP.TOPT
-                    CMP # BASICType.CHAR    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                LDA ZP.TOPT
-                CMP # BASICType.CHAR
-                if (Z)
-                {
-                    LDA ZP.NEXTT
-                    CMP # BASICType.CHAR    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                SEC
-                break;
-            }
-            
-            CMP # 2 // allowed if both BIT
-            if (Z)
-            {
-                LDA ZP.NEXTT
-                CMP # BASICType.BIT
-                if (Z)
-                {
-                    LDA ZP.TOPT
-                    CMP # BASICType.BIT    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                LDA ZP.TOPT
-                CMP # BASICType.BIT
-                if (Z)
-                {
-                    LDA ZP.NEXTT
-                    CMP # BASICType.BIT    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                LDA ZP.NEXTT
-                CMP # BASICType.STRING
-                if (Z)
-                {
-                    LDA ZP.TOPT
-                    CMP # BASICType.STRING    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                LDA ZP.TOPT
-                CMP # BASICType.STRING
-                if (Z)
-                {
-                    LDA ZP.NEXTT
-                    CMP # BASICType.STRING    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                LDA ZP.NEXTT
-                CMP # BASICType.CHAR
-                if (Z)
-                {
-                    LDA ZP.TOPT
-                    CMP # BASICType.CHAR    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                
-                LDA ZP.TOPT
-                CMP # BASICType.CHAR
-                if (Z)
-                {
-                    LDA ZP.NEXTT
-                    CMP # BASICType.CHAR    
-                    if (NZ)
-                    {
-                        CLC   
-                        break;
-                    }
-                }
-                SEC
-                break;
-            }
-            BRK // bad argument : should be #1 or #2
-            break;
-        } // single exit
-    }
     
     // Equality comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
@@ -287,26 +13,26 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
-#ifdef BASICLONG
+            if (NC) { break; }
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.EQ();
                 SEC
                 break;
             }
-#endif
             LDX #0          // Assume false (not equal)
             
-            
-            // Handle STRING type combinations
             LDA ZP.NEXTT
-            CMP #BASICType.STRING
-            if (Z)
+            CMP ZP.TOPT
+            if (NZ)
             {
-                // Left operand is STRING
-                LDA ZP.TOPT
-                CMP #BASICType.STRING
-                if (Z)
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break;
+            }
+            switch (A)
+            {
+                case BASICType.STRING:
                 {
                     // Both operands are STRING - compare string content
                     Tools.StringCompare(); // Includes pointer equality optimization
@@ -314,102 +40,29 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                     {
                         LDX #1 // Strings are equal
                     }
-                    // Continue to value comparison section (will reach PushX)
                 }
-                else
+                case BASICType.CHAR:
+                case BASICType.BIT:
                 {
-                    // STRING vs non-STRING = type mismatch
+                    LDA ZP.TOP0
+                    CMP ZP.NEXT0
+                    if (Z)
+                    {
+                        LDX #1 // Values are equal
+                    }   
+                }
+                default:
+                {
+                    Error.InternalError(); BIT ZP.EmulatorPCL
                     CLC
                     break;
                 }
             }
-            else
-            {
-                // Left operand is not STRING, check right operand
-                LDA ZP.TOPT
-                CMP #BASICType.STRING
-                if (Z)
-                {
-                    // non-STRING vs STRING = type mismatch
-                    CLC
-                    break;
-                }
-            }
             
-            // Handle numeric type combinations (INT, WORD, BIT, BYTE, CHAR)
-            LDA #2 // BIT, CHAR and STRING types allowed for equality comparison
-            checkBITandCHARTypes();
-            if (NC)
-            {
-                CLC
-                break; // BIT type mismatch
-            }            
-            
-            // Check for cross-type compatibility (INT vs WORD/BYTE)
-            LDA ZP.TOPT
-            CMP ZP.NEXTT
-            if (NZ)
-            {
-                // Different numeric types - handle special cases
-                // BIT|CHAR vs INT|WORD|BYTE already rejected by checkBITandCHARTypes above
-                // STRING vs numeric already handled above
-                // Only INT vs WORD|BYTE combinations remain
-                
-                LDA ZP.NEXTT
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    // Left is INT, right is WORD/BYTE
-                    BIT ZP.NEXTH
-                    if (MI)
-                    {
-                        // Negative INT cannot equal positive WORD/BYTE
-                        // LDX already 0 (false)
-                        Stacks.PushX();
-                        SEC
-                        break;
-                    }
-                }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    // Right is INT, left is WORD/BYTE  
-                    BIT ZP.TOPH
-                    if (MI)
-                    {
-                        // Negative INT cannot equal positive WORD/BYTE
-                        // LDX already 0 (false)
-                        Stacks.PushX();
-                        SEC
-                        break;
-                    }
-                }
-            }
-            
-            // Compare actual 16-bit values
-            LDA ZP.TOPL
-            CMP ZP.NEXTL
-            if (Z)
-            {
-                LDA ZP.TOPH
-                CMP ZP.NEXTH
-                if (Z)
-                {
-                    LDX #1 // Values are equal
-                }
-            }   
-
             Stacks.PushX();
             SEC
             break;
         } // single exit
-        
-        if (NC)
-        {
-            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-        }
     }
 
     // Not-equal comparison operation (pops two operands, pushes BIT result)
@@ -422,116 +75,49 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
-#ifdef BASICLONG
+            if (NC) { break; }
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.NE();
                 SEC
                 break;
             }
-#endif
             LDX #1          // Assume true (not equal)
             
-            // Handle STRING type combinations
             LDA ZP.NEXTT
-            CMP #BASICType.STRING
-            if (Z)
+            CMP ZP.TOPT
+            if (NZ)
             {
-                // Left operand is STRING
-                LDA ZP.TOPT
-                CMP #BASICType.STRING
-                if (Z)
+                CLC
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            switch (A)
+            {
+                case BASICType.STRING:
                 {
                     // Both operands are STRING - compare string content
                     Tools.StringCompare(); // Includes pointer equality optimization
                     if (C)
                     {
-                        LDX #0 // Strings are equal, so NOT EQUAL is false
+                        LDX #0 // Strings are equal
                     }
-                    // Continue to value comparison section (will reach PushX)
                 }
-                else
+                case BASICType.CHAR:
+                case BASICType.BIT:
                 {
-                    // STRING vs non-STRING = type mismatch
+                    LDA ZP.TOP0
+                    CMP ZP.NEXT0
+                    if (Z)
+                    {
+                        LDX #0 // Values are equal
+                    }   
+                }
+                default:
+                {
+                    Error.InternalError(); BIT ZP.EmulatorPCL
                     CLC
                     break;
-                }
-            }
-            else
-            {
-                // Left operand is not STRING, check right operand
-                LDA ZP.TOPT
-                CMP #BASICType.STRING
-                if (Z)
-                {
-                    // non-STRING vs STRING = type mismatch
-                    CLC
-                    break;
-                }
-            }
-            
-            // Handle numeric type combinations (INT, WORD, BIT, BYTE)
-            LDA #2 // BIT, CHAR and STRING types allowed for equality comparison
-            checkBITandCHARTypes();
-            if (NC)
-            {
-                CLC
-                break; // BIT type mismatch
-            }
-            
-            // Check for cross-type compatibility (INT vs WORD/BYTE)
-            LDA ZP.TOPT
-            CMP ZP.NEXTT
-            if (NZ)
-            {
-                // Different numeric types - handle special cases
-                // BIT|CHAR vs INT|WORD|BYTE already rejected by checkBITandCHARTypes above
-                // STRING vs numeric already handled above
-                // Only INT vs WORD|BYTE combinations remain
-                
-                LDA ZP.NEXTT
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    // Left is INT, right is WORD/BYTE
-                    BIT ZP.NEXTH
-                    if (MI)
-                    {
-                        // Negative INT cannot equal positive WORD/BYTE
-                        // LDX already 1 (true - they are not equal)
-                        Stacks.PushX();
-                        SEC
-                        break;
-                    }
-                }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    // Right is INT, left is WORD/BYTE
-                    BIT ZP.TOPH
-                    if (MI)
-                    {
-                        // Negative INT cannot equal positive WORD/BYTE
-                        // LDX already 1 (true - they are not equal)
-                        Stacks.PushX();
-                        SEC
-                        break;
-                    }
-                }
-            }
-            
-            // Compare actual 16-bit values
-            LDA ZP.TOPL
-            CMP ZP.NEXTL
-            if (Z)
-            {
-                LDA ZP.TOPH
-                CMP ZP.NEXTH
-                if (Z)
-                {
-                    LDX #0 // Values are equal, so NOT EQUAL is false
                 }
             }
             
@@ -539,80 +125,6 @@ unit ComparisonInstructions // ComparisonInstructions.asm
             SEC
             break;
         } // single exit
-        
-        if (NC)
-        {
-            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-        }
-    }
-    
-    // Check types for integer comparison operations
-    // Input: ZP.NEXTT and ZP.TOPT (operand types)
-    // Output: X = comparison strategy (1=unsigned, 2=signed, 3=signs comparison), Y = result for signs comparison
-    checkINTTypes()
-    {
-        loop
-        {
-            LDX #1 // default to  unsigned compare
-            
-            LDA ZP.NEXTT
-            CMP #BASICType.INT
-            if (Z)
-            {
-                LDA ZP.TOPT
-                CMP #BASICType.INT
-                if (Z)
-                {
-                    // both INT
-                    LDX #2
-                    break;
-                }
-                
-                // INT vs WORD
-                BIT ZP.NEXTH
-                if (MI)
-                {
-                    // NEXT < 0 
-                    BIT ZP.TOPH
-                    if (MI)
-                    {
-                        // TOP > 32657
-                        // 0 = NEXT < TOP
-                        // 1 = NEXT == TOP  
-                        // 2 = NEXT > TOP
-                        LDX #3
-                        LDY #0
-                        break;
-                    }
-                    LDX #2 // signed
-                }
-            }
-            LDA ZP.TOPT
-            CMP #BASICType.INT
-            if (Z)
-            {
-                // WORD vs INT
-                BIT ZP.TOPH
-                if (MI)
-                {
-                    // TOP < 0 
-                    BIT ZP.NEXTH
-                    if (MI)
-                    {
-                        // NEXT > 32657
-                        // 0 = NEXT < TOP
-                        // 1 = NEXT == TOP  
-                        // 2 = NEXT > TOP
-                        LDX #3
-                        LDY #2
-                        break;
-                    }
-                    LDX #2 // signed
-                }
-            }
-            
-            break;
-        }
     }
     
     // Less-than comparison operation (pops two operands, pushes BIT result)
@@ -625,97 +137,55 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
-#ifdef BASICLONG
+            if (NC) { break; }
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.LT();
                 SEC
                 break;
             }
-#endif
-            LDA #1 // not allowed : STRING, BIT
-            checkBITandCHARTypes();
-            if (NC)
+            
+            LDX #0 // false
+            
+            LDA ZP.NEXTT
+            CMP ZP.TOPT
+            if (NZ)
             {
-                break;
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break; // BIT type mismatch
             }
-            checkINTTypes();
-            switch (X)
+            switch (A)
             {
-                case 1:
+                case BASICType.CHAR:
                 {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doUnsignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #0
+                    LDA ZP.NEXT0
+                    CMP ZP.TOP0
                     if (Z)
                     {
-                        LDX #1 // true
+                        LDX #0      // NEXT == TOP
                     }
-                }
-                case 2:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doSignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #0
-                    if (Z)
+                    else if (C)
                     {
-                        LDX #1 // true
+                        LDX #0      // NEXT > TOP
                     }
-                }
-                case 3:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    LDX #0 // Assume false
-                    CPY #0
-                    if (Z)
+                    else
                     {
-                        LDX #1 // true
+                        LDX #1      // NEXT < TOP
                     }
                 }
                 default:
                 {
-                    CLC  // type mismatch
-                    break;
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL break;
+                    break; // BIT type mismatch
                 }
             }
+            
             Stacks.PushX();
             SEC
             break;
         } // loop
-        
-        if (NC)
-        {
-            loop
-            {
-                // Check if it's an unsupported type (BIT or STRING)
-                LDA ZP.NEXTT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING  
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                // Otherwise it's a numeric type mismatch
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-        }
-    }    
+    }
     
     // Greater-than comparison operation (pops two operands, pushes BIT result)
     // Input: Stack contains two operands (right operand on top)
@@ -727,97 +197,53 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
-#ifdef BASICLONG
+            if (NC) { break; }
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.GT();
                 SEC
                 break;
             }
-#endif
             
-            LDA #1 // not allowed : CHAR, STRING, BIT
-            checkBITandCHARTypes();
-            if (NC)
+            LDX #0 // false
+            
+            LDA ZP.NEXTT
+            CMP ZP.TOPT
+            if (NZ)
             {
-                break;
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break; // BIT type mismatch
             }
-            checkINTTypes();
-            switch (X)
+            switch (A)
             {
-                case 1:
+                case BASICType.CHAR:
                 {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doUnsignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #2
+                    LDA ZP.NEXT0
+                    CMP ZP.TOP0
                     if (Z)
                     {
-                        LDX #1 // true
+                        LDX #0      // NEXT == TOP
                     }
-                }
-                case 2:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doSignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #2
-                    if (Z)
+                    else if (C)
                     {
-                        LDX #1 // true
+                        LDX #1      // NEXT > TOP
                     }
-                }
-                case 3:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    LDX #0 // Assume false
-                    CPY #2
-                    if (Z)
+                    else
                     {
-                        LDX #1 // true
+                        LDX #0      // NEXT < TOP
                     }
                 }
                 default:
                 {
-                    CLC  // type mismatch
-                    break;
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL break;
+                    break; // BIT type mismatch
                 }
             }
             
             Stacks.PushX();
             SEC
             break;
-        }
-        
-        if (NC)
-        {
-            loop
-            {
-                // Check if it's an unsupported type (BIT or STRING)
-                LDA ZP.NEXTT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING  
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                // Otherwise it's a numeric type mismatch
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
         }
     }    
     
@@ -831,96 +257,53 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
-#ifdef BASICLONG
+            if (NC) { break; }
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.LE();
                 SEC
                 break;
             }
-#endif
             
-            LDA #1 // not allowed : CHAR, STRING, BIT
-            checkBITandCHARTypes();
-            if (NC)
+            LDX #0 // false
+            
+            LDA ZP.NEXTT
+            CMP ZP.TOPT
+            if (NZ)
             {
-                break;
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break; // BIT type mismatch
             }
-            checkINTTypes();
-            switch (X)
+            switch (A)
             {
-                case 1:
+                case BASICType.CHAR:
                 {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doUnsignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #2
-                    if (NZ)
+                    LDA ZP.NEXT0
+                    CMP ZP.TOP0
+                    if (Z)
                     {
-                        LDX #1 // true
+                        LDX #1      // NEXT == TOP
                     }
-                }
-                case 2:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doSignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #2
-                    if (NZ)
+                    else if (C)
                     {
-                        LDX #1 // true
+                        LDX #0      // NEXT > TOP
                     }
-                }
-                case 3:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    LDX #0 // Assume false
-                    CPY #2
-                    if (NZ)
+                    else
                     {
-                        LDX #1 // true
+                        LDX #1      // NEXT < TOP
                     }
                 }
                 default:
                 {
-                    CLC  // type mismatch
-                    break;
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL break;
+                    break; // BIT type mismatch
                 }
             }
+            
             Stacks.PushX();
             SEC
             break;
-        }
-        
-        if (NC)
-        {
-            loop
-            {
-                // Check if it's an unsupported type (BIT or STRING)
-                LDA ZP.NEXTT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING  
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                // Otherwise it's a numeric type mismatch
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
         }
     }
     
@@ -934,97 +317,53 @@ unit ComparisonInstructions // ComparisonInstructions.asm
         {
             // Pop two operands
             Long.PopTopNext();
-#ifdef BASICLONG
+            if (NC) { break; }
             if (BBS3, ZP.TOPT) // if either is LONG, both will be long
             {
                 Long.GE();
                 SEC
                 break;
             }
-#endif
             
-            LDA #1 // not allowed : CHAR, STRING, BIT
-            checkBITandCHARTypes();
-            if (NC)
+            LDX #0 // false
+            
+            LDA ZP.NEXTT
+            CMP ZP.TOPT
+            if (NZ)
             {
-                break;
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break; // BIT type mismatch
             }
-            checkINTTypes();
-            switch (X)
+            switch (A)
             {
-                case 1:
+                case BASICType.CHAR:
                 {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doUnsignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #0
-                    if (NZ)
+                    LDA ZP.NEXT0
+                    CMP ZP.TOP0
+                    if (Z)
                     {
-                        LDX #1 // true
+                        LDX #1      // NEXT == TOP
                     }
-                }
-                case 2:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    doSignedCompare();
-                    LDX #0     // Assume false
-                    LDA ZP.ACCL
-                    CMP #0
-                    if (NZ)
+                    else if (C)
                     {
-                        LDX #1 // true
+                        LDX #1      // NEXT > TOP
                     }
-                }
-                case 3:
-                {
-                    // 0 = NEXT < TOP
-                    // 1 = NEXT == TOP  
-                    // 2 = NEXT > TOP
-                    LDX #0 // Assume false
-                    CPY #0
-                    if (NZ)
+                    else
                     {
-                        LDX #1 // true
+                        LDX #0      // NEXT < TOP
                     }
                 }
                 default:
                 {
-                    CLC  // type mismatch
-                    break;
+                    Error.InvalidOperator(); BIT ZP.EmulatorPCL break;
+                    break; // BIT type mismatch
                 }
             }
             
             Stacks.PushX();
             SEC
             break;
-        }
-        
-        if (NC)
-        {
-            loop
-            {
-                // Check if it's an unsupported type (BIT or STRING)
-                LDA ZP.NEXTT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING  
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                LDA ZP.TOPT
-                CMP #BASICType.BIT
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                CMP #BASICType.STRING
-                if (Z) { Error.InvalidOperator(); BIT ZP.EmulatorPCL break; }
-                
-                // Otherwise it's a numeric type mismatch
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
         }
     }
 }

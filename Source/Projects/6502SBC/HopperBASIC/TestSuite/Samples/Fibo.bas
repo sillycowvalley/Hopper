@@ -9,11 +9,11 @@ FUNC Fibo(n)
 ENDFUNC
 
 FUNC Benchmark(name, arg, loops)
-    WORD start
-    WORD result
-    WORD count
-    WORD elapsed
-    WORD avgS
+    VAR start
+    VAR result
+    VAR count
+    VAR elapsed
+    VAR avgS
     
     start = SECONDS()
     
@@ -28,7 +28,7 @@ FUNC Benchmark(name, arg, loops)
 ENDFUNC
 
 BEGIN
-    Benchmark("Fibonacci", 20, 1)
+    Benchmark("Fibonacci", 24, 1)
 END
 
 ! test from REPL (or just type RUN)

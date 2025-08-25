@@ -91,24 +91,24 @@ unit BASICSysCalls
                     case SysCallType.PrintValue:
                         { LDA #Token.VAR         }
                     case SysCallType.Abs:
-                        { LDA #Token.INT         }
+                        { LDA #Token.LONG        }
                     case SysCallType.Delay:
                     case SysCallType.Peek:
-                        { LDA #Token.WORD        }
+                        { LDA #Token.LONG        }
                     case SysCallType.Poke:
-                        { LDA #Token.WORD       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BYTE }
+                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.LONG }
                     case SysCallType.PinMode:
-                        { LDA #Token.BYTE       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BYTE }
+                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.LONG }
                     case SysCallType.Read:
                     case SysCallType.Chr:
-                        { LDA #Token.BYTE        }
+                        { LDA #Token.LONG        }
                     case SysCallType.PrintChar:
                     case SysCallType.Asc:
                         { LDA #Token.CHAR        }
                     case SysCallType.Len:
                         { LDA #Token.STRING      }
                     case SysCallType.Write:
-                        { LDA #Token.BYTE       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BIT }
+                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BIT }
                 }
                 Tokens.PrintKeyword();
             }
@@ -126,10 +126,10 @@ unit BASICSysCalls
                     case SysCallType.Millis:
                     case SysCallType.Seconds:
                     case SysCallType.Len:
-                        { LDA #Token.WORD  }
                     case SysCallType.Peek:
                     case SysCallType.Asc:
-                        { LDA #Token.BYTE  }
+                        { LDA #Token.LONG  }
+                            
                     case SysCallType.Read:
                         { LDA #Token.BIT   }
                     case SysCallType.Chr:
@@ -180,6 +180,7 @@ unit BASICSysCalls
                    PHY
                    Long.PopTopNext(); // First arg in ZP.NEXT, Second arg in ZP.TOP*, munts X and Y
                    PLY
+                   if (NC) { break; }
                }
                case 3: 
                { 
@@ -209,38 +210,8 @@ unit BASICSysCalls
                    // ABS function - compute absolute value
                    // Input: ZP.TOP* contains value and type
                    // Output: ZP.TOP* contains absolute value
-                   LDA ZP.TOPT
-                   switch (A)
-                   {
-                       case BASICType.INT:
-                       {
-                           // INT absolute value - check if negative
-                           LDA ZP.TOPH
-                           if (MI)
-                           {
-                               // Negate using two's complement
-                               SEC
-                               LDA #0
-                               SBC ZP.TOPL
-                               STA ZP.TOPL
-                               LDA #0
-                               SBC ZP.TOPH
-                               STA ZP.TOPH
-                           }
-                       }
-                       case BASICType.WORD:
-                       case BASICType.BYTE:
-                       {
-                           // WORD/BYTE always positive (unsigned)
-    
-                       }
-                       default:
-                       {
-                           Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                           States.SetFailure();
-                           break;
-                       }
-                   }
+                   TODO(); BIT ZP.EmulatorPCL // LONG
+                   
                }
                case SysCallType.Rnd:           // ID = 4
                {
@@ -257,17 +228,15 @@ unit BASICSysCalls
                    LDA ZP.TICK2 STA ZP.TOP2
                    LDA ZP.TICK1 STA ZP.TOP1
                    LDA ZP.TICK0 STA ZP.TOP0
-#ifdef BASICLONG
                    LDA #BASICType.LONG STA ZP.TOPT
-#else
-                   LDA #BASICType.WORD STA ZP.TOPT
-#endif
                }
                case SysCallType.Seconds:       // ID = 6
                {
                    // SECONDS function - get elapsed seconds
+                   PHY
                    Tools.Seconds();              
-                   LDY #0 // already pushed the result
+                   PLY
+                   LDA #BASICType.LONG STA ZP.TOPT
                }
                case SysCallType.Delay:         // ID = 7
                {
@@ -281,6 +250,7 @@ unit BASICSysCalls
                    // Output: ZP.TOP* contains byte value
                    
                    // Validate address is WORD or INT type
+                   TODO(); BIT ZP.EmulatorPCL // LONG
                    LDA ZP.TOPT
                    switch(A)
                    {
@@ -319,6 +289,7 @@ unit BASICSysCalls
                    // Input: ZP.NEXT* contains address, ZP.TOP* contains value
                    
                    // Validate address is WORD or INT type
+                   TODO(); BIT ZP.EmulatorPCL // LONG
                    LDA ZP.NEXTT
                    switch (A)
                    {
@@ -389,6 +360,7 @@ unit BASICSysCalls
                     }
                     
                     // Validate mode (0 or 1)
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     LDA ZP.TOPH
                     if (NZ)
                     {
@@ -418,6 +390,7 @@ unit BASICSysCalls
                     // Output: ZP.TOP* = pin value (0 or 1)
                     
                     // Validate pin number (0-15)
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     LDA ZP.TOPH
                     if (NZ)
                     {
@@ -448,6 +421,7 @@ unit BASICSysCalls
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = value
                     
                     // Validate pin number (0-15)
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     LDA ZP.NEXTH
                     if (NZ)
                     {
@@ -486,6 +460,7 @@ unit BASICSysCalls
                     // Output: ZP.TOP* contains CHAR value
                     
                     // Validate value is 0-255 regardless of type
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     LDA ZP.TOPT
                     switch (A)
                     {
@@ -554,6 +529,7 @@ unit BASICSysCalls
                     
                     // Convert CHAR to BYTE (value stays the same)
                     // ZP.TOPL already contains the ASCII value
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     STZ ZP.TOPH  // Ensure high byte is clear
                     LDA #BASICType.BYTE
                     STA ZP.TOPT
@@ -581,6 +557,7 @@ unit BASICSysCalls
                         STZ ZP.TOPH
                         LDA # BASICType.BYTE
                         STA ZP.TOPT
+                        TODO(); BIT ZP.EmulatorPCL // LONG
                         
                         PLY
                     }
@@ -600,6 +577,7 @@ unit BASICSysCalls
                             STA ZP.TOPL
                             LDA ZP.ACCH
                             STA ZP.TOPH
+                            TODO(); BIT ZP.EmulatorPCL // LONG
                         }
                         else
                         {
@@ -615,7 +593,7 @@ unit BASICSysCalls
                
                default:
                {
-                   TODO(); BIT ZP.EmulatorPCL
+                   TODO(); BIT ZP.EmulatorPCL // unknown SysCall
                    States.SetFailure();
                    break;
                }
@@ -628,6 +606,8 @@ unit BASICSysCalls
            {
                // type in ZP.TOPT
                Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
+               if (NC) { break; }
+               
            }
            SEC
            States.SetSuccess();

@@ -239,7 +239,7 @@ unit Compiler // Compiler.asm
             {
                 if (BBS0, ZP.CompilerFlags) // constant expression:  was constant expression, the folded value is on VM stack
                 {
-                    Stacks.PopTop(); // Get the constant value into ZP.TOP/TOPT
+                    Long.PopTop(); // Get the constant value into ZP.TOP/TOPT
                                 
                     // Rollback the opcode buffer to initial state
                     PLA 
@@ -1036,7 +1036,10 @@ unit Compiler // Compiler.asm
                             }
                             case BASICType.BYTE:
                             {
-                                LDA ZP.TOPL  
+                                LDA ZP.TOP0
+                                STZ ZP.TOP1
+                                STZ ZP.TOP2
+                                STZ ZP.TOP3
                                 Emit.PushByte();
                             }
                             case BASICType.CHAR:
@@ -1044,19 +1047,41 @@ unit Compiler // Compiler.asm
                                 LDA ZP.TOPL
                                 Emit.PushChar();
                             }
-                            default: // INT, WORD
+                            case BASICType.INT:
                             {
-                                LDA ZP.TOPL
+                                LDA ZP.TOP0
                                 STA Compiler.compilerOperand1
-                                LDA ZP.TOPH
+                                LDA ZP.TOP1
                                 STA Compiler.compilerOperand2
+                                if (MI)
+                                {
+                                    LDA #0xFF
+                                    STA ZP.TOP2
+                                    STA ZP.TOP3
+                                }
+                                else
+                                {
+                                    STZ ZP.TOP2
+                                    STZ ZP.TOP3
+                                }
+                                Emit.PushWord();
+                            }
+                            default: // WORD
+                            {
+                                LDA ZP.TOP0
+                                STA Compiler.compilerOperand1
+                                LDA ZP.TOP1
+                                STA Compiler.compilerOperand2
+                                STZ ZP.TOP2
+                                STZ ZP.TOP3
                                 Emit.PushWord();
                             }
                         } // switch
                         if (BBS0, ZP.CompilerFlags) // constant expression:  PUSH constant value
                         {
-                            LDA ZP.TOPT
-                            Stacks.PushTop();
+                            LDA #BASICType.LONG
+                            STA ZP.TOPT
+                            Long.PushTop();
                         }
                     } // simple integral constant
                     else
@@ -1358,19 +1383,45 @@ unit Compiler // Compiler.asm
                            CMP #BASICType.BYTE
                            if (Z)
                            {
-                               LDA ZP.TOPL
+                               LDA ZP.TOP0
+                               STZ ZP.TOP1
+                               STZ ZP.TOP2
+                               STZ ZP.TOP3
+                               
                                Emit.PushByte();
                                CheckError();
                                if (NC) { break; }
                            }
-                           else // 16-bit value (INT or WORD)
+                           else
                            {
-                               // Set up operands for word emission
-                               LDA ZP.TOPL
-                               STA compilerOperand1  // LSB
-                               LDA ZP.TOPH
-                               STA compilerOperand2  // MSB
-                               
+                               CMP #BASICType.INT
+                               if (Z) // INT
+                               {
+                                   LDA ZP.TOP0
+                                   STA compilerOperand1  // LSB
+                                   LDA ZP.TOP1
+                                   STA compilerOperand2  // MSB
+                                   if (MI)
+                                   {
+                                       LDA #0xFF
+                                       STA ZP.TOP2
+                                       STA ZP.TOP3
+                                   }
+                                   else
+                                   {
+                                       STZ ZP.TOP2
+                                       STZ ZP.TOP3
+                                   }
+                               }
+                               else // WORD
+                               {
+                                   LDA ZP.TOP0
+                                   STA compilerOperand1  // LSB
+                                   LDA ZP.TOP1
+                                   STA compilerOperand2  // MSB
+                                   STZ ZP.TOP2
+                                   STZ ZP.TOP3
+                               }
                                Emit.PushWord();
                                CheckError();
                                if (NC) { break; }
@@ -1379,8 +1430,9 @@ unit Compiler // Compiler.asm
                    }
                    if (BBS0, ZP.CompilerFlags) // constant expression: NUMBER: PUSH numeric literal
                    {
-                       LDA ZP.TOPT
-                       Stacks.PushTop();
+                       LDA #BASICType.LONG
+                       STA ZP.TOPT
+                       Long.PushTop();
                    }
                    
                    // Get next token
@@ -2030,12 +2082,15 @@ unit Compiler // Compiler.asm
                     CheckError();
                     if (NC) { States.SetFailure(); break; }
                 }
-                
-                
                
                case Token.INT:
                case Token.WORD:
                case Token.BYTE:
+               {
+                   TODO(); BIT ZP.EmulatorPCL // LONG
+                   States.SetFailure();
+                   break;   
+               }
                case Token.CHAR:
                case Token.BIT:
                case Token.STRING:
@@ -2408,9 +2463,10 @@ unit Compiler // Compiler.asm
                 }
                 case BASICType.BYTE:
                 {
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     // Emit PUSHBYTE 0
-                    LDA #0
-                    Emit.PushByte();
+                    //LDA #0
+                    //Emit.PushByte();
                 }
                 case BASICType.CHAR:
                 {
@@ -2420,8 +2476,8 @@ unit Compiler // Compiler.asm
                 }
                 case BASICType.LONG:
                 {
-#ifdef BASICLONG
                     // For LONG locals, push LONG 0 using TOLONG conversion
+                    /*
                     LDA #0
                     Emit.PushByte();        // Push BYTE 0
                     Error.CheckError();
@@ -2431,9 +2487,10 @@ unit Compiler // Compiler.asm
                     LDA #OpCode.TOLONG
                     STA Compiler.compilerOpCode
                     Emit.OpCode();
-#else
-                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-#endif
+                    */
+                    // Emit PUSHBYTE 0
+                    LDA #0
+                    Emit.PushByte();
                 }
                 case BASICType.VAR:
                 {
@@ -2441,9 +2498,10 @@ unit Compiler // Compiler.asm
                 }
                 default:
                 {
+                    TODO(); BIT ZP.EmulatorPCL // LONG
                     // WORD, INT
-                    STA ZP.TOPT
-                    Emit.PushWord();
+                    //STA ZP.TOPT
+                    //Emit.PushWord();
                 }
             } // switch
             PLA

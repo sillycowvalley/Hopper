@@ -90,22 +90,47 @@ unit Print
     // Munts: Flags
     Decimal()
     {
+        // allowed types: zero, INT, LONG
         PHA
         LDA ZP.TOPT
-        if (Z)
-        {
-            LDA # BASICType.WORD // good default
-            STA ZP.TOPT
-        }
         PHA
         
+        AND # BASICType.TYPEMASK
+        STA ZP.TOPT
         loop
         {
-            if (BBR3, ZP.TOPT) // LONG = bit 3
+            switch (A)
             {
-                Long.TopToLong(); // ZP.TOPL, ZP.TOPH, ZP.TOPT -> ZP.LTOP0-3, ZP.TOPT
-                if (NC)
+                case 0:
+                case BASICType.WORD:
                 {
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                    LDA # BASICType.WORD
+                    STA ZP.TOPT
+                }
+                case BASICType.INT:
+                {
+                    if (BBS7, ZP.TOP1) // Set MI (negative)
+                    {
+                        LDA #0xFF     // Negative: extend with 0xFF
+                        STA ZP.TOP2
+                        STA ZP.TOP3
+                    }
+                    else
+                    {
+                        STZ ZP.TOP2
+                        STZ ZP.TOP3
+                    
+                    }
+                }
+                case BASICType.LONG:
+                {
+                    // all good
+                }
+                default:
+                {
+                    Error.InternalError(); BIT ZP.EmulatorPCL
                     break;
                 }
             }

@@ -124,12 +124,7 @@ unit BASICTypes // BASICTypes.asm
                             }
                             case BASICType.LONG:
                             {
-        #ifdef BASICLONG
                                 LDA #Token.LONG
-        #else
-                                Error.InternalError(); BIT ZP.EmulatorPCL
-                                break;
-        #endif
                             }
                             case BASICType.BIT:
                             {
@@ -397,9 +392,14 @@ unit BASICTypes // BASICTypes.asm
                 }
                 PHP
             }
-            default:
+            case BASICType.LONG:
             {
                 Print.Decimal(); // Numeric types
+            }
+            default:
+            {
+                Error.InternalError(); BIT ZP.EmulatorPCL
+                // Print.Decimal(); // Numeric types
             }
         }
         

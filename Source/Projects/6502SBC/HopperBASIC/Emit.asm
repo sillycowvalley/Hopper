@@ -355,25 +355,29 @@ unit Emit
                     LDA # BASICType.LONG
                     STA ZP.TOPT
                     Emit.PushWord();
+                    
                     break;
                 }
                 
                 case BASICType.INT:
                 case BASICType.WORD:
                 {
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    
                     // Full word value needed
-                    LDA ZP.TOPL
-                    STA Compiler.compilerOperand1
-                    LDA ZP.TOPH  
-                    STA Compiler.compilerOperand2
-                    Emit.PushWord(); // Handles INT vs WORD based on ZP.TOPT
+                    //LDA ZP.TOPL
+                    //STA Compiler.compilerOperand1
+                    //LDA ZP.TOPH  
+                    //STA Compiler.compilerOperand2
+                    //Emit.PushWord(); // Handles INT vs WORD based on ZP.TOPT
                     break;
                 }
                 
                 case BASICType.BYTE:
                 {
-                    LDA ZP.TOPL
-                    Emit.PushByte();
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    //LDA ZP.TOPL
+                    //Emit.PushByte();
                     break;
                 }
                 

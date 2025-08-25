@@ -66,7 +66,7 @@ unit OpCodes
        GETITEM      = 0x1B,  // Generic indexing: container[index]
        SETITEM      = 0x1C,  // Generic assignment: container[index] = value
        
-       TOLONG       = 0x1D,  // pop any other numeric type (BYTE|INT|WORD) and push a LONG
+       //TOLONG       = 0x1D,  // pop any other numeric type (BYTE|INT|WORD) and push a LONG
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
@@ -153,7 +153,7 @@ unit OpCodes
    
    
    // String constants for all opcodes
-   const string opcodeTOLONG = "TOLONG";
+   //const string opcodeTOLONG = "TOLONG";
    const string opcodeUNDEFINED = "UNDEFINED";
    const string opcodeDONTCARE = "DONTCARE";
    const string opcodeINVALID = "INVALID";
@@ -234,6 +234,7 @@ unit OpCodes
         PHA
         switch (X)
         {
+            /*
             case OpCode.TOLONG:
             {
                 LDA #(opcodeTOLONG % 256)
@@ -241,6 +242,7 @@ unit OpCodes
                 LDA #(opcodeTOLONG / 256)
                 STA ZP.STRH
             }
+            */
             case OpCode.GETITEMGG:
             {
                 LDA #(opcodeGETITEMGG % 256)

@@ -146,11 +146,13 @@ unit Tools // Tools.asm
         Long.DivMod(); // Seconds = Millis / 1000   
         
         LDA NEXT0
-        STA TOPL
+        STA TOP0
         LDA NEXT1
-        STA TOPH
-        LDA # Types.UInt
-        Stacks.PushTop();
+        STA TOP1
+        LDA NEXT2
+        STA TOP2
+        LDA NEXT3
+        STA TOP3
     }
     
     

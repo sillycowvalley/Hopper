@@ -1,8 +1,6 @@
-You're absolutely right! Here's the complete specification with all content preserved:
-
-# Hopper BASIC Specification v2.17
+# Hopper BASIC Specification v3.0
 **Document Type: Language Specification for Hopper BASIC**
-**Last Updated: Implementation Complete for Benchmarks**
+**Last Updated: Simplified Type System with LONG**
 
 ## Project Objectives
 
@@ -14,10 +12,32 @@ You're absolutely right! Here's the complete specification with all content pres
 - Incremental development - easy to persist environment, encourage breakdown into small functions (FORTH-like development)
 - Small footprint - Target 16K ROM, minimal RAM usage
 - Fast - competitive with the Classic 6502 BASIC's of the day (Apple II+ / Commodore 64 era)
+- **Simplified type system** - LONG as single numeric type with strict compatibility rules
+
+## Fundamental Type System Changes
+
+### Core Types
+- **LONG**: 32-bit signed integer (-2,147,483,648 to 2,147,483,647) - **The only numeric type for variables and expressions**
+- **CHAR**: 8-bit character (ASCII 0-255) - Compatible only with CHAR
+- **BIT**: Pure boolean (TRUE or FALSE only) - Compatible only with BIT  
+- **STRING**: Immutable strings with mutable references - Compatible only with STRING
+
+### Strict Type Compatibility
+- **CHAR** is only compatible with **CHAR**
+- **BIT** is only compatible with **BIT**
+- **STRING** is only compatible with **STRING**
+- **LONG** is only compatible with **LONG**
+
+### Ordering Comparisons
+- **CHAR types**: Full ordering support (`< > <= >= = <>`)
+- **LONG types**: Full ordering support (`< > <= >= = <>`)
+- **BIT and STRING types**: Equality only (`= <>`)
+
+---
 
 ## Target Benchmarks ✅ READY TO RUN
 
-Both benchmark programs should now run successfully with the current implementation!
+Both benchmark programs should now run successfully with the simplified type system!
 
 ### Sieve of Eratosthenes
 ```basic
@@ -25,14 +45,14 @@ Both benchmark programs should now run successfully with the current implementat
 CONST sizepl = 8191
 BIT flags[sizepl]
 BEGIN
-    WORD i
-    WORD prime
-    WORD k
-    WORD count
-    WORD iter
-    WORD start
-    WORD elapsed
-    WORD avgMs
+    VAR i
+    VAR prime
+    VAR k
+    VAR count
+    VAR iter
+    VAR start
+    VAR elapsed
+    VAR avgMs
     
     PRINT "10 iterations"
     start = MILLIS()
@@ -78,11 +98,11 @@ FUNC Fibo(n)
 ENDFUNC
 
 FUNC Benchmark(name, arg, loops)
-    WORD start
-    WORD result
-    WORD count
-    WORD elapsed
-    WORD avgMs
+    VAR start
+    VAR result
+    VAR count
+    VAR elapsed
+    VAR avgMs
     
     start = MILLIS()
     
@@ -115,6 +135,11 @@ END
 - **`FORGET name`** - Remove variable or function
 - **`MEM`** - Show available memory
 - **`BYE`** - Exit interpreter
+- **`SAVE "name"`** - Save program to EEPROM
+- **`LOAD "name"`** - Load program from EEPROM
+- **`DIR`** - List saved programs
+- **`DEL "name"`** - Delete saved program
+- **`FORMAT`** - Format storage system
 
 ### Debug Commands (DEBUG build only)
 - **`HEAP`** - Show heap memory layout
@@ -122,21 +147,26 @@ END
 - **`DUMP [page]`** - Hex dump of memory page (default: page 0)
 
 ### Variable Declaration Commands
-- **`INT name [= value]`** - Signed integer (-32768 to 32767)
-- **`WORD name [= value]`** - Unsigned integer (0 to 65535)
-- **`BIT name [= value]`** - Boolean (TRUE or FALSE only)
-- **`BYTE name [= value]`** - 8-bit unsigned numeric (0 to 255)
-- **`CHAR name [= value]`** - 8-bit character (ASCII 0-255)
-- **`STRING name = "value"`** - Mutable string variable
-- **`VAR name [= value]`** - Runtime-typed variable (duck typing)
+- **`VAR name [= value]`** - Runtime-typed variable with implicit type inference
+  - Numeric literals become LONG: `VAR n = 42`
+  - Character literals become CHAR: `VAR c = 'A'`  
+  - Boolean literals become BIT: `VAR flag = TRUE`
+  - String literals become STRING: `VAR text = "Hello"`
 
-### Constant Declaration Commands
-- **`CONST INT name = value`** - Immutable signed integer
-- **`CONST WORD name = value`** - Immutable unsigned integer
-- **`CONST BIT name = value`** - Immutable boolean
-- **`CONST BYTE name = value`** - Immutable 8-bit unsigned numeric
-- **`CONST CHAR name = 'c'`** - Immutable character
-- **`CONST STRING name = "value"`** - Immutable string
+### Constant Declaration Commands (Type Inference)
+- **`CONST name = value`** - Immutable constant with type inferred from RHS
+  - `CONST N = 10` → LONG constant
+  - `CONST C = 'A'` → CHAR constant  
+  - `CONST B = TRUE` → BIT constant
+  - `CONST S = "STR"` → STRING constant
+
+### Array Declaration Commands (Explicit Typing)
+Arrays retain explicit type specifiers for memory efficiency:
+- **`BIT name[size]`** - Packed boolean array (8 bits per byte)
+- **`CHAR name[size]`** - Character array (1 byte per element)  
+- **`BYTE name[size]`** - 8-bit unsigned array (1 byte per element)
+- **`WORD name[size]`** - 16-bit unsigned array (2 bytes per element)
+- **`INT name[size]`** - 16-bit signed array (2 bytes per element)
 
 ### Definition Commands
 - **`FUNC name(params)`** - Function definition (multi-line capture)
@@ -161,30 +191,28 @@ END
 - **`! [comment]`** - Short-form comment
 
 #### Expressions & Operators
-- **Arithmetic**: `+ - * / MOD` (numeric types only)
-- **Bitwise**: `& |` (AND, OR)
-- **Unary**: `-` (negation), `NOT` (logical)
+- **Arithmetic**: `+ - * / MOD` (LONG types only)
+- **Bitwise**: `& |` (AND, OR - LONG types only)
+- **Unary**: `-` (negation - LONG only), `NOT` (logical - BIT only)
 - **Comparison**: `= <> < > <= >=` (returns BIT type)
-  - **Numeric comparisons**: ✅ IMPLEMENTED - Full support for INT/WORD/BYTE
-  - **CHAR equality**: ✅ IMPLEMENTED - `char1 = char2`, `char1 <> char2`
-  - **CHAR ordering**: ✅ IMPLEMENTED - `char1 < char2`, `char1 > char2`, etc.
-  - **STRING equality**: ✅ IMPLEMENTED - String comparison with pointer optimization
+  - **LONG comparisons**: ✅ Full support for all comparison operators
+  - **CHAR comparisons**: ✅ Full support for all comparison operators  
+  - **BIT comparisons**: ✅ Equality only (`=` and `<>`)
+  - **STRING comparisons**: ✅ Equality only (`=` and `<>`)
 - **Logical**: `AND OR NOT` (BIT operands only)
 - **Parentheses**: `( )` for precedence
 
-#### Type System
-- **INT**: 16-bit signed (-32768 to 32767)
-- **WORD**: 16-bit unsigned (0 to 65535)
-- **BIT**: Pure boolean (TRUE or FALSE only)
-- **BYTE**: 8-bit unsigned numeric (0 to 255)
-- **CHAR**: 8-bit character (ASCII 0-255)
-- **STRING**: Immutable strings with mutable references
-- **Type promotion**: Automatic between compatible numeric types only
-- **Type safety**: Comprehensive checking with errors
+#### Simplified Type System
+- **LONG**: 32-bit signed integer - The single numeric type for all calculations
+- **CHAR**: 8-bit character - Independent type for character operations
+- **BIT**: Pure boolean - Independent type for logical operations  
+- **STRING**: Immutable strings - Independent type for text operations
+- **No automatic type promotion** - Strict type compatibility enforced
+- **Type safety**: Comprehensive checking with runtime errors for mismatched types
 
 #### String Operations
 - **String variables**: ✅ IMPLEMENTED
-- **String constants**: ✅ IMPLEMENTED
+- **String constants**: ✅ IMPLEMENTED  
 - **String comparison**: ✅ IMPLEMENTED (equality only: `=` and `<>`)
 - **String indexing**: ✅ IMPLEMENTED - `char = string[index]` for 0-based character access
 - **Bounds checking**: ✅ IMPLEMENTED - Runtime error on out-of-bounds access
@@ -198,21 +226,22 @@ END
 - **`END`** - End main program
 
 #### Assignment
-- **`var = expr`** - Assignment with type checking
-- **`array[index] = expr`** - Array element assignment
+- **`var = expr`** - Assignment with strict type checking
+- **`array[index] = expr`** - Array element assignment with type checking
 
 #### JIT Compilation System
 - **Expression compilation** - Infix to postfix opcodes
-- **Stack-based execution** - Using Hopper VM stacks
+- **Stack-based execution** - Using Hopper VM stacks with LONG support
 - **Buffer management** - 512-byte opcode buffer
 - **Opcode dispatch** - Complete instruction set including FORCHK/FORIT/GETITEM/SETITEM
 - **Jump patching** - Forward and backward jump resolution
 - **Local variable management** - BP-relative addressing for locals and arguments
+- **LONG arithmetic** - 32-bit operations on stack
 
 #### Function System
 - **Function declaration** - FUNC/ENDFUNC syntax
 - **Parameter parsing** - Comma-separated parameters including arrays
-- **Local variables** - Declarations within functions (positive BP offset)
+- **Local variables** - VAR declarations within functions (positive BP offset)
 - **Arguments** - Function parameters (negative BP offset)
 - **Array parameters** - ✅ Arrays can be passed to functions
 - **Multi-line capture** - Interactive definition
@@ -228,62 +257,62 @@ END
 - **Call stack** - Full recursion support with BP/SP management
 
 #### Built-in Functions
-- **`ABS(x)`** - Absolute value
-- **`ASC(char)`** - Convert CHAR to BYTE value
-- **`CHR(numeric)`** - Convert any numeric value (BYTE/WORD/INT) to CHAR
-  - Accepts: BYTE (0-255), WORD (0-65535), INT (-32768 to 32767)  
+- **`ABS(x)`** - Absolute value (LONG → LONG)
+- **`ASC(char)`** - Convert CHAR to LONG value
+- **`CHR(numeric)`** - Convert LONG to CHAR
   - Range check: Value must be 0-255, runtime error otherwise
   - Returns: CHAR value
-- **`LEN(string|array)`** - Return length of string or array
-- **`MILLIS()`** - Milliseconds since startup
-- **`SECONDS()`** - Seconds since startup
-- **`DELAY(ms)`** - Pause for a delay in milliseconds
-- **`PEEK(addr)`** - Read byte from memory
-- **`POKE(addr, value)`** - Write byte to memory
+- **`LEN(string|array)`** - Return length as LONG
+- **`MILLIS()`** - Milliseconds since startup (LONG)
+- **`SECONDS()`** - Seconds since startup (LONG)
+- **`DELAY(ms)`** - Pause for a delay in milliseconds (LONG parameter)
+- **`PEEK(addr)`** - Read byte from memory (LONG → LONG)
+- **`POKE(addr, value)`** - Write byte to memory (LONG, LONG)
 
 ---
 
 ## Phase 2: Loop Constructs & Array Support ✅ COMPLETE
 
 ### FOR/NEXT Loops ✅ COMPLETE
-- **`FOR var = start TO end [STEP increment]`** - Counted loops with automatic iterator as local variable
+- **`FOR var = start TO end [STEP increment]`** - Counted loops with LONG iterator as local variable
 - **`NEXT [var]`** - End of FOR loop (var name optional)
 - **Nested loops** - Full support with proper iterator management
 - **Optimization** - FORITF opcode for positive-only ranges with STEP 1
 
 ### Array Support ✅ COMPLETE
 - **Global Arrays** - Single-dimensional arrays with dynamic allocation
-- **Array Declaration** - `type name[size]` syntax with dimension expressions
-- **Array Indexing** - Zero-based access with `array[index]` syntax
+- **Array Declaration** - Explicit type syntax: `BIT name[size]`, `CHAR name[size]`, etc.
+- **Array Indexing** - Zero-based access with `array[index]` syntax (LONG index)
 - **Array Assignment** - `array[index] = value` with type checking
 - **Array Parameters** - Arrays can be passed to functions
-- **Array Types** - Support for BIT, BYTE, CHAR, INT, WORD arrays
+- **Array Types** - Support for BIT, CHAR, BYTE, WORD, INT arrays (not LONG arrays for memory efficiency)
 - **Bounds Checking** - Runtime validation with error reporting
 - **Memory Management** - Automatic allocation and cleanup
 - **Redimensioning** - Dynamic resizing of arrays
 - **GETITEM/SETITEM** - Opcodes for array element access
-- **LEN(array)** - Get array element count
+- **LEN(array)** - Get array element count as LONG
 
 ---
 
-## Phase 3: Storage and File Management ❌ NOT STARTED
+## Phase 3: Storage and File Management ✅ COMPLETE
 
 ### Storage Commands
-- ❌ **`SAVE "name"`** - Save to EEPROM
-- ❌ **`LOAD "name"`** - Load from EEPROM
-- ❌ **`DIR`** - List saved programs
-- ❌ **`DEL "name"`** - Delete program
+- ✅ **`SAVE "name"`** - Save program to EEPROM
+- ✅ **`LOAD "name"`** - Load program from EEPROM
+- ✅ **`DIR`** - List saved programs
+- ✅ **`DEL "name"`** - Delete saved program
+- ✅ **`FORMAT`** - Format storage system
 
 ---
 
 ## Phase 4: Hardware I/O ✅ COMPLETE
 
 ### Hardware Commands
-- **`READ(pin)`** - Digital input
-- **`WRITE(pin, value)`** - Digital output
-- **`PINMODE(pin, mode)`** - Configure pins
+- **`READ(pin)`** - Digital input (LONG → BIT) - Returns TRUE or FALSE
+- **`WRITE(pin, value)`** - Digital output (LONG, BIT) - Value is TRUE or FALSE
+- **`PINMODE(pin, mode)`** - Configure pins (LONG, LONG)
 
-**Note**: All hardware I/O functions are complete with full validation (pin 0-15, mode 0-1).
+**Note**: All hardware I/O functions are complete with full validation (pin 0-15, mode 0-1). PIN values are BIT type for TRUE/FALSE logic.
 
 ---
 
@@ -304,10 +333,6 @@ END
 ### String Manipulation
 - ❌ **String functions** - Basic string operations beyond indexing
 
-### Type Conversion
-- ✅ **`ASC/CHR`** - Character/byte conversion IMPLEMENTED
-- ❌ **Additional conversion functions** - Not implemented
-
 ### Character Iteration Support
 - ✅ **`FOR char_var = 'start' TO 'end'`** - Character range iteration NOW WORKS
   - CHAR variables work as FOR loop iterators
@@ -323,14 +348,16 @@ END
 console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
                  | HEAP | BUFFERS | DUMP [number]
                  | FORGET identifier
+                 | SAVE string_literal | LOAD string_literal 
+                 | DIR | DEL string_literal | FORMAT
 ```
 
 ### Variable and Constant Declarations
 ```
-variable_decl := type_keyword identifier [ "=" expression ]
-               | type_keyword identifier "[" expression "]"  // Array declaration
-constant_decl := CONST type_keyword identifier "=" expression
-type_keyword := INT | WORD | BIT | BYTE | CHAR | STRING | VAR
+variable_decl := VAR identifier [ "=" expression ]
+constant_decl := CONST identifier "=" expression
+array_decl := array_type identifier "[" expression "]"
+array_type := BIT | CHAR | BYTE | WORD | INT
 ```
 
 ### Program Structure
@@ -339,6 +366,7 @@ program := { statement }*
 
 statement := variable_decl
            | constant_decl
+           | array_decl
            | assignment
            | print_statement
            | if_statement
@@ -352,7 +380,7 @@ statement := variable_decl
            | function_call
 
 assignment := identifier "=" expression
-            | identifier "[" expression "]" "=" expression  // Array element assignment
+            | identifier "[" expression "]" "=" expression
 
 print_statement := PRINT [ print_list ]
 print_list := print_item [ separator print_item ]* [ separator ]
@@ -377,7 +405,7 @@ function_definition := FUNC identifier "(" [ parameter_list ] ")"
                       { local_declaration | statement }*
                       ENDFUNC
 
-local_declaration := type_keyword identifier [ "=" expression ]
+local_declaration := VAR identifier [ "=" expression ]
 
 main_program := BEGIN 
                 { local_declaration | statement }* 
@@ -405,7 +433,7 @@ multiplicative_expr := unary_expr [ ("*" | "/" | MOD) unary_expr ]
 unary_expr := [ "-" | NOT ] primary_expr
 primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
-              | identifier "[" expression "]"    // String/Array indexing
+              | identifier "[" expression "]"
 
 built_in_function := ABS "(" expression ")"
                   | ASC "(" expression ")"
@@ -445,50 +473,66 @@ char_literal := "'" character "'"
 
 ## Technical Architecture
 
+### Simplified Type System Architecture
+**Core Principle**: Single numeric type (LONG) with strict type boundaries
+
+**Type Compatibility Matrix**:
+- LONG ↔ LONG only
+- CHAR ↔ CHAR only
+- BIT ↔ BIT only  
+- STRING ↔ STRING only
+
+**No automatic promotion** - Clean, predictable type behavior
+
 ### JIT Compilation System
 **Compilation Phase:**
 1. Infix to Postfix conversion via recursive descent
-2. Opcode generation to 512-byte buffer
-3. Type checking at compile time
+2. Opcode generation to 512-byte buffer with LONG arithmetic support
+3. Strict type checking at compile time - no implicit conversions
 4. Literal optimization
 5. Jump offset calculation and patching
 6. Local variable and argument allocation with BP-relative addressing
 
 **Execution Phase:**
-1. Stack machine using Hopper VM stacks
+1. Stack machine using Hopper VM stacks with 32-bit LONG operations
 2. Fast opcode dispatch including FOR loop and array opcodes
-3. Runtime type checking and overflow detection
+3. Runtime type checking with strict compatibility enforcement
 4. Stack frame management with BP/SP
 5. Clean API with register preservation
 
-**Opcode Set:**
-- No Operands: Arithmetic, logical, comparison operations
-- One Byte: PUSHBIT, PUSHBYTE, PUSHLOCAL, POPLOCAL, CALL, CALLF, SYSCALL, JUMPB series
-- Two Bytes: PUSHINT, PUSHWORD, PUSHCSTRING, PUSHGLOBAL, JUMPW series
-- Three Bytes: FORCHK, FORIT, FORITF (FOR loop management)
-- Special: GETITEM, SETITEM (array/string indexing)
+**Enhanced Opcode Set for LONG Support**:
+- Arithmetic operations extended for 32-bit LONG values
+- Type-specific opcodes for each core type (LONG, CHAR, BIT, STRING)
+- Array access opcodes with proper type checking
+- FOR loop opcodes optimized for LONG iterators
 
 ### Memory Management
 - **Symbol Table**: 4-layer architecture for variables/functions/locals/arguments
 - **String Architecture**: Immutable strings with pointer comparisons
 - **Array Architecture**: Dynamic allocation with header (count, type, elements)
+  - Arrays use compact storage types (BIT, CHAR, BYTE, WORD, INT)
+  - Variable expressions use LONG for all numeric operations
 - **Buffer Management**: Fixed buffers for input, tokens, opcodes
-- **Zero Page**: Dedicated allocations for BASIC and symbol tables
+- **Zero Page**: Dedicated allocations for BASIC and symbol tables with LONG support
 - **Stack Frame**: BP-relative addressing for locals (positive offset) and arguments (negative offset)
 
 ### Array Implementation
 - **Memory Layout**: 2-byte count + 1-byte type + element data
 - **Element Storage**:
   - BIT: Packed 8 bits per byte
-  - BYTE/CHAR: One byte per element
-  - INT/WORD: Two bytes per element (LSB first)
+  - CHAR: One byte per element
+  - BYTE: One byte per element  
+  - WORD: Two bytes per element (LSB first)
+  - INT: Two bytes per element (LSB first)
+- **Index Operations**: All array indices are LONG values
 - **Dynamic Management**: Allocation, redimensioning, automatic cleanup
-- **Type Safety**: Runtime type checking for assignments
+- **Type Safety**: Runtime type checking for assignments with strict compatibility
 - **Bounds Checking**: Runtime validation with error reporting
 - **Array Parameters**: Arrays passed by reference to functions
 
 ### Built on Hopper VM
 - Reuses Serial I/O, memory management, stack operations
+- Extended with 32-bit LONG arithmetic support
 - Leverages proven runtime code
 - Maintains compatibility with memory layout
 - Well-defined external API contracts
@@ -498,59 +542,38 @@ char_literal := "'" character "'"
 ## Current Implementation Status Summary
 
 ### ✅ Benchmark-Ready Status
-**Both target benchmark programs should now run successfully!**
+**Both target benchmark programs should now run successfully with simplified type system!**
 
 The interpreter has achieved its primary goal with:
+- Simplified LONG-based numeric system
 - Complete array implementation including array parameters
 - Full character comparison support (equality and ordering)
 - Robust function system with recursion
 - All required control structures
-- Comprehensive type system
-- JIT compilation for performance
+- Strict type system with clear compatibility rules
+- JIT compilation for performance with LONG support
 
 ### Feature Completeness by Phase:
-- **Phase 1**: ✅ COMPLETE - Core functionality
+- **Phase 1**: ✅ COMPLETE - Core functionality with simplified types
 - **Phase 2**: ✅ COMPLETE - Loops and arrays
-- **Phase 3**: ❌ Not started - Storage
+- **Phase 3**: ✅ COMPLETE - Storage and file management
 - **Phase 4**: ✅ COMPLETE - Hardware I/O
 - **Phase 5**: ❌ Not started - Extended functions
 - **Phase 6**: ❌ Not started - Advanced features
 
 ---
 
-## Development Guidelines Compliance
-
-- **Rule #0**: Project knowledge current and authoritative
-- **Rule #1**: No silent failures - proper error handling throughout
-- **Rule #2**: Stack preferred over zero page for temporaries
-- **Rule #3**: Clear flag comments (Set Z/Set NZ)
-- **Rule #4**: Complete methods always generated
-- **Rule #5**: Analysis-first debugging approach
-- **Rule #6**: X-indexed zero page indirect addressing forbidden
-- **Rule #7**: C/NC flags for success/failure status
-- **Rule #8**: CamelCase identifiers used consistently
-- **Rule #9**: Direct enum syntax without qualification
-- **Rule #10**: Proper switch statement usage without break
-- **Rule #11**: "What changed?" approach for debugging regressions
-
-### Code Quality
-- Comprehensive error handling with C/NC status
-- Memory leak prevention with proper cleanup
-- Type safety throughout all operations
-- Clear documentation and interfaces
-- Debugging support via Tools.Dump* methods
-- Clean APIs with register preservation
-- Nested structure support with proper state management
-
----
-
 ## Usage Examples
 
-### Basic Operations
+### Basic Operations with Simplified Types
 ```basic
-> INT x = 10
+> VAR x = 10          ! LONG variable
 OK
-> WORD count = 0
+> VAR count = 0       ! LONG variable  
+OK
+> CONST name = "Test" ! STRING constant
+OK
+> CONST flag = TRUE   ! BIT constant
 OK
 > PRINT x * 2 + 5
 25
@@ -562,13 +585,15 @@ OK
 
 ### Array Operations
 ```basic
-> BIT flags[100]
+> BIT flags[100]      ! BIT array for memory efficiency
 OK
-> INT numbers[10]
+> INT numbers[10]     ! INT array (16-bit elements)
+OK
+> VAR index = 5       ! LONG index variable
 OK
 > flags[0] = TRUE
 OK
-> numbers[5] = 42
+> numbers[index] = 42
 OK
 > PRINT numbers[5]
 42
@@ -576,7 +601,7 @@ OK
 ! Array with dimension expression
 > CONST size = 50
 OK
-> WORD data[size * 2]
+> WORD data[size * 2] ! Expression evaluation uses LONG arithmetic
 OK
 ```
 
@@ -585,8 +610,8 @@ OK
 > BIT flags[20]
 OK
 > FUNC CountTrue(arr)
-*   WORD total = 0
-*   FOR i = 0 TO LEN(arr)-1
+*   VAR total = 0           ! LONG local variable
+*   FOR i = 0 TO LEN(arr)-1 ! LONG iterator
 *     IF arr[i] THEN total = total + 1 ENDIF
 *   NEXT i
 *   RETURN total
@@ -602,35 +627,35 @@ OK
 
 ### Character and String Operations
 ```basic
-> CHAR letter = 'A'
+> VAR letter = 'A'        ! CHAR variable
 OK
-> STRING name = "HOPPER"
+> VAR name = "HOPPER"     ! STRING variable
 OK
-> CHAR first = name[0]      ! Gets 'H'
+> VAR first = name[0]     ! Gets 'H' as CHAR
 OK
 > PRINT first
 H
-> PRINT ASC(first)
+> PRINT ASC(first)        ! Returns LONG value
 72
 
-! Character comparisons now work fully:
+! Character comparisons work fully:
 > IF letter >= 'A' AND letter <= 'Z' THEN
 *   PRINT "Uppercase letter"
 * ENDIF
 Uppercase letter
 
 ! Character iteration
-> FOR ch = 'A' TO 'Z'
+> FOR ch = 'A' TO 'Z'     ! CHAR iteration variable
 *   PRINT CHR(ch);
 * NEXT ch
 ABCDEFGHIJKLMNOPQRSTUVWXYZ
 ```
 
-### Functions with Arguments and Local Variables
+### Functions with LONG Arithmetic
 ```basic
 > FUNC Add(a, b)
-*   INT sum
-*   sum = a + b
+*   VAR sum         ! LONG local variable
+*   sum = a + b     ! LONG arithmetic
 *   RETURN sum
 * ENDFUNC
 OK
@@ -638,53 +663,16 @@ OK
 8
 
 > FUNC Factorial(n)
-*   IF n <= 1 THEN RETURN 1 ENDIF
-*   RETURN n * Factorial(n - 1)
+*   IF n <= 1 THEN RETURN 1 ENDIF    ! LONG comparison
+*   RETURN n * Factorial(n - 1)      ! LONG arithmetic
 * ENDFUNC
 OK
 > PRINT Factorial(5)
 120
 
-> FUNC BubbleSort(arr, size)
-*   FOR i = 0 TO size-2
-*     FOR j = 0 TO size-i-2
-*       IF arr[j] > arr[j+1] THEN
-*         INT temp = arr[j]
-*         arr[j] = arr[j+1]
-*         arr[j+1] = temp
-*       ENDIF
-*     NEXT j
-*   NEXT i
-* ENDFUNC
-OK
-```
-
-### FOR/NEXT Loops with Arrays
-```basic
-> INT values[5]
-OK
-> FOR i = 0 TO 4
-*   values[i] = i * i
-* NEXT i
-OK
-> FOR i = 0 TO 4
-*   PRINT values[i]
-* NEXT i
-0
-1
-4
-9
-16
-
-! Nested loops with 2D array simulation
-> INT matrix[9]  ! 3x3 matrix as 1D array
-OK
-> FOR row = 0 TO 2
-*   FOR col = 0 TO 2
-*     matrix[row * 3 + col] = row + col
-*   NEXT col
-* NEXT row
-OK
+! Large number support with LONG
+> PRINT Factorial(10)
+3628800
 ```
 
 ### Control Flow
@@ -692,7 +680,7 @@ OK
 > IF x > 10 THEN PRINT "Big" ELSE PRINT "Small" ENDIF
 Big
 
-> INT i = 0
+> VAR i = 0
 > WHILE i < 5
 *   PRINT i
 *   i = i + 1
@@ -728,48 +716,81 @@ Value11Count0
 
 ### Hardware I/O
 ```basic
-> PINMODE(13, 1)    ! Set pin 13 as output
+> PINMODE(13, 1)    ! Set pin 13 as output (LONG parameters)
 OK
-> WRITE(13, 1)      ! Turn on LED
+> WRITE(13, TRUE)   ! Turn on LED (BIT value)
 OK
-> PRINT READ(12)    ! Read pin 12
-0
-> WRITE(13, 0)      ! Turn off LED
+> PRINT READ(12)    ! Read pin 12, returns BIT (TRUE or FALSE)
+FALSE
+> WRITE(13, FALSE)  ! Turn off LED (BIT value)
 OK
 ```
 
 ### Memory Access
 ```basic
-> POKE(0x5000, 65)
+> POKE(0x5000, 65)  ! LONG address and value
 OK
-> PRINT PEEK(0x5000)
+> PRINT PEEK(0x5000) ! Returns LONG
 65
 ```
 
-### Built-in Functions
+### Built-in Functions with LONG Support
 ```basic
-> PRINT ABS(-42)
+> PRINT ABS(-42)     ! LONG → LONG
 42
-> PRINT MILLIS()
+> PRINT MILLIS()     ! Returns LONG
 12345
-> PRINT LEN("HELLO")
+> PRINT LEN("HELLO") ! Returns LONG
 5
-> PRINT CHR(65)
+> PRINT CHR(65)      ! LONG → CHAR
 A
-> PRINT ASC('Z')
+> PRINT ASC('Z')     ! CHAR → LONG
 90
-> DELAY(1000)       ! Wait 1 second
+> DELAY(1000)        ! LONG parameter - Wait 1 second
 OK
 ```
 
 ---
 
+## Development Guidelines Compliance
+
+- **Rule #0**: Project knowledge current and authoritative
+- **Rule #1**: No silent failures - proper error handling throughout
+- **Rule #2**: Stack preferred over zero page for temporaries
+- **Rule #3**: Clear flag comments (Set Z/Set NZ)
+- **Rule #4**: Complete methods always generated
+- **Rule #5**: Analysis-first debugging approach
+- **Rule #6**: X-indexed zero page indirect addressing forbidden
+- **Rule #7**: C/NC flags for success/failure status
+- **Rule #8**: CamelCase identifiers used consistently
+- **Rule #9**: Direct enum syntax without qualification
+- **Rule #10**: Proper switch statement usage without break
+- **Rule #11**: "What changed?" approach for debugging regressions
+
+### Code Quality
+- Comprehensive error handling with C/NC status
+- Memory leak prevention with proper cleanup
+- Strict type safety with no implicit conversions
+- Clear documentation and interfaces
+- Debugging support via Tools.Dump* methods
+- Clean APIs with register preservation
+- Nested structure support with proper state management
+- 32-bit LONG arithmetic support throughout
+
+---
+
 ## Next Steps
 
-The core interpreter is **feature-complete for the benchmark programs**. Future enhancements could include:
+The core interpreter is **feature-complete for the benchmark programs** with the simplified type system. The LONG-based numeric system provides:
 
-1. **Phase 3: Storage** - SAVE/LOAD functionality for program persistence
-2. **Phase 5: Extended Functions** - RND() for random numbers, INPUT for user input
-3. **Phase 6: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
+1. **Simplified mental model** - One numeric type eliminates confusion
+2. **Consistent behavior** - All numeric operations use same type
+3. **Future-proof** - 32-bit range supports larger computations
+4. **Memory efficient arrays** - Compact storage types where it matters
+5. **Type safety** - Strict compatibility prevents errors
 
-The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter capable of running classic benchmark programs within the 16K ROM constraint.
+With Phases 1-4 complete, future enhancements could include:
+1. **Phase 5: Extended Functions** - RND() for random numbers, INPUT for user input
+2. **Phase 6: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
+
+The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter with a clean, simple type system, complete storage functionality, and hardware I/O support - all capable of running classic benchmark programs within the 16K ROM constraint.

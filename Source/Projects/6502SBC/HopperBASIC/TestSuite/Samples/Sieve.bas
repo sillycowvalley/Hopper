@@ -3,16 +3,16 @@ CLS
 MEM
 
 ! Sieve of Eratosthenes - Byte Magazine benchmark
-CONST WORD sizepl  = 8191
+CONST LONG sizepl  = 8191
 BIT flags[sizepl]
 
-WORD i
-WORD prime
-WORD k
-WORD count
-WORD iter
-WORD start
-WORD elapsed
+VAR i
+VAR prime
+VAR k
+VAR count
+VAR iter
+VAR start
+VAR elapsed
 
 BEGIN
     PRINT "10 iterations"

@@ -378,23 +378,15 @@ unit Statement // Statement.asm
             }
             case Token.INT:
             case Token.WORD:
-            case Token.BIT:
             case Token.BYTE:
+            case Token.BIT:
             case Token.CHAR:
             case Token.STRING:
             case Token.VAR: 
-            {
-                executeVariableDeclaration();
-            }
             case Token.LONG:
             {
-#ifdef BASICLONG
                 executeVariableDeclaration();
-#else
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
-#endif
             }
-            
             
             default:
             {
@@ -534,6 +526,23 @@ unit Statement // Statement.asm
             
             
             STA stmtType // LHS type
+            
+            LDA stmtSymbol
+            CMP #SymbolType.CONSTANT
+            if (Z)
+            {
+                LDA stmtType
+                switch (A)
+                {
+                    case BASICType.WORD:
+                    case BASICType.INT:
+                    case BASICType.BYTE:
+                    {
+                        TODO(); BIT ZP.EmulatorPCL // LONG
+                        CLC break;
+                    }
+                }
+            }
             
             Tokenizer.NextToken();
             CheckError();
@@ -689,23 +698,27 @@ unit Statement // Statement.asm
                         STA (stmtTokensPtr + 1)
                      
                         // Pop the result into NEXT
-                        Stacks.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
+                        Long.PopNext();  // Result in ZP.NEXT, type in ZP.NEXTT,  modifies X
                         
                         LDA ZP.NEXTT
-                        switch (A)
+                        CMP # BASICType.LONG
+                        if (Z)
                         {
-                            case BASICType.INT:
-                            case BASICType.BYTE:
-                            case BASICType.WORD:
-                            {
-                                // ok
-                            }
-                            default:
+                            LDA ZP.NEXT2
+                            ORA ZP.NEXT3
+                            if (NZ)
                             {
                                 Error.BadIndex(); BIT ZP.EmulatorPCL
                                 CLC
                                 break; 
                             }
+                            // ok
+                        }
+                        else
+                        {
+                            Error.BadIndex(); BIT ZP.EmulatorPCL
+                            CLC
+                            break; 
                         }
                         
                         INC declInitializer
@@ -733,7 +746,7 @@ unit Statement // Statement.asm
                         PHA
                         LDA ZP.TokenizerPosH
                         PHA
-                        
+                                               
                         // Get next token (start of expression)
                         Tokenizer.NextToken();
                         CheckError();
@@ -807,8 +820,6 @@ unit Statement // Statement.asm
                         {
                             STZ ZP.NEXT0
                             STZ ZP.NEXT1
-/*                            
-#ifdef BASICLONG
                             STZ ZP.NEXT2
                             STZ ZP.NEXT3
                             
@@ -817,15 +828,6 @@ unit Statement // Statement.asm
                             STA stmtType
                             LDA #BASICType.LONG
                             STA ZP.NEXTT
-#else                            
-*/
-                            // Default VAR to INT with value 0
-                            LDA # (BASICType.VAR | BASICType.INT)
-                            STA stmtType
-                            LDA #BASICType.INT
-                            STA ZP.NEXTT
-//#endif
-                            
                             
                             SEC  // Success
                             break;
@@ -874,6 +876,23 @@ unit Statement // Statement.asm
                         break; // error exit
                     }
                 } // switch
+                
+                LDA stmtType
+                AND #BASICType.ARRAY
+                if (Z)
+                {
+                    LDA stmtType
+                    switch (A)
+                    {
+                        case BASICType.WORD:
+                        case BASICType.INT:
+                        case BASICType.BYTE:
+                        {
+                            TODO(); BIT ZP.EmulatorPCL // LONG
+                            CLC break;
+                        }
+                    }
+                }
                 
                 SEC  // Success
                 break;

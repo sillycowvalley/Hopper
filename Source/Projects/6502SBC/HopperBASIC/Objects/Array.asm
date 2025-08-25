@@ -251,8 +251,8 @@ unit BASICArray
     }
     
     // Get array element value
-    // Input: ZP.IDX = array pointer, ZP.IDY = element index, ZP.ACCT = element type
-    // Output: ZP.TOP = element value (16-bit), A = element type, C set if successful, NC if index out of bounds
+    // Input: ZP.IDX = array pointer, ZP.IDY = element index
+    // Output: ZP.TOP = element value and type, C set if successful, NC if index out of bounds
     // Modifies: ZP.TOP
     // Preserves: A, X, Y registers
     GetItem()
@@ -297,38 +297,78 @@ unit BASICArray
             {
                 case BASICType.BIT:
                 {
+                    STA ZP.TOPT
                     // Extract bit value using mask
                     LDA [IDY], Y           
                     AND bitMasks, X
                     if (Z)
                     {
-                        STA ZP.TOPL    // Bit is 0
+                        STA ZP.TOP0    // Bit is 0
                     }
                     else
                     {
                         LDA # 1
-                        STA ZP.TOPL    // Bit is 1
+                        STA ZP.TOP0    // Bit is 1
                     }
                 }
                 case BASICType.CHAR:
+                {
+                    STA ZP.TOPT
+                    // Read single byte
+                    LDA [IDY], Y
+                    STA ZP.TOP0
+                    STZ ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                }
                 case BASICType.BYTE:
                 {
                     // Read single byte
                     LDA [IDY], Y
-                    STA ZP.TOPL
+                    STA ZP.TOP0
+                    STZ ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                    LDA #BASICType.LONG
+                    STA ZP.TOPT
+                }
+                case BASICType.WORD:
+                {
+                    // Read single byte
+                    // Read two-byte value (LSB first)
+                    LDA [IDY], Y
+                    STA ZP.TOP0
+                    INY
+                    LDA [IDY], Y
+                    STA ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                    LDA #BASICType.LONG
+                    STA ZP.TOPT
                 }
                 default:
                 {
-                    // Read two-byte value (LSB first)
-                    LDA [IDY], Y
-                    STA ZP.TOPL
-                    INY
-                    LDA [IDY], Y
-                    STA ZP.TOPH
+                   // Read two-byte value (LSB first)
+                   LDA [IDY], Y
+                   STA ZP.TOP0
+                   INY
+                   LDA [IDY], Y
+                   STA ZP.TOP1
+                   if (MI)
+                   {
+                       LDA #0xFF
+                       STA ZP.TOP2
+                       STA ZP.TOP3
+                   }
+                   else
+                   {
+                       STZ ZP.TOP2
+                       STZ ZP.TOP3
+                   }
+                   LDA #BASICType.LONG
+                   STA ZP.TOPT
                 }
             }      
-            
-            LDA ZP.ACCT        // Return element type in A
             SEC                // Success
             break;
         } // single exit
@@ -340,7 +380,7 @@ unit BASICArray
     
     
     // Set array element value  
-    // Input: ZP.IDX = array pointer, ZP.IDY = element index, ZP.TOP = new value (16-bit)
+    // Input: ZP.IDX = array pointer, ZP.IDY = element index, ZP.TOP = new value and type
     // Output: C set if successful, NC if index out of bounds
     // Modifies: Element at specified index
     // Preserves: A, X, Y registers
@@ -406,17 +446,57 @@ unit BASICArray
                 case BASICType.CHAR:
                 case BASICType.BYTE:
                 {
+                    LDA ZP.TOP1
+                    ORA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                    }
                     // Write single byte
-                    LDA ZP.TOPL
+                    LDA ZP.TOP0
+                    STA [IDY], Y
+                }
+                case BASICType.INT:
+                {
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        LDA ZP.TOP2
+                        CMP #0xFF
+                        if (NZ)
+                        {
+                            Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                        }
+                        LDA ZP.TOP3
+                        CMP #0xFF
+                        if (NZ)
+                        {
+                            Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                        }
+                    }
+                    // Write two-byte value (LSB first)
+                    LDA ZP.TOP0
+                    STA [IDY], Y
+                    INY
+                    LDA ZP.TOP1
                     STA [IDY], Y
                 }
                 default:
                 {
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                    }
+                    
                     // Write two-byte value (LSB first)
-                    LDA ZP.TOPL
+                    LDA ZP.TOP0
                     STA [IDY], Y
                     INY
-                    LDA ZP.TOPH
+                    LDA ZP.TOP1
                     STA [IDY], Y
                 }
             } 

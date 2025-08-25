@@ -504,14 +504,10 @@ unit Executor // Executor.asm
                ComparisonInstructions.GreaterEqual();
            }
            
-            case OpCode.TOLONG:
-            {
-                executeToLong();
-            }
-            case OpCode.PUSHLONG:
-            {
-                executePushLong();
-            }
+           case OpCode.PUSHLONG:
+           {
+               executePushLong();
+           }
            
            case OpCode.GETITEM:
            {
@@ -798,8 +794,7 @@ unit Executor // Executor.asm
        TYA Debug.HOut();
        Debug.DumpBuffers();
 #endif                
-       // Unknown opcode
-       TODO(); BIT ZP.EmulatorPCL
+       TODO(); BIT ZP.EmulatorPCL // Unknown opcode
        States.SetFailure();
        
 #ifdef TRACE
@@ -1014,14 +1009,12 @@ unit Executor // Executor.asm
        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
    #endif
        
-       // Store INT 0 in ZP.TOP
-       STZ ZP.TOPL
-       STZ ZP.TOPH
-       LDA #BASICType.INT
-       STA ZP.TOPT
-       Stacks.PushTop(); // Push0: push value and type to stack -> always Success
+       STZ ZP.TOP0
+       STZ ZP.TOP1
+       STZ ZP.TOP2
+       STZ ZP.TOP3
        
-       States.SetSuccess();
+       commonPushLong();
        
    #ifdef TRACE
        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1038,13 +1031,12 @@ unit Executor // Executor.asm
        
        // Store INT 1 in ZP.TOP
        LDA #1
-       STA ZP.TOPL
-       STZ ZP.TOPH
-       LDA #BASICType.INT
-       STA ZP.TOPT
-       Stacks.PushTop(); // Push1: push value and type to stack -> always Success
+       STA ZP.TOP0
+       STZ ZP.TOP1
+       STZ ZP.TOP2
+       STZ ZP.TOP3
        
-       States.SetSuccess();
+       commonPushLong();
        
    #ifdef TRACE
        LDA #(executePush1Trace % 256) STA ZP.TraceMessageL LDA #(executePush1Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1064,18 +1056,11 @@ unit Executor // Executor.asm
        // Store VOID 0 in ZP.TOP
        STZ ZP.TOP0
        STZ ZP.TOP1
-/*
-#ifdef BASICLONG
        STZ ZP.TOP2
        STZ ZP.TOP3
        LDA # (BASICType.VAR|BASICType.LONG)
-#else       
-*/
-       LDA # (BASICType.VAR|BASICType.INT)
-//#endif
        STA ZP.TOPT
        Stacks.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
-       
        States.SetSuccess();
        
    #ifdef TRACE
@@ -1092,8 +1077,10 @@ unit Executor // Executor.asm
    #endif
        
        // Store VOID 0 in ZP.TOP
-       STZ ZP.TOPL
-       STZ ZP.TOPH
+       STZ ZP.TOP0
+       STZ ZP.TOP1
+       STZ ZP.TOP2
+       STZ ZP.TOP3
        LDA #BASICType.VOID
        STA ZP.TOPT
        Stacks.PushTop(); // PushVoid: push value and type to stack -> always Success
@@ -1164,18 +1151,12 @@ unit Executor // Executor.asm
             INC ZP.PCH
         }
 #endif
-           
-       // Store as BYTE value
-       LDX ZP.SP
-       INC ZP.SP
-        
-       STA Address.ValueStackLSB, X
-       STZ Address.ValueStackMSB, X
-       LDA # BASICType.BYTE
-       STA Address.TypeStackLSB, X
-        
-       LDA #State.Success
-       STA ZP.SystemState
+       STA ZP.TOP0
+       STZ ZP.TOP1
+       STZ ZP.TOP2
+       STZ ZP.TOP3
+       
+       commonPushLong();
        
 #ifdef TRACE
        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1391,13 +1372,22 @@ unit Executor // Executor.asm
        FetchOperandWord();
        // Store in ZP.TOP as INT value
        LDA executorOperandL
-       STA ZP.TOPL
+       STA ZP.TOP0
        LDA executorOperandH
-       STA ZP.TOPH
-       LDA # BASICType.INT
-       Stacks.PushTop(); // PushInt: push value and type to stack -> always Success
+       STA ZP.TOP1
+       if (MI)
+       {
+           LDA #0xFF
+           STA ZP.TOP2
+           STA ZP.TOP3
+       }
+       else
+       {
+           STZ ZP.TOP2
+           STZ ZP.TOP3
+       }
        
-       States.SetSuccess();
+       commonPushLong();
        
 #ifdef TRACE
        LDA #(executePushIntTrace % 256) STA ZP.TraceMessageL LDA #(executePushIntTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1417,13 +1407,13 @@ unit Executor // Executor.asm
        
        // Store in ZP.TOP as WORD value
        LDA executorOperandL
-       STA ZP.TOPL
+       STA ZP.TOP0
        LDA executorOperandH
-       STA ZP.TOPH
-       LDA # BASICType.WORD
-       Stacks.PushTop(); // PushWord: push value and type to stack -> always Success
+       STA ZP.TOP1
+       STZ ZP.TOP2
+       STZ ZP.TOP3
        
-       States.SetSuccess();
+       commonPushLong();
        
 #ifdef TRACE
        LDA #(executePushWordTrace % 256) STA ZP.TraceMessageL LDA #(executePushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1815,7 +1805,6 @@ unit Executor // Executor.asm
            STA Address.ValueStackB0, X
            LDA Address.ValueStackB1, Y  
            STA Address.ValueStackB1, X
-#ifdef BASICLONG
            if (BBS3, ZP.TOPT) // Bit 3 - LONG
            {
                LDA Address.ValueStackB2, Y
@@ -1823,7 +1812,6 @@ unit Executor // Executor.asm
                LDA Address.ValueStackB3, Y
                STA Address.ValueStackB3, X
            }
-#endif
            LDA #State.Success
            STA ZP.SystemState
            break;
@@ -1880,7 +1868,6 @@ unit Executor // Executor.asm
             STA ZP.TOP0
             LDA Address.ValueStackB1, X
             STA ZP.TOP1
-#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // Bit 3 - LONG RHS
             {
                 // popping 4 bytes
@@ -1893,10 +1880,10 @@ unit Executor // Executor.asm
             {
                 if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
                 {
-                    Long.TopToLong(); // RHS -> LONG
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    // Long.TopToLong(); // RHS -> LONG
                 }
             }
-#endif            
             
             // Check if variable has VAR bit set
             if (BBS4, ZP.NEXTT) // Bit 4 - VAR
@@ -1934,7 +1921,6 @@ unit Executor // Executor.asm
             STA Address.ValueStackB0, Y
             LDA ZP.TOP1
             STA Address.ValueStackB1, Y
-#ifdef BASICLONG
             if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS
             {
                 LDA ZP.TOP2
@@ -1942,7 +1928,6 @@ unit Executor // Executor.asm
                 LDA ZP.TOP3
                 STA Address.ValueStackB3, Y
             }
-#endif             
             LDA #State.Success
             STA ZP.SystemState
         
@@ -2008,7 +1993,6 @@ unit Executor // Executor.asm
             STA ZP.TOP0
             LDA Address.ValueStackB1, X
             STA ZP.TOP1
-#ifdef BASICLONG
             if (BBS3, ZP.TOPT) // Bit 3 - LONG RHS
             {
                 // popping 4 bytes
@@ -2021,10 +2005,10 @@ unit Executor // Executor.asm
             {
                 if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS but short RHS
                 {
-                    Long.TopToLong(); // RHS -> LONG
+                    Error.InternalError(); BIT ZP.EmulatorPCL
+                    // Long.TopToLong(); // RHS -> LONG
                 }
             }
-#endif
             // Check if variable has VAR bit set
             if (BBS4, ZP.NEXTT) // Bit 4 - VAR
             {
@@ -2051,7 +2035,6 @@ unit Executor // Executor.asm
             STA Address.ValueStackB0, Y
             LDA ZP.TOP1
             STA Address.ValueStackB1, Y
-#ifdef BASICLONG
             if (BBS3, ZP.NEXTT) // Bit 3 - LONG LHS
             {
                 LDA ZP.TOP2
@@ -2059,7 +2042,6 @@ unit Executor // Executor.asm
                 LDA ZP.TOP3
                 STA Address.ValueStackB3, Y
             }
-#endif
             LDA #State.Success
             STA ZP.SystemState
             break;
@@ -2193,7 +2175,7 @@ unit Executor // Executor.asm
             {
                 // For negative STEP: check if iterator >= TO
                 // Continue if iterator >= TO, exit if iterator < TO
-                ComparisonInstructions.GreaterEqual();  // Sets Z if iterator >= TO
+                ComparisonInstructions.GreaterEqual();  // FORCHK   Sets Z if iterator >= TO
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
                 Stacks.PopA(); // FORCHK
@@ -2209,7 +2191,7 @@ unit Executor // Executor.asm
             {
                 // For positive STEP: check if iterator <= TO
                 // Continue if iterator <= TO, exit if iterator > TO
-                ComparisonInstructions.LessEqual();
+                ComparisonInstructions.LessEqual(); // FORCHK
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
                 Stacks.PopA();   // FORCHK
@@ -2313,7 +2295,7 @@ unit Executor // Executor.asm
             {
                 // For negative STEP: check if iterator >= TO
                 // Continue if iterator >= TO, exit if iterator < TO
-                ComparisonInstructions.GreaterEqual();
+                ComparisonInstructions.GreaterEqual(); // FORIT
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
                 Stacks.PopA();   // FORIT
@@ -2329,7 +2311,7 @@ unit Executor // Executor.asm
             {
                 // For positive STEP: check if iterator <= TO
                 // Continue if iterator <= TO, exit if iterator > TO
-                ComparisonInstructions.LessEqual();
+                ComparisonInstructions.LessEqual(); // FORIT
                 States.CanContinue();
                 if (NC) { break; }  // Type mismatch
                 Stacks.PopA(); // FORIT
@@ -2810,14 +2792,14 @@ unit Executor // Executor.asm
     {
         loop
         {
-            // Check index type is numeric (INT, WORD, or BYTE)
+            // Check index type is numeric (LONG)
             LDA ZP.TOPT
             AND #BASICType.TYPEMASK  // Remove VAR bit if present
-            CMP #BASICType.INT
+            CMP #BASICType.LONG
             if (Z) 
             { 
                 // INT type - check if negative
-                LDA ZP.TOPH
+                LDA ZP.TOP3
                 if (MI)  // Negative index
                 {
                     Error.RangeError(); BIT ZP.EmulatorPCL
@@ -2827,18 +2809,10 @@ unit Executor // Executor.asm
             }
             else
             {
-                CMP #BASICType.WORD
-                if (NZ)
-                {
-                    CMP #BASICType.BYTE
-                    if (NZ)
-                    {
-                        // Invalid index type
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
-                }
+                // Invalid index type
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                States.SetFailure();
+                break;
             }
             
             // Dispatch based on collection type
@@ -2895,15 +2869,12 @@ unit Executor // Executor.asm
                 if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
                 {
                     // Get the element value
-                    BASICArray.GetItem();  // Returns value in ZP.TOP, type in ZP.ACCT
+                    BASICArray.GetItem(); // Returns value and type in ZP.TOP
                     if (NC)
                     {
                         States.SetFailure();
                         break;
                     }
-                    
-                    // Push result with correct type
-                    LDA ZP.ACCT
                 }
                 else
                 {
@@ -2914,11 +2885,16 @@ unit Executor // Executor.asm
             }
             
             LDY ZP.SP
+            LDA ZP.TOPT
             STA Address.TypeStackLSB, Y
-            LDA ZP.TOPL
-            STA Address.ValueStackLSB, Y
-            LDA ZP.TOPH
-            STA Address.ValueStackMSB, Y
+            LDA ZP.TOP0
+            STA Address.ValueStackB0, Y
+            LDA ZP.TOP1
+            STA Address.ValueStackB1, Y
+            LDA ZP.TOP2
+            STA Address.ValueStackB2, Y
+            LDA ZP.TOP3
+            STA Address.ValueStackB3, Y
             INC ZP.SP
             
             LDA #State.Success
@@ -2944,10 +2920,14 @@ unit Executor // Executor.asm
             // Pop value into TOP (includes type)
             LDX ZP.SP
             DEX
-            LDA Address.ValueStackLSB, X
-            STA ZP.TOPL
-            LDA Address.ValueStackMSB, X
-            STA ZP.TOPH
+            LDA Address.ValueStackB0, X
+            STA ZP.TOP0
+            LDA Address.ValueStackB1, X
+            STA ZP.TOP1
+            LDA Address.ValueStackB2, X
+            STA ZP.TOP2
+            LDA Address.ValueStackB3, X
+            STA ZP.TOP3
             LDA Address.TypeStackLSB, X
             STA ZP.TOPT
             
@@ -3001,7 +2981,7 @@ unit Executor // Executor.asm
         loop
         {
             // Pop value from stack into TOP
-            Stacks.PopTop();
+            Long.PopTop();
             
 #ifdef TRACEEXE            
             FetchOperandByte();
@@ -3077,7 +3057,7 @@ unit Executor // Executor.asm
         loop
         {
             // Pop value from stack into TOP
-            Stacks.PopTop();
+            Long.PopTop();
             
 #ifdef TRACEEXE            
             FetchOperandByte();
@@ -3153,7 +3133,7 @@ unit Executor // Executor.asm
         loop
         {
             // Pop value from stack into TOP
-            Stacks.PopTop();
+            Long.PopTop();
             
 #ifdef TRACEEXE            
             FetchOperandByte();
@@ -3233,7 +3213,7 @@ unit Executor // Executor.asm
         loop
         {
             // Pop value from stack into TOP
-            Stacks.PopTop();
+            Long.PopTop();
            
             
 #ifdef TRACEEXE            
@@ -3601,11 +3581,25 @@ unit Executor // Executor.asm
     #endif
     }
     
+    commonPushLong()
+    {
+        loop
+        {
+            LDA # BASICType.LONG
+            STA ZP.TOPT
+            Long.PushTop();
+            if (NC) { break; }
+            
+            LDA #State.Success
+            STA ZP.SystemState
+            SEC
+            break;
+        }
+    }
+    
     const string executePushLongTrace = "PUSHLONG";
     executePushLong()
     {
-#ifdef BASICLONG        
-        
     #ifdef TRACE
         LDA #(executePushLongTrace % 256) STA ZP.TraceMessageL 
         LDA #(executePushLongTrace / 256) STA ZP.TraceMessageH 
@@ -3624,13 +3618,8 @@ unit Executor // Executor.asm
             STA ZP.TOP2
             LDA executorOperandH
             STA ZP.TOP3
-   
-            // Push the recombined LONG value to stack
-            LDA # BASICType.LONG
-            STA ZP.TOPT
-            Long.PushTop();
             
-            SEC  // Set C (successful conversion)
+            commonPushLong();
             break;
         } // Single exit block
         
@@ -3639,55 +3628,5 @@ unit Executor // Executor.asm
         LDA #(executePushLongTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
-        
-#else     
-        Error.InternalError(); BIT ZP.EmulatorPCL   
-#endif        
-    }
-    
-    // Execute TOLONG opcode - convert stack top to LONG type
-    // Input: Stack top contains 16 bit value to convert
-    // Output: Stack top contains LONG value, C set if successful, NC if error
-    // Modifies: ZP.TOP*, ZP.LTOP0-3, A, X, Y
-    // Preserves: All other registers and zero page locations
-    const string executeToLongTrace = "TOLONG";
-    executeToLong()
-    {
-#ifdef BASICLONG        
-        
-    #ifdef TRACE
-        LDA #(executeToLongTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeToLongTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-    #endif
-        
-        loop // Single exit block
-        {
-            // Pop the value to convert from stack
-            Stacks.PopTop();
-            Error.CheckError();
-            if (NC) { break; }
-
-            // Input: ZP.TOPL, ZP.TOPH, ZP.TOPT
-            // Output: ZP.LTOP0-3, ZP.TOPT
-            Long.TopToLong();
-            
-            // Push the converted LONG value back to stack
-            // type in ZP.TOPT
-            Long.PushTop();
-            
-            SEC  // Set C (successful conversion)
-            break;
-        } // Single exit block
-        
-    #ifdef TRACE
-        LDA #(executeToLongTrace % 256) STA ZP.TraceMessageL 
-        LDA #(executeToLongTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
-        
-#else     
-        Error.InternalError(); BIT ZP.EmulatorPCL   
-#endif        
     }
 }

@@ -422,8 +422,7 @@ unit Commands
         STA ZP.TOPL
         LDA ZP.ACCH
         STA ZP.TOPH
-        LDA #BASICType.WORD
-        STA ZP.TOPT
+        STZ ZP.TOPT
         Print.Decimal();
         
         LDA #']' Serial.WriteChar();
@@ -435,7 +434,7 @@ unit Commands
         LDA #'<' Serial.WriteChar();
         
         // Get element type for PrintValue
-        BASICArray.GetItemType(); // Returns type in ZP.ACCT, preserves ZP.ACCL and ZP.ACCH
+        BASICArray.GetItemType(); // Returns ZP.ACCT, preserves ZP.ACCL and ZP.ACCH
         
         // Determine how many elements to show (min of 10 or count)
         LDX #0  // Element counter
@@ -487,7 +486,7 @@ unit Commands
             // Get element at index X
             STX ZP.IDYL
             STZ ZP.IDYH
-            BASICArray.GetItem(); // Returns value in ZP.TOP, type in A
+            BASICArray.GetItem(); // Returns value and type in ZP.TOP
             
             // Print the value (type is already in ZP.TOPT from GetItem)
             SEC  // quotes for strings and chars
@@ -982,7 +981,7 @@ unit Commands
 #ifdef HASEEPROM 
         File.Dir();
 #else
-        TODO(); BIT ZP.EmulatorPCL
+        TODO(); BIT ZP.EmulatorPCL // no EEPROM
 #endif 
     }
     
@@ -994,7 +993,7 @@ unit Commands
 #ifdef HASEEPROM 
         File.Delete(); // Input: ZP.STR
 #else
-        TODO(); BIT ZP.EmulatorPCL
+        TODO(); BIT ZP.EmulatorPCL // no EEPROM
 #endif 
     }
     
@@ -1027,7 +1026,7 @@ unit Commands
             break;
         }
 #else
-        TODO(); BIT ZP.EmulatorPCL
+        TODO(); BIT ZP.EmulatorPCL // no EEPROM
 #endif        
     }
     
@@ -1039,7 +1038,7 @@ unit Commands
 #ifdef HASEEPROM        
         Storage.LoadProgram(); // Input: ZP.STR
 #else
-        TODO(); BIT ZP.EmulatorPCL
+        TODO(); BIT ZP.EmulatorPCL // no EEPROM
 #endif                
     }
     
@@ -1058,7 +1057,7 @@ unit Commands
         }
         // If NC, user cancelled - no action needed (no error)
 #else
-        TODO(); BIT ZP.EmulatorPCL
+        TODO(); BIT ZP.EmulatorPCL // no EEPROM
 #endif        
     }
     

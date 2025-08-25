@@ -409,6 +409,8 @@ unit CompilerFlow
            
            // Compile condition expression (e.g., "I < 10")
            Compiler.CompileFoldedExpressionTree(); // WHILE <expression>
+           CheckError();
+           if (NC) { States.SetFailure(); break; }
            
            // Save forward jump operand position for later patching
            // This is where JUMPZW operand will be stored (after the opcode byte)
@@ -883,12 +885,10 @@ unit CompilerFlow
            Compiler.CompileFoldedExpressionTree();  // Compile FROM expression
            CheckError();
            if (NC) { States.SetFailure(); break; }
-           
+
            // push 2 copies
-           LDA ZP.TOPT
-           Stacks.PushTop(); // FROM integral value
-           LDA ZP.TOPT
-           Stacks.PushTop();
+           Long.PushTop(); // FROM integral value
+           Long.PushTop();
            if (BBR0, ZP.CompilerFlags)
            {
                RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
@@ -919,12 +919,18 @@ unit CompilerFlow
            if (NC) { States.SetFailure(); break; }
            
            Compiler.CompileFoldedExpressionTree();  // Compile TO expression (leaves on stack)
-           
+           CheckError();
+           if (NC) { States.SetFailure(); break; }
+
            LDA ZP.TOPT
            PHA
-           LDA ZP.TOPL
+           LDA ZP.TOP0
            PHA
-           LDA ZP.TOPH
+           LDA ZP.TOP1
+           PHA
+           LDA ZP.TOP2
+           PHA
+           LDA ZP.TOP3
            PHA
            
            // placeholder slot
@@ -936,12 +942,16 @@ unit CompilerFlow
            STA ZP.TOPL
            LDA #(ForVarName / 256)
            STA ZP.TOPH
-           Locals.Add(); // HERE
+           Locals.Add();
            
            PLA
-           STA ZP.TOPH
+           STA ZP.TOP3
            PLA
-           STA ZP.TOPL
+           STA ZP.TOP2
+           PLA
+           STA ZP.TOP1
+           PLA
+           STA ZP.TOP0
            PLA
            STA ZP.TOPT
            
@@ -950,7 +960,7 @@ unit CompilerFlow
            if (NC) { States.SetFailure(); break; }
            
            LDA ZP.TOPT
-           Stacks.PushTop(); // TO integeral value
+           Long.PushTop(); // TO integeral value
            if (BBR0, ZP.CompilerFlags) // TO is not constant expression
            {
                RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
@@ -971,6 +981,8 @@ unit CompilerFlow
                if (NC) { States.SetFailure(); break; }
                
                Compiler.CompileFoldedExpressionTree();  // Compile STEP expression (leaves on stack)
+               CheckError();
+               if (NC) { States.SetFailure(); break; }
                
                // placeholder slot
                LDA Compiler.compilerSavedNodeAddrL
@@ -978,9 +990,9 @@ unit CompilerFlow
                LDA Compiler.compilerSavedNodeAddrH
                STA ZP.IDXH
                LDA #(ForVarName % 256)
-               STA ZP.TOPL
+               STA ZP.TOP0
                LDA #(ForVarName / 256)
-               STA ZP.TOPH
+               STA ZP.TOP1
                Locals.Add(); // HERE
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
                
@@ -995,14 +1007,16 @@ unit CompilerFlow
                {
                    // STEP == 1?
                    LDA #1
-                   CMP ZP.TOPL
+                   CMP ZP.TOP0
                    if (NZ)
                    {
                        RMB3 ZP.CompilerFlags // STEP != 1, optimization to FORITF disqualified
                    }
                    else
                    {
-                       LDA ZP.TOPH
+                       LDA ZP.TOP1
+                       ORA ZP.TOP2
+                       ORA ZP.TOP3
                        if (NZ)
                        {
                            RMB3 ZP.CompilerFlags // STEP != 1, optimization to FORITF disqualified
@@ -1050,10 +1064,12 @@ unit CompilerFlow
                    {
                        case BASICType.BYTE:
                        {
+                           Error.InternalError(); BIT ZP.EmulatorPCL
+                           /*
                            // User declared BYTE - can hold 0-255 
                            LDA #0xFF
                            Stacks.GetStackTopSP(); // TO: [SP-1] -> TOP
-                           LDA ZP.TOPH
+                           LDA ZP.TOP1
                            if (NZ)
                            {
                                RMB3 ZP.CompilerFlags // TO > 255 (iterator is BYTE), optimization to FORITF disqualified
@@ -1070,9 +1086,12 @@ unit CompilerFlow
                                    Error.NumericOverflow(); BIT ZP.EmulatorPCL // let the next CheckError() catch this
                                }
                            }
+                           */
                        }
                        case BASICType.INT:
                        {
+                           Error.InternalError(); BIT ZP.EmulatorPCL
+                           /*
                            // User declared INT  - can hold 0-32767
                            LDA #0xFF
                            Stacks.GetStackTopSP(); // TO: [SP-1] -> TOP
@@ -1091,9 +1110,47 @@ unit CompilerFlow
                                    RMB3 ZP.CompilerFlags  // FROM > 32767 (iterator is INT), optimization to FORITF disqualified
                                }
                            }
+                           */
+                       }
+                       case BASICType.LONG:
+                       {
+                           LDA #0xFF
+                           Long.GetStackTopSP(); // TO: [SP-1] -> TOP
+                           LDA ZP.TOP3
+                           if (MI)
+                           {
+                               RMB3 ZP.CompilerFlags  // -ve LONG, optimization to FORITF disqualified
+                           }
+                           else
+                           {
+                               ORA ZP.TOP2
+                               if (NZ)
+                               {
+                                   RMB3 ZP.CompilerFlags // > 65535, optimization to FORITF disqualified
+                               }
+                               else
+                               {
+                                   LDA #0xFE
+                                   Long.GetStackTopSP(); // FROM: [SP-2] -> TOP
+                                   LDA ZP.TOP3
+                                   if (MI)
+                                   {
+                                       RMB3 ZP.CompilerFlags  // -ve LONG, , optimization to FORITF disqualified
+                                   }
+                                   else
+                                   {
+                                       ORA ZP.TOP2
+                                       if (NZ)
+                                       {
+                                           RMB3 ZP.CompilerFlags // > 65535, optimization to FORITF disqualified
+                                       }
+                                   }
+                               }
+                           }
                        }
                        case BASICType.WORD:
                        {
+                           Error.InternalError(); BIT ZP.EmulatorPCL
                            // User declared WORD - can hold 0-65535
                            // comparisons below will range check properly (using types)
                        }
@@ -1119,8 +1176,8 @@ unit CompilerFlow
                }
                
                // FROM < TO?
-               ComparisonInstructions.LessThan(); // 3 - pops 2, + pushes 1 = 2
-               Stacks.PopA();                     // 2 - pop 1 = 1
+               ComparisonInstructions.LessThan(); // FROM <= TO   3 - pops 2, + pushes 1 = 2
+               Stacks.PopA();                     //              2 - pop 1 = 1
                if (Z)
                {
                    Stacks.PopTop(); // 1 - pop 1 = 0
@@ -1128,14 +1185,17 @@ unit CompilerFlow
                }
                else
                {
-                   STZ ZP.TOPL  
-                   STZ ZP.TOPH
-                   LDA # BASICType.BYTE
-                   Stacks.PushTop(); // 1 + push 1 = 2
+                   STZ ZP.TOP0
+                   STZ ZP.TOP1
+                   STZ ZP.TOP2
+                   STZ ZP.TOP3
+                   LDA # BASICType.LONG
+                   STA ZP.TOPT
+                   Long.PushTop(); // 1 + push 1 = 2
                    
                    // FROM >= 0
-                   ComparisonInstructions.GreaterEqual();  // 2 - pops 2, + pushes 1 = 1
-                   Stacks.PopA();                          // 1 - pop 1 = 0
+                   ComparisonInstructions.GreaterEqual();  // FROM >= 0   2 - pops 2, + pushes 1 = 1
+                   Stacks.PopA();                          //             1 - pop 1 = 0
                    if (Z)
                    {
                        RMB3 ZP.CompilerFlags // TO >= FROM, optimization to FORITF disqualified

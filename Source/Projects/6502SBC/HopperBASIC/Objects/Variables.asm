@@ -243,9 +243,9 @@ unit Variables
             }
             // Copy value to TOP and extract data type - value is now in ZP.IDY
             LDA ZP.IDYL
-            STA ZP.TOPL
+            STA ZP.TOP0
             LDA ZP.IDYH
-            STA ZP.TOPH
+            STA ZP.TOP1
             
             LDA ZP.ACCT
             AND # BASICType.TYPEMASK   // masks off VAR bit (0x10)
