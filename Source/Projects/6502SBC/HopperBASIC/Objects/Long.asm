@@ -38,8 +38,12 @@ unit Long
             
             if (BBR3, ZP.TOPT)
             {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
+                BASICTypes.Promote();
+                if (NC)
+                {
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
             
             STA TypeStack, Y           // Store type
@@ -104,6 +108,9 @@ unit Long
             
             if (BBR3, ZP.TOPT)
             {
+#ifdef DEBUG
+Debug.NL(); LDA ZP.TOPT HOut();
+#endif                
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
@@ -113,6 +120,9 @@ unit Long
             
             if (BBR3, ZP.NEXTT)
             {
+#ifdef DEBUG
+Debug.NL(); LDA ZP.NEXTT HOut();
+#endif                
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }

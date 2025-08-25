@@ -324,7 +324,7 @@ unit Commands
     CmdDump()  { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
 #endif
 
-#if defined(TRACE) || defined(TRACEEXE)  || defined(TRACEFILE)
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
     // Execute TRON command - enable trace
     // Input: None
     // Output: Trace enabled (bit 2 of ZP.FLAGS set)

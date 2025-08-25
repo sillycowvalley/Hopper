@@ -130,7 +130,7 @@ unit CompilerFlow
     const string compileIfStatementTrace = "CompIf // IF...THEN...ELSE...ENDIF";
     CompileIfStatement()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileIfStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIfStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
 
@@ -387,7 +387,7 @@ unit CompilerFlow
         PLA
         STA ZP.SP
 
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileIfStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIfStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
@@ -398,7 +398,7 @@ unit CompilerFlow
     const string compileWhileStatementTrace = "CompWhile // WHILE...WEND";
     CompileWhileStatement()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
        LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
     
@@ -542,7 +542,7 @@ unit CompilerFlow
        PLA
        STA ZP.SP
 
-    #ifdef TRACE
+    #ifdef TRACEPARSE
        LDA #(compileWhileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileWhileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
@@ -553,7 +553,7 @@ unit CompilerFlow
     const string compileDoUntilStatementTrace = "CompDo // DO...UNTIL";
     CompileDoUntilStatement()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileDoUntilStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileDoUntilStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
 
@@ -651,7 +651,7 @@ unit CompilerFlow
             Stacks.PopTop();
         }
 
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileDoUntilStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileDoUntilStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
@@ -700,7 +700,7 @@ unit CompilerFlow
     const string compileForStatementTrace = "CompFor // FOR...NEXT";
     CompileForStatement()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
        LDA #(compileForStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileForStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
        
@@ -1547,7 +1547,7 @@ unit CompilerFlow
        STA Compiler.compilerForIteratorOffset
            
        
-    #ifdef TRACE
+    #ifdef TRACEPARSE
        LDA #(compileForStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileForStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }

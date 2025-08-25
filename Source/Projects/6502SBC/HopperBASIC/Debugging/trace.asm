@@ -1,7 +1,7 @@
 unit Trace // Trace.asm
 {
     // #define TRACESP (6502 SP for stack balance diagnosis)
-#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)    
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)  || defined(TRACEPARSE)   
     IsTracing()
     {
         if (BBS2, ZP.FLAGS)
@@ -20,7 +20,7 @@ unit Trace // Trace.asm
     }
 #endif
 
-#if defined(DEBUG) || defined(TRACE) || defined(TRACEFILE)
+#if defined(DEBUG) || defined(TRACE) || defined(TRACEFILE)  || defined(TRACEPARSE)
     // Shared utilities (needed by Debug unit too)
     // Print current indentation level using spaces
     // Input: ZP.TraceIndent = current depth
@@ -47,7 +47,7 @@ unit Trace // Trace.asm
     }
 #endif
 
-#if defined(TRACE) || defined(TRACEFILE)
+#if defined(TRACE) || defined(TRACEFILE) || defined(TRACEPARSE)
     const string convergenceMarker = " <- CONVERGENCE";
     const string endBrace = "} // ";
 

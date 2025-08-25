@@ -43,7 +43,7 @@ unit Compiler // Compiler.asm
    const string initOpCodeBufferTrace = "InitOpBuf";
    InitOpCodeBuffer()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(initOpCodeBufferTrace % 256) STA ZP.TraceMessageL LDA #(initOpCodeBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -85,7 +85,7 @@ unit Compiler // Compiler.asm
 
        SEC // Success
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(initOpCodeBufferTrace % 256) STA ZP.TraceMessageL LDA #(initOpCodeBufferTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -93,7 +93,7 @@ unit Compiler // Compiler.asm
    const string setLiteralBaseTrace = "SetLitBase";
    SetLiteralBase()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -104,7 +104,7 @@ unit Compiler // Compiler.asm
     STA ZP.IDYH
     STA ZP.XIDH
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(setLiteralBaseTrace % 256) STA ZP.TraceMessageL LDA #(setLiteralBaseTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -116,7 +116,7 @@ unit Compiler // Compiler.asm
    const string lastOpCodeIsReturnTrace = "ChkReturn";
    checkLastOpCodeIsReturn()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(lastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(lastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        loop
@@ -142,7 +142,7 @@ unit Compiler // Compiler.asm
            break;
        }
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(lastOpCodeIsReturnTrace % 256) STA ZP.TraceMessageL LDA #(lastOpCodeIsReturnTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -154,7 +154,7 @@ unit Compiler // Compiler.asm
    const string checkBufferSpaceTrace = "ChkBufSpc";
    CheckBufferSpace()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
        loop
@@ -180,7 +180,7 @@ unit Compiler // Compiler.asm
            break;
        }
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
    }
@@ -192,7 +192,7 @@ unit Compiler // Compiler.asm
    const string calculateTokenOffsetTrace = "CalcTokOff";
    CalculateTokenOffset()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(calculateTokenOffsetTrace % 256) STA ZP.TraceMessageL LDA #(calculateTokenOffsetTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -207,7 +207,7 @@ unit Compiler // Compiler.asm
        
        SEC // Success
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(calculateTokenOffsetTrace % 256) STA ZP.TraceMessageL LDA #(calculateTokenOffsetTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -220,7 +220,7 @@ unit Compiler // Compiler.asm
    const string compileConstExpressionTreelTrace = "CompFldExprTree // OR";
    CompileFoldedExpressionTree()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
         LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
         SMB0 ZP.CompilerFlags // constant expression = TRUE
@@ -272,7 +272,7 @@ unit Compiler // Compiler.asm
         PLA
         STA ZP.SP
 
-#ifdef TRACE
+#ifdef TRACEPARSE
         LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -285,7 +285,7 @@ unit Compiler // Compiler.asm
    const string compileExpressionTreelTrace = "CompExprTree // OR";
    compileExpressionTree()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -323,7 +323,7 @@ unit Compiler // Compiler.asm
            break;
        } // loop
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -335,7 +335,7 @@ unit Compiler // Compiler.asm
    const string compileLogicalAndTrace = "CompAnd // AND";
    compileLogicalAnd()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileLogicalAndTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalAndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -375,7 +375,7 @@ unit Compiler // Compiler.asm
        } // loop
        
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileLogicalAndTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalAndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -387,7 +387,7 @@ unit Compiler // Compiler.asm
    const string compileComparisonTrace = "CompCmp // = | <> | < > <= >=";
    compileComparison()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileComparisonTrace % 256) STA ZP.TraceMessageL LDA #(compileComparisonTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -452,7 +452,7 @@ unit Compiler // Compiler.asm
        } // loop
        
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileComparisonTrace % 256) STA ZP.TraceMessageL LDA #(compileComparisonTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -464,7 +464,7 @@ unit Compiler // Compiler.asm
    const string compileBitwiseAndTrace = "CompBitAnd // &";
    compileBitwiseAnd()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileBitwiseAndTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseAndTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -503,7 +503,7 @@ unit Compiler // Compiler.asm
        } // loop
        
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileBitwiseAndTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseAndTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -515,7 +515,7 @@ unit Compiler // Compiler.asm
    const string compileBitwiseOrTrace = "CompBitOr // |";
    compileBitwiseOr()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileBitwiseOrTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseOrTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -555,7 +555,7 @@ unit Compiler // Compiler.asm
        } // loop
        
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileBitwiseOrTrace % 256) STA ZP.TraceMessageL LDA #(compileBitwiseOrTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -567,7 +567,7 @@ unit Compiler // Compiler.asm
    const string compileAdditiveTrace = "CompAdd // +";
    compileAdditive()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -646,7 +646,7 @@ unit Compiler // Compiler.asm
            break;
        } // loop
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileAdditiveTrace % 256) STA ZP.TraceMessageL LDA #(compileAdditiveTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -658,7 +658,7 @@ unit Compiler // Compiler.asm
    const string compileMultiplicativeTrace = "CompMult // *";
    compileMultiplicative()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -740,7 +740,7 @@ unit Compiler // Compiler.asm
            break;
        } // loop
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileMultiplicativeTrace % 256) STA ZP.TraceMessageL LDA #(compileMultiplicativeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -752,7 +752,7 @@ unit Compiler // Compiler.asm
    const string compileUnaryTrace = "CompUnary // -";
    compileUnary()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -853,7 +853,7 @@ unit Compiler // Compiler.asm
            break;
        } // loop
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileUnaryTrace % 256) STA ZP.TraceMessageL LDA #(compileUnaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -869,7 +869,7 @@ unit Compiler // Compiler.asm
        PHX
        PHY
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -924,7 +924,7 @@ unit Compiler // Compiler.asm
            
            break; // Exit outer loop
        }
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
        
@@ -945,7 +945,7 @@ unit Compiler // Compiler.asm
         PHX
         PHY
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileVariableOrArgumentTrace % 256) STA ZP.TraceMessageL LDA #(compileVariableOrArgumentTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
         
@@ -1119,7 +1119,7 @@ unit Compiler // Compiler.asm
             break;
         } // single exit
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileVariableOrArgumentTrace % 256) STA ZP.TraceMessageL LDA #(compileVariableOrArgumentTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
         
@@ -1136,7 +1136,7 @@ unit Compiler // Compiler.asm
         PHX
         PHY
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
@@ -1293,7 +1293,7 @@ unit Compiler // Compiler.asm
             break;
         }
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileFunctionCallOrVariableTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
@@ -1312,7 +1312,7 @@ unit Compiler // Compiler.asm
    const string compilePrimaryTrace = "CompPrim // <literal>";
    compilePrimary()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -1668,7 +1668,7 @@ unit Compiler // Compiler.asm
            break; // Normal exit point
        } // Single exit point
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -1682,7 +1682,7 @@ unit Compiler // Compiler.asm
     const string compileSysCallTrace = "CompSysCall";
     compileSysCall()
     {
-#ifdef TRACE
+#ifdef TRACEPARSE
         PHA LDA #(compileSysCallTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileSysCallTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry(); PLA
@@ -1798,7 +1798,7 @@ unit Compiler // Compiler.asm
             break;
         }
         
-#ifdef TRACE
+#ifdef TRACEPARSE
         LDA #(compileSysCallTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileSysCallTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
@@ -1815,7 +1815,7 @@ unit Compiler // Compiler.asm
    const string strCompileExpression = "CompExpr";
    CompileExpression()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
@@ -1833,7 +1833,7 @@ unit Compiler // Compiler.asm
        
        States.SetSuccess();
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(strCompileExpression % 256) STA ZP.TraceMessageL LDA #(strCompileExpression / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -1848,7 +1848,7 @@ unit Compiler // Compiler.asm
     const string compileStatementBlockTrace = "CompStmtBlock";
     CompileStatementBlock()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileStatementBlockTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementBlockTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
     
@@ -1901,7 +1901,7 @@ unit Compiler // Compiler.asm
             break; // Exit main loop (reached from termination cases or error)
         } // Statement compilation loop
     
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileStatementBlockTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementBlockTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
@@ -1919,7 +1919,7 @@ unit Compiler // Compiler.asm
        PHX
        PHY
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -2010,7 +2010,7 @@ unit Compiler // Compiler.asm
        STZ Compiler.compilerSavedNodeAddrH
        
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileFunctionTrace % 256) STA ZP.TraceMessageL LDA #(compileFunctionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
        
@@ -2029,7 +2029,7 @@ unit Compiler // Compiler.asm
    const string compileStatementTrace = "CompStmt // <statement>";
    CompileStatement()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        PHA LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
        
@@ -2175,7 +2175,7 @@ unit Compiler // Compiler.asm
            break;
        } // loop
        
-#ifdef TRACE
+#ifdef TRACEPARSE
        PHA LDA #(compileStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
    }
@@ -2194,7 +2194,7 @@ unit Compiler // Compiler.asm
     const string compilePrintStatementTrace = "CompPrint // PRINT";
     compilePrintStatement()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
         
@@ -2325,7 +2325,7 @@ unit Compiler // Compiler.asm
             break; // Exit main loop
         } // loop
 
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compilePrintStatementTrace % 256) STA ZP.TraceMessageL LDA #(compilePrintStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }
@@ -2337,7 +2337,7 @@ unit Compiler // Compiler.asm
    const string compileReturnStatementTrace = "CompReturn // RETURN";
    compileReturnStatement()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileReturnStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileReturnStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
@@ -2383,7 +2383,7 @@ unit Compiler // Compiler.asm
            break;
        } // loop
 
-#ifdef TRACE
+#ifdef TRACEPARSE
        LDA #(compileReturnStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileReturnStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
@@ -2405,7 +2405,7 @@ unit Compiler // Compiler.asm
         PHX
         PHY
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileLocalDeclTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileLocalDeclTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
@@ -2453,7 +2453,7 @@ unit Compiler // Compiler.asm
 #ifdef DEBUG
 LDA ZP.TOPL STA ZP.STRL                
 LDA ZP.TOPH STA ZP.STRH
-Debug.NL(); Print.String();
+Debug.NL(); LDA #'"' COut(); Print.String(); LDA #'"' COut();  Space(); TOut(); Space(); XOut();
 #endif
                 Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
                 break;
@@ -2606,7 +2606,7 @@ Debug.NL(); Print.String();
             break;
         }
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileLocalDeclTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileLocalDeclTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
@@ -2636,7 +2636,7 @@ Debug.NL(); Print.String();
         PHX
         PHY
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileAssignmentTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileAssignmentTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
@@ -2937,7 +2937,7 @@ Debug.NL(); Print.String();
             break;
         }
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileAssignmentTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileAssignmentTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
@@ -2954,7 +2954,7 @@ Debug.NL(); Print.String();
    const string compileIdentifierStatementTrace = "compIdentStmt";
    compileIdentifierStatement()
    {
-#ifdef TRACE
+#ifdef TRACEPARSE
        PHA LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
    
@@ -3032,7 +3032,7 @@ Debug.NL(); Print.String();
            }
            break;
        } // single exit
-#ifdef TRACE
+#ifdef TRACEPARSE
        PHA LDA #(compileIdentifierStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileIdentifierStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
 
@@ -3070,7 +3070,7 @@ Debug.NL(); Print.String();
     const string compileCLSStatementTrace = "CompCLS // CLS";
     compileCLSStatement()
     {
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileCLSStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileCLSStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
         
@@ -3090,7 +3090,7 @@ Debug.NL(); Print.String();
             break;
         } // loop
         
-    #ifdef TRACE
+    #ifdef TRACEPARSE
         LDA #(compileCLSStatementTrace % 256) STA ZP.TraceMessageL LDA #(compileCLSStatementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     }

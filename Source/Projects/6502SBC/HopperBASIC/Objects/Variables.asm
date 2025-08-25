@@ -117,6 +117,9 @@ unit Variables
                 STA ZP.TOPH
                 PLA
                 STA ZP.TOPL
+                LDA ZP.ACCT
+                AND # BASICType.MASK // keep VAR
+                STA ZP.TOPT
             }
             // set by Objects.Add() - C for success, NC for failure
             States.IsFailure();

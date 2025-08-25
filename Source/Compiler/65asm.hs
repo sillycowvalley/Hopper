@@ -1510,10 +1510,8 @@ program Assemble
                         tokenType = Token.GetType(Parser.CurrentToken);
                         if (tokenType == HopperToken.LParen)
                         {
-DumpPeek("Before method call");
                             // method call
                             success = assembleMethodCall(tokenString);
-DumpCurrent("After method call");
                         }
                         else
                         {

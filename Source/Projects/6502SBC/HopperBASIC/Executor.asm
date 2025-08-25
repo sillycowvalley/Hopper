@@ -982,11 +982,9 @@ unit Executor // Executor.asm
 #endif
        
        // Duplicate top stack value
-       Stacks.PopTop();  // Dup: Get top value in ZP.TOP and ZP.TOPT
-       LDA ZP.TOPT
-       Stacks.PushTop(); // Dup: push value and type to stack -> always Success
-       LDA ZP.TOPT  
-       Stacks.PushTop(); // Dup: push value and type to stack -> always Success
+       Long.PopTop();  // Dup: Get top value in ZP.TOP and ZP.TOPT
+       Long.PushTop(); // Dup: push value and type to stack -> always Success
+       Long.PushTop(); // Dup: push value and type to stack -> always Success
        States.SetSuccess();
        
 #ifdef TRACE
@@ -1071,7 +1069,7 @@ unit Executor // Executor.asm
        STZ ZP.TOP3
        LDA # (BASICType.VAR|BASICType.LONG)
        STA ZP.TOPT
-       Stacks.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
+       Long.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
        States.SetSuccess();
        
    #ifdef TRACE
@@ -1094,7 +1092,7 @@ unit Executor // Executor.asm
        STZ ZP.TOP3
        LDA #BASICType.VOID
        STA ZP.TOPT
-       Stacks.PushTop(); // PushVoid: push value and type to stack -> always Success
+       Long.PushTop(); // PushVoid: push value and type to stack -> always Success
        
        States.SetSuccess();
        
@@ -1241,7 +1239,7 @@ unit Executor // Executor.asm
            STA ZP.TOPT
            
            // Push to stack with STRING type
-           Stacks.PushTop(); // PushCString: push value and type to stack -> always Success
+           Long.PushTop(); // PushCString: push value and type to stack -> always Success
            CheckError();
            if (NC) 
            { 
@@ -2129,10 +2127,8 @@ unit Executor // Executor.asm
 
             // Now TOP = iterator, NEXT = TO
             // Push them for the comparison instructions
-            LDA ZP.TOPT
-            Stacks.PushTop();   // FORCHK: Push iterator => NEXT slot
-            LDA ZP.NEXTT
-            Stacks.PushNext();  // FORCHK: Push TO       => TOP slot
+            Long.PushTop();   // FORCHK: Push iterator => NEXT slot
+            Long.PushNext();  // FORCHK: Push TO       => TOP slot
             
                 
             // Now TOP = iterator, NEXT = TO
@@ -2473,8 +2469,10 @@ unit Executor // Executor.asm
             STA ZP.IDYL
             LDA Address.ValueStackMSB, Y
             STA ZP.IDYH
+            LDA Address.TypeStackLSB, Y
+            STA ZP.TOPT
             
-            // Call common implementation
+            // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
             commonGetItem();
             break;
         }
@@ -2543,8 +2541,10 @@ unit Executor // Executor.asm
             STA ZP.IDYL
             LDA Address.ValueStackMSB, Y
             STA ZP.IDYH
+            LDA Address.TypeStackLSB, Y
+            STA ZP.TOPT
             
-            // Call common implementation
+            // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
             commonGetItem();
             break;
         }
@@ -2614,8 +2614,10 @@ unit Executor // Executor.asm
             STA ZP.IDYL
             LDA Address.ValueStackMSB, Y
             STA ZP.IDYH
+            LDA Address.TypeStackLSB, Y
+            STA ZP.TOPT
             
-            // Call common implementation
+            // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
             commonGetItem();
             break;
         }
@@ -2687,8 +2689,10 @@ unit Executor // Executor.asm
             STA ZP.IDYL
             LDA Address.ValueStackMSB, Y
             STA ZP.IDYH
+            LDA Address.TypeStackLSB, Y
+            STA ZP.TOPT
             
-            // Call common implementation
+            // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
             commonGetItem();
             break;
         }
@@ -2735,7 +2739,6 @@ unit Executor // Executor.asm
             STA ZP.ACCT
             
             // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
-            // Output: Element pushed to stack, States set appropriately  
             commonGetItem();
             
             break;
@@ -2772,6 +2775,9 @@ unit Executor // Executor.asm
             }
             else
             {
+#ifdef DEBUG
+Debug.NL(); TLOut(); Space(); YOut();
+#endif                
                 // Invalid index type
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 States.SetFailure();

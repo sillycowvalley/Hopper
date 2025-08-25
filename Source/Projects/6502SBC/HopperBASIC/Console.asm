@@ -1045,7 +1045,7 @@ unit Console // Console.asm
     parseDasm()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
 #endif
 
-#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE)
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
     // Parse and execute TRON command
     parseTron()
     {
@@ -1153,6 +1153,7 @@ unit Console // Console.asm
 #endif
         
         // Start iteration over all variables
+#ifdef EEPROM        
         if (BBS3, Storage.LoaderFlags)
         {
             Variables.IterateAll();
@@ -1161,6 +1162,9 @@ unit Console // Console.asm
         {
             Variables.IterateVariables();
         }
+#else
+        Variables.IterateVariables();
+#endif        
         
         // Returns: ZP.IDX = first variable node, C = found, NC = none
         loop // Variable iteration loop
@@ -1395,7 +1399,9 @@ unit Console // Console.asm
         {
             Tokenizer.NextToken(); // consume 'RUN'
             
+#ifdef EEPROM            
             STZ Storage.LoaderFlags // clear Bit 3 
+#endif
             InitializeGlobals();
                                     
             loop // Single exit block

@@ -38,44 +38,57 @@ unit BASICTypes // BASICTypes.asm
     
     
     // Input:   TOP0..3, BYTE, WORD, INT
-    // Output:  TOP0..3, TOPT -> LONG
+    // Output:  TOP0..3, TOPT -> LONG, C if OK, NC if unsupported type
     Promote()
     {
-        LDA ZP.TOPT
-        switch(A)
+        loop
         {
-            case BASICType.BYTE:
+            LDA ZP.TOPT
+            switch(A)
             {
-                STZ ZP.TOP1
-                STZ ZP.TOP2
-                STZ ZP.TOP3
-            }
-            case BASICType.INT:
-            {
-                if (BBS7, ZP.TOP1)
+                case BASICType.BYTE:
                 {
-                    LDA #0x0FF
-                    STA ZP.TOP2
-                    STA ZP.TOP3
+                    STZ ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
                 }
-                else
+                case BASICType.INT:
+                {
+                    if (BBS7, ZP.TOP1)
+                    {
+                        LDA #0x0FF
+                        STA ZP.TOP2
+                        STA ZP.TOP3
+                    }
+                    else
+                    {
+                        STZ ZP.TOP2
+                        STZ ZP.TOP3
+                    }
+                }
+                case 0:
+                case BASICType.WORD:
                 {
                     STZ ZP.TOP2
                     STZ ZP.TOP3
                 }
+                case BASICType.LONG:
+                {
+                }
+                default:
+                {
+                    CLC
+                    break;
+                }
             }
-            case 0:
-            case BASICType.WORD:
-            {
-                STZ ZP.TOP2
-                STZ ZP.TOP3
-            }
-        }
-        LDA # BASICType.LONG
-        STA ZP.TOPT
+            LDA # BASICType.LONG
+            STA ZP.TOPT
+            SEC
+            break;
+        } // single exit
     }
     
-    // Input:   TOP0-3, TOPT, desired type ACCT
+    // Input:   LONG: TOP0-3, TOPT, desired type ACCT
     // Output:  C, or NC if out of range
     Coerce()
     {
@@ -85,7 +98,7 @@ unit BASICTypes // BASICTypes.asm
             CMP ZP.TOPT
             if (NZ)
             {
-                Error.InternalError(); BIT ZP.EmulatorPCL
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
             LDA ZP.ACCT

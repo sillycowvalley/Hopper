@@ -88,6 +88,7 @@ unit Instructions // Instructions.asm
             // Pop two operands
             Long.PopTopNextStrict();
             if (NC) { break; }
+//Debug.NL(); NLOut(); LDA #'+' COut(); TLOut(); LDA#'-' COut();LDA#'>' COut();
             
             // Perform addition
             CLC
@@ -104,8 +105,8 @@ unit Instructions // Instructions.asm
             ADC ZP.TOP3
             STA ZP.NEXT3
 
+//NLOut();
             // Push result to stack
-            LDA ZP.NEXTT
             Long.PushNext();
             if (NC) { break; }
             SEC

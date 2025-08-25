@@ -2265,7 +2265,7 @@ unit AsmPoints
                                 modified = true;
                             }
                             case "JSR":
-                            case "BBS5":
+                            case "BBS5": // this would actually work (but needs to be tested)
                             {
                                 // nope
                             }
