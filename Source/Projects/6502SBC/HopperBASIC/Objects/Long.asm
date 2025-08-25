@@ -359,60 +359,7 @@ unit Long
         
         PLX
     }
-    /*
-    NextToLong()
-    {
-        loop
-        {
-            // Check the current type and convert accordingly
-            LDA ZP.TOPT
-            AND # BASICType.TYPEMASK
-            switch (A)
-            {
-                case BASICType.BYTE:
-                {
-                    // Zero-extend BYTE: 0x42 -> 0x00000042
-                    STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
-                }
-                case BASICType.WORD:
-                {
-                    // Zero-extend WORD: 0x1234 -> 0x00001234
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
-                }
-                case BASICType.INT:
-                {
-                    // Sign-extend INT based on high bit
-                    // Check sign bit in TOPH and extend accordingly
-                    if (BBS7, ZP.TOP1) // Set MI (negative)
-                    {
-                        LDA #0xFF     // Negative: extend with 0xFF
-                        STA ZP.TOP2
-                        STA ZP.TOP3
-                    }
-                    else
-                    {
-                        STZ ZP.TOP2  // Positive: extend with 0x00
-                        STZ ZP.TOP3
-                    }
-                }
-                default:
-                {
-                    // Unsupported type for LONG conversion
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    CLC
-                }
-                
-            }
-            LDA #BASICType.LONG
-            STA ZP.TOPT
-            SEC
-            break;
-        } // single exit
-    }
-    */
+    
     commonEQ()
     {
         // NEXT == TOP

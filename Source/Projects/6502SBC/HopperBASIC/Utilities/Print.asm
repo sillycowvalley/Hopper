@@ -97,46 +97,8 @@ unit Print
         
         AND # BASICType.TYPEMASK
         STA ZP.TOPT
-        loop
-        {
-            switch (A)
-            {
-                case 0:
-                case BASICType.WORD:
-                {
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
-                    LDA # BASICType.WORD
-                    STA ZP.TOPT
-                }
-                case BASICType.INT:
-                {
-                    if (BBS7, ZP.TOP1) // Set MI (negative)
-                    {
-                        LDA #0xFF     // Negative: extend with 0xFF
-                        STA ZP.TOP2
-                        STA ZP.TOP3
-                    }
-                    else
-                    {
-                        STZ ZP.TOP2
-                        STZ ZP.TOP3
-                    
-                    }
-                }
-                case BASICType.LONG:
-                {
-                    // all good
-                }
-                default:
-                {
-                    Error.InternalError(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            Long.Print();
-            break;
-        } // single exit
+        BASICTypes.Promote(); // -> LONG
+        Long.Print();
         
         PLA
         STA ZP.TOPT

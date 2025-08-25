@@ -8,7 +8,6 @@ BEGIN
     VAR START = MILLIS()
     VAR ST = SECONDS()
     VAR S
-    VAR J
     FOR i=1 TO 10
         s=0
         FOR j=1 TO 1000
@@ -22,6 +21,4 @@ BEGIN
 END
 
 RUN
-!DASM
-!NEW
-!MEM
+

@@ -321,52 +321,22 @@ unit BASICArray
                     STZ ZP.TOP2
                     STZ ZP.TOP3
                 }
-                case BASICType.BYTE:
-                {
-                    // Read single byte
-                    LDA [IDY], Y
-                    STA ZP.TOP0
-                    STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
-                    LDA #BASICType.LONG
-                    STA ZP.TOPT
-                }
-                case BASICType.WORD:
-                {
-                    // Read single byte
-                    // Read two-byte value (LSB first)
-                    LDA [IDY], Y
-                    STA ZP.TOP0
-                    INY
-                    LDA [IDY], Y
-                    STA ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
-                    LDA #BASICType.LONG
-                    STA ZP.TOPT
-                }
                 default:
                 {
-                   // Read two-byte value (LSB first)
+                    // WORD | INT | BYTE 
+                    
                    LDA [IDY], Y
                    STA ZP.TOP0
-                   INY
-                   LDA [IDY], Y
-                   STA ZP.TOP1
-                   if (MI)
-                   {
-                       LDA #0xFF
-                       STA ZP.TOP2
-                       STA ZP.TOP3
-                   }
-                   else
-                   {
-                       STZ ZP.TOP2
-                       STZ ZP.TOP3
-                   }
-                   LDA #BASICType.LONG
+                   LDA ZP.ACCT
                    STA ZP.TOPT
+                   CMP # BASICType.BYTE
+                   if (NZ)
+                   {
+                       INY
+                       LDA [IDY], Y
+                       STA ZP.TOP1
+                   }
+                   BASICTypes.Promote(); // -> LONG
                 }
             }      
             SEC                // Success
@@ -420,7 +390,7 @@ unit BASICArray
             // Write element value based on type
             LDY # aiElements
             STZ ZP.NEXTH       // Clear for safety
-                          
+            // TODO TYPE DEMOTION
             LDA ZP.ACCT
             switch (A)
             {

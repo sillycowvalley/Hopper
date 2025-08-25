@@ -927,9 +927,7 @@ unit CompilerFlow
            
            if (BBS0, ZP.CompilerFlags)
            {
-               LDA # ZP.TOPT
-               CMP # BASICType.LONG
-               if (NZ)
+               if (BBR3, ZP.TOPT) // Bit 3 - LONG
                {
                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
                    States.SetFailure();
@@ -975,9 +973,7 @@ unit CompilerFlow
            
            if (BBS0, ZP.CompilerFlags)
            {
-               LDA # ZP.TOPT
-               CMP # BASICType.LONG
-               if (NZ)
+               if (BBR3, ZP.TOPT) // Bit 3 - LONG
                {
                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
                    States.SetFailure();
@@ -1024,13 +1020,20 @@ unit CompilerFlow
            
            LDA ZP.TOPT
            Long.PushTopStrict(); // TO integeral value
+           
+
            if (BBR0, ZP.CompilerFlags) // TO is not constant expression
            {
                RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
            }
            if (BBS3, ZP.TOPT) // LONG not ok
            {
-               RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
+               LDA ZP.TOP2
+               ORA ZP.TOP3
+               if (NZ)
+               {
+                   RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
+               }
            }
            
            // Check for optional STEP
@@ -1049,9 +1052,7 @@ unit CompilerFlow
                
                if (BBS0, ZP.CompilerFlags)
                {
-                   LDA # ZP.TOPT
-                   CMP # BASICType.LONG
-                   if (NZ)
+                   if (BBR3, ZP.TOPT) // Bit 3 - LONG
                    {
                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
                        States.SetFailure();
@@ -1070,10 +1071,9 @@ unit CompilerFlow
                STA ZP.TOP1
                Locals.Add(); // HERE
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
-               
                CheckError();
                if (NC) { States.SetFailure(); break; }
-               
+
                if (BBR0, ZP.CompilerFlags) // STEP is NOT constant expression
                {
                    RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
@@ -1189,6 +1189,7 @@ unit CompilerFlow
                        }
                        case BASICType.LONG:
                        {
+                           // TODO TYPE DEMOTION
                            LDA #0xFF
                            Long.GetStackTopSP(); // TO: [SP-1] -> TOP
                            LDA ZP.TOP3
@@ -1249,7 +1250,7 @@ unit CompilerFlow
                        }
                    } // switch
                }
-               
+
                // FROM < TO?
                ComparisonInstructions.LessThan(); // FROM <= TO   3 - pops 2, + pushes 1 = 2
                Stacks.PopA();                     //              2 - pop 1 = 1

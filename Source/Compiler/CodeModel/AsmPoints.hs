@@ -2265,6 +2265,7 @@ unit AsmPoints
                                 modified = true;
                             }
                             case "JSR":
+                            case "BBS5":
                             {
                                 // nope
                             }

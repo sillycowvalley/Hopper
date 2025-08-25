@@ -579,6 +579,14 @@ unit Optimizer
         Trace.MethodEntry();
     #endif
 
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         LDA ZP.TOPL
         PHA
         LDA ZP.TOPH
@@ -743,6 +751,14 @@ unit Optimizer
             PLA STA ZP.TOPH
             PLA STA ZP.TOPL
         }
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
         
     #ifdef TRACE
         LDA #(isSimpleConstantTrace % 256) STA ZP.TraceMessageL 

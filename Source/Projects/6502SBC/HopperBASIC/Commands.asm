@@ -178,9 +178,6 @@ unit Commands
                 displayVariable(); // Input: ZP.IDX = variable node
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
-            
-            
-            
             break;
         }
         

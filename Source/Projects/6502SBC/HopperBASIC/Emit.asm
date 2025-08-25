@@ -434,7 +434,7 @@ unit Emit
    // In emit.asm
 
    // Emit PUSHGLOBAL opcode for identifier
-   // Input: Current token is IDENTIFIER
+   // Input: IIDY is current variable index
    // Output: PUSHGLOBAL opcode with index emitted, C set if successful
    // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1
    const string emitPushGlobalTrace = "Emit PUSHGLOBAL";
@@ -452,25 +452,6 @@ unit Emit
        
        loop // Single exit
        {
-           // Get the identifier name from the tokenizer
-           Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
-           CheckError();
-           if (NC) { break; }
-           
-           // Find the variable/constant by name
-           STZ ZP.SymbolIteratorFilter  // Accept both variables and constants
-           Variables.Find();  // Input: ZP.TOP = name
-                              // Output: ZP.IDX = node address, ZP.IDYL = index
-           if (NC)
-           {
-               // Variable not found
-               Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
-               break;
-           }
-           
-           // Check if index is valid (< 256 variables)
-           // Since IDYL is a byte, it's always valid
-           
            // Store index as operand
            LDA ZP.IDYL
            STA Compiler.compilerOperand1  // Index
@@ -510,7 +491,6 @@ unit Emit
        loop
        {
            // TOP already contains variable name from assignment compilation
-           
            // Find the variable by name
            LDA #SymbolType.VARIABLE
            STA ZP.SymbolIteratorFilter  // Only variables (not constants)
@@ -522,6 +502,7 @@ unit Emit
                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
                break;
            }
+           
            
            // Store index as operand
            LDA ZP.IDYL

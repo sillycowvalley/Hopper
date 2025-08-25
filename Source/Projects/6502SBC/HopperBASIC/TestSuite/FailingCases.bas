@@ -1,72 +1,35 @@
 NEW
-! Only the 2 remaining failures
+! Test 10: Type compatibility verification
+VAR longNum = 1000000
+VAR character = 'Z'
+VAR boolean = FALSE
+VAR text = "TEST"
 
-! Failure 1: Parameter modification
-FUNC TestParam(value)
-    PRINT "param="; value
-    value = 777
-    PRINT "modified="; value
-ENDFUNC
-
-VAR original = 123
-
-BEGIN
-    PRINT "Parameter modification test:"
-    TestParam(original)
-END
-RUN
-
-
-
-
-NEW
-! Failure 2: Array parameters
-BIT flags[3]
-CHAR letters[3]
-INT numbers[3]
-
-FUNC ModifyArrays(f, l, n)
-    f[0] = TRUE
-    PRINT "Modified"
-ENDFUNC
-
-BEGIN
-    PRINT "Array parameter test:"
-    ModifyArrays(flags, letters, numbers)
-END
-RUN
-
-
-
-
-NEW
-! Issue 1: Uninitialized defaults wrong
-VAR uninit
-
-BEGIN
-    PRINT "uninit="; uninit; " expect 0"
-END
-RUN
-
-
-
-NEW
-! Issue 2: CONST string problem
+CONST maxValue = 2147483647
+CONST letter = 'A'
+CONST flag = TRUE
 CONST message = "HELLO"
 
+! Modify before RUN
+longNum = -999999
+character = 'Q'
+boolean = TRUE
+text = "MODIFIED"
+
 BEGIN
-    PRINT message
+    PRINT "10. Type compatibility:"
+    PRINT "longNum="; longNum; " expect 1000000"
+    PRINT "character="; character; " expect Z"
+    PRINT "boolean="; boolean; " expect FALSE"
+    PRINT "text="; text; " expect TEST"
+    
+    ! Test assignments work
+    longNum = maxValue
+    character = letter
+    boolean = flag
+    text = message
+    PRINT "Assignments successful"
 END
 RUN
 
 
-
-NEW
-! Issue 3: Array type compatibility
-INT numbers[3]
-
-BEGIN
-    numbers[0] = 999
-    PRINT numbers[0]
-END
-RUN

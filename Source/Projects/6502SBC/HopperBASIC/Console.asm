@@ -1294,7 +1294,6 @@ unit Console // Console.asm
                             }
                             else
                             {
-Debug.NL(); LDA #'@' COut();
                                 // No initialization tokens - use default value 0
                                 LDA #Token.NUMBER
                                 Tokenizer.appendToTokenBuffer();
@@ -1355,7 +1354,7 @@ Debug.NL(); LDA #'@' COut();
                 LDA ZP.GVIH
                 STA ZP.IDXH
                 
-                Stacks.PopTop(); // includes ZP.TOPT
+                Long.PopTop(); // includes ZP.TOPT
                 
                 Variables.SetValue();
             } // not ARRAY

@@ -3,7 +3,7 @@ CLS
 MEM
 
 ! Sieve of Eratosthenes - Byte Magazine benchmark
-CONST LONG sizepl  = 8191
+CONST sizepl  = 8191
 BIT flags[sizepl]
 
 VAR i
@@ -17,7 +17,7 @@ VAR elapsed
 BEGIN
     PRINT "10 iterations"
     start = SECONDS()
-    FOR iter = 1 TO 10
+    FOR iter = 1 TO 1
         count = 0
         
         ! Initialize flags array to true

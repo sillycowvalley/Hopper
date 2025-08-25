@@ -137,6 +137,8 @@ BEGIN
 END
 RUN
 
+
+
 NEW
 ! Test 9: INT array re-initialization
 INT intArray[3]
@@ -245,5 +247,7 @@ RUN
 
 ! Final verification
 VARS
-MEM
 NEW
+MEM
+
+

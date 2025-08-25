@@ -161,8 +161,8 @@ unit ZP // ZeroPage.asm
 
     const byte SymbolType           = 0x40;  // Current symbol type|datatype
     const byte SymbolValue          = 0x41;  // Symbol value (16-bit)
-    const byte SymbolValueL         = 0x41;  // Symbol value low (alias)
-    const byte SymbolValueH         = 0x42;  // Symbol value high
+    //const byte SymbolValueL         = 0x41;  // Symbol value low (alias)
+    //const byte SymbolValueH         = 0x42;  // Symbol value high
     const byte SymbolName           = 0x43;  // Symbol name pointer (16-bit)
     const byte SymbolNameL          = 0x43;  // Symbol name low (alias)
     const byte SymbolNameH          = 0x44;  // Symbol name high

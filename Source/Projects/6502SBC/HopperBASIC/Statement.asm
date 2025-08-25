@@ -284,6 +284,7 @@ unit Statement // Statement.asm
     #endif
         loop
         {
+
             // Set literal base to TokenizerBuffer for REPL (same as EvaluateExpression)
             Compiler.SetLiteralBase();
             
@@ -292,12 +293,12 @@ unit Statement // Statement.asm
             Compiler.InitOpCodeBuffer();
             CheckError();
             if (NC) { States.SetFailure(); break; }
-            
+
             // Compile the statement (not expression)
             Compiler.CompileStatement();
             CheckError();
             if (NC) { States.SetFailure(); break; }
-            
+
             // Emit HALT for REPL
             Emit.Halt();
             CheckError();
@@ -310,7 +311,7 @@ unit Statement // Statement.asm
             PHA
             
             States.SetSuccess(); // Clear state
-            
+
             // Execute the compiled statement opcodes
             Executor.ExecuteOpCodes();
             CheckError();
@@ -848,7 +849,7 @@ unit Statement // Statement.asm
                             CMP #SymbolType.CONSTANT
                             if (Z)
                             {
-                                LDA ZP.TOPT
+                                LDA ZP.NEXTT
                                 CMP #BASICType.STRING // constant expression of sorts
                                 if (NZ)
                                 {
@@ -973,8 +974,6 @@ unit Statement // Statement.asm
             STA ZP.IDYL
             LDA (stmtTokensPtr+1)
             STA ZP.IDYH
-            
-Debug.NL(); NLOut(); Space(); YOut();
             
             // Call Variables.Declare
             // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),

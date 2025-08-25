@@ -39,7 +39,7 @@ unit Objects
     // Add new symbol to table
     // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
     //        ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
-    //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
+    //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit or 32-bit)
     // Output: ZP.IDX = new symbol node address, C set if successful, NC if allocation failed
     // Munts: ZP.LCURRENT, ZP.LHEADX
     Add()
@@ -58,11 +58,6 @@ unit Objects
         LDA ZP.ACCH
         PHA
         
-        LDA ZP.NEXTH
-        PHA
-        LDA ZP.NEXTL
-        PHA
-        
         loop // start of single exit block
         {
             // Save table head address
@@ -71,11 +66,6 @@ unit Objects
             // Save input parameters in dedicated ZP locations that survive Memory.Allocate()
             LDA ZP.ACCT
             STA ZP.SymbolType   // Save symbolType|dataType
-            
-            LDA ZP.NEXTL
-            STA ZP.SymbolValueL // Save value/args low
-            LDA ZP.NEXTH
-            STA ZP.SymbolValueH // Save value/args high
             
             LDA ZP.TOPL
             STA ZP.SymbolNameL  // Save name pointer low
@@ -100,17 +90,12 @@ unit Objects
                 break;
             }
             
-            // Initialize the new node using saved parameters
+            // Initialize the new node using saved parameters, ZP.NEXT for value
             initializeNode();
             
             SEC  // Success
             break;
         } // end of single exit block
-        
-        PLA
-        STA ZP.NEXTL
-        PLA
-        STA ZP.NEXTH
         
         PLA
         STA ZP.ACCH
@@ -230,7 +215,7 @@ unit Objects
     }
     
     // Set symbol value (variables only)
-    // Input: ZP.IDX = symbol node address, ZP.IDY = new value/args
+    // Input: ZP.IDX = symbol node address, ZP.TOP = new value/args
     // Output: C set if successful, NC if not a variable
     SetValue()
     {
@@ -256,10 +241,16 @@ unit Objects
             
             // Update value (offset snValue to snValue+1)
             LDY # snValue
-            LDA ZP.IDYL
+            LDA ZP.TOP0
             STA [ZP.IDX], Y
             INY
-            LDA ZP.IDYH
+            LDA ZP.TOP1
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.TOP2
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.TOP3
             STA [ZP.IDX], Y
             
             SEC  // Success
@@ -472,10 +463,16 @@ unit Objects
         STA [ZP.IDX], Y
         
         // Store value/args (offset snValue to snValue+1)
-        LDA ZP.SymbolValueL
+        LDA ZP.NEXT0
         LDY #snValue
         STA [ZP.IDX], Y
-        LDA ZP.SymbolValueH
+        LDA ZP.NEXT1
+        INY
+        STA [ZP.IDX], Y
+        LDA ZP.NEXT2
+        INY
+        STA [ZP.IDX], Y
+        LDA ZP.NEXT3
         INY
         STA [ZP.IDX], Y
         

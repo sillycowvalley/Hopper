@@ -36,6 +36,120 @@ unit BASICTypes // BASICTypes.asm
     
     const string voidName = "VOID";
     
+    
+    // Input:   TOP0..3, BYTE, WORD, INT
+    // Output:  TOP0..3, TOPT -> LONG
+    Promote()
+    {
+        LDA ZP.TOPT
+        switch(A)
+        {
+            case BASICType.BYTE:
+            {
+                STZ ZP.TOP1
+                STZ ZP.TOP2
+                STZ ZP.TOP3
+            }
+            case BASICType.INT:
+            {
+                if (BBS7, ZP.TOP1)
+                {
+                    LDA #0x0FF
+                    STA ZP.TOP2
+                    STA ZP.TOP3
+                }
+                else
+                {
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                }
+            }
+            case 0:
+            case BASICType.WORD:
+            {
+                STZ ZP.TOP2
+                STZ ZP.TOP3
+            }
+        }
+        LDA # BASICType.LONG
+        STA ZP.TOPT
+    }
+    
+    // Input:   TOP0-3, TOPT, desired type ACCT
+    // Output:  C, or NC if out of range
+    Coerce()
+    {
+        loop
+        {
+            LDA #BASICType.LONG
+            CMP ZP.TOPT
+            if (NZ)
+            {
+                Error.InternalError(); BIT ZP.EmulatorPCL
+                break;
+            }
+            LDA ZP.ACCT
+            switch (A)
+            {
+                case BASICType.BYTE:
+                case BASICType.CHAR:
+                {
+                    LDA ZP.TOP1
+                    ORA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                case BASICType.WORD:
+                {
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                case BASICType.INT:
+                {
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        LDA #0xFF
+                        CMP ZP.TOP3
+                        if (NZ)
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                        CMP ZP.TOP2
+                        if (NZ)
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                        if (BBR7, ZP.TOP1) // not negative
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                    }
+                }
+                default:
+                {
+                    Error.RangeError(); BIT ZP.EmulatorPCL
+                    break;
+                }
+            }
+            SEC
+            break;
+        } // single exit
+    }
+    
     // Print BasicType enum value as readable string
     // Input: A = BasicType enum value
     // Output: Type name printed to serial
@@ -409,6 +523,9 @@ unit BASICTypes // BASICTypes.asm
             }
             default:
             {
+#ifdef DEBUG
+Debug.NL(); TLOut();
+#endif
                 Error.InternalError(); BIT ZP.EmulatorPCL
                 // Print.Decimal(); // Numeric types
             }

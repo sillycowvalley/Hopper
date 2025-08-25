@@ -227,6 +227,7 @@ unit Dasm
                                 // Sign extend the byte to 16-bit word
                                 LDA ZP.ACCL
                                 STA ZP.TOPL
+                                // TODO TYPE SIGN EXTENSION
                                 if (MI) // Negative
                                 {
                                     LDA #0xFF
@@ -254,6 +255,7 @@ unit Dasm
                                 // Sign extend to 16-bit for printing
                                 LDA ZP.ACCL
                                 STA ZP.TOPL
+                                // TODO TYPE SIGN EXTENSION
                                 if (PL)
                                 {
                                     STZ ZP.TOPH
@@ -445,6 +447,7 @@ unit Dasm
                                  // Sign extend the byte to 16-bit word
                                 LDA ZP.ACCT
                                 STA ZP.TOPL
+                                // TODO TYPE SIGN EXTENSION
                                 if (PL)  // Positive or zero
                                 {
                                     STZ ZP.TOPH  // Zero high byte for positive
@@ -497,6 +500,7 @@ unit Dasm
                                  // Sign extend the byte to 16-bit word
                                 LDA ZP.ACCT
                                 STA ZP.TOPL
+                                // TODO TYPE SIGN EXTENSION
                                 if (PL)  // Positive or zero
                                 {
                                     STZ ZP.TOPH  // Zero high byte for positive

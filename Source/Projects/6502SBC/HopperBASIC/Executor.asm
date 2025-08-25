@@ -37,6 +37,7 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(strLoadGlobals % 256) STA ZP.TraceMessageL LDA #(strLoadGlobals / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif        
+
         // Iterate through all symbols (variables and constants)
         Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
         if (C)
@@ -47,17 +48,21 @@ unit Executor // Executor.asm
                 
                 // Get symbol's value and type
                 Variables.GetValue(); // Input: ZP.IDX, Output: ZP.TOP = value, ZP.TOPT = dataType (VAR|ARRAY masked away)
+                
                 // Get symbol's full type (might have VAR|ARRAY bit)
                 Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = symbolType|dataType (packed)
+
                 // Store type in type stack (preserving VAR bit for variables)
                 LDA ZP.ACCT
                 AND # BASICType.MASK // keep VAR when creating the global slots
-                Stacks.PushTop();  // LoadGlobals: type is in A
+                STA ZP.TOPT
+                Long.PushTop();  // LoadGlobals: type is in A
                 
                 // Move to next symbol
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             }
         }
+
 #ifdef TRACE
        LDA #(strLoadGlobals % 256) STA ZP.TraceMessageL LDA #(strLoadGlobals / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif        
@@ -87,6 +92,7 @@ unit Executor // Executor.asm
            }
        }
 #endif        
+
         // Iterate through all symbols (variables and constants)
         Variables.IterateAll(); // Output: ZP.IDX = first symbol, C set if found
         if (C)
@@ -120,10 +126,14 @@ unit Executor // Executor.asm
                 STA ZP.TOPT
                 
                 // Get value from value stacks at this index
-                LDA Address.ValueStackLSB, Y
-                STA ZP.TOPL
-                LDA Address.ValueStackMSB, Y
-                STA ZP.TOPH
+                LDA Address.ValueStackB0, Y
+                STA ZP.TOP0
+                LDA Address.ValueStackB1, Y
+                STA ZP.TOP1
+                LDA Address.ValueStackB2, Y
+                STA ZP.TOP2
+                LDA Address.ValueStackB3, Y
+                STA ZP.TOP3
                 
                 if (BBS4, ZP.FLAGS) // Bit 4 - initialization mode: skip current variable GVI?
                 {
@@ -156,18 +166,19 @@ unit Executor // Executor.asm
                 
                 // reload  ZP.ACCT = symbolType|dataType (packed)
                 Variables.GetType();
-
+                
                 // Set the new value in symbol table:
                 // If the old value was a string, not the same as this one, it will Free it
                 // If the new value is a string, it will create a copy for itself.
                 // If the new value is the same string as the old value, it will do nothing.
                 Variables.SetValue(); // preserves Y, Input: ZP.IDX = node, ZP.TOP = value, ZP.TOPT = type
-                
+
                 // Move to next symbol
                 INY  // Increment index for next stack position
                 Variables.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
             } // loop
         }
+        
 #ifdef TRACE
        LDA #(strSaveGlobals % 256) STA ZP.TraceMessageL LDA #(strSaveGlobals / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif        
@@ -1986,13 +1997,6 @@ unit Executor // Executor.asm
                 ORA #BASICType.VAR
                 STA Address.TypeStack, Y
             }
-            else
-            {
-                // why not?! all locals should be VAR now
-                Error.InternalError(); BIT ZP.EmulatorPCL
-                States.SetFailure();
-                break;
-            }
             
             LDA ZP.TOP0
             STA Address.ValueStackB0, Y
@@ -2225,12 +2229,10 @@ unit Executor // Executor.asm
             Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT, preserves X, strips BASICTypes.VAR
 
             // Add STEP to iterator (TOP = iterator + NEXT)
-            LDA ZP.TOPT
-            Stacks.PushTop();   // FORIT: Push iterator => NEXT slot
-            LDA ZP.NEXTT
-            Stacks.PushNext();  // FORIT: Push STEP     => TOP slot
+            Long.PushTop();   // FORIT: Push iterator => NEXT slot
+            Long.PushNext();  // FORIT: Push STEP     => TOP slot
             Instructions.Addition();  // Handles signed/unsigned, type checking, preserves X
-            PHX Stacks.PopTop(); PLX // FORIT
+            PHX Long.PopTop(); PLX // FORIT
             
             States.CanContinue(); // preserves X
             if (NC) { break; }  // Type mismatch or overflow
@@ -2246,10 +2248,8 @@ unit Executor // Executor.asm
             
             // Now TOP = iterator, NEXT = TO
             // Push them for the comparison instructions
-            LDA ZP.TOPT
-            Stacks.PushTop();   // FORIT: Push iterator => NEXT slot
-            LDA ZP.NEXTT
-            Stacks.PushNext();  // FORIT: Push       TO => TOP slot
+            Long.PushTop();   // FORIT: Push iterator => NEXT slot
+            Long.PushNext();  // FORIT: Push       TO => TOP slot
             
             // TOP = updated iterator, NEXT = TO
             // Use comparison based on STEP direction
@@ -2734,7 +2734,7 @@ unit Executor // Executor.asm
             LDA Address.TypeStackLSB, X
             STA ZP.ACCT
             
-            // Inputs: ZP.ACCT = array type, ZP.IDX = array pointer, ZP.TOPT = index type, ZP.IDY = index
+            // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
             // Output: Element pushed to stack, States set appropriately  
             commonGetItem();
             
@@ -2749,7 +2749,7 @@ unit Executor // Executor.asm
     }
     
     // Common GETITEM implementation
-    // Inputs: ZP.ACCT = array type, ZP.IDX = array pointer, ZP.TOPT = index type, ZP.IDY = index
+    // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
     // Output: Element pushed to stack, States set appropriately  
     commonGetItem()
     {
@@ -2832,7 +2832,7 @@ unit Executor // Executor.asm
                 if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
                 {
                     // Get the element value
-                    BASICArray.GetItem(); // Returns value and type in ZP.TOP
+                    BASICArray.GetItem(); // ZP.IDX = array pointer, ZP.IDY = element index, -> value and type in ZP.TOP
                     if (NC)
                     {
                         States.SetFailure();
@@ -3248,24 +3248,95 @@ unit Executor // Executor.asm
             {
                 // not an ARRAY
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                States.SetFailure();
                 break;
             }
             
             // Get array element type for type checking
             BASICArray.GetItemType(); // Returns type in ZP.ACCT
             
-            // Check type compatibility: array element type vs value type
+            // TODO TYPE DEMOTION
             LDA ZP.ACCT
-            STA ZP.NEXTT  // LHS type (array element)
-            // TOPT already has RHS type (value)
-            
-            Instructions.CheckRHSTypeCompatibility();
-            if (NC)
+            switch (A)
             {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                States.SetFailure();
-                break;
+                case BASICType.CHAR:
+                case BASICType.BIT:
+                {
+                    CMP ZP.TOPT
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                case BASICType.BYTE:
+                {
+                    if (BBR3, ZP.TOPT) // Bit 3 - LONG
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    LDA ZP.TOP1
+                    ORA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    }
+                }
+                case BASICType.WORD:
+                {
+                    if (BBR3, ZP.TOPT) // Bit 3 - LONG
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    LDA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    }
+                }
+                case BASICType.INT:
+                {
+                    if (BBR3, ZP.TOPT) // Bit 3 - LONG
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    if (BBS7, ZP.TOP3)
+                    {
+                        LDA ZP.TOP2
+                        CMP #0xFF
+                        if (NZ)
+                        {
+                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                        LDA ZP.TOP3
+                        CMP #0xFF
+                        if (NZ)
+                        {
+                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        LDA ZP.TOP2
+                        ORA ZP.TOP3
+                        if (NZ)
+                        {
+                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                    }
+                }
+                default:
+                {
+                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                    break;
+                }
             }
             
             // BASICArray.SetItem expects: 

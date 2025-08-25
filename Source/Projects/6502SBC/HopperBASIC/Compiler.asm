@@ -223,8 +223,8 @@ unit Compiler // Compiler.asm
 #ifdef TRACE
         LDA #(compileConstExpressionTreelTrace % 256) STA ZP.TraceMessageL LDA #(compileConstExpressionTreelTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       
         SMB0 ZP.CompilerFlags // constant expression = TRUE
+        
         LDA ZP.SP
         PHA
         
@@ -239,7 +239,7 @@ unit Compiler // Compiler.asm
             PHA
             LDA ZP.XPCH
             PHA
-            
+
             compileExpressionTree();
             CheckError();
             if (C)
@@ -689,7 +689,7 @@ unit Compiler // Compiler.asm
                            PLA // Clean up stack
                            break; 
                        }
-                       
+
                        // Compile right operand
                        compileUnary();
                        CheckError();
@@ -707,6 +707,7 @@ unit Compiler // Compiler.asm
                        
                        if (BBS0, ZP.CompilerFlags) // constant expression:  ADD: both sides are still constant
                        {
+
                            switch (A)
                            {
                                case Token.MULTIPLY:
@@ -725,6 +726,7 @@ unit Compiler // Compiler.asm
                            CheckError();
                            if (NC) { break; }
                        }
+
                        
                        continue; // Check for more multiplicative operations
                    }
@@ -800,7 +802,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                }
                default:
-                {
+               {
                     // Not unary, compile primary
                     compilePrimary();
                     CheckError();
@@ -995,7 +997,10 @@ unit Compiler // Compiler.asm
             if (Z)
             {
                 // no function node?
-                // declaring the constant
+                // declaring the constant, like BYTE arr[<const>]
+                STZ ZP.SymbolIteratorFilter // variables and constants
+                Variables.Find(); // ZP.TOP = name, -> ZP.IDX = symbol node address, ZP.IDY is node index
+                
                 Emit.PushGlobal();
                 CheckError();
                 if (NC) { break; }
@@ -1007,7 +1012,8 @@ unit Compiler // Compiler.asm
             {
                 // Try to find this identifier as a global
                 // Not found in locals, try globals (input is name in TOP)
-                Variables.Find(); // ZP.IDX = symbol node address
+                STZ ZP.SymbolIteratorFilter // variables and constants
+                Variables.Find(); // ZP.TOP = name, -> ZP.IDX = symbol node address, ZP.IDY is node index
                 if (C)
                 {
                     // Before emitting PUSHGLOBAL, check for constant optimization
@@ -1061,6 +1067,7 @@ unit Compiler // Compiler.asm
                                 STA Compiler.compilerOperand1
                                 LDA ZP.TOP1
                                 STA Compiler.compilerOperand2
+                                // TODO TYPE SIGN EXTENSION
                                 if (MI)
                                 {
                                     LDA #0xFF
@@ -1277,6 +1284,7 @@ unit Compiler // Compiler.asm
 
                 // Compile as variable or argument
                 compileVariableOrArgument();
+
                 CheckError();
                 if (NC) { break; }
             }
@@ -1365,6 +1373,7 @@ unit Compiler // Compiler.asm
                }
                case Token.NUMBER:
                {
+
                    // Get number value and type
                    Tokenizer.GetTokenNumber(); // Result in ZP.TOP, type in ZP.TOPT
                    CheckError();
@@ -1429,6 +1438,7 @@ unit Compiler // Compiler.asm
                                    STA compilerOperand1  // LSB
                                    LDA ZP.TOP1
                                    STA compilerOperand2  // MSB
+                                   // TODO TYPE SIGN EXTENSION
                                    if (MI)
                                    {
                                        LDA #0xFF
@@ -1462,7 +1472,7 @@ unit Compiler // Compiler.asm
                        STA ZP.TOPT
                        Long.PushTop();
                    }
-                   
+
                    // Get next token
                    Tokenizer.NextToken();
                    CheckError();
@@ -2239,11 +2249,12 @@ unit Compiler // Compiler.asm
             // Must have expression(s) - compile argument list
             loop // Argument processing loop
             {
+
                 // Compile current expression
                 CompileFoldedExpressionTree(); // PRINT arguments, use full expression compilation
                 CheckError();
                 if (NC) { States.SetFailure(); break; }
-                
+
                 // Emit system call to print the value on stack
                 Emit.PrintValue();
                 CheckError();
@@ -2439,6 +2450,11 @@ unit Compiler // Compiler.asm
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {
+#ifdef DEBUG
+LDA ZP.TOPL STA ZP.STRL                
+LDA ZP.TOPH STA ZP.STRH
+Debug.NL(); Print.String();
+#endif
                 Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
                 break;
             }

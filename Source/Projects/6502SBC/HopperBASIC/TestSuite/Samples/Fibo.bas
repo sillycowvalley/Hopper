@@ -31,11 +31,4 @@ BEGIN
     Benchmark("Fibonacci", 24, 1)
 END
 
-! test from REPL (or just type RUN)
 Benchmark("Fibonacci", 20, 1)
-
-! NEW
-! MEM
-
-
-

@@ -249,38 +249,17 @@ unit BASICSysCalls
                    // Input: ZP.TOP* contains address
                    // Output: ZP.TOP* contains byte value
                    
-                   // Validate address is WORD or INT type
-                   TODO(); BIT ZP.EmulatorPCL // LONG
-                   LDA ZP.TOPT
-                   switch(A)
-                   {
-                       case BASICType.WORD:
-                       case BASICType.BYTE:
-                       {
-                       }
-                       case BASICType.INT:
-                       {
-                           // Check INT is positive (valid address)
-                           LDA ZP.TOPH
-                           if (MI)
-                           {
-                               Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               States.SetFailure();
-                               break;
-                           }
-                       }
-                       default:
-                       {
-                           Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                           States.SetFailure();
-                           break;
-                       }
-                   } // switch on type            
+                   LDA # BASICType.WORD
+                   BASICTypes.Coerce();
+                   if (NC) { break; }
+                   
                    // Read byte from memory address
                    LDA [ZP.TOP]
-                   STA ZP.TOPL
-                   STZ ZP.TOPH
-                   LDA #BASICType.BYTE
+                   STA ZP.TOP0
+                   STZ ZP.TOP1
+                   STZ ZP.TOP2
+                   STZ ZP.TOP3
+                   LDA #BASICType.LONG
                    STA ZP.TOPT
                }
                case SysCallType.Poke:          // ID = 9
@@ -288,52 +267,46 @@ unit BASICSysCalls
                    // POKE function - write memory byte
                    // Input: ZP.NEXT* contains address, ZP.TOP* contains value
                    
+                   // TODO TYPE DEMOTION
+                   
                    // Validate address is WORD or INT type
-                   TODO(); BIT ZP.EmulatorPCL // LONG
                    LDA ZP.NEXTT
-                   switch (A)
+                   CMP # BASICType.LONG
+                   if (NZ)
                    {
-                       case BASICType.WORD:
-                       case BASICType.BYTE:
-                       {
-                           // Validate value is 0..255 (any type)
-                           LDA ZP.TOPH
-                           if (NZ)
-                           {
-                               Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               States.SetFailure();
-                               break;
-                           }
-                       }
-                       case BASICType.INT:
-                       {
-                           // Check INT is positive (valid address)
-                           LDA ZP.NEXTH
-                           if (MI)
-                           {
-                               Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               States.SetFailure();
-                               break;
-                           }
-                           
-                           // Validate value is 0..255 (any type)
-                           LDA ZP.TOPH
-                           if (NZ)
-                           {
-                               Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                               States.SetFailure();
-                               break;
-                           }
-                       }
-                       default:
-                       {
-                           Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                           States.SetFailure();
-                           break;
-                       }
-                   } // switch on type
+                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                       break;
+                   }
+                   LDA ZP.NEXT2
+                   ORA ZP.NEXT3
+                   if (NZ)
+                   {
+                       Error.RangeError(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                       break;
+                   }
+                   
+                   LDA ZP.TOPT
+                   CMP # BASICType.LONG
+                   if (NZ)
+                   {
+                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                       break;
+                   }
+                   LDA ZP.TOP1
+                   ORA ZP.TOP2
+                   ORA ZP.TOP3
+                   if (NZ)
+                   {
+                       Error.RangeError(); BIT ZP.EmulatorPCL
+                       States.SetFailure();
+                       break;
+                   }
+                   
                    // Write byte to memory address
-                   LDA ZP.TOPL  // Get value to write
+                   LDA ZP.TOP0     // Get value to write
                    STA [ZP.NEXT]   // Write to address
                }
                
@@ -342,17 +315,38 @@ unit BASICSysCalls
                     // PINMODE function - configure pin direction
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = mode
                     
-                    // Validate pin number (0-15)
-                    LDA ZP.NEXTH
+                    // TODO TYPE DEMOTION
+                    
+                    LDA ZP.NEXTT
+                    CMP # BASICType.LONG
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
-                    LDA ZP.NEXTL
-                    CMP #16
-                    if (C)
+                    // Validate pin number (0-15)
+                    LDA ZP.NEXT1
+                    ORA ZP.NEXT2
+                    ORA ZP.NEXT3
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.NEXT0
+                    AND #0xF0
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    
+                    LDA ZP.TOPT
+                    CMP # BASICType.LONG
+                    if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
                         States.SetFailure();
@@ -360,26 +354,27 @@ unit BASICSysCalls
                     }
                     
                     // Validate mode (0 or 1)
-                    TODO(); BIT ZP.EmulatorPCL // LONG
-                    LDA ZP.TOPH
+                    LDA ZP.TOP1
+                    ORA ZP.TOP2
+                    ORA ZP.TOP3
                     if (NZ)
                     {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        Error.RangeError(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
-                    LDA ZP.TOPL
-                    CMP #2
-                    if (C)
+                    LDA ZP.TOP0
+                    AND #0xFE
+                    if (NZ)
                     {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        Error.RangeError(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
                     
                     // Call GPIO.PinMode
-                    LDA ZP.NEXTL    // Pin number
-                    LDX ZP.TOPL     // Mode
+                    LDA ZP.NEXT0    // Pin number
+                    LDX ZP.TOP0     // Mode
                     GPIO.PinMode();
                 }
                 
@@ -389,28 +384,39 @@ unit BASICSysCalls
                     // Input: ZP.TOP* = pin number
                     // Output: ZP.TOP* = pin value (0 or 1)
                     
-                    // Validate pin number (0-15)
-                    TODO(); BIT ZP.EmulatorPCL // LONG
-                    LDA ZP.TOPH
+                    // TODO TYPE DEMOTION
+                    
+                    LDA ZP.TOPT
+                    CMP # BASICType.LONG
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
-                    LDA ZP.TOPL
-                    CMP #16
-                    if (C)
+                    // Validate pin number (0-15)
+                    LDA ZP.TOP1
+                    ORA ZP.TOP2
+                    ORA ZP.TOP3
+                    if (NZ)
                     {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.TOP0
+                    AND #0xF0
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
                     
                     // Call GPIO.PinRead
                     GPIO.PinRead();  // Result in A
-                    STA ZP.TOPL
-                    STZ ZP.TOPH
+                    STA ZP.TOP0
+                    STZ ZP.TOP1
                     LDA #BASICType.BIT
                     STA ZP.TOPT
                 }
@@ -420,26 +426,37 @@ unit BASICSysCalls
                     // WRITE function - write digital output
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = value
                     
-                    // Validate pin number (0-15)
-                    TODO(); BIT ZP.EmulatorPCL // LONG
-                    LDA ZP.NEXTH
+                    // TODO TYPE DEMOTION
+                    
+                    LDA ZP.NEXTT
+                    CMP # BASICType.LONG
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
-                    LDA ZP.NEXTL
-                    CMP #16
-                    if (C)
+                    LDA ZP.NEXT1
+                    ORA ZP.NEXT2
+                    ORA ZP.NEXT3
+                    if (NZ)
                     {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        States.SetFailure();
+                        break;
+                    }
+                    LDA ZP.NEXT0
+                    AND #0xF0
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
                         States.SetFailure();
                         break;
                     }
                     
                     // Validate value (0 or 1 for digital)
-                    LDA ZP.TOPH
+                    LDA ZP.TOPT
+                    CMP # BASICType.BIT
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
@@ -448,8 +465,8 @@ unit BASICSysCalls
                     }
                     
                     // Call GPIO.PinWrite
-                    LDA ZP.NEXTL    // Pin number
-                    LDX ZP.TOPL     // Value
+                    LDA ZP.NEXT0    // Pin number
+                    LDX ZP.TOP0     // Value
                     GPIO.PinWrite();
                 }
                 
@@ -459,50 +476,9 @@ unit BASICSysCalls
                     // Input: ZP.TOP* contains numeric value (BYTE/WORD/INT)
                     // Output: ZP.TOP* contains CHAR value
                     
-                    // Validate value is 0-255 regardless of type
-                    TODO(); BIT ZP.EmulatorPCL // LONG
-                    LDA ZP.TOPT
-                    switch (A)
-                    {
-                        case BASICType.BYTE:
-                        {
-                            // BYTE is always valid (0-255)
-                        }
-                        case BASICType.WORD:
-                        {
-                            // Check WORD is <= 255
-                            LDA ZP.TOPH
-                            if (NZ)
-                            {
-                                Error.RangeError(); BIT ZP.EmulatorPCL
-                                States.SetFailure();
-                                break;
-                            }
-                        }
-                        case BASICType.INT:
-                        {
-                            // Check INT is 0-255
-                            LDA ZP.TOPH
-                            if (MI)  // Negative?
-                            {
-                                Error.RangeError(); BIT ZP.EmulatorPCL
-                                States.SetFailure();
-                                break;
-                            }
-                            if (NZ)  // > 255?
-                            {
-                                Error.RangeError(); BIT ZP.EmulatorPCL
-                                States.SetFailure();
-                                break;
-                            }
-                        }
-                        default:
-                        {
-                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                            States.SetFailure();
-                            break;
-                        }
-                    }
+                    LDA # BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.Coerce();
                     
                     // Value is valid, convert to CHAR
                     // ZP.TOPL already contains the byte value
@@ -529,9 +505,11 @@ unit BASICSysCalls
                     
                     // Convert CHAR to BYTE (value stays the same)
                     // ZP.TOPL already contains the ASCII value
-                    TODO(); BIT ZP.EmulatorPCL // LONG
-                    STZ ZP.TOPH  // Ensure high byte is clear
-                    LDA #BASICType.BYTE
+                    
+                    STZ ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                    LDA #BASICType.LONG
                     STA ZP.TOPT
                 }
                 
@@ -553,11 +531,8 @@ unit BASICSysCalls
                         LDA ZP.TOPH
                         STA ZP.STRH
                         String.Length();
-                        STY ZP.TOPL
-                        STZ ZP.TOPH
-                        LDA # BASICType.BYTE
-                        STA ZP.TOPT
-                        TODO(); BIT ZP.EmulatorPCL // LONG
+                        STY ZP.TOP0
+                        STZ ZP.TOP1
                         
                         PLY
                     }
@@ -574,10 +549,9 @@ unit BASICSysCalls
                             BASICArray.GetCount();  // Returns in ZP.ACC
                             // Move to TOP and set type
                             LDA ZP.ACCL
-                            STA ZP.TOPL
+                            STA ZP.TOP0
                             LDA ZP.ACCH
-                            STA ZP.TOPH
-                            TODO(); BIT ZP.EmulatorPCL // LONG
+                            STA ZP.TOP1
                         }
                         else
                         {
@@ -586,8 +560,9 @@ unit BASICSysCalls
                             break;
                         }
                     }
-                    // Set type to WORD
-                    LDA #BASICType.WORD
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                    LDA #BASICType.LONG
                     STA ZP.TOPT
                }
                

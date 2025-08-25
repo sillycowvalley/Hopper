@@ -8,7 +8,7 @@ unit Variables
     
     // Declare new variable or constant
     // Input: ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
-    //        ZP.NEXT = initial value (16-bit), number of elements for ARRAY
+    //        ZP.NEXT = initial value (16-bit or 32 bit), number of elements for ARRAY
     //        ZP.IDY = tokens pointer (16-bit)
     // Output: C set if successful, NC if error (name exists, out of memory)
     // Munts: ZP.LCURRENT, ZP.LHEADX, ZP.LNEXT
@@ -98,8 +98,8 @@ unit Variables
             LDX #ZP.VariablesList
             
             // Input: X = ZP address of table head (ZP.VariableList or ZP.FunctionsList),
-    //        ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
-    //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit)
+            //        ZP.TOP = name pointer, ZP.ACCT = symbolType|dataType (packed),
+            //        ZP.IDY = tokens pointer (16-bit), ZP.NEXT = value/args (16-bit or 32 bit)
             
             Objects.Add();
             if (NC)
@@ -130,7 +130,7 @@ unit Variables
             CMP # BASICType.STRING
             if (Z)
             {
-                SetValue(); // TOP->
+                Variables.SetValue(); // TOP->
             }
             if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
@@ -138,7 +138,7 @@ unit Variables
                 STA ZP.TOPL
                 LDA ZP.NEXTH
                 STA ZP.TOPH
-                SetValue(); // TOP->
+                Variables.SetValue(); // TOP->
             }
             SEC // success
             break;
@@ -206,12 +206,52 @@ unit Variables
             break;
         } // end of single exit block
         
+        
         PLA
         STA ZP.ACCT
         
         PLY
         PLX
         PLA
+    }
+    
+    
+    // Get symbol data from found node
+    // Input: ZP.IDX = symbol node address (from Find)
+    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.TOP = value/args
+    // Munts: A, ZP.NEXT, ZP.ACCT
+    getData()
+    {
+        PHY
+        
+        // Get symbolType|dataType (offset snType)
+        LDY # Objects.snType
+        LDA [ZP.IDX], Y
+        STA ZP.ACCT
+        
+        // Get tokens pointer (offset snTokens to snTokens+1)
+        LDY # Objects.snTokens
+        LDA [ZP.IDX], Y
+        STA ZP.NEXTL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.NEXTH
+        
+        // Get value/args (offset snValue to snValue+1)
+        LDY # Objects.snValue
+        LDA [ZP.IDX], Y
+        STA ZP.TOP0
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.TOP1
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.TOP2
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.TOP3
+        
+        PLY
     }
     
     // Get variable/constant value and type
@@ -225,7 +265,7 @@ unit Variables
         
         loop // start of single exit block
         {
-            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
+            Variables.getData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.TOP
             
             // Check if it's a variable or constant
             LDA ZP.ACCT
@@ -241,11 +281,6 @@ unit Variables
                     break;
                 }
             }
-            // Copy value to TOP and extract data type - value is now in ZP.IDY
-            LDA ZP.IDYL
-            STA ZP.TOP0
-            LDA ZP.IDYH
-            STA ZP.TOP1
             
             LDA ZP.ACCT
             AND # BASICType.TYPEMASK   // masks off VAR bit (0x10)
@@ -287,8 +322,10 @@ unit Variables
 
         loop // start of single exit block
         {
-            // Get current symbol info
-            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
+            // Get symbolType|dataType (offset snType)
+            LDY # Objects.snType
+            LDA [ZP.IDX], Y
+            STA ZP.ACCT
 
             // Check if it's a variable
             LDA ZP.ACCT
@@ -304,38 +341,34 @@ unit Variables
                 }
             }
             
-            LDA ZP.ACCT // symbolType|dataType from Objects.GetData()
-            
+            LDA ZP.ACCT // symbolType|dataType
             if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
                 // ARRAY management happens elsewhere, just overwrite ptr              
-                // Non-STRING - use value
-                LDA ZP.TOPL
-                STA ZP.IDYL
-                LDA ZP.TOPH
-                STA ZP.IDYH
+                // Non-STRING - use value (TOP)
             }
             else
             {
                 // Check if the current value is a STRING variable needing memory management
-                LDA ZP.ACCT  // symbolType|dataType from Objects.GetData()
+                LDA ZP.ACCT // symbolType|dataType
                 AND # BASICType.TYPEMASK
                 CMP # BASICType.STRING
                 if (Z)
                 {
                     LDA ZP.TOPT
+                    AND # BASICType.TYPEMASK
                     CMP # BASICType.STRING
                     if (Z)
                     {
                         // If the new value is the same string as the old value, it will do nothing.
                         LDY #Objects.snValue
                         LDA [ZP.IDX], Y
-                        CMP ZP.TOPL
+                        CMP ZP.TOP0
                         if (Z)
                         {
                             INY
                             LDA [ZP.IDX], Y
-                            CMP ZP.TOPH
+                            CMP ZP.TOP1
                             if (Z)
                             {
                                 SEC // same pointer, nothing to do
@@ -343,6 +376,7 @@ unit Variables
                             }
                         }    
                     }
+
                     // If the old value was a string, not the same as the new one, we'll free it
                     SEC
                     // STRING variable - need to free old string and allocate new
@@ -350,6 +384,7 @@ unit Variables
                     CheckError();
                     if (NC) { break; }
                 }
+                
                 LDA ZP.TOPT
                 AND # BASICType.TYPEMASK
                 CMP # BASICType.STRING
@@ -360,16 +395,12 @@ unit Variables
                     AllocateAndCopyString(); // Returns new string pointer in ZP.TOP -> ZP.IDY, preserves IDX, ACCT
                     CheckError();
                     if (NC) { break; }
+                    LDA ZP.IDYL
+                    STA ZP.TOP0
+                    LDA ZP.IDYH
+                    STA ZP.TOP1
                 }
-                else
-                {
-                    // Non-STRING - use value
-                    LDA ZP.TOPL
-                    STA ZP.IDYL
-                    LDA ZP.TOPH
-                    STA ZP.IDYH
-                }
-                
+                                
                 // Update type if it's a VAR variable : Variable type (packed)
                 if (BBS4, ZP.ACCT) // Bit 4 - VAR
                 {
@@ -387,9 +418,8 @@ unit Variables
                 
             } // not ARRAY
                         
-            
             // Set the new string pointer as the variable's value
-            Objects.SetValue(); // Uses ZP.IDY, C = success, NC = failure
+            Objects.SetValue(); // Uses ZP.TOP for value, C = success, NC = failure
             break;
         } // end of single exit block
         
@@ -421,18 +451,12 @@ unit Variables
     GetType()
     {
         PHA
+        PHY
         
-        LDA ZP.IDYL
-        PHA
-        LDA ZP.IDYH
-        PHA
-        
-        LDA ZP.NEXTL
-        PHA
-        LDA ZP.NEXTH  
-        PHA
-        
-        Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
+        // Get symbolType|dataType (offset snType)
+        LDY # Objects.snType
+        LDA [ZP.IDX], Y
+        STA ZP.ACCT
         
         // Check if it's a variable or constant
         LDA ZP.ACCT
@@ -454,55 +478,11 @@ unit Variables
             }
         }
         
-        PLA
-        STA ZP.NEXTH
-        PLA
-        STA ZP.NEXTL
-        
-        PLA
-        STA ZP.IDYH
-        PLA
-        STA ZP.IDYL
-        
+        PLY
         PLA
     }
     
-    // Get variable/constant signature info
-    // Input: ZP.IDX = symbol node address (from Find or iteration)
-    // Output: ZP.ACCT = symbolType|dataType (packed), ZP.NEXT = tokens pointer, ZP.IDY = value, C set if successful, NC if error
-    // Munts: -
-    GetSignature()
-    {
-        PHA
-        
-        loop // start of single exit block
-        {
-            Objects.GetData();  // Returns type in ZP.ACCT, tokens in ZP.NEXT, value in ZP.IDY
-            
-            // Check if it's a variable or constant
-            LDA ZP.ACCT
-            AND #SymbolType.MASK
-            CMP #SymbolType.VARIABLE
-            if (Z)
-            {
-                SEC  // Success - ZP.ACC, ZP.NEXT, ZP.IDY already set by Objects.GetData()
-                break;
-            }
-            
-            CMP #SymbolType.CONSTANT
-            if (Z)
-            {
-                SEC  // Success - ZP.ACC, ZP.NEXT, ZP.IDY already set by Objects.GetData()
-                break;
-            }
-            
-            // Not a variable or constant
-            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-            break;
-        } // end of single exit block
-        
-        PLA
-    }    
+      
     // Get name pointer from symbol node
     // Input: ZP.IDX = symbol node address (from Find or iteration)
     // Output: ZP.STR = name pointer (points into node data), always succeeds
@@ -830,19 +810,27 @@ unit Variables
     {
         LDA ZP.ACCT
         PHA
+        LDA ZP.NEXTL
+        PHA
+        LDA ZP.NEXTH
+        PHA
         LDA ZP.IDYL
         PHA
         LDA ZP.IDYH
         PHA
-        LDA ZP.NEXTL
+        LDA ZP.TOP0
         PHA
-        LDA ZP.NEXTH
+        LDA ZP.TOP1
+        PHA
+        LDA ZP.TOP2
+        PHA
+        LDA ZP.TOP3
         PHA
         
         loop // single exit
         {
             // Get variable data
-            Objects.GetData(); // Input: IDX, Returns type in ZP.ACCT, value in ZP.IDY, tokens in ZP.NEXT
+            Variables.getData(); // Input: IDX, Returns type in ZP.ACCT, value in ZP.IDY, tokens in ZP.NEXT
             
             // Check if it's a ARRAY variable
             if (BBR5, ZP.ACCT) // Bit 5 - ARRAY
@@ -860,35 +848,48 @@ unit Variables
             }
             
             // Check if string pointer is non-zero
-            LDA ZP.IDYL
-            ORA ZP.IDYH
+            LDA ZP.TOP0
+            ORA ZP.TOP1
             if (Z)
             {
                 // Null pointer - nothing to free
                 SEC // Success (no-op)
                 break;
             }
+            LDA ZP.TOP0
+            STA ZP.IDYL
+            LDA ZP.TOP1
+            STA ZP.IDYH
             
             // Free the string memory (use different register than IDX)
             Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
                  
-            STZ ZP.IDYL  // Zero out for Objects.SetValue
-            STZ ZP.IDYH
+            STZ ZP.TOP0  // Zero out for Objects.SetValue
+            STZ ZP.TOP1
+            STZ ZP.TOP2
+            STZ ZP.TOP3
             Objects.SetValue(); // Set variable's string pointer to 0x0000
             
             SEC // Success
             break;
         }
         
-                
         PLA
-        STA ZP.NEXTH
+        STA ZP.TOP3
         PLA
-        STA ZP.NEXTL
+        STA ZP.TOP2
+        PLA
+        STA ZP.TOP1
+        PLA
+        STA ZP.TOP0
         PLA
         STA ZP.IDYH
         PLA
         STA ZP.IDYL
+        PLA
+        STA ZP.NEXTH
+        PLA
+        STA ZP.NEXTL
         PLA
         STA ZP.ACCT
     }
@@ -959,155 +960,4 @@ unit Variables
         PLA
     }
     
-    // Get LONG variable value and push to stack
-    // Input: ZP.IDX = LONG variable node address (from Find)
-    // Output: LONG value returned in ZP.LTOP0-3 and ZP.TOPT,  C set if successful, NC if error
-    // Modifies: ZP.LTOP0-3, A, X, Y
-    // Preserves: ZP.IDX
-    const string getLongValueTrace = "GetLongVal";
-    GetLongValue()
-    {
-        PHA
-        PHY
-        
-    #ifdef TRACE
-        LDA #(getLongValueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(getLongValueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-    #endif
-        
-        loop // Single exit block
-        {
-            // Get variable type
-            Objects.GetData(); // Returns type in ZP.ACCT, value in ZP.IDY
-            
-            // Check if it's a LONG variable
-            if (BBR3, ZP.ACCT) // LONG = bit 3
-            {
-                // Not a LONG variable
-                // Read 2-byte value directly from Objects node
-                // LSW from snValue (offset 5-6)
-                STA ZP.TOPT // from ZP.ACCT
-                LDY #Objects.snValue
-                LDA [ZP.IDX], Y
-                STA ZP.TOPL
-                INY
-                LDA [ZP.IDX], Y
-                STA ZP.LTOPH
-                Long.ToLong(); // TOP -> LTOP, C or NC
-            }
-            else
-            {
-                // Read 4-byte LONG value directly from Objects node
-                // LSW from snValue (offset 5-6)
-                LDY #Objects.snValue
-                LDA [ZP.IDX], Y
-                STA ZP.LTOP0
-                INY
-                LDA [ZP.IDX], Y
-                STA ZP.LTOP1
-                
-                // MSW from extended value (offset 7-8)  
-                LDY #7  // Extended value offset
-                LDA [ZP.IDX], Y
-                STA ZP.LTOP2
-                INY
-                LDA [ZP.IDX], Y
-                STA ZP.LTOP3
-                
-                LDA #BASICType.LONG
-                STA ZP.TOPT
-                
-                SEC // Success
-            }
-        } // Single exit block
-        
-    #ifdef TRACE
-        LDA #(getLongValueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(getLongValueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
-        
-        PLY
-        PLA
-    }
-
-    // Set LONG variable value from stack
-    // Input: ZP.IDX = LONG variable node address, ZP.LTOP0-3 = new value, ZP.TOPT = new value type
-    // Output: Variable updated with new value, C set if successful, NC if error
-    // Modifies: ZP.ACCT, A, X, Y
-    // Preserves: ZP.IDX
-    const string setLongValueTrace = "SetLongVal";
-    SetLongValue()
-    {
-        PHA
-        PHY
-        
-    #ifdef TRACE
-        LDA #(setLongValueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(setLongValueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-    #endif
-        
-        loop // Single exit block
-        {
-            // Get current variable type  
-            Objects.GetData(); // Returns type in ZP.ACCT
-            
-            // Check if it's a LONG variable
-            LDA ZP.ACCT
-            if (NC)
-            {
-                // Not a LONG variable
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-            }
-            else
-            {
-                // Store 4-byte LONG value directly to Objects node
-                // LSW to snValue (offset 5-6)
-                LDY #Objects.snValue
-                LDA ZP.LTOP0
-                STA [ZP.IDX], Y
-                INY
-                LDA ZP.LTOP1
-                STA [ZP.IDX], Y
-                
-                // MSW to extended value (offset 7-8)
-                LDY #7  // Extended value offset
-                LDA ZP.LTOP2
-                STA [ZP.IDX], Y
-                INY
-                LDA ZP.LTOP3
-                STA [ZP.IDX], Y
-                
-                // Update type if it's a VAR variable : Variable type (packed)
-                if (BBS4, LDA ZP.ACCT) // Bit 4 - VAR
-                {
-                    // VAR variable - update type in symbol table
-                    LDA ZP.ACCT
-                    AND #(SymbolType.MASK | BASICType.VAR) // preserve VARIABLE|CONSTANT and VARness
-                    ORA ZP.TOPT
-                    STA ZP.ACCT
-                    
-                    // Set symbolType|dataType (offset snType)
-                    LDY #Objects.snType
-                    LDA ZP.ACCT
-                    STA [ZP.IDX], Y
-                }
-                
-                SEC // Success
-            }
-        } // Single exit block
-        
-    #ifdef TRACE
-        LDA #(setLongValueTrace % 256) STA ZP.TraceMessageL 
-        LDA #(setLongValueTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
-        
-        PLY
-        PLA
-    }
-
-
 }
