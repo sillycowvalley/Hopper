@@ -30,11 +30,13 @@ unit Compiler // Compiler.asm
    const uint compilerGlobalIteratorSlot = Address.BasicCompilerWorkspace + 14; // 1 byte - slot of global being shadowed
    const uint compilerForIteratorBP      = Address.BasicCompilerWorkspace + 15; // 1 byte - signed one byte offset, location of for iterator relative to BP (according to Locals.Find)
    const uint compilerIfClauses          = Address.BasicCompilerWorkspace + 16; // 1 byte - compileIfStatement - single or multiline mode
+   const uint compilerCurrentArgCount    = Address.BasicCompilerWorkspace + 17; // 1 byte - number of arguments in the current function call
 #ifdef PEEPHOLE   
-   const uint compilerSetItemObjInstr    = Address.BasicCompilerWorkspace + 17; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem object
-   const uint compilerSetItemObjOffset   = Address.BasicCompilerWorkspace + 18; // 1 byte - offset or address for previous
-   const uint compilerSetItemIndexInstr  = Address.BasicCompilerWorkspace + 19; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem index
-   const uint compilerSetItemIndexOffset = Address.BasicCompilerWorkspace + 20; // 1 byte - offset or address for previous
+   const uint compilerSetItemObjInstr    = Address.BasicCompilerWorkspace + 18; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem object
+   const uint compilerSetItemObjOffset   = Address.BasicCompilerWorkspace + 19; // 1 byte - offset or address for previous
+   const uint compilerSetItemIndexInstr  = Address.BasicCompilerWorkspace + 20; // 1 byte - PUSHGLOBAL or PUSHLOCAL for SetItem index
+   const uint compilerSetItemIndexOffset = Address.BasicCompilerWorkspace + 21; // 1 byte - offset or address for previous
+   
 #endif
    
    // Initialize the opcode buffer for compilation
@@ -1111,8 +1113,17 @@ unit Compiler // Compiler.asm
                 } // found
                 else
                 {
-                    // not found?!
-                    Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                    Functions.Find();  // Input: ZP.TOP = name pointer, Output: ZP.IDX = function node
+                    if (C)
+                    {
+                        Error.SyntaxError(); // function with no ()
+                    }
+                    else
+                    {
+                        // not found?!
+                        Error.UndefinedIdentifier();
+                    }
+                    BIT ZP.EmulatorPCL
                     States.SetFailure();
                 }
             }
@@ -1142,6 +1153,9 @@ unit Compiler // Compiler.asm
         Trace.MethodEntry();
     #endif
         
+        LDA compilerCurrentArgCount
+        PHA
+        
         loop // Single exit
         {
             // Current token is IDENTIFIER
@@ -1152,12 +1166,13 @@ unit Compiler // Compiler.asm
             STA ZP.TOPH
             LDA ZP.TOPT
             Stacks.PushTop();
-
             Tokenizer.PeekToken(); // peek next -> A
             CMP #Token.LPAREN
             if (Z)
-            {          
+            {     
                 RMB0 ZP.CompilerFlags // constant expression: LPAREN: not an integral constant expression
+                
+                STZ compilerCurrentArgCount
                    
                 Tokenizer.NextToken(); // consume LPAREN
                 CheckError();
@@ -1198,8 +1213,9 @@ unit Compiler // Compiler.asm
                     // Parse arguments separated by commas
                     loop
                     {
-                        // Compile argument expression
-                        compileComparison(); // Use full expression compilation : TODO : should be compileExpressionTree() !!!
+                        INC compilerCurrentArgCount
+                        
+                        compileExpressionTree();
                         CheckError();
                         if (NC) 
                         { 
@@ -1262,6 +1278,21 @@ unit Compiler // Compiler.asm
                 LDA ZP.TOPL
                 STA ZP.TokenLiteralPosL
                 
+                Tokenizer.GetTokenString(); // name -> TOP
+                Functions.Find();  // Input: ZP.TOP = name pointer, Output: ZP.IDX = function node
+                if (C) // Function found
+                {
+                    // Compare with actual argument count
+                    Locals.GetCount(); // Input: ZP.IDX = function node, Output: A = argument count
+                    LDA ZP.ACCL
+                    CMP compilerCurrentArgCount
+                    if (NZ)
+                    {
+                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                
                 // Emit CALL opcode (uses ZP.TokenLiteralPos for function name)
                 Emit.Call();
                 CheckError();
@@ -1274,8 +1305,20 @@ unit Compiler // Compiler.asm
             }
             else
             {
-                // Not a function call - clean up VM stack slot
-                Stacks.PopA(); 
+                Stacks.PopTop();
+                LDA ZP.TOPH
+                STA ZP.TokenLiteralPosH
+                LDA ZP.TOPL
+                STA ZP.TokenLiteralPosL
+                
+                Tokenizer.GetTokenString(); // name -> TOP
+                Functions.Find();  // Input: ZP.TOP = name pointer, Output: ZP.IDX = function node
+                if (C) 
+                {
+                    // function without ()
+                    Error.SyntaxError(); BIT ZP.EmulatorPCL
+                    break;
+                }
                 
                 // Get the identifier token
                 Tokenizer.NextToken();
@@ -1298,6 +1341,11 @@ unit Compiler // Compiler.asm
         LDA #(compileFunctionCallOrVariableTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodExit();
     #endif
+    
+        PLA
+        STA compilerCurrentArgCount
+        
+        
         
         PLY
         PLX
@@ -2958,7 +3006,7 @@ Debug.NL(); LDA #'"' COut(); Print.String(); LDA #'"' COut();  Space(); TOut(); 
        loop
        {
            // Typically called when ZP.CurrentToken is Token.IDENTIFIER, or a keyword
-           // Output: symbol or function in IDX, A = IdentifierType
+           // Output: symbol or function in IDX, ZP.ACCT = IdentifierType
            Statement.ResolveIdentifier(); // Uses same logic as REPL
            CheckError();
            if (NC) 
