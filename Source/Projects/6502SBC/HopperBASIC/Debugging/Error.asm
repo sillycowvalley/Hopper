@@ -905,11 +905,16 @@ unit Error // ErrorID.asm
         PHA
         
         // Print the error message
-        LDA #'?'
-        Serial.WriteChar(); // '?' prefix
+        
         LDA ZP.LastError
+        
+        
+#if defined(RELEASE)
+        LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
+        Error.MessageNL();
+#else
+        LDX # MessageExtras.PrefixSpace
         Message();
-#if !defined(RELEASE)
         // 6502 PC
         LDA #' '
         Serial.WriteChar();
@@ -925,9 +930,9 @@ unit Error // ErrorID.asm
         Serial.HexOut();
         LDA #')'
         Serial.WriteChar();
+        Print.NewLine(); // '\n' suffix
 #endif        
-        LDA #'\n'
-        Serial.WriteChar(); // '\n' suffix
+        
         
         PLA
         STA ZP.ACCH

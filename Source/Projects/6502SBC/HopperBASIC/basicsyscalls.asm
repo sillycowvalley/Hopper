@@ -12,7 +12,7 @@ unit BASICSysCalls
         
         // Built-in functions (ID 3-9)
         Abs          = (0b00011 << 3) | (1 << 2) | 0b01,  // ID=3, returns,  1 arg  = 0x1D
-        Rnd          = (0b00100 << 3) | (1 << 2) | 0b01,  // ID=4, returns,  1 arg  = 0x25
+        Input        = (0b00100 << 3) | (1 << 2) | 0b00,  // ID=4, returns,  0 args = 0x24
         Millis       = (0b00101 << 3) | (1 << 2) | 0b00,  // ID=5, returns,  0 args = 0x2C  
         Seconds      = (0b00110 << 3) | (1 << 2) | 0b00,  // ID=6, returns,  0 args = 0x34
         Delay        = (0b00111 << 3) | (0 << 2) | 0b01,  // ID=7, void,     1 arg  = 0x39
@@ -61,8 +61,8 @@ unit BASICSysCalls
                     Print.String();
                     LDA #0
                 } 
+                case SysCallType.Input:   { LDA #Token.INPUT   }  // INPUT
                 case SysCallType.Abs:     { LDA #Token.ABS     }  // ABS
-                case SysCallType.Rnd:     { LDA #Token.RND     }  // RND
                 case SysCallType.Millis:  { LDA #Token.MILLIS  }  // MILLIS
                 case SysCallType.Seconds: { LDA #Token.SECONDS }  // SECONDS
                 case SysCallType.Delay:   { LDA #Token.DELAY   }  // DELAY
@@ -82,7 +82,6 @@ unit BASICSysCalls
             }
             
             // Show argument count and return type in parentheses
-            LDA #'(' COut();
             TXA
             AND #0x03  // Extract argument count
             if (NZ)
@@ -123,7 +122,6 @@ unit BASICSysCalls
                 switch (X)
                 {
                     case SysCallType.Abs:     
-                    case SysCallType.Rnd:
                     case SysCallType.Millis:
                     case SysCallType.Seconds:
                     case SysCallType.Len:
@@ -189,7 +187,6 @@ unit BASICSysCalls
 #ifdef DEBUG
                    // Handle 3-argument functions (future expansion)
                    TODO(); BIT ZP.EmulatorPCL
-                   States.SetFailure();
                    break;
 #endif
                }
@@ -206,26 +203,41 @@ unit BASICSysCalls
                case SysCallType.PrintChar:     // ID = 2
                {
                    // Character to print is in ZP.TOP (1 argument)
+                   LDA ZP.TOPT
+                   CMP # BASICType.CHAR
+                   if (NZ)
+                   {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                   }
+                   
                    LDA ZP.TOPL
                    Serial.WriteChar();
                }
+               
                case SysCallType.Abs:           // ID = 3
                {
                    // ABS function - compute absolute value
-                   // Input: ZP.TOP* contains value and type
+                   // Input: ZP.TOP* contains value and type  
                    // Output: ZP.TOP* contains absolute value
-                   TODO(); BIT ZP.EmulatorPCL // TODO LONG
-                   
-               }
-               case SysCallType.Rnd:           // ID = 4
-               {
-                   // RND function - random number generation
-                   // Input: ZP.TOP* contains max value
-                   // Output: ZP.TOP* contains random number 0 to max-1
-                   
-                   // TODO: Replace with actual implementation
-                   TODO(); BIT ZP.EmulatorPCL
-               }
+                   if (BBR3, ZP.TOPT) // Bit 3 - Long
+                   {
+                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                       break;
+                   }
+                  
+                   // Check if negative (test MSB of TOP3)
+                   LDA ZP.TOP3
+                   if (MI)
+                   {
+                       // Negative, so negate it
+                       Long.NegateLongTOP();
+                   }
+               }     
+                
+                         
+                                  
+                                                    
                case SysCallType.Millis:        // ID = 5
                {
                    LDA ZP.TICK3 STA ZP.TOP3  // reading TICK3 makes a snapshot of all 4 registers on the emulator
@@ -245,6 +257,11 @@ unit BASICSysCalls
                case SysCallType.Delay:         // ID = 7
                {
                    // DELAY function - delay in milliseconds
+                   if (BBR3, ZP.TOPT) // Bit 3 - Long
+                   {
+                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                       break;
+                   }
                    Time.DelayTOP();            // Uses ZP.TOP*
                }
                case SysCallType.Peek:          // ID = 8
@@ -252,17 +269,18 @@ unit BASICSysCalls
                    // PEEK function - read memory byte
                    // Input: ZP.TOP* contains address
                    // Output: ZP.TOP* contains byte value
-                   
                    LDA # BASICType.WORD
+                   STA ZP.ACCT
                    BASICTypes.Coerce();
+                   CheckError();
                    if (NC) { break; }
                    
                    // Read byte from memory address
                    LDA [ZP.TOP]
                    STA ZP.TOP0
                    STZ ZP.TOP1
-                   STZ ZP.TOP2
-                   STZ ZP.TOP3
+                   //STZ ZP.TOP2 // already clear thanks to Coerce above
+                   //STZ ZP.TOP3
                    LDA #BASICType.LONG
                    STA ZP.TOPT
                }
@@ -271,43 +289,17 @@ unit BASICSysCalls
                    // POKE function - write memory byte
                    // Input: ZP.NEXT* contains address, ZP.TOP* contains value
                    
-                   // TODO TYPE DEMOTION
-                   
-                   // Validate address is WORD or INT type
-                   LDA ZP.NEXTT
-                   CMP # BASICType.LONG
-                   if (NZ)
-                   {
-                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                       States.SetFailure();
-                       break;
-                   }
-                   LDA ZP.NEXT2
-                   ORA ZP.NEXT3
-                   if (NZ)
-                   {
-                       Error.RangeError(); BIT ZP.EmulatorPCL
-                       States.SetFailure();
-                       break;
-                   }
-                   
-                   LDA ZP.TOPT
-                   CMP # BASICType.LONG
-                   if (NZ)
-                   {
-                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                       States.SetFailure();
-                       break;
-                   }
-                   LDA ZP.TOP1
-                   ORA ZP.TOP2
-                   ORA ZP.TOP3
-                   if (NZ)
-                   {
-                       Error.RangeError(); BIT ZP.EmulatorPCL
-                       States.SetFailure();
-                       break;
-                   }
+                   LDA # BASICType.WORD
+                   STA ZP.ACCT
+                   BASICTypes.CoerceNext();
+                   CheckError();
+                   if (NC) { break; }
+
+                   LDA # BASICType.BYTE
+                   STA ZP.ACCT
+                   BASICTypes.Coerce();
+                   CheckError();
+                   if (NC) { break; }
                    
                    // Write byte to memory address
                    LDA ZP.TOP0     // Get value to write
@@ -319,60 +311,31 @@ unit BASICSysCalls
                     // PINMODE function - configure pin direction
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = mode
                     
-                    // TODO TYPE DEMOTION
+                    LDA # BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.CoerceNext();
+                    CheckError();
+                    if (NC) { break; }
                     
-                    LDA ZP.NEXTT
-                    CMP # BASICType.LONG
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
-                    // Validate pin number (0-15)
-                    LDA ZP.NEXT1
-                    ORA ZP.NEXT2
-                    ORA ZP.NEXT3
-                    if (NZ)
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
                     LDA ZP.NEXT0
                     AND #0xF0
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
                         break;
                     }
+
+                    LDA # BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.Coerce();
+                    CheckError();
+                    if (NC) { break; }
                     
-                    LDA ZP.TOPT
-                    CMP # BASICType.LONG
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
-                    
-                    // Validate mode (0 or 1)
-                    LDA ZP.TOP1
-                    ORA ZP.TOP2
-                    ORA ZP.TOP3
-                    if (NZ)
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
                     LDA ZP.TOP0
                     AND #0xFE
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
                         break;
                     }
                     
@@ -388,39 +351,24 @@ unit BASICSysCalls
                     // Input: ZP.TOP* = pin number
                     // Output: ZP.TOP* = pin value (0 or 1)
                     
-                    // TODO TYPE DEMOTION
+                    LDA # BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.Coerce();
+                    CheckError();
+                    if (NC) { break; }
                     
-                    LDA ZP.TOPT
-                    CMP # BASICType.LONG
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
-                    // Validate pin number (0-15)
-                    LDA ZP.TOP1
-                    ORA ZP.TOP2
-                    ORA ZP.TOP3
-                    if (NZ)
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
                     LDA ZP.TOP0
                     AND #0xF0
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
                         break;
                     }
                     
                     // Call GPIO.PinRead
                     GPIO.PinRead();  // Result in A
                     STA ZP.TOP0
-                    STZ ZP.TOP1
+                    //STZ ZP.TOP1 - already 0 from Coerce above
                     LDA #BASICType.BIT
                     STA ZP.TOPT
                 }
@@ -429,32 +377,18 @@ unit BASICSysCalls
                 {
                     // WRITE function - write digital output
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = value
-                    
-                    // TODO TYPE DEMOTION
-                    
-                    LDA ZP.NEXTT
-                    CMP # BASICType.LONG
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
-                    LDA ZP.NEXT1
-                    ORA ZP.NEXT2
-                    ORA ZP.NEXT3
-                    if (NZ)
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
-                        break;
-                    }
+            
+                    LDA # BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.CoerceNext();
+                    CheckError();
+                    if (NC) { break; }
+                            
                     LDA ZP.NEXT0
                     AND #0xF0
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
                         break;
                     }
                     
@@ -464,7 +398,6 @@ unit BASICSysCalls
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
                         break;
                     }
                     
@@ -479,14 +412,15 @@ unit BASICSysCalls
                     // CHR function - convert numeric to CHAR
                     // Input: ZP.TOP* contains numeric value (BYTE/WORD/INT)
                     // Output: ZP.TOP* contains CHAR value
-                    
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
+                    CheckError();
+                    if (NC) { break; }
                     
                     // Value is valid, convert to CHAR
-                    // ZP.TOPL already contains the byte value
-                    STZ ZP.TOPH  // Clear high byte
+                    // ZP.TOP0 already contains the byte value
+                    // ZP.TOP1-3 are clear (thanks to Coerce() above)
                     LDA #BASICType.CHAR
                     STA ZP.TOPT
                 }
@@ -503,16 +437,15 @@ unit BASICSysCalls
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        States.SetFailure();
                         break;
                     }
                     
                     // Convert CHAR to BYTE (value stays the same)
                     // ZP.TOPL already contains the ASCII value
                     
-                    STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
+                    //STZ ZP.TOP1
+                    //STZ ZP.TOP2 - already zero from Coerce above
+                    //STZ ZP.TOP3
                     LDA #BASICType.LONG
                     STA ZP.TOPT
                 }
@@ -560,7 +493,6 @@ unit BASICSysCalls
                         else
                         {
                             Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                            States.SetFailure();
                             break;
                         }
                     }
@@ -574,7 +506,6 @@ unit BASICSysCalls
                {
 #ifdef DEBUG
                    TODO(); BIT ZP.EmulatorPCL // unknown SysCall
-                   States.SetFailure();
                    break;
 #endif
                }
@@ -586,7 +517,7 @@ unit BASICSysCalls
            if (NZ) 
            {
                // type in ZP.TOPT
-               Long.PushTopStrict(); // Push return value from ZP.TOP0..ZP.TOP3
+               Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
                if (NC) { break; }
                
            }
@@ -594,6 +525,15 @@ unit BASICSysCalls
            States.SetSuccess();
            break;
        } // loop exit
+       
+       CheckError();
+       if (NC)
+       {
+           States.SetFailure();
+       }
+       
+       
+       
 #ifdef TRACE
        LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

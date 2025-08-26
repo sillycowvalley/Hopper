@@ -10,18 +10,18 @@ unit Long
             LDY ZP.SP                    // Current stack pointer
             LDA ZP.TOPT
             
-            STA TypeStack, Y           // Store type
+            STA TypeStack, Y            // Store type
             LDA ZP.TOP0
             STA ValueStackB0,Y          // Store byte 0 (LSB)
             LDA ZP.TOP1  
             STA ValueStackB1,Y          // Store byte 1
             
             LDA ZP.TOP2
-            STA ValueStackB2,Y         // Store byte 2
+            STA ValueStackB2,Y          // Store byte 2
             LDA ZP.TOP3
-            STA ValueStackB3,Y         // Store byte 3 (MSB)
+            STA ValueStackB3,Y          // Store byte 3 (MSB)
             
-            INC ZP.SP                    // Advance stack pointer
+            INC ZP.SP                   // Advance stack pointer
             
             SEC
             break;
@@ -363,7 +363,7 @@ Debug.NL(); LDA ZP.NEXTT HOut();
         if (C)
         {
             INX // count the -ve
-            negateLongTOP(); // TOP = -TOP
+            NegateLongTOP(); // TOP = -TOP
         }
         STX ZP.FSIGN // store the sign count
         
@@ -589,7 +589,7 @@ Debug.NL(); LDA ZP.NEXTT HOut();
             break; // 32 bit exit
         } // loop
     }
-    negateLongTOP()
+    NegateLongTOP()
     {
         SEC
         LDA # 0
@@ -655,7 +655,7 @@ Debug.NL(); LDA ZP.NEXTT HOut();
             Serial.WriteChar();
             
             // Negate the 32-bit value: ZP.TOP = 0 - ZP.TOP
-            negateLongTOP();
+            NegateLongTOP();
         }
         
         STZ ZP.ACCL         // Initialize: no padding (suppress leading zeros)

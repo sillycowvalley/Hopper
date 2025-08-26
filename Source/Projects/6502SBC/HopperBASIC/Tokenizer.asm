@@ -1255,6 +1255,26 @@ unit Tokenizer // Tokenizer.asm
                     Serial.WriteChar();  // Echo newline
                     break;
                 }
+                case 0x09:  // Tab key
+                {
+                    // Check if we have room for 4 spaces
+                    CPX #(Limits.BasicInputSize - 4)
+                    if (C) { continue; }  // Not enough space, ignore tab
+                    
+                    // Insert 4 spaces into buffer and echo them
+                    LDY #4
+                    loop
+                    {
+                        LDA #' '
+                        STA Address.BasicInputBuffer, X
+                        Serial.WriteChar();  // Echo space
+                        INX
+                        DEY
+                        if (Z) { break; }
+                    }
+                    continue;  // Continue reading input
+                }
+                
                 case 0x08:  // Backspace
                 case 0x7F:  // Delete
                 {

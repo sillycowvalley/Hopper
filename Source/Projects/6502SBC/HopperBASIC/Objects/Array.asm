@@ -291,13 +291,13 @@ unit BASICArray
             LDY # aiElements
             LDA # 0
             STA ZP.TOPH        // Default high byte = 0
-                          
+
             LDA ZP.ACCT
+            STA ZP.TOPT
             switch (A)
             {
                 case BASICType.BIT:
                 {
-                    STA ZP.TOPT
                     // Extract bit value using mask
                     LDA [IDY], Y           
                     AND bitMasks, X
@@ -313,7 +313,6 @@ unit BASICArray
                 }
                 case BASICType.CHAR:
                 {
-                    STA ZP.TOPT
                     // Read single byte
                     LDA [IDY], Y
                     STA ZP.TOP0
@@ -323,12 +322,10 @@ unit BASICArray
                 }
                 default:
                 {
-                    // WORD | INT | BYTE 
-                    
+                   // WORD | INT | BYTE 
                    LDA [IDY], Y
                    STA ZP.TOP0
                    LDA ZP.ACCT
-                   STA ZP.TOPT
                    CMP # BASICType.BYTE
                    if (NZ)
                    {

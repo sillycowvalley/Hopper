@@ -1601,15 +1601,6 @@ unit Compiler // Compiler.asm
                     if (NC) { break; }
                     break;
                 }
-                case Token.RND:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
-                    LDA #SysCallType.Rnd
-                    compileSysCall();
-                    CheckError();
-                    if (NC) { break; }
-                    break;
-                }
                 case Token.PEEK:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression

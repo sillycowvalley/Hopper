@@ -1226,7 +1226,6 @@ unit Console // Console.asm
                 {
                     break;
                 }
-//Debug.NL(); XOut(); TOut();
                 // Input: ZP.IDX = symbol node address (from Find), ZP.TOP = new ARRAY
                 LDA ZP.TOPT
                 ORA # BASICType.ARRAY

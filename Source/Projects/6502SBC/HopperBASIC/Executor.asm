@@ -2070,7 +2070,7 @@ unit Executor // Executor.asm
             Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT, preserves X, strips BASICTypes.VAR
             // Load TO value
             LDA #0xFE
-            Stacks.GetStackNextSP();  //[SP-2] => TO in ZP.NEXT/NEXTT, strips BASICTypes.VAR
+            Stacks.GetStackNextSP();  //[SP-2] => TO in ZP.NEXT/NEXTT, preserves X, strips BASICTypes.VAR
 
             // Now TOP = iterator, NEXT = TO
             // Push them for the comparison instructions
@@ -2168,15 +2168,14 @@ unit Executor // Executor.asm
             LDA Executor.executorOperandBP
             Stacks.GetStackTopBP();  // Iterator in ZP.TOP/TOPT, preserves X, strips BASICTypes.VAR
 
+
             // Add STEP to iterator (TOP = iterator + NEXT)
             Long.PushTop();   // FORIT: Push iterator => NEXT slot
             Long.PushNext();  // FORIT: Push STEP     => TOP slot
             Instructions.Addition();  // Handles signed/unsigned, type checking, preserves X
             PHX Long.PopTop(); PLX // FORIT
-            
             States.CanContinue(); // preserves X
             if (NC) { break; }  // Type mismatch or overflow
-
 
             // Store updated iterator back (TOP now has new value)
             LDA Executor.executorOperandBP
@@ -2773,6 +2772,7 @@ Debug.NL(); TLOut(); Space(); YOut();
                 STA ZP.TOPL
                 STZ ZP.TOPH  // Clear high byte
                 LDA #BASICType.CHAR
+                STA ZP.TOPT
             }
             else
             {
@@ -2793,7 +2793,7 @@ Debug.NL(); TLOut(); Space(); YOut();
                     break;
                 }
             }
-            
+
             LDY ZP.SP
             LDA ZP.TOPT
             STA Address.TypeStackLSB, Y

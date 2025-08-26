@@ -2669,11 +2669,8 @@ unit File
         // Print file size
         printFileSizeFromDirectory(); // Expects Y = entry offset (0, 16, 32...)
         
-        LDA #(Messages.BytesLabel % 256)
-        STA ZP.STRL
-        LDA #(Messages.BytesLabel / 256)
-        STA ZP.STRH
-        Print.String();
+        // " BYTES, "
+        LDA # ErrorID.BytesLabel LDX # (MessageExtras.PrefixSpace|MessageExtras.SuffixComma|MessageExtras.SuffixSpace) Error.Message();
         
         // Calculate and print sector count
         LDA #','

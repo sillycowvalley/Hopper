@@ -22,21 +22,6 @@ BEGIN
 END
 RUN
 
-! ===== TEST 2: RND() Function (Unimplemented) =====
-NEW
-FUNC TestRnd()
-    VAR max1 = 10
-    VAR max2 = 100
-    PRINT "RND() Tests:"
-    PRINT "RND(10)="; RND(max1); " ! expect 0-9 or error"
-    PRINT "RND(100)="; RND(max2); " ! expect 0-99 or error"
-    PRINT "RND(1)="; RND(1); " ! expect 0 or error"
-ENDFUNC
-BEGIN
-    TestRnd()
-END
-RUN
-
 ! ===== TEST 3: ASC() Function =====
 NEW
 FUNC TestAsc()

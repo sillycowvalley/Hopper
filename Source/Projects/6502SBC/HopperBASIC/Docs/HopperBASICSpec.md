@@ -319,7 +319,6 @@ Arrays retain explicit type specifiers for memory efficiency:
 ## Phase 5: Extended Functions ❌ NOT STARTED
 
 ### Additional Functions
-- ❌ **`RND(max)`** - Random number generation (placeholder exists)
 - ❌ **`INPUT prompt`** - User input with prompt
 
 ---
@@ -790,7 +789,6 @@ The core interpreter is **feature-complete for the benchmark programs** with the
 5. **Type safety** - Strict compatibility prevents errors
 
 With Phases 1-4 complete, future enhancements could include:
-1. **Phase 5: Extended Functions** - RND() for random numbers, INPUT for user input
-2. **Phase 6: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
+2. **Phase 5: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
 
 The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter with a clean, simple type system, complete storage functionality, and hardware I/O support - all capable of running classic benchmark programs within the 32K ROM constraint.

@@ -55,7 +55,7 @@ unit Tokens
         
         // Language keywords
         PRINT    = 0x9F,
-        //INPUT    = 0xA0,
+        INPUT    = 0xA0,
         IF       = 0xA1,
         THEN     = 0xA2,
         ELSE     = 0xA3,
@@ -91,7 +91,6 @@ unit Tokens
         MILLIS   = 0xC1,
         PEEK     = 0xC2,
         POKE     = 0xC3,
-        RND      = 0xC4,
         SECONDS  = 0xC5,
         DELAY    = 0xC6,
         CLS      = 0xC7,
@@ -212,7 +211,7 @@ unit Tokens
         3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic (0xBB)
         
         // FREQUENT (Rank 11-20)
-        //5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
+        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
         3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length (0xCA)
         3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type (0x9D)
         4, Token.LONG, 'L', 'O', 'N', 'G',       // New 32-bit type (0x9A)
@@ -222,7 +221,6 @@ unit Tokens
         4, Token.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops (0xAF)
         4, Token.STEP, 'S', 'T', 'E', 'P',       // Rank 18 - FOR loop increment (0xAC)
         4, Token.LIST, 'L', 'I', 'S', 'T',       // Rank 22 - Display program (0x81)
-        3, Token.RND, 'R', 'N', 'D',             // Rank 24 - Random number generation (0xC4)
         4, Token.LOAD, 'L', 'O', 'A', 'D',       // Rank 27 - Load from storage (0x88)
         
         // INFREQUENT (Everything else - HopperBASIC specific and console commands)

@@ -349,7 +349,7 @@ unit Dasm
                                 STA ZP.TOPH
                                 LDA # BASICType.INT
                                 STA ZP.TOPT
-                                BASICTypes.PrintValue();
+                                Print.Decimal();
                                 
                                 LDA #')' COut();
                             }
@@ -364,7 +364,7 @@ unit Dasm
                                 STA ZP.TOPH
                                 LDA # BASICType.WORD
                                 STA ZP.TOPT
-                                BASICTypes.PrintValue();
+                                Print.Decimal();
                                 
                                 LDA #')' COut();
                             }

@@ -219,16 +219,6 @@ PRINT ABS(-42)    ! Returns "? NOT IMPLEMENTED"
 **Impact:** No absolute value function available
 **Priority:** LOW - can work around with IF statements
 
-### 15. RND() Function Not Implemented  
-**Symptom:** RND() returns "NOT IMPLEMENTED" message  
-**Reproduce:**
-```basic
-PRINT RND(10)     ! Returns "? NOT IMPLEMENTED"
-```
-**Status:** EXPECTED - Phase 5 feature  
-**Impact:** No random number generation available
-**Priority:** LOW - not essential for basic programming
-
 ---
 
 ## ANNOYANCES

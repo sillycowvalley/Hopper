@@ -156,7 +156,7 @@ unit CompilerFlow
             
             if (BBS0, ZP.CompilerFlags)
             {
-                LDA # ZP.TOPT
+                LDA ZP.TOPT
                 CMP # BASICType.BIT
                 if (NZ)
                 {
@@ -1138,54 +1138,12 @@ unit CompilerFlow
                    switch (A)
                    {
                        case BASICType.BYTE:
-                       {
-                           Error.InternalError(); BIT ZP.EmulatorPCL
-                           /*
-                           // User declared BYTE - can hold 0-255 
-                           LDA #0xFF
-                           Stacks.GetStackTopSP(); // TO: [SP-1] -> TOP
-                           LDA ZP.TOP1
-                           if (NZ)
-                           {
-                               RMB3 ZP.CompilerFlags // TO > 255 (iterator is BYTE), optimization to FORITF disqualified
-                               Error.NumericOverflow(); BIT ZP.EmulatorPCL // let the next CheckError() catch this
-                           }
-                           else
-                           {
-                               LDA #0xFE
-                               Stacks.GetStackTopSP(); // FROM: [SP-2] -> TOP
-                               LDA ZP.TOPH
-                               if (NZ)
-                               {
-                                   // FROM > 255 (iterator is BYTE), optimization to FORITF disqualified
-                                   Error.NumericOverflow(); BIT ZP.EmulatorPCL // let the next CheckError() catch this
-                               }
-                           }
-                           */
-                       }
                        case BASICType.INT:
+                       case BASICType.WORD:
                        {
+#ifdef DEBUG
                            Error.InternalError(); BIT ZP.EmulatorPCL
-                           /*
-                           // User declared INT  - can hold 0-32767
-                           LDA #0xFF
-                           Stacks.GetStackTopSP(); // TO: [SP-1] -> TOP
-                           LDA ZP.TOPH
-                           if (MI)
-                           {
-                               RMB3 ZP.CompilerFlags  // TO > 32767 (iterator is INT), optimization to FORITF disqualified
-                           }
-                           else
-                           {
-                               LDA #0xFE
-                               Stacks.GetStackTopSP(); // FROM: [SP-2] -> TOP
-                               LDA ZP.TOPH
-                               if (MI)
-                               {
-                                   RMB3 ZP.CompilerFlags  // FROM > 32767 (iterator is INT), optimization to FORITF disqualified
-                               }
-                           }
-                           */
+#endif
                        }
                        case BASICType.LONG:
                        {
@@ -1223,12 +1181,6 @@ unit CompilerFlow
                                    }
                                }
                            }
-                       }
-                       case BASICType.WORD:
-                       {
-                           Error.InternalError(); BIT ZP.EmulatorPCL
-                           // User declared WORD - can hold 0-65535
-                           // comparisons below will range check properly (using types)
                        }
                        case BASICType.VOID:
                        {

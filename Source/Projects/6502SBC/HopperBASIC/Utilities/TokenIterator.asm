@@ -658,7 +658,6 @@ unit TokenIterator // TokenIterator.asm
                 case Token.MILLIS:
                 case Token.PEEK:
                 case Token.POKE:
-                case Token.RND:
                 case Token.SECONDS:
                 case Token.DELAY:
                 case Token.ASC:

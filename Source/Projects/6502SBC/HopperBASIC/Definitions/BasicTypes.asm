@@ -163,6 +163,81 @@ unit BASICTypes // BASICTypes.asm
         } // single exit
     }
     
+    // Input:   LONG: NEXT0-3, NEXT, desired type ACCT
+    // Output:  C, or NC if out of range
+    CoerceNext()
+    {
+        loop
+        {
+            LDA #BASICType.LONG
+            CMP ZP.NEXTT
+            if (NZ)
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            LDA ZP.ACCT
+            switch (A)
+            {
+                case BASICType.BYTE:
+                case BASICType.CHAR:
+                {
+                    LDA ZP.NEXT1
+                    ORA ZP.NEXT2
+                    ORA ZP.NEXT3
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                case BASICType.WORD:
+                {
+                    LDA ZP.NEXT2
+                    ORA ZP.NEXT3
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
+                case BASICType.INT:
+                {
+                    LDA ZP.NEXT2
+                    ORA ZP.NEXT3
+                    if (NZ)
+                    {
+                        LDA #0xFF
+                        CMP ZP.NEXT3
+                        if (NZ)
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                        CMP ZP.NEXT2
+                        if (NZ)
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                        if (BBR7, ZP.NEXT1) // not negative
+                        {
+                            Error.RangeError(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                    }
+                }
+                default:
+                {
+                    Error.RangeError(); BIT ZP.EmulatorPCL
+                    break;
+                }
+            }
+            SEC
+            break;
+        } // single exit
+    }
+    
     // Print BasicType enum value as readable string
     // Input: A = BasicType enum value
     // Output: Type name printed to serial

@@ -264,6 +264,7 @@ unit ComparisonInstructions // ComparisonInstructions.asm
                 SEC
                 break;
             }
+
             
             LDX #0 // false
             

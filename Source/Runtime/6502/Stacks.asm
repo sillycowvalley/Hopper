@@ -90,10 +90,14 @@ unit Stacks // Stacks.asm
         CLC
         ADC ZP.BP
         TAY
-        LDA Address.ValueStackLSB, Y
-        STA ZP.TOPL
-        LDA Address.ValueStackMSB, Y
-        STA ZP.TOPH
+        LDA Address.ValueStackB0, Y
+        STA ZP.TOP0
+        LDA Address.ValueStackB1, Y
+        STA ZP.TOP1
+        LDA Address.ValueStackB2, Y
+        STA ZP.TOP2
+        LDA Address.ValueStackB3, Y
+        STA ZP.TOP3
         LDA Address.TypeStackLSB, Y
         AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.TOPT
@@ -107,10 +111,14 @@ unit Stacks // Stacks.asm
         CLC
         ADC ZP.BP
         TAY
-        LDA Address.ValueStackLSB, Y
-        STA ZP.NEXTL
-        LDA Address.ValueStackMSB, Y
-        STA ZP.NEXTH
+        LDA Address.ValueStackB0, Y
+        STA ZP.NEXT0
+        LDA Address.ValueStackB1, Y
+        STA ZP.NEXT1
+        LDA Address.ValueStackB2, Y
+        STA ZP.NEXT2
+        LDA Address.ValueStackB3, Y
+        STA ZP.NEXT3
         LDA Address.TypeStackLSB, Y
         AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.NEXTT
@@ -124,10 +132,14 @@ unit Stacks // Stacks.asm
         CLC
         ADC ZP.SP
         TAY
-        LDA Address.ValueStackLSB, Y
-        STA ZP.TOPL
-        LDA Address.ValueStackMSB, Y
-        STA ZP.TOPH
+        LDA Address.ValueStackB0, Y
+        STA ZP.TOP0
+        LDA Address.ValueStackB1, Y
+        STA ZP.TOP1
+        LDA Address.ValueStackB2, Y
+        STA ZP.TOP2
+        LDA Address.ValueStackB3, Y
+        STA ZP.TOP3
         LDA Address.TypeStackLSB, Y
         AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.TOPT
@@ -141,10 +153,14 @@ unit Stacks // Stacks.asm
         CLC
         ADC ZP.SP
         TAY
-        LDA Address.ValueStackLSB, Y
-        STA ZP.NEXTL
-        LDA Address.ValueStackMSB, Y
-        STA ZP.NEXTH
+        LDA Address.ValueStackB0, Y
+        STA ZP.NEXT0
+        LDA Address.ValueStackB1, Y
+        STA ZP.NEXT1
+        LDA Address.ValueStackB2, Y
+        STA ZP.NEXT2
+        LDA Address.ValueStackB3, Y
+        STA ZP.NEXT3
         LDA Address.TypeStackLSB, Y
         AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.NEXTT
@@ -157,10 +173,14 @@ unit Stacks // Stacks.asm
         CLC
         ADC ZP.BP
         TAY
-        LDA ZP.TOPL
-        STA Address.ValueStackLSB, Y
-        LDA ZP.TOPH
-        STA Address.ValueStackMSB, Y
+        LDA ZP.TOP0
+        STA Address.ValueStackB0, Y
+        LDA ZP.TOP1
+        STA Address.ValueStackB1, Y
+        LDA ZP.TOP2
+        STA Address.ValueStackB2, Y
+        LDA ZP.TOP3
+        STA Address.ValueStackB3, Y
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
     }
