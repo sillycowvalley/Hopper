@@ -346,10 +346,6 @@ unit Executor // Executor.asm
    {
        loop
        {
-           // clear state
-           LDA #State.Success
-           STA ZP.SystemState
-        
            // Fetch operand
            LDA [ZP.PC]
            
@@ -380,10 +376,6 @@ unit Executor // Executor.asm
    {
        loop
        {
-           // clear state
-           LDA #State.Success
-           STA ZP.SystemState
-           
            LDA [ZP.PC]
            STA executorOperandL // Save operand
            
@@ -864,7 +856,6 @@ unit Executor // Executor.asm
                STA Address.ValueStackMSB, X
                LDA ZP.TOPT
                STA Address.TypeStackLSB, X
-               States.SetSuccess();
            }
            break;
        } // exit loop
@@ -930,7 +921,6 @@ unit Executor // Executor.asm
        Stacks.PushBP();
        LDA ZP.SP
        STA ZP.BP
-       States.SetSuccess();
        
 //DumpStack();
        
@@ -965,9 +955,6 @@ unit Executor // Executor.asm
         ADC ZP.SP    // Two's complement subtraction: SP + (~operand + 1) = SP - operand (2 bytes, 3 cycles)
         STA ZP.SP    // Store result (2 bytes, 3 cycles)   
         
-        LDA #State.Success
-        STA ZP.SystemState
-        
     #ifdef TRACE
         LDA #(executeDecSPTrace % 256) STA ZP.TraceMessageL LDA #(executeDecSPTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
@@ -985,7 +972,6 @@ unit Executor // Executor.asm
        Long.PopTop();  // Dup: Get top value in ZP.TOP and ZP.TOPT
        Long.PushTop(); // Dup: push value and type to stack -> always Success
        Long.PushTop(); // Dup: push value and type to stack -> always Success
-       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeDupTrace % 256) STA ZP.TraceMessageL LDA #(executeDupTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1001,7 +987,6 @@ unit Executor // Executor.asm
 #endif
        
        // No operation - do nothing
-       States.SetSuccess();
        
 #ifdef TRACE
        LDA #(executeNopTrace % 256) STA ZP.TraceMessageL LDA #(executeNopTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1070,7 +1055,6 @@ unit Executor // Executor.asm
        LDA # (BASICType.VAR|BASICType.LONG)
        STA ZP.TOPT
        Long.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
-       States.SetSuccess();
        
    #ifdef TRACE
        LDA #(executePushEmptyVarTrace % 256) STA ZP.TraceMessageL LDA #(executePushEmptyVarTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1093,8 +1077,6 @@ unit Executor // Executor.asm
        LDA #BASICType.VOID
        STA ZP.TOPT
        Long.PushTop(); // PushVoid: push value and type to stack -> always Success
-       
-       States.SetSuccess();
        
    #ifdef TRACE
        LDA #(executePushVoidTrace % 256) STA ZP.TraceMessageL LDA #(executePushVoidTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1131,9 +1113,6 @@ unit Executor // Executor.asm
         LDA # BASICType.BIT
         STA Address.TypeStackLSB, X
         
-        LDA #State.Success
-        STA ZP.SystemState
-       
 #ifdef TRACE
        LDA #(executePushBitTrace % 256) STA ZP.TraceMessageL LDA #(executePushBitTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1202,9 +1181,6 @@ unit Executor // Executor.asm
        LDA # BASICType.CHAR
        STA Address.TypeStackLSB, X
         
-       LDA #State.Success
-       STA ZP.SystemState
-       
 #ifdef TRACE
        LDA #(executePushCharTrace % 256) STA ZP.TraceMessageL LDA #(executePushCharTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1247,7 +1223,6 @@ unit Executor // Executor.asm
                break; 
            }
            
-           States.SetSuccess();
            break;
        }
        
@@ -1338,7 +1313,6 @@ unit Executor // Executor.asm
            LDA # OpCode.CALLF
            STA [ZP.PC]
            
-           States.SetSuccess();
            break;
        } // loop
        
@@ -1504,8 +1478,6 @@ unit Executor // Executor.asm
        // Apply offset to PC
        applySignedOffsetToPC();
        
-       States.SetSuccess();
-       
 #ifdef TRACE
        LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1543,7 +1515,6 @@ unit Executor // Executor.asm
                // Don't apply offset - just continue
            }
            
-           States.SetSuccess();
            break;
        }
        
@@ -1584,7 +1555,6 @@ unit Executor // Executor.asm
                // Don't apply offset - just continue to next instruction
            }
            
-           States.SetSuccess();
            break;
        }
        
@@ -1613,8 +1583,6 @@ unit Executor // Executor.asm
        // Apply offset to PC
        applySignedOffsetToPC();
        
-       States.SetSuccess();
-       
 #ifdef TRACE
        LDA #(executeJumpWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1629,10 +1597,6 @@ unit Executor // Executor.asm
        
        loop
        {
-            // clear state
-            LDA #State.Success
-            STA ZP.SystemState
-            
             // Pop and validate BIT type from stack
             DEC ZP.SP
             LDX ZP.SP
@@ -1755,7 +1719,6 @@ unit Executor // Executor.asm
                // Don't apply offset - just continue to next instruction
            }
            
-           States.SetSuccess();
            break;
        }
        
@@ -1821,8 +1784,6 @@ unit Executor // Executor.asm
                LDA Address.ValueStackB3, Y
                STA Address.ValueStackB3, X
            }
-           LDA #State.Success
-           STA ZP.SystemState
            break;
        }
        
@@ -1914,9 +1875,6 @@ unit Executor // Executor.asm
                 LDA ZP.TOP3
                 STA Address.ValueStackB3, Y
             }
-            LDA #State.Success
-            STA ZP.SystemState
-        
             break;
        } // single exit loop
        
@@ -1939,11 +1897,6 @@ unit Executor // Executor.asm
         loop
         {
             // Fetch signed offset operand
-            // FetchOperandByte(); // Result in A -> always success
-            
-            // clear state
-            LDA #State.Success
-            STA ZP.SystemState
 #ifdef TRACEEXE
             FetchOperandByte();
 #else
@@ -2007,8 +1960,6 @@ unit Executor // Executor.asm
                 LDA ZP.TOP3
                 STA Address.ValueStackB3, Y
             }
-            LDA #State.Success
-            STA ZP.SystemState
             break;
         } // single exit
         
@@ -2029,11 +1980,6 @@ unit Executor // Executor.asm
     #endif
         
         // Fetch signed offset operand
-        // FetchOperandByte(); // Result in A -> always Success
-        
-        // clear state
-        LDA #State.Success
-        STA ZP.SystemState
 #ifdef TRACEEXE
         FetchOperandByte();
 #else            
@@ -2145,7 +2091,6 @@ unit Executor // Executor.asm
                 if (NZ) // TRUE'
                 {
                     // Iterator >= TO, continue loop
-                    States.SetSuccess();
                     break;
                 }
                 // Iterator < TO, exit loop
@@ -2161,7 +2106,6 @@ unit Executor // Executor.asm
                 if (NZ) // 'TRUE'
                 {
                     // Iterator <= TO, continue loop
-                    States.SetSuccess();
                     break;
                 }
                 // Iterator > TO, exit loop
@@ -2176,7 +2120,6 @@ unit Executor // Executor.asm
             ADC Executor.executorOperandH
             STA ZP.PCH
             
-            States.SetSuccess();
             break;
             
         } // Single exit block
@@ -2261,7 +2204,6 @@ unit Executor // Executor.asm
                 if (Z) // 'FALSE'
                 {
                     // Iterator < TO, exit loop (fall through)
-                    States.SetSuccess();
                     break;
                 }
                 // Iterator >= TO, continue loop
@@ -2277,7 +2219,6 @@ unit Executor // Executor.asm
                 if (Z) // FALSE
                 {
                     // Iterator > TO, exit loop (fall through)
-                    States.SetSuccess();
                     break;
                 }
                 // Iterator <= TO, continue loop
@@ -2292,7 +2233,6 @@ unit Executor // Executor.asm
             ADC Executor.executorOperandH
             STA ZP.PCH
             
-            States.SetSuccess();
             break;
             
         } // Single exit block
@@ -2405,9 +2345,6 @@ unit Executor // Executor.asm
             STA ZP.PCH
             break;
         } // Single exit block
-        
-        LDA #State.Success
-        STA ZP.SystemState
         
     #ifdef TRACE
         LDA #(executeFORITFTrace % 256) STA ZP.TraceMessageL 
@@ -2869,8 +2806,6 @@ Debug.NL(); TLOut(); Space(); YOut();
             STA Address.ValueStackB3, Y
             INC ZP.SP
             
-            LDA #State.Success
-            STA ZP.SystemState
             break;
         } // single exit
     }
@@ -3359,8 +3294,6 @@ Debug.NL(); TLOut(); Space(); YOut();
                 break;
             }
             
-            LDA #State.Success
-            STA ZP.SystemState
             break;
         } // single exit
     }
@@ -3375,10 +3308,6 @@ Debug.NL(); TLOut(); Space(); YOut();
     #ifdef TRACE
         LDA #(executeIncLocalTrace % 256) STA ZP.TraceMessageL LDA #(executeIncLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
-        
-        // method never fails
-        LDA #State.Success
-        STA ZP.SystemState
         
         // Fetch signed offset operand
 #ifdef TRACEEXE
@@ -3422,10 +3351,6 @@ Debug.NL(); TLOut(); Space(); YOut();
     #ifdef TRACE
         LDA #(executeIncGlobalTrace % 256) STA ZP.TraceMessageL LDA #(executeIncGlobalTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
-        
-        // method never fails
-        LDA #State.Success
-        STA ZP.SystemState
         
         // Fetch unsigned stack address
 #ifdef TRACEEXE
@@ -3572,9 +3497,6 @@ Debug.NL(); TLOut(); Space(); YOut();
                 }
             }
             
-            
-            LDA #State.Success
-            STA ZP.SystemState
             break;
         }
         
@@ -3615,7 +3537,6 @@ Debug.NL(); TLOut(); Space(); YOut();
             ADC Address.ValueStackMSB, Y
             STA Address.ValueStackMSB, X
             
-            States.SetSuccess();
             break;
         }
         
@@ -3633,8 +3554,6 @@ Debug.NL(); TLOut(); Space(); YOut();
             Long.PushTopStrict();
             if (NC) { break; }
             
-            LDA #State.Success
-            STA ZP.SystemState
             SEC
             break;
         }

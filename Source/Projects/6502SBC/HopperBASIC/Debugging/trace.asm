@@ -114,11 +114,8 @@ unit Trace // Trace.asm
         LDA ZP.LastError
         if (NZ)
         {
-            Print.Space(); 
-            LDA #'(' Print.Char(); 
+            LDX # (MessageExtras.InParens | MessageExtras.PrefixSpace | MessageExtras.SuffixSpace)
             LDA ZP.LastError Error.Message();
-            Print.Space(); 
-            LDA #')' Print.Char();  Print.Space(); 
             PLP
             if (NC)
             {
@@ -208,10 +205,8 @@ unit Trace // Trace.asm
         LDA ZP.LastError
         if (NZ)
         {
-            Print.Space(); 
-            LDA #'(' Print.Char(); 
+            LDX # (MessageExtras.InParens | MessageExtras.PrefixSpace | MessageExtras.SuffixSpace)
             LDA ZP.LastError Error.Message();
-            LDA #')' Print.Char(); Print.Space(); 
             PLP
             if (NC)
             {

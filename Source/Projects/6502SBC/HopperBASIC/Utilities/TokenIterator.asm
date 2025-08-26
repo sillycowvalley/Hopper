@@ -413,9 +413,8 @@ unit TokenIterator // TokenIterator.asm
         Print.Spaces();
         
         // Print the error message
-        LDA #'?'
-        Serial.WriteChar(); // '?' prefix
         LDA ZP.LastError
+        LDX # MessageExtras.PrefixQuest
         Error.Message();
              
         PLX

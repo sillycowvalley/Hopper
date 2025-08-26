@@ -26,13 +26,19 @@ unit Tokens
         DEL      = 0x8A,
         FORMAT   = 0x8B,
         MEM      = 0x8C,
+        
+        // only DEBUG
         HEAP     = 0x8D,
         BUFFERS  = 0x8E,
         DUMP     = 0x8F,
         DASM     = 0x90,
+
         BYE      = 0x91,
+        
+        // only defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
         TRON     = 0x92,
         TROFF    = 0x93,
+
         REM      = 0x94,
         COMMENT  = 0x95,
         
@@ -49,7 +55,7 @@ unit Tokens
         
         // Language keywords
         PRINT    = 0x9F,
-        INPUT    = 0xA0,
+        //INPUT    = 0xA0,
         IF       = 0xA1,
         THEN     = 0xA2,
         ELSE     = 0xA3,
@@ -68,10 +74,10 @@ unit Tokens
         DO       = 0xB0,
         UNTIL    = 0xB1,
         BREAK    = 0xB2,
-        CONTINUE = 0xB3,
-        CONT     = 0xB4,
-        GOSUB    = 0xB5,
-        GOTO     = 0xB6,
+        
+        //CONT     = 0xB4,
+        
+        
         ARRAY    = 0xB7,
         AND      = 0xB8,
         OR       = 0xB9,
@@ -79,8 +85,6 @@ unit Tokens
         MOD      = 0xBB,
         TRUE     = 0xBC,
         FALSE    = 0xBD,
-        REPEAT   = 0xBE,
-        STOP     = 0xBF,
         
         // Built-in functions
         ABS      = 0xC0,
@@ -153,8 +157,6 @@ unit Tokens
     const byte[] keywordsAH = {
         // VERY FREQUENT (Rank 1-10)
         3, Token.FOR, 'F', 'O', 'R',             // Rank 3 - FOR/NEXT loops (0xAA)
-        4, Token.GOTO, 'G', 'O', 'T', 'O',       // Rank 8 - Jump to line (0xB6)
-        5, Token.GOSUB, 'G', 'O', 'S', 'U', 'B', // Rank 9 - Subroutine call (0xB5)
         3, Token.END, 'E', 'N', 'D',             // Rank 10 - Program termination (0xA9)
         
         // FREQUENT (Rank 11-20)
@@ -182,18 +184,19 @@ unit Tokens
         // INFREQUENT (Everything else alphabetically)
         5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration (0xB7)
         5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control (0xB2)
-        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command (0x8E)
         3, Token.BYE, 'B', 'Y', 'E',             // Exit interpreter (0x91)
-        4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break (0xB4)
-        8, Token.CONTINUE, 'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E', // Loop control (0xB3)
+        //4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break (0xB4)
+//#ifdef DEBUG
+        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command (0x8E)
         4, Token.DASM, 'D', 'A', 'S', 'M',       // Disassemble function (0x90)
+        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump (0x8F)
+        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command (0x8D)  
+//#endif
         3, Token.DEL, 'D', 'E', 'L',             // Delete file (0x8A)
         3, Token.DIR, 'D', 'I', 'R',             // Directory listing (0x89)
-        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump (0x8F)
         6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol (0x86)
         6, Token.FORMAT, 'F', 'O', 'R', 'M', 'A', 'T', // Format file system (0x8B)
         5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions (0x85)
-        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command (0x8D)
         
         0  // End marker
     };
@@ -209,7 +212,7 @@ unit Tokens
         3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic (0xBB)
         
         // FREQUENT (Rank 11-20)
-        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
+        //5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
         3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length (0xCA)
         3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type (0x9D)
         4, Token.LONG, 'L', 'O', 'N', 'G',       // New 32-bit type (0x9A)
@@ -239,8 +242,11 @@ unit Tokens
         4, Token.SAVE, 'S', 'A', 'V', 'E',       // File operation (0x87)
         4, Token.VARS, 'V', 'A', 'R', 'S',       // Console command (0x84)
         3, Token.REM, 'R', 'E', 'M',             // Comment (infrequent in programs) (0x94)
+        
+//#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
         4, Token.TRON, 'T', 'R', 'O', 'N',       // Debug command (0x92)
         5, Token.TROFF, 'T', 'R', 'O', 'F', 'F', // Debug command (0x93)
+//#endif        
         
         // Built-in functions (all infrequent)
         6, Token.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function (0xC1)

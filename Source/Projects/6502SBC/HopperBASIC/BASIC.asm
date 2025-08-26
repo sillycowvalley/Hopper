@@ -151,11 +151,8 @@ program HopperBASIC
     interpreterLoop()
     {
         // Show initial ready prompt
-        LDA #(Messages.ReadyPrompt % 256)
-        STA ZP.STRL
-        LDA #(Messages.ReadyPrompt / 256)
-        STA ZP.STRH
-        Print.String();
+        LDX # MessageExtras.None
+        LDA # ErrorID.ReadyPrompt Error.Message();
         
         loop
         {
@@ -188,6 +185,9 @@ program HopperBASIC
                 continue; 
             }
             
+            // Clear output flag before processing statement
+            RMB6 ZP.FLAGS // Bit 6 - track output was produced by REPL command
+            
             // Process non-empty line
             Console.ProcessLine();
             
@@ -201,16 +201,26 @@ program HopperBASIC
             {
                 Error.CheckAndPrint();
             }
+            else
+            {
+                // Check if statement produced output
+                if (BBR6, ZP.FLAGS)  // Bit 6 clear - no output produced by last REPL command
+                {
+                    Statement.IsCaptureModeOff();
+                    if (C)
+                    {
+                        LDX # MessageExtras.None
+                        LDA # ErrorID.OKPrompt Error.Message();
+                    }
+                }
+            }
             
             // Show ready prompt after successful execution
             Statement.IsCaptureModeOff();
             if (C)
             {
-                LDA #(Messages.ReadyPrompt % 256)
-                STA ZP.STRL
-                LDA #(Messages.ReadyPrompt / 256)
-                STA ZP.STRH
-                Print.String();
+                LDX # MessageExtras.None
+                LDA # ErrorID.ReadyPrompt Error.Message();
             }
         }
     }

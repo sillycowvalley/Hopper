@@ -36,7 +36,7 @@ unit ZP // ZeroPage.asm
     const byte FLAGS                = 0x02;  // System flags register
     // FLAGS bits:
     // Bit 7 - (unused in BASIC)
-    // Bit 6 - (unused in BASIC)
+    // Bit 6 - output was produced by the most recent REPL command (so no need to print "OK")
     // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
     // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
     // Bit 3 - REPL mode flag - set for REPL buffers, clear for BASIC buffers

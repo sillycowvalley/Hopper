@@ -17,6 +17,9 @@ unit Print
             Serial.WriteChar(); // Print the character
             INY             // Move to next character
         }
+        
+        SMB6 ZP.FLAGS // Bit 6 - output was produced
+        
         PLY
         PLA
     }
@@ -29,6 +32,8 @@ unit Print
     Char()
     {
         Serial.WriteChar();
+        
+        SMB6 ZP.FLAGS // Bit 6 - output was produced
     }
     
     // Print byte value as two hex characters
@@ -39,6 +44,8 @@ unit Print
     Hex()
     {
         Serial.HexOut();
+        
+        SMB6 ZP.FLAGS // Bit 6 - output was produced
     }
     
     // Print newline character
@@ -103,5 +110,7 @@ unit Print
         PLA
         STA ZP.TOPT
         PLA
+        
+        SMB6 ZP.FLAGS // Bit 6 - output was produced
     }
 }

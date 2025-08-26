@@ -19,7 +19,6 @@ unit Commands
     {
         Variables.Clear();
         Functions.Clear();
-        Messages.PrintOK();
     }
     
     // Execute CLEAR command - reset variables to default values
@@ -29,7 +28,6 @@ unit Commands
     {
         Variables.Clear();
         Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
-        Messages.PrintOK();
     }
     
     // Execute BYE command - exit interpreter
@@ -45,14 +43,11 @@ unit Commands
     // Output: Memory information printed to serial
     CmdMem()
     {
+        
+        
+        LDA # ErrorID.MemoryMessage LDX # (MessageExtras.SuffixColon|MessageExtras.SuffixSpace) Error.Message();
+        
         Memory.AvailableACC(); // Returns available bytes in ZP.ACC
-        
-        LDA #(Messages.MemoryMsg % 256)
-        STA ZP.STRL
-        LDA #(Messages.MemoryMsg / 256)
-        STA ZP.STRH
-        Print.String();
-        
         LDA ZP.ACCL
         STA ZP.TOPL
         LDA ZP.ACCH
@@ -60,21 +55,15 @@ unit Commands
         STZ ZP.TOPT
         Print.Decimal();
         
-        LDA #(Messages.BytesMsg % 256)
-        STA ZP.STRL
-        LDA #(Messages.BytesMsg / 256)
-        STA ZP.STRH
-        Print.String();
+        LDA # ErrorID.BytesMessage LDX # MessageExtras.PrefixSpace Error.MessageNL();
         
         
 #ifdef HASEEPROM
         EEPROM.Detect();
         if (C)  // Set C (detected)
         {
-            LDA # ErrorWord.EEPROM
-            Error.PrintWord();
-            LDA #':' Print.Char();
-            Print.Space();
+            LDA # ErrorID.EEPROMLabel LDX # (MessageExtras.SuffixColon|MessageExtras.SuffixSpace) Error.Message();
+            
             EEPROM.GetSize(); // A -> number of K
             STA ZP.TOPL
             STZ ZP.TOPH
@@ -85,11 +74,7 @@ unit Commands
             Print.Space();
             File.GetAvailable(); // TOP -> number of B
             Print.Decimal();
-            LDA #(Messages.BytesMsg % 256)
-            STA ZP.STRL
-            LDA #(Messages.BytesMsg / 256)
-            STA ZP.STRH
-            Print.String();
+            LDA # ErrorID.BytesMessage LDX # MessageExtras.PrefixSpace Error.MessageNL();
         }
 #endif                
         SEC
@@ -117,18 +102,12 @@ unit Commands
         {
             // Successfully removed variable/constant
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
-            Messages.PrintOK();
         }
         else
         {
             // Not found as variable/constant, try function
             Functions.Remove(); // Input: ZP.TOP = name pointer
-            if (C)
-            {
-                // Successfully removed function
-                Messages.PrintOK();
-            }
-            else
+            if (NC)
             {
                 // Not found anywhere
                 Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
@@ -332,7 +311,6 @@ unit Commands
     {
         // Set bit 2 of ZP.FLAGS to enable trace execution
         SMB2 ZP.FLAGS
-        Messages.PrintOK();
     }
     
     // Execute TROFF command - disable trace
@@ -342,7 +320,6 @@ unit Commands
     {
         // Clear bit 2 of ZP.FLAGS to disable trace execution
         RMB2 ZP.FLAGS
-        Messages.PrintOK();
     }
 #else
     // Stubs for non-trace builds
@@ -1082,20 +1059,18 @@ unit Commands
             {
                 case 1: // FORMAT
                 {
-                    LDA #(Messages.FormatWarning % 256)
-                    STA ZP.STRL
-                    LDA #(Messages.FormatWarning / 256)
-                    STA ZP.STRH
+                    LDA # ErrorID.FormatWarning LDX # (MessageExtras.None|MessageExtras.SuffixPeriod|MessageExtras.SuffixSpace)
+                    Error.Message();
+                    LDA # ErrorID.ContinueWarning LDX # (MessageExtras.None|MessageExtras.SuffixSpace)
                 }
                 case 2: // SAVE
                 {
-                    LDA #(Messages.OverwriteWarning % 256)
-                    STA ZP.STRL
-                    LDA #(Messages.OverwriteWarning / 256)
-                    STA ZP.STRH
+                    LDA # ErrorID.OverwriteWarning LDX # (MessageExtras.None|MessageExtras.SuffixSpace)
                 }
             }
-            Print.String();
+            Error.Message();
+            LDA # ErrorID.YesNo LDX # (MessageExtras.InParens|MessageExtras.SuffixQuest|MessageExtras.SuffixSpace)
+            Error.Message();
             
             loop // Input validation loop
             {
@@ -1118,11 +1093,8 @@ unit Commands
                     default:
                     {
                         // Invalid input - ask again
-                        LDA #(Messages.InvalidResponse % 256)
-                        STA ZP.STRL
-                        LDA #(Messages.InvalidResponse / 256)
-                        STA ZP.STRH
-                        Print.String();
+                        LDA # ErrorID.YesNo LDX # (MessageExtras.SuffixQuest|MessageExtras.SuffixSpace)
+                        Error.Message();
                     }
                 }
             }

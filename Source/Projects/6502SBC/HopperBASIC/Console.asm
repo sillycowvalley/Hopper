@@ -284,7 +284,6 @@ unit Console // Console.asm
                 }
                 else
                 {
-                    Messages.PrintOK();  // Print OK after successful function definition
                     States.SetSuccess();
                 }
                 break;
@@ -594,41 +593,16 @@ unit Console // Console.asm
                     Tokenizer.NextToken(); // preserves X
                     CheckError();    // preserves X
                     if (NC)
-                    { SMB1 ZP.FLAGS } // Set exit flag on error
+                    { 
+                        SMB1 ZP.FLAGS // Set exit flag on error
+                    }
                     else
                     {
-                        PHX
-                        
-                        // Let Statement handle it
                         Statement.Execute();  // Handles the current statement
-                        
-                        PLX
-                        
                         CheckError();
                         if (NC) 
-                        { SMB1 ZP.FLAGS } // Set exit flag on error
-                        else
                         {
-                            // Check if we should print OK (for declarations in immediate mode)
-                            Statement.IsCaptureModeOn();
-                            if (NC)  // Only in immediate mode, not during function capture
-                            {
-                                LDA ZP.CurrentToken
-                                CMP #Token.EOL
-                                if (Z)  // At end of statement
-                                {
-                                    // Print OK for successful declarations
-                                    // X = token saved before rollback
-                                    
-                                    // Input: X is token
-                                    // Output: C set if token is a type keyword, NC if not a type keyword, A = BASICType
-                                    BASICTypes.FromToken(); 
-                                    if (C)
-                                    {
-                                        Messages.PrintOK();
-                                    }
-                                }
-                            }
+                            SMB1 ZP.FLAGS // Set exit flag on error
                         }
                     }
                 }
@@ -1411,13 +1385,7 @@ unit Console // Console.asm
                 Functions.Find(); // Input: ZP.TOP = "$MAIN", Output: ZP.IDX if found
                 if (NC)
                 {
-                    // No main program defined
-                    LDA #(Messages.NoMainProgram % 256)
-                    STA ZP.STRL
-                    LDA #(Messages.NoMainProgram / 256)
-                    STA ZP.STRH
-                    Print.String();
-                    Print.NewLine();
+                    LDA # ErrorID.NoProgram LDX # MessageExtras.None Error.MessageNL();
                     break;
                 }
                 

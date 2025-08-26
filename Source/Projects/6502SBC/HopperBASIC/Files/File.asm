@@ -465,12 +465,7 @@ unit File
             if (NZ)
             {
                 // Print header
-                LDA #(Messages.DirListHeader % 256)
-                STA ZP.STRL
-                LDA #(Messages.DirListHeader / 256)
-                STA ZP.STRH
-                Print.String();
-                Print.NewLine();
+                LDA # ErrorID.Files LDX # MessageExtras.SuffixColon Error.MessageNL();
                 
                 // Print each file entry
                 printAllFileEntries();
@@ -1342,13 +1337,8 @@ unit File
         // Y already has directory entry offset 
         printFileSizeFromDirectory(); // Uses Y = directory entry offset
         
-        LDA #(Messages.BytesLabel % 256)
-        STA ZP.STRL
-        LDA #(Messages.BytesLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.NewLine();
+        // " BYTES"
+        LDA # ErrorID.BytesLabel LDX # MessageExtras.PrefixSpace Error.MessageNL();
         
         PLX
         PLY
@@ -1426,12 +1416,8 @@ unit File
         STZ ZP.TOPT
         Print.Decimal();
         
-        // Print " files, "
-        LDA #(Messages.FilesLabel % 256)
-        STA ZP.STRL
-        LDA #(Messages.FilesLabel / 256)
-        STA ZP.STRH
-        Print.String();
+        // " FILES, "
+        LDA # ErrorID.Files LDX # (MessageExtras.PrefixSpace|MessageExtras.SuffixComma|MessageExtras.SuffixSpace) Error.Message();
         
         // Print total bytes
         LDA BytesRemainingL
@@ -1441,14 +1427,9 @@ unit File
         STZ ZP.TOPT
         Print.Decimal();
         
-        // Print " bytes used"
-        LDA #(Messages.BytesUsedLabel % 256)
-        STA ZP.STRL
-        LDA #(Messages.BytesUsedLabel / 256)
-        STA ZP.STRH
-        Print.String();
+        // " BYTES USED"
+        LDA # ErrorID.BytesUsedLabel LDX # MessageExtras.PrefixSpace Error.MessageNL();
         
-        Print.NewLine();
 #ifdef TRACEFILE
         LDA #(printDirectorySummaryTrace % 256) STA ZP.TraceMessageL LDA #(printDirectorySummaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

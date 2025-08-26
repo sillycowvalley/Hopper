@@ -80,8 +80,23 @@ unit Error // ErrorID.asm
         DIRECTORY  = 0x42,  // "DIRECTORY"
         FULL       = 0x43,  // "FULL"
         EEPROM     = 0x44,  // "EEPROM"
+        BYTES      = 0x45,  // "BYTES"
+        AVAILABLE  = 0x46,  // "AVAILABLE"
+        READY      = 0x47,  // "READY"
+        OK         = 0x48,  // "OK"
+        MAIN       = 0x49,  // "MAIN"
+        PROGRAM    = 0x4A,  // "PROGRAM"
+        VOID       = 0x4B,  // "VOID"
+        FILES      = 0x4C,  // "FILES"
+        WILL       = 0x4D,  // "WILL"
+        ERASE      = 0x4E,  // "ERASE"
+        ALL        = 0x4F,  // "ALL"
+        OVERWRITE  = 0x50,  // "OVERWRITE"
+        USED       = 0x51,  // "USED"
+        YN         = 0x52,  // "(Y/N)"
+        CONTINUE   = 0x53,  // "CONTINUE"
         
-        // Tables 2 & 3 available for future expansion (0x45-0x7F)
+        // Tables 2 & 3 available for future expansion (0x53-0x7F)
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -121,16 +136,6 @@ unit Error // ErrorID.asm
         0  // End marker
     };
     
-    // Table 2: Additional words (0x40-0x5F)
-    const byte[] errorWordsTable2 = {
-        10, ErrorWord.EXPRESSION, 'E', 'X', 'P', 'R', 'E', 'S', 'S', 'I', 'O', 'N',
-        8,  ErrorWord.FILENAME,   'F', 'I', 'L', 'E', 'N', 'A', 'M', 'E',
-        9,  ErrorWord.DIRECTORY,  'D', 'I', 'R', 'E', 'C', 'T', 'O', 'R', 'Y',
-        4,  ErrorWord.FULL,       'F', 'U', 'L', 'L',
-        6,  ErrorWord.EEPROM,     'E', 'E', 'P', 'R', 'O', 'M',
-        0  // End marker
-    };
-    
     // Table 1: Expression/parsing words (0x20-0x3F)
     const byte[] errorWordsTable1 = {
         5,  ErrorWord.INDEX,      'I', 'N', 'D', 'E', 'X',
@@ -154,7 +159,6 @@ unit Error // ErrorID.asm
         7,  ErrorWord.CORRUPT,    'C', 'O', 'R', 'R', 'U', 'P', 'T',
         6,  ErrorWord.CANNOT,     'C', 'A', 'N', 'N', 'O', 'T',
         8,  ErrorWord.ROLLBACK,   'R', 'O', 'L', 'L', 'B', 'A', 'C', 'K',
-        5,  ErrorWord.BREAK,      'B', 'R', 'E', 'A', 'K',
         2,  ErrorWord.NO,         'N', 'O',
         4,  ErrorWord.MORE,       'M', 'O', 'R', 'E',
         6,  ErrorWord.LOCALS,     'L', 'O', 'C', 'A', 'L', 'S',
@@ -168,9 +172,35 @@ unit Error // ErrorID.asm
         0  // End marker
     };
     
+    // Table 2: Additional words (0x40-0x5F)
+    const byte[] errorWordsTable2 = {
+        10, ErrorWord.EXPRESSION, 'E', 'X', 'P', 'R', 'E', 'S', 'S', 'I', 'O', 'N',
+        8,  ErrorWord.FILENAME,   'F', 'I', 'L', 'E', 'N', 'A', 'M', 'E',
+        9,  ErrorWord.DIRECTORY,  'D', 'I', 'R', 'E', 'C', 'T', 'O', 'R', 'Y',
+        4,  ErrorWord.FULL,       'F', 'U', 'L', 'L',
+        6,  ErrorWord.EEPROM,     'E', 'E', 'P', 'R', 'O', 'M',
+        5,  ErrorWord.BYTES,      'B', 'Y', 'T', 'E', 'S',
+        9,  ErrorWord.AVAILABLE,  'A', 'V', 'A', 'I', 'L', 'A', 'B', 'L', 'E',
+        7,  ErrorWord.READY,      'R', 'E', 'A', 'D', 'Y', '\n', '>',
+        3,  ErrorWord.OK,         'O', 'K', '\n',
+        4,  ErrorWord.MAIN,       'M', 'A', 'I', 'N',
+        7,  ErrorWord.PROGRAM,    'P', 'R', 'O', 'G', 'R', 'A', 'M',
+        4,  ErrorWord.VOID,       'V', 'O', 'I', 'D',
+        5,  ErrorWord.FILES,      'F', 'I', 'L', 'E', 'S',
+        4,  ErrorWord.WILL,       'W', 'I', 'L', 'L',
+        5,  ErrorWord.ERASE,      'E', 'R', 'A', 'S', 'E',
+        3,  ErrorWord.ALL,        'A', 'L', 'L',
+        9,  ErrorWord.OVERWRITE,  'O', 'V', 'E', 'R', 'W', 'R', 'I', 'T', 'E',
+        4,  ErrorWord.USED,       'U', 'S', 'E', 'D',
+        8,  ErrorWord.CONTINUE,   'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E',
+        3,  ErrorWord.YN,         'Y', '/', 'N',
+        0  // End marker
+    };
+    
     enum ErrorID
     {
-        InternalError = 1, // 0 is no error
+        // 0 is "no error"
+        InternalError = 0x01, // start of errorMessages0
         SyntaxError,
         NotImplemented,
         OnlyInDebug,
@@ -218,9 +248,27 @@ unit Error // ErrorID.asm
         EEPROMFull,
         FileExists,
         EEPROMError,
+        
+        FormatWarning,
+        OverwriteWarning,
+        ContinueWarning,
+        YesNo,
+        NoProgram,
+        
+        ReadyPrompt,
+        OKPrompt,
+        
+        MemoryMessage,
+        BytesMessage,
+        EEPROMLabel,
+        
+        Files = 0x80, // start of errorMessages1
+        BytesLabel,
+        BytesUsedLabel,
+        
     }
     
-    const byte[] errorMessages = {
+    const byte[] errorMessages0 = {
         2, ErrorID.InternalError,              ErrorWord.INTERNAL, ErrorWord.ERROR,
         2, ErrorID.SyntaxError,                ErrorWord.SYNTAX, ErrorWord.ERROR,
         2, ErrorID.NotImplemented,             ErrorWord.NOT, ErrorWord.IMPLEMENTED,
@@ -257,7 +305,7 @@ unit Error // ErrorID.asm
         3, ErrorID.OnlyAtConsole,              ErrorWord.ONLY, ErrorWord.AT, ErrorWord.CONSOLE,
         2, ErrorID.HeapCorrupt,                ErrorWord.HEAP, ErrorWord.CORRUPT,
         2, ErrorID.CannotRollback,             ErrorWord.CANNOT, ErrorWord.ROLLBACK,
-        1, ErrorID.Break,                      ErrorWord.BREAK,
+        1, ErrorID.Break,                      Token.BREAK,
         3, ErrorID.LateDeclaration,            ErrorWord.NO, ErrorWord.MORE, ErrorWord.LOCALS,
         2, ErrorID.MissingNext,                ErrorWord.MISSING, Token.NEXT,
         2, ErrorID.NextMismatch,               Token.NEXT, ErrorWord.MISMATCH,
@@ -270,16 +318,38 @@ unit Error // ErrorID.asm
         2, ErrorID.FileExists,                 ErrorWord.FILE, ErrorWord.EXISTS,
         2, ErrorID.EEPROMError,                ErrorWord.EEPROM, ErrorWord.ERROR,
         
+        5, ErrorID.FormatWarning,              Token.FORMAT, ErrorWord.WILL, ErrorWord.ERASE, ErrorWord.ALL, ErrorWord.FILES,
+        1, ErrorID.OverwriteWarning,           ErrorWord.OVERWRITE,
+        1, ErrorID.ContinueWarning,            ErrorWord.CONTINUE,
+        1, ErrorID.YesNo,                      ErrorWord.YN,
+        3, ErrorID.NoProgram,                  ErrorWord.NO, ErrorWord.MAIN, ErrorWord.PROGRAM,
+        
+        1, ErrorID.ReadyPrompt,                ErrorWord.READY,
+        1, ErrorID.OKPrompt,                   ErrorWord.OK,
+        
+        1, ErrorID.MemoryMessage,              ErrorWord.MEMORY,
+        2, ErrorID.BytesMessage,               ErrorWord.BYTES, ErrorWord.AVAILABLE,
+        2, ErrorID.EEPROMLabel,                ErrorWord.EEPROM, 
+        
         0  // End marker
     };
+    
+    const byte[] errorMessages1 = {
+        1, ErrorID.Files,                      ErrorWord.FILES,
+        1, ErrorID.BytesLabel,                 ErrorWord.BYTES,
+        2, ErrorID.BytesUsedLabel,             ErrorWord.BYTES, ErrorWord.USED,
+        
+        0  // End marker
+    };
+    
     
     // Print error word corresponding to word ID
     // Input: A = word ID (0x00-0x7F for error words, 0x80+ for keywords)
     // Output: Word printed to serial, C set if found, NC if not found
     PrintWord()
     {
-        PHX
         PHY
+        PHX
         
         TAX
         if (MI)
@@ -324,20 +394,63 @@ unit Error // ErrorID.asm
                 break;
             } // single exit
         }
-        PLY
         PLX
+        PLY
     }
     
-    // Input A = error ID
+    flags MessageExtras
+    {
+        None,
+        PrefixSpace  = 0b00000001, // Print a space before the message
+        SuffixSpace  = 0b00000010, // Print a space after the message
+        SuffixColon  = 0b00000100, // Print a ':' after the message
+        SuffixQuest  = 0b00001000, // Print a '?' after the message
+        SuffixComma  = 0b00010000, // Print a ',' after the message
+        SuffixPeriod = 0b00100000, // Print a '.' after the message
+        PrefixQuest  = 0b01000000, // Print a '?' before the message
+        InParens     = 0b10000000  // Print message within '(' .. ')'
+    }
+    
+    // same as Message() but followed by '\n'
+    MessageNL()
+    {
+        Message();
+        Print.NewLine();
+    }
+    // Input A = error ID, X = MessageExtras
     Message()
     {
         STA ZP.ACCL  // Store target error ID
-                
-        // Set up pointer to errorMessages table
-        LDA #(errorMessages % 256)
-        STA ZP.IDYL
-        LDA #(errorMessages / 256)
-        STA ZP.IDYH
+        STX ZP.ACCH  // Store MessageExtras
+        
+        if (BBS0, ZP.ACCH) // PrefixSpace
+        {
+            Space();
+        }
+        if (BBS6, ZP.ACCH) // PrefixQuest
+        {
+            LDA #'?' Print.Char();
+        }
+        if (BBS7, ZP.ACCH) // InParens
+        {
+            LDA #'(' Print.Char();
+        }
+        
+        // Set up pointer to errorMessagesN table
+        if (BBR7, ZP.ACCL)
+        {
+            LDA #(errorMessages0 % 256)
+            STA ZP.IDYL
+            LDA #(errorMessages0 / 256)
+            STA ZP.IDYH
+        }
+        else
+        {
+            LDA #(errorMessages1 % 256)
+            STA ZP.IDYL
+            LDA #(errorMessages1 / 256)
+            STA ZP.IDYH
+        }
         
         LDY #0  // Start at beginning of table
         loop
@@ -380,10 +493,33 @@ unit Error // ErrorID.asm
                 INY
                 DEX
             }
-        }
+        } // single exit
         
-                
-         CLC  // Indicate error occurred
+        
+        if (BBS7, ZP.ACCH) // InParens
+        {
+            LDA #')' Print.Char();
+        }
+        if (BBS2, ZP.ACCH) // SuffixColon
+        {
+            LDA #':' Print.Char();
+        }
+        if (BBS3, ZP.ACCH) // SuffixQuest
+        {
+            LDA #'?' Print.Char();
+        }
+        if (BBS4, ZP.ACCH) // SuffixComma
+        {
+            LDA #',' Print.Char();
+        }
+        if (BBS5, ZP.ACCH) // SuffixPeriod
+        {
+            LDA #'.' Print.Char();
+        }
+        if (BBS1, ZP.ACCH) // SuffixSpace
+        {
+            Space();
+        }
     }
     
     commonError()

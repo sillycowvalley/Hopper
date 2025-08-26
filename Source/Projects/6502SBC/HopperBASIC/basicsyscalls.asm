@@ -31,6 +31,7 @@ unit BASICSysCalls
     }
    
     // SYSCALL formatting for DASM:
+#ifdef DEBUG    
     ToString()
     {
         loop
@@ -44,9 +45,9 @@ unit BASICSysCalls
             {
                 case SysCallType.PrintValue: // PRINTVALUE
                 { 
-                    LDA #(PrintValue % 256)
+                    LDA #(Messages.PrintValue % 256)
                     STA ZP.STRL
-                    LDA #(PrintValue / 256)
+                    LDA #(Messages.PrintValue / 256)
                     STA ZP.STRH
                     Print.String();
                     LDA #0                    
@@ -140,6 +141,7 @@ unit BASICSysCalls
             break;
         } // single exit
     }
+#endif    
    
    // Execute SYSCALL opcode - system call with flags-based dispatch
    const string executeSysCallTrace = "SYSCALL // System call";
