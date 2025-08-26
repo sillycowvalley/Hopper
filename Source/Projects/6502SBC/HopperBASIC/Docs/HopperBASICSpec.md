@@ -4,13 +4,13 @@
 
 ## Project Objectives
 
-**Primary Goal**: Create a simple, elegant BASIC interpreter for 6502 systems that fits in 16K ROM and provides an interactive development environment.
+**Primary Goal**: Create a simple, elegant BASIC interpreter for 6502 systems that fits in 32K ROM and provides an interactive development environment.
 
 **Design Principles**:
 - Simplicity and reliability over large feature set
 - Immediate feedback - Interactive development with instant results (REPL ala Python)
 - Incremental development - easy to persist environment, encourage breakdown into small functions (FORTH-like development)
-- Small footprint - Target 16K ROM, minimal RAM usage
+- Small footprint - Target 32K ROM, minimal RAM usage
 - Fast - competitive with the Classic 6502 BASIC's of the day (Apple II+ / Commodore 64 era)
 - **Simplified type system** - LONG as single numeric type with strict compatibility rules
 
@@ -793,4 +793,4 @@ With Phases 1-4 complete, future enhancements could include:
 1. **Phase 5: Extended Functions** - RND() for random numbers, INPUT for user input
 2. **Phase 6: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
 
-The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter with a clean, simple type system, complete storage functionality, and hardware I/O support - all capable of running classic benchmark programs within the 16K ROM constraint.
+The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter with a clean, simple type system, complete storage functionality, and hardware I/O support - all capable of running classic benchmark programs within the 32K ROM constraint.

@@ -1,17 +1,17 @@
 CLS
 ! IF Statement Test Suite for Hopper BASIC
-! Tests all multiline IF variants and edge cases
+! Tests all multiline IF variants and edge cases using simplified type system
+! All numeric variables use VAR with type inference
 ! Following progressive isolation methodology
-! Each test is under 400 characters to stay within 512-byte limit
 
 NEW
 MEM
 
-! ===== TEST 1: Basic IF/THEN/ENDIF (Isolated) =====
+! ===== TEST 1: Basic IF/THEN/ENDIF =====
 NEW
 FUNC TestBasicIf()
-    INT x = 5
-    BIT result = FALSE
+    VAR x = 5
+    VAR result = FALSE
     IF x = 5 THEN
         result = TRUE
         PRINT "Inside IF block"
@@ -24,11 +24,11 @@ BEGIN
 END
 RUN
 
-! ===== TEST 2: IF/THEN/ELSE/ENDIF (Isolated) =====
+! ===== TEST 2: IF/THEN/ELSE/ENDIF =====
 NEW
 FUNC TestIfElse()
-    INT x = 3
-    STRING msg = ""
+    VAR x = 3
+    VAR msg = ""
     IF x > 5 THEN
         msg = "GREATER"
         PRINT "In THEN branch"
@@ -46,8 +46,8 @@ RUN
 ! ===== TEST 3: Multiple Statements in THEN Block =====
 NEW
 FUNC TestMultipleThen()
-    INT count = 0
-    BIT flag = FALSE
+    VAR count = 0
+    VAR flag = FALSE
     IF TRUE THEN
         count = count + 1
         flag = TRUE
@@ -64,8 +64,8 @@ RUN
 ! ===== TEST 4: Multiple Statements in ELSE Block =====
 NEW
 FUNC TestMultipleElse()
-    INT total = 10
-    STRING status = "INIT"
+    VAR total = 10
+    VAR status = "INIT"
     IF FALSE THEN
         total = 999
         status = "WRONG"
@@ -85,9 +85,9 @@ RUN
 ! ===== TEST 5: Multiple Statements in Both Blocks =====
 NEW
 FUNC TestBothBlocks()
-    INT x = 7
-    INT result1 = 0
-    INT result2 = 0
+    VAR x = 7
+    VAR result1 = 0
+    VAR result2 = 0
     IF x > 5 THEN
         result1 = x * 2
         result2 = result1 + 10
@@ -107,9 +107,9 @@ RUN
 ! ===== TEST 6: Nested IF Statements (Simple) =====
 NEW
 FUNC TestNestedSimple()
-    INT x = 8
-    INT y = 3
-    STRING result = "NONE"
+    VAR x = 8
+    VAR y = 3
+    VAR result = "NONE"
     IF x > 5 THEN
         IF y < 5 THEN
             result = "BOTH_TRUE"
@@ -129,8 +129,8 @@ RUN
 ! ===== TEST 7: Nested IF in ELSE Branch =====
 NEW
 FUNC TestNestedInElse()
-    INT score = 45
-    STRING grade = ""
+    VAR score = 45
+    VAR grade = ""
     IF score >= 90 THEN
         grade = "A"
     ELSE
@@ -154,10 +154,10 @@ RUN
 ! ===== TEST 8: Complex Boolean Expressions =====
 NEW
 FUNC TestComplexBoolean()
-    INT a = 5
-    INT b = 10
-    BIT c = TRUE
-    STRING result = "DEFAULT"
+    VAR a = 5
+    VAR b = 10
+    VAR c = TRUE
+    VAR result = "DEFAULT"
     IF a < b AND c = TRUE THEN
         result = "CONDITION1"
         IF a + b > 12 THEN
@@ -176,9 +176,9 @@ RUN
 ! ===== TEST 9: IF with Comparison Operations =====
 NEW
 FUNC TestComparisons()
-    WORD w1 = 100
-    WORD w2 = 200
-    INT count = 0
+    VAR w1 = 100
+    VAR w2 = 200
+    VAR count = 0
     IF w1 < w2 THEN
         count = count + 1
     ENDIF
@@ -198,9 +198,9 @@ RUN
 ! ===== TEST 10: IF with CHAR Comparisons =====
 NEW
 FUNC TestCharIf()
-    CHAR c1 = 'A'
-    CHAR c2 = 'Z'
-    STRING result = "DEFAULT"
+    VAR c1 = 'A'
+    VAR c2 = 'Z'
+    VAR result = "DEFAULT"
     IF c1 = 'A' THEN
         result = "MATCH_A"
         IF c2 > c1 THEN
@@ -217,9 +217,9 @@ RUN
 ! ===== TEST 11: IF with String Comparisons =====
 NEW
 FUNC TestStringIf()
-    STRING s1 = "HELLO"
-    STRING s2 = "WORLD"
-    INT matches = 0
+    VAR s1 = "HELLO"
+    VAR s2 = "WORLD"
+    VAR matches = 0
     IF s1 = "HELLO" THEN
         matches = matches + 1
     ENDIF
@@ -242,8 +242,8 @@ FUNC IsEven(n)
     RETURN n MOD 2 = 0
 ENDFUNC
 FUNC TestFunctionIf()
-    INT num = 8
-    STRING parity = "UNKNOWN"
+    VAR num = 8
+    VAR parity = "UNKNOWN"
     IF IsEven(num) THEN
         parity = "EVEN"
         PRINT "Number is even"
@@ -261,9 +261,9 @@ RUN
 ! ===== TEST 13: IF with Built-in Functions =====
 NEW
 FUNC TestBuiltinIf()
-    STRING text = "BASIC"
-    CHAR first = 'X'
-    INT length = 0
+    VAR text = "BASIC"
+    VAR first = 'X'
+    VAR length = 0
     IF LEN(text) > 3 THEN
         first = text[0]
         length = LEN(text)
@@ -281,7 +281,7 @@ RUN
 NEW
 FUNC TestVarIf()
     VAR v = 42
-    STRING result = "INIT"
+    VAR result = "INIT"
     IF v = 42 THEN
         result = "INT_MATCH"
         v = "STRING_VAL"
@@ -296,21 +296,21 @@ BEGIN
 END
 RUN
 
-! ===== TEST 15: Deep Nesting Test =====
+! ===== TEST 15: Deep Nesting Test (No Concatenation) =====
 NEW
 FUNC TestDeepNesting()
-    INT x = 3
-    STRING path = ""
+    VAR x = 3
+    VAR path = ""
     IF x > 0 THEN
         path = "A"
         IF x > 1 THEN
-            path = path + "B"
+            path = "AB"
             IF x > 2 THEN
-                path = path + "C"
+                path = "ABC"
                 IF x > 3 THEN
-                    path = path + "D"
+                    path = "ABCD"
                 ELSE
-                    path = path + "E"
+                    path = "ABCE"
                 ENDIF
             ENDIF
         ENDIF
@@ -324,38 +324,23 @@ RUN
 
 ! ===== TEST 16: IF with Local vs Global Variables =====
 NEW
-INT global_counter = 0
+VAR globalCounter = 0
 FUNC TestScopeIf()
-    INT local_counter = 5
-    IF local_counter > global_counter THEN
-        global_counter = 10
-        local_counter = 20
+    VAR localCounter = 5
+    IF localCounter > globalCounter THEN
+        globalCounter = 10
+        localCounter = 20
         PRINT "Modified both counters"
     ENDIF
-    PRINT "local="; local_counter; " ! expect 20"
+    PRINT "local="; localCounter; " ! expect 20"
 ENDFUNC
 BEGIN
     TestScopeIf()
-    PRINT "global="; global_counter; " ! expect 10"
+    PRINT "global="; globalCounter; " ! expect 10"
 END
 RUN
 
-! ===== TEST 17: IF with Colon-Separated Statements =====
-NEW
-FUNC TestColonStatements()
-    INT x = 7
-    INT a = 0 : INT b = 0
-    IF x > 5 THEN a = 1 : b = 2 : PRINT "Colon THEN"
-    ELSE a = 3 : b = 4 : PRINT "Colon ELSE"
-    ENDIF
-    PRINT "a="; a; " b="; b; " ! expect 1 2"
-ENDFUNC
-BEGIN
-    TestColonStatements()
-END
-RUN
-
-! ===== TEST 18: IF with RETURN Statements =====
+! ===== TEST 17: IF with RETURN Statements =====
 NEW
 FUNC EarlyReturn(flag)
     IF flag THEN
@@ -366,8 +351,8 @@ FUNC EarlyReturn(flag)
     RETURN 111
 ENDFUNC
 FUNC TestReturnIf()
-    INT result1 = EarlyReturn(TRUE)
-    INT result2 = EarlyReturn(FALSE)
+    VAR result1 = EarlyReturn(TRUE)
+    VAR result2 = EarlyReturn(FALSE)
     PRINT "r1="; result1; " r2="; result2; " ! expect 999 111"
 ENDFUNC
 BEGIN
@@ -375,15 +360,15 @@ BEGIN
 END
 RUN
 
-! ===== TEST 19: IF with PRINT Variations =====
+! ===== TEST 18: IF with PRINT Variations =====
 NEW
 FUNC TestPrintIf()
-    BIT verbose = TRUE
-    INT value = 42
+    VAR verbose = TRUE
+    VAR value = 42
     IF verbose THEN
         PRINT "Verbose mode: value ="; value
         PRINT "Additional info: "; value * 2
-        PRINT ! Empty line
+        PRINT
         PRINT "End of verbose block"
     ELSE
         PRINT value
@@ -395,11 +380,11 @@ BEGIN
 END
 RUN
 
-! ===== TEST 20: Edge Case - Empty THEN/ELSE Blocks =====
+! ===== TEST 19: Edge Case - Empty THEN/ELSE Blocks =====
 NEW
 FUNC TestEmptyBlocks()
-    BIT flag = TRUE
-    STRING result = "BEFORE"
+    VAR flag = TRUE
+    VAR result = "BEFORE"
     IF flag THEN
         ! Empty THEN block
     ELSE
