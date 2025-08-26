@@ -8,10 +8,11 @@
 **Reproduce:**
 ```basic
 FUNC Test()
-    WORD w
+    VAR w
     FOR w = 65534 TO 65536  ! Wraps at 65535
         PRINT w
     NEXT w
+    PRINT W
 ENDFUNC
 ```
 **Status:** ACTIVE  
@@ -77,6 +78,7 @@ PRINT ! Empty line
 PRINT "text" ! comment
 VARS ! comment  
 VAR uninitVar ! comment on uninitialized VAR
+MEM ! comment
 ```
 **Error:** `?SYNTAX ERROR` (various error codes)  
 **Status:** ACTIVE  
@@ -105,6 +107,39 @@ NEXT i
 **Status:** ACTIVE  
 **Note:** Classic BASIC compatibility issue - error vs. infinite loop
 
+### 8. Local Variable Limit in FOR Loop Bodies
+**Symptom:** Cannot declare new VAR variables within FOR loop body  
+**Reproduce:**
+```basic
+FUNC TestLoop()
+    FOR i = 1 TO 5
+        VAR temp = i * 2    ! NO MORE LOCALS error
+        PRINT temp
+    NEXT i
+ENDFUNC
+```
+**Error:** `?NO MORE LOCALS`  
+**Status:** ACTIVE  
+**Impact:** Variables must be declared before FOR loops, limiting dynamic local declarations
+**Workaround:** Declare all needed variables at function start
+
+### 9. Negative Start FOR Loop Failure
+**Symptom:** FOR loops with negative start values fail to execute completely  
+**Reproduce:**
+```basic
+FUNC TestNegative()
+    FOR i = -2 TO 2        ! Loop body never executes
+        PRINT i;           ! No output produced
+    NEXT i
+    PRINT " ! expect -2 -1 0 1 2"
+ENDFUNC
+```
+**Expected:** `-2 -1 0 1 2`  
+**Actual:** No output (loop body never executes)  
+**Status:** ACTIVE  
+**Impact:** Cannot iterate through ranges with negative starting values
+**Note:** FORCHK opcode logic appears to fail condition evaluation for negative start values
+
 ---
 
 ## RESOLVED ISSUES
@@ -121,7 +156,7 @@ NEXT i
 ## ANNOYANCES
 *Minor issues, cosmetic, or nice-to-haves*
 
-### 8. CHAR Ordered Comparison Error Message
+### 10. CHAR Ordered Comparison Error Message
 **Symptom:** STRING comparison gives INVALID OPERATOR instead of TYPE MISMATCH  
 **Reproduce:**
 ```basic
@@ -132,7 +167,7 @@ PRINT c >= s
 **Error:** `?INVALID OPERATOR` (should be `?TYPE MISMATCH` for consistency)  
 **Status:** ACTIVE
 
-### 9. Underscore Identifiers Not Supported
+### 11. Underscore Identifiers Not Supported
 **Symptom:** Variable names with underscores rejected  
 **Reproduce:**
 ```basic

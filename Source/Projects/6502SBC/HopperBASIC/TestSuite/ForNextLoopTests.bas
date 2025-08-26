@@ -1,13 +1,15 @@
 CLS
 
-! FOR/NEXT Loop Test Suite for Hopper BASIC - Updated for Design Change
+! FOR/NEXT Loop Test Suite for Hopper BASIC v3 - Simplified Type System
 ! Following progressive isolation methodology
-! Tests basic loops, STEP, nested loops, type promotion, optimization
+! Tests basic loops, STEP, nested loops, and edge cases
 ! 
-! DESIGN CHANGE: Implicit iterators go out of scope after NEXT
+! DESIGN: All numeric iterators use LONG type via VAR declaration
+! Implicit iterators go out of scope after NEXT
 ! Declared iterators persist after NEXT (traditional BASIC behavior)
 
-MEM 
+NEW
+MEM
 
 ! ===== TEST 1: Basic FOR/NEXT (Isolated) =====
 NEW
@@ -93,10 +95,10 @@ BEGIN
 END
 RUN
 
-! ===== TEST 7: Iterator Scope Behavior (Updated) =====
+! ===== TEST 7: Iterator Scope Behavior =====
 NEW
 FUNC TestIteratorScope()
-    INT j
+    VAR j
     PRINT "Testing iterator scope:"
     
     ! Test implicit iterator (goes out of scope)
@@ -118,7 +120,7 @@ RUN
 
 ! ===== TEST 8: Global Iterator Value After Loop =====
 NEW
-INT g
+VAR g
 BEGIN
     FOR g = 1 TO 3
         ! Loop runs
@@ -128,10 +130,10 @@ END
 RUN
 VARS
 
-! ===== TEST 9: Nested Loops (Declaration Required) =====
+! ===== TEST 9: Nested Loops =====
 NEW
 FUNC TestNested()
-    INT j
+    VAR j
     PRINT "Nested 3x3:"
     FOR i = 1 TO 3
         FOR j = 1 TO 3
@@ -152,7 +154,10 @@ FUNC TestModifyIter()
     PRINT "Modify iterator (i=i+1 when i=2):"
     FOR i = 1 TO 5
         PRINT i;
-        IF i = 2 THEN i = i + 1 ENDIF
+        VAR condition = i = 2
+        IF condition THEN 
+            i = i + 1 
+        ENDIF
     NEXT i
     PRINT " ! expect 1 2 4 5 (skip 3)"
 ENDFUNC
@@ -161,19 +166,19 @@ BEGIN
 END
 RUN
 
-! ===== TEST 11: BYTE Iterator with INT Bounds =====
+! ===== TEST 11: Large LONG Iterator Values =====
 NEW
-FUNC TestByteIter()
-    BYTE b
-    PRINT "BYTE iter, INT bounds:"
-    FOR b = 1 TO 5
-        PRINT b;
-    NEXT b
-    PRINT " ! expect 1 2 3 4 5"
-    PRINT "After: b="; b; " ! expect 6"
+FUNC TestLongRange()
+    VAR bigStart = 1000000
+    VAR bigEnd = 1000003
+    PRINT "LONG range 1000000 TO 1000003:"
+    FOR i = bigStart TO bigEnd
+        PRINT i;
+    NEXT i
+    PRINT " ! expect 1000000-1000003"
 ENDFUNC
 BEGIN
-    TestByteIter()
+    TestLongRange()
 END
 RUN
 
@@ -208,28 +213,29 @@ BEGIN
 END
 RUN
 
-! ===== TEST 14: Type Promotion Test =====
+! ===== TEST 14: Array Index Iteration =====
 NEW
-FUNC TestTypePromo()
-    BYTE b = 2
-    INT i = 5
-    WORD w = 8
-    PRINT "Type promotion in FOR:"
-    FOR x = b TO w
-        PRINT x;
-    NEXT x
-    PRINT " ! expect 2 3 4 5 6 7 8"
+INT numbers[5]
+FUNC TestArrayIter()
+    VAR value = 100
+    PRINT "Array index iteration:"
+    FOR i = 0 TO 4
+        numbers[i] = value + i
+        PRINT numbers[i];
+    NEXT i
+    PRINT " ! expect 100 101 102 103 104"
 ENDFUNC
 BEGIN
-    TestTypePromo()
+    TestArrayIter()
 END
 RUN
 
 ! ===== TEST 15: Nested with Mixed Scopes =====
 NEW
-INT outer
+VAR outer
 FUNC TestMixedScope()
-    INT inner
+    VAR inner
+    PRINT "Mixed scope nested:"
     FOR outer = 1 TO 2
         FOR inner = 1 TO 2
             PRINT outer; inner;
@@ -243,10 +249,10 @@ END
 RUN
 VARS
 
-! ===== TEST 16: Empty Loop with Declared Iterator (Updated) =====
+! ===== TEST 16: Empty Loop with Declared Iterator =====
 NEW
 FUNC TestEmptyLoopDeclared()
-    INT i
+    VAR i
     PRINT "Empty loop with declared iterator:"
     FOR i = 1 TO 3
     NEXT i
@@ -257,23 +263,7 @@ BEGIN
 END
 RUN
 
-! ===== TEST 17: WORD Iterator Safe Range =====
-NEW
-FUNC TestWordRange()
-    WORD w
-    PRINT "WORD 65530 TO 65533:"
-    FOR w = 65530 TO 65533
-        PRINT w;
-    NEXT w
-    PRINT " ! expect 65530-65533"
-    PRINT "After: w="; w; " ! expect 65534"
-ENDFUNC
-BEGIN
-    TestWordRange()
-END
-RUN
-
-! ===== TEST 18: FOR with Arguments =====
+! ===== TEST 17: FOR with VAR Arguments =====
 NEW
 FUNC TestForWithArg(start, stop)
     PRINT "FOR "; start; " TO "; stop; ":"
@@ -289,7 +279,7 @@ BEGIN
 END
 RUN
 
-! ===== TEST 19: Nested Implicit Iterators (New) =====
+! ===== TEST 18: Nested Implicit Iterators =====
 NEW
 FUNC TestNestedImplicit()
     PRINT "Nested implicit iterators:"
@@ -309,9 +299,9 @@ BEGIN
 END
 RUN
 
-! ===== TEST 20: Mixed Implicit and Declared (New) =====
+! ===== TEST 19: Mixed Implicit and Declared =====
 NEW
-INT outer
+VAR outer
 FUNC TestMixedIterators()
     PRINT "Mixed iterator types:"
     FOR outer = 1 TO 2
@@ -327,7 +317,7 @@ BEGIN
 END
 RUN
 
-! ===== TEST 21: Multiple Implicit Sequential (New) =====
+! ===== TEST 20: Sequential Implicit Reuse =====
 NEW
 FUNC TestSequentialImplicit()
     PRINT "Sequential implicit iterators:"
@@ -346,38 +336,16 @@ BEGIN
 END
 RUN
 
-! ===== TEST 22: Implicit Iterator Type Changes (New) =====
-NEW
-FUNC TestImplicitTypes()
-    BYTE b = 5
-    WORD w = 300
-    PRINT "Implicit iterator type promotion:"
-    FOR i = b TO 10
-        PRINT i;
-    NEXT i
-    PRINT " BYTE to INT"
-    FOR i = 1 TO w
-        IF i > 5 THEN
-            RETURN
-        ENDIF
-        PRINT i;
-    NEXT i
-    PRINT " INT to WORD"
-ENDFUNC
-BEGIN
-    TestImplicitTypes()
-END
-RUN
-
-! ===== TEST 23: STEP Zero Test (May hang!) =====
-! Uncomment with caution - might require ^C
+! ===== STEP Zero Test (May hang!) =====
+! Uncomment with caution - might require ^C to break
 !NEW
 !FUNC TestStepZero()
 !    PRINT "Testing STEP 0 (may hang):"
 !    FOR i = 1 TO 5 STEP 0
 !        PRINT i
-!        IF i > 2 THEN
-!            PRINT "Infinite!"
+!        VAR escape = i > 2
+!        IF escape THEN
+!            PRINT "Infinite detected!"
 !            RETURN
 !        ENDIF
 !    NEXT i
@@ -387,7 +355,7 @@ RUN
 !END
 !RUN
 
-! ===== TEST 24: Memory Check =====
+! Memory leak detection
 NEW
 MEM
-PRINT "Memory check complete - all iterators cleaned up"
+PRINT "FOR/NEXT tests complete - check memory vs baseline"
