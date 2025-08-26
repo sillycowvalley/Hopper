@@ -265,7 +265,7 @@ unit Error // ErrorID.asm
         Files = 0x80, // start of errorMessages1
         BytesLabel,
         BytesUsedLabel,
-        
+        BadStep,
     }
     
     const byte[] errorMessages0 = {
@@ -338,7 +338,7 @@ unit Error // ErrorID.asm
         1, ErrorID.Files,                      ErrorWord.FILES,
         1, ErrorID.BytesLabel,                 ErrorWord.BYTES,
         2, ErrorID.BytesUsedLabel,             ErrorWord.BYTES, ErrorWord.USED,
-        
+        2, ErrorID.BadStep,                    ErrorWord.BAD,   Token.STEP,
         0  // End marker
     };
     
@@ -612,6 +612,12 @@ unit Error // ErrorID.asm
         LDA #ErrorID.TypeMismatch
         commonError();
     }
+    BadStep() inline
+    { 
+        LDA #ErrorID.BadStep
+        commonError();
+    }
+    
 
     FunctionExists() inline
     { 
