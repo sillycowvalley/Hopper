@@ -31,105 +31,8 @@ NEXT i
 
 ---
 
-## CRITICAL BUGS
-*Core functionality completely broken*
-
-### 3. CHR() Function TYPE MISMATCH Error
-**Symptom:** CHR() function fails with TYPE MISMATCH when passed LONG values  
-**Reproduce:**
-```basic
-FUNC TestChr()
-    VAR val = 65
-    PRINT CHR(val)    ! TYPE MISMATCH error
-ENDFUNC
-```
-**Error:** `?TYPE MISMATCH` during CHR() call  
-**Status:** ACTIVE  
-**Impact:** CRITICAL - Cannot convert LONG to CHAR, breaks fundamental type conversion
-**Note:** This breaks the primary conversion mechanism between numeric and character types
-
-### 4. PEEK/POKE Memory Access VALUE OUT OF RANGE
-**Symptom:** PEEK/POKE functions fail with hex addresses  
-**Reproduce:**
-```basic
-FUNC TestMemory()
-    VAR addr = 0x0B40
-    PRINT PEEK(addr)      ! VALUE OUT OF RANGE error
-    POKE(addr, 42)        ! VALUE OUT OF RANGE error
-ENDFUNC
-```
-**Error:** `?VALUE OUT OF RANGE`  
-**Status:** ACTIVE  
-**Impact:** CRITICAL - Memory access functions unusable with standard hex addresses
-**Note:** Hex parsing works fine, but address validation appears broken
-
-### 5. Hardware I/O READ() Function TYPE MISMATCH
-**Symptom:** READ() function fails with TYPE MISMATCH  
-**Reproduce:**
-```basic
-FUNC TestRead()
-    PINMODE(0, 0)         ! Works fine
-    PRINT READ(0)         ! TYPE MISMATCH error
-ENDFUNC
-```
-**Error:** `?TYPE MISMATCH` during READ() call  
-**Status:** ACTIVE  
-**Impact:** CRITICAL - Digital input completely broken
-**Note:** PINMODE and WRITE work fine, only READ() affected
-
----
-
 ## BUGS
 *Wrong behavior but recoverable*
-
-### 6. Boolean Literal Type Resolution in IF Conditions
-**Symptom:** IF statements with literal TRUE/FALSE fail with TYPE MISMATCH  
-**Reproduce:**
-```basic
-FUNC TestLiteralBoolean()
-    IF TRUE THEN          ! TYPE MISMATCH here
-        PRINT "Should work"
-    ENDIF
-    IF FALSE THEN         ! TYPE MISMATCH here  
-        PRINT "Also should work"
-    ENDIF
-ENDFUNC
-```
-**Error:** `?TYPE MISMATCH` at IF condition evaluation  
-**Status:** ACTIVE  
-**Impact:** Cannot use literal TRUE/FALSE in IF conditions, must assign to BIT variable first
-**Workaround:** `VAR flag = TRUE; IF flag THEN...` works fine
-
-### 7. String Indexing Returns ASCII Value Instead of Character
-**Symptom:** String indexing operation returns LONG ASCII value instead of CHAR  
-**Reproduce:**
-```basic
-FUNC TestStringIndex()
-    VAR text = "BASIC"
-    VAR first = text[0]     ! Should get 'B' but gets 66
-    PRINT "first="; first; " ! expect B but shows 66"
-ENDFUNC
-```
-**Expected:** `first=B` (CHAR type)  
-**Actual:** `first=66` (LONG ASCII value)  
-**Status:** ACTIVE  
-**Impact:** String indexing produces wrong type, affects character processing
-
-### 8. CHR() Function Result Type Incompatibility
-**Symptom:** CHR() function result not recognized as CHAR type for comparisons  
-**Reproduce:**
-```basic
-FUNC TestChr()
-    VAR c = 'M'
-    VAR val = 65
-    PRINT CHR(val) < c    ! TYPE MISMATCH error
-ENDFUNC
-```
-**Error:** `?TYPE MISMATCH` during comparison evaluation  
-**Status:** ACTIVE  
-**Impact:** Cannot directly compare CHR() results with CHAR variables
-**Note:** CHR() converts LONG to CHAR but result isn't typed correctly for comparison operators
-**Workaround:** Assign CHR() result to variable first: `VAR temp = CHR(val); PRINT temp < c`
 
 ### 9. LONG Arithmetic Overflow (Silent Wraparound)
 **Symptom:** 32-bit LONG arithmetic silently wraps on overflow without warning  
@@ -144,23 +47,6 @@ PRINT bigNum            ! Shows -2000000000 (wrapped)
 **Status:** ACTIVE  
 **Impact:** Mathematical calculations can produce incorrect results without warning
 **Note:** Max LONG = 2,147,483,647; result exceeded and wrapped to negative
-
-### 10. Negative Start FOR Loop Failure
-**Symptom:** FOR loops with negative start values fail to execute completely  
-**Reproduce:**
-```basic
-FUNC TestNegative()
-    FOR i = -2 TO 2        ! Loop body never executes
-        PRINT i;           ! No output produced
-    NEXT i
-    PRINT " ! expect -2 -1 0 1 2"
-ENDFUNC
-```
-**Expected:** `-2 -1 0 1 2`  
-**Actual:** No output (loop body never executes)  
-**Status:** ACTIVE  
-**Impact:** Cannot iterate through ranges with negative starting values
-**Note:** FORCHK opcode logic appears to fail condition evaluation for negative start values
 
 ### 11. Local Variable Limit in FOR Loop Bodies
 **Symptom:** Cannot declare new VAR variables within FOR loop body  
@@ -206,34 +92,8 @@ ENDIF
 
 ---
 
-## UNIMPLEMENTED FEATURES
-*Known missing functionality marked as placeholders*
-
-### 14. ABS() Function Not Implemented
-**Symptom:** ABS() returns "NOT IMPLEMENTED" message  
-**Reproduce:**
-```basic
-PRINT ABS(-42)    ! Returns "? NOT IMPLEMENTED"
-```
-**Status:** EXPECTED - Phase 5 feature  
-**Impact:** No absolute value function available
-**Priority:** LOW - can work around with IF statements
-
----
-
 ## ANNOYANCES
 *Minor issues, cosmetic, or nice-to-haves*
-
-### 16. CHAR Ordered Comparison Error Message
-**Symptom:** STRING comparison gives INVALID OPERATOR instead of TYPE MISMATCH  
-**Reproduce:**
-```basic
-CHAR c = 'A'
-STRING s = "A"
-PRINT c >= s
-```
-**Error:** `?INVALID OPERATOR` (should be `?TYPE MISMATCH` for consistency)  
-**Status:** ACTIVE
 
 ### 17. Underscore Identifiers Not Supported
 **Symptom:** Variable names with underscores rejected  
@@ -247,37 +107,16 @@ INT global_counter = 0
 
 ---
 
-## RESOLVED ISSUES
-*Recently fixed bugs*
-
-### ✅ String Variable Corruption in Deep Nesting (FIXED)
-**Previous Symptom:** String variables lost content in deeply nested IF statements  
-**Previous Result:** `path=ue` instead of `path=ABCE`  
-**Current Status:** **RESOLVED** - Deep nesting now works correctly
-**Test Result:** `path=ABCE ! expect ABCE` ✅
-
----
-
 ## ISSUE PRIORITY SUMMARY
 
-**IMMEDIATE ACTION REQUIRED:**
-1. **CHR() Function** - Core type conversion broken (Issue #3)
-2. **PEEK/POKE Memory Access** - Essential debugging tool broken (Issue #4) 
-3. **Hardware READ()** - Digital input completely broken (Issue #5)
-
 **HIGH PRIORITY:**
-4. **FOR Loop Infinite Loops** - Data corruption risk (Issue #1, #2)
-5. **Negative FOR Loops** - Basic loop functionality broken (Issue #10)
+1. **FOR Loop Infinite Loops** - Data corruption risk (Issue #1, #2)
+2. **LONG Arithmetic Silent Overflow** - Incorrect calculations (Issue #9)
 
 **MEDIUM PRIORITY:**
-6. **Boolean Literals in IF** - Common syntax pattern broken (Issue #6)
-7. **String Indexing Type** - Wrong result type (Issue #7)
+3. **Comment Parsing Issues** - Code readability (Issue #12)
+4. **Colon Statement Parser** - Syntax flexibility (Issue #13)
 
 **LOW PRIORITY:**
-8. Parser edge cases, local variable limits, comment parsing
-9. Unimplemented functions (ABS, RND)
-10. Cosmetic issues
-
----
-
-**Test Suite Status**: Comprehensive testing revealed that several "COMPLETE" features from Phase 4 (Hardware I/O) and core functions are actually broken. The type system implementation appears to have issues with function parameter and return value type checking.
+5. **Local Variable Limits** - Has workaround (Issue #11)
+6. **Underscore Identifiers** - Cosmetic/design choice (Issue #17)

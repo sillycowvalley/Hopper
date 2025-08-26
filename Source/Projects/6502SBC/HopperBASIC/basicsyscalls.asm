@@ -123,6 +123,7 @@ unit BASICSysCalls
                 {
                     case SysCallType.Abs:     
                     case SysCallType.Millis:
+                    case SysCallType.Input:
                     case SysCallType.Seconds:
                     case SysCallType.Len:
                     case SysCallType.Peek:
@@ -235,6 +236,65 @@ unit BASICSysCalls
                    }
                }     
                 
+                case SysCallType.Input:          // ID = 16
+                {
+                    // INPUT function - read user input and parse as literal
+                    // Input: No arguments (uses previous PRINT as prompt)
+                    // Output: ZP.TOP* contains parsed value (LONG)
+                    PHY                    
+                    loop
+                    {
+                        // Read line using existing infrastructure
+                        Tokenizer.ReadLine();    // Returns length in A, input in BasicInputBuffer
+                        
+                        STZ ZP.TOP0
+                        LDA # BASICType.BYTE
+                        STA ZP.TOPT
+                                
+                        // Check for empty input - return CHAR(0)
+                        LDA ZP.BasicInputLength
+                        if (NZ)
+                        {
+                            // Tokenize the single input line
+                            LDX #0
+                            STX ZP.OpCodeTemp  // Replace mode = 0
+                            Tokenizer.TokenizeLineWithMode();
+                            CheckError();
+                            if (C) 
+                            { 
+                                // Get the first token
+                                Tokenizer.NextToken();
+                                CheckError();
+                                if (C) 
+                                { 
+                                    // is it a NUMBER?
+                                    LDA ZP.CurrentToken
+                                    CMP #Token.NUMBER
+                                    if (Z)
+                                    {
+                                        // Parse as LONG literal
+                                        Tokenizer.GetTokenNumber();    // Parse into ZP.TOP*, sets ZP.TOPT
+                                        CheckError();
+                                        if (C)
+                                        {
+                                            break; // return the number (BYTE|INT|WORD|LONG)
+                                        }
+                                    }
+                                }
+                            }
+                            Error.ClearError();
+                            // Well, tokenizing a NUMBER didn't work so ..
+                            // just return ASCII for the first character:
+                            LDA Address.BasicInputBuffer
+                            STA ZP.TOP0
+                        }
+                        break;
+                    } // single exit
+                    BASICTypes.Promote(); // -> LONG 
+                    PLY
+                    if (NC) { break; }
+                }
+               
                          
                                   
                                                     
@@ -443,9 +503,9 @@ unit BASICSysCalls
                     // Convert CHAR to BYTE (value stays the same)
                     // ZP.TOPL already contains the ASCII value
                     
-                    //STZ ZP.TOP1
-                    //STZ ZP.TOP2 - already zero from Coerce above
-                    //STZ ZP.TOP3
+                    STZ ZP.TOP1
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
                     LDA #BASICType.LONG
                     STA ZP.TOPT
                 }

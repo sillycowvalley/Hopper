@@ -1537,6 +1537,14 @@ unit Compiler // Compiler.asm
                     }
                     break;
                 }
+                case Token.INPUT:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
+                    LDA #SysCallType.Input
+                    compileSysCall();
+                    CheckError();
+                    break;
+                }
                
                case Token.IDENTIFIER:
                {
@@ -1571,9 +1579,7 @@ unit Compiler // Compiler.asm
                    break;
                }
                
-               
-               
-               // All built-in functions now use compileSysCall()
+                // All built-in functions now use compileSysCall()
                 case Token.MILLIS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
