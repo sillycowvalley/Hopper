@@ -2192,15 +2192,28 @@ unit Compiler // Compiler.asm
                case Token.VAR:
                {
                    // Check if we've already seen flow altering statements
-                    LDA compilerCanDeclareLocals
-                    if (Z)
-                    {
-                        Error.LateDeclaration(); BIT ZP.EmulatorPCL  // "Declarations must come before statements"
-                        States.SetFailure();
-                        break;
-                    }
-                   compileLocalDeclaration();
-                   CheckError();
+                   LDA compilerCanDeclareLocals
+                   if (Z)
+                   {
+                       Error.LateDeclaration(); BIT ZP.EmulatorPCL  // "Declarations must come before statements"
+                       States.SetFailure();
+                       break;
+                   }
+                   loop
+                   {
+                       compileLocalDeclaration();
+                       CheckError();
+                       if (NC) { break; }
+                       
+                       // Check for comma
+                        LDA ZP.CurrentToken
+                        CMP #Token.COMMA
+                        if (NZ) { break; } // Done
+                        
+                        // Set up for next iteration: pretend the COMMA is a VAR ..
+                        LDA # Token.VAR
+                        STA ZP.CurrentToken
+                   }
                    if (NC) { break; }
                    break;
                }
@@ -2495,11 +2508,6 @@ unit Compiler // Compiler.asm
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {
-#ifdef DEBUG
-LDA ZP.TOPL STA ZP.STRL                
-LDA ZP.TOPH STA ZP.STRH
-Debug.NL(); LDA #'"' COut(); Print.String(); LDA #'"' COut();  Space(); TOut(); Space(); XOut();
-#endif
                 Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
                 break;
             }

@@ -17,7 +17,7 @@ FUNC DRAW()
     VAR a, b, c, d
     VAR q, p, t, s, i
     VAR f = 50
-    
+    VAR done
     FOR y = -12 TO 12
         FOR x = -49 TO 29
             c = x * 229 / 100
@@ -26,8 +26,8 @@ FUNC DRAW()
             b = d
             i = 0
             
-            VAR done = FALSE
-            WHILE NOT done
+            done = FALSE
+            DO
                 q = b / f
                 s = b - (q * f)
                 t = ((a * a) - (b * b)) / f + c
@@ -46,7 +46,7 @@ FUNC DRAW()
                         done = TRUE
                     ENDIF
                 ENDIF
-            WEND
+            UNTIL done
         NEXT x
         PRINT
         PRINT ' ';

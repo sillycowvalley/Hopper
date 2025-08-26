@@ -495,7 +495,21 @@ unit Statement // Statement.asm
 
         LDA #SymbolType.VARIABLE
         STA stmtSymbol
-        processSingleSymbolDeclaration();
+        
+        loop
+        {
+            processSingleSymbolDeclaration(); // Consumes VAR, processes variable
+            CheckError();
+            if (NC) { break; }
+            
+            // Check for comma
+            LDA ZP.CurrentToken
+            CMP #Token.COMMA
+            if (NZ) { break; }
+            
+            // Set up for next iteration: pretend the COMMA is a VAR ..
+            LDX #Token.VAR
+        }
         
 #ifdef TRACE
         LDA #(executeVarDeclTrace % 256) STA ZP.TraceMessageL LDA #(executeVarDeclTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -516,7 +530,7 @@ unit Statement // Statement.asm
             STZ (stmtStringPtr + 0)
             STZ (stmtStringPtr + 1)
 
-            // current token can be:
+            // Current token can be:
             // - BYTE, BIT, CHAR, WORD, INT if it is an ARRAY
             // - VAR if it is a variable
             // - EQUAL if it is a constant
@@ -865,6 +879,7 @@ unit Statement // Statement.asm
                     }
                     case Token.EOL:
                     case Token.COLON:
+                    case Token.COMMA:
                     {
                         LDA stmtSymbol
                         CMP #SymbolType.CONSTANT

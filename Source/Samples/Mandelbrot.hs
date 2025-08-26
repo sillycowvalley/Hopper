@@ -2,7 +2,9 @@ program Mandelbrot
 {
     //uses "/Source/Library/Boards/PiPico"
     //uses "/Source/Library/Boards/PiPico2"
-    uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/System/System"
+    uses "/Source/System/IO"
         
     Hopper()
     {
@@ -22,15 +24,17 @@ program Mandelbrot
         
         long start = Millis;
         string palette = ".,'~=+:;*%&$OXB#@ ";
-        int a; int b; int c; int d;
-        int q; int p; int t; int s; byte i;
-        int y; int x;
-        int f = 50;
+        long a; long b; long c; long d;
+        long q; long p; long t; long s; long i;
+        long y; long x;
+        long f = 50;
         for (y = -12; y <= 12; y++)
         {
             for (x = -49; x <= 29; x++)
             {
                 c = x * 229 / 100;
+                IO.Write(c.ToString() + " ");
+                /*
                 d = y * 416 / 100;
                 a = c; b = d; i = 0;
                 loop
@@ -51,6 +55,7 @@ program Mandelbrot
                     }
                     break;
                 }
+                */
             } // next x
             IO.WriteLn(); IO.Write(' ');
         } // next y
