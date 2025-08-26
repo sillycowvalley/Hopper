@@ -304,7 +304,7 @@ Debug.NL(); LDA ZP.NEXTT HOut();
     Mul()
     {
         // (IDY) = (NEXT) * (TOP)
-        
+        utilityDoLongSigns();
         // #### https://llx.com/Neil/a2/mult.html ####
         // http://www.6502.org/source/integers/32muldiv.htm
     
