@@ -664,8 +664,10 @@ Debug.NL();
                 }
                 default:
                 {
+#ifdef #DEBUG
                     TODO(); BIT ZP.EmulatorPCL CLC // what's this?
                     break;
+#endif
                 }
             } // switch
 

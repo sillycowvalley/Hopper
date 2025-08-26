@@ -267,6 +267,17 @@ unit Commands
     // Debug Commands (conditional compilation)
     // ============================================================================
     
+    NotAvailable()
+    {
+        // Missing because:
+        //
+        // - not DEBUG build?
+        // - not TRACE build?
+        // - HASEEPROM not defined?
+        
+        Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+    }
+    
 #ifdef DEBUG
     // Execute HEAP command - show heap dump
     // Input: None
@@ -298,9 +309,9 @@ unit Commands
     }
 #else
     // Stubs for non-debug builds
-    CmdHeap()  { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
-    CmdBuffers() { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
-    CmdDump()  { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
+    CmdHeap()    { Commands.NotAvailable(); } // only in DEBUG
+    CmdBuffers() { Commands.NotAvailable(); } // only in DEBUG
+    CmdDump()    { Commands.NotAvailable(); } // only in DEBUG
 #endif
 
 #if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
@@ -956,7 +967,7 @@ unit Commands
 #ifdef HASEEPROM 
         File.Dir();
 #else
-        TODO(); BIT ZP.EmulatorPCL // no EEPROM
+        Commands.NotAvailable();
 #endif 
     }
     
@@ -968,7 +979,7 @@ unit Commands
 #ifdef HASEEPROM 
         File.Delete(); // Input: ZP.STR
 #else
-        TODO(); BIT ZP.EmulatorPCL // no EEPROM
+        Commands.NotAvailable();
 #endif 
     }
     
@@ -1001,7 +1012,7 @@ unit Commands
             break;
         }
 #else
-        TODO(); BIT ZP.EmulatorPCL // no EEPROM
+        Commands.NotAvailable();
 #endif        
     }
     
@@ -1013,7 +1024,7 @@ unit Commands
 #ifdef HASEEPROM        
         Storage.LoadProgram(); // Input: ZP.STR
 #else
-        TODO(); BIT ZP.EmulatorPCL // no EEPROM
+        Commands.NotAvailable();
 #endif                
     }
     
@@ -1032,7 +1043,7 @@ unit Commands
         }
         // If NC, user cancelled - no action needed (no error)
 #else
-        TODO(); BIT ZP.EmulatorPCL // no EEPROM
+        Commands.NotAvailable();
 #endif        
     }
     

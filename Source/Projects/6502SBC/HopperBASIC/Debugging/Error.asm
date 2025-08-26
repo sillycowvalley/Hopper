@@ -28,9 +28,9 @@ unit Error // ErrorID.asm
         INTERNAL   = 0x12,  // "INTERNAL"
         ONLY       = 0x13,  // "ONLY"
         IN         = 0x14,  // "IN"
-        DEBUG      = 0x15,  // "DEBUG"
-        BUILD      = 0x16,  // "BUILD"
-        TRACE      = 0x17,  // "TRACE"
+        //DEBUG      = 0x15,  // "DEBUG"
+        //BUILD      = 0x16,  // "BUILD"
+        //TRACE      = 0x17,  // "TRACE"
         VARIABLE   = 0x18,  // "VARIABLE"
         FILE       = 0x19,  // "FILE"
         FOUND      = 0x1A,  // "FOUND"
@@ -122,9 +122,9 @@ unit Error // ErrorID.asm
         8,  ErrorWord.INTERNAL,   'I', 'N', 'T', 'E', 'R', 'N', 'A', 'L',
         4,  ErrorWord.ONLY,       'O', 'N', 'L', 'Y',
         2,  ErrorWord.IN,         'I', 'N',
-        5,  ErrorWord.DEBUG,      'D', 'E', 'B', 'U', 'G',
-        5,  ErrorWord.BUILD,      'B', 'U', 'I', 'L', 'D',
-        5,  ErrorWord.TRACE,      'T', 'R', 'A', 'C', 'E',
+        //5,  ErrorWord.DEBUG,      'D', 'E', 'B', 'U', 'G',
+        //5,  ErrorWord.BUILD,      'B', 'U', 'I', 'L', 'D',
+        //5,  ErrorWord.TRACE,      'T', 'R', 'A', 'C', 'E',
         8,  ErrorWord.VARIABLE,   'V', 'A', 'R', 'I', 'A', 'B', 'L', 'E',
         4,  ErrorWord.FILE,       'F', 'I', 'L', 'E',
         5,  ErrorWord.FOUND,      'F', 'O', 'U', 'N', 'D',
@@ -203,8 +203,8 @@ unit Error // ErrorID.asm
         InternalError = 0x01, // start of errorMessages0
         SyntaxError,
         NotImplemented,
-        OnlyInDebug,
-        OnlyInTrace,
+        //OnlyInDebug,
+        //OnlyInTrace,
         TypeMismatch,
         FunctionExists,
         ConstantExists,
@@ -272,8 +272,8 @@ unit Error // ErrorID.asm
         2, ErrorID.InternalError,              ErrorWord.INTERNAL, ErrorWord.ERROR,
         2, ErrorID.SyntaxError,                ErrorWord.SYNTAX, ErrorWord.ERROR,
         2, ErrorID.NotImplemented,             ErrorWord.NOT, ErrorWord.IMPLEMENTED,
-        4, ErrorID.OnlyInDebug,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.DEBUG, ErrorWord.BUILD,
-        4, ErrorID.OnlyInTrace,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.TRACE, ErrorWord.BUILD,
+        //4, ErrorID.OnlyInDebug,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.DEBUG, ErrorWord.BUILD,
+        //4, ErrorID.OnlyInTrace,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.TRACE, ErrorWord.BUILD,
         2, ErrorID.TypeMismatch,               ErrorWord.TYPE, ErrorWord.MISMATCH,
         2, ErrorID.FunctionExists,             Token.FUNC, ErrorWord.EXISTS,
         2, ErrorID.ConstantExists,             Token.CONST, ErrorWord.EXISTS,
@@ -329,7 +329,7 @@ unit Error // ErrorID.asm
         
         1, ErrorID.MemoryMessage,              ErrorWord.MEMORY,
         2, ErrorID.BytesMessage,               ErrorWord.BYTES, ErrorWord.AVAILABLE,
-        2, ErrorID.EEPROMLabel,                ErrorWord.EEPROM, 
+        1, ErrorID.EEPROMLabel,                ErrorWord.EEPROM, 
         
         0  // End marker
     };
@@ -588,6 +588,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
+/*
     OnlyInDebug() 
     { 
         LDA #ErrorID.OnlyInDebug
@@ -599,7 +600,7 @@ unit Error // ErrorID.asm
         LDA #ErrorID.OnlyInTrace
         commonError();
     }
-
+*/
     OnlyAtConsole() 
     { 
         LDA #ErrorID.OnlyAtConsole

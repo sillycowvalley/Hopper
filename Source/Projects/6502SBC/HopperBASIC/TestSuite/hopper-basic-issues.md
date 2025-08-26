@@ -74,25 +74,33 @@ NEXT i
 **Status:** ACTIVE  
 **Note:** Classic BASIC compatibility issue - error vs. infinite loop
 
-### 5. PRINT with Inline Comments
-**Symptom:** SYNTAX ERROR when PRINT statement followed by comment  
+### 5. LONG Arithmetic Overflow (Silent Wraparound)
+**Symptom:** 32-bit LONG arithmetic silently wraps on overflow without warning  
+**Reproduce:**
+```basic
+VAR bigNum = 1000000
+bigNum = bigNum * 2000  ! Should be 2,000,000,000
+PRINT bigNum            ! Shows -2000000000 (wrapped)
+```
+**Expected:** `2000000000` or overflow error  
+**Actual:** `-2000000000` (silent wraparound)  
+**Status:** ACTIVE  
+**Impact:** Mathematical calculations can produce incorrect results without warning
+**Note:** Max LONG = 2,147,483,647; result exceeded and wrapped to negative
+
+### 6. Comment Parsing Issues
+**Symptom:** SYNTAX ERROR when comments follow certain statements  
 **Reproduce:**
 ```basic
 PRINT ! Empty line
 PRINT "text" ! comment
+VARS ! comment  
+VAR uninitVar ! comment on uninitialized VAR
 ```
-**Error:** `?SYNTAX ERROR (0xC25E)`  
+**Error:** `?SYNTAX ERROR` (various error codes)  
 **Status:** ACTIVE  
-**Note:** Comments work fine on separate lines
+**Note:** Comments work fine on separate lines - appears to be tokenizer issue with inline comments after specific statement types
 
-### 6. VARS Command Comment Parsing
-**Symptom:** SYNTAX ERROR when VARS followed by comment  
-**Reproduce:**
-```basic
-VARS ! comment
-```
-**Error:** `?SYNTAX ERROR (0xE0FB)`  
-**Status:** ACTIVE
 
 ---
 
@@ -120,114 +128,3 @@ INT global_counter = 0
 **Status:** WORKING AS DESIGNED  
 **Note:** Aesthetic choice - underscores not allowed in identifiers
 
----
-
-## FIXED
-*Already resolved*
-
-### ~~VAR Type Re-initialization~~ ✅
-**Was:** Hang when initialized VAR changed type to STRING then RUN  
-**Fixed:** Now properly resets to declared type/value on RUN
-
-### ~~STRING Local Variables~~ ✅
-**Was:** SYNTAX ERROR for STRING declarations in functions  
-**Fixed:** Tokenizer issue with >256 byte token streams
-
-### ~~DEL Reserved Word~~ ✅
-**Was:** Variable name 'del' conflicts with DEL command  
-**Note:** Working as designed - DEL reserved for future file operations
-
----
-
-## WORKING CORRECTLY
-*Features that tested successfully*
-
-### ✅ Complete IF/THEN/ELSE/ENDIF Support
-**Working:** Full conditional execution with ELSE clauses
-```basic
-IF condition THEN
-    statements
-ELSE
-    statements  
-ENDIF
-```
-
-### ✅ Nested IF Statements
-**Working:** Complex nested IF/ELSE structures
-```basic
-IF outer_condition THEN
-    IF inner_condition THEN
-        action1
-    ELSE
-        action2
-    ENDIF
-ELSE
-    action3
-ENDIF
-```
-
-### ✅ Multiple Statements in IF Blocks
-**Working:** Multiple statements in both THEN and ELSE blocks
-```basic
-IF condition THEN
-    statement1
-    statement2
-    statement3
-ELSE
-    statement4
-    statement5
-ENDIF
-```
-
-### ✅ Complex Expression Conditions  
-**Working:** Arithmetic, logical, comparison expressions as conditions
-```basic
-IF a + b = 7 THEN PRINT "works" ENDIF
-IF a < b AND b < c THEN PRINT "chain" ENDIF
-```
-
-### ✅ All Data Types in Conditions
-**Working:** BIT, VAR, comparison results, string equality, char ordering
-```basic
-IF flag THEN ... ENDIF              ! BIT
-IF s = "HELLO" THEN ... ENDIF       ! STRING equality
-IF c1 < c2 THEN ... ENDIF           ! CHAR ordering
-```
-
-### ✅ Function Calls in Conditions
-**Working:** Both user-defined and built-in functions as conditions
-```basic
-IF IsEven(num) THEN ... ENDIF       ! User function
-IF LEN(text) > 5 THEN ... ENDIF     ! Built-in function
-```
-
-### ✅ Empty IF/ELSE Blocks
-**Working:** Empty THEN or ELSE blocks with just comments
-```basic
-IF flag THEN
-    ! Empty THEN block
-ELSE
-    result = "executed"
-ENDIF
-```
-
-### ✅ RETURN Statements in IF Blocks
-**Working:** Early returns from functions within IF statements
-```basic
-IF condition THEN
-    PRINT "early exit"
-    RETURN value
-ENDIF
-```
-
-### ✅ Type Safety in Conditions
-**Working:** Proper TYPE MISMATCH errors for invalid comparisons
-```basic
-IF string_var = int_var THEN ... ENDIF  ! Correctly errors
-```
-
----
-
-*Last Updated: Comprehensive IF statement testing reveals robust conditional logic implementation*  
-*Version: Hopper BASIC v2.0*  
-*Major Discovery: IF/ELSE system is fully functional and well-implemented*

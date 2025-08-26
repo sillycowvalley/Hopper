@@ -2518,7 +2518,7 @@ Debug.NL(); LDA #'"' COut(); Print.String(); LDA #'"' COut();  Space(); TOut(); 
                 }
                 case BASICType.BYTE:
                 {
-                    TODO(); BIT ZP.EmulatorPCL // LONG
+                    TODO(); BIT ZP.EmulatorPCL // TODO LONG
                     // Emit PUSHBYTE 0
                     //LDA #0
                     //Emit.PushByte();
@@ -2553,7 +2553,7 @@ Debug.NL(); LDA #'"' COut(); Print.String(); LDA #'"' COut();  Space(); TOut(); 
                 }
                 default:
                 {
-                    TODO(); BIT ZP.EmulatorPCL // LONG
+                    TODO(); BIT ZP.EmulatorPCL // TODO LONG
                     // WORD, INT
                     //STA ZP.TOPT
                     //Emit.PushWord();

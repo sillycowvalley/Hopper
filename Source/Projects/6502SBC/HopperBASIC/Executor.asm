@@ -796,10 +796,11 @@ unit Executor // Executor.asm
        LDA #'?' Debug.COut();
        TYA Debug.HOut();
        Debug.DumpBuffers();
-#endif                
+
        TODO(); BIT ZP.EmulatorPCL // Unknown opcode
        States.SetFailure();
-       
+#endif
+
 #ifdef TRACE
        LDA #(executeNotImplementedTrace % 256) STA ZP.TraceMessageL LDA #(executeNotImplementedTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif

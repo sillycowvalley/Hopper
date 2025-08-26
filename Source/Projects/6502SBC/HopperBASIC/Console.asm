@@ -1013,10 +1013,10 @@ unit Console // Console.asm
     }
 #else
     // Stubs for non-debug builds
-    parseHeap()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
-    parseBuffers() { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
-    parseDump()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
-    parseDasm()    { Error.OnlyInDebug(); BIT ZP.EmulatorPCL }
+    parseHeap()    { Commands.NotAvailable(); } // only in DEBUG
+    parseBuffers() { Commands.NotAvailable(); } // only in DEBUG
+    parseDump()    { Commands.NotAvailable(); } // only in DEBUG
+    parseDasm()    { Commands.NotAvailable(); } // only in DEBUG
 #endif
 
 #if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
@@ -1055,8 +1055,8 @@ unit Console // Console.asm
     }
 #else
     // Stubs for non-trace builds
-    parseTron()  { Error.OnlyInTrace(); BIT ZP.EmulatorPCL }
-    parseTroff() { Error.OnlyInTrace(); BIT ZP.EmulatorPCL }
+    parseTron()  { Commands.NotAvailable(); } // only in TRACE
+    parseTroff() { Commands.NotAvailable(); } // only in TRACE
 #endif
     
     // Parse optional identifier argument
@@ -1259,14 +1259,7 @@ unit Console // Console.asm
                         }
                         default:
                         {
-                            if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
-                            {
-                                // should never get here (see case above)
-                                Error.TODO(); BIT ZP.EmulatorPCL
-                                States.SetFailure();
-                                break;
-                            }
-                            else
+                            if (BBR5, ZP.ACCT) // Bit 5 - ARRAY?
                             {
                                 // No initialization tokens - use default value 0
                                 LDA #Token.NUMBER
@@ -1279,6 +1272,15 @@ unit Console // Console.asm
                                 // '\0' (null terminator for number string)
                                 LDA #0x00
                                 Tokenizer.appendToTokenBuffer();
+                            }
+                            else
+                            {
+#ifdef DEBUG
+                                // should never get here (see case above)
+                                Error.TODO(); BIT ZP.EmulatorPCL
+                                States.SetFailure();
+                                break;
+#endif
                             }
                         }
                     }

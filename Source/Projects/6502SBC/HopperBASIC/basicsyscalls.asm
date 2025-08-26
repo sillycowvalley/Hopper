@@ -186,10 +186,12 @@ unit BASICSysCalls
                }
                case 3: 
                { 
+#ifdef DEBUG
                    // Handle 3-argument functions (future expansion)
                    TODO(); BIT ZP.EmulatorPCL
                    States.SetFailure();
                    break;
+#endif
                }
            }
            
@@ -212,7 +214,7 @@ unit BASICSysCalls
                    // ABS function - compute absolute value
                    // Input: ZP.TOP* contains value and type
                    // Output: ZP.TOP* contains absolute value
-                   TODO(); BIT ZP.EmulatorPCL // LONG
+                   TODO(); BIT ZP.EmulatorPCL // TODO LONG
                    
                }
                case SysCallType.Rnd:           // ID = 4
@@ -570,9 +572,11 @@ unit BASICSysCalls
                
                default:
                {
+#ifdef DEBUG
                    TODO(); BIT ZP.EmulatorPCL // unknown SysCall
                    States.SetFailure();
                    break;
+#endif
                }
            }
            

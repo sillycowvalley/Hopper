@@ -47,9 +47,9 @@ END
 RUN
 
 NEW
-! Test 3: BIT variable re-initialization
+! Test 3: BIT variable re-initialization (CORRECTED)
 VAR bitVar = TRUE
-VAR bitVar2
+VAR bitVar2 = FALSE  ! Must initialize to get BIT type
 
 ! Modify before RUN
 bitVar = FALSE
@@ -63,9 +63,9 @@ END
 RUN
 
 NEW
-! Test 4: STRING variable re-initialization
+! Test 4: STRING variable re-initialization (CORRECTED)
 VAR stringVar = "HELLO"
-VAR stringVar2
+VAR stringVar2 = ""  ! Must initialize to get STRING type
 
 ! Modify before RUN
 stringVar = "CHANGED"
@@ -75,6 +75,20 @@ BEGIN
     PRINT "4. STRING test:"
     PRINT "stringVar="; stringVar; " expect HELLO"
     PRINT "stringVar2="; stringVar2; " expect empty"
+END
+RUN
+
+NEW
+! Additional Test: Uninitialized VAR defaults (LONG)
+! Defaults to LONG type, value 0
+VAR uninitLong
+
+! Modify before RUN
+uninitLong = 12345
+
+BEGIN
+    PRINT "Uninitialized VAR test:"
+    PRINT "uninitLong="; uninitLong; " expect 0 (LONG default)"
 END
 RUN
 

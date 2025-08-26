@@ -127,13 +127,13 @@ Debug.NL();
                     }
                     default:
                     {
-#ifdef DEBUG                        
+#ifdef DEBUG
                         Storage.dumpBuffers();
-#endif
                         TODO(); BIT ZP.EmulatorPCL CLC // what's this?
                         
                         loop {  }
                         break;
+#endif
                     }
                 } // switch
             } // loop
@@ -1114,8 +1114,10 @@ Debug.NL();
                 }
                 default:
                 {
+#ifdef DEBUG
                     TODO(); BIT ZP.EmulatorPCL CLC // what's this?
                     break;
+#endif
                 }
             } // switch
 
