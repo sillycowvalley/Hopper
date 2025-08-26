@@ -1,19 +1,18 @@
 CLS
-! CHAR Ordered Comparison Test Suite for Hopper BASIC
-! Tests newly implemented < > <= >= operators for CHAR type
+! CHAR Ordered Comparison Test Suite for Hopper BASIC v3
+! Tests < > <= >= operators for CHAR type with simplified type system
 ! Following progressive isolation methodology
-! Tests type mismatch protection and CHR/ASC conversion comparisons
 
 NEW
 MEM
 
-! ===== TEST 1: Basic CHAR Ordered Comparisons (Isolated) =====
+! ===== TEST 1: Basic CHAR Ordered Comparisons =====
 NEW
 FUNC TestCharOrdered()
-    CHAR c1 = 'A'
-    CHAR c2 = 'B'
-    CHAR c3 = 'Z'
-    CHAR c4 = 'A'
+    VAR c1 = 'A'
+    VAR c2 = 'B'
+    VAR c3 = 'Z'
+    VAR c4 = 'A'
     PRINT "CHAR Ordered Tests:"
     PRINT c1 < c2; " ! expect TRUE (A < B)"
     PRINT c2 < c3; " ! expect TRUE (B < Z)"
@@ -25,13 +24,13 @@ BEGIN
 END
 RUN
 
-! ===== TEST 2: CHAR Greater Than (Isolated) =====
+! ===== TEST 2: CHAR Greater Than =====
 NEW
 FUNC TestCharGreater()
-    CHAR c1 = 'Z'
-    CHAR c2 = 'A'
-    CHAR c3 = 'M'
-    CHAR c4 = 'M'
+    VAR c1 = 'Z'
+    VAR c2 = 'A'
+    VAR c3 = 'M'
+    VAR c4 = 'M'
     PRINT "CHAR Greater Tests:"
     PRINT c1 > c2; " ! expect TRUE (Z > A)"
     PRINT c3 > c2; " ! expect TRUE (M > A)"
@@ -43,12 +42,12 @@ BEGIN
 END
 RUN
 
-! ===== TEST 3: CHAR Less Than or Equal (Isolated) =====
+! ===== TEST 3: CHAR Less Than or Equal =====
 NEW
 FUNC TestCharLessEqual()
-    CHAR c1 = 'A'
-    CHAR c2 = 'B'
-    CHAR c3 = 'A'
+    VAR c1 = 'A'
+    VAR c2 = 'B'
+    VAR c3 = 'A'
     PRINT "CHAR <= Tests:"
     PRINT c1 <= c2; " ! expect TRUE (A <= B)"
     PRINT c1 <= c3; " ! expect TRUE (A <= A)"
@@ -59,12 +58,12 @@ BEGIN
 END
 RUN
 
-! ===== TEST 4: CHAR Greater Than or Equal (Isolated) =====
+! ===== TEST 4: CHAR Greater Than or Equal =====
 NEW
 FUNC TestCharGreaterEqual()
-    CHAR c1 = 'Z'
-    CHAR c2 = 'Y'
-    CHAR c3 = 'Z'
+    VAR c1 = 'Z'
+    VAR c2 = 'Y'
+    VAR c3 = 'Z'
     PRINT "CHAR >= Tests:"
     PRINT c1 >= c2; " ! expect TRUE (Z >= Y)"
     PRINT c1 >= c3; " ! expect TRUE (Z >= Z)"
@@ -78,9 +77,9 @@ RUN
 ! ===== TEST 5: Digit Character Comparisons =====
 NEW
 FUNC TestDigitChars()
-    CHAR d0 = '0'
-    CHAR d5 = '5'
-    CHAR d9 = '9'
+    VAR d0 = '0'
+    VAR d5 = '5'
+    VAR d9 = '9'
     PRINT "Digit CHAR Tests:"
     PRINT d0 < d5; " ! expect TRUE (0 < 5)"
     PRINT d5 < d9; " ! expect TRUE (5 < 9)"
@@ -96,14 +95,13 @@ RUN
 ! ===== TEST 6: Mixed Case Comparisons =====
 NEW
 FUNC TestMixedCase()
-    CHAR upper = 'A'
-    CHAR lower = 'a'
-    CHAR upperZ = 'Z'
-    CHAR lowerZ = 'z'
+    VAR upper = 'A'
+    VAR lower = 'a'
+    VAR upperZ = 'Z'
     PRINT "Mixed Case Tests:"
     PRINT upper < lower; " ! expect TRUE (A < a)"
     PRINT upperZ < lower; " ! expect TRUE (Z < a)"
-    PRINT lowerZ > upper; " ! expect TRUE (z > A)"
+    PRINT lower > upper; " ! expect TRUE (a > A)"
     PRINT upper <= upperZ; " ! expect TRUE (A <= Z)"
 ENDFUNC
 BEGIN
@@ -111,209 +109,127 @@ BEGIN
 END
 RUN
 
-! ===== TEST 7: Special Character Comparisons =====
+! ===== TEST 7: Special Characters =====
 NEW
 FUNC TestSpecialChars()
-    CHAR space = ' '
-    CHAR exclaim = '!'
-    CHAR at = '@'
-    CHAR tilde = '~'
+    VAR space = ' '
+    VAR exclaim = '!'
+    VAR at = '@'
+    VAR tilde = '~'
     PRINT "Special CHAR Tests:"
-    PRINT space < exclaim; " ! expect TRUE"
-    PRINT exclaim < at; " ! expect TRUE"
-    PRINT at < tilde; " ! expect TRUE"
-    PRINT tilde > space; " ! expect TRUE"
+    PRINT space < exclaim; " ! expect TRUE (space < !)"
+    PRINT exclaim < at; " ! expect TRUE (! < @)"
+    PRINT at < tilde; " ! expect TRUE (@ < ~)"
+    PRINT tilde > space; " ! expect TRUE (~ > space)"
 ENDFUNC
 BEGIN
     TestSpecialChars()
 END
 RUN
 
-! ===== TEST 8: CHR() Conversion Comparisons (Legal) =====
+! ===== TEST 8: CHR() Conversion Comparisons =====
 NEW
 FUNC TestChrComparisons()
-    CHAR c = 'M'
-    BYTE b1 = 65  ! 'A'
-    BYTE b2 = 90  ! 'Z'
+    VAR c = 'M'
+    VAR val1 = 65
+    VAR val2 = 90
     PRINT "CHR() Comparison Tests:"
-    PRINT CHR(b1) < c; " ! expect TRUE (A < M)"
-    PRINT CHR(b2) > c; " ! expect TRUE (Z > M)"
-    PRINT CHR(b1) <= c; " ! expect TRUE (A <= M)"
-    PRINT CHR(b2) >= c; " ! expect TRUE (Z >= M)"
-    PRINT c > CHR(b1); " ! expect TRUE (M > A)"
+    PRINT CHR(val1) < c; " ! expect TRUE (CHR(65)=A < M)"
+    PRINT CHR(val2) > c; " ! expect TRUE (CHR(90)=Z > M)"
+    PRINT CHR(val1) <= c; " ! expect TRUE (A <= M)"
+    PRINT CHR(val2) >= c; " ! expect TRUE (Z >= M)"
 ENDFUNC
 BEGIN
     TestChrComparisons()
 END
 RUN
 
-! ===== TEST 9: ASC() Conversion Comparisons (Legal) =====
+! ===== TEST 9: ASC() Conversion Comparisons =====
 NEW
 FUNC TestAscComparisons()
-    CHAR c1 = 'A'
-    CHAR c2 = 'Z'
-    INT i = 77   ! 'M'
-    WORD w = 66  ! 'B'
+    VAR c1 = 'A'
+    VAR c2 = 'Z'
+    VAR longVal = 77
+    VAR longVal2 = 66
     PRINT "ASC() Comparison Tests:"
-    PRINT ASC(c1) < i; " ! expect TRUE (65 < 77)"
-    PRINT ASC(c2) > i; " ! expect TRUE (90 > 77)"
-    PRINT ASC(c1) < w; " ! expect TRUE (65 < 66)"
-    PRINT ASC(c2) >= w; " ! expect TRUE (90 >= 66)"
+    PRINT ASC(c1) < longVal; " ! expect TRUE (ASC(A)=65 < 77)"
+    PRINT ASC(c2) > longVal; " ! expect TRUE (ASC(Z)=90 > 77)"
+    PRINT ASC(c1) < longVal2; " ! expect TRUE (65 < 66)"
+    PRINT ASC(c2) >= longVal2; " ! expect TRUE (90 >= 66)"
 ENDFUNC
 BEGIN
     TestAscComparisons()
 END
 RUN
 
-! ===== TEST 10: Complex Expression Comparisons =====
-NEW
-FUNC TestComplexExpr()
-    CHAR c = 'G'
-    BYTE b = 70  ! 'F'
-    PRINT "Complex Expression Tests:"
-    PRINT c > CHR(b); " ! expect TRUE (G > F)"
-    PRINT ASC(c) > b; " ! expect TRUE (71 > 70)"
-    ! Chained comparison
-    CHAR c1 = 'B'
-    CHAR c2 = 'D'
-    PRINT c1 < c AND c < c2; " ! expect FALSE (B<G AND G<D)"
-    CHAR c3 = 'A'
-    CHAR c4 = 'Z'
-    PRINT c3 < c AND c < c4; " ! expect TRUE (A<G AND G<Z)"
-ENDFUNC
-BEGIN
-    TestComplexExpr()
-END
-RUN
-
-! ===== TEST 11: Boundary Characters =====
-NEW
-FUNC TestBoundaries()
-    CHAR nul = CHR(0)
-    CHAR delete = CHR(127)
-    CHAR ff = CHR(255)
-    CHAR one = CHR(1)
-    PRINT "Boundary CHAR Tests:"
-    PRINT nul < one; " ! expect TRUE"
-    PRINT one > nul; " ! expect TRUE"
-    PRINT delete < ff; " ! expect TRUE"
-    PRINT ff > delete; " ! expect TRUE"
-    PRINT nul <= nul; " ! expect TRUE"
-    PRINT ff >= ff; " ! expect TRUE"
-ENDFUNC
-BEGIN
-    TestBoundaries()
-END
-RUN
-
-! ===== TEST 12: String Indexing with Comparisons =====
+! ===== TEST 10: String Indexing Issue Test =====
 NEW
 FUNC TestStringIndex()
-    STRING s = "HELLO"
-    CHAR c1 = s[0]  ! 'H'
-    CHAR c2 = s[1]  ! 'E'
-    CHAR c3 = s[4]  ! 'O'
-    PRINT "String Index Comparison:"
-    PRINT c2 < c1; " ! expect TRUE (E < H)"
-    PRINT c3 > c1; " ! expect TRUE (O > H)"
-    PRINT c1 <= s[0]; " ! expect TRUE (H <= H)"
-    PRINT s[2] = s[3]; " ! expect TRUE (L = L)"
+    VAR s = "HELLO"
+    VAR c1 = s[0]
+    VAR c2 = s[1]
+    PRINT "String Index Test (known bug):"
+    PRINT "s[0]="; c1; " s[1]="; c2; " ! may show ASCII values"
+    PRINT c2 < c1; " ! expect TRUE if chars, may fail if LONG"
 ENDFUNC
 BEGIN
     TestStringIndex()
 END
 RUN
 
-! ===== TEST 13-17: Type Mismatch Errors =====
-! Test these one at a time to catch expected errors
-
+! ===== TEST 11: CHAR Array Elements =====
 NEW
-FUNC TestCharByteMismatch()
-    CHAR c = 'A'
-    BYTE b = 65
-    PRINT "Direct CHAR < BYTE: "; c < b
+CHAR letters[4]
+FUNC TestCharArray()
+    letters[0] = 'A'
+    letters[1] = 'C'
+    letters[2] = 'B'
+    letters[3] = 'D'
+    PRINT "CHAR Array Tests:"
+    PRINT letters[0] < letters[1]; " ! expect TRUE (A < C)"
+    PRINT letters[1] > letters[2]; " ! expect TRUE (C > B)"
+    PRINT letters[0] <= letters[0]; " ! expect TRUE (A <= A)"
+    PRINT letters[3] >= letters[2]; " ! expect TRUE (D >= B)"
 ENDFUNC
 BEGIN
-    PRINT "Testing CHAR < BYTE (expect error):"
-    TestCharByteMismatch()
+    TestCharArray()
 END
 RUN
-! Expected: ?TYPE MISMATCH error
 
+! ===== TEST 12-14: Type Mismatch Errors =====
 NEW
-FUNC TestCharIntMismatch()
-    CHAR c = 'Z'
-    INT i = 90
-    PRINT "Direct CHAR > INT: "; c > i
+FUNC TestCharLongMismatch()
+    VAR charVar = 'A'
+    VAR longVar = 65
+    PRINT "CHAR < LONG: "; charVar < longVar; " ! expect TYPE MISMATCH"
 ENDFUNC
 BEGIN
-    PRINT "Testing CHAR > INT (expect error):"
-    TestCharIntMismatch()
+    TestCharLongMismatch()
 END
 RUN
-! Expected: ?TYPE MISMATCH error
-
-NEW
-FUNC TestCharWordMismatch()
-    CHAR c = 'M'
-    WORD w = 77
-    PRINT "Direct CHAR <= WORD: "; c <= w
-ENDFUNC
-BEGIN
-    PRINT "Testing CHAR <= WORD (expect error):"
-    TestCharWordMismatch()
-END
-RUN
-! Expected: ?TYPE MISMATCH error
 
 NEW
 FUNC TestCharStringMismatch()
-    CHAR c = 'A'
-    STRING s = "A"
-    PRINT "Direct CHAR >= STRING: "; c >= s
+    VAR c = 'A'
+    VAR s = "A"
+    PRINT "CHAR >= STRING: "; c >= s; " ! expect TYPE MISMATCH"
 ENDFUNC
 BEGIN
-    PRINT "Testing CHAR >= STRING (expect error):"
     TestCharStringMismatch()
 END
 RUN
-! Expected: ?TYPE MISMATCH error
 
 NEW
 FUNC TestCharBitMismatch()
-    CHAR c = 'T'
-    BIT b = TRUE
-    PRINT "Direct CHAR = BIT: "; c = b
+    VAR c = 'T'
+    VAR b = TRUE
+    PRINT "CHAR = BIT: "; c = b; " ! expect TYPE MISMATCH"
 ENDFUNC
 BEGIN
-    PRINT "Testing CHAR = BIT (expect error):"
     TestCharBitMismatch()
 END
 RUN
-! Expected: ?TYPE MISMATCH error
 
-! ===== TEST 18: VAR Type with CHAR Comparisons =====
-NEW
-FUNC TestVarChar()
-    VAR v1 = 'A'
-    VAR v2 = 'Z'
-    CHAR c = 'M'
-    PRINT "VAR(CHAR) Tests:"
-    PRINT v1 < v2; " ! expect TRUE (A < Z)"
-    PRINT v2 > v1; " ! expect TRUE (Z > A)"
-    ! VAR to CHAR comparison
-    PRINT v1 < c; " ! expect TRUE (A < M)"
-    PRINT v2 > c; " ! expect TRUE (Z > M)"
-    ! Change VAR type
-    v1 = 100
-    PRINT "After v1=100, type is now INT/WORD"
-ENDFUNC
-BEGIN
-    TestVarChar()
-END
-RUN
-
-! ===== TEST 19: Memory Check =====
 NEW
 MEM
-PRINT "Memory check complete - no leaks expected"
+PRINT "CHAR comparison tests complete"

@@ -140,6 +140,23 @@ ENDFUNC
 **Impact:** Cannot iterate through ranges with negative starting values
 **Note:** FORCHK opcode logic appears to fail condition evaluation for negative start values
 
+### 10. CHR() Function Result Type Incompatibility
+**Symptom:** CHR() function result not recognized as CHAR type for comparisons  
+**Reproduce:**
+```basic
+FUNC TestChr()
+    VAR c = 'M'
+    VAR val = 65
+    PRINT CHR(val) < c    ! TYPE MISMATCH error
+ENDFUNC
+```
+**Error:** `?TYPE MISMATCH` during comparison evaluation  
+**Status:** ACTIVE  
+**Impact:** Cannot directly compare CHR() results with CHAR variables
+**Note:** CHR() converts LONG to CHAR but result isn't typed correctly for comparison operators
+**Workaround:** Assign CHR() result to variable first: `VAR temp = CHR(val); PRINT temp < c`
+
+
 ---
 
 ## RESOLVED ISSUES
