@@ -372,7 +372,6 @@ unit Instructions // Instructions.asm
             AND ZP.TOP3
             STA ZP.NEXT3
             
-            LDA ZP.NEXTT
             Long.PushNext();
             if (NC) { break; }
             SEC
@@ -382,6 +381,43 @@ unit Instructions // Instructions.asm
         PLY
         PLX
         PLA
+    }
+    
+    // Add this method to Executor.asm:
+    const string executeBitwiseComplementTrace = "BITWISE_NOT// Pop value, push bitwise complement";
+    BitwiseNot()
+    {
+    #ifdef TRACE
+        LDA #(executeBitwiseComplementTrace % 256) STA ZP.TraceMessageL LDA #(executeBitwiseComplementTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            Long.PopTop();
+            
+            // ~TOP -> NEXT (bitwise complement)
+            LDA ZP.TOP0
+            EOR #0xFF
+            STA ZP.TOP0
+            LDA ZP.TOP1
+            EOR #0xFF
+            STA ZP.TOP1
+            LDA ZP.TOP2
+            EOR #0xFF
+            STA ZP.TOP2
+            LDA ZP.TOP3
+            EOR #0xFF
+            STA ZP.TOP3
+            
+            Long.PushTop();
+            
+            SEC  // Success
+            break;
+        }
+        
+    #ifdef TRACE
+        LDA #(executeBitwiseComplementTrace % 256) STA ZP.TraceMessageL LDA #(executeBitwiseComplementTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
     }
     
     // Bitwise OR operation (pops two operands, pushes result)
@@ -414,7 +450,6 @@ unit Instructions // Instructions.asm
             ORA ZP.TOP2
             STA ZP.NEXT2
 
-            LDA ZP.NEXTT
             Long.PushNext();
             if (NC) { break; }
             SEC

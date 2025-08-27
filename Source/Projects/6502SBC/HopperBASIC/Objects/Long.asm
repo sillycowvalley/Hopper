@@ -335,8 +335,6 @@ unit Long
         
     }
     
-    
-    
     negateLongNEXT()
     {
         SEC

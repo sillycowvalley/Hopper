@@ -32,41 +32,40 @@ unit OpCodes
        // Bitwise operations
        BITWISE_AND  = 0x07,  // Pop two values, push bitwise AND
        BITWISE_OR   = 0x08,  // Pop two values, push bitwise OR
+       BITWISE_NOT  = 0x09,  // Pop two values, push bitwise NOT
        
        // Logical operations (BIT type only)
-       LOGICAL_AND  = 0x09,  // Pop two BIT values, push logical AND
-       LOGICAL_OR   = 0x0A,  // Pop two BIT values, push logical OR
-       LOGICAL_NOT  = 0x0B,  // Pop BIT value, push logical NOT
+       LOGICAL_AND  = 0x0A,  // Pop two BIT values, push logical AND
+       LOGICAL_OR   = 0x0B,  // Pop two BIT values, push logical OR
+       LOGICAL_NOT  = 0x0C,  // Pop BIT value, push logical NOT
        
        // Comparison operations (return BIT type)
-       EQ           = 0x0C,  // Pop two values, push equality result (BIT)
-       NE           = 0x0D,  // Pop two values, push inequality result (BIT)
-       LT           = 0x0E,  // Pop two values, push less than result (BIT)
-       GT           = 0x0F,  // Pop two values, push greater than result (BIT)
-       LE           = 0x10,  // Pop two values, push less or equal result (BIT)
-       GE           = 0x11,  // Pop two values, push greater or equal result (BIT)
+       EQ           = 0x0D,  // Pop two values, push equality result (BIT)
+       NE           = 0x0E,  // Pop two values, push inequality result (BIT)
+       LT           = 0x0F,  // Pop two values, push less than result (BIT)
+       GT           = 0x10,  // Pop two values, push greater than result (BIT)
+       LE           = 0x11,  // Pop two values, push less or equal result (BIT)
+       GE           = 0x12,  // Pop two values, push greater or equal result (BIT)
        
        // Stack manipulation
-       DUP          = 0x12,  // Duplicate top stack value
+       DUP          = 0x13,  // Duplicate top stack value
        
        // Utility and common literals
-       NOP          = 0x13,  // No operation (useful for code generation/optimization)
-       PUSH0        = 0x14,  // Push INT 0 (very common literal, no operand)
-       PUSH1        = 0x15,  // Push INT 1 (very common literal, no operand)
-       PUSHVOID     = 0x16,  // Push VOID 0 (very common literal, no operand)
+       NOP          = 0x14,  // No operation (useful for code generation/optimization)
+       PUSH0        = 0x15,  // Push INT 0 (very common literal, no operand)
+       PUSH1        = 0x16,  // Push INT 1 (very common literal, no operand)
+       PUSHVOID     = 0x17,  // Push VOID 0 (very common literal, no operand)
        
-       HALT         = 0x17,  // end of REPL opcode stream
+       HALT         = 0x18,  // end of REPL opcode stream
        
        // Function frame management
-       ENTER        = 0x18,  // Enter function frame - push BP, SP->BP
+       ENTER        = 0x19,  // Enter function frame - push BP, SP->BP
        
-       CLEARSCREEN  = 0x19,
-       PUSHEMPTYVAR = 0x1A,  // create a stack slot with 0 value and type VAR|INT
+       CLEARSCREEN  = 0x1A,
+       PUSHEMPTYVAR = 0x1B,  // create a stack slot with 0 value and type VAR|INT
        
-       GETITEM      = 0x1B,  // Generic indexing: container[index]
-       SETITEM      = 0x1C,  // Generic assignment: container[index] = value
-       
-       //TOLONG       = 0x1D,  // pop any other numeric type (BYTE|INT|WORD) and push a LONG
+       GETITEM      = 0x1C,  // Generic indexing: container[index]
+       SETITEM      = 0x1D,  // Generic assignment: container[index] = value
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
@@ -165,6 +164,7 @@ unit OpCodes
    const string opcodeNEG = "NEG";
    const string opcodeBITWISE_AND = "BITWISE_AND";
    const string opcodeBITWISE_OR = "BITWISE_OR";
+   const string opcodeBITWISE_NOT = "BITWISE_NOT";
    const string opcodeLOGICAL_AND = "LOGICAL_AND";
    const string opcodeLOGICAL_OR = "LOGICAL_OR";
    const string opcodeLOGICAL_NOT = "LOGICAL_NOT";
@@ -410,6 +410,13 @@ unit OpCodes
                 LDA #(opcodeBITWISE_OR % 256)
                 STA ZP.STRL
                 LDA #(opcodeBITWISE_OR / 256)
+                STA ZP.STRH
+            }
+            case OpCode.BITWISE_NOT:
+            {
+                LDA #(opcodeBITWISE_NOT % 256)
+                STA ZP.STRL
+                LDA #(opcodeBITWISE_NOT / 256)
                 STA ZP.STRH
             }
             case OpCode.LOGICAL_AND:

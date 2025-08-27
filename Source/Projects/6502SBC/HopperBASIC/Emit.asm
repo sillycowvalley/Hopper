@@ -868,21 +868,21 @@ unit Emit
            {
                case Token.AND:
                {
-                   LDA #OpCode.LOGICAL_AND
+                   LDA # OpCode.LOGICAL_AND
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.OR:
                {
-                   LDA #OpCode.LOGICAL_OR
+                   LDA # OpCode.LOGICAL_OR
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.NOT:
                {
-                   LDA #OpCode.LOGICAL_NOT
+                   LDA # OpCode.LOGICAL_NOT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
@@ -918,14 +918,21 @@ unit Emit
            {
                case Token.BITWISE_AND:
                {
-                   LDA #OpCode.BITWISE_AND
+                   LDA # OpCode.BITWISE_AND
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;
                }
                case Token.BITWISE_OR:
                {
-                   LDA #OpCode.BITWISE_OR
+                   LDA # OpCode.BITWISE_OR
+                   STA Compiler.compilerOpCode
+                   Emit.OpCode();
+                   break;
+               }
+               case Token.BITWISE_NOT:
+               {
+                   LDA # OpCode.BITWISE_NOT
                    STA Compiler.compilerOpCode
                    Emit.OpCode();
                    break;

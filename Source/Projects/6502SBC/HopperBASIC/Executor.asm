@@ -466,6 +466,10 @@ unit Executor // Executor.asm
            {
                Instructions.BitwiseOr();
            }
+           case OpCode.BITWISE_NOT:
+           {
+               Instructions.BitwiseNot();
+           }
            
            // Logical operations (BIT operands only)
            case OpCode.LOGICAL_AND:

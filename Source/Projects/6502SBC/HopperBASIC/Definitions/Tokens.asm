@@ -144,12 +144,13 @@ unit Tokens
         // Bitwise operators
         BITWISE_AND = 0xE4,
         BITWISE_OR  = 0xE5,
+        BITWISE_NOT = 0xE6,  // Bitwise complement (~)
         
-        // Array and string operators
-        LBRACKET = 0xE6,
-        RBRACKET = 0xE7,
-        LBRACE   = 0xE8,
-        RBRACE   = 0xE9,
+        // Array and string operators (shifted down by 1 to make room for TILDE)
+        LBRACKET = 0xE7,
+        RBRACKET = 0xE8,
+        LBRACE   = 0xE9,
+        RBRACE   = 0xEA,
     }
         
     // Keywords A-H (first character < 'I')

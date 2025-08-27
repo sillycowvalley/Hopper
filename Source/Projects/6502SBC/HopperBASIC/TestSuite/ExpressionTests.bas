@@ -340,37 +340,60 @@ FUNC TestSpecCompliance()
     PRINT
 ENDFUNC
 
-! ===== MAIN TEST RUNNER =====
-BEGIN
-    PRINT "Hopper BASIC Expression Test Suite v2.0"
-    PRINT "Testing CORRECTED operator precedence"
-    PRINT "Precedence: () > unary(-,~) > *,/,MOD > & > | > +,- > comparisons"
-    PRINT "KEY FIX: Bitwise operators now bind tighter than arithmetic"
-    PRINT "=================================================="
-    PRINT
-    
-    TestPrimary()
-    TestUnary()
-    TestBitwiseComplement()
-    TestMultiplicative()
-    TestBitwiseAnd()
-    TestBitwiseOr()
-    TestAdditive() 
-    TestComparisons()
-    TestCorrectedPrecedence()
-    TestFullPrecedenceChain()
-    TestHardwareProgramming()
-    TestOldPrecedenceErrors()
-    TestSpecCompliance()
-    
-    PRINT "=================================================="
-    PRINT "=== Test Suite Complete ==="
-    PRINT "All arithmetic/bitwise precedence should now be correct"
-    PRINT "Bitwise operators (&,|) bind tighter than arithmetic (+,-)"
-    PRINT "This matches assembly language expectations for hardware programming"
-END
+MEM
 
-RUN
+PRINT "Hopper BASIC Expression Test Suite v2.0"
+PRINT "Testing CORRECTED operator precedence"
+PRINT "Precedence: () > unary(-,~) > *,/,MOD > & > | > +,- > comparisons"
+PRINT "KEY FIX: Bitwise operators now bind tighter than arithmetic"
+PRINT "=================================================="
+PRINT
+    
+TestPrimary()
+FORGET TestPrimary
 
+TestUnary()
+FORGET TestUnary
+
+TestBitwiseComplement()
+FORGET TestBitwiseComplement
+
+TestMultiplicative()
+FORGET TestMultiplicative
+
+TestBitwiseAnd()
+FORGET TestBitwiseAnd
+
+TestBitwiseOr()
+FORGET TestBitwiseOr
+TestAdditive() 
+FORGET TestAdditive
+
+TestComparisons()
+FORGET TestComparisons
+
+TestCorrectedPrecedence()
+FORGET TestCorrectedPrecedence
+
+TestFullPrecedenceChain()
+FORGET TestFullPrecedenceChain
+
+TestHardwareProgramming()
+FORGET TestHardwareProgramming
+
+TestOldPrecedenceErrors()
+FORGET TestOldPrecedenceErrors
+
+TestSpecCompliance()
+FORGET TestSpecCompliance
+
+    
+PRINT "=================================================="
+PRINT "=== Test Suite Complete ==="
+PRINT "All arithmetic/bitwise precedence should now be correct"
+PRINT "Bitwise operators (&,|) bind tighter than arithmetic (+,-)"
+PRINT "This matches assembly language expectations for hardware programming"
+
+MEM
 NEW
 MEM

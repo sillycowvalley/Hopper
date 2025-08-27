@@ -330,10 +330,55 @@ unit Compiler // Compiler.asm
 #endif
    }
    
-   compileLogicalNot()
-   {
-       compileComparison();
-   }
+   // NEW: Compile logical NOT operations (level 9 precedence)
+    // Input: ZP.CurrentToken = current token
+    // Output: Logical NOT opcodes emitted, ZP.CurrentToken = token after expression
+    // Modifies: ZP.CurrentToken, ZP.TokenizerPos (via Tokenizer calls), buffer state, A/X/Y registers
+    const string compileLogicalNotTrace = "CompLogNot // NOT";
+    compileLogicalNot()
+    {
+    #ifdef TRACEPARSE
+        LDA #(compileLogicalNotTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalNotTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP #Token.NOT
+            if (Z)
+            {
+                RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
+                
+                // Get next token for operand
+                Tokenizer.NextToken();
+                CheckError();
+                if (NC) { break; }
+                
+                // Compile the operand (recursive call to handle multiple NOTs)
+                compileLogicalNot();
+                CheckError();
+                if (NC) { break; }
+                
+                // Emit logical NOT opcode
+                LDA #Token.NOT
+                Emit.LogicalOp();
+                CheckError();
+                if (NC) { break; }
+            }
+            else
+            {
+                // Not logical NOT, compile next precedence level
+                compileComparison();
+                CheckError();
+                if (NC) { break; }
+            }
+            break;
+        } // loop
+    
+    #ifdef TRACEPARSE
+        LDA #(compileLogicalNotTrace % 256) STA ZP.TraceMessageL LDA #(compileLogicalNotTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
    
    // Compile logical AND operations
    // Input: ZP.CurrentToken = current token
@@ -793,9 +838,9 @@ unit Compiler // Compiler.asm
                    CheckError();
                    if (NC) { break; }
                }
-               case Token.NOT:
+               case Token.BITWISE_NOT:
                {
-                   RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
+                   RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
                    
                    // Get next token for operand
                    Tokenizer.NextToken();
@@ -808,8 +853,8 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit logical NOT opcode
-                   LDA #Token.NOT
-                   Emit.LogicalOp();
+                   LDA #Token.BITWISE_NOT
+                   Emit.BitwiseOp();
                    CheckError();
                    if (NC) { break; }
                }
