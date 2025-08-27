@@ -503,7 +503,7 @@ char_literal := "'" character "'"
 | `()` `[]` Functions.. | `()` Functions.. | **Primary: identifiers, literals, '(expression)', function calls
 |  | `^` (power) | **BBC: Has power**
 | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
-| `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point `DIV` vs `/`**
+| `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point `/` integer `DIV`**
 | `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
 | `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
 | `+` `-` | `+` `-` | 
