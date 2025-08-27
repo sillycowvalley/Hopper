@@ -501,7 +501,7 @@ char_literal := "'" character "'"
 | **Level** | **Hopper (2025) - UPDATED** | **BBC BASIC (1981)** | **Notes**
 |-----------|----------------|----------------------|-----------|
 | **1** | `()` `[]` Functions.. | `()` Functions.. | **Primary: identifiers, literals, '(expression)', function calls
-| **2** |  | `^`  |  **Hopper: No power
+| **2** |  | `^` (power) | **BBC: Has power**
 | **3** | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
 | **4** | `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point**
 | **5** | `+` `-` | `+` `-` | 
@@ -510,7 +510,7 @@ char_literal := "'" character "'"
 | **8** | `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
 | **9** | `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
 | **10** | `AND` (logical) | `AND` | **Hopper: Logical AND separated from bitwise**
-| **11** | `OR`  | `OR` `EOR` | **Hopper: No EOR, logical OR separated from bitwise**
+| **11** | `OR`  | `OR` `EOR` | **Hopper: Logical OR separated from bitwise, BBC: Has EOR **
 
 
 ## **Key Observations:**
