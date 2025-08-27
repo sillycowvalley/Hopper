@@ -445,12 +445,13 @@ argument_list := expression [ "," expression ]*
 expression := logical_or_expr
 logical_or_expr := logical_and_expr [ OR logical_and_expr ]
 logical_and_expr := comparison_expr [ AND comparison_expr ]
-comparison_expr := additive_expr [ comparison_op additive_expr ]
+comparison_expr := bitwise_or_expr [ comparison_op bitwise_or_expr ]
 comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
-additive_expr := bitwise_or_expr [ ("+" | "-") bitwise_or_expr ]
 bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
-bitwise_and_expr := multiplicative_expr [ "&" multiplicative_expr ]
-multiplicative_expr := unary_expr [ ("*" | "/" | MOD) unary_expr ]
+bitwise_and_expr := additive_expr [ "&" additive_expr ]
+additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
+multiplicative_expr := exponential_expr [ ("*" | "/" | MOD) exponential_expr ]
+exponential_expr := unary_expr [ "^" unary_expr ]
 unary_expr := [ "-" | NOT | "~" ] primary_expr
 primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
@@ -496,20 +497,22 @@ char_literal := "'" character "'"
 
 ## **Our Precedence vs GW-BASIC vs BBC BASIC:**
 
-| **Level** | **Hopper (2025)** | **GW-BASIC (1983)** | **BBC BASIC (1981)** | **Notes**
+| **Level** | **Hopper (2025) - CORRECTED** | **GW-BASIC (1983)** | **BBC BASIC (1981)** | **Notes**
 |-----------|----------------|----------------------|-----------------------|-----------|
-| **1** | `()` `[]` | `()` | `()` Functions | Universal highest precedence
-| **2** | `-` `NOT` `~` | `^` (power) | `^` (power) | **Both classics had exponentiation, we have unary ops**
+| **1** | `()` `[]` **identifiers** **function_calls** **literals** | `()` | `()` Functions | **Hopper: Complete primary expressions**
+| **2** | `-` `NOT` `~`* | `^` (power) | `^` (power) | **Missing: ^ exponentiation in Hopper**
 | **3** | `*` `/` `MOD` | `-` (unary) | `-` `NOT` (unary) | **BBC grouped unary with level 3**  
-| **4** | `&` (bitwise AND) | `*` `/` | `*` `/` `DIV` `MOD` | **Our bitwise, classics: arithmetic**
-| **5** | `|` (bitwise OR) | `MOD` | `+` `-` | **Our bitwise, BBC: additive**
-| **6** | `+` `-` | `+` `-` | `=` `<>` `<` `>` `<=` `>=` | **✅ We match GW-BASIC perfectly**
-| **7** | `=` `<>` `<` `>` `<=` `>=` | `\` (int div) | `AND` | **BBC had cleaner logical precedence**
-| **8** | `AND` (logical) | `=` `<>` `<` `>` `<=` `>=` | `OR` `EOR` | **BBC included EOR (XOR)**
+| **4** | `+` `-` | `*` `/` | `*` `/` `DIV` `MOD` | **Missing: DIV in GW-BASIC**
+| **5** | `&` (bitwise AND) | `MOD` | `+` `-` | **Hopper unique: bitwise precedence**
+| **6** | `|` (bitwise OR) | `+` `-` | `=` `<>` `<` `>` `<=` `>=` | **Hopper unique: bitwise precedence**
+| **7** | `=` `<>` `<` `>` `<=` `>=` | `\` (int div) | `AND` | **Missing: \\ integer division in Hopper**
+| **8** | `AND` (logical) | `=` `<>` `<` `>` `<=` `>=` | `OR` `EOR` | **Missing: EOR (XOR) in Hopper**
 | **9** | `OR` (logical) | `NOT` | - | **GW had scattered precedence**
-| **10** | - | `AND` | - | **GW logical ops very low**
+| **10** | - | `AND` | - | -
 | **11** | - | `OR` | - | -
 | **12** | - | `=` (assignment) | - | **GW assignment at bottom**
+
+
 
 ## **Key Observations:**
 
