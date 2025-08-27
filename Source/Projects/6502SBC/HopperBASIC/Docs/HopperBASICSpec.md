@@ -279,8 +279,8 @@ Arrays retain explicit type specifiers for memory efficiency:
 - **`POKE(addr, value)`** - Write byte to memory (LONG, LONG)
 - ✅ **`INPUT()`** - Read user input and parse as LONG
   - Returns 0 for empty line or parsing error
-  - Single character returns ASCII value (A → 65, '0' → 48)
-  - Numeric input parsed to LONG value (65 → 65)
+  - Single character returns ASCII value (A → 65, ' ' → 32)
+  - Numeric input parsed to LONG value (65 → 65, '0' -> 0)
 
 ---
 
