@@ -493,6 +493,49 @@ char_literal := "'" character "'"
 
 **Key Fix**: Bitwise operators (&, |) now have higher precedence than arithmetic (+, -), which makes sense for low-level programming and matches assembly language expectations.
 
+
+## **Our Precedence vs GW-BASIC vs BBC BASIC:**
+
+| **Level** | **Hopper (2025)** | **GW-BASIC (1983)** | **BBC BASIC (1981)** | **Notes**
+|-----------|----------------|----------------------|-----------------------|-----------|
+| **1** | `()` `[]` | `()` | `()` Functions | Universal highest precedence
+| **2** | `-` `NOT` `~` | `^` (power) | `^` (power) | **Both classics had exponentiation, we have unary ops**
+| **3** | `*` `/` `MOD` | `-` (unary) | `-` `NOT` (unary) | **BBC grouped unary with level 3**  
+| **4** | `&` (bitwise AND) | `*` `/` | `*` `/` `DIV` `MOD` | **Our bitwise, classics: arithmetic**
+| **5** | `|` (bitwise OR) | `MOD` | `+` `-` | **Our bitwise, BBC: additive**
+| **6** | `+` `-` | `+` `-` | `=` `<>` `<` `>` `<=` `>=` | **✅ We match GW-BASIC perfectly**
+| **7** | `=` `<>` `<` `>` `<=` `>=` | `\` (int div) | `AND` | **BBC had cleaner logical precedence**
+| **8** | `AND` (logical) | `=` `<>` `<` `>` `<=` `>=` | `OR` `EOR` | **BBC included EOR (XOR)**
+| **9** | `OR` (logical) | `NOT` | - | **GW had scattered precedence**
+| **10** | - | `AND` | - | **GW logical ops very low**
+| **11** | - | `OR` | - | -
+| **12** | - | `=` (assignment) | - | **GW assignment at bottom**
+
+## **Key Observations:**
+
+## **🎯 BBC BASIC (1981) - Most Advanced Classic BASIC**
+- **✅ Sophisticated design** - Well-organized 8-level precedence vs GW's scattered 12 levels
+- **✅ Better logical precedence** - `AND`/`OR` at levels 7-8 vs GW's 10-11
+- **✅ Advanced bitwise** - Had `EOR` (XOR) when GW-BASIC had none
+- **✅ Mathematical tradition** - Proper `^` (power) placement
+
+## **⚠️ GW-BASIC (1983) - Regression from BBC**
+- **❌ Scattered precedence** - 12 levels with `NOT` at level 9, illogical
+- **❌ No bitwise operations** - Missing essential hardware manipulation  
+- **❌ Assignment confusion** - `=` as assignment at lowest precedence
+- **❌ Poor logical grouping** - `AND`/`OR` buried at levels 10-11
+
+## **🏆 Our System (2025) - Best of All Worlds**
+- **✅ Classic BASIC arithmetic** - Preserves the perfect `+` `-` precedence (level 6)
+- **✅ Complete bitwise toolkit** - Adds missing `&`, `|`, `~` for hardware programming
+- **✅ Type safety revolution** - Separates logical (BIT) from bitwise (LONG) operations  
+- **✅ Assembly-optimized** - Hardware operations bind tight for microcontroller work
+- **✅ BBC's logical clarity** - Clean `AND`/`OR` precedence without BBC's EOR complexity
+
+Our design takes **BBC BASIC's sophisticated foundation** and **modernizes it** with type safety and hardware-oriented precedence!
+
+
+
 ---
 
 ## Technical Architecture
