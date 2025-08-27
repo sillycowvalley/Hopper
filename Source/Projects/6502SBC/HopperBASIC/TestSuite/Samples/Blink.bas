@@ -3,14 +3,14 @@ BEGIN
    PINMODE(0, 1) ! Pin 0  for Writing
    
    WHILE TRUE
-       WRITE(0, 1)
-       DELAY(500)
+       WRITE(0, TRUE)
+       DELAY(1000)
        PRINT "On"
-       WRITE(0, 0)
-       DELAY(500)
+       WRITE(0, FALSE)
+       DELAY(1000)
        PRINT "Off"
        COUNT = COUNT + 1
-       PRINT COUNT, SECONDS()
+       PRINT "Laps="; COUNT, "Seconds="; SECONDS()
    WEND
 END
 

@@ -422,7 +422,7 @@ unit CompilerFlow
            
            if (BBS0, ZP.CompilerFlags)
            {
-               LDA # ZP.TOPT
+               LDA ZP.TOPT
                CMP # BASICType.BIT
                if (NZ)
                {
@@ -584,7 +584,7 @@ unit CompilerFlow
             
             if (BBS0, ZP.CompilerFlags)
             {
-                LDA # ZP.TOPT
+                LDA ZP.TOPT
                 CMP # BASICType.BIT
                 if (NZ)
                 {

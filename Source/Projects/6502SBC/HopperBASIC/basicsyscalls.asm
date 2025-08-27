@@ -283,9 +283,7 @@ unit BASICSysCalls
        loop
        {
 
-           FetchOperandByte();  // A = SYSCALL ID
-           States.CanContinue();
-           if (NC) { break; }
+           FetchOperandByte();  // A = SYSCALL ID, never fails
            
            TAY  // Preserve full SYSCALL ID in Y
            
@@ -305,12 +303,13 @@ unit BASICSysCalls
                case 0: { /* No arguments to pop */ }
                case 1: 
                { 
-                   Long.PopTop();  // Arg in ZP.TOP*, munts X
-               }
+                   Long.PopTop();                 }
                case 2: 
                { 
                    PHY
-                   Long.PopTopNext(); // First arg in ZP.NEXT, Second arg in ZP.TOP*, munts X and Y
+                   // don't use PopTopNext() - it requires both types to be LONG if one is LONG
+                   Long.PopTop();  // second arg in ZP.TOP*, munts X
+                   Long.PopNext(); // first arg in ZP.TOP*, munts X
                    PLY
                    if (NC) { break; }
                }
@@ -330,7 +329,6 @@ unit BASICSysCalls
                {
                    CLC // no quotes
                    BASICTypes.PrintValue();  // Uses ZP.TOP*, CLC = no quotes
-                   SEC // all good
                }
                case SysCallType.PrintChar:     // ID = 2
                {
