@@ -445,11 +445,11 @@ argument_list := expression [ "," expression ]*
 expression := logical_or_expr
 logical_or_expr := logical_and_expr [ (OR | EOR) logical_and_expr ]
 logical_and_expr := logical_not_expr [ AND logical_not_expr ]
-logical_not_expr := comparison_expr [ NOT comparison_expr ]
-comparison_expr := bitwise_or_expr [ comparison_op bitwise_or_expr ]
-comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
+logical_not_expr := [ NOT ] bitwise_or_expr
 bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
-bitwise_and_expr := additive_expr [ "&" additive_expr ]
+bitwise_and_expr := comparison_expr [ "&" bitwise_and_expr ]
+comparison_expr := additive_expr [ comparison_op additive_expr ]
+comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
 additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
 multiplicative_expr := exponential_expr [ ("*" | "/" | MOD | DIV) exponential_expr ]
 exponential_expr := unary_expr [ "^" unary_expr ]
@@ -500,10 +500,10 @@ char_literal := "'" character "'"
 
 | **Level** | **Hopper (2025) - UPDATED** | **BBC BASIC (1981)** | **Notes**
 |-----------|----------------|----------------------|-----------|
-| **1** | `()` `[]` Functions, Identifiers | `()` Functions, Identifiers | 
+| **1** | `()` `[]` Functions.. | `()` Functions.. | **Primary: identifiers, literals, '(expression)', function calls
 | **2** | `^` (not implemented) | `^` (power) | 
 | **3** | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
-| **4** | `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **✅ BBC has floating point**
+| **4** | `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point**
 | **5** | `+` `-` | `+` `-` | 
 | **6** | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | 
 | **7** | `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
