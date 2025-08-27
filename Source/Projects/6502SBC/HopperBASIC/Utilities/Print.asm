@@ -75,14 +75,18 @@ unit Print
     Spaces()
     {
         PHX
-        loop
+        CPX #0
+        if (NZ)
         {
-            LDA #' '
-            Serial.WriteChar();
-            DEX
-            if (Z) // Set Z - counter reached 0
-            { 
-                break; 
+            loop
+            {
+                LDA #' '
+                Serial.WriteChar();
+                DEX
+                if (Z) // Set Z - counter reached 0
+                { 
+                    break; 
+                }
             }
         }
         PLX

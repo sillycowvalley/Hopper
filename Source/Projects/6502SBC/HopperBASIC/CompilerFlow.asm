@@ -638,43 +638,15 @@ unit CompilerFlow
     #endif
     }
 
-
-    // Prerequisites:
-    // 1. In Tokenizer.asm, ensure these tokens exist:
-    //    - Token.FOR
-    //    - Token.NEXT  
-    //    - Token.TO
-    //    - Token.STEP
-    //
-    // 2. In Compiler.asm workspace section, add:
-    //    const uint compilerForIteratorOffset = Address.BasicCompilerWorkspace + 11; // 1 byte - signed BP offset of current FOR iterator
-    //    const uint compilerOperand3         = Address.BasicCompilerWorkspace + 12; // 1 byte - third operand for 3-operand opcodes
-    //
-    // 3. In OpCodes.asm, add:
-    //    FORCHK = 0xC0,  // FOR initial check [iterator_offset] [forward_offset_lsb] [forward_offset_msb]
-    //    FORIT  = 0xC1,  // FOR iterate [iterator_offset] [backward_offset_lsb] [backward_offset_msb]
-    //
-    // 4. In CompileStatement() switch statement, add:
-    //    case Token.FOR:
-    //    {
-    //        STZ compilerCanDeclareLocals // no more locals after this
-    //        compileForStatement();
-    //        CheckErrorAndSetFailure();
-    //        if (NC) { break; }
-    //    }
-    //
-    // 5. Assumes these methods exist in Locals unit:
-    //    - Locals.Find()  // Input: ZP.IDX = function node, ZP.TOP = name pointer, Output: C set if found, A = BP offset
-    //    - Locals.Add()   // Input: ZP.IDX = function node, ZP.TOP = name pointer, ZP.SymbolType = type, Output: A = BP offset
-    //
-    // 6. Requires implementation of executeFORCHK() and executeFORIT() in Executor.asm
-    //    (See the design document for implementation details)
-    //
-    // 7. FOR/NEXT loops must be inside a function (FUNC or BEGIN) - they cannot be at global scope
-    //    This is because the iterator becomes a local variable with a BP-relative offset
-    //
-    // 8. Assumes compilerSavedNodeAddrL/H contains the current function node address
-    //    (Set by CompileFunction when entering function compilation)
+    
+    addForVar() // Locals.Add() a variable called "$F"
+    {
+        LDA #(Messages.ForVarName % 256)
+        STA ZP.TOPL
+        LDA #(Messages.ForVarName / 256)
+        STA ZP.TOPH
+        Locals.Add();
+    }     
 
     // Compile FOR...NEXT statement
     // Input: ZP.CurrentToken = FOR token
@@ -979,11 +951,7 @@ unit CompilerFlow
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
            STA ZP.IDXH
-           LDA #(ForVarName % 256)
-           STA ZP.TOPL
-           LDA #(ForVarName / 256)
-           STA ZP.TOPH
-           Locals.Add();
+           addForVar(); // Locals.Add() a variable called "$F"
            
            PLA
            STA ZP.TOP3
@@ -1057,11 +1025,7 @@ unit CompilerFlow
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH
                STA ZP.IDXH
-               LDA #(ForVarName % 256)
-               STA ZP.TOP0
-               LDA #(ForVarName / 256)
-               STA ZP.TOP1
-               Locals.Add(); // HERE
+               addForVar(); // Locals.Add() a variable called "$F"
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
                CheckErrorAndSetFailure();
                if (NC) { break; }
@@ -1105,11 +1069,7 @@ unit CompilerFlow
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH
                STA ZP.IDXH
-               LDA #(ForVarName % 256)
-               STA ZP.TOPL
-               LDA #(ForVarName / 256)
-               STA ZP.TOPH
-               Locals.Add(); // HERE
+               addForVar(); // Locals.Add() a variable called "$F"
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            }
            if (BBS3, ZP.CompilerFlags) 

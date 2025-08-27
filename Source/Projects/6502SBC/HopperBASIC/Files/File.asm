@@ -1328,11 +1328,6 @@ unit File
         
         printFilenameFromDirectory(); // Uses Y = filename start offset
         
-        // Calculate spaces needed for alignment (aim for 16 total chars)
-        // For now, use fixed spacing - could be improved with actual length calculation
-        LDX #4
-        Print.Spaces();
-        
         // Print file size
         // Y already has directory entry offset 
         printFileSizeFromDirectory(); // Uses Y = directory entry offset
@@ -1357,12 +1352,14 @@ unit File
 #ifdef TRACEFILE
         LDA #(printFilenameFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFilenameFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        PHX
         PHY
         TYA
         CLC
         ADC #3                   // Offset to filename field
         TAY
         
+        LDX #16
         loop
         {
             LDA DirectoryBuffer, Y
@@ -1370,12 +1367,22 @@ unit File
             PHA                      // Save character
             AND #0x7F                // Clear high bit
             Print.Char();            // Print character
+            DEX                      // count the character (for space padding below)
             PLA                      // Restore character
             
             if (MI) { break; }       // High bit set = last character
             INY
+            
         } // single exit
+        loop
+        {
+            Print.Space();
+            DEX
+            if (Z) { break; }
+        }
+        
         PLY
+        PLX
 #ifdef TRACEFILE
         LDA #(printFilenameFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFilenameFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1395,6 +1402,43 @@ unit File
         LDA DirectoryBuffer + 1, Y  // Length MSB
         STA ZP.TOPH
         STZ ZP.TOPT
+        
+        // right aligment of numbers in the 10..9999 range
+        PHX
+        LDX #0                       // assume 0 spaces of padding
+        LDA ZP.TOPH
+        CMP #4                       // Check for 1024+
+        if (NC)                      // < 1024, need more analysis
+        {
+            CMP #3                   // Check if TOPH = 3 (768-1023)
+            if (Z)                   // TOPH = 3
+            {
+                LDA ZP.TOPL
+                CMP #232             // 1000 = 3*256 + 232
+                if (NC)              // < 1000 (768-999 range)
+                {        INX }       //     3-digit numbers get 1 space
+                // else >= 1000 (1000-1023), keep X=0 for 4-digit alignment
+            }
+            else                     // TOPH = 0, 1, or 2
+            {
+                CMP #0
+                if (NZ)              // TOPH = 1 or 2 (256-767)
+                {        INX }       //     3-digit numbers get 1 space
+                else                 // TOPH = 0 (0-255)
+                {
+                    LDA ZP.TOPL
+                    CMP #100
+                    if (NC)          // < 100 (10-99 range)
+                    { LDX #2 }       //     2-digit numbers get 2 spaces
+                    else             // >= 100 (100-255 range)
+                    {    INX }       //     3-digit numbers get 1 space
+                }
+            }
+        }
+        // else >= 1024, keep X=0 (no padding for 4+ digits)
+        Print.Spaces();              // print X spaces (zero is ok)
+        PLX
+        
         Print.Decimal();
 #ifdef TRACEFILE
         LDA #(printFileSizeFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFileSizeFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

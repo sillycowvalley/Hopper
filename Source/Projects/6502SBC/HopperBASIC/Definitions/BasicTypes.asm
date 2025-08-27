@@ -315,11 +315,8 @@ unit BASICTypes // BASICTypes.asm
                     if (Z)
                     {
                         // 0 = BASICType.VOID:
-                        LDA #(Messages.VoidName % 256)
-                        STA ZP.STRL
-                        LDA #(Messages.VoidName / 256)
-                        STA ZP.STRH
-                        Print.String();
+                        LDA # ErrorWord.VOID
+                        Error.PrintWord();
                     }
                     else
                     {

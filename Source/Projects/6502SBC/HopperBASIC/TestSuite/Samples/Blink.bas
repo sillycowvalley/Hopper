@@ -1,5 +1,5 @@
 BEGIN
-   WORD COUNT
+   VAR COUNT
    PINMODE(0, 1) ! Pin 0  for Writing
    
    WHILE TRUE
