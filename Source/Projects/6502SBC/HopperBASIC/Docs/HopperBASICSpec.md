@@ -445,12 +445,12 @@ argument_list := expression [ "," expression ]*
 expression := logical_or_expr
 logical_or_expr := logical_and_expr [ (OR | EOR) logical_and_expr ]
 logical_and_expr := logical_not_expr [ AND logical_not_expr ]
-logical_not_expr := [ NOT ] bitwise_or_expr
-bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
-bitwise_and_expr := comparison_expr [ "&" bitwise_and_expr ]
+logical_not_expr := [ NOT ] comparison_expr
 comparison_expr := additive_expr [ comparison_op additive_expr ]
 comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
-additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
+additive_expr := bitwise_or_expr [ ("+" | "-") bitwise_or_expr ]
+bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
+bitwise_and_expr := multiplicative_expr [ "&" bitwise_and_expr ]
 multiplicative_expr := exponential_expr [ ("*" | "/" | MOD | DIV) exponential_expr ]
 exponential_expr := unary_expr [ "^" unary_expr ]
 unary_expr := [ "-" | "~" ] primary_expr

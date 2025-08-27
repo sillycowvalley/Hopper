@@ -264,7 +264,6 @@ BEGIN
     
     TestPrimary()
     TestUnary()
-    TestBitwiseComplement()
     TestMultiplicative()
     TestBitwiseAnd()
     TestBitwiseOr()
@@ -272,9 +271,9 @@ BEGIN
     TestArithmeticPrecedence()
     TestComparisons()
     TestComplexPrecedence()
-    TestBitwiseComprehensive()
     TestStateConsistency()
-    
+    TestBitwiseComplement()
+    TestBitwiseComprehensive()
     PRINT "=== Test Suite Complete ==="
     PRINT "All outputs should match expected values"
     PRINT "If ~ operator not implemented, those tests will fail"
@@ -282,5 +281,5 @@ END
 
 RUN
 
-NEW
-MEM
+!NEW
+!MEM

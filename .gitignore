@@ -33,3 +33,4 @@ Runtimes/Universal/Hopper/Publish
 /Runtimes/Windows/HopperNET/.vs
 /Runtimes/NETCore/bin
 /Source/Projects/6502SBC/HopperBASIC/Parser
+/Runtimes/NETCore/.vs

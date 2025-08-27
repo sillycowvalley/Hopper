@@ -330,6 +330,11 @@ unit Compiler // Compiler.asm
 #endif
    }
    
+   compileLogicalNot()
+   {
+       compileComparison();
+   }
+   
    // Compile logical AND operations
    // Input: ZP.CurrentToken = current token
    // Output: Logical AND opcodes emitted, ZP.CurrentToken = token after expression
@@ -345,7 +350,7 @@ unit Compiler // Compiler.asm
        loop
        {
            // Compile left operand (higher precedence)
-           compileComparison();
+           compileLogicalNot();
            CheckError();
            if (NC) { break; }
            
@@ -363,7 +368,7 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Compile right operand
-               compileComparison();
+               compileLogicalNot();
                CheckError();
                if (NC) { break; }
                
@@ -397,7 +402,7 @@ unit Compiler // Compiler.asm
        loop
        {
            // Compile left operand (higher precedence)
-           compileBitwiseOr();
+           compileAdditive();
            CheckError();
            if (NC) { break; }
            
@@ -427,7 +432,7 @@ unit Compiler // Compiler.asm
                        }
                        
                        // Compile right operand
-                       compileBitwiseOr();
+                       compileAdditive();
                        CheckError();
                        if (NC) 
                        { 
@@ -473,7 +478,7 @@ unit Compiler // Compiler.asm
        loop
        {
            // Compile left operand (higher precedence)
-           compileAdditive();
+           compileMultiplicative();
            CheckError();
            if (NC) { break; }
            
@@ -491,7 +496,7 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Compile right operand
-               compileAdditive();
+               compileMultiplicative();
                CheckError();
                if (NC) { break; }
                
@@ -576,7 +581,7 @@ unit Compiler // Compiler.asm
        loop
        {
            // Compile left operand (higher precedence)
-           compileMultiplicative();
+           compileBitwiseOr();
            CheckError();
            if (NC) { break; }
            
@@ -592,7 +597,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Compile right operand
-                   compileMultiplicative();
+                   compileBitwiseOr();
                    CheckError();
                    if (NC) { break; }
 
@@ -653,6 +658,11 @@ unit Compiler // Compiler.asm
 #endif
    }
    
+   compileExponential()
+   {
+       compileUnary();
+   }
+   
    // Compile multiplicative operations (*, /, MOD)
    // Input: ZP.CurrentToken = current token
    // Output: Multiplicative opcodes emitted, ZP.CurrentToken = token after expression
@@ -668,7 +678,7 @@ unit Compiler // Compiler.asm
        loop
        {
            // Compile left operand (higher precedence)
-           compileUnary();
+           compileExponential();
            CheckError();
            if (NC) { break; }
            
@@ -693,7 +703,7 @@ unit Compiler // Compiler.asm
                        }
 
                        // Compile right operand
-                       compileUnary();
+                       compileExponential();
                        CheckError();
                        if (NC) 
                        { 
@@ -895,7 +905,7 @@ unit Compiler // Compiler.asm
            loop
            {
                // Compile argument expression
-               compileComparison(); // Use full expression compilation
+               compileExpressionTree(); // Use full expression compilation
                CheckError();
                if (NC) { break; }
                
