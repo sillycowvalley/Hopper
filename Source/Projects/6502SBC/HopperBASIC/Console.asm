@@ -531,26 +531,8 @@ unit Console // Console.asm
                 // ========== BASIC LANGUAGE RUN ==========
                 case Token.RUN:
                 {
+                    Tokenizer.NextToken(); // consume 'RUN'
                     cmdRun();
-                    CheckError();
-                    // RUN was a '$MAIN' function call (buffer is munted so even if there was a ':', no point)
-                    // We can remove this when function compiling doesn't use shared token and buffers
-                    if (NC)
-                    {
-                        States.IsExiting();
-                        if (C)
-                        {
-                            States.SetFailure(); // don't "BYE" if we have a failure (probably syntax error from Executor)
-                        }
-                    }
-                    else
-                    {
-                        States.IsExiting();
-                        if (C)
-                        {
-                            States.SetSuccess(); // don't "BYE" if we are just Exiting REPL
-                        }
-                    }
                     SMB1 ZP.FLAGS  // Always exit after RUN
                 }
                 
@@ -579,24 +561,57 @@ unit Console // Console.asm
                     
                     // save the token before rollback -> X
                     TAX 
-                    
-                    // Roll back one token so Statement can process it
-                    Tokenizer.Rollback();
-                    
-                    // Load the token at the new position
-                    Tokenizer.NextToken(); // preserves X
-                    CheckError();    // preserves X
-                    if (NC)
-                    { 
-                        SMB1 ZP.FLAGS // Set exit flag on error
-                    }
-                    else
-                    {
-                        Statement.Execute();  // Handles the current statement
-                        CheckError();
-                        if (NC) 
+#ifdef HASEEPROM
+                    CMP #Token.IDENTIFIER
+                    if (Z)
+                    {   
+                        PHX // preserve X for default processing
+                                 
+                        Tokenizer.GetTokenStringSTR();
+                        File.Exists(); // Input: ZP.STR, Output: C if exists
+                        if (C)
                         {
+                            Tokenizer.NextToken(); // consume filename - point of no return in terms of default processing below
+                            CheckError();
+                            if (C)
+                            {
+                                validateEndOfCommand();
+                                if (C)
+                                {
+                                    Storage.LoadProgram(); // Input: ZP.STR
+                                    CheckError();
+                                    if (C) 
+                                    {
+                                        cmdRun();                            
+                                    }
+                                }
+                            }
+                            SMB1 ZP.FLAGS  // Always exit after auto load/run
+                        }
+                        
+                        PLX
+                    }
+#endif
+                    if (BBR1, ZP.FLAGS)
+                    {
+                        // Roll back one token so Statement can process it
+                        Tokenizer.Rollback();
+                        
+                        // Load the token at the new position
+                        Tokenizer.NextToken(); // preserves X
+                        CheckError();    // preserves X
+                        if (NC)
+                        { 
                             SMB1 ZP.FLAGS // Set exit flag on error
+                        }
+                        else
+                        {
+                            Statement.Execute();  // Handles the current statement
+                            CheckError();
+                            if (NC) 
+                            {
+                                SMB1 ZP.FLAGS // Set exit flag on error
+                            }
                         }
                     }
                 }
@@ -1368,8 +1383,6 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'RUN'
-            
 #ifdef HASEEPROM
             STZ Storage.LoaderFlags // clear Bit 3 
 #endif
@@ -1432,6 +1445,27 @@ unit Console // Console.asm
                 Statement.EvaluateExpression(); // executes 'identifier()' as function call- GLOBAL LOAD SAVE
               
                 break;
+            }
+        }
+        
+        
+        CheckError();
+        // RUN was a '$MAIN' function call (buffer is munted so even if there was a ':', no point)
+        // We can remove this when function compiling doesn't use shared token and buffers
+        if (NC)
+        {
+            States.IsExiting();
+            if (C)
+            {
+                States.SetFailure(); // don't "BYE" if we have a failure (probably syntax error from Executor)
+            }
+        }
+        else
+        {
+            States.IsExiting();
+            if (C)
+            {
+                States.SetSuccess(); // don't "BYE" if we are just Exiting REPL
             }
         }
         

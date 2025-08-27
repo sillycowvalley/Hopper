@@ -1307,7 +1307,7 @@ unit Tokenizer // Tokenizer.asm
         
         LDA ZP.TokenBufferH
         ADC ZP.TokenLiteralPosH
-        STA ZP.STRL
+        STA ZP.STRH
         
         PLA
     }
