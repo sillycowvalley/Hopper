@@ -443,16 +443,17 @@ argument_list := expression [ "," expression ]*
 ### Expressions - **FIXED OPERATOR PRECEDENCE**
 ```
 expression := logical_or_expr
-logical_or_expr := logical_and_expr [ OR logical_and_expr ]
-logical_and_expr := comparison_expr [ AND comparison_expr ]
+logical_or_expr := logical_and_expr [ (OR | EOR) logical_and_expr ]
+logical_and_expr := logical_not_expr [ AND logical_not_expr ]
+logical_not_expr := comparison_expr [ NOT comparison_expr ]
 comparison_expr := bitwise_or_expr [ comparison_op bitwise_or_expr ]
 comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
 bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
 bitwise_and_expr := additive_expr [ "&" additive_expr ]
 additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
-multiplicative_expr := exponential_expr [ ("*" | "/" | MOD) exponential_expr ]
+multiplicative_expr := exponential_expr [ ("*" | "/" | MOD | DIV) exponential_expr ]
 exponential_expr := unary_expr [ "^" unary_expr ]
-unary_expr := [ "-" | NOT | "~" ] primary_expr
+unary_expr := [ "-" | "~" ] primary_expr
 primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
               | identifier "[" expression "]"
@@ -495,22 +496,23 @@ char_literal := "'" character "'"
 **Key Fix**: Bitwise operators (&, |) now have higher precedence than arithmetic (+, -), which makes sense for low-level programming and matches assembly language expectations.
 
 
-## **Our Precedence vs GW-BASIC vs BBC BASIC:**
+## **Our Precedence vs BBC BASIC:**
 
-| **Level** | **Hopper (2025) - CORRECTED** | **GW-BASIC (1983)** | **BBC BASIC (1981)** | **Notes**
-|-----------|----------------|----------------------|-----------------------|-----------|
-| **1** | `()` `[]` **identifiers** **function_calls** **literals** | `()` | `()` Functions | **Hopper: Complete primary expressions**
-| **2** | `-` `NOT` `~`* | `^` (power) | `^` (power) | **Missing: ^ exponentiation in Hopper**
-| **3** | `*` `/` `MOD` | `-` (unary) | `-` `NOT` (unary) | **BBC grouped unary with level 3**  
-| **4** | `+` `-` | `*` `/` | `*` `/` `DIV` `MOD` | **Missing: DIV in GW-BASIC**
-| **5** | `&` (bitwise AND) | `MOD` | `+` `-` | **Hopper unique: bitwise precedence**
-| **6** | `|` (bitwise OR) | `+` `-` | `=` `<>` `<` `>` `<=` `>=` | **Hopper unique: bitwise precedence**
-| **7** | `=` `<>` `<` `>` `<=` `>=` | `\` (int div) | `AND` | **Missing: \\ integer division in Hopper**
-| **8** | `AND` (logical) | `=` `<>` `<` `>` `<=` `>=` | `OR` `EOR` | **Missing: EOR (XOR) in Hopper**
-| **9** | `OR` (logical) | `NOT` | - | **GW had scattered precedence**
-| **10** | - | `AND` | - | -
-| **11** | - | `OR` | - | -
-| **12** | - | `=` (assignment) | - | **GW assignment at bottom**
+| **Level** | **Hopper (2025) - UPDATED** | **BBC BASIC (1981)** | **Notes**
+|-----------|----------------|----------------------|-----------|
+| **1** | `()` `[]` **identifiers** **function_calls** **literals** | `()` Functions | **Hopper: More complete primary expressions**
+| **2** | `^` (power) | `^` (power) | **✅ Now matches BBC**
+| **3** | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
+| **4** | `*` `/` `MOD` `DIV` | `*` `/` `DIV` `MOD` | **✅ Now matches BBC (added DIV)**
+| **5** | `+` `-` | `+` `-` | **✅ Perfect match**
+| **6** | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | **✅ Perfect match**
+| **7** | `&` (bitwise AND) | _(empty)_ | **Hopper addition: bitwise operations**
+| **8** | `|` (bitwise OR) | _(empty)_ | **Hopper addition: bitwise operations**
+| **9** | `NOT` (logical) | _(empty)_ | **Hopper: Logical NOT separated from unary**
+| **10** | `AND` (logical) | `AND` | **✅ Matches BBC**
+| **11** | `OR` `EOR` (logical) | `OR` `EOR` | **✅ Now matches BBC (added EOR)**
+
+
 
 
 
