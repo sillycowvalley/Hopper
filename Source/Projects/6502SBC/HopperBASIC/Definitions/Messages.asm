@@ -6,7 +6,7 @@ unit Messages // Messages.asm
     const string BeginFunctionName = "$MAIN"; // String constant for BEGIN function name
     const string ForVarName = "$F";           // String constant for name of "fake" TO and STEP variable slots in FOR loop
     
-    const string ErrorMarker = "<------";
+    const string ErrorMarker = "<-----";
     
     const string VoidName = "VOID";                     // used in BASICTypes.PrintType()
 

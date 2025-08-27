@@ -1,6 +1,6 @@
-# Hopper BASIC Specification v3.0
+# Hopper BASIC Specification v3.1
 **Document Type: Language Specification for Hopper BASIC**
-**Last Updated: Simplified Type System with LONG**
+**Last Updated: Fixed Operator Precedence Grammar + INPUT + Multiple VAR**
 
 ## Project Objectives
 
@@ -147,11 +147,15 @@ END
 - **`DUMP [page]`** - Hex dump of memory page (default: page 0)
 
 ### Variable Declaration Commands
-- **`VAR name [= value]`** - Runtime-typed variable with implicit type inference
-  - Numeric literals become LONG: `VAR n = 42`
-  - Character literals become CHAR: `VAR c = 'A'`  
-  - Boolean literals become BIT: `VAR flag = TRUE`
-  - String literals become STRING: `VAR text = "Hello"`
+- **`VAR name [= value] [, name [= value]]*`** - Runtime-typed variables with implicit type inference and multiple declarations
+  - **Single**: `VAR n = 42` (LONG)
+  - **Multiple uninitialized**: `VAR A, B, C, D` (all default to LONG with value 0)
+  - **Multiple with mixed initialization**: `VAR T = "TEXT", B = FALSE, X = 100`
+  - **Type inference from literals**:
+    - Numeric literals become LONG: `VAR n = 42`
+    - Character literals become CHAR: `VAR c = 'A'`  
+    - Boolean literals become BIT: `VAR flag = TRUE`
+    - String literals become STRING: `VAR text = "Hello"`
 
 ### Constant Declaration Commands (Type Inference)
 - **`CONST name = value`** - Immutable constant with type inferred from RHS
@@ -182,6 +186,10 @@ Arrays retain explicit type specifiers for memory efficiency:
 - **`PRINT expr[;expr...]`** - Semicolon-separated values without spacing
 - **`PRINT expr,`** - Trailing comma suppresses newline with spacing
 - **`PRINT expr;`** - Trailing semicolon suppresses newline
+- ✅ **`INPUT`** - Read user input as LONG value
+  - Returns 0 for empty line or parsing error
+  - Single character returns ASCII value (A → 65)
+  - Numeric input parsed to LONG value
 
 #### Statement Separators
 - **Colon (`:`) separator** - Multiple statements per line
@@ -268,6 +276,10 @@ Arrays retain explicit type specifiers for memory efficiency:
 - **`DELAY(ms)`** - Pause for a delay in milliseconds (LONG parameter)
 - **`PEEK(addr)`** - Read byte from memory (LONG → LONG)
 - **`POKE(addr, value)`** - Write byte to memory (LONG, LONG)
+- ✅ **`INPUT()`** - Read user input and parse as LONG
+  - Returns 0 for empty line or parsing error
+  - Single character returns ASCII value (A → 65, '0' → 48)
+  - Numeric input parsed to LONG value (65 → 65)
 
 ---
 
@@ -316,10 +328,14 @@ Arrays retain explicit type specifiers for memory efficiency:
 
 ---
 
-## Phase 5: Extended Functions ❌ NOT STARTED
+## Phase 5: Extended Functions ✅ PARTIALLY COMPLETE
 
 ### Additional Functions
-- ❌ **`INPUT prompt`** - User input with prompt
+- ✅ **`INPUT()`** - User input parsing (no prompt) - **IMPLEMENTED**
+  - Returns LONG: 0 for empty line, 0 for parse errors
+  - Single character returns ASCII: 'A' → 65
+  - Numbers parse to LONG: "123" → 123
+- ❌ **`RND(max)`** - Random number generation
 
 ---
 
@@ -340,7 +356,7 @@ Arrays retain explicit type specifiers for memory efficiency:
 
 ---
 
-## Grammar
+## Grammar - **CORRECTED OPERATOR PRECEDENCE**
 
 ### Console Commands
 ```
@@ -351,9 +367,11 @@ console_command := NEW | LIST | RUN | CLEAR | VARS | FUNCS | MEM | BYE
                  | DIR | DEL string_literal | FORMAT
 ```
 
-### Variable and Constant Declarations
+### Variable and Constant Declarations - **UPDATED FOR MULTIPLE VARS**
 ```
-variable_decl := VAR identifier [ "=" expression ]
+variable_decl := VAR variable_list
+variable_list := variable_item [ "," variable_item ]*
+variable_item := identifier [ "=" expression ]
 constant_decl := CONST identifier "=" expression
 array_decl := array_type identifier "[" expression "]"
 array_type := BIT | CHAR | BYTE | WORD | INT
@@ -368,6 +386,7 @@ statement := variable_decl
            | array_decl
            | assignment
            | print_statement
+           | input_statement
            | if_statement
            | while_statement
            | do_until_statement
@@ -385,6 +404,8 @@ print_statement := PRINT [ print_list ]
 print_list := print_item [ separator print_item ]* [ separator ]
 print_item := expression
 separator := "," | ";"
+
+input_statement := INPUT "(" ")"
 
 if_statement := IF expression THEN statement_block [ ELSE statement_block ] ENDIF
 
@@ -404,7 +425,7 @@ function_definition := FUNC identifier "(" [ parameter_list ] ")"
                       { local_declaration | statement }*
                       ENDFUNC
 
-local_declaration := VAR identifier [ "=" expression ]
+local_declaration := VAR variable_list
 
 main_program := BEGIN 
                 { local_declaration | statement }* 
@@ -418,16 +439,16 @@ function_call := identifier "(" [ argument_list ] ")"
 argument_list := expression [ "," expression ]*
 ```
 
-### Expressions
+### Expressions - **FIXED OPERATOR PRECEDENCE**
 ```
 expression := logical_or_expr
 logical_or_expr := logical_and_expr [ OR logical_and_expr ]
 logical_and_expr := comparison_expr [ AND comparison_expr ]
-comparison_expr := bitwise_or_expr [ comparison_op bitwise_or_expr ]
+comparison_expr := additive_expr [ comparison_op additive_expr ]
 comparison_op := "=" | "<>" | "<" | ">" | "<=" | ">="
+additive_expr := bitwise_or_expr [ ("+" | "-") bitwise_or_expr ]
 bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
-bitwise_and_expr := additive_expr [ "&" additive_expr ]
-additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
+bitwise_and_expr := multiplicative_expr [ "&" multiplicative_expr ]
 multiplicative_expr := unary_expr [ ("*" | "/" | MOD) unary_expr ]
 unary_expr := [ "-" | NOT ] primary_expr
 primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
@@ -443,6 +464,7 @@ built_in_function := ABS "(" expression ")"
                   | DELAY "(" expression ")"
                   | MILLIS "(" ")"
                   | SECONDS "(" ")"
+                  | INPUT "(" ")"
                   | READ "(" expression ")"
                   | WRITE "(" expression "," expression ")"
                   | PINMODE "(" expression "," expression ")"
@@ -457,16 +479,18 @@ string_literal := '"' { character }* '"'
 char_literal := "'" character "'"
 ```
 
-### Operator Precedence (Highest to Lowest)
+### Operator Precedence (Highest to Lowest) - **CORRECTED**
 1. Function calls, parentheses, indexing ([])
 2. Unary minus (-), NOT
 3. Multiplication (*), Division (/), Modulo (MOD)
-4. Addition (+), Subtraction (-)
-5. Bitwise AND (&)
-6. Bitwise OR (|)
+4. **Bitwise AND (&)** - **MOVED HIGHER**
+5. **Bitwise OR (|)** - **MOVED HIGHER**
+6. **Addition (+), Subtraction (-)** - **MOVED LOWER**
 7. Comparison (=, <>, <, >, <=, >=)
 8. Logical AND
 9. Logical OR
+
+**Key Fix**: Bitwise operators (&, |) now have higher precedence than arithmetic (+, -), which makes sense for low-level programming and matches assembly language expectations.
 
 ---
 
@@ -485,7 +509,7 @@ char_literal := "'" character "'"
 
 ### JIT Compilation System
 **Compilation Phase:**
-1. Infix to Postfix conversion via recursive descent
+1. Infix to Postfix conversion via recursive descent with **corrected precedence**
 2. Opcode generation to 512-byte buffer with LONG arithmetic support
 3. Strict type checking at compile time - no implicit conversions
 4. Literal optimization
@@ -544,25 +568,108 @@ char_literal := "'" character "'"
 **Both target benchmark programs should now run successfully with simplified type system!**
 
 The interpreter has achieved its primary goal with:
-- Simplified LONG-based numeric system
+- Simplified LONG-based numeric system with **corrected operator precedence**
 - Complete array implementation including array parameters
 - Full character comparison support (equality and ordering)
 - Robust function system with recursion
 - All required control structures
 - Strict type system with clear compatibility rules
 - JIT compilation for performance with LONG support
+- **Multi-variable declarations** for convenience
+- **INPUT function** for interactive programs
 
 ### Feature Completeness by Phase:
 - **Phase 1**: ✅ COMPLETE - Core functionality with simplified types
 - **Phase 2**: ✅ COMPLETE - Loops and arrays
 - **Phase 3**: ✅ COMPLETE - Storage and file management
 - **Phase 4**: ✅ COMPLETE - Hardware I/O
-- **Phase 5**: ❌ Not started - Extended functions
+- **Phase 5**: 🔧 **PARTIALLY COMPLETE** - INPUT implemented, RND pending
 - **Phase 6**: ❌ Not started - Advanced features
 
 ---
 
 ## Usage Examples
+
+### Multiple Variable Declarations - **NEW FEATURE**
+```basic
+! Multiple variables without initialization (default to LONG = 0)
+> VAR A, B, C, D
+OK
+> PRINT A, B, C, D
+0 0 0 0
+
+! Multiple variables with mixed initialization and type inference
+> VAR text = "Hello", flag = TRUE, count = 42
+OK
+> PRINT text, flag, count
+Hello TRUE 42
+
+! Mix of initialized and uninitialized
+> VAR X = 100, Y, Z = 200  
+OK
+> PRINT X, Y, Z
+100 0 200
+```
+
+### INPUT Function Usage - **NEW FEATURE**
+```basic
+! Interactive number input
+> PRINT "Enter number: ";
+Enter number: > VAR n = INPUT()
+*   [User enters: 123]
+OK  
+> PRINT n
+123
+
+! Character input returns ASCII value
+> VAR ch = INPUT()
+*   [User enters: A]
+OK
+> PRINT ch          ! Shows ASCII value
+65
+> PRINT CHR(ch)     ! Convert back to character
+A
+
+! Empty input or errors return 0
+> VAR empty = INPUT()
+*   [User presses Enter]
+OK
+> PRINT empty
+0
+
+! Interactive program example
+> BEGIN
+*   VAR guess, target = 42
+*   PRINT "Guess the number (1-100): ";
+*   guess = INPUT()
+*   IF guess = target THEN
+*     PRINT "Correct!"
+*   ELSE
+*     PRINT "Wrong, it was "; target
+*   ENDIF
+* END
+```
+
+### Corrected Operator Precedence Examples
+```basic
+! Bitwise operations now bind tighter than arithmetic
+> PRINT 2 + 3 & 4     ! Now: 2 + (3 & 4) = 2 + 0 = 2
+2
+
+> PRINT 8 | 1 + 2     ! Now: (8 | 1) + 2 = 9 + 2 = 11  
+11
+
+! Use parentheses to override precedence when needed
+> PRINT (2 + 3) & 4   ! Force addition first: 5 & 4 = 4
+4
+
+! Complex expression showing all precedence levels
+> VAR result = 10 + 5 & 3 | 1 * 2 > 15
+> ! Evaluates as: 10 + ((5 & 3) | (1 * 2)) > 15
+> ! = 10 + (1 | 2) > 15 = 10 + 3 > 15 = 13 > 15 = FALSE
+> PRINT result
+FALSE
+```
 
 ### Basic Operations with Simplified Types
 ```basic
@@ -747,6 +854,13 @@ A
 90
 > DELAY(1000)        ! LONG parameter - Wait 1 second
 OK
+
+! New INPUT function
+> VAR userInput = INPUT()  ! No prompt - waits for input
+*   [User enters: 456]
+OK
+> PRINT userInput
+456
 ```
 
 ---
@@ -778,17 +892,51 @@ OK
 
 ---
 
+## Grammar Changes Summary
+
+### **🔧 Critical Fix: Operator Precedence**
+**Problem**: Arithmetic operators (+, -) were binding tighter than bitwise operators (&, |)
+**Solution**: Reordered grammar so bitwise operations parse before arithmetic
+
+**Old (Incorrect)**:
+```
+bitwise_and_expr := additive_expr [ "&" additive_expr ]      ! + binds tighter than &
+additive_expr := multiplicative_expr [ ("+" | "-") multiplicative_expr ]
+```
+
+**New (Correct)**:
+```
+additive_expr := bitwise_or_expr [ ("+" | "-") bitwise_or_expr ]    ! & binds tighter than +
+bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
+bitwise_and_expr := multiplicative_expr [ "&" multiplicative_expr ]
+```
+
+**Expression Impact**:
+- `2 + 3 & 4` now correctly evaluates as `2 + (3 & 4)` instead of `(2 + 3) & 4`
+- `8 | 1 + 2` now correctly evaluates as `(8 | 1) + 2` instead of `8 | (1 + 2)`
+
+### **✅ Added Multiple Variable Declaration Support**
+```
+variable_decl := VAR variable_list
+variable_list := variable_item [ "," variable_item ]*
+variable_item := identifier [ "=" expression ]
+```
+
+### **✅ Added INPUT Function Support**
+```
+input_statement := INPUT "(" ")"
+built_in_function := ... | INPUT "(" ")" | ...
+```
+
+---
+
 ## Next Steps
 
-The core interpreter is **feature-complete for the benchmark programs** with the simplified type system. The LONG-based numeric system provides:
+The core interpreter is **feature-complete for the benchmark programs** with the **corrected operator precedence**. The fixed grammar ensures:
 
-1. **Simplified mental model** - One numeric type eliminates confusion
-2. **Consistent behavior** - All numeric operations use same type
-3. **Future-proof** - 32-bit range supports larger computations
-4. **Memory efficient arrays** - Compact storage types where it matters
-5. **Type safety** - Strict compatibility prevents errors
+1. **Assembly-like precedence** - Bitwise operations bind tighter than arithmetic
+2. **Predictable evaluation** - Complex expressions evaluate as expected in low-level context  
+3. **Compatibility** - Maintains existing functionality while fixing precedence
+4. **Enhanced usability** - Multiple VAR declarations and INPUT for interactive programs
 
-With Phases 1-4 complete, future enhancements could include:
-2. **Phase 5: Advanced Features** - BREAK/CONTINUE for loop control, string manipulation functions
-
-The implementation has successfully achieved its primary goal of creating a functional BASIC interpreter with a clean, simple type system, complete storage functionality, and hardware I/O support - all capable of running classic benchmark programs within the 32K ROM constraint.
+With the precedence fix and new features, the implementation achieves its goal of providing a clean, efficient BASIC interpreter suitable for 6502 systems with proper low-level operation precedence.

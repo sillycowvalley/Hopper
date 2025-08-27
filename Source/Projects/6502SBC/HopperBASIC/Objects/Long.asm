@@ -27,7 +27,12 @@ unit Long
             break;
         }
     }
-    
+#ifndef #DEBUG
+    PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
+    {
+        PushTop();
+    }
+#else    
     // type in ZP.TOPT
     PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
     {
@@ -63,6 +68,7 @@ unit Long
             break;
         }
     }
+#endif    
     // type in ZP.NEXTT
     PushNext()    // Push 4-byte value from NEXT0-3 + BASICType.LONG
     {
@@ -94,6 +100,12 @@ unit Long
         }
     }
     
+#ifndef #DEBUG
+    PopTopNextStrict()
+    {
+        PopTopNext();
+    }
+#else    
     PopTopNextStrict()
     {
         loop
@@ -108,9 +120,6 @@ unit Long
             
             if (BBR3, ZP.TOPT)
             {
-#ifdef DEBUG
-Debug.NL(); LDA ZP.TOPT HOut();
-#endif                
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
@@ -120,9 +129,6 @@ Debug.NL(); LDA ZP.TOPT HOut();
             
             if (BBR3, ZP.NEXTT)
             {
-#ifdef DEBUG
-Debug.NL(); LDA ZP.NEXTT HOut();
-#endif                
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 break;
             }
@@ -149,7 +155,8 @@ Debug.NL(); LDA ZP.NEXTT HOut();
             break;
         } // single exit
     }
-    
+#endif   
+ 
     PopTopNext()
     {
         loop
@@ -490,6 +497,81 @@ Debug.NL(); LDA ZP.NEXTT HOut();
         }
         Stacks.PushX(); // as Type.Bool
     }
+    
+    const byte[] modRemaining  = { 0x00, 0x06, 0x02, 0x08, 0x04, 0x00, 0x06, 0x02, 0x08, 0x04 };
+    const byte[] tensRemaining = { 0,25,51,76,102,128,153,179,204,230 };
+    
+    utility16BitDiv10()
+    {
+        // NEXT = NEXT / 10
+        LDA ZP.NEXT0
+        STA ZP.TOP0
+        LDA ZP.NEXT1
+        STA ZP.TOP1
+        
+        //    UNSIGNED DIVIDE BY 10 (16 BIT)
+        //    111 cycles (max), 96 bytes
+        //    https://forums.atariage.com/blogs/entry/11044-16-bit-division-fast-divide-by-10/
+        loop
+        {
+            LDA    ZP.TOP1
+            STA    ZP.ACCL
+            LSR        
+            ADC    #13 
+            ADC    ZP.ACCL
+            ROR        
+            LSR        
+            LSR        
+            ADC    ZP.ACCL
+            ROR        
+            ADC    ZP.ACCL
+            ROR        
+            LSR        
+            AND    # 0x7C                // AND'ing here...
+            STA    ZP.ACCL                  // and saving result as highTen (times 4)
+            LSR        
+            LSR        
+            STA    ZP.NEXT1
+            ADC    ZP.ACCL                  // highTen (times 5)
+            ASL                          // highTen (times 10)
+            SBC    ZP.TOP1
+            EOR    # 0xFF
+            TAY                          // mod 10 result!
+            LDA    tensRemaining, Y      // Fill the low byte with the tens it should
+            STA    ZP.NEXT0                 // have at this point from the high byte divide.
+            LDA    ZP.TOP0
+            ADC    modRemaining, Y       // 4  @69
+            
+            if (NC) 
+            { 
+                STA    ZP.ACCL
+                LSR        
+                ADC    # 13 
+                ADC    ZP.ACCL
+                ROR        
+                LSR        
+                LSR        
+                ADC    ZP.ACCL
+                ROR        
+                ADC    ZP.ACCL
+                ROR        
+                LSR        
+                LSR        
+                LSR        
+                CLC  
+                break; 
+            }
+            
+            CMP    #4                    //  We have overflowed, but we can apply a shortcut.
+            LDA    #25                   //  Divide by 10 will be at least 25, and the
+            if (NZ)                      //  carry is set when higher for the next addition. 
+            { 
+                break; 
+            }
+        }
+        ADC    ZP.NEXT0
+        STA    ZP.NEXT0
+    }
 
     DivMod()
     {
@@ -518,6 +600,34 @@ Debug.NL(); LDA ZP.NEXTT HOut();
                 // Clear upper bytes and initialize remainder
                 STZ NEXT2
                 STZ NEXT3
+                
+                LDA ZP.TOP1
+                if (Z)
+                {
+                    LDA ZP.TOP0
+                    CMP # 10
+                    if (Z)
+                    {
+                        utility16BitDiv10(); //  / 10
+                        break; // 16 bit exit
+                    }
+                    CMP # 50
+                    if (Z)
+                    {
+                        utility16BitDiv10(); //  / 10
+                        ASL ZP.NEXT0         //  * 2
+                        ROL ZP.NEXT1
+                        utility16BitDiv10(); //  / 10
+                        break; // 16 bit exit
+                    }
+                    CMP # 100
+                    if (Z)
+                    {
+                        utility16BitDiv10(); //  / 10
+                        utility16BitDiv10(); //  / 10
+                        break; // 16 bit exit
+                    }
+                }
                 
                 LDX #16       // 16 iterations instead of 32
                 loop

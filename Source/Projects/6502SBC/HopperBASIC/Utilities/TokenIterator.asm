@@ -253,6 +253,7 @@ unit TokenIterator // TokenIterator.asm
                 case Token.FUNC:
                 case Token.FOR:
                 case Token.WHILE:
+                case Token.DO:
                 case Token.BEGIN:
                 {
                     SEC

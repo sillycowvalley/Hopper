@@ -1400,7 +1400,7 @@ unit Tokenizer // Tokenizer.asm
             if (Z)
             {
                 // Already at position 0, can't rollback
-                Error.CannotRollback(); BIT ZP.EmulatorPCL
+                Error.InternalError(); BIT ZP.EmulatorPCL
                 PLY
                 PLA
                 break;
