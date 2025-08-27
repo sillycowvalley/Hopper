@@ -413,7 +413,7 @@ unit BASICArray
                 {
                     LDA ZP.TOP1
                     ORA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x3
                     if (NZ)
                     {
                         Error.NumericOverflow(); BIT ZP.EmulatorPCL
@@ -425,7 +425,7 @@ unit BASICArray
                 case BASICType.INT:
                 {
                     LDA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x2
                     if (NZ)
                     {
                         LDA ZP.TOP2
@@ -451,7 +451,7 @@ unit BASICArray
                 default:
                 {
                     LDA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x2
                     if (NZ)
                     {
                         Error.NumericOverflow(); BIT ZP.EmulatorPCL

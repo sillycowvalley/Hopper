@@ -107,7 +107,7 @@ unit BASICTypes // BASICTypes.asm
                 {
                     LDA ZP.TOP1
                     ORA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x3
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
@@ -117,7 +117,7 @@ unit BASICTypes // BASICTypes.asm
                 case BASICType.WORD:
                 {
                     LDA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x2
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
@@ -127,7 +127,7 @@ unit BASICTypes // BASICTypes.asm
                 case BASICType.INT:
                 {
                     LDA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x2
                     if (NZ)
                     {
                         LDA #0xFF
@@ -182,7 +182,7 @@ unit BASICTypes // BASICTypes.asm
                 {
                     LDA ZP.NEXT1
                     ORA ZP.NEXT2
-                    ORA ZP.NEXT3
+                    ORA ZP.NEXT3 // x2
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
@@ -192,7 +192,7 @@ unit BASICTypes // BASICTypes.asm
                 case BASICType.WORD:
                 {
                     LDA ZP.NEXT2
-                    ORA ZP.NEXT3
+                    ORA ZP.NEXT3 // x2
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL
@@ -202,7 +202,7 @@ unit BASICTypes // BASICTypes.asm
                 case BASICType.INT:
                 {
                     LDA ZP.NEXT2
-                    ORA ZP.NEXT3
+                    ORA ZP.NEXT3 // x2
                     if (NZ)
                     {
                         LDA #0xFF

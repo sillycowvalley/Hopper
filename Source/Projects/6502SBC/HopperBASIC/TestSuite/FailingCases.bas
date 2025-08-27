@@ -1,26 +1,28 @@
-CLS
-NEW
-FUNC TestFailures()
-    PRINT "=== FAILURES ==="
-    
-    ! PRINT "is ";~0; " expect -1"
-    
-    PRINT "is "; 2 + 3 & 4; ", expect 2"
-    PRINT "is "; 2 + (3 & 4); ", expect 2 (explicit)"
-    
-    PRINT "is "; 12 & 4 + 3; ", expect 7" 
-    PRINT "is "; (12 & 4) + 3; ", expect 7 (explicit)"
-    
-    PRINT "is "; 10 - 6 & 8; ", expect 10"
-    PRINT "is "; 10 - (6 & 8); ", expect 10 (explicit)"
-    
-    PRINT "is "; 8 - 2 | 4; ", expect 6"
-    PRINT "is "; (8 - 2) | 4; ", expect 6 (explicit)"
-    
-    ! PRINT "is "; ~5 + 1; ", expect -5"
-ENDFUNC
-
 BEGIN
-    TestFailures()
+    PRINT "Testing RND function"
+    PRINT ""
+    
+    PRINT "Rolling dice (1-6):"
+    PRINT RND(6), RND(6), RND(6), RND(6), RND(6)
+    PRINT ""
+    
+    PRINT "Random 1-100:"
+    PRINT RND(100), RND(100), RND(100)
+    PRINT ""
+    
+    PRINT "Always 1 (RND(1)):"
+    PRINT RND(1), RND(1), RND(1)
+    PRINT ""
+    
+    PRINT "Random 1-10 stored in variable:"
+    VAR num = RND(10)
+    PRINT "Random number: "; num
+    PRINT ""
+    
+    PRINT "Random numbers in a loop:"
+    FOR i = 1 TO 5
+        PRINT "Roll "; i; ": "; RND(20)
+    NEXT i
 END
+
 RUN

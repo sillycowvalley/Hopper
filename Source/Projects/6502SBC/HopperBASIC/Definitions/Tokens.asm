@@ -104,53 +104,54 @@ unit Tokens
         PINMODE  = 0xCB,
         READ     = 0xCC,
         WRITE    = 0xCD,
+        RND      = 0xCE,
         
-        lastKeyword = 0xCD,
+        lastKeyword = 0xCE,
         
         // Literals and identifiers
-        NUMBER     = 0xCE,
-        STRINGLIT  = 0xCF,
-        CHARLIT    = 0xD0,
-        IDENTIFIER = 0xD1,
+        NUMBER     = 0xCF,
+        STRINGLIT  = 0xD0,
+        CHARLIT    = 0xD1,
+        IDENTIFIER = 0xD2,
         
         // Stream/File control tokens
-        EOF      = 0xD2,
-        EOL      = 0xD3,
-        EOE      = 0xD4,
+        EOF      = 0xD3,
+        EOL      = 0xD4,
+        EOE      = 0xD5,
         
         // Basic punctuation
-        COLON    = 0xD5,
-        COMMA    = 0xD6,
-        SEMICOLON = 0xD7,
+        COLON    = 0xD6,
+        COMMA    = 0xD7,
+        SEMICOLON = 0xD8,
         
         // Basic operators
-        EQUALS   = 0xD8,
-        PLUS     = 0xD9,
-        MINUS    = 0xDA,
-        LPAREN   = 0xDB,
-        RPAREN   = 0xDC,
+        EQUALS   = 0xD9,
+        PLUS     = 0xDA,
+        MINUS    = 0xDB,
+        LPAREN   = 0xDC,
+        RPAREN   = 0xDD,
         
         // Additional comparison operators (moved down by 1 from 0xDC-0xE0)
-        NOTEQUAL = 0xDD,
-        LT       = 0xDE,
-        GT       = 0xDF,
-        LE       = 0xE0,
-        GE       = 0xE1,
+        NOTEQUAL = 0xDE,
+        LT       = 0xDF,
+        GT       = 0xE0,
+        LE       = 0xE1,
+        GE       = 0xE2,
         
         // Arithmetic operators
-        MULTIPLY = 0xE2,
-        DIVIDE   = 0xE3,
+        MULTIPLY = 0xE3,
+        DIVIDE   = 0xE4,
         
         // Bitwise operators
-        BITWISE_AND = 0xE4,
-        BITWISE_OR  = 0xE5,
-        BITWISE_NOT = 0xE6,  // Bitwise complement (~)
+        BITWISE_AND = 0xE5,
+        BITWISE_OR  = 0xE6,
+        BITWISE_NOT = 0xE7,  // Bitwise complement (~)
         
         // Array and string operators (shifted down by 1 to make room for TILDE)
-        LBRACKET = 0xE7,
-        RBRACKET = 0xE8,
-        LBRACE   = 0xE9,
-        RBRACE   = 0xEA,
+        LBRACKET = 0xE8,
+        RBRACKET = 0xE9,
+        LBRACE   = 0xEA,
+        RBRACE   = 0xEB,
     }
         
     // Keywords A-H (first character < 'I')
@@ -251,6 +252,7 @@ unit Tokens
         6, Token.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function (0xC1)
         4, Token.PEEK, 'P', 'E', 'E', 'K',       // Built-in function (0xC2)
         4, Token.POKE, 'P', 'O', 'K', 'E',       // Built-in function (0xC3)
+        3, Token.RND, 'R', 'N', 'D',             // Random number generation (0xCE)
         7, Token.SECONDS, 'S', 'E', 'C', 'O', 'N', 'D', 'S', // Built-in function (0xC5)
         
         // Hardware I/O functions

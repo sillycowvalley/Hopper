@@ -143,6 +143,7 @@ unit Tools // Tools.asm
         STZ TOP2
         STZ TOP3
         
+        LDX #0 // Div
         Long.DivMod(); // Seconds = Millis / 1000   
         
         LDA NEXT0

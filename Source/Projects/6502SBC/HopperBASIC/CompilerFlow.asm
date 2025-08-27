@@ -1011,7 +1011,7 @@ unit CompilerFlow
            if (BBS3, ZP.TOPT) // LONG not ok
            {
                LDA ZP.TOP2
-               ORA ZP.TOP3
+               ORA ZP.TOP3 // x2
                if (NZ)
                {
                    RMB3 ZP.CompilerFlags // optimization to FORITF disqualified
@@ -1043,7 +1043,7 @@ unit CompilerFlow
                    LDA ZP.TOP0
                    ORA ZP.TOP1
                    ORA ZP.TOP2
-                   ORA ZP.TOP3
+                   ORA ZP.TOP3 // x4
                    if (Z)
                    {
                        Error.BadStep(); BIT ZP.EmulatorPCL
@@ -1083,7 +1083,7 @@ unit CompilerFlow
                    {
                        LDA ZP.TOP1
                        ORA ZP.TOP2
-                       ORA ZP.TOP3
+                       ORA ZP.TOP3 // x3
                        if (NZ)
                        {
                            RMB3 ZP.CompilerFlags // STEP != 1, optimization to FORITF disqualified

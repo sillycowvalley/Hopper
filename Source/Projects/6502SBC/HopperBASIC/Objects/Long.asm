@@ -298,7 +298,9 @@ unit Long
         PHA
         
         utilityDoLongSigns();
-        DivMod();
+        LDX #1 // Mod
+        DivMod(); // RESULT = NEXT % TOP
+        // RESULT0-3 -> NEXT0-3
         LDA ZP.RESULT0
         STA ZP.NEXT0
         LDA ZP.RESULT1
@@ -318,7 +320,8 @@ unit Long
     Div()
     {
         utilityDoLongSigns();
-        DivMod();
+        LDX #0 // Div
+        DivMod(); // NEXT = NEXT / TOP
         LDA ZP.FSIGN // load the sign count
         CMP # 1
         if (Z)
@@ -335,6 +338,7 @@ unit Long
         // http://www.6502.org/source/integers/32muldiv.htm
     
         utilityLongMUL();
+        // RESULT0-3 -> NEXT0-3
         LDA ZP.RESULT0
         STA ZP.NEXT0
         LDA ZP.RESULT1
@@ -603,76 +607,80 @@ unit Long
         STZ RESULT0
         STZ RESULT1
         STZ RESULT2
-        STZ RESULT3
+        STZ RESULT3 // x4
 
         loop
         {
-            // Check if both operands fit in 16 bits
-            LDA NEXT3
-            ORA TOP3
-            ORA NEXT2  
-            ORA TOP2
-            if (Z)  // All high bytes are zero - use 16-bit division
+            // only do 16 bit optimizations in Div (X = 0) mode, not Mod (X = 1) mode
+            CPX #0
+            if (Z)
             {
-                // Clear upper bytes and initialize remainder
-                STZ NEXT2
-                STZ NEXT3
-                
-                LDA ZP.TOP1
-                if (Z)
+                // Check if both operands fit in 16 bits
+                LDA NEXT3
+                ORA TOP3
+                ORA NEXT2  
+                ORA TOP2
+                if (Z)  // All high bytes are zero - use 16-bit division
                 {
-                    LDA ZP.TOP0
-                    CMP # 10
-                    if (Z)
-                    {
-                        utility16BitDiv10(); //  / 10
-                        break; // 16 bit exit
-                    }
-                    CMP # 50
-                    if (Z)
-                    {
-                        utility16BitDiv10(); //  / 10
-                        ASL ZP.NEXT0         //  * 2
-                        ROL ZP.NEXT1
-                        utility16BitDiv10(); //  / 10
-                        break; // 16 bit exit
-                    }
-                    CMP # 100
-                    if (Z)
-                    {
-                        utility16BitDiv10(); //  / 10
-                        utility16BitDiv10(); //  / 10
-                        break; // 16 bit exit
-                    }
-                }
-                
-                LDX #16       // 16 iterations instead of 32
-                loop
-                {
-                    ASL NEXT0    // shift hi bit of dividend into remainder
-                    ROL NEXT1    
-                    ROL RESULT0
-                    ROL RESULT1
+                    // Clear upper bytes and initialize remainder
+                    STZ NEXT2
+                    STZ NEXT3
                     
-                    SEC           // trial subtraction
-                    LDA RESULT0
-                    SBC TOP0
-                    TAY          // temp storage
-                    LDA RESULT1
-                    SBC TOP1
-                    if (C)        // did subtraction succeed?
+                    LDA ZP.TOP1
+                    if (Z)
                     {
-                        STA RESULT1  // if yes, save it
-                        STY RESULT0
-                        INC NEXT0    // and record a 1 in the quotient
+                        LDA ZP.TOP0
+                        CMP # 10
+                        if (Z)
+                        {
+                            utility16BitDiv10(); //  / 10
+                            break; // 16 bit exit
+                        }
+                        CMP # 50
+                        if (Z)
+                        {
+                            utility16BitDiv10(); //  / 10
+                            ASL ZP.NEXT0         //  * 2
+                            ROL ZP.NEXT1
+                            utility16BitDiv10(); //  / 10
+                            break; // 16 bit exit
+                        }
+                        CMP # 100
+                        if (Z)
+                        {
+                            utility16BitDiv10(); //  / 10
+                            utility16BitDiv10(); //  / 10
+                            break; // 16 bit exit
+                        }
                     }
-                    DEX
-                    if (Z) { break; }
+                    
+                    LDX #16       // 16 iterations instead of 32
+                    loop
+                    {
+                        ASL NEXT0    // shift hi bit of dividend into remainder
+                        ROL NEXT1    
+                        ROL RESULT0
+                        ROL RESULT1
+                        
+                        SEC           // trial subtraction
+                        LDA RESULT0
+                        SBC TOP0
+                        TAY          // temp storage
+                        LDA RESULT1
+                        SBC TOP1
+                        if (C)        // did subtraction succeed?
+                        {
+                            STA RESULT1  // if yes, save it
+                            STY RESULT0
+                            INC NEXT0    // and record a 1 in the quotient
+                        }
+                        DEX
+                        if (Z) { break; }
+                    }
+                
+                    break; // 16 bit exit
                 }
-            
-                break; // 16 bit exit
             }
-        
             LDX #32       // there are 16 bits in N
             loop
             {
@@ -1008,8 +1016,10 @@ unit Long
         STA ZP.NEXT0
         STZ ZP.NEXT1
         STZ ZP.NEXT2
-        STZ ZP.NEXT3
+        STZ ZP.NEXT3 // 3x
         utilityLongMUL();
+        
+        // RESULT0-3 -> TOP0-3
         LDA ZP.RESULT0
         STA ZP.TOP0
         LDA ZP.RESULT1

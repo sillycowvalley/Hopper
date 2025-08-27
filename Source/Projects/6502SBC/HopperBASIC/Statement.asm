@@ -755,7 +755,7 @@ unit Statement // Statement.asm
                         if (Z)
                         {
                             LDA ZP.NEXT2
-                            ORA ZP.NEXT3
+                            ORA ZP.NEXT3 // x2
                             if (NZ)
                             {
                                 Error.BadIndex(); BIT ZP.EmulatorPCL
@@ -901,7 +901,7 @@ unit Statement // Statement.asm
                         STZ ZP.NEXT0
                         STZ ZP.NEXT1
                         STZ ZP.NEXT2
-                        STZ ZP.NEXT3
+                        STZ ZP.NEXT3 // 4x
                         
                         // Default VAR to LONG with value 0
                         LDA #BASICType.LONG

@@ -28,6 +28,7 @@ unit BASICSysCalls
         Chr          = (0b01101 << 3) | (1 << 2) | 0b01,  // ID=13, returns, 1 arg  = 0x6D
         Asc          = (0b01110 << 3) | (1 << 2) | 0b01,  // ID=14, returns, 1 arg  = 0x75
         Len          = (0b01111 << 3) | (1 << 2) | 0b01,  // ID=15, returns, 1 arg  = 0x7D
+        Rnd          = (0b10000 << 3) | (1 << 2) | 0b01,  // ID=16, returns, 1 arg  = 0x85
     }
    
     // SYSCALL formatting for DASM:
@@ -63,6 +64,7 @@ unit BASICSysCalls
                 } 
                 case SysCallType.Input:   { LDA #Token.INPUT   }  // INPUT
                 case SysCallType.Abs:     { LDA #Token.ABS     }  // ABS
+                case SysCallType.Rnd:     { LDA #Token.RND     }  // RND
                 case SysCallType.Millis:  { LDA #Token.MILLIS  }  // MILLIS
                 case SysCallType.Seconds: { LDA #Token.SECONDS }  // SECONDS
                 case SysCallType.Delay:   { LDA #Token.DELAY   }  // DELAY
@@ -91,24 +93,22 @@ unit BASICSysCalls
                     case SysCallType.PrintValue:
                         { LDA #Token.VAR         }
                     case SysCallType.Abs:
-                        { LDA #Token.LONG        }
+                    case SysCallType.Rnd:
                     case SysCallType.Delay:
                     case SysCallType.Peek:
-                        { LDA #Token.LONG        }
-                    case SysCallType.Poke:
-                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.LONG }
-                    case SysCallType.PinMode:
-                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.LONG }
-                    case SysCallType.Read:
                     case SysCallType.Chr:
                         { LDA #Token.LONG        }
+                    case SysCallType.Poke:
+                    case SysCallType.PinMode:
+                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.LONG }
+                    case SysCallType.Write:
+                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BIT }
+                    case SysCallType.Read:
                     case SysCallType.PrintChar:
                     case SysCallType.Asc:
                         { LDA #Token.CHAR        }
                     case SysCallType.Len:
                         { LDA #Token.STRING      }
-                    case SysCallType.Write:
-                        { LDA #Token.LONG       Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.BIT }
                 }
                 Tokens.PrintKeyword();
             }
@@ -121,7 +121,8 @@ unit BASICSysCalls
                 Space(); LDA #'-' COut(); LDA #'>' COut(); Space();
                 switch (X)
                 {
-                    case SysCallType.Abs:     
+                    case SysCallType.Abs:
+                    case SysCallType.Rnd:
                     case SysCallType.Millis:
                     case SysCallType.Input:
                     case SysCallType.Seconds:
@@ -140,7 +141,137 @@ unit BASICSysCalls
             break;
         } // single exit
     }
-#endif    
+#endif
+
+    // Update 16-bit random seed using simplified XORshift algorithm
+    // Input: ZP.RANDOMSEEDL/H = current seed
+    // Output: ZP.RANDOMSEEDL/H = new seed (never zero)
+    // Munts: A, X
+    updateRandomSeed()
+    {
+        // Handle seed = 0 case
+        LDA ZP.RANDOMSEEDL
+        ORA ZP.RANDOMSEEDH
+        if (Z)
+        {
+            LDA #0x01  // Use 1 as default seed if zero
+            STA ZP.RANDOMSEEDL
+        }
+        
+        // Save original for the XOR step
+        LDA ZP.RANDOMSEEDL
+        STA ZP.ACCL
+        LDA ZP.RANDOMSEEDH
+        STA ZP.ACCH
+        
+        // Multiply by 17: seed = seed * 16 + seed
+        ASL ZP.RANDOMSEEDL  // *2
+        ROL ZP.RANDOMSEEDH
+        ASL ZP.RANDOMSEEDL  // *4
+        ROL ZP.RANDOMSEEDH
+        ASL ZP.RANDOMSEEDL  // *8
+        ROL ZP.RANDOMSEEDH
+        ASL ZP.RANDOMSEEDL  // *16
+        ROL ZP.RANDOMSEEDH
+        
+        // Add original: seed*16 + seed = seed*17
+        CLC
+        LDA ZP.RANDOMSEEDL
+        ADC ZP.ACCL
+        STA ZP.RANDOMSEEDL
+        LDA ZP.RANDOMSEEDH
+        ADC ZP.ACCH
+        STA ZP.RANDOMSEEDH
+        
+        // XOR with (original >> 1)
+        LSR ZP.ACCH
+        ROR ZP.ACCL
+        
+        LDA ZP.RANDOMSEEDL
+        EOR ZP.ACCL
+        STA ZP.RANDOMSEEDL
+        LDA ZP.RANDOMSEEDH
+        EOR ZP.ACCH
+        STA ZP.RANDOMSEEDH
+        
+        // Add 1
+        INC ZP.RANDOMSEEDL
+        if (Z)
+        {
+            INC ZP.RANDOMSEEDH
+        }
+    }
+
+    // Generate random number using XORshift PRNG
+    // Input: ZP.TOP* = max value (LONG)
+    // Output: ZP.TOP* = random number 1-max (LONG)
+    // Modifies: ZP.ACC, ZP.NEXT, ZP.RESULT, ZP.RANDOMSEED*
+    executeRnd()
+    {
+        PHY
+        loop // single exit
+        {
+            // Check for valid range (max > 0)
+            LDA ZP.TOP0
+            ORA ZP.TOP1  
+            ORA ZP.TOP2
+            ORA ZP.TOP3
+            if (Z)  // max == 0
+            {
+                // Return 0 for invalid range
+                STZ ZP.TOP0
+                STZ ZP.TOP1
+                STZ ZP.TOP2
+                STZ ZP.TOP3
+                CLC  // Error condition
+                break;
+            }
+            
+            // Update the random seed
+            updateRandomSeed();
+            
+            // Convert 16-bit seed to 32-bit for modulo operation
+            LDA ZP.RANDOMSEEDL
+            STA ZP.NEXT0
+            LDA ZP.RANDOMSEEDH
+            STA ZP.NEXT1
+            STZ ZP.NEXT2
+            STZ ZP.NEXT3
+            
+            // Calculate result = (seed % max) + 1
+            LDX #1 // Mod
+            Long.DivMod();  // RESULT = NEXT % TOP
+            
+            // Add 1 for range 1-max
+            INC ZP.RESULT0
+            if (Z)
+            {
+                INC ZP.RESULT1
+                if (Z)
+                {
+                    INC ZP.RESULT2
+                    if (Z)
+                    {
+                        INC ZP.RESULT3
+                    }
+                }
+            }
+            
+            // Return result in ZP.TOP*
+            LDA ZP.RESULT0
+            STA ZP.TOP0
+            LDA ZP.RESULT1
+            STA ZP.TOP1
+            LDA ZP.RESULT2
+            STA ZP.TOP2
+            LDA ZP.RESULT3
+            STA ZP.TOP3
+            
+            SEC // Success
+            break;
+        }
+        PLY
+    }
    
    // Execute SYSCALL opcode - system call with flags-based dispatch
    const string executeSysCallTrace = "SYSCALL // System call";
@@ -214,6 +345,18 @@ unit BASICSysCalls
                    
                    LDA ZP.TOPL
                    Serial.WriteChar();
+               }
+               case SysCallType.Rnd:
+               {
+                   // RND function - compute absolute value
+                   // Input: ZP.TOP* contains maxvalue
+                   // Output: ZP.TOP* contains random number in range [1..maxvalue]
+                   executeRnd();
+                   if (NC)
+                   {
+                       Error.RangeError(); BIT ZP.EmulatorPCL // maxvalue cannot be zero
+                       break;
+                   }
                }
                
                case SysCallType.Abs:           // ID = 3

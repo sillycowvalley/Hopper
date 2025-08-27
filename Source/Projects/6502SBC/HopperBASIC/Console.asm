@@ -1119,6 +1119,12 @@ unit Console // Console.asm
 #ifdef TRACE
         LDA #(initGlobsTrace % 256) STA ZP.TraceMessageL LDA #(initGlobsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+        // Initialize 16-bit random seed with current time (millis)
+        LDA ZP.TICK3 // trigger a millis update in the emulator
+        LDA ZP.TICK0
+        STA ZP.RANDOMSEEDL  
+        LDA ZP.TICK1
+        STA ZP.RANDOMSEEDH
         
         // Start iteration over all variables
 #ifdef HASEEPROM        

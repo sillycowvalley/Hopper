@@ -289,7 +289,7 @@ unit Instructions // Instructions.asm
             LDA ZP.TOP0
             ORA ZP.TOP1
             ORA ZP.TOP2
-            ORA ZP.TOP3
+            ORA ZP.TOP3 // x4
             if (Z)  // Divisor is zero
             {
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
@@ -325,7 +325,7 @@ unit Instructions // Instructions.asm
             LDA ZP.TOP0
             ORA ZP.TOP1
             ORA ZP.TOP2
-            ORA ZP.TOP3
+            ORA ZP.TOP3 // x4
             if (Z)  // Divisor is zero
             {
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL

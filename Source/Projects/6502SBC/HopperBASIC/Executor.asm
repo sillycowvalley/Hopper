@@ -3201,7 +3201,7 @@ Debug.NL(); TLOut(); Space(); YOut();
                     }
                     LDA ZP.TOP1
                     ORA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x3
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
@@ -3215,7 +3215,7 @@ Debug.NL(); TLOut(); Space(); YOut();
                         break;
                     }
                     LDA ZP.TOP2
-                    ORA ZP.TOP3
+                    ORA ZP.TOP3 // x2
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
@@ -3248,7 +3248,7 @@ Debug.NL(); TLOut(); Space(); YOut();
                     else
                     {
                         LDA ZP.TOP2
-                        ORA ZP.TOP3
+                        ORA ZP.TOP3 // x2
                         if (NZ)
                         {
                             Error.TypeMismatch(); BIT ZP.EmulatorPCL

@@ -656,6 +656,7 @@ unit TokenIterator // TokenIterator.asm
             switch (A)
             {
                 case Token.ABS:
+                case Token.RND:
                 case Token.MILLIS:
                 case Token.PEEK:
                 case Token.POKE:

@@ -1341,7 +1341,6 @@ unit Compiler // Compiler.asm
                     CMP compilerCurrentArgCount
                     if (NZ)
                     {
-Debug.NL(); LDA compilerCurrentArgCount HOut(); Space(); LDA ZP.ACCL HOut(); Space(); XOut();
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
                         break;
                     }
@@ -1696,6 +1695,15 @@ Debug.NL(); LDA compilerCurrentArgCount HOut(); Space(); LDA ZP.ACCL HOut(); Spa
                 {
                     RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
                     LDA #SysCallType.Abs
+                    compileSysCall();
+                    CheckError();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.RND:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
+                    LDA #SysCallType.Rnd
                     compileSysCall();
                     CheckError();
                     if (NC) { break; }

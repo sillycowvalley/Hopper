@@ -384,6 +384,10 @@ unit ZP // ZeroPage.asm
     const byte SS5                  = 0xA0;
     const byte SS6                  = 0xA1;
     
+    // Random Number Generator Seed (16-bit)
+    const byte RANDOMSEEDL          = 0xA2;  // LSB of random seed  
+    const byte RANDOMSEEDH          = 0xA3;  // MSB of random seed
+    
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
     // Shared with Storage.LoadProgram
     const byte TableIndex           = ZP.SS0;
