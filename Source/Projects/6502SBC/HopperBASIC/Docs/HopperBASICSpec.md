@@ -503,14 +503,14 @@ char_literal := "'" character "'"
 | `()` `[]` Functions.. | `()` Functions.. | **Primary: identifiers, literals, '(expression)', function calls
 |  | `^` (power) | **BBC: Has power**
 | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
-| `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point**
+| `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point `DIV` vs `/`**
 | `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
 | `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
 | `+` `-` | `+` `-` | 
 | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | 
-| `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
-| `AND` (logical) | `AND` | **Hopper: Logical AND separated from bitwise**
-| `OR`  | `OR` `EOR` | **Hopper: Logical OR separated from bitwise**
+| `NOT` (logical) |  | **Hopper: Logical `NOT` separated from unary**
+| `AND` (logical) | `AND` | **Hopper: Logical `AND` separated from bitwise**
+| `OR`  | `OR` `EOR` | **Hopper: Logical `OR` separated from bitwise**
 
 
 ## **Key Observations:**
