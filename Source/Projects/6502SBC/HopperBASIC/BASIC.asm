@@ -4,12 +4,12 @@ program HopperBASIC
     #define PEEPHOLE  // include the peephole optimizer
     #define HASEEPROM
         
-    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    //#define DEBUG
+    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    #define DEBUG
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEFILE  // Storage and File
     //#define TRACEPARSE // Compiler and CompilerFlow
-    //#define TRACEEXE // instructions in Executor
+    #define TRACEEXE // instructions in Executor
 
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     

@@ -339,15 +339,15 @@ unit Locals
         PLA
     }
     
-    // Get local count in function's locals list
+    // Get arguments count using function's locals list
     // Input: ZP.IDX = function node address
-    // Output: ZP.ACCL = local count, C set (always succeeds)
+    // Output: ZP.ACCL = arguments count, C set (always succeeds)
     // Munts: ZP.LCURRENT, ZP.LNEXT, A, X, Y
-    GetCount()
+    GetArgumentsCount()
     {
         // NOTE: optimizations in this method are hideous: be careful
         
-        STZ ZP.ACCL  // Argument count
+        STZ ZP.ACCL  // arguments count
         
         // Get locals list head from function node (IDX preserved)
         LDY #( Objects.snLocals + 1)
@@ -363,7 +363,14 @@ unit Locals
             ORA ZP.LCURRENTH
             if (Z) { break; }  // End of list
             
-            INC ZP.ACCL  // Increment count
+            LDY # lnType
+            LDA [ZP.LCURRENT], Y
+            AND # SymbolType.MASK
+            CMP # SymbolType.ARGUMENT
+            if (Z)
+            {
+                INC ZP.ACCL  // Increment arguments count
+            }
             
             // Move to next local (use LCURRENT, not IDX)
             LDY # lnNext

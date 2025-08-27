@@ -661,7 +661,7 @@ unit Functions
             if (C)
             {
                 // has arguments
-                Locals.GetCount(); // ZP.ACCL = argument count
+                Locals.GetArgumentsCount(); // ZP.ACCL = argument count
             }
            
             LDA ZP.IDXL

@@ -1336,11 +1336,12 @@ unit Compiler // Compiler.asm
                 if (C) // Function found
                 {
                     // Compare with actual argument count
-                    Locals.GetCount(); // Input: ZP.IDX = function node, Output: A = argument count
+                    Locals.GetArgumentsCount(); // Input: ZP.IDX = function node, Output: A = argument count
                     LDA ZP.ACCL
                     CMP compilerCurrentArgCount
                     if (NZ)
                     {
+Debug.NL(); LDA compilerCurrentArgCount HOut(); Space(); LDA ZP.ACCL HOut(); Space(); XOut();
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
                         break;
                     }
