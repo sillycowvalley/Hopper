@@ -200,14 +200,15 @@ Arrays retain explicit type specifiers for memory efficiency:
 
 #### Expressions & Operators
 - **Arithmetic**: `+ - * / MOD` (LONG types only)
-- **Bitwise**: `& |` (AND, OR - LONG types only)
-- **Unary**: `-` (negation - LONG only), `NOT` (logical - BIT only)
+- **Bitwise**: `& | ~` (AND, OR, complement - LONG types only)
+- **Unary**: `-` (negation - LONG only), `NOT` (logical - BIT only), `~` (bitwise complement - LONG only)
 - **Comparison**: `= <> < > <= >=` (returns BIT type)
   - **LONG comparisons**: ✅ Full support for all comparison operators
   - **CHAR comparisons**: ✅ Full support for all comparison operators  
   - **BIT comparisons**: ✅ Equality only (`=` and `<>`)
   - **STRING comparisons**: ✅ Equality only (`=` and `<>`)
 - **Logical**: `AND OR NOT` (BIT operands only)
+- **Bitwise Complement**: `~` (LONG operand only)
 - **Parentheses**: `( )` for precedence
 
 #### Simplified Type System
@@ -450,7 +451,7 @@ additive_expr := bitwise_or_expr [ ("+" | "-") bitwise_or_expr ]
 bitwise_or_expr := bitwise_and_expr [ "|" bitwise_and_expr ]
 bitwise_and_expr := multiplicative_expr [ "&" multiplicative_expr ]
 multiplicative_expr := unary_expr [ ("*" | "/" | MOD) unary_expr ]
-unary_expr := [ "-" | NOT ] primary_expr
+unary_expr := [ "-" | NOT | "~" ] primary_expr
 primary_expr := number | identifier | string_literal | char_literal | TRUE | FALSE
               | "(" expression ")" | function_call | built_in_function
               | identifier "[" expression "]"
@@ -481,7 +482,7 @@ char_literal := "'" character "'"
 
 ### Operator Precedence (Highest to Lowest) - **CORRECTED**
 1. Function calls, parentheses, indexing ([])
-2. Unary minus (-), NOT
+2. Unary minus (-), NOT, ~ (bitwise complement)
 3. Multiplication (*), Division (/), Modulo (MOD)
 4. **Bitwise AND (&)** - **MOVED HIGHER**
 5. **Bitwise OR (|)** - **MOVED HIGHER**
@@ -659,6 +660,18 @@ OK
 > PRINT 8 | 1 + 2     ! Now: (8 | 1) + 2 = 9 + 2 = 11  
 11
 
+! Bitwise complement operator
+> PRINT ~0            ! All bits flipped: ~0 = -1 (0xFFFFFFFF)
+-1
+
+> PRINT ~(-1)         ! All bits flipped: ~(-1) = 0
+0
+
+> VAR mask = ~(1 << 3)  ! Create bit mask (if we had << operator)
+> VAR mask = ~8         ! Invert bit 3: ~8 = -9 (0xFFFFFFF7)
+> PRINT mask
+-9
+
 ! Use parentheses to override precedence when needed
 > PRINT (2 + 3) & 4   ! Force addition first: 5 & 4 = 4
 4
@@ -669,6 +682,13 @@ OK
 > ! = 10 + (1 | 2) > 15 = 10 + 3 > 15 = 13 > 15 = FALSE
 > PRINT result
 FALSE
+
+! Bitwise complement with arithmetic
+> PRINT ~5 + 1        ! (~5) + 1 = -6 + 1 = -5
+-5
+
+> PRINT ~(5 + 1)      ! ~(6) = -7
+-7
 ```
 
 ### Basic Operations with Simplified Types
@@ -861,6 +881,14 @@ OK
 OK
 > PRINT userInput
 456
+
+! Bitwise operations including complement
+> PRINT 15 & 7       ! Bitwise AND: 15 & 7 = 7
+7
+> PRINT 8 | 4        ! Bitwise OR: 8 | 4 = 12
+12  
+> PRINT ~15          ! Bitwise complement: ~15 = -16
+-16
 ```
 
 ---
