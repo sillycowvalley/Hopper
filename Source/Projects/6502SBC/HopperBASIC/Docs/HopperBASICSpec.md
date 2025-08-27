@@ -510,7 +510,7 @@ char_literal := "'" character "'"
 | **8** | `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
 | **9** | `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
 | **10** | `AND` (logical) | `AND` | **Hopper: Logical AND separated from bitwise**
-| **11** | `OR`  | `OR` `EOR` | **Hopper: Logical OR separated from bitwise, BBC: Has EOR **
+| **11** | `OR`  | `OR` `EOR` | **Hopper: Logical OR separated from bitwise**
 
 
 ## **Key Observations:**
