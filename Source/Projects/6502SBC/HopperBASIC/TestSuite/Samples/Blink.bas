@@ -1,16 +1,15 @@
+CONST PIN = 0
+
 BEGIN
    VAR COUNT
-   PINMODE(0, 1) ! Pin 0  for Writing
-   
+   PINMODE(PIN, 1) ! set to "write"
+   VAR STATE = FALSE
    WHILE TRUE
-       WRITE(0, TRUE)
+       STATE = NOT STATE
+       WRITE(PIN, STATE)
        DELAY(1000)
-       PRINT "On"
-       WRITE(0, FALSE)
-       DELAY(1000)
-       PRINT "Off"
        COUNT = COUNT + 1
-       PRINT "Laps="; COUNT, "Seconds="; SECONDS()
+       PRINT "Laps="; COUNT, "Seconds="; SECONDS(), "Milliseconds="; MILLIS()
    WEND
 END
 
