@@ -992,10 +992,7 @@ unit Tokenizer // Tokenizer.asm
     GetTokenNumber()
     {
         // Initialize to zero
-        STZ ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
+        Long.ZeroTop();
         
         // Set up 16-bit pointer to saved literal position in token buffer
         LDA ZP.TokenBufferL

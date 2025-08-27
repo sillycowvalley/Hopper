@@ -209,12 +209,8 @@ unit Executor // Executor.asm
        loop // Single exit block
        {
            Executor.LoadGlobals();
-           CheckError();
-           if (NC) 
-           { 
-              States.SetFailure();
-              break;
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
        
            // Initialize executor state
            InitExecutor();
@@ -265,11 +261,8 @@ unit Executor // Executor.asm
                 // Regular status and error processing if the above was not true:
                 
                 // Check if any instruction set an error
-                CheckError();
-                if (NC) 
-                { 
-                   States.SetFailure();
-                }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 States.CanContinue();  // Returns C for Success|Exiting|Return, NC for Failure
                 if (NC)
                 {
@@ -1008,12 +1001,8 @@ unit Executor // Executor.asm
        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
    #endif
        
-       STZ ZP.TOP0
-       STZ ZP.TOP1
-       STZ ZP.TOP2
-       STZ ZP.TOP3
-       
-       commonPushLong();
+       Long.ZeroTop();
+       Long.PushTopStrictLONG(); // sets TOPT = LONG
        
    #ifdef TRACE
        LDA #(executePush0Trace % 256) STA ZP.TraceMessageL LDA #(executePush0Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1031,11 +1020,9 @@ unit Executor // Executor.asm
        // Store INT 1 in ZP.TOP
        LDA #1
        STA ZP.TOP0
-       STZ ZP.TOP1
-       STZ ZP.TOP2
-       STZ ZP.TOP3
+       Long.ZeroTop3();
        
-       commonPushLong();
+       Long.PushTopStrictLONG();
        
    #ifdef TRACE
        LDA #(executePush1Trace % 256) STA ZP.TraceMessageL LDA #(executePush1Trace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1053,10 +1040,7 @@ unit Executor // Executor.asm
    #endif
        
        // Store VOID 0 in ZP.TOP
-       STZ ZP.TOP0
-       STZ ZP.TOP1
-       STZ ZP.TOP2
-       STZ ZP.TOP3
+       Long.ZeroTop();
        LDA # (BASICType.VAR|BASICType.LONG)
        STA ZP.TOPT
        Long.PushTop(); // PushEmptyVar: push value and type to stack -> always Success
@@ -1075,10 +1059,7 @@ unit Executor // Executor.asm
    #endif
        
        // Store VOID 0 in ZP.TOP
-       STZ ZP.TOP0
-       STZ ZP.TOP1
-       STZ ZP.TOP2
-       STZ ZP.TOP3
+       Long.ZeroTop();
        LDA #BASICType.VOID
        STA ZP.TOPT
        Long.PushTop(); // PushVoid: push value and type to stack -> always Success
@@ -1145,11 +1126,9 @@ unit Executor // Executor.asm
         }
 #endif
        STA ZP.TOP0
-       STZ ZP.TOP1
-       STZ ZP.TOP2
-       STZ ZP.TOP3
+       Long.ZeroTop3();
        
-       commonPushLong();
+       Long.PushTopStrictLONG(); // sets TOPT = LONG
        
 #ifdef TRACE
        LDA #(executePushByteTrace % 256) STA ZP.TraceMessageL LDA #(executePushByteTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1221,12 +1200,8 @@ unit Executor // Executor.asm
            
            // Push to stack with STRING type
            Long.PushTop(); // PushCString: push value and type to stack -> always Success
-           CheckError();
-           if (NC) 
-           { 
-               States.SetFailure();
-               break; 
-           }
+           CheckErrorAndSetFailure();
+            if (NC) { break; }
            
            break;
        }
@@ -1375,7 +1350,7 @@ unit Executor // Executor.asm
            STZ ZP.TOP3
        }
        
-       commonPushLong();
+       Long.PushTopStrictLONG();
        
 #ifdef TRACE
        LDA #(executePushIntTrace % 256) STA ZP.TraceMessageL LDA #(executePushIntTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1401,7 +1376,7 @@ unit Executor // Executor.asm
        STZ ZP.TOP2
        STZ ZP.TOP3
        
-       commonPushLong();
+       Long.PushTopStrictLONG();
        
 #ifdef TRACE
        LDA #(executePushWordTrace % 256) STA ZP.TraceMessageL LDA #(executePushWordTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -3550,19 +3525,7 @@ Debug.NL(); TLOut(); Space(); YOut();
     #endif
     }
     
-    commonPushLong()
-    {
-        loop
-        {
-            LDA # BASICType.LONG
-            STA ZP.TOPT
-            Long.PushTopStrict();
-            if (NC) { break; }
-            
-            SEC
-            break;
-        }
-    }
+    
     
     const string executePushLongTrace = "PUSHLONG";
     executePushLong()
@@ -3586,7 +3549,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             LDA executorOperandH
             STA ZP.TOP3
             
-            commonPushLong();
+            Long.PushTopStrictLONG();
             break;
         } // Single exit block
         

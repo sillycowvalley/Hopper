@@ -27,6 +27,25 @@ unit Long
             break;
         }
     }
+    
+    PushTopStrictLONG()
+    {
+        LDA # BASICType.LONG
+        STA ZP.TOPT
+        Long.PushTopStrict();
+    }
+    ZeroTop()
+    {
+        STZ ZP.TOP0
+        ZeroTop3();
+    }
+    ZeroTop3()
+    {
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+    }
+    
 #ifndef #DEBUG
     PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
     {

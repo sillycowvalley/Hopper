@@ -81,8 +81,8 @@ unit Console // Console.asm
         loop // Single exit pattern
         {
             // Check for tokenization errors
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Check for empty line (just EOL token)
             LDA ZP.TokenBufferContentLengthL
@@ -264,8 +264,8 @@ unit Console // Console.asm
         loop // Single exit pattern
         {
             // Check for tokenization errors
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Check if this line contains ENDFUNC (completing the function)
             checkForCompletionToken();
@@ -277,15 +277,9 @@ unit Console // Console.asm
                 
                 // Complete the captured function
                 FunctionDeclaration.CompletePartialFunction();
-                CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                }
-                else
-                {
-                    States.SetSuccess();
-                }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
+                States.SetSuccess();
                 break;
             }
             

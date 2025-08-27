@@ -48,9 +48,7 @@ unit BASICTypes // BASICTypes.asm
             {
                 case BASICType.BYTE:
                 {
-                    STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
+                    Long.ZeroTop3();
                 }
                 case BASICType.INT:
                 {

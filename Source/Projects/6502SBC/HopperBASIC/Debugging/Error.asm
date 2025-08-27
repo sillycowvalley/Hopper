@@ -851,6 +851,15 @@ unit Error // ErrorID.asm
         PLA
     }
     
+    CheckErrorAndSetFailure()
+    {
+        CheckError();
+        if (NC) 
+        {
+            States.SetFailure();
+        }
+    }
+    
     // Check if error has occurred
     // Input: None
     // Output: C set if ok, NC if not ok (error occurred)

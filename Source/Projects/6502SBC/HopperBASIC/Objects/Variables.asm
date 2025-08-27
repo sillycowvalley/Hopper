@@ -867,10 +867,8 @@ unit Variables
             // Free the string memory (use different register than IDX)
             Memory.FreeIDY();  // Input: ZP.IDY, Munts: A, ZP.M* -> C on success
                  
-            STZ ZP.TOP0  // Zero out for Objects.SetValue
-            STZ ZP.TOP1
-            STZ ZP.TOP2
-            STZ ZP.TOP3
+            // Zero out for Objects.SetValue
+            Long.ZeroTop();
             Objects.SetValue(); // Set variable's string pointer to 0x0000
             
             SEC // Success

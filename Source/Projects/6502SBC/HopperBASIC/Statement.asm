@@ -216,8 +216,8 @@ unit Statement // Statement.asm
             // Set literal base to TokenizerBuffer for REPL
             Compiler.SetLiteralBase();
             Compiler.CompileExpression();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             if (BBS0, ZP.CompilerFlags)
             {
@@ -229,8 +229,8 @@ unit Statement // Statement.asm
             
             // Emit HALT for REPL
             Emit.Halt();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Save opcode buffer length after compilation (important for function calls from REPL)
             LDA ZP.OpCodeBufferContentLengthL
@@ -249,12 +249,8 @@ unit Statement // Statement.asm
             PLA
             STA ZP.OpCodeBufferContentLengthL
             
-            CheckError(); 
-            if (NC)
-            {
-                States.SetFailure(); 
-                break;
-            } 
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             States.SetSuccess(); // TODO : consider State.Return vs State.Success in terms of stack slot
             
             // Result is now on stack
@@ -291,18 +287,18 @@ unit Statement // Statement.asm
             // Initialize opcode buffer if this is the start of compilation  
             BufferManager.UseREPLOpCodeBuffer();
             Compiler.InitOpCodeBuffer();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
 
             // Compile the statement (not expression)
             Compiler.CompileStatement();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
 
             // Emit HALT for REPL
             Emit.Halt();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Save opcode buffer length after compilation 
             LDA ZP.OpCodeBufferContentLengthL
@@ -322,12 +318,8 @@ unit Statement // Statement.asm
             PLA
             STA ZP.OpCodeBufferContentLengthL
             
-            CheckError(); 
-            if (NC)
-            {
-                States.SetFailure(); 
-                break;
-            } 
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             States.SetSuccess();
             break;

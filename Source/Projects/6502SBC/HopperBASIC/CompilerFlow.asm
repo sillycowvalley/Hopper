@@ -146,13 +146,13 @@ unit CompilerFlow
         {
             // Skip IF token and compile condition expression
             Tokenizer.NextToken();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Compile condition expression (e.g., "X > 10")
             Compiler.CompileFoldedExpressionTree(); // IF <expression>
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             if (BBS0, ZP.CompilerFlags)
             {
@@ -177,8 +177,8 @@ unit CompilerFlow
             }
             
             Tokenizer.NextToken();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Detect single-line vs multi-line form by peeking ahead
             LDA ZP.CurrentToken
@@ -193,8 +193,8 @@ unit CompilerFlow
                     STA Compiler.compilerIfClauses
                     
                     Tokenizer.NextToken();  // Skip the EOL/comment
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 default:
                 {
@@ -215,8 +215,8 @@ unit CompilerFlow
             STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
             STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
             Emit.OpCodeWithWord();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // === COMPILE THEN CLAUSE ===
             
@@ -226,15 +226,15 @@ unit CompilerFlow
             {
                 // Single-line: compile one statement
                 CompileStatement();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
             }
             else
             {
                 // Multi-line: use statement block (handles ELSE/ENDIF termination)
                 CompileStatementBlock();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
             }
             
             // === HANDLE ELSE OR ENDIF ===
@@ -254,8 +254,8 @@ unit CompilerFlow
                 STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
                 STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
                 Emit.OpCodeWithWord();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 // === PATCH JUMPZW (condition false -> jump to ELSE) ===
                 
@@ -280,8 +280,8 @@ unit CompilerFlow
                 
                 // Skip ELSE token
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 // === COMPILE ELSE CLAUSE ===
                 
@@ -291,15 +291,15 @@ unit CompilerFlow
                 {
                     // Single-line: compile one statement
                     CompileStatement();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 else
                 {
                     // Multi-line: use statement block (handles ENDIF termination)
                     CompileStatementBlock();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 
                 // Validate we got ENDIF
@@ -314,8 +314,8 @@ unit CompilerFlow
                 
                 // Skip ENDIF token
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 // === PATCH JUMPW (end of THEN -> after ENDIF) ===
                 
@@ -352,8 +352,8 @@ unit CompilerFlow
                 
                 // Skip ENDIF token
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 // === PATCH JUMPZW (condition false -> after ENDIF) ===
                 
@@ -409,20 +409,16 @@ unit CompilerFlow
        {
            // Get and compile condition expression
            Tokenizer.NextToken();  // Skip WHILE token
-           CheckError();
-           if (NC) 
-           {
-               States.SetFailure(); 
-               break; 
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Mark loop start position for backward jump (start of condition evaluation)
            saveCurrentPosition();
            
            // Compile condition expression (e.g., "I < 10")
            Compiler.CompileFoldedExpressionTree(); // WHILE <expression>
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            if (BBS0, ZP.CompilerFlags)
            {
@@ -441,12 +437,8 @@ unit CompilerFlow
            saveCurrentPosition();
            
            // Check for compilation errors after consuming all 4 stack slots
-           CheckError();
-           if (NC) 
-           {
-               States.SetFailure();
-               break;
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Emit conditional exit jump (placeholder - will be patched after WEND)
            // JUMPZW: Jump if condition is zero/FALSE (exit loop when condition fails)
@@ -455,16 +447,12 @@ unit CompilerFlow
            STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
            Emit.OpCodeWithWord();
-           CheckError();
-           if (NC)
-           {
-               States.SetFailure();
-               break; 
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            CompileStatementBlock();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
             
            // Validate we got WEND
            LDA ZP.CurrentToken
@@ -475,11 +463,8 @@ unit CompilerFlow
                break;
            }
            Tokenizer.NextToken();
-           CheckError();
-           if (NC)
-           {
-               States.SetFailure(); break; 
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // === OFFSET CALCULATION PHASE ===
            // Pop saved positions from stack (in reverse order)
@@ -528,11 +513,8 @@ unit CompilerFlow
            Emit.OpCodeWithWord();
            
            // Final error check
-           CheckError();
-           if (NC) 
-           {
-               States.SetFailure(); break;
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            States.SetSuccess();
            break;
@@ -561,15 +543,15 @@ unit CompilerFlow
         {
             // Skip DO token
             Tokenizer.NextToken();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Mark loop start position for backward jump
             saveCurrentPosition();
             
             CompileStatementBlock();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Validate we got WEND
             LDA ZP.CurrentToken
@@ -592,13 +574,13 @@ unit CompilerFlow
             
             // Skip UNTIL token and compile condition expression
             Tokenizer.NextToken();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Compile condition expression (e.g., "I = 10")
             Compiler.CompileFoldedExpressionTree(); // UNTIL <expression>
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             if (BBS0, ZP.CompilerFlags)
             {
@@ -637,8 +619,8 @@ unit CompilerFlow
             LDA ZP.TOPH  // Backward offset MSB
             STA Compiler.compilerOperand2
             Emit.OpCodeWithWord();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             States.SetSuccess();
             break;
@@ -677,8 +659,8 @@ unit CompilerFlow
     //    {
     //        STZ compilerCanDeclareLocals // no more locals after this
     //        compileForStatement();
-    //        CheckError();
-    //        if (NC) { States.SetFailure(); break; }
+    //        CheckErrorAndSetFailure();
+    //        if (NC) { break; }
     //    }
     //
     // 5. Assumes these methods exist in Locals unit:
@@ -734,8 +716,8 @@ unit CompilerFlow
            
            // Skip FOR token
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Expect iterator identifier
            LDA ZP.CurrentToken
@@ -749,8 +731,8 @@ unit CompilerFlow
            
            // Get iterator name
            Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Check if iterator is already a local
            LDA ZP.TOPL
@@ -779,8 +761,8 @@ unit CompilerFlow
                     
                     // First push a default value to create the stack slot
                     Emit.PushEmptyVar();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // Variables.Find() already set ZP.IDY to the index (slot)
                     // Emit PUSHGLOBAL using that slot
@@ -790,8 +772,8 @@ unit CompilerFlow
                     LDA #OpCode.PUSHGLOBAL
                     STA Compiler.compilerOpCode
                     Emit.OpCodeWithByte();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // Create a shadow local with same name
                     LDA ZP.TOPL
@@ -809,13 +791,13 @@ unit CompilerFlow
                     STA ZP.IDXH
 
                     Locals.Add();          // Creates local
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
 
                     // Now find it to get the BP offset
                     Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     LDA ZP.ACCL     // Get the offset from Find()
                     STA Compiler.compilerForIteratorBP // keep the actual offset for the NEXT check
@@ -829,8 +811,8 @@ unit CompilerFlow
                     LDA #OpCode.POPLOCAL
                     STA Compiler.compilerOpCode
                     Emit.OpCodeWithByte();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // ZP.IDX already points to our new local from Locals.Add()
                     // compilerForIteratorOffset has the BP offset
@@ -861,8 +843,8 @@ unit CompilerFlow
                    // Iterator not found - create implicit local
                    // First push a default value to create the stack slot
                    Emit.PushEmptyVar();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                    
                    // Now create the local node
                    // ZP.TOP still contains name pointer
@@ -872,15 +854,15 @@ unit CompilerFlow
                    SMB1 ZP.CompilerFlags  // we own the iterator
     
                    Locals.Add();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                    
                    SMB5 ZP.CompilerFlags // we created an implicit local that needs to be removed at the end of the function
                    
                    // get BP offset
                    Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                    INC Compiler.compilerFuncLocals  // Track new local
                    LDA ZP.ACCL     // Get the offset from Find()
                    STA Compiler.compilerForIteratorBP      // keep the actual offset for the NEXT check
@@ -903,8 +885,8 @@ unit CompilerFlow
            
            // Skip iterator name
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Expect '=' token
            LDA ZP.CurrentToken
@@ -918,12 +900,12 @@ unit CompilerFlow
            
            // Skip '=' and compile FROM expression
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            Compiler.CompileFoldedExpressionTree();  // Compile FROM expression
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            if (BBS0, ZP.CompilerFlags)
            {
@@ -949,8 +931,8 @@ unit CompilerFlow
            LDA #OpCode.POPLOCAL
            STA Compiler.compilerOpCode
            Emit.OpCodeWithByte();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Expect TO token
            LDA ZP.CurrentToken
@@ -964,12 +946,12 @@ unit CompilerFlow
            
            // Skip TO and compile TO expression
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            Compiler.CompileFoldedExpressionTree();  // Compile TO expression (leaves on stack)
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            if (BBS0, ZP.CompilerFlags)
            {
@@ -1015,8 +997,8 @@ unit CompilerFlow
            STA ZP.TOPT
            
            INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            LDA ZP.TOPT
            Long.PushTopStrict(); // TO integeral value
@@ -1043,12 +1025,12 @@ unit CompilerFlow
            {
                // Skip STEP and compile STEP expression
                Tokenizer.NextToken();
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
                
                Compiler.CompileFoldedExpressionTree();  // Compile STEP expression (leaves on stack)
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
                
                if (BBS0, ZP.CompilerFlags)
                {
@@ -1081,8 +1063,8 @@ unit CompilerFlow
                STA ZP.TOP1
                Locals.Add(); // HERE
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
 
                if (BBR0, ZP.CompilerFlags) // STEP is NOT constant expression
                {
@@ -1115,8 +1097,8 @@ unit CompilerFlow
                LDA #OpCode.PUSH1
                STA Compiler.compilerOpCode
                Emit.OpCode();
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
                
                // placeholder slot
                LDA Compiler.compilerSavedNodeAddrL
@@ -1223,13 +1205,8 @@ unit CompilerFlow
                }
                else
                {
-                   STZ ZP.TOP0
-                   STZ ZP.TOP1
-                   STZ ZP.TOP2
-                   STZ ZP.TOP3
-                   LDA # BASICType.LONG
-                   STA ZP.TOPT
-                   Long.PushTopStrict(); // 1 + push 1 = 2
+                   Long.ZeroTop();
+                   Long.PushTopStrictLONG();  // sets TOPT = LONG, 1 + push 1 = 2
                    
                    // FROM >= 0
                    ComparisonInstructions.GreaterEqual();  // FROM >= 0   2 - pops 2, + pushes 1 = 1
@@ -1266,12 +1243,8 @@ unit CompilerFlow
                LDX #0x00  // Placeholder forward offset LSB
                LDY #0x00  // Placeholder forward offset MSB
                Emit.ForCheck();
-               CheckError();
-               if (NC) 
-               { 
-                   States.SetFailure(); 
-                   break; 
-               }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
            }
            
            // Save loop body start position for FORIT's backward jump
@@ -1285,8 +1258,8 @@ unit CompilerFlow
                if (NZ) { break; }
                
                Tokenizer.NextToken();
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
            }
            
            // Compile loop body statements until NEXT
@@ -1304,8 +1277,8 @@ unit CompilerFlow
            }
            
            // Check if we exited due to error
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // We should be at NEXT now
            LDA ZP.CurrentToken
@@ -1319,8 +1292,8 @@ unit CompilerFlow
            
            // Skip NEXT token
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Expect iterator identifier
            LDA ZP.CurrentToken
@@ -1334,8 +1307,8 @@ unit CompilerFlow
            
            // Get iterator name and verify it matches
            Tokenizer.GetTokenString(); // Result in ZP.TOP (name pointer)
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Find the iterator to get its BP offset
            LDA Compiler.compilerSavedNodeAddrL
@@ -1367,8 +1340,8 @@ unit CompilerFlow
            
            // Skip iterator name
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // === EMIT FORIT WITH BACKWARD JUMP ===
            
@@ -1396,8 +1369,8 @@ unit CompilerFlow
                // Emit FORIT
                LDA Compiler.compilerForIteratorOffset
                Emit.ForIterate();
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
                
                // === PATCH FORCHK WITH FORWARD JUMP ===
                
@@ -1424,8 +1397,8 @@ unit CompilerFlow
            // Emit stack cleanup (remove TO and STEP values)
            LDA #0x02  // Decrement by 2 positions
            Emit.DecSp();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
             
            DEC Compiler.compilerFuncLocals
            DEC Compiler.compilerFuncLocals  // Decrement twice since we're removing 2 locals
@@ -1454,8 +1427,8 @@ unit CompilerFlow
                LDA #OpCode.POPGLOBAL
                STA Compiler.compilerOpCode
                Emit.OpCodeWithByte();
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
                
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
@@ -1470,8 +1443,8 @@ unit CompilerFlow
           {
                LDA #0x01  // Decrement by 1 position
                Emit.DecSp();
-               CheckError();
-               if (NC) { States.SetFailure(); break; }
+               CheckErrorAndSetFailure();
+               if (NC) { break; }
                
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL

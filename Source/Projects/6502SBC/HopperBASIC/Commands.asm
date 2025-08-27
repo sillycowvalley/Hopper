@@ -214,13 +214,9 @@ unit Commands
             
             // ZP.STR is null - show all functions with bodies
             displayAllFunctionsWithBodies();
-            CheckError();
-            if (NC)
-            {
-                States.SetFailure(); 
-                break;
-            }
-
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
+            
             // Also display $MAIN function if it exists (even though it's "hidden")
             LDA #(Messages.BeginFunctionName % 256)
             STA ZP.TOPL

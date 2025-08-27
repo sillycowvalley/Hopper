@@ -316,9 +316,7 @@ unit BASICArray
                     // Read single byte
                     LDA [IDY], Y
                     STA ZP.TOP0
-                    STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
+                    Long.ZeroTop3();
                 }
                 default:
                 {

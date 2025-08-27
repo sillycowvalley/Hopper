@@ -503,9 +503,7 @@ unit BASICSysCalls
                     // Convert CHAR to BYTE (value stays the same)
                     // ZP.TOPL already contains the ASCII value
                     
-                    STZ ZP.TOP1
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
+                    Long.ZeroTop3();
                     LDA #BASICType.LONG
                     STA ZP.TOPT
                 }

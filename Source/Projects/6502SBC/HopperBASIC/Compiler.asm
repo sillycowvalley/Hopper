@@ -1108,9 +1108,7 @@ unit Compiler // Compiler.asm
                             case BASICType.BYTE:
                             {
                                 LDA ZP.TOP0
-                                STZ ZP.TOP1
-                                STZ ZP.TOP2
-                                STZ ZP.TOP3
+                                Long.ZeroTop3();
                                 Emit.PushByte();
                             }
                             case BASICType.CHAR:
@@ -1439,9 +1437,7 @@ unit Compiler // Compiler.asm
                    
                    if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                    {
-                       STZ ZP.TOP1
-                       STZ ZP.TOP2
-                       STZ ZP.TOP3
+                       Long.ZeroTop3();
                        LDA #BASICType.BIT
                        STA ZP.TOPT
                        Long.PushTop();
@@ -1464,9 +1460,7 @@ unit Compiler // Compiler.asm
                    
                    if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                    {
-                       STZ ZP.TOP1
-                       STZ ZP.TOP2
-                       STZ ZP.TOP3
+                       Long.ZeroTop3();
                        LDA #BASICType.BIT
                        STA ZP.TOPT
                        Long.PushTop();
@@ -1524,9 +1518,7 @@ unit Compiler // Compiler.asm
                            if (Z)
                            {
                                LDA ZP.TOP0
-                               STZ ZP.TOP1
-                               STZ ZP.TOP2
-                               STZ ZP.TOP3
+                               Long.ZeroTop3();
                                
                                Emit.PushByte();
                                CheckError();
@@ -1631,9 +1623,7 @@ unit Compiler // Compiler.asm
                     
                     if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                     {
-                        STZ ZP.TOP1
-                        STZ ZP.TOP2
-                        STZ ZP.TOP3
+                        Long.ZeroTop3();
                         LDA #BASICType.CHAR
                         STA ZP.TOPT
                         Long.PushTop();
@@ -1923,13 +1913,13 @@ unit Compiler // Compiler.asm
        BufferManager.UseREPLOpCodeBuffer();
        InitOpCodeBuffer();
        
-       CheckError();
-       if (NC) { States.SetFailure(); return; }
+       CheckErrorAndSetFailure();
+       if (NC) { return; }
        
        // Compile the expression using same precedence as Expression.asm
        CompileFoldedExpressionTree(); // REPL expression
-       CheckError();
-       if (NC) { States.SetFailure(); return; }
+       CheckErrorAndSetFailure();
+       if (NC) { return; }
        
        States.SetSuccess();
 
@@ -1973,8 +1963,8 @@ unit Compiler // Compiler.asm
                 {
                     // Skip empty lines
                     Tokenizer.NextToken();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     continue; // Continue main loop
                 }
                 
@@ -1982,8 +1972,8 @@ unit Compiler // Compiler.asm
                 {
                     // Compile the statement
                     CompileStatement();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // Handle colon separator
                     LDA ZP.CurrentToken
@@ -1991,8 +1981,8 @@ unit Compiler // Compiler.asm
                     if (Z)
                     {
                         Tokenizer.NextToken();
-                        CheckError();
-                        if (NC) { States.SetFailure(); break; }
+                        CheckErrorAndSetFailure();
+                        if (NC) { break; }
                     }
                     continue; // Continue main loop
                 }
@@ -2035,8 +2025,8 @@ unit Compiler // Compiler.asm
        {
            // Initialize opcode buffer
            InitOpCodeBuffer();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            //Save the function node address for argument lookups
            LDA ZP.IDXL
@@ -2050,20 +2040,20 @@ unit Compiler // Compiler.asm
            
            // Get first token of function body
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            
            Emit.Enter();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            STZ compilerFuncLocals // no locals yet
            
            // Replace the statement loop with:
            CompileStatementBlock();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
             
            // Validate we got EOF
            LDA ZP.CurrentToken
@@ -2085,12 +2075,12 @@ unit Compiler // Compiler.asm
                 //CLC
                 //ADC compilerFuncLocals  // Total slots to clean
                 Emit.Return();  // Pass total count
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
            }
            Emit.Halt();  // sentinel for ending opcode iteration
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            States.SetSuccess(); // Success
            break;
@@ -2143,62 +2133,62 @@ unit Compiler // Compiler.asm
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileWhileStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.DO:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileDoUntilStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.PRINT:
                {
                    compilePrintStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.CLS:
                {
                    compileCLSStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.RETURN:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    compileReturnStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.IF:
                {
                    STZ compilerCanDeclareLocals // no more locals after this
                    CompilerFlow.CompileIfStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.FOR:
                {
                    CompilerFlow.CompileForStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.IDENTIFIER:
                {
                    // Could be assignment or function call
                    compileIdentifierStatement();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                case Token.REM:
                case Token.COMMENT:
                {
                    // Skip comments - advance to next token
                    Tokenizer.NextToken();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                }
                
                
@@ -2207,29 +2197,29 @@ unit Compiler // Compiler.asm
                 {
                     LDA #SysCallType.Delay
                     compileSysCall();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 case Token.POKE:
                 {
                     LDA #SysCallType.Poke
                     compileSysCall();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 case Token.WRITE:
                 {
                     LDA #SysCallType.Write
                     compileSysCall();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 case Token.PINMODE:
                 {
                     LDA #SysCallType.PinMode
                     compileSysCall();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                
                case Token.INT:
@@ -2315,8 +2305,8 @@ unit Compiler // Compiler.asm
         {
             // Get next token (should be start of expression, separator, or EOL)
             Tokenizer.NextToken();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Check for PRINT with no arguments (just newline)
             LDA ZP.CurrentToken
@@ -2325,8 +2315,8 @@ unit Compiler // Compiler.asm
             {
                 // PRINT (newline only)
                 Emit.PrintNewLine();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 States.SetSuccess();
                 break;
             }
@@ -2338,12 +2328,12 @@ unit Compiler // Compiler.asm
             {
                 // PRINT, - space and no newline
                 Emit.PrintSpace();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 States.SetSuccess();
                 break;
             }
@@ -2353,8 +2343,8 @@ unit Compiler // Compiler.asm
             {
                 // PRINT; - no space, no newline
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 States.SetSuccess();
                 break;
             }
@@ -2365,13 +2355,13 @@ unit Compiler // Compiler.asm
 
                 // Compile current expression
                 CompileFoldedExpressionTree(); // PRINT arguments, use full expression compilation
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
 
                 // Emit system call to print the value on stack
                 Emit.PrintValue();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 // Check what follows this expression
                 LDA ZP.CurrentToken
@@ -2380,13 +2370,13 @@ unit Compiler // Compiler.asm
                 {
                     // Comma separator - add space and continue with next expression
                     Emit.PrintSpace();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // Get next token for next expression
                     Tokenizer.NextToken();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // Check if this is a trailing comma (followed by EOL)
                     LDA ZP.CurrentToken
@@ -2408,8 +2398,8 @@ unit Compiler // Compiler.asm
                     // Semicolon separator - no space, continue with next expression
                     // Get next token for next expression
                     Tokenizer.NextToken();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     // Check if this is a trailing semicolon (followed by EOL)
                     LDA ZP.CurrentToken
@@ -2428,8 +2418,8 @@ unit Compiler // Compiler.asm
                 // No separator - end of expression list
                 // Default behavior: add newline
                 Emit.PrintNewLine();
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 States.SetSuccess();
                 break; // Exit argument loop
@@ -2458,8 +2448,8 @@ unit Compiler // Compiler.asm
        {
            // Get next token
            Tokenizer.NextToken();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Check if there's a return expression
            LDA ZP.CurrentToken
@@ -2472,16 +2462,16 @@ unit Compiler // Compiler.asm
                 //CLC
                 //ADC compilerFuncLocals  // Total slots to clean
                 Emit.Return();  // Pass total count
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 States.SetSuccess();
                 break;
            }
            
            // Compile return expression
            CompileFoldedExpressionTree(); // RETURN <expression>
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            // Emit RETURN with locals cleanup count
            LDA compilerFuncArgs
@@ -2489,8 +2479,8 @@ unit Compiler // Compiler.asm
            //CLC
            //ADC compilerFuncLocals  // Total slots to clean
            Emit.ReturnVal();
-           CheckError();
-           if (NC) { States.SetFailure(); break; }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
            
            States.SetSuccess();
            break;
@@ -2783,11 +2773,8 @@ unit Compiler // Compiler.asm
                     
                     // Push array pointer onto stack
                     compileVariableOrArgument(); 
-                    CheckError();
-                    if (NC)
-                    {
-                        States.SetFailure(); break; 
-                    }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
 #ifdef PEEPHOLE
                     STZ Compiler.compilerSetItemObjInstr
                     LDA Compiler.compilerLastOpCode
@@ -2804,25 +2791,17 @@ unit Compiler // Compiler.asm
 #endif     
                     // Move past '[' and compile index expression
                     Tokenizer.NextToken();
-                    CheckError();
-                    if (NC)
-                    {
-                        States.SetFailure(); break; 
-                    }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
                     Tokenizer.NextToken();
-                    CheckError();
-                    if (NC)
-                    {
-                        States.SetFailure(); break; 
-                    }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                    
                     // Index value on stack
                     CompileFoldedExpressionTree(); // array[<expression>] = 
-                    CheckError();
-                    if (NC)
-                    {
-                        States.SetFailure(); break; 
-                    }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     
 #ifdef PEEPHOLE                    
                     STZ Compiler.compilerSetItemIndexInstr
@@ -2866,12 +2845,8 @@ unit Compiler // Compiler.asm
             {
                 // Move to next token - should be '='
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                    break; 
-                }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 
                 // Verify we have '='
@@ -2886,21 +2861,13 @@ unit Compiler // Compiler.asm
                 
                 // Move past '=' to the expression
                 Tokenizer.NextToken();
-                CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                    break; 
-                }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 
                 // Compile the RHS expression (this WILL munt ZP.IDX and ZP.ACCL)
                 CompileFoldedExpressionTree(); // local = <expression>
-                CheckError();
-                if (NC) 
-                { 
-                    States.SetFailure(); 
-                    break; 
-                }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
                 break;
             }
             
@@ -2999,8 +2966,8 @@ unit Compiler // Compiler.asm
                     Emit.OpCode();
                     break;
                 } 
-                CheckError();
-                if (NC) { States.SetFailure(); break; }
+                CheckErrorAndSetFailure();
+                if (NC) { break; }
             }
             else
             {
@@ -3012,12 +2979,8 @@ unit Compiler // Compiler.asm
                     // Local variable - use POPLOCAL with BP offset
                     LDA ZP.ACCL  // BP offset (signed)
                     Emit.PopLocal();
-                    CheckError();
-                    if (NC) 
-                    { 
-                        States.SetFailure(); 
-                        break; 
-                    }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
                 else  // Must be Global
                 {
@@ -3033,12 +2996,8 @@ unit Compiler // Compiler.asm
                     
                     // Call the new PopGlobal that finds by name and uses index
                     Emit.PopGlobal();
-                    CheckError();
-                    if (NC) 
-                    { 
-                        States.SetFailure(); 
-                        break; 
-                    }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                 }
             }
             States.SetSuccess();
@@ -3071,11 +3030,9 @@ unit Compiler // Compiler.asm
            // Typically called when ZP.CurrentToken is Token.IDENTIFIER, or a keyword
            // Output: symbol or function in IDX, ZP.ACCT = IdentifierType
            Statement.ResolveIdentifier(); // Uses same logic as REPL
-           CheckError();
-           if (NC) 
-           { 
-               States.SetFailure(); break; 
-           }
+           CheckErrorAndSetFailure();
+           if (NC) { break; }
+           
            LDA ZP.ACCT
            switch (A)
            {
@@ -3083,14 +3040,14 @@ unit Compiler // Compiler.asm
                {
                    // Compile function call using existing logic
                    compileFunctionCallOrVariable();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                    
                    // For function calls as statements, discard the return value
                    LDA #0x01  // Decrement by 1 position
                    Emit.DecSp();
-                   CheckError();
-                   if (NC) { States.SetFailure(); break; }
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
                    
                    States.SetSuccess();
                    break;
@@ -3099,8 +3056,8 @@ unit Compiler // Compiler.asm
                 case IdentifierType.Local:  // Add this case
                 {
                     compileAssignment();
-                    CheckError();
-                    if (NC) { States.SetFailure(); break; }
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
                     States.SetSuccess();
                     break;
                 }
@@ -3111,8 +3068,8 @@ unit Compiler // Compiler.asm
                    {
                        // populating the stack with global constants
                        compileAssignment();
-                       CheckError();
-                       if (NC) { States.SetFailure(); break; }
+                       CheckErrorAndSetFailure();
+                       if (NC) { break; }
                        States.SetSuccess();
                    }
                    else
@@ -3186,13 +3143,13 @@ unit Compiler // Compiler.asm
         {
             // Get next token - should be EOL or COLON (CLS takes no arguments)
             Tokenizer.NextToken();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             // Emit the CLS opcode
             Emit.ClearScreen();
-            CheckError();
-            if (NC) { States.SetFailure(); break; }
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
             
             States.SetSuccess();
             break;
