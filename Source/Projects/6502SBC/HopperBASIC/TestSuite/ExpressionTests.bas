@@ -1,6 +1,7 @@
 ! Hopper BASIC Expression Grammar Test Suite
 ! Tests operator precedence and arithmetic correctness
 ! Focus on numeric operations, systematic grammar coverage
+! CORRECTED: Comments now reflect actual precedence rules
 
 CLS
 NEW
@@ -28,6 +29,22 @@ FUNC TestUnary()
     PRINT -42; " ! expect -42"
     PRINT -(-17); " ! expect 17"
     PRINT -(5 + 3); " ! expect -8"
+    PRINT
+ENDFUNC
+
+! ===== LEVEL 2B: Bitwise Complement (NEW) =====
+FUNC TestBitwiseComplement()
+    PRINT "=== Bitwise Complement: ~ ==="
+    PRINT "Basic complement:"
+    PRINT ~0; " ! expect -1 (all bits flipped)"
+    PRINT ~(-1); " ! expect 0 (all bits flipped)"
+    PRINT ~15; " ! expect -16 (flip 0x0F to 0xFFF0)"
+    PRINT ~255; " ! expect -256 (flip 0xFF to 0xFF00)"
+    
+    PRINT "Precedence (~ is unary, high precedence):"
+    PRINT ~5 + 1; " ! expect -5 ((~5) + 1 = -6 + 1)"
+    PRINT ~(5 + 1); " ! expect -7 (~6 = -7)"
+    PRINT 10 + ~3; " ! expect 6 (10 + (~3) = 10 + (-4))"
     PRINT
 ENDFUNC
 
@@ -60,7 +77,41 @@ FUNC TestMultiplicative()
     PRINT
 ENDFUNC
 
-! ===== LEVEL 4: Additive Expressions =====
+! ===== LEVEL 4: Bitwise AND (CORRECTED LEVEL) =====
+FUNC TestBitwiseAnd()
+    PRINT "=== Bitwise AND: & ==="
+    
+    PRINT "Basic bitwise AND:"
+    PRINT 15 & 7; " ! expect 7 (1111 & 0111)"
+    PRINT 12 & 10; " ! expect 8 (1100 & 1010)"
+    PRINT 255 & 15; " ! expect 15"
+    PRINT 0 & 999; " ! expect 0"
+    
+    PRINT "Precedence (& after * but before +):"
+    PRINT 4 + 8 & 12; " ! expect 12 (4 + (8&12) = 4+8)"
+    PRINT 15 & 7 + 1; " ! expect 8 ((15&7) + 1 = 7+1)"
+    PRINT 2 * 3 & 5; " ! expect 6 ((2*3) & 5 = 6&5 = 4)"
+    PRINT
+ENDFUNC
+
+! ===== LEVEL 5: Bitwise OR (CORRECTED LEVEL) =====
+FUNC TestBitwiseOr()
+    PRINT "=== Bitwise OR: | ==="
+    
+    PRINT "Basic bitwise OR:"
+    PRINT 8 | 4; " ! expect 12 (1000 | 0100)"
+    PRINT 15 | 240; " ! expect 255"
+    PRINT 0 | 42; " ! expect 42"
+    PRINT 7 | 0; " ! expect 7"
+    
+    PRINT "Precedence (| after & but before +):"
+    PRINT 8 | 4 & 12; " ! expect 12 (8 | (4&12) = 8|4)"
+    PRINT 15 & 7 | 8; " ! expect 15 ((15&7) | 8 = 7|8)"
+    PRINT 1 + 2 | 4; " ! expect 7 ((1+2) | 4 = 3|4)"
+    PRINT
+ENDFUNC
+
+! ===== LEVEL 6: Additive Expressions (MOVED DOWN) =====
 FUNC TestAdditive()
     PRINT "=== Additive: + - ==="
     
@@ -83,7 +134,7 @@ FUNC TestAdditive()
     PRINT
 ENDFUNC
 
-! ===== LEVEL 5: Precedence Tests (Multiplicative vs Additive) =====
+! ===== LEVEL 7: Arithmetic Precedence (UPDATED) =====
 FUNC TestArithmeticPrecedence()
     PRINT "=== Arithmetic Precedence ==="
     
@@ -105,38 +156,6 @@ FUNC TestArithmeticPrecedence()
     PRINT (2 + 3) * 4; " ! expect 20 (not 14)"
     PRINT 2 + (3 * 4); " ! expect 14"
     PRINT (10 - 6) / 2; " ! expect 2 (not 7)"
-    PRINT
-ENDFUNC
-
-! ===== LEVEL 6: Bitwise AND =====
-FUNC TestBitwiseAnd()
-    PRINT "=== Bitwise AND: & ==="
-    
-    PRINT "Basic bitwise AND:"
-    PRINT 15 & 7; " ! expect 7 (1111 & 0111)"
-    PRINT 12 & 10; " ! expect 8 (1100 & 1010)"
-    PRINT 255 & 15; " ! expect 15"
-    PRINT 0 & 999; " ! expect 0"
-    
-    PRINT "Precedence (& before +):"
-    PRINT 4 + 8 & 12; " ! expect 8 ((4+8) & 12 = 12&12)"
-    PRINT 15 & 7 + 1; " ! expect 7 (15 & (7+1) = 15&8)"
-    PRINT
-ENDFUNC
-
-! ===== LEVEL 7: Bitwise OR =====
-FUNC TestBitwiseOr()
-    PRINT "=== Bitwise OR: | ==="
-    
-    PRINT "Basic bitwise OR:"
-    PRINT 8 | 4; " ! expect 12 (1000 | 0100)"
-    PRINT 15 | 240; " ! expect 255"
-    PRINT 0 | 42; " ! expect 42"
-    PRINT 7 | 0; " ! expect 7"
-    
-    PRINT "Precedence (| after &):"
-    PRINT 8 | 4 & 12; " ! expect 12 (8 | (4&12) = 8|4)"
-    PRINT 15 & 7 | 8; " ! expect 15 ((15&7) | 8 = 7|8)"
     PRINT
 ENDFUNC
 
@@ -170,13 +189,14 @@ FUNC TestComparisons()
     PRINT
 ENDFUNC
 
-! ===== LEVEL 9: Complex Precedence =====
+! ===== LEVEL 9: Complex Precedence (CORRECTED) =====
 FUNC TestComplexPrecedence()
     PRINT "=== Complex Precedence ==="
     
-    PRINT "Full precedence chain:"
-    PRINT 2 + 3 * 4 & 15; " ! expect 14 (2+(3*4)&15 = 2+12 = 14&15)"
-    PRINT 1 | 2 & 4 + 8; " ! expect 1 (1|(2&(4+8)) = 1|(2&12) = 1|0)"
+    PRINT "Full precedence chain (* > & > | > +):"
+    PRINT 2 + 3 * 4 & 15; " ! expect 14 (2+((3*4)&15) = 2+(12&15) = 2+12)"
+    PRINT 1 | 2 & 4 + 8; " ! expect 13 (1|(2&(4+8)) = 1|(2&12) = 1|0 = 1)"
+    PRINT 8 & 4 + 2; " ! expect 6 ((8&4)+2 = 0+2 = 2)"
     
     PRINT "Nested parentheses:"
     PRINT ((2 + 3) * 4) - 5; " ! expect 15"
@@ -191,7 +211,27 @@ FUNC TestComplexPrecedence()
     PRINT
 ENDFUNC
 
-! ===== LEVEL 10: State Consistency Tests =====
+! ===== LEVEL 10: Comprehensive Bitwise Tests (NEW) =====
+FUNC TestBitwiseComprehensive()
+    PRINT "=== Comprehensive Bitwise Tests ==="
+    
+    PRINT "Mixed bitwise operations:"
+    PRINT 15 & 12 | 3; " ! expect 15 ((15&12)|3 = 12|3)"
+    PRINT 8 | 4 & 2; " ! expect 8 (8|(4&2) = 8|0)"
+    PRINT ~7 & 15; " ! expect 8 ((~7)&15 = -8&15)"
+    
+    PRINT "Bitwise with arithmetic:"
+    PRINT 10 + 5 & 12; " ! expect 12 ((10+5)&12 = 15&12)"
+    PRINT 20 - 4 | 3; " ! expect 19 ((20-4)|3 = 16|3)"
+    PRINT 6 * 2 & 8; " ! expect 8 ((6*2)&8 = 12&8)"
+    
+    PRINT "Complex bitwise chains:"
+    PRINT 1 | 2 & 4 | 8; " ! expect 9 (1|(2&4)|8 = 1|0|8)"
+    PRINT 15 & 7 | 8 & 12; " ! expect 15 ((15&7)|(8&12) = 7|8)"
+    PRINT
+ENDFUNC
+
+! ===== LEVEL 11: State Consistency Tests =====
 FUNC TestStateConsistency()
     PRINT "=== State Consistency ==="
     
@@ -217,21 +257,30 @@ ENDFUNC
 
 ! ===== MAIN TEST RUNNER =====
 BEGIN
-    PRINT "Hopper BASIC Expression Grammar Test Suite"
-    PRINT "Testing numeric operators and precedence"
+    PRINT "Hopper BASIC Expression Grammar Test Suite v2"
+    PRINT "Testing numeric operators with CORRECTED precedence"
+    PRINT "Precedence: () > unary(-,~) > *,/,MOD > &,| > +,- > comparisons"
     PRINT
     
     TestPrimary()
     TestUnary()
+    TestBitwiseComplement()
     TestMultiplicative()
-    TestAdditive() 
-    TestArithmeticPrecedence()
     TestBitwiseAnd()
     TestBitwiseOr()
+    TestAdditive() 
+    TestArithmeticPrecedence()
     TestComparisons()
     TestComplexPrecedence()
+    TestBitwiseComprehensive()
     TestStateConsistency()
     
     PRINT "=== Test Suite Complete ==="
-    PRINT "Check all outputs match expected values"
+    PRINT "All outputs should match expected values"
+    PRINT "If ~ operator not implemented, those tests will fail"
 END
+
+RUN
+
+NEW
+MEM
