@@ -500,42 +500,44 @@ char_literal := "'" character "'"
 
 | **Level** | **Hopper (2025) - UPDATED** | **BBC BASIC (1981)** | **Notes**
 |-----------|----------------|----------------------|-----------|
-| **1** | `()` `[]` **identifiers** **function_calls** **literals** | `()` Functions | **Hopper: More complete primary expressions**
-| **2** | `^` (power) | `^` (power) | **✅ Now matches BBC**
+| **1** | `()` `[]` Functions, Identifiers | `()` Functions, Identifiers | 
+| **2** | `^` (power) | `^` (power) | 
 | **3** | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
-| **4** | `*` `/` `MOD` `DIV` | `*` `/` `DIV` `MOD` | **✅ Now matches BBC (added DIV)**
-| **5** | `+` `-` | `+` `-` | **✅ Perfect match**
-| **6** | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | **✅ Perfect match**
-| **7** | `&` (bitwise AND) | _(empty)_ | **Hopper addition: bitwise operations**
-| **8** | `|` (bitwise OR) | _(empty)_ | **Hopper addition: bitwise operations**
-| **9** | `NOT` (logical) | _(empty)_ | **Hopper: Logical NOT separated from unary**
-| **10** | `AND` (logical) | `AND` | **✅ Matches BBC**
-| **11** | `OR` `EOR` (logical) | `OR` `EOR` | **✅ Now matches BBC (added EOR)**
-
-
-
+| **4** | `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **✅ BBC has floating point**
+| **5** | `+` `-` | `+` `-` | 
+| **6** | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | 
+| **7** | `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
+| **8** | `|` (bitwise OR) |  | **Hopper addition: bitwise operations**
+| **9** | `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
+| **10** | `AND` (logical) | `AND` | 
+| **11** | `OR` `EOR` (logical) | `OR` `EOR` |
 
 
 ## **Key Observations:**
 
-## **🎯 BBC BASIC (1981) - Most Advanced Classic BASIC**
-- **✅ Sophisticated design** - Well-organized 8-level precedence vs GW's scattered 12 levels
-- **✅ Better logical precedence** - `AND`/`OR` at levels 7-8 vs GW's 10-11
-- **✅ Advanced bitwise** - Had `EOR` (XOR) when GW-BASIC had none
-- **✅ Mathematical tradition** - Proper `^` (power) placement
+## **🎯 BBC BASIC (1981) - Excellent Foundation**
+- **✅ Clean 8-level design** - Well-organized precedence hierarchy
+- **✅ Proper mathematical order** - `^` exponentiation at level 2, arithmetic levels 4-5
+- **✅ Logical clarity** - `AND`/`OR` at dedicated levels 7-8
+- **✅ Advanced for its time** - Had `EOR` (XOR) when others didn't
+- **✅ Consistent comparison** - All 6 comparison operators at level 6
 
-## **⚠️ GW-BASIC (1983) - Regression from BBC**
-- **❌ Scattered precedence** - 12 levels with `NOT` at level 9, illogical
-- **❌ No bitwise operations** - Missing essential hardware manipulation  
-- **❌ Assignment confusion** - `=` as assignment at lowest precedence
-- **❌ Poor logical grouping** - `AND`/`OR` buried at levels 10-11
+## **🏆 Hopper (2025) - BBC Foundation + Modern Enhancements**
+- **✅ Preserves BBC excellence** - Maintains BBC's proven precedence levels 1-6, 10-11
+- **✅ Adds essential bitwise** - Inserts `&` `|` `~` at levels 7-8 for hardware programming
+- **✅ Separates logical NOT** - Moves `NOT` to level 9 (just below `AND`) for cleaner semantics
+- **✅ Type safety innovation** - Distinguishes logical (BIT) from bitwise (LONG) operations
+- **✅ Complete operator set** - Adds missing `^`, `DIV`, `EOR` while keeping modern `~`
+- **✅ Assembly-optimized** - Bitwise operations bind tight for microcontroller efficiency
+- **✅ Array indexing** - Explicit `[]` at highest precedence for modern syntax
 
-## **🏆 Our System (2025) - Best of All Worlds**
-- **✅ Classic BASIC arithmetic** - Preserves the perfect `+` `-` precedence (level 6)
-- **✅ Complete bitwise toolkit** - Adds missing `&`, `|`, `~` for hardware programming
-- **✅ Type safety revolution** - Separates logical (BIT) from bitwise (LONG) operations  
-- **✅ Assembly-optimized** - Hardware operations bind tight for microcontroller work
-- **✅ BBC's logical clarity** - Clean `AND`/`OR` precedence without BBC's EOR complexity
+## **🔧 Architectural Advantages:**
+- **Hardware-first design** - Bitwise operations prioritized for embedded programming
+- **Type system clarity** - Clean separation between logical and bitwise domains  
+- **BBC compatibility** - Respects proven precedence while extending capabilities
+- **Modern completeness** - Full operator complement for contemporary programming needs
+
+**Bottom Line**: Hopper takes BBC BASIC's excellent foundation and adds the bitwise operations and type safety, while maintaining mathematical and logical clarity.
 
 Our design takes **BBC BASIC's sophisticated foundation** and **modernizes it** with type safety and hardware-oriented precedence!
 
