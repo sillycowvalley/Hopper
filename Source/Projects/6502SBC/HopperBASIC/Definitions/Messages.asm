@@ -5,6 +5,7 @@ unit Messages // Messages.asm
     
     const string BeginFunctionName = "$MAIN"; // String constant for BEGIN function name
     const string ForVarName = "$F";           // String constant for name of "fake" TO and STEP variable slots in FOR loop
+    const string AutoexecName = "AUTOEXEC";   // String constant for name for "autoexec" feature
     
     const string ErrorMarker = "<-----";
     
@@ -15,4 +16,13 @@ unit Messages // Messages.asm
     const string PrintChar  = "PRINTCHAR";
     const string PrintValue = "PRINTVALUE";
 #endif
+
+    Main() // point ZP.TOP -> "$MAIN"
+    {
+        LDA #(Messages.BeginFunctionName % 256) // TOPL
+        STA ZP.TOPL
+        LDA #(Messages.BeginFunctionName / 256)
+        STA ZP.TOPH
+    }
+
 }

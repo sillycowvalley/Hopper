@@ -20,11 +20,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
         loop // Single exit block for clean error handling
         {
             // Check if "BEGIN" function already exists and remove it
-            LDA #(Messages.BeginFunctionName % 256)
-            STA ZP.TOPL
-            LDA #(Messages.BeginFunctionName / 256)
-            STA ZP.TOPH
-            
+            Messages.Main(); // point ZP.TOP -> "$MAIN"
             Functions.Find(); // Input: ZP.TOP = name
             if (C)
             {
@@ -34,17 +30,11 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 if (NC) { break; }
                 
                 // Restore the name pointer for declaration
-                LDA #(Messages.BeginFunctionName % 256)
-                STA ZP.TOPL
-                LDA #(Messages.BeginFunctionName / 256)
-                STA ZP.TOPH
+                //Messages.Main(); // point ZP.TOP -> "$MAIN"
             }
             
             // Create empty "BEGIN" function with no arguments
-            LDA #(Messages.BeginFunctionName % 256)
-            STA ZP.TOPL
-            LDA #(Messages.BeginFunctionName / 256)
-            STA ZP.TOPH
+            //Messages.Main(); // point ZP.TOP -> "$MAIN"
             
             // Initialize empty arguments list and body tokens
             STZ ZP.NEXTL // Arguments list head = null (no arguments)
@@ -628,10 +618,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                     break;
                 }
                 // "BEGIN" function name
-                LDA #(Messages.BeginFunctionName % 256)
-                STA ZP.TOPL
-                LDA #(Messages.BeginFunctionName / 256)
-                STA ZP.TOPH
+                Messages.Main(); // point ZP.TOP -> "$MAIN"
                 
                 // Skip EOL after BEGIN if present (from multi-line capture)
                 Tokenizer.NextToken();

@@ -532,7 +532,7 @@ unit Console // Console.asm
                 case Token.RUN:
                 {
                     Tokenizer.NextToken(); // consume 'RUN'
-                    cmdRun();
+                    CmdRun();
                     SMB1 ZP.FLAGS  // Always exit after RUN
                 }
                 
@@ -582,7 +582,7 @@ unit Console // Console.asm
                                     CheckError();
                                     if (C) 
                                     {
-                                        cmdRun();                            
+                                        CmdRun();                            
                                     }
                                 }
                             }
@@ -1370,7 +1370,7 @@ unit Console // Console.asm
     
     // Execute RUN command - run the main program
     const string runTrace = "RUN";
-    cmdRun()
+    CmdRun()
     {
 #ifdef TRACE
         LDA #(runTrace % 256) STA ZP.TraceMessageL LDA #(runTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
@@ -1391,10 +1391,7 @@ unit Console // Console.asm
             loop // Single exit block
             {
                 // Find the $MAIN function
-                LDA #(Messages.BeginFunctionName % 256)
-                STA ZP.TOPL
-                LDA #(Messages.BeginFunctionName / 256)
-                STA ZP.TOPH
+                Messages.Main(); // point ZP.TOP -> "$MAIN"
                 
                 Functions.Find(); // Input: ZP.TOP = "$MAIN", Output: ZP.IDX if found
                 if (NC)

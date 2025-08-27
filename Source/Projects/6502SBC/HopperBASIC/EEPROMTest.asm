@@ -704,7 +704,7 @@ Debug.NL();
             STZ ZP.NEXTL
             STZ ZP.NEXTH
             
-            LDA #(Messages.BeginFunctionName % 256)
+            LDA #(Messages.BeginFunctionName % 256) // STRL
             STA ZP.STRL
             LDA #(Messages.BeginFunctionName / 256)
             STA ZP.STRH

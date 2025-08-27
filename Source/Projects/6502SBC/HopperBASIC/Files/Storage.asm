@@ -1154,10 +1154,7 @@ Debug.NL();
             STZ ZP.NEXTL
             STZ ZP.NEXTH
             
-            LDA #(Messages.BeginFunctionName % 256)
-            STA ZP.TOPL
-            LDA #(Messages.BeginFunctionName / 256)
-            STA ZP.TOPH
+            Messages.Main(); // point ZP.TOP -> "$MAIN"
                         
             STZ ZP.IDYL
             STZ ZP.IDYH

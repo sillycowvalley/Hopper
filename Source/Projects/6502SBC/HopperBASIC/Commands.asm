@@ -218,10 +218,7 @@ unit Commands
             if (NC) { break; }
             
             // Also display $MAIN function if it exists (even though it's "hidden")
-            LDA #(Messages.BeginFunctionName % 256)
-            STA ZP.TOPL
-            LDA #(Messages.BeginFunctionName / 256)
-            STA ZP.TOPH
+            Messages.Main(); // point ZP.TOP -> "$MAIN"
 
             Functions.Find(); // Input: ZP.TOP = "$MAIN" name, Output: ZP.IDX = node
             if (C)
@@ -921,11 +918,7 @@ unit Commands
         PHX
         PHY
         
-        // Get pointer to "$MAIN" constant
-        LDA #(Messages.BeginFunctionName % 256)
-        STA ZP.TOPL
-        LDA #(Messages.BeginFunctionName / 256)
-        STA ZP.TOPH
+        Messages.Main(); // point ZP.TOP -> "$MAIN"
         
         // Compare strings character by character
         LDY #0

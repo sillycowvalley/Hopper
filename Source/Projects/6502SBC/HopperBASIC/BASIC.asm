@@ -20,8 +20,8 @@ program HopperBASIC
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    #define ROM_48K    
-    //#define ROM_32K
+    //#define ROM_48K    
+    #define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"
@@ -150,6 +150,21 @@ program HopperBASIC
     // Main interpreter loop
     interpreterLoop()
     {
+        // Auto-execute "AUTO" file if it exists
+#ifdef HASEEPROM
+        LDA #(Messages.AutoexecName % 256)
+        STA ZP.STRL
+        LDA #(Messages.AutoexecName / 256)  
+        STA ZP.STRH
+        File.Exists();
+        if (C) 
+        { 
+            Storage.LoadProgram();
+            if (C) { Console.CmdRun(); }
+        }
+#endif        
+        
+        
         // Show initial ready prompt
         LDX # MessageExtras.None
         LDA # ErrorID.ReadyPrompt Error.Message();
