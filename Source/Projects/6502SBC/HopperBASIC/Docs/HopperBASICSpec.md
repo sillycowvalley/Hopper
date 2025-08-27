@@ -498,19 +498,19 @@ char_literal := "'" character "'"
 
 ## **Our Precedence vs BBC BASIC:**
 
-| **Level** | **Hopper (2025) - UPDATED** | **BBC BASIC (1981)** | **Notes**
-|-----------|----------------|----------------------|-----------|
-| **1** | `()` `[]` Functions.. | `()` Functions.. | **Primary: identifiers, literals, '(expression)', function calls
-| **2** |  | `^` (power) | **BBC: Has power**
-| **3** | `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
-| **4** | `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point**
-| **5** | `+` `-` | `+` `-` | 
-| **6** | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | 
-| **7** | `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
-| **8** | `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
-| **9** | `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
-| **10** | `AND` (logical) | `AND` | **Hopper: Logical AND separated from bitwise**
-| **11** | `OR`  | `OR` `EOR` | **Hopper: Logical OR separated from bitwise**
+| **Hopper (2025) - UPDATED** | **BBC BASIC (1981)** | **Notes**
+|----------------|----------------------|-----------|
+| `()` `[]` Functions.. | `()` Functions.. | **Primary: identifiers, literals, '(expression)', function calls
+|  | `^` (power) | **BBC: Has power**
+| `-` `~` (unary) | `-` `NOT` (unary) | **Hopper: Separate arithmetic/bitwise unary**
+| `*` `/` `MOD`  | `*` `/` `DIV` `MOD` | **BBC: Has floating point**
+| `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
+| `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
+| `+` `-` | `+` `-` | 
+| `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | 
+| `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
+| `AND` (logical) | `AND` | **Hopper: Logical AND separated from bitwise**
+| `OR`  | `OR` `EOR` | **Hopper: Logical OR separated from bitwise**
 
 
 ## **Key Observations:**
