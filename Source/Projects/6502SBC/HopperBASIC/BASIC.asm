@@ -2,7 +2,8 @@ program HopperBASIC
 {
     // Optional Features
     #define PEEPHOLE  // include the peephole optimizer
-    #define HASEEPROM
+    #define HASEEPROM // include EEPROM storage
+    #define HASI2C    // include 6502SBC I2C support
         
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     //#define DEBUG
