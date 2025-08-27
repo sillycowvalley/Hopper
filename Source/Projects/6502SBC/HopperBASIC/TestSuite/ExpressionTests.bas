@@ -240,8 +240,8 @@ FUNC TestOldPrecedenceErrors()
     PRINT "^^ Note: Same result by coincidence, but different evaluation!"
     
     PRINT "Where difference is clear:"
-    PRINT "15 & 7 + 1 OLD way: "; 15 & (7 + 1); " (= 0)"
-    PRINT "15 & 7 + 1 NEW way: "; (15 & 7) + 1; " (= 8)"
+    PRINT "OLD way: "; 8 & (4 + 2); " (= 0)"  ! 8 & 6 = 0  
+    PRINT "NEW way: "; 8 & 4 + 2; " (= 2)"  ! 0 + 2 = 2
     PRINT
 ENDFUNC
 
@@ -266,7 +266,7 @@ FUNC TestFullPrecedenceChain()
     PRINT 1 | 2 + 4; " ! expect 7 ((1|2)+4 = 3+4)"
     
     PRINT "Full complexity:"
-    PRINT 2 + 3 * 4 & 15 | 1; " ! expect 13 ((2+(((3*4)&15)|1)) = 2+((12&15)|1) = 2+(12|1) = 2+13 = 15)"
+    PRINT 2 + 3 * 4 & 15 | 1; " ! expect 15 ((2+(((3*4)&15)|1)) = 2+((12&15)|1) = 2+(12|1) = 2+13 = 15)"
     PRINT
 ENDFUNC
 
@@ -342,12 +342,11 @@ ENDFUNC
 
 MEM
 
-PRINT "Hopper BASIC Expression Test Suite v2.0"
-PRINT "Testing CORRECTED operator precedence"
-PRINT "Precedence: () > unary(-,~) > *,/,MOD > & > | > +,- > comparisons"
-PRINT "KEY FIX: Bitwise operators now bind tighter than arithmetic"
-PRINT "=================================================="
-PRINT
+! "Hopper BASIC Expression Test Suite v2.0"
+! "Testing CORRECTED operator precedence"
+! "Precedence: () > unary(-,~) > *,/,MOD > & > | > +,- > comparisons"
+! "KEY FIX: Bitwise operators now bind tighter than arithmetic"
+! "=================================================="
     
 TestPrimary()
 FORGET TestPrimary
@@ -388,11 +387,11 @@ TestSpecCompliance()
 FORGET TestSpecCompliance
 
     
-PRINT "=================================================="
-PRINT "=== Test Suite Complete ==="
-PRINT "All arithmetic/bitwise precedence should now be correct"
-PRINT "Bitwise operators (&,|) bind tighter than arithmetic (+,-)"
-PRINT "This matches assembly language expectations for hardware programming"
+! "=================================================="
+! "=== Test Suite Complete ==="
+! "All arithmetic/bitwise precedence should now be correct"
+! "Bitwise operators (&,|) bind tighter than arithmetic (+,-)"
+! "This matches assembly language expectations for hardware programming"
 
 MEM
 NEW
