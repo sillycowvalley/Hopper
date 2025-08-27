@@ -520,7 +520,7 @@ unit Long
     }
     
     const byte[] modRemaining  = { 0x00, 0x06, 0x02, 0x08, 0x04, 0x00, 0x06, 0x02, 0x08, 0x04 };
-    const byte[] tensRemaining = { 0,25,51,76,102,128,153,179,204,230 };
+    const byte[] tensRemaining = { 0,      25,   51,   76,  102,  128,  153,  179,  204,  230 };
     
     utility16BitDiv10()
     {
