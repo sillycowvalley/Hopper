@@ -507,7 +507,7 @@ char_literal := "'" character "'"
 | **5** | `+` `-` | `+` `-` | 
 | **6** | `=` `<>` `<` `>` `<=` `>=` | `=` `<>` `<` `>` `<=` `>=` | 
 | **7** | `&` (bitwise AND) |  | **Hopper addition: bitwise operations**
-| **8** | `|` (bitwise OR) |  | **Hopper addition: bitwise operations**
+| **8** | `\|` (bitwise OR) |  | **Hopper addition: bitwise operations**
 | **9** | `NOT` (logical) |  | **Hopper: Logical NOT separated from unary**
 | **10** | `AND` (logical) | `AND` | **Hopper: Logical AND separated from bitwise**
 | **11** | `OR`  | `OR` `EOR` | **Hopper: No EOR, logical OR separated from bitwise**
