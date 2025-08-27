@@ -1,46 +1,26 @@
-FUNC TEST1()
-    VAR a = 10
-    VAR b = 20  
-    VAR f = 50
-    VAR c = 5
+CLS
+NEW
+FUNC TestFailures()
+    PRINT "=== FAILURES ==="
     
-    ! Test broken down step by step
-    VAR aa = a * a
-    PRINT "aa = "; aa; " ! should be 100"
+    ! PRINT "is ";~0; " expect -1"
     
-    VAR bb = b * b
-    PRINT "bb = "; bb; " ! should be 400"
+    PRINT "is "; 2 + 3 & 4; ", expect 2"
+    PRINT "is "; 2 + (3 & 4); ", expect 2 (explicit)"
     
-    VAR diff = aa - bb  
-    PRINT "diff = "; diff; " ! should be -300"
+    PRINT "is "; 12 & 4 + 3; ", expect 7" 
+    PRINT "is "; (12 & 4) + 3; ", expect 7 (explicit)"
     
-    VAR temp = diff / f
-    PRINT "temp = "; temp; " ! should be -6"
+    PRINT "is "; 10 - 6 & 8; ", expect 10"
+    PRINT "is "; 10 - (6 & 8); ", expect 10 (explicit)"
     
-    VAR result2 = temp + c
-    PRINT "result2 = "; result2; " ! should be -1"
-ENDFUNC
-
-
-FUNC TEST2()
-    VAR a = 10
-    VAR b = 20  
-    VAR f = 50
-    VAR c = 5
-    VAR extra1 = 1
+    PRINT "is "; 8 - 2 | 4; ", expect 6"
+    PRINT "is "; (8 - 2) | 4; ", expect 6 (explicit)"
     
-    PRINT "a = "; a; " ! should be 10"
-    PRINT "b = "; b; " ! should be 20"
-    
-    VAR aa = a * a
-    PRINT "a * a = "; aa; " ! should be 100"
-    
-    VAR bb = b * b  
-    PRINT "b * b = "; bb; " ! should be 400"
+    ! PRINT "is "; ~5 + 1; ", expect -5"
 ENDFUNC
 
 BEGIN
-    TEST1()
-    TEST2()
+    TestFailures()
 END
-
+RUN
