@@ -388,6 +388,8 @@ unit ZP // ZeroPage.asm
     const byte RANDOMSEEDL          = 0xA2;  // LSB of random seed  
     const byte RANDOMSEEDH          = 0xA3;  // MSB of random seed
     
+    const byte CURRENTSYSCALL       = 0xA4;
+    
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
     // Shared with Storage.LoadProgram
     const byte TableIndex           = ZP.SS0;

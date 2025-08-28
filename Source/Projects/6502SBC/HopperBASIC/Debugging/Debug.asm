@@ -2519,11 +2519,25 @@ unit Debug // Debug.asm
                 // Count hex digits based on type
                 if (BBS2, ZP.DB0)  // LONG?
                 {
-                    // LONG: 8 hex digits (4 bytes: 0x12345678)
-                    LDA ZP.ACCL
-                    CLC
-                    ADC #8
-                    STA ZP.ACCL
+                    // Check if upper bytes are zero for compact display
+                    LDA Address.ValueStackB3, X
+                    ORA Address.ValueStackB2, X
+                    if (NZ)  // Upper bytes are non-zero?
+                    {
+                        // Full LONG: 8 hex digits
+                        LDA ZP.ACCL
+                        CLC
+                        ADC #8
+                        STA ZP.ACCL
+                    }
+                    else
+                    {
+                        // Compact LONG: 4 hex digits (same as regular types)
+                        LDA ZP.ACCL
+                        CLC
+                        ADC #4
+                        STA ZP.ACCL
+                    }
                 }
                 else
                 {
@@ -2637,14 +2651,21 @@ unit Debug // Debug.asm
                 // Print value based on type
                 if (BBS2, ZP.DB0)  // LONG?
                 {
-                    // Print 4 more hex digits for LONG
-                    LDA Address.ValueStackB3, X  // MSB first
-                    Serial.HexOut();
-                    LDA Address.ValueStackB2, X
-                    Serial.HexOut();
+                    // Check if upper bytes are zero
+                    LDA Address.ValueStackB3, X
+                    ORA Address.ValueStackB2, X
+                    if (NZ)  // Upper bytes are non-zero?
+                    {
+                        // Print all 4 hex digits for full LONG
+                        LDA Address.ValueStackB3, X  // MSB first
+                        Serial.HexOut();
+                        LDA Address.ValueStackB2, X
+                        Serial.HexOut();
+                    }
+                    // Always print lower 2 bytes (fall through)
                 }
-                
-                // Print 4 hex digits for regular types (2 bytes)
+
+                // Print lower 2 bytes (common for all types and compact LONGs)
                 LDA Address.ValueStackB1, X   // MSB first
                 Serial.HexOut();
                 LDA Address.ValueStackB0, X   // LSB last  

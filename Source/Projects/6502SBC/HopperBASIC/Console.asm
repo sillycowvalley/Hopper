@@ -1083,6 +1083,24 @@ unit Console // Console.asm
         LDA ZP.TICK1
         STA ZP.RANDOMSEEDH
         
+        // Clear any leftover locals from all functions
+        Functions.IterateFunctions(); // Returns first function in ZP.IDX, C if found
+        loop
+        {
+            if (NC) { break; } // No more functions
+            Locals.GetArgumentsCount(); // -> ZP.ACCL
+            
+            // remove Locals from the back of the list until there are only Arguments remaining
+            loop
+            {
+                Locals.FindByIndex(); // function IDX, index ZP.ACCL -> local IDY, C or NC
+                if (NC) { break; }    // no more locals -> exit loop
+                Locals.RemoveLast();  // Clear locals for function in ZP.IDX
+            }
+            Functions.IterateNext(); // Get next function
+        }
+        
+        
         // Start iteration over all variables
 #ifdef HASEEPROM        
         if (BBS3, Storage.LoaderFlags)

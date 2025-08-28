@@ -31,12 +31,12 @@ unit BASICSysCalls
         Rnd          = (0b10000 << 3) | (1 << 2) | 0b01,  // ID=16, returns, 1 arg  = 0x85
         
         // I2C functions (ID 17-22)
-        I2CFind   = (0b10001 << 3) | (1 << 2) | 0b01,  // ID=17, returns, 1 arg  = 0x8D
-        I2CBegin  = (0b10010 << 3) | (0 << 2) | 0b01,  // ID=18, void,    1 arg  = 0x91
-        I2CPut    = (0b10011 << 3) | (0 << 2) | 0b01,  // ID=19, void,    1 arg  = 0x99
-        I2CEnd    = (0b10100 << 3) | (1 << 2) | 0b00,  // ID=20, returns, 0 args = 0xA4
-        I2CGet    = (0b10101 << 3) | (1 << 2) | 0b10,  // ID=21, returns, 2 args = 0xAE
-        I2CNext   = (0b10110 << 3) | (1 << 2) | 0b00,  // ID=22, returns, 0 args = 0xB4
+        I2CFind      = (0b10001 << 3) | (1 << 2) | 0b01,  // ID=17, returns, 1 arg  = 0x8D
+        I2CBegin     = (0b10010 << 3) | (0 << 2) | 0b01,  // ID=18, void,    1 arg  = 0x91
+        I2CPut       = (0b10011 << 3) | (0 << 2) | 0b01,  // ID=19, void,    1 arg  = 0x99
+        I2CEnd       = (0b10100 << 3) | (1 << 2) | 0b00,  // ID=20, returns, 0 args = 0xA4
+        I2CGet       = (0b10101 << 3) | (1 << 2) | 0b10,  // ID=21, returns, 2 args = 0xAE
+        I2CNext      = (0b10110 << 3) | (1 << 2) | 0b00,  // ID=22, returns, 0 args = 0xB4
     }
    
     // SYSCALL formatting for DASM:
@@ -306,6 +306,27 @@ unit BASICSysCalls
         STA ZP.ACCT
         BASICTypes.Coerce();
     }
+    validatePinNumber()
+    {
+        LDA # BASICType.BYTE
+        STA ZP.ACCT
+        BASICTypes.CoerceNext();
+        if (C)
+        {
+            LDA ZP.NEXT0
+            AND #0xF0
+            if (NZ)
+            {
+                Error.RangeError(); BIT ZP.EmulatorPCL // -> NC
+            }
+        }
+    }
+    
+    pushLongExit()
+    {
+        PushTopStrictLONG(); // LONG -> TOPT
+        CheckErrorAndSetFailure();
+    }
    
    // Execute SYSCALL opcode - system call with flags-based dispatch
    const string executeSysCallTrace = "SYSCALL // System call";
@@ -318,19 +339,7 @@ unit BASICSysCalls
        {
 
            FetchOperandByte();  // A = SYSCALL ID, never fails
-           
-           TAY  // Preserve full SYSCALL ID in Y
-           
-#ifdef TRACE
-           //TYA Debug.HOut(); Debug.NL(); 
-           //CMP # SysCallType.Delay
-           //if (Z)
-           //{
-           //   DumpStack();
-           //}
-#endif           
-           // Handle arguments based on count (bits 1-0)
-           TYA
+           STA ZP.CURRENTSYSCALL
            AND #0b00000011   // A = argument count
            switch (A)
            {
@@ -340,11 +349,9 @@ unit BASICSysCalls
                    Long.PopTop();                 }
                case 2: 
                { 
-                   PHY
                    // don't use PopTopNext() - it requires both types to be LONG if one is LONG
                    Long.PopTop();  // second arg in ZP.TOP*, munts X
                    Long.PopNext(); // first arg in ZP.TOP*, munts X
-                   PLY
                    if (NC) { break; }
                }
                case 3: 
@@ -357,29 +364,54 @@ unit BASICSysCalls
                }
            }
            
+           LDY ZP.CURRENTSYSCALL
            switch (Y) // full SYSCALL ID
            {
-               case SysCallType.PrintValue:    // ID = 1
+               case SysCallType.Millis:        // ID = 5
                {
-                   CLC // no quotes
-                   BASICTypes.PrintValue();  // Uses ZP.TOP*, CLC = no quotes
+                   LDA ZP.TICK3 STA ZP.TOP3  // reading TICK3 makes a snapshot of all 4 registers on the emulator
+                   LDA ZP.TICK2 STA ZP.TOP2
+                   LDA ZP.TICK1 STA ZP.TOP1
+                   LDA ZP.TICK0 STA ZP.TOP0
+                   pushLongExit();
+                   return;
                }
-               case SysCallType.PrintChar:     // ID = 2
+               case SysCallType.Seconds:       // ID = 6
                {
-                   // Character to print is in ZP.TOP (1 argument)
-                   LDA ZP.TOPT
-                   CMP # BASICType.CHAR
-                   if (NZ)
-                   {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        break;
-                   }
-                   
-                   LDA ZP.TOPL
-                   Serial.WriteChar();
+                   // SECONDS function - get elapsed seconds
+                   Tools.Seconds();              
+                   pushLongExit();
+                   return;
                }
-               case SysCallType.Rnd:
-               {
+               case SysCallType.I2CEnd:  // ID = 20
+                {
+                    // I2CEND() - End transaction
+                    // Output: ZP.TOP* = BIT (TRUE if ACKed)
+                    
+                    I2C.EndTx();     // Returns Bool on stack
+                    Stacks.PopA(); // Get result -> A, munts Y
+                    
+                    // Convert Bool to BIT
+                    STA ZP.TOP0
+                    LDA #BASICType.BIT
+                    STA ZP.TOPT
+                }
+                case SysCallType.I2CNext:  // ID = 22
+                {
+                    // I2CNEXT() - Get next byte from buffer
+                    // Output: ZP.TOP* = byte value (LONG)
+                    
+                    I2C.Read();     // Returns Byte on stack
+                    Stacks.PopA();  // munts Y
+                    
+                    // Convert to LONG
+                    STA ZP.TOP0
+                    Long.ZeroTop3();
+                    pushLongExit();
+                    return;
+                }
+                case SysCallType.Rnd:
+                {
                    // RND function - compute absolute value
                    // Input: ZP.TOP* contains maxvalue
                    // Output: ZP.TOP* contains random number in range [1..maxvalue]
@@ -389,7 +421,9 @@ unit BASICSysCalls
                        Error.RangeError(); BIT ZP.EmulatorPCL // maxvalue cannot be zero
                        break;
                    }
-               }
+                   pushLongExit();
+                   return;
+                }
                
                case SysCallType.Abs:           // ID = 3
                {
@@ -409,14 +443,155 @@ unit BASICSysCalls
                        // Negative, so negate it
                        Long.NegateLongTOP();
                    }
-               }     
+                   pushLongExit();
+                   return;
+               }
+               case SysCallType.Peek:          // ID = 8
+               {
+                   // PEEK function - read memory byte
+                   // Input: ZP.TOP* contains address
+                   // Output: ZP.TOP* contains byte value
+                   validateTopBYTE();
+                   if (NC) { break; }
+                   
+                   // Read byte from memory address
+                   LDA [ZP.TOP]
+                   STA ZP.TOP0
+                   STZ ZP.TOP1
+                   pushLongExit();
+                   return;
+               }
+               case SysCallType.Asc:           // ID = 14
+                {
+                    // ASC function - convert CHAR to BYTE
+                    // Input: ZP.TOP* contains CHAR value
+                    // Output: ZP.TOP* contains BYTE value
+                    
+                    // Validate input is CHAR type
+                    LDA ZP.TOPT
+                    CMP #BASICType.CHAR
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    
+                    // Convert CHAR to BYTE (value stays the same)
+                    // ZP.TOPL already contains the ASCII value
+                    
+                    Long.ZeroTop3();
+                    pushLongExit();
+                    return;
+                }
+                
+                case SysCallType.Len:           // ID = 15
+                {
+                    // LEN function - get string length
+                    // Input: ZP.TOP* contains STRING pointer
+                    // Output: ZP.TOP* contains length as WORD
+                    // Validate input is STRING type
+                    LDA ZP.TOPT
+                    AND # BASICType.TYPEMASK
+                    CMP # BASICType.STRING
+                    if (Z)
+                    {
+                        LDA ZP.TOPL
+                        STA ZP.STRL
+                        LDA ZP.TOPH
+                        STA ZP.STRH
+                        String.Length();
+                        STY ZP.TOP0
+                        STZ ZP.TOP1
+                    }
+                    else
+                    {
+                        // Check if it's an array type
+                        if (BBS5, ZP.TOPT) // Bit 5 - ARRAY
+                        {
+                            // Array handling
+                            LDA ZP.TOPL
+                            STA ZP.IDXL
+                            LDA ZP.TOPH
+                            STA ZP.IDXH
+                            BASICArray.GetCount();  // Returns in ZP.ACC
+                            // Move to TOP and set type
+                            LDA ZP.ACCL
+                            STA ZP.TOP0
+                            LDA ZP.ACCH
+                            STA ZP.TOP1
+                        }
+                        else
+                        {
+                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                            break;
+                        }
+                    }
+                    STZ ZP.TOP2
+                    STZ ZP.TOP3
+                    pushLongExit();
+                    return;
+               }
+               case SysCallType.I2CGet:  // ID = 21
+                {
+                    // I2CGET(addr, count) - Read bytes from device
+                    // Input: ZP.NEXT* = I2C address, ZP.TOP* = byte count
+                    // Output: ZP.TOP* = bytes actually read (LONG)
+                    
+                    // Validate and convert address
+                    LDA #BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.CoerceNext(); // BYTE
+                    if (NC) { break; }
+                    
+                    if (BBS7, ZP.NEXT0)  // Address > 127
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    
+                    // Validate and convert count
+                    validateTopBYTE();
+                    if (NC) { break; }
+                    
+                    // Push count (TOP0), then address (NEXT0) for RequestFrom
+                    Stacks.PushTop();  // munts Y
+                    Stacks.PushNext(); // munts Y
+                    
+                    I2C.RequestFrom();  // Returns bytes read
+                    Stacks.PopA();      // munts Y
+                    
+                    // Convert result to LONG
+                    STA ZP.TOP0
+                    Long.ZeroTop3();
+                    pushLongExit();
+                    return;
+                }
+                
+                case SysCallType.PrintValue:    // ID = 1
+                {
+                    CLC // no quotes
+                    BASICTypes.PrintValue();  // Uses ZP.TOP*, CLC = no quotes
+                }
+                case SysCallType.PrintChar:     // ID = 2
+                {
+                   // Character to print is in ZP.TOP (1 argument)
+                   LDA ZP.TOPT
+                   CMP # BASICType.CHAR
+                   if (NZ)
+                   {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                   }
+                   
+                   LDA ZP.TOPL
+                   Serial.WriteChar();
+                }
                 
                 case SysCallType.Input:          // ID = 16
                 {
                     // INPUT function - read user input and parse as literal
                     // Input: No arguments (uses previous PRINT as prompt)
                     // Output: ZP.TOP* contains parsed value (LONG)
-                    PHY                    
                     loop
                     {
                         // Read line using existing infrastructure
@@ -465,56 +640,10 @@ unit BASICSysCalls
                         break;
                     } // single exit
                     BASICTypes.Promote(); // -> LONG 
-                    PLY
                     if (NC) { break; }
                 }
                
-                         
-                                  
-                                                    
-               case SysCallType.Millis:        // ID = 5
-               {
-                   LDA ZP.TICK3 STA ZP.TOP3  // reading TICK3 makes a snapshot of all 4 registers on the emulator
-                   LDA ZP.TICK2 STA ZP.TOP2
-                   LDA ZP.TICK1 STA ZP.TOP1
-                   LDA ZP.TICK0 STA ZP.TOP0
-                   LDA #BASICType.LONG STA ZP.TOPT
-               }
-               case SysCallType.Seconds:       // ID = 6
-               {
-                   // SECONDS function - get elapsed seconds
-                   PHY
-                   Tools.Seconds();              
-                   PLY
-                   LDA #BASICType.LONG STA ZP.TOPT
-               }
-               case SysCallType.Delay:         // ID = 7
-               {
-                   // DELAY function - delay in milliseconds
-                   if (BBR3, ZP.TOPT) // Bit 3 - Long
-                   {
-                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                       break;
-                   }
-                   Time.DelayTOP();            // Uses ZP.TOP*
-               }
-               case SysCallType.Peek:          // ID = 8
-               {
-                   // PEEK function - read memory byte
-                   // Input: ZP.TOP* contains address
-                   // Output: ZP.TOP* contains byte value
-                   validateTopBYTE();
-                   if (NC) { break; }
-                   
-                   // Read byte from memory address
-                   LDA [ZP.TOP]
-                   STA ZP.TOP0
-                   STZ ZP.TOP1
-                   //STZ ZP.TOP2 // already clear thanks to Coerce above
-                   //STZ ZP.TOP3
-                   LDA #BASICType.LONG
-                   STA ZP.TOPT
-               }
+               
                case SysCallType.Poke:          // ID = 9
                {
                    // POKE function - write memory byte
@@ -526,7 +655,7 @@ unit BASICSysCalls
                    if (NC) { break; }
 
                    validateTopBYTE();
-                    if (NC) { break; }
+                   if (NC) { break; }
                    
                    // Write byte to memory address
                    LDA ZP.TOP0     // Get value to write
@@ -538,19 +667,9 @@ unit BASICSysCalls
                     // PINMODE function - configure pin direction
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = mode
                     
-                    LDA # BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.CoerceNext(); // BYTE
+                    validatePinNumber();
                     if (NC) { break; }
                     
-                    LDA ZP.NEXT0
-                    AND #0xF0
-                    if (NZ)
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-
                     validateTopBYTE();
                     if (NC) { break; }
                     
@@ -598,18 +717,8 @@ unit BASICSysCalls
                     // WRITE function - write digital output
                     // Input: ZP.NEXT* = pin number, ZP.TOP* = value
             
-                    LDA # BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.CoerceNext(); // BYTE
+                    validatePinNumber();
                     if (NC) { break; }
-                            
-                    LDA ZP.NEXT0
-                    AND #0xF0
-                    if (NZ)
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        break;
-                    }
                     
                     // Validate value (0 or 1 for digital)
                     LDA ZP.TOPT
@@ -626,95 +735,7 @@ unit BASICSysCalls
                     GPIO.PinWrite();
                 }
                 
-                case SysCallType.Chr:           // ID = 13
-                {
-                    // CHR function - convert numeric to CHAR
-                    // Input: ZP.TOP* contains numeric value (BYTE/WORD/INT)
-                    // Output: ZP.TOP* contains CHAR value
-                    validateTopBYTE();
-                    if (NC) { break; }
-                    
-                    // Value is valid, convert to CHAR
-                    // ZP.TOP0 already contains the byte value
-                    // ZP.TOP1-3 are clear (thanks to Coerce() above)
-                    LDA #BASICType.CHAR
-                    STA ZP.TOPT
-                }
                 
-                case SysCallType.Asc:           // ID = 14
-                {
-                    // ASC function - convert CHAR to BYTE
-                    // Input: ZP.TOP* contains CHAR value
-                    // Output: ZP.TOP* contains BYTE value
-                    
-                    // Validate input is CHAR type
-                    LDA ZP.TOPT
-                    CMP #BASICType.CHAR
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    
-                    // Convert CHAR to BYTE (value stays the same)
-                    // ZP.TOPL already contains the ASCII value
-                    
-                    Long.ZeroTop3();
-                    LDA #BASICType.LONG
-                    STA ZP.TOPT
-                }
-                
-                case SysCallType.Len:           // ID = 15
-                {
-                    // LEN function - get string length
-                    // Input: ZP.TOP* contains STRING pointer
-                    // Output: ZP.TOP* contains length as WORD
-                    // Validate input is STRING type
-                    LDA ZP.TOPT
-                    AND # BASICType.TYPEMASK
-                    CMP # BASICType.STRING
-                    if (Z)
-                    {
-                        PHY
-                        
-                        LDA ZP.TOPL
-                        STA ZP.STRL
-                        LDA ZP.TOPH
-                        STA ZP.STRH
-                        String.Length();
-                        STY ZP.TOP0
-                        STZ ZP.TOP1
-                        
-                        PLY
-                    }
-                    else
-                    {
-                        // Check if it's an array type
-                        if (BBS5, ZP.TOPT) // Bit 5 - ARRAY
-                        {
-                            // Array handling
-                            LDA ZP.TOPL
-                            STA ZP.IDXL
-                            LDA ZP.TOPH
-                            STA ZP.IDXH
-                            BASICArray.GetCount();  // Returns in ZP.ACC
-                            // Move to TOP and set type
-                            LDA ZP.ACCL
-                            STA ZP.TOP0
-                            LDA ZP.ACCH
-                            STA ZP.TOP1
-                        }
-                        else
-                        {
-                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                            break;
-                        }
-                    }
-                    STZ ZP.TOP2
-                    STZ ZP.TOP3
-                    LDA #BASICType.LONG
-                    STA ZP.TOPT
-               }
                
                 
                 case SysCallType.I2CFind:  // ID = 17
@@ -733,7 +754,7 @@ unit BASICSysCalls
                         break;
                     }
                     LDA ZP.TOP0
-                    I2C.Scan();  // A = address, returns ZP.LastAck
+                    I2C.Scan();  // A = address, returns ZP.LastAck, preserves Y
                     LDA ZP.LastAck
                     EOR #1       // Invert: ACK (0) becomes TRUE (1)
                     STA ZP.TOP0
@@ -761,6 +782,8 @@ unit BASICSysCalls
                     I2C.BeginTx();
                 }
                 
+                
+                
                 case SysCallType.I2CPut:  // ID = 19  
                 {
                     // I2CPUT(byte) - Send byte in transaction
@@ -770,78 +793,36 @@ unit BASICSysCalls
                     if (NC) { break; }
                     
                     // Push byte and call I2C
-                    Stacks.PushTop();
+                    Stacks.PushTop(); // munts Y
                     I2C.Write();
-                    
-                    // No return value for this version
                 }
-                
-                case SysCallType.I2CEnd:  // ID = 20
+                case SysCallType.Delay:         // ID = 7
+               {
+                   // DELAY function - delay in milliseconds
+                   if (BBR3, ZP.TOPT) // Bit 3 - Long
+                   {
+                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                       break;
+                   }
+                   Time.DelayTOP();            // Uses ZP.TOP*
+               }
+               
+                case SysCallType.Chr:           // ID = 13
                 {
-                    // I2CEND() - End transaction
-                    // Output: ZP.TOP* = BIT (TRUE if ACKed)
-                    
-                    I2C.EndTx();     // Returns Bool on stack
-                    Stacks.PopA(); // Get result -> A
-                    
-                    // Convert Bool to BIT
-                    STA ZP.TOP0
-                    LDA #BASICType.BIT
-                    STA ZP.TOPT
-                }
-                
-                case SysCallType.I2CGet:  // ID = 21
-                {
-                    // I2CGET(addr, count) - Read bytes from device
-                    // Input: ZP.NEXT* = I2C address, ZP.TOP* = byte count
-                    // Output: ZP.TOP* = bytes actually read (LONG)
-                    
-                    // Validate and convert address
-                    LDA #BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.CoerceNext(); // BYTE
-                    if (NC) { break; }
-                    
-                    if (BBS7, ZP.NEXT0)  // Address > 127
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    
-                    // Validate and convert count
+                    // CHR function - convert numeric to CHAR
+                    // Input: ZP.TOP* contains numeric value (BYTE/WORD/INT)
+                    // Output: ZP.TOP* contains CHAR value
                     validateTopBYTE();
                     if (NC) { break; }
                     
-                    // Push count (TOP0), then address (NEXT0) for RequestFrom
-                    Stacks.PushTop();
-                    Stacks.PushNext();
-                    
-                    I2C.RequestFrom();  // Returns bytes read
-                    Stacks.PopA();
-                    
-                    // Convert result to LONG
-                    STA ZP.TOP0
-                    Long.ZeroTop3();
-                    LDA #BASICType.LONG
+                    // Value is valid, convert to CHAR
+                    // ZP.TOP0 already contains the byte value
+                    // ZP.TOP1-3 are clear (thanks to Coerce() above)
+                    LDA #BASICType.CHAR
                     STA ZP.TOPT
                 }
                 
-                case SysCallType.I2CNext:  // ID = 22
-                {
-                    // I2CNEXT() - Get next byte from buffer
-                    // Output: ZP.TOP* = byte value (LONG)
-                    
-                    I2C.Read();  // Returns Byte on stack
-                    Stacks.PopA();
-                    
-                    // Convert to LONG
-                    STA ZP.TOP0
-                    Long.ZeroTop3();
-                    LDA #BASICType.LONG
-                    STA ZP.TOPT
-                }
                 
-               
                
                default:
                {
@@ -850,17 +831,17 @@ unit BASICSysCalls
                    break;
 #endif
                }
-           }
+           } // switch
            
            // Handle return value (bit 2)
-           TYA              // Restore full SYSCALL ID
+           LDA ZP.CURRENTSYSCALL
            AND # 0b00000100 // Test return value bit
            if (NZ) 
            {
+               
                // type in ZP.TOPT
                Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
                if (NC) { break; }
-               
            }
            SEC
            States.SetSuccess();
