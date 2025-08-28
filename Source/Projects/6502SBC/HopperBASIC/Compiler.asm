@@ -2150,38 +2150,57 @@ unit Compiler // Compiler.asm
                    CheckErrorAndSetFailure();
                    if (NC) { break; }
                }
-               case Token.IDENTIFIER:
-               {
-                   // Could be assignment or function call
-                   compileIdentifierStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.REM:
-               case Token.COMMENT:
-               {
-                   // Skip comments - advance to next token
-                   Tokenizer.NextTokenCheckSetFailure();
-                   if (NC) { break; }
-               }
+                case Token.IDENTIFIER:
+                {
+                    // Could be assignment or function call
+                    compileIdentifierStatement();
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                }
+                case Token.REM:
+                case Token.COMMENT:
+                {
+                    // Skip comments - advance to next token
+                    Tokenizer.NextTokenCheckSetFailure();
+                    if (NC) { break; }
+                }
                
-               case Token.I2CBEGIN:
-               {
-                   LDA #SysCallType.I2CBegin
-                   compileSysCall();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.I2CPUT:
-               {
-                   LDA #SysCallType.I2CPut
-                   compileSysCall();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               
-               
-               
+                case Token.I2CBEGIN:
+                {
+                    LDA #SysCallType.I2CBegin
+                    compileSysCall();
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                }
+                case Token.I2CPUT:
+                {
+                    LDA #SysCallType.I2CPut
+                    compileSysCall();
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                }
+                // include these so you can ignore/discard the return values (treat them like statements):
+                case Token.I2CEND:
+                {
+                    LDA #SysCallType.I2CEnd
+                    compileSysCall();
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                }
+                case Token.I2CGET:
+                {
+                    LDA #SysCallType.I2CGet
+                    compileSysCall();
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                }
+                case Token.I2CNEXT:
+                {
+                    LDA #SysCallType.I2CNext
+                    compileSysCall();
+                    CheckErrorAndSetFailure();
+                    if (NC) { break; }
+                }
                
                 // VOID syscalls (procedures that don't return values)
                 case Token.DELAY:
