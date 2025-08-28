@@ -27,18 +27,23 @@ ENDFUNC
 
 FUNC ReadEEPROM(addr)
     VAR bytes
+    VAR result
     I2CBEGIN(EEPROM)
     I2CPUT(addr / 256)
     I2CPUT(addr & 255)
-    IF NOT I2CEND() THEN
-        RETURN FALSE
+    result = I2CEND()
+    IF NOT result THEN
+print "a";
+        ! RETURN FALSE
     ENDIF
-    
+    DELAY(5) ! wait 5ms for EEPROM..
     bytes = I2CGET(EEPROM, 16)
+
     IF bytes <> 16 THEN
-        RETURN FALSE
+print "c";
+print bytes
+        !RETURN FALSE
     ENDIF
-    
     RETURN TRUE
 ENDFUNC
 
@@ -60,22 +65,22 @@ FUNC GetSector()
 ENDFUNC
 
 FUNC Name()
-    VAR len = 0
+    VAR length
     VAR c
     FOR i = 1 TO 13
         c = I2CNEXT()
         IF c = 0 THEN
-            RETURN len
+            RETURN length
         ENDIF
         IF c > 127 THEN
             PRINT CHR(c & 127);
-            RETURN len + 1
+            RETURN length + 1
         ELSE
             PRINT CHR(c);
-            len = len + 1
+            length = length + 1
         ENDIF
     NEXT i
-    RETURN len
+    RETURN length
 ENDFUNC
 
 FUNC Skip()

@@ -1,5 +1,5 @@
 # HopperBASIC User Manual and Reference Guide
-*Version 3.2 - A Modern BASIC for 6502 Systems*
+*Version 3.3 - A Modern BASIC for 6502 Systems*
 
 ---
 
@@ -7,7 +7,7 @@
 
 ### What is HopperBASIC?
 
-HopperBASIC is a modern BASIC interpreter designed specifically for 6502 microprocessor systems. It combines the simplicity and immediacy of classic BASIC with modern language features, fitting comfortably within a 32K ROM while providing a rich, interactive development environment.
+HopperBASIC is a modern BASIC interpreter designed specifically for 6502 microprocessor systems. It combines the simplicity and immediacy of classic BASIC with modern language features, fitting comfortably within a 32K ROM while providing a rich, interactive development environment with hardware I/O capabilities including I2C communication.
 
 ### Design Philosophy
 
@@ -16,7 +16,7 @@ HopperBASIC was created with four core principles:
 1. **Immediate Feedback** - Interactive REPL environment for instant results
 2. **Incremental Development** - Encourage small, testable functions with easy persistence
 3. **Small Footprint** - Target 32K ROM with minimal RAM usage
-4. **Performance** - JIT compilation for competitive speed with classic 6502 BASICs
+4. **Hardware Integration** - Direct support for GPIO, I2C, and other peripherals
 
 ### Comparison with Classic BASICs
 
@@ -30,7 +30,7 @@ HopperBASIC was created with four core principles:
 | **Bitwise Ops** | Full support | None | None | AND/OR/EOR |
 | **Compilation** | JIT to opcodes | Interpreted | Interpreted | Semi-compiled |
 | **Storage** | EEPROM files | Tape/Disk | Tape/Disk | Tape/Disk |
-| **Hardware I/O** | Built-in | PEEK/POKE only | PEEK/POKE only | Built-in |
+| **Hardware I/O** | GPIO, I2C built-in | PEEK/POKE only | PEEK/POKE only | Built-in |
 
 ### Key Innovations
 
@@ -39,6 +39,7 @@ HopperBASIC was created with four core principles:
 - **Modern Precedence**: Bitwise operators bind tighter than arithmetic, matching assembly expectations
 - **Interactive Functions**: Define and test functions interactively without line numbers
 - **JIT Compilation**: Expressions compile to stack-based opcodes for fast execution
+- **I2C Support**: Native commands for I2C device communication and control
 
 ---
 
@@ -49,7 +50,7 @@ HopperBASIC was created with four core principles:
 When you start HopperBASIC, you'll see:
 
 ```
-Hopper BASIC v3.2
+Hopper BASIC v3.3
 MEMORY: 27390 BYTES AVAILABLE
 EEPROM: 64K, 64512 BYTES AVAILABLE
 READY
@@ -362,6 +363,51 @@ OK
 You pressed: A
 ```
 
+### Hardware I/O
+
+#### Digital I/O
+
+Control GPIO pins directly:
+
+```basic
+CONST LED = 13
+PINMODE(LED, 1)     ! Set as output
+WRITE(LED, TRUE)    ! Turn on
+DELAY(1000)         ! Wait 1 second
+WRITE(LED, FALSE)   ! Turn off
+
+VAR button = READ(2)  ! Read input pin
+IF button THEN PRINT "Pressed" ENDIF
+```
+
+#### I2C Communication
+
+HopperBASIC provides comprehensive I2C support for communicating with peripherals:
+
+```basic
+! Scan for I2C devices
+FOR addr = 8 TO 119
+    IF I2CFIND(addr) THEN
+        PRINT "Device found at address"; addr
+    ENDIF
+NEXT addr
+
+! Write to device
+CONST DISPLAY = 60   ! OLED at 0x3C
+I2CBEGIN(DISPLAY)
+I2CPUT(0)           ! Command mode
+I2CPUT(175)         ! Display on command
+IF I2CEND() THEN
+    PRINT "Display configured"
+ENDIF
+
+! Read from device  
+VAR bytes = I2CGET(80, 4)  ! Read 4 bytes from EEPROM
+FOR i = 1 TO bytes
+    PRINT I2CNEXT();
+NEXT i
+```
+
 ### Storage Management
 
 Save and load programs to EEPROM:
@@ -669,7 +715,7 @@ Arrays use compact storage types for memory efficiency:
 | `PEEK(addr)` | Read byte from memory | LONG → LONG | `value = PEEK(0x5000)` |
 | `POKE(addr, val)` | Write byte to memory | LONG, LONG → | `POKE(0x5000, 65)` |
 
-#### I/O Functions
+#### GPIO Functions
 
 | Function | Description | Type Signature | Example |
 |----------|-------------|----------------|---------|
@@ -677,6 +723,17 @@ Arrays use compact storage types for memory efficiency:
 | `READ(pin)` | Read digital pin | LONG → BIT | `state = READ(13)` |
 | `WRITE(pin, val)` | Write digital pin | LONG, BIT → | `WRITE(13, TRUE)` |
 | `PINMODE(pin, mode)` | Configure pin | LONG, LONG → | `PINMODE(13, 1)` |
+
+#### I2C Functions
+
+| Function | Description | Type Signature | Example |
+|----------|-------------|----------------|---------|
+| `I2CFIND(addr)` | Test if device responds | LONG → BIT | `IF I2CFIND(60) THEN...` |
+| `I2CBEGIN(addr)` | Start write transaction | LONG → | `I2CBEGIN(60)` |
+| `I2CPUT(byte)` | Send byte in transaction | LONG → | `I2CPUT(175)` |
+| `I2CEND()` | Complete transaction | → BIT | `IF I2CEND() THEN...` |
+| `I2CGET(addr, count)` | Read bytes from device | LONG, LONG → LONG | `bytes = I2CGET(80, 4)` |
+| `I2CNEXT()` | Get next buffered byte | → LONG | `data = I2CNEXT()` |
 
 ### Error Messages
 
@@ -691,6 +748,7 @@ Arrays use compact storage types for memory efficiency:
 - `DIVISION BY ZERO` - Attempt to divide by zero
 - `STACK OVERFLOW` - Too many nested calls
 - `OUT OF MEMORY` - Insufficient memory
+- `RANGE ERROR` - Value out of valid range (e.g., I2C address > 127)
 
 #### Storage Errors
 - `FILE NOT FOUND` - Requested file doesn't exist
@@ -746,7 +804,7 @@ HopperBASIC manages memory efficiently:
 - **Zero Page**: System variables and pointers
 - **Stack**: Expression evaluation and function calls
 - **Heap**: Dynamic allocation for strings, arrays, and symbol tables
-- **Buffers**: Fixed areas for input, tokens, and opcodes
+- **Buffers**: Fixed areas for input, tokens, opcodes, and I2C data
 
 ### Performance Notes
 
@@ -757,11 +815,13 @@ Expressions are compiled to stack-based opcodes for efficient execution, providi
 - FOR loops with STEP 1 use optimized FORITF opcode
 - String comparisons use pointer comparison when possible
 - Local variables use BP-relative addressing
+- I2C operations use buffered reads for efficiency
 
 #### Memory Efficiency
 - Arrays use compact storage types
 - BIT arrays pack 8 bits per byte
 - Strings are immutable to enable sharing
+- I2C read buffer minimizes memory overhead
 
 ---
 
@@ -850,6 +910,117 @@ BEGIN
 END
 ```
 
+### I2C Device Scanner
+
+```basic
+! Scan I2C bus for connected devices
+BEGIN
+    PRINT "Scanning I2C bus..."
+    VAR found = 0
+    
+    FOR addr = 8 TO 119
+        IF I2CFIND(addr) THEN
+            PRINT "Device found at address ", addr, " (0x";
+            IF addr < 16 THEN PRINT "0" ENDIF
+            ! Would print hex here in full version
+            PRINT ")"
+            found = found + 1
+        ENDIF
+    NEXT addr
+    
+    PRINT found, " devices found"
+END
+```
+
+### OLED Display Control
+
+```basic
+! Initialize and write to SSD1306 OLED display
+CONST OLED = 60  ! I2C address 0x3C
+
+FUNC InitOLED()
+    IF NOT I2CFIND(OLED) THEN
+        PRINT "OLED not found!"
+        RETURN FALSE
+    ENDIF
+    
+    ! Send initialization sequence
+    I2CBEGIN(OLED)
+    I2CPUT(0)       ! Command mode
+    I2CPUT(174)     ! Display off
+    I2CPUT(213)     ! Set display clock
+    I2CPUT(128)     ! Suggested ratio
+    I2CPUT(168)     ! Set multiplex
+    I2CPUT(63)      ! 1/64 duty
+    I2CPUT(211)     ! Set display offset
+    I2CPUT(0)       ! No offset
+    I2CPUT(64)      ! Set start line
+    I2CPUT(175)     ! Display on
+    
+    IF I2CEND() THEN
+        PRINT "OLED initialized"
+        RETURN TRUE
+    ELSE
+        PRINT "OLED init failed"
+        RETURN FALSE
+    ENDIF
+ENDFUNC
+
+BEGIN
+    IF InitOLED() THEN
+        PRINT "Display ready for use"
+    ENDIF
+END
+```
+
+### EEPROM Read/Write
+
+```basic
+! Read and write to 24C256 EEPROM via I2C
+CONST EEPROM = 80  ! I2C address 0x50
+
+FUNC WriteEEPROM(addr, value)
+    I2CBEGIN(EEPROM)
+    I2CPUT(addr / 256)    ! Address high byte
+    I2CPUT(addr MOD 256)  ! Address low byte
+    I2CPUT(value)         ! Data byte
+    RETURN I2CEND()
+ENDFUNC
+
+FUNC ReadEEPROM(addr)
+    ! Set read address
+    I2CBEGIN(EEPROM)
+    I2CPUT(addr / 256)    ! Address high byte
+    I2CPUT(addr MOD 256)  ! Address low byte
+    IF NOT I2CEND() THEN
+        PRINT "Failed to set address"
+        RETURN 0
+    ENDIF
+    
+    ! Read single byte
+    VAR count = I2CGET(EEPROM, 1)
+    IF count = 1 THEN
+        RETURN I2CNEXT()
+    ELSE
+        PRINT "Read failed"
+        RETURN 0
+    ENDIF
+ENDFUNC
+
+BEGIN
+    ! Write test data
+    IF WriteEEPROM(0, 42) THEN
+        PRINT "Wrote 42 to address 0"
+    ENDIF
+    
+    DELAY(10)  ! Write cycle time
+    
+    ! Read it back
+    VAR data = ReadEEPROM(0)
+    PRINT "Read back: ", data
+END
+```
+
 ---
 
 ## Quick Reference Card
@@ -898,10 +1069,20 @@ END
 
 ### Built-in Functions
 ```basic
+! Math & Type Conversion
 ABS(x)          CHR(n)          LEN(s)
-ASC(c)          INPUT()         MILLIS()
-PEEK(addr)      POKE(addr,val)  DELAY(ms)
+ASC(c)          INPUT()         
+
+! Time & Memory
+MILLIS()        SECONDS()       DELAY(ms)
+PEEK(addr)      POKE(addr,val)  
+
+! GPIO
 READ(pin)       WRITE(pin,val)  PINMODE(pin,mode)
+
+! I2C Communication
+I2CFIND(addr)   I2CBEGIN(addr)  I2CPUT(byte)
+I2CEND()        I2CGET(addr,n)  I2CNEXT()
 ```
 
 ### Operators (by precedence)
@@ -918,7 +1099,15 @@ AND                Logical AND
 OR                 Logical OR
 ```
 
+### Common I2C Device Addresses
+```basic
+CONST OLED = 60      ! SSD1306 OLED (0x3C)
+CONST EEPROM = 80    ! 24C256 EEPROM (0x50)
+CONST RTC = 104      ! DS3231 RTC (0x68)
+CONST TEMP = 72      ! LM75 Temp (0x48)
+```
+
 ---
 
-*HopperBASIC v3.2 - A Modern BASIC for 6502 Systems*  
+*HopperBASIC v3.3 - A Modern BASIC for 6502 Systems*  
 *© 2025 Hopper Development Team*

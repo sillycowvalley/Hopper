@@ -383,33 +383,6 @@ unit BASICSysCalls
                    pushLongExit();
                    return;
                }
-               case SysCallType.I2CEnd:  // ID = 20
-                {
-                    // I2CEND() - End transaction
-                    // Output: ZP.TOP* = BIT (TRUE if ACKed)
-                    
-                    I2C.EndTx();     // Returns Bool on stack
-                    Stacks.PopA(); // Get result -> A, munts Y
-                    
-                    // Convert Bool to BIT
-                    STA ZP.TOP0
-                    LDA #BASICType.BIT
-                    STA ZP.TOPT
-                }
-                case SysCallType.I2CNext:  // ID = 22
-                {
-                    // I2CNEXT() - Get next byte from buffer
-                    // Output: ZP.TOP* = byte value (LONG)
-                    
-                    I2C.Read();     // Returns Byte on stack
-                    Stacks.PopA();  // munts Y
-                    
-                    // Convert to LONG
-                    STA ZP.TOP0
-                    Long.ZeroTop3();
-                    pushLongExit();
-                    return;
-                }
                 case SysCallType.Rnd:
                 {
                    // RND function - compute absolute value
@@ -531,41 +504,7 @@ unit BASICSysCalls
                     pushLongExit();
                     return;
                }
-               case SysCallType.I2CGet:  // ID = 21
-                {
-                    // I2CGET(addr, count) - Read bytes from device
-                    // Input: ZP.NEXT* = I2C address, ZP.TOP* = byte count
-                    // Output: ZP.TOP* = bytes actually read (LONG)
-                    
-                    // Validate and convert address
-                    LDA #BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.CoerceNext(); // BYTE
-                    if (NC) { break; }
-                    
-                    if (BBS7, ZP.NEXT0)  // Address > 127
-                    {
-                        Error.RangeError(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    
-                    // Validate and convert count
-                    validateTopBYTE();
-                    if (NC) { break; }
-                    
-                    // Push count (TOP0), then address (NEXT0) for RequestFrom
-                    Stacks.PushTop();  // munts Y
-                    Stacks.PushNext(); // munts Y
-                    
-                    I2C.RequestFrom();  // Returns bytes read
-                    Stacks.PopA();      // munts Y
-                    
-                    // Convert result to LONG
-                    STA ZP.TOP0
-                    Long.ZeroTop3();
-                    pushLongExit();
-                    return;
-                }
+               
                 
                 case SysCallType.PrintValue:    // ID = 1
                 {
@@ -776,13 +715,13 @@ unit BASICSysCalls
                         Error.RangeError(); BIT ZP.EmulatorPCL
                         break;
                     }
-                    
-                    // Push address and call I2C
-                    Stacks.PushTop();
-                    I2C.BeginTx();
+                    // I2C address
+                    LDA ZP.TOP0
+                    ASL
+                    STA ZP.OutB
+                    // BeginTx
+                    I2C.Start();
                 }
-                
-                
                 
                 case SysCallType.I2CPut:  // ID = 19  
                 {
@@ -791,21 +730,84 @@ unit BASICSysCalls
                     
                     validateTopBYTE();
                     if (NC) { break; }
-                    
-                    // Push byte and call I2C
-                    Stacks.PushTop(); // munts Y
-                    I2C.Write();
+                    // write byte to I2C
+                    LDA ZP.TOP0
+                    STA ZP.OutB
+                    I2C.ByteOut();
                 }
+                case SysCallType.I2CEnd:  // ID = 20
+                {
+                    // I2CEND() - End transaction
+                    // Output: ZP.TOP* = BIT (TRUE if ACKed)
+                    I2C.Stop();
+                    LDA ZP.LastAck
+                    STA ZP.TOP0
+                    LDA #BASICType.BIT
+                    STA ZP.TOPT
+                }
+                case SysCallType.I2CGet:  // ID = 21
+                {
+                    // I2CGET(addr, count) - Read bytes from device
+                    // Input: ZP.NEXT* = I2C address, ZP.TOP* = byte count
+                    // Output: ZP.TOP* = bytes actually read (LONG)
+                    
+                    // Validate and convert address
+                    LDA #BASICType.BYTE
+                    STA ZP.ACCT
+                    BASICTypes.CoerceNext(); // BYTE
+                    if (NC) { break; }
+                    
+                    if (BBS7, ZP.NEXT0)  // Address > 127
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    
+                    // Validate and convert count
+                    validateTopBYTE();
+                    if (NC) { break; }
+                    
+                    STA ZP.TOPL  // number of bytes to read
+                    LDA ZP.NEXTL // I2C address
+                    RequestFromTOPA(); // A has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
+                    
+                    // Convert result to LONG
+                    Long.ZeroTop3();
+                    pushLongExit();
+                    return;
+                }
+                case SysCallType.I2CNext:  // ID = 22
+                {
+                    // I2CNEXT() - Get next byte from buffer
+                    // Output: ZP.TOP* = byte value (LONG)
+                    
+                    STZ ZP.TOP0
+                    
+                    LDA ZP.I2CInReadPtr
+                    CMP ZP.I2CInWritePtr
+                    if (NZ) // ReadPtr != WritePtr means we have more data available in the I2CInBuffer
+                    {
+                        LDX ZP.I2CInReadPtr
+                        LDA Address.I2CInBuffer, X
+                        STA ZP.TOPL
+                        INC ZP.I2CInReadPtr
+                    }
+                    Long.ZeroTop3();
+                    pushLongExit();
+                    return;
+                }
+                
+               
                 case SysCallType.Delay:         // ID = 7
-               {
-                   // DELAY function - delay in milliseconds
-                   if (BBR3, ZP.TOPT) // Bit 3 - Long
-                   {
-                       Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                       break;
-                   }
-                   Time.DelayTOP();            // Uses ZP.TOP*
-               }
+                {
+                    // DELAY function - delay in milliseconds
+                    if (BBR3, ZP.TOPT) // Bit 3 - Long
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    Time.DelayTOP();            // Uses ZP.TOP*
+                }
                
                 case SysCallType.Chr:           // ID = 13
                 {
