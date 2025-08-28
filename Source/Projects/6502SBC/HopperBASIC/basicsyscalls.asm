@@ -876,14 +876,7 @@ unit BASICSysCalls
            States.SetSuccess();
            break;
        } // loop exit
-       
-       CheckError();
-       if (NC)
-       {
-           States.SetFailure();
-       }
-       
-       
+       CheckErrorAndSetFailure();
        
 #ifdef TRACE
        LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();

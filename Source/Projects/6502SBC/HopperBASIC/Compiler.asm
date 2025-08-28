@@ -1608,7 +1608,7 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
                     LDA #SysCallType.Input
                     compileSysCall();
-                    break;
+                    return;
                 }
                
                case Token.IDENTIFIER:
@@ -1646,32 +1646,28 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: I2CFIND: not an integral constant expression
                     LDA #SysCallType.I2CFind
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.I2CEND:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: I2CEND: not an integral constant expression
                     LDA #SysCallType.I2CEnd
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.I2CGET:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: I2CGET: not an integral constant expression
                     LDA #SysCallType.I2CGet
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.I2CNEXT:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: I2CNEXT: not an integral constant expression
                     LDA #SysCallType.I2CNext
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 
                 case Token.MILLIS:
@@ -1679,72 +1675,63 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
                     LDA #SysCallType.Millis
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.SECONDS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: SECONDS: not an integral constant expression
                     LDA #SysCallType.Seconds
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.ABS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
                     LDA #SysCallType.Abs
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.RND:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
                     LDA #SysCallType.Rnd
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.PEEK:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression
                     LDA #SysCallType.Peek
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.READ:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: READ: not an integral constant expression
                     LDA #SysCallType.Read
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.CHR:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
                     LDA #SysCallType.Chr
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.ASC:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
                     LDA #SysCallType.Asc
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                 case Token.LEN:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: LEN: not an integral constant expression
                     LDA #SysCallType.Len
                     compileSysCall();
-                    if (NC) { break; }
-                    break;
+                    return;
                 }
                
                
@@ -1756,8 +1743,8 @@ unit Compiler // Compiler.asm
                }
            }
            
-           break; // Normal exit point
-       } // Single exit point
+           break;
+       } // NOT SINGLE EXIT
        CheckError();       
 
 #ifdef TRACEPARSE
@@ -1797,7 +1784,7 @@ unit Compiler // Compiler.asm
             if (NZ) 
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
-                CheckError();
+                CheckErrorAndSetFailure();
                 PLA  // Clean stack before exit
                 break; 
             }
@@ -1813,7 +1800,7 @@ unit Compiler // Compiler.asm
             if (Z)
             {
                 // No arguments - expect immediate closing parenthesis
-                Tokenizer.NextTokenCheck();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) 
                 { 
                     PLA  // Clean stack before exit
@@ -1827,14 +1814,14 @@ unit Compiler // Compiler.asm
                 loop
                 {
                     // Get next token (start of argument expression)
-                    Tokenizer.NextTokenCheck();
+                    Tokenizer.NextTokenCheckSetFailure();
                     if (NC) { break; }  // Exit argument loop on error
                     
                     // Compile the argument expression
                     PHX
                     compileExpressionTree();
                     PLX
-                    CheckError();
+                    CheckErrorAndSetFailure();
                     if (NC) { break; }  // Exit argument loop on error
                     
                     DEX  // One less argument to process
@@ -1846,7 +1833,7 @@ unit Compiler // Compiler.asm
                     if (NZ)
                     {
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
-                        CheckError();
+                        CheckErrorAndSetFailure();
                         break;
                     }
                     // Loop for next argument
@@ -1867,13 +1854,13 @@ unit Compiler // Compiler.asm
             if (NZ) 
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
-                CheckError();
+                CheckErrorAndSetFailure();
                 PLA  // Clean stack before exit
                 break; 
             }
             
             // Move past closing parenthesis
-            Tokenizer.NextTokenCheck();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) 
             { 
                 PLA  // Clean stack before exit
@@ -2210,28 +2197,24 @@ unit Compiler // Compiler.asm
                 {
                     LDA #SysCallType.Delay
                     compileSysCall();
-                    CheckErrorAndSetFailure();
                     if (NC) { break; }
                 }
                 case Token.POKE:
                 {
                     LDA #SysCallType.Poke
                     compileSysCall();
-                    CheckErrorAndSetFailure();
                     if (NC) { break; }
                 }
                 case Token.WRITE:
                 {
                     LDA #SysCallType.Write
                     compileSysCall();
-                    CheckErrorAndSetFailure();
                     if (NC) { break; }
                 }
                 case Token.PINMODE:
                 {
                     LDA #SysCallType.PinMode
                     compileSysCall();
-                    CheckErrorAndSetFailure();
                     if (NC) { break; }
                 }
                
