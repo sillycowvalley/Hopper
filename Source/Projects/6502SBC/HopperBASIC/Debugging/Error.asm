@@ -55,13 +55,11 @@ unit Error // ErrorID.asm
         LINE       = 0x2B,  // "LINE"
         LITERAL    = 0x2C,  // "LITERAL"
         VALUE      = 0x2D,  // "VALUE"
-        //MODE       = 0x2E,  // "MODE"
         AT         = 0x2F,  // "AT"
         CONSOLE    = 0x30,  // "CONSOLE"
         HEAP       = 0x31,  // "HEAP"
         CORRUPT    = 0x32,  // "CORRUPT"
         CANNOT     = 0x33,  // "CANNOT"
-        //ROLLBACK   = 0x34,  // "ROLLBACK"
         BREAK      = 0x35,  // "BREAK"
         NO         = 0x36,  // "NO"
         MORE       = 0x37,  // "MORE"
@@ -152,13 +150,12 @@ unit Error // ErrorID.asm
         4,  ErrorWord.LINE,       'L', 'I', 'N', 'E',
         7,  ErrorWord.LITERAL,    'L', 'I', 'T', 'E', 'R', 'A', 'L',
         5,  ErrorWord.VALUE,      'V', 'A', 'L', 'U', 'E',
-        //4,  ErrorWord.MODE,       'M', 'O', 'D', 'E',
+        5,  ErrorWord.BREAK,      'B', 'R', 'E', 'A', 'K',
         2,  ErrorWord.AT,         'A', 'T',
         7,  ErrorWord.CONSOLE,    'C', 'O', 'N', 'S', 'O', 'L', 'E',
         4,  ErrorWord.HEAP,       'H', 'E', 'A', 'P',
         7,  ErrorWord.CORRUPT,    'C', 'O', 'R', 'R', 'U', 'P', 'T',
         6,  ErrorWord.CANNOT,     'C', 'A', 'N', 'N', 'O', 'T',
-        //8,  ErrorWord.ROLLBACK,   'R', 'O', 'L', 'L', 'B', 'A', 'C', 'K',
         2,  ErrorWord.NO,         'N', 'O',
         4,  ErrorWord.MORE,       'M', 'O', 'R', 'E',
         6,  ErrorWord.LOCALS,     'L', 'O', 'C', 'A', 'L', 'S',
@@ -301,7 +298,7 @@ unit Error // ErrorID.asm
         3, ErrorID.InvalidBitValue,            ErrorWord.INVALID, Token.BIT, ErrorWord.VALUE,
         3, ErrorID.OnlyAtConsole,              ErrorWord.ONLY, ErrorWord.AT, ErrorWord.CONSOLE,
         2, ErrorID.HeapCorrupt,                ErrorWord.HEAP, ErrorWord.CORRUPT,
-        1, ErrorID.Break,                      Token.BREAK,
+        1, ErrorID.Break,                      ErrorWord.BREAK,
         3, ErrorID.LateDeclaration,            ErrorWord.NO, ErrorWord.MORE, ErrorWord.LOCALS,
         2, ErrorID.MissingNext,                ErrorWord.MISSING, Token.NEXT,
         2, ErrorID.NextMismatch,               Token.NEXT, ErrorWord.MISMATCH,

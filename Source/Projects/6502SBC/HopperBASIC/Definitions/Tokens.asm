@@ -73,7 +73,7 @@ unit Tokens
         WEND     = 0xAF,
         DO       = 0xB0,
         UNTIL    = 0xB1,
-        BREAK    = 0xB2,
+        //BREAK    = 0xB2,
         
         //CONT     = 0xB4,
         
@@ -106,62 +106,74 @@ unit Tokens
         WRITE    = 0xCD,
         RND      = 0xCE,
         
-        lastKeyword = 0xCE,
+        // I2C functions
+        I2CFIND  = 0xCF,
+        I2CBEGIN = 0xD0,
+        I2CPUT   = 0xD1,
+        I2CEND   = 0xD2,
+        I2CGET   = 0xD3,
+        I2CNEXT  = 0xD4,
         
-        // Literals and identifiers
-        NUMBER     = 0xCF,
-        STRINGLIT  = 0xD0,
-        CHARLIT    = 0xD1,
-        IDENTIFIER = 0xD2,
+        lastKeyword = 0xD4,  // Updated from 0xCE
+        
+        // Literals and identifiers (shifted down by 6)
+        NUMBER     = 0xD5,  // was 0xCF
+        STRINGLIT  = 0xD6,  // was 0xD0
+        CHARLIT    = 0xD7,  // was 0xD1
+        IDENTIFIER = 0xD8,  // was 0xD2
         
         // Stream/File control tokens
-        EOF      = 0xD3,
-        EOL      = 0xD4,
-        EOE      = 0xD5,
+        EOF      = 0xD9,  // was 0xD3
+        EOL      = 0xDA,  // was 0xD4
+        EOE      = 0xDB,  // was 0xD5
         
         // Basic punctuation
-        COLON    = 0xD6,
-        COMMA    = 0xD7,
-        SEMICOLON = 0xD8,
+        COLON     = 0xDC,  // was 0xD6
+        COMMA     = 0xDD,  // was 0xD7
+        SEMICOLON = 0xDE,  // was 0xD8
         
         // Basic operators
-        EQUALS   = 0xD9,
-        PLUS     = 0xDA,
-        MINUS    = 0xDB,
-        LPAREN   = 0xDC,
-        RPAREN   = 0xDD,
+        EQUALS   = 0xDF,  // was 0xD9
+        PLUS     = 0xE0,  // was 0xDA
+        MINUS    = 0xE1,  // was 0xDB
+        LPAREN   = 0xE2,  // was 0xDC
+        RPAREN   = 0xE3,  // was 0xDD
         
-        // Additional comparison operators (moved down by 1 from 0xDC-0xE0)
-        NOTEQUAL = 0xDE,
-        LT       = 0xDF,
-        GT       = 0xE0,
-        LE       = 0xE1,
-        GE       = 0xE2,
+        // Additional comparison operators
+        NOTEQUAL = 0xE4,  // was 0xDE
+        LT       = 0xE5,  // was 0xDF
+        GT       = 0xE6,  // was 0xE0
+        LE       = 0xE7,  // was 0xE1
+        GE       = 0xE8,  // was 0xE2
         
-        // Arithmetic operators
-        MULTIPLY = 0xE3,
-        DIVIDE   = 0xE4,
+        // Arithmetic operators  
+        MULTIPLY = 0xE9,  // was 0xE3
+        DIVIDE   = 0xEA,  // was 0xE4
         
         // Bitwise operators
-        BITWISE_AND = 0xE5,
-        BITWISE_OR  = 0xE6,
-        BITWISE_NOT = 0xE7,  // Bitwise complement (~)
+        BITWISE_AND = 0xEB,  // was 0xE5
+        BITWISE_OR  = 0xEC,  // was 0xE6
+        BITWISE_NOT = 0xED,  // was 0xE7
         
-        // Array and string operators (shifted down by 1 to make room for TILDE)
-        LBRACKET = 0xE8,
-        RBRACKET = 0xE9,
-        LBRACE   = 0xEA,
-        RBRACE   = 0xEB,
+        // Array and string operators
+        LBRACKET = 0xEE,  // was 0xE8
+        RBRACKET = 0xEF,  // was 0xE9
+        LBRACE   = 0xF0,  // was 0xEA
+        RBRACE   = 0xF1,  // was 0xEB
     }
+    
         
-    // Keywords A-H (first character < 'I')
-    const byte[] keywordsAH = {
+    // Keywords A-I (first character < 'J')
+    const byte[] keywordsAI = {
         // VERY FREQUENT (Rank 1-10)
         3, Token.FOR, 'F', 'O', 'R',             // Rank 3 - FOR/NEXT loops (0xAA)
+        2, Token.IF, 'I', 'F',                   // Rank 4 - Conditionals (0xA1)
+        3, Token.INT, 'I', 'N', 'T',             // Rank 5 - Common numeric type (0x96)
         3, Token.END, 'E', 'N', 'D',             // Rank 10 - Program termination (0xA9)
         
         // FREQUENT (Rank 11-20)
         3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND (0xB8)
+        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
         3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value (0xC0)
         4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch (0xA3)
         2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops (0xB0)
@@ -184,40 +196,38 @@ unit Tokens
         
         // INFREQUENT (Everything else alphabetically)
         5, Token.ARRAY, 'A', 'R', 'R', 'A', 'Y', // Array type declaration (0xB7)
-        5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control (0xB2)
+        //5, Token.BREAK, 'B', 'R', 'E', 'A', 'K', // Loop control (0xB2)
         3, Token.BYE, 'B', 'Y', 'E',             // Exit interpreter (0x91)
-        //4, Token.CONT, 'C', 'O', 'N', 'T',       // Continue from break (0xB4)
-//#ifdef DEBUG
-        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command (0x8E)
-        4, Token.DASM, 'D', 'A', 'S', 'M',       // Disassemble function (0x90)
-        4, Token.DUMP, 'D', 'U', 'M', 'P',       // Debug dump (0x8F)
-        4, Token.HEAP, 'H', 'E', 'A', 'P',       // Heap inspection command (0x8D)  
-//#endif
         3, Token.DEL, 'D', 'E', 'L',             // Delete file (0x8A)
         3, Token.DIR, 'D', 'I', 'R',             // Directory listing (0x89)
         6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol (0x86)
         6, Token.FORMAT, 'F', 'O', 'R', 'M', 'A', 'T', // Format file system (0x8B)
         5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions (0x85)
         
+        // I2C functions
+        7, Token.I2CFIND,  'I', '2', 'C', 'F', 'I', 'N', 'D',      // I2C device discovery (0xCF)
+        8, Token.I2CBEGIN, 'I', '2', 'C', 'B', 'E', 'G', 'I', 'N', // Start I2C write (0xD0)
+        6, Token.I2CPUT,   'I', '2', 'C', 'P', 'U', 'T',           // Send I2C byte (0xD1)  
+        6, Token.I2CEND,   'I', '2', 'C', 'E', 'N', 'D',           // End I2C transaction (0xD2)
+        6, Token.I2CGET,   'I', '2', 'C', 'G', 'E', 'T',           // Read I2C bytes (0xD3)
+        7, Token.I2CNEXT,  'I', '2', 'C', 'N', 'E', 'X', 'T',      // Get buffered byte (0xD4)
+        
         0  // End marker
     };
-
-    // Keywords I-Z (first character >= 'I')
-    const byte[] keywordsIZ = {
+    
+    // Keywords J-Z (first character >= 'J')
+    const byte[] keywordsJZ = {
         // VERY FREQUENT (Rank 1-10)
         5, Token.PRINT, 'P', 'R', 'I', 'N', 'T', // Rank 1 - Output data (0x9F)
         4, Token.NEXT, 'N', 'E', 'X', 'T',       // Rank 2 - FOR/NEXT loops (0xAD)
         4, Token.THEN, 'T', 'H', 'E', 'N',       // Rank 3 - IF/THEN conditionals (0xA2)
-        2, Token.IF, 'I', 'F',                   // Rank 4 - Conditionals (0xA1)
-        3, Token.INT, 'I', 'N', 'T',             // Rank 5 - Common numeric type (0x96)
         3, Token.MOD, 'M', 'O', 'D',             // Rank 7 - Remainder arithmetic (0xBB)
         
         // FREQUENT (Rank 11-20)
-        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
         3, Token.LEN, 'L', 'E', 'N',             // Rank 18 - String length (0xCA)
-        3, Token.VAR, 'V', 'A', 'R',             // Uninitialized type (0x9D)
-        4, Token.LONG, 'L', 'O', 'N', 'G',       // New 32-bit type (0x9A)
-
+        3, Token.VAR, 'V', 'A', 'R',             // Variable declaration (0x9D)
+        4, Token.LONG, 'L', 'O', 'N', 'G',       // 32-bit type (0x9A)
+        
         // MODERATE (Rank 21-30)
         5, Token.WHILE, 'W', 'H', 'I', 'L', 'E', // Rank 16 - WHILE/WEND loops (0xAE)
         4, Token.WEND, 'W', 'E', 'N', 'D',       // Rank 16 - WHILE/WEND loops (0xAF)
@@ -243,11 +253,6 @@ unit Tokens
         4, Token.VARS, 'V', 'A', 'R', 'S',       // Console command (0x84)
         3, Token.REM, 'R', 'E', 'M',             // Comment (infrequent in programs) (0x94)
         
-//#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
-        4, Token.TRON, 'T', 'R', 'O', 'N',       // Debug command (0x92)
-        5, Token.TROFF, 'T', 'R', 'O', 'F', 'F', // Debug command (0x93)
-//#endif        
-        
         // Built-in functions (all infrequent)
         6, Token.MILLIS, 'M', 'I', 'L', 'L', 'I', 'S', // Built-in function (0xC1)
         4, Token.PEEK, 'P', 'E', 'E', 'K',       // Built-in function (0xC2)
@@ -262,34 +267,32 @@ unit Tokens
         
         0  // End marker
     };
+                
+                        
+      
+#if defined(TRACE) || defined(DEBUG) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
     
-    // Find keyword match for current identifier in working buffer
-    // Input: Working buffer at Address.BasicProcessBuffer, null-terminated
+    // DEBUG and TRACE keywords
+    const byte[] keywordsDebug  = {
+    
+        7, Token.BUFFERS, 'B', 'U', 'F', 'F', 'E', 'R', 'S', // Debug command (0x8E)
+        4, Token.DASM,    'D', 'A', 'S', 'M',                // Disassemble function (0x90)
+        4, Token.DUMP,    'D', 'U', 'M', 'P',                // Debug dump (0x8F)
+        4, Token.HEAP,    'H', 'E', 'A', 'P',                // Heap inspection command (0x8D)  
+        
+        4, Token.TRON,    'T', 'R', 'O', 'N',                // Debug command (0x92)
+        5, Token.TROFF,   'T', 'R', 'O', 'F', 'F',           // Debug command (0x93)
+        0,
+    };
+#endif    
+    
+    // Search a single keyword table for a match
+    // Input: ZP.TableIndex = address of keyword table to search
+    //        Address.BasicProcessBuffer = null-terminated identifier to find
     // Output: A = token value if found, or 0 if not found
-    // Munts: A, X, Y, ZP.ACC, ZP.IDY
-    FindKeyword()
+    // Munts: X, Y, ZP.KeywordLength, ZP.TokenValue
+    searchKeywordTable()
     {
-        PHX
-        PHY
-        
-        // Choose table based on first character
-        LDA Address.BasicProcessBuffer
-        CMP #'I'  // Changed from 'M' to 'I'
-        if (C)    // >= 'I', use I-Z table
-        {
-            LDA #(keywordsIZ % 256)
-            STA ZP.TableIndexL
-            LDA #(keywordsIZ / 256)
-            STA ZP.TableIndexH
-        }
-        else      // < 'I', use A-H table
-        {
-            LDA #(keywordsAH % 256)
-            STA ZP.TableIndexL
-            LDA #(keywordsAH / 256)
-            STA ZP.TableIndexH
-        }
-        
         LDY #0  // Start at beginning of keyword table
         loop
         {
@@ -314,9 +317,6 @@ unit Tokens
                     if (Z)
                     {
                         LDA ZP.TokenValue  // Return token value - exact match!
-                        
-                        PLY
-                        PLX
                         return;
                     }
                     break; // Length mismatch
@@ -342,12 +342,54 @@ unit Tokens
                 INY                   // Advance Y to next character
             }
         } // loop
+        LDA #0  // Not found
+    }
+    
+    // Find keyword match for current identifier in working buffer
+    // Input: Working buffer at Address.BasicProcessBuffer, null-terminated
+    // Output: A = token value if found, or 0 if not found
+    // Munts: A, X, Y, ZP.ACC, ZP.IDY
+    FindKeyword()
+    {
+        PHX
+        PHY
         
+        // Choose primary table based on first character
+        LDA Address.BasicProcessBuffer
+        CMP #'J'  // Split point changed to 'J'
+        if (C)    // >= 'J', use J-Z table
+        {
+            LDA #(keywordsJZ % 256)
+            STA ZP.TableIndexL
+            LDA #(keywordsJZ / 256)
+            STA ZP.TableIndexH
+        }
+        else      // < 'J', use A-I table
+        {
+            LDA #(keywordsAI % 256)
+            STA ZP.TableIndexL
+            LDA #(keywordsAI / 256)
+            STA ZP.TableIndexH
+        }
+        
+        searchKeywordTable();
+        
+#if defined(DEBUG) || defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
+        // If not found in primary table, check debug table
+        if (Z)  // A is 0 = not found
+        {
+            LDA #(keywordsDebug % 256)
+            STA ZP.TableIndexL
+            LDA #(keywordsDebug / 256)
+            STA ZP.TableIndexH
+            
+            searchKeywordTable();
+        }
+#endif
         
         PLY
         PLX
-        
-        LDA #0  // Not found
+        // A contains token value or 0, Z may not be correct though ..
     }
 
     // Print keyword corresponding to token value
@@ -364,20 +406,32 @@ unit Tokens
         STA ZP.TokenValue  // Store target token value
         
         // Load keywords table address into ZP.IDY
-        LDA #(keywordsAH % 256)
+        LDA #(keywordsAI % 256)
         STA ZP.TableIndexL
-        LDA #(keywordsAH / 256)
+        LDA #(keywordsAI / 256)
         STA ZP.TableIndexH
         
         PrintKeywordFromTable();
         if (NC)
         {
             // perhaps it is in the other table
-            LDA #(keywordsIZ % 256)
+            LDA #(keywordsJZ % 256)
             STA ZP.TableIndexL
-            LDA #(keywordsIZ / 256)
+            LDA #(keywordsJZ / 256)
             STA ZP.TableIndexH
             PrintKeywordFromTable();
+            
+#if defined(DEBUG) || defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
+            // If not found in primary table, check debug table            
+            if (NC)
+            {
+                LDA #(keywordsDebug % 256)
+                STA ZP.TableIndexL
+                LDA #(keywordsDebug / 256)
+                STA ZP.TableIndexH
+                PrintKeywordFromTable();
+            }
+#endif            
 #ifdef DEBUG
             if (NC)
             {
@@ -628,9 +682,9 @@ unit Tokens
         PHA
         
         // Validate keywordsAH table
-        LDA #(keywordsAH % 256)
+        LDA #(keywordsAI % 256)
         STA ZP.IDYL
-        LDA #(keywordsAH / 256)
+        LDA #(keywordsAI / 256)
         STA ZP.IDYH
         
         ValidateKeywordTable();
@@ -639,7 +693,7 @@ unit Tokens
         {
             Debug.NL();
             LDA #'A' Debug.COut();
-            LDA #'H' Debug.COut();
+            LDA #'I' Debug.COut();
             LDA #':' Debug.COut();
             Debug.HOut();  // Print offset where error occurred
             Error.InternalError(); BIT ZP.EmulatorPCL
@@ -650,7 +704,7 @@ unit Tokens
             STZ ZP.TOPH
             Debug.NL();
             LDA #'A' Debug.COut();
-            LDA #'H' Debug.COut();
+            LDA #'I' Debug.COut();
             LDA #'=' Debug.COut();
             STZ ZP.TOPT
             Print.Decimal();
@@ -660,9 +714,9 @@ unit Tokens
         
         
         // Validate keywordsIZ table
-        LDA #(keywordsIZ % 256)
+        LDA #(keywordsJZ % 256)
         STA ZP.IDYL
-        LDA #(keywordsIZ / 256)
+        LDA #(keywordsJZ / 256)
         STA ZP.IDYH
         
         ValidateKeywordTable();
@@ -670,7 +724,7 @@ unit Tokens
         if (NC)
         {
             Debug.NL();
-            LDA #'I' Debug.COut();
+            LDA #'J' Debug.COut();
             LDA #'Z' Debug.COut();
             LDA #':' Debug.COut();
             Debug.HOut();  // Print offset where error occurred
@@ -681,7 +735,7 @@ unit Tokens
 #ifdef VERBOSEDEBUG
             STZ ZP.TOPH
             Debug.NL();
-            LDA #'I' Debug.COut();
+            LDA #'J' Debug.COut();
             LDA #'Z' Debug.COut();
             LDA #'=' Debug.COut();
             STZ ZP.TOPT

@@ -830,7 +830,6 @@ unit Compiler // Compiler.asm
                    
                    // Compile the operand
                    compilePrimary();
-                   CheckError();
                    if (NC) { break; }
                    
                    // Emit unary minus opcode
@@ -849,7 +848,6 @@ unit Compiler // Compiler.asm
                    
                    // Compile the operand
                    compilePrimary();
-                   CheckError();
                    if (NC) { break; }
                    
                    // Emit logical NOT opcode
@@ -862,7 +860,6 @@ unit Compiler // Compiler.asm
                {
                     // Not unary, compile primary
                     compilePrimary();
-                    CheckError();
                     if (NC) { break; }
                     
                     // Check for postfix operations (indexing)
@@ -1570,7 +1567,6 @@ unit Compiler // Compiler.asm
 
                    // Get next token
                    Tokenizer.NextToken();
-                   CheckError();
                    break;
                }
                case Token.STRINGLIT:
@@ -1590,8 +1586,6 @@ unit Compiler // Compiler.asm
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   CheckError();
-                   
                    break;
                }
                case Token.CHARLIT:
@@ -1635,14 +1629,12 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
                     LDA #SysCallType.Input
                     compileSysCall();
-                    CheckError();
                     break;
                 }
                
                case Token.IDENTIFIER:
                {
                    compileFunctionCallOrVariable();
-                   CheckError();
                    break;
                }
                case Token.LPAREN:
@@ -1668,17 +1660,47 @@ unit Compiler // Compiler.asm
                    
                    // Get next token
                    Tokenizer.NextToken();
-                   CheckError();
                    break;
                }
                
-                // All built-in functions now use compileSysCall()
+                case Token.I2CFIND:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: I2CFIND: not an integral constant expression
+                    LDA #SysCallType.I2CFind
+                    compileSysCall();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.I2CEND:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: I2CEND: not an integral constant expression
+                    LDA #SysCallType.I2CEnd
+                    compileSysCall();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.I2CGET:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: I2CGET: not an integral constant expression
+                    LDA #SysCallType.I2CGet
+                    compileSysCall();
+                    if (NC) { break; }
+                    break;
+                }
+                case Token.I2CNEXT:
+                {
+                    RMB0 ZP.CompilerFlags // constant expression: I2CNEXT: not an integral constant expression
+                    LDA #SysCallType.I2CNext
+                    compileSysCall();
+                    if (NC) { break; }
+                    break;
+                }
+                
                 case Token.MILLIS:
                 {
                     RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
                     LDA #SysCallType.Millis
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1687,7 +1709,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: SECONDS: not an integral constant expression
                     LDA #SysCallType.Seconds
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1696,7 +1717,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
                     LDA #SysCallType.Abs
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1705,7 +1725,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
                     LDA #SysCallType.Rnd
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1714,7 +1733,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression
                     LDA #SysCallType.Peek
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1723,7 +1741,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: READ: not an integral constant expression
                     LDA #SysCallType.Read
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1732,7 +1749,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
                     LDA #SysCallType.Chr
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1741,7 +1757,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
                     LDA #SysCallType.Asc
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1750,7 +1765,6 @@ unit Compiler // Compiler.asm
                     RMB0 ZP.CompilerFlags // constant expression: LEN: not an integral constant expression
                     LDA #SysCallType.Len
                     compileSysCall();
-                    CheckError();
                     if (NC) { break; }
                     break;
                 }
@@ -1766,6 +1780,7 @@ unit Compiler // Compiler.asm
            
            break; // Normal exit point
        } // Single exit point
+       CheckError();       
 
 #ifdef TRACEPARSE
        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1805,6 +1820,7 @@ unit Compiler // Compiler.asm
             if (NZ) 
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
+                CheckError();
                 PLA  // Clean stack before exit
                 break; 
             }
@@ -1855,7 +1871,7 @@ unit Compiler // Compiler.asm
                     if (NZ)
                     {
                         Error.SyntaxError(); BIT ZP.EmulatorPCL
-                        CLC  // Indicate error
+                        CheckError();
                         break;
                     }
                     // Loop for next argument
@@ -1876,6 +1892,7 @@ unit Compiler // Compiler.asm
             if (NZ) 
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
+                CheckError();
                 PLA  // Clean stack before exit
                 break; 
             }
@@ -2199,6 +2216,23 @@ unit Compiler // Compiler.asm
                    CheckErrorAndSetFailure();
                    if (NC) { break; }
                }
+               
+               case Token.I2CBEGIN:
+               {
+                   LDA #SysCallType.I2CBegin
+                   compileSysCall();
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
+               }
+               case Token.I2CPUT:
+               {
+                   LDA #SysCallType.I2CPut
+                   compileSysCall();
+                   CheckErrorAndSetFailure();
+                   if (NC) { break; }
+               }
+               
+               
                
                
                 // VOID syscalls (procedures that don't return values)

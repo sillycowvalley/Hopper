@@ -787,6 +787,7 @@ unit Tokenizer // Tokenizer.asm
                     
                     // Check if it's a keyword
                     Tokens.FindKeyword();
+                    CMP #0
                     if (NZ)  // Found keyword
                     {
                         // Check if it's REM - need special processing

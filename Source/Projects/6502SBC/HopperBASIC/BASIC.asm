@@ -7,6 +7,8 @@ program HopperBASIC
         
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     //#define DEBUG
+    //#define VERBOSEDEBUG // debug the keyword table limits
+    
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEFILE  // Storage and File
     //#define TRACEPARSE // Compiler and CompilerFlow
@@ -18,11 +20,13 @@ program HopperBASIC
     #define HOPPER_BASIC
     
     
+    
+    
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    //#define ROM_48K    
-    #define ROM_32K
+    #define ROM_48K    
+    //#define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"
@@ -265,7 +269,9 @@ program HopperBASIC
         CLI  // Re-enable interrupts
         
         // Show startup information
+#ifndef VERBOSEDEBUG        
         printStartupBanner();
+#endif
         
         // Enter the main interpreter loop
         interpreterLoop();

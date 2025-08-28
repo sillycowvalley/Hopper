@@ -62,8 +62,7 @@ unit SerialEEPROM
         LDA # serialPageSize
         STA ZP.TOPL
         LDA # I2C.SerialEEPROMAddress
-        STA NEXTL
-        RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
+        RequestFromTOPA(); // A has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
         // assume success
         
         LDX # 0

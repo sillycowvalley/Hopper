@@ -24,16 +24,14 @@ unit I2C
     }
     BeginTx()
     {
-        PopTop();          // I2C address
-        LDA ZP.TOPL
+        PopA();          // I2C address -> A
         ASL                // always 'write'
         STA ZP.OutB        // Save addr + r/w bit
         Start();
     }
     BeginRx()
     {
-        PopTop();          // I2C address
-        LDA ZP.TOPL
+        PopA();          // I2C address -> A
         ASL                
         ORA # 0b00000001   // always 'read'
         STA ZP.OutB        // Save addr + r/w bit
@@ -98,28 +96,26 @@ unit I2C
         
     Write() 
     {
-        PopTop();          // byte to send
-        LDA ZP.TOPL
+        PopA();          // byte to send
         STA ZP.OutB
         ByteOut();
     }
     
     RequestFrom()
     {
-        PopTop();           // bytes to read (0..255)
-        PopNext();          // I2C address
-        RequestFromTOPNEXT();
+        PopTop();           // bytes to read (0..255) -> TOPL
+        PopA();            // I2C address -> A
+        RequestFromTOPA();
         // bytes read in TOPL
         LDA # 0
         STA ZP.TOPH
         LDA # Types.Byte
         PushTop();
     }
-    // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
+    // A has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
     //    munts A, X
-    RequestFromTOPNEXT() 
+    RequestFromTOPA() 
     {
-        LDA ZP.NEXTL
         ASL                // always 'read'
         ORA # 0b00000001
         STA ZP.OutB        // Save addr + r/w bit
