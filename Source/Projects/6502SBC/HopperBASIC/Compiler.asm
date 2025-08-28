@@ -2610,17 +2610,6 @@ unit Compiler // Compiler.asm
                 case BASICType.LONG:
                 {
                     // For LONG locals, push LONG 0 using TOLONG conversion
-                    /*
-                    LDA #0
-                    Emit.PushByte();        // Push BYTE 0
-                    Error.CheckError();
-                    if (NC) { break; }
-                    
-                    // Convert BYTE to LONG
-                    LDA #OpCode.TOLONG
-                    STA Compiler.compilerOpCode
-                    Emit.OpCode();
-                    */
                     // Emit PUSHBYTE 0
                     LDA #0
                     Emit.PushByte();

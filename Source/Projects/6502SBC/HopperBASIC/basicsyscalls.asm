@@ -299,6 +299,14 @@ unit BASICSysCalls
         PLY
     }
    
+   
+    validateTopBYTE()
+    {
+        LDA # BASICType.BYTE
+        STA ZP.ACCT
+        BASICTypes.Coerce();
+    }
+   
    // Execute SYSCALL opcode - system call with flags-based dispatch
    const string executeSysCallTrace = "SYSCALL // System call";
    ExecuteSysCall()
@@ -495,9 +503,7 @@ unit BASICSysCalls
                    // PEEK function - read memory byte
                    // Input: ZP.TOP* contains address
                    // Output: ZP.TOP* contains byte value
-                   LDA # BASICType.WORD
-                   STA ZP.ACCT
-                   BASICTypes.Coerce();
+                   validateTopBYTE();
                    if (NC) { break; }
                    
                    // Read byte from memory address
@@ -516,13 +522,11 @@ unit BASICSysCalls
                    
                    LDA # BASICType.WORD
                    STA ZP.ACCT
-                   BASICTypes.CoerceNext();
+                   BASICTypes.CoerceNext(); // WORD
                    if (NC) { break; }
 
-                   LDA # BASICType.BYTE
-                   STA ZP.ACCT
-                   BASICTypes.Coerce();
-                   if (NC) { break; }
+                   validateTopBYTE();
+                    if (NC) { break; }
                    
                    // Write byte to memory address
                    LDA ZP.TOP0     // Get value to write
@@ -536,7 +540,7 @@ unit BASICSysCalls
                     
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
-                    BASICTypes.CoerceNext();
+                    BASICTypes.CoerceNext(); // BYTE
                     if (NC) { break; }
                     
                     LDA ZP.NEXT0
@@ -547,9 +551,7 @@ unit BASICSysCalls
                         break;
                     }
 
-                    LDA # BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     LDA ZP.TOP0
@@ -572,9 +574,7 @@ unit BASICSysCalls
                     // Input: ZP.TOP* = pin number
                     // Output: ZP.TOP* = pin value (0 or 1)
                     
-                    LDA # BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     LDA ZP.TOP0
@@ -600,7 +600,7 @@ unit BASICSysCalls
             
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
-                    BASICTypes.CoerceNext();
+                    BASICTypes.CoerceNext(); // BYTE
                     if (NC) { break; }
                             
                     LDA ZP.NEXT0
@@ -631,9 +631,7 @@ unit BASICSysCalls
                     // CHR function - convert numeric to CHAR
                     // Input: ZP.TOP* contains numeric value (BYTE/WORD/INT)
                     // Output: ZP.TOP* contains CHAR value
-                    LDA # BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     // Value is valid, convert to CHAR
@@ -725,9 +723,7 @@ unit BASICSysCalls
                     // Input: ZP.TOP* = I2C address (LONG)
                     // Output: ZP.TOP* = BIT (TRUE/FALSE)
                     
-                    LDA #BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     // Validate address (0-127)
@@ -750,9 +746,7 @@ unit BASICSysCalls
                     // I2CBEGIN(addr) - Start write transaction
                     // Input: ZP.TOP* = I2C address (LONG)
                     
-                    LDA #BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     // Validate address (0-127)
@@ -772,9 +766,7 @@ unit BASICSysCalls
                     // I2CPUT(byte) - Send byte in transaction
                     // Input: ZP.TOP* = byte value (LONG)
                     
-                    LDA #BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     // Push byte and call I2C
@@ -807,7 +799,7 @@ unit BASICSysCalls
                     // Validate and convert address
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
-                    BASICTypes.CoerceNext();
+                    BASICTypes.CoerceNext(); // BYTE
                     if (NC) { break; }
                     
                     if (BBS7, ZP.NEXT0)  // Address > 127
@@ -817,9 +809,7 @@ unit BASICSysCalls
                     }
                     
                     // Validate and convert count
-                    LDA #BASICType.BYTE
-                    STA ZP.ACCT
-                    BASICTypes.Coerce();
+                    validateTopBYTE();
                     if (NC) { break; }
                     
                     // Push count (TOP0), then address (NEXT0) for RequestFrom

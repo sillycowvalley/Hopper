@@ -364,6 +364,11 @@ unit Statement // Statement.asm
                 FunctionDeclaration.ExecuteBeginDeclaration();
             }
             
+            case Token.WRITE:
+            case Token.POKE:
+            case Token.DELAY:
+            case Token.PINMODE:
+            
             case Token.PRINT:
             case Token.CLS:
             case Token.IDENTIFIER: // Could be assignment or function call
