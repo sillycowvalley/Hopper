@@ -1,9 +1,10 @@
 CONST EEPROM = 80       ! I2C address
 CONST DIRADDR = 256     ! Directory at sector 1
 CONST ENTRIES = 16      ! 16 directory entries
-
-VAR files = 0
-VAR bytes = 0
+VAR files
+VAR bytes
+VAR bufpos
+BYTE buffer[256]
 
 FUNC Hex(val)
     VAR h = val / 16
@@ -25,31 +26,61 @@ FUNC Hex(val)
     PRINT CHR(c);
 ENDFUNC
 
-FUNC ReadEEPROM(addr)
+FUNC DumpBuffer()
+    VAR idx
+    PRINT "Buffer contents (256 bytes):"
+    FOR row = 0 TO 15
+        ! Print address
+        Hex(row * 16)
+        PRINT ": ";
+        
+        ! Print 16 hex bytes
+        FOR col = 0 TO 15
+            idx = (row * 16) + col
+            Hex(buffer[idx])
+            PRINT " ";
+        NEXT col
+        PRINT
+    NEXT row
+ENDFUNC
+
+FUNC ReadSector(sector)
     VAR bytes
     VAR result
+    
     I2CBEGIN(EEPROM)
-    I2CPUT(addr / 256)
-    I2CPUT(addr & 255)
+    I2CPUT(sector)
+    I2CPUT(0)
     result = I2CEND()
-    IF NOT result THEN
-print "a";
-        ! RETURN FALSE
-    ENDIF
+    
     DELAY(5) ! wait 5ms for EEPROM..
-    bytes = I2CGET(EEPROM, 16)
+    bytes = I2CGET(EEPROM, 128)
+PRINT "bytes=",bytes
+    FOR i = 0 TO 127
+        buffer[i] = I2CNEXT()
+    NEXT I
+    
+    I2CBEGIN(EEPROM)
+    I2CPUT(sector)
+    I2CPUT(128)
+    result = I2CEND()
+    
+    DELAY(5) ! wait 5ms for EEPROM..
+    bytes = I2CGET(EEPROM, 128)
+    FOR i = 128 TO 255
+        buffer[i] = I2CNEXT()
+    NEXT I
+ENDFUNC
 
-    IF bytes <> 16 THEN
-print "c";
-print bytes
-        !RETURN FALSE
-    ENDIF
-    RETURN TRUE
+FUNC GetByte()
+    VAR b = buffer[bufpos]
+    bufpos = bufpos + 1
+    RETURN b
 ENDFUNC
 
 FUNC GetSize()
-    VAR lo = I2CNEXT()
-    VAR hi = I2CNEXT()
+    VAR lo = GetByte()
+    VAR hi = GetByte()
     VAR size = lo + (hi * 256)
     
     IF size > 0 THEN
@@ -61,14 +92,14 @@ FUNC GetSize()
 ENDFUNC
 
 FUNC GetSector()
-    RETURN I2CNEXT()
+    RETURN GetByte()
 ENDFUNC
 
 FUNC Name()
     VAR length
     VAR c
     FOR i = 1 TO 13
-        c = I2CNEXT()
+        c = GetByte()
         IF c = 0 THEN
             RETURN length
         ENDIF
@@ -85,7 +116,7 @@ ENDFUNC
 
 FUNC Skip()
     FOR i = 1 TO 13
-        I2CNEXT()
+        bufpos = bufpos + 1  ! Just advance the pointer
     NEXT i
 ENDFUNC
 
@@ -99,14 +130,12 @@ FUNC PadSpaces(size)
 ENDFUNC
 
 FUNC Entry(number)
-    VAR addr = DIRADDR + (number * 16)
     VAR size
     VAR sector
     VAR length
-    IF NOT ReadEEPROM(addr) THEN
-        PRINT "Read error"
-        RETURN
-    ENDIF
+    
+    ! Set buffer position to start of this entry
+    bufpos = number * 16
     
     size = GetSize()
     sector = GetSector()
@@ -150,8 +179,8 @@ BEGIN
     PRINT "EEPROM Directory"
     PRINT "================"
     PRINT
-    
+    ReadSector(1) ! sector 1 is directory
+    DumpBuffer()
     Directory()
     Summary()
 END
-
