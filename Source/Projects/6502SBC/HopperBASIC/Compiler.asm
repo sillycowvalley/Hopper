@@ -2533,7 +2533,7 @@ unit Compiler // Compiler.asm
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {
-                Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                Error.VariableExists(); BIT ZP.EmulatorPCL
                 break;
             }
             SEC
