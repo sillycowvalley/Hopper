@@ -176,7 +176,6 @@ FUNC Directory()
 ENDFUNC
 
 FUNC Summary()
-    PRINT
     PRINT "------------------------"
     PRINT files; " file(s), "; bytes; " bytes used"
     
@@ -187,7 +186,6 @@ ENDFUNC
 BEGIN
     PRINT "EEPROM Directory"
     PRINT "================"
-    PRINT
     ReadSector(1) ! sector 1 is directory
     ! DumpBuffer()
     Directory()
