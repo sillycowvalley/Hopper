@@ -498,7 +498,6 @@ unit BASICSysCalls
                    LDA # BASICType.WORD
                    STA ZP.ACCT
                    BASICTypes.Coerce();
-                   CheckError();
                    if (NC) { break; }
                    
                    // Read byte from memory address

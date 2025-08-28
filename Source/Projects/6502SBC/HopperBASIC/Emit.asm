@@ -3,7 +3,7 @@ unit Emit
 
    // Emit a single-byte opcode (no operands)
    // Input: compilerOpCode = opcode value
-   // Output: OpCode written to buffer
+   // Output: OpCode written to buffer, C or NC depending on success or failure
    // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented), ZP.XPC (incremented)
    const string emitOpCodeTrace = "EmitOp";
    OpCode()
@@ -24,6 +24,7 @@ unit Emit
            CheckBufferSpace();
            if (NC) 
            { 
+               CheckError();
                break; 
            } // Buffer overflow
        
@@ -45,6 +46,7 @@ unit Emit
            SEC // Success
            break;
        }
+       
 #ifdef TRACE
        LDA #(emitOpCodeTrace % 256) STA ZP.TraceMessageL LDA #(emitOpCodeTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -940,6 +942,7 @@ unit Emit
                default:
                {
                    Error.InvalidOperator(); BIT ZP.EmulatorPCL
+                   CheckError();
                    break;
                }
            }

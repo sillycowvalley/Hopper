@@ -838,6 +838,7 @@ unit Error // ErrorID.asm
         }
         else
         {
+            // LastError is set: SetFailure and NC
             States.IsSuccess(); // don't alter Exiting or Return
             if (C)
             {
