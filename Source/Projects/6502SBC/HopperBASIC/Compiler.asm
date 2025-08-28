@@ -1721,16 +1721,42 @@ unit Compiler // Compiler.asm
             }
             case Token.CHR:
             {
-                RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
                 LDA #SysCallType.Chr
                 compileSysCall();
+                if (BBS0, ZP.CompilerFlags) // constant expression: CHAR?
+                {
+                    Long.PopTop();
+                    LDA # BASICType.CHAR
+                    STA ZP.ACCT
+                    // LONG -> CHAR
+                    BASICTypes.Coerce();
+                    CheckErrorAndSetFailure();
+                    Long.PushTop();
+                }  
                 return;
             }
             case Token.ASC:
             {
-                RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
                 LDA #SysCallType.Asc
                 compileSysCall();
+                if (BBS0, ZP.CompilerFlags) // constant expression: CHAR?
+                {
+                    Long.PopTop();
+                    LDA ZP.TOPT
+                    CMP # BASICType.CHAR
+                    if (Z)
+                    {
+                        // CHAR -> LONG
+                        ZeroTop3();
+                        Long.PushTopStrictLONG();
+                    }
+                    else
+                    {
+                        Long.PushTop();
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        CheckErrorAndSetFailure();
+                    }
+                }               
                 return;
             }
             case Token.LEN:

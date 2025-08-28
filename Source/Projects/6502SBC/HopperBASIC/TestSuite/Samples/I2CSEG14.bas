@@ -76,7 +76,7 @@ FUNC BuildDigits()
     CharSet[ASC('2')] = 0xDB
     CharSet[ASC('3')] = 0x8F
     CharSet[ASC('4')] = 0xE6
-    CharSet[ASC('5')] = 0x69
+    CharSet[ASC('5')] = 0xED
     CharSet[ASC('6')] = 0xFD
     CharSet[ASC('7')] = 0x07
     CharSet[ASC('8')] = 0xFF

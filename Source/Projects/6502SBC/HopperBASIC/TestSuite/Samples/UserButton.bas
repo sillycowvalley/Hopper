@@ -3,7 +3,7 @@ BEGIN
     PINMODE(0, 1)
     VAR P
     WHILE TRUE
-        P = READ(1)
+        P = NOT READ(1)
         PRINT P
         IF P THEN
             WRITE(0, TRUE)

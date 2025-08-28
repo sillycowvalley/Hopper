@@ -645,6 +645,7 @@ unit BASICSysCalls
                     }
                     
                     // Call GPIO.PinRead
+                    LDA ZP.TOP0
                     GPIO.PinRead();  // Result in A
                     STA ZP.TOP0
                     //STZ ZP.TOP1 - already 0 from Coerce above
