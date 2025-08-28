@@ -39,13 +39,22 @@ Debug.NL(); LDA LoadBufferIndexH HOut(); LDA LoadBufferIndexL HOut(); Space();
             LDA LoadBufferLengthH HOut(); LDA LoadBufferLengthL HOut(); Space();
 Debug.NL();            
 
-        LDA #(LoadBuffer / 256)
+        LDA #(LoadBuffer / 256 + 0)
         Debug.DumpPage();
         
         LDA #(LoadBuffer / 256 + 1)
         Debug.DumpPage();
         
         LDA #(LoadBuffer / 256 + 2)
+        Debug.DumpPage();
+        
+        LDA #(LoadBuffer / 256 + 3)
+        Debug.DumpPage();
+        
+        LDA #(LoadBuffer / 256 + 4)
+        Debug.DumpPage();
+        
+        LDA #(LoadBuffer / 256 + 5)
         Debug.DumpPage();
         
         Debug.DumpHeap();
@@ -991,6 +1000,15 @@ Debug.NL();
             LDA ZP.FLENGTHH
             STA ZP.ACCH
             
+            /*
+            LDA ZP.ACCH
+            AND #0xF0
+            if (NZ)
+            {
+                dumpBuffers();
+            }
+            */
+            
             Memory.Allocate(); // Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
@@ -1327,11 +1345,15 @@ Debug.NL();
         
         Memory.Copy();
         
+//Debug.NL();
         // fill
         loop
         {
             if (BBS0, LoaderFlags)       { SEC break; } // no more data to read
-            if (BBS1, LoadBufferLengthH) { SEC break; } // current data >= 512 bytes
+            
+            LDA LoadBufferLengthH
+            CMP #0x05
+            if (C) { SEC break; } // current data >= 1280 bytes (potentially less than 256 bytes remaining in our buffer space)
             File.NextStream();
             if (NC) 
             { 
@@ -1345,6 +1367,8 @@ Debug.NL();
                 break; 
             }
             appendSectorToBuffer();
+//LDA #'+' COut();
+//PHX dumpBuffers(); PLX
         }
         
         PLA
@@ -1375,12 +1399,13 @@ Debug.NL();
         LDA #(LoadBuffer / 256)
         STA LoadBufferIndexH
         
-
+//Debug.NL();
         
         // Load up first sectors to fill buffer
-        LDX #(Limits.FileSystemBufferSize / 256)
+        LDX #(LoadBufferSize / 256)
         loop
         {
+//LDA #'<' COut();
             File.NextStream();
             if (NC) 
             { 
@@ -1392,7 +1417,10 @@ Debug.NL();
                 }
                 break; 
             }
+//LDA #'>' COut();            
             appendSectorToBuffer();
+//LDA #'.' COut();  
+//PHX dumpBuffers(); PLX
             
             DEX
             if (Z) { break; } // Buffer full
@@ -1442,10 +1470,12 @@ Debug.NL();
         LDA File.TransferLengthH
         STA ZP.FLENGTHH
         
+//LDA #'[' COut(); LDA ZP.FLENGTHH HOut();LDA ZP.FLENGTHL HOut();
         // Input: ZP.FSOURCEADDRESS = source pointer
         //        ZP.FDESTINATIONADDRESS = destination pointer  
         //        ZP.FLENGTH = number of bytes to copy (16-bit)
         Memory.Copy();
+//LDA #']' COut();
         
         // Update buffer content length (16-bit add)
         CLC
@@ -1466,11 +1496,13 @@ Debug.NL();
         LDA #0
         SBC ZP.FDESTINATIONADDRESSL
         STA ZP.FLENGTHL
-        LDA #(LoadBuffer / 256 + 3)
+        LDA #((LoadBuffer / 256) + (LoadBufferSize / 256)) // 0x0C + 0x60
         SBC ZP.FDESTINATIONADDRESSH
         STA ZP.FLENGTHH
+
+//LDA #'{' COut(); LDA ZP.FLENGTHH HOut();LDA ZP.FLENGTHL HOut();                        
         Clear();
-        /*
+/*
         loop
         {
             // Check if FLENGTH == 0
@@ -1498,6 +1530,7 @@ Debug.NL();
             DEC ZP.FLENGTHL
         }
         */
+//LDA #'}' COut();        
 
 //Debug.NL(); LDA #'D' COut();LDA #'>' COut(); LDA ZP.FDESTINATIONADDRESSH HOut(); LDA ZP.FDESTINATIONADDRESSL HOut();          
 //Debug.NL(); LDA #'L' COut();LDA #'>' COut(); LDA ZP.FLENGTHH HOut(); LDA ZP.FLENGTHL HOut();          

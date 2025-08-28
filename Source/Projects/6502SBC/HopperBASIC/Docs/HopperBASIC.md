@@ -18,20 +18,6 @@ HopperBASIC was created with four core principles:
 3. **Small Footprint** - Target 32K ROM with minimal RAM usage
 4. **Hardware Integration** - Direct support for GPIO, I2C, and other peripherals
 
-### Comparison with Classic BASICs
-
-| Feature | HopperBASIC | Apple II BASIC | Commodore 64 BASIC | BBC BASIC |
-|---------|------------|----------------|-------------------|-----------|
-| **Numeric Type** | 32-bit LONG | 16-bit INT + REAL | 16-bit INT + REAL | INT + REAL |
-| **Type System** | Strict typing | Weak typing | Weak typing | Weak typing |
-| **Functions** | Named with locals | Line numbers only | Line numbers only | Named PROC/FN |
-| **Arrays** | Multiple types | REAL only | REAL only | Multiple types |
-| **Strings** | Immutable | Mutable | Limited (255 char) | Full support |
-| **Bitwise Ops** | Full support | None | None | AND/OR/EOR |
-| **Compilation** | JIT to opcodes | Interpreted | Interpreted | Semi-compiled |
-| **Storage** | EEPROM files | Tape/Disk | Tape/Disk | Tape/Disk |
-| **Hardware I/O** | GPIO, I2C built-in | PEEK/POKE only | PEEK/POKE only | Built-in |
-
 ### Key Innovations
 
 - **Single Numeric Type**: LONG (32-bit signed integer) simplifies the type system while providing ample range

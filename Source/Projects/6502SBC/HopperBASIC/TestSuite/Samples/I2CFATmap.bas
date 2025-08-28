@@ -78,7 +78,7 @@ ENDFUNC
 
 FUNC PrintFATMap()
     PRINT "FAT Sector Map (256 sectors):"
-    PRINT "  Legend: . = Free, R = Reserved, E = End-of-chain, * = Chain link"
+    PRINT "  Legend: . = Free, F = FAT, D = Directory, E = End-of-chain, * = Chain link"
     PRINT
     PRINT "     0123456789ABCDEF"
     PRINT "     ----------------"
@@ -102,7 +102,11 @@ FUNC PrintFATMap()
             ELSE
                 IF val = 1 THEN
                     IF idx < 2 THEN
-                        PRINT "R";    ! Reserved (FAT or Directory)
+                        if IDX = 0 THEN
+                            PRINT "F";    ! FAT
+                        ELSE
+                            PRINT "D";    ! Directory
+                        ENDIF
                         reserved = reserved + 1
                     ELSE
                         PRINT "E";    ! End of chain

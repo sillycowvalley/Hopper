@@ -29,9 +29,9 @@ unit Address // MemoryMap.asm
     const uint BasicExecutorWorkspace  = BasicStatementWorkspace + Limits.BasicStatementWorkspaceSize;  // 32 bytes - executor.asm  
     
     const uint BasicProcessBuffer      = BasicExecutorWorkspace  + Limits.BasicExecutorWorkspaceSize;   // 32 bytes - used to convert string literals to uppercase in tokenizer.asm
-    
+
+    // These two MUST be sequential because collectively they make up the massive LoadBuffer in Storage unit:
     const uint TokenizerBuffer         = BasicProcessBuffer      + Limits.BasicProcessBufferSize;       // 1024 bytes - tokenized line storage
-    
     const uint FunctionOpCodeBuffer    = TokenizerBuffer         + Limits.TokenizerBufferSize;          // 512 bytes - JIT compiled BASIC function opcodes
     
     const uint REPLOpCodeBuffer        = FunctionOpCodeBuffer    + Limits.OpCodeBufferSize;             // 512 bytes - compiled REPL line OpCode storage
