@@ -239,17 +239,14 @@ unit BASICSysCalls
         loop // single exit
         {
             // Check for valid range (max > 0)
-            LDA ZP.TOP0
-            ORA ZP.TOP1  
-            ORA ZP.TOP2
-            ORA ZP.TOP3
+            Long.ZeroCheckTop();
             if (Z)  // max == 0
             {
                 // Return 0 for invalid range
                 STZ ZP.TOP0
                 STZ ZP.TOP1
                 STZ ZP.TOP2
-                STZ ZP.TOP3
+                STZ ZP.TOP3 // x4
                 CLC  // Error condition
                 break;
             }
@@ -501,7 +498,7 @@ unit BASICSysCalls
                         }
                     }
                     STZ ZP.TOP2
-                    STZ ZP.TOP3
+                    STZ ZP.TOP3 // x2
                     pushLongExit();
                     return;
                }

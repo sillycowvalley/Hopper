@@ -981,10 +981,7 @@ unit CompilerFlow
                        States.SetFailure();
                        break;
                    }
-                   LDA ZP.TOP0
-                   ORA ZP.TOP1
-                   ORA ZP.TOP2
-                   ORA ZP.TOP3 // x4
+                   Long.ZeroCheckTop();
                    if (Z)
                    {
                        Error.BadStep(); BIT ZP.EmulatorPCL

@@ -425,8 +425,210 @@ BEGIN
 END
 RUN
 
-! ===== TEST 23: Memory Check =====
+! ===== TEST 23: LONG Bitwise Operations =====
+NEW
+FUNC TestLongBitwise()
+    VAR a = 15
+    VAR b = 7
+    VAR c = 255
+    VAR d = 0
+    PRINT "LONG Bitwise:"
+    PRINT a & b; " ! expect 7 (15 & 7)"
+    PRINT a | b; " ! expect 15 (15 | 7)"
+    PRINT c & a; " ! expect 15 (255 & 15)"
+    PRINT ~d; " ! expect -1 (~0)"
+    PRINT ~(-1); " ! expect 0 (~-1)"
+    PRINT ~255; " ! expect -256"
+ENDFUNC
+BEGIN
+    TestLongBitwise()
+END
+RUN
+
+! ===== TEST 24: LONG Unary Negation =====
+NEW
+FUNC TestLongNegation()
+    VAR pos = 42
+    VAR neg = -42
+    VAR zero = 0
+    VAR max = 2147483647
+    VAR min = -2147483648
+    PRINT "Unary Negation:"
+    PRINT -pos; " ! expect -42"
+    PRINT -neg; " ! expect 42"
+    PRINT -zero; " ! expect 0"
+    PRINT -max; " ! expect -2147483647"
+    ! Note: -min will overflow back to min
+ENDFUNC
+BEGIN
+    TestLongNegation()
+END
+RUN
+
+
+! ===== TEST 25: LONG Boundary Cases =====
+NEW
+FUNC TestLongBoundaries()
+    VAR maxLong = 2147483647
+    VAR minLong = -2147483648
+    PRINT "LONG Boundaries:"
+    PRINT "Max+1: "; maxLong + 1; " ! expect -2147483648"
+    PRINT "Min-1: "; minLong - 1; " ! expect 2147483647"
+    PRINT "Max+Max: "; maxLong + maxLong; " ! expect -2"
+ENDFUNC
+BEGIN
+    TestLongBoundaries()
+END
+RUN
+
+! ===== TEST 26: LONG Special Division Cases =====
+NEW
+FUNC TestDivSpecial()
+    VAR zero = 0
+    VAR pos = 100
+    VAR neg = -100
+    VAR negOne = -1  ! Store -1 in variable to avoid TYPE MISMATCH
+    PRINT "Division Special Cases:"
+    PRINT "0/100: "; zero / pos; " ! expect 0"
+    PRINT "0/-100: "; zero / neg; " ! expect 0"
+    PRINT "100/1: "; pos / 1; " ! expect 100"
+    PRINT "100/-1: "; pos / negOne; " ! expect -100"
+    PRINT "-100/1: "; neg / 1; " ! expect -100"
+    PRINT "-100/-1: "; neg / negOne; " ! expect 100"
+ENDFUNC
+BEGIN
+    TestDivSpecial()
+END
+RUN
+
+! ===== Memory Check Before Performance =====
 NEW
 MEM
-PRINT "LONG arithmetic test suite complete"
-PRINT "All tests use VAR with LONG type inference"
+PRINT "Functional tests complete. Starting performance tests..."
+PRINT
+
+! ===== PERFORMANCE TESTS - RUN LAST =====
+! These may interfere with serial I/O
+
+! ===== TEST 27: Performance - Non-Optimizable =====
+NEW
+FUNC TestPerfNonOpt()
+    VAR start, elapsed
+    VAR sum = 0
+    VAR i, loops = 1000
+    
+    PRINT "Performance - Non-optimizable:"
+    
+    ! Test with prime numbers and non-power-of-2
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum + 17
+        sum = sum - 13
+        sum = sum * 7
+        sum = sum / 3
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops (17,13,7,3): "; elapsed; "ms ! expect ~10655ms"
+    
+    ! Reset for next test
+    sum = 1000
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum * 11
+        sum = sum / 11
+        sum = sum + 997
+        sum = sum - 997
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops (11,997): "; elapsed; "ms ! expect ~6498ms"
+ENDFUNC
+
+! ===== TEST 28: Performance - Optimizable Multiply =====
+FUNC TestPerfOptMul()
+    VAR start, elapsed
+    VAR sum = 1000
+    VAR i, loops = 1000
+    
+    PRINT "Performance - Optimizable Multiply:"
+    
+    ! Power of 2 multiplications (shift candidates)
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum * 2
+        sum = sum / 2
+        sum = sum * 4
+        sum = sum / 4
+        sum = sum * 8
+        sum = sum / 8
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops (*2,*4,*8): "; elapsed; "ms ! expect ~11479ms"
+    
+    ! Special cases: *0, *1, *10
+    sum = 42
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum * 1
+        sum = sum * 10
+        sum = sum / 10
+        sum = sum * 0
+        sum = 42  ! restore
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops (*0,*1,*10): "; elapsed; "ms ! expect ~6351ms"
+ENDFUNC
+
+! ===== TEST 29: Performance - Optimizable Divide =====
+FUNC TestPerfOptDiv()
+    VAR start, elapsed
+    VAR sum = 100000
+    VAR i, loops = 1000
+    
+    PRINT "Performance - Optimizable Divide:"
+    
+    ! Power of 2 divisions (shift candidates)
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum / 2
+        sum = sum * 2
+        sum = sum / 4
+        sum = sum * 4
+        sum = sum / 8
+        sum = sum * 8
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops (/2,/4,/8): "; elapsed; "ms ! expect ~17520ms"
+    
+    ! Common divisors
+    sum = 10000
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum / 1
+        sum = sum / 10
+        sum = sum * 10
+        sum = sum / 100
+        sum = sum * 100
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops (/1,/10,/100): "; elapsed; "ms ! expect ~8135ms"
+ENDFUNC
+BEGIN
+    TestPerfNonOpt()
+    TestPerfOptMul()
+    TestPerfOptDiv()
+END
+
+! Division by zero tests at REPL
+
+VAR x = 100
+PRINT x / 0
+PRINT x MOD 0
+
+! Performance tests
+RUN
+
+! ===== Final Memory Check =====
+NEW
+MEM
+! "LONG arithmetic test suite complete"
+

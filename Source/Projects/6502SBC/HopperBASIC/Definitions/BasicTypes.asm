@@ -61,14 +61,14 @@ unit BASICTypes // BASICTypes.asm
                     else
                     {
                         STZ ZP.TOP2
-                        STZ ZP.TOP3
+                        STZ ZP.TOP3 // x2
                     }
                 }
                 case 0:
                 case BASICType.WORD:
                 {
                     STZ ZP.TOP2
-                    STZ ZP.TOP3
+                    STZ ZP.TOP3 // x2
                 }
                 case BASICType.LONG:
                 {
@@ -182,7 +182,7 @@ unit BASICTypes // BASICTypes.asm
                 {
                     LDA ZP.NEXT1
                     ORA ZP.NEXT2
-                    ORA ZP.NEXT3 // x2
+                    ORA ZP.NEXT3 // x3
                     if (NZ)
                     {
                         Error.RangeError(); BIT ZP.EmulatorPCL

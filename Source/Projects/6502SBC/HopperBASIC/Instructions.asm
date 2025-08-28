@@ -286,10 +286,7 @@ unit Instructions // Instructions.asm
             if (NC) { break; }
             
             // Check for division by zero
-            LDA ZP.TOP0
-            ORA ZP.TOP1
-            ORA ZP.TOP2
-            ORA ZP.TOP3 // x4
+            Long.ZeroCheckTop();
             if (Z)  // Divisor is zero
             {
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
@@ -322,10 +319,7 @@ unit Instructions // Instructions.asm
             if (NC) { break; }
             
             // Check for division by zero
-            LDA ZP.TOP0
-            ORA ZP.TOP1
-            ORA ZP.TOP2
-            ORA ZP.TOP3 // x4
+            Long.ZeroCheckTop();
             if (Z)  // Divisor is zero
             {
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL

@@ -46,6 +46,14 @@ unit Long
         STZ ZP.TOP3
     }
     
+    ZeroCheckTop()
+    {
+        LDA ZP.TOP0
+        ORA ZP.TOP1
+        ORA ZP.TOP2
+        ORA ZP.TOP3
+    }
+    
 #ifndef #DEBUG
     PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
     {

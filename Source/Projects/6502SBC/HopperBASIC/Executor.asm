@@ -1350,7 +1350,7 @@ unit Executor // Executor.asm
        else
        {
            STZ ZP.TOP2
-           STZ ZP.TOP3
+           STZ ZP.TOP3 // x2
        }
        
        Long.PushTopStrictLONG();
@@ -1377,7 +1377,7 @@ unit Executor // Executor.asm
        LDA executorOperandH
        STA ZP.TOP1
        STZ ZP.TOP2
-       STZ ZP.TOP3
+       STZ ZP.TOP3 // x2
        
        Long.PushTopStrictLONG();
        
@@ -3538,7 +3538,7 @@ Debug.NL(); TLOut(); Space(); YOut();
     #endif
         
         STZ ZP.TOP2
-        STZ ZP.TOP3
+        STZ ZP.TOP3 // x2
         Stacks.PopTop();
         Long.PushTopStrictLONG();
         

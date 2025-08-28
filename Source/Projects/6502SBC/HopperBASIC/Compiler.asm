@@ -1131,7 +1131,7 @@ unit Compiler // Compiler.asm
                                 else
                                 {
                                     STZ ZP.TOP2
-                                    STZ ZP.TOP3
+                                    STZ ZP.TOP3 // x2
                                 }
                                 Emit.PushWord();
                             }
@@ -1142,7 +1142,7 @@ unit Compiler // Compiler.asm
                                 LDA ZP.TOP1
                                 STA Compiler.compilerOperand2
                                 STZ ZP.TOP2
-                                STZ ZP.TOP3
+                                STZ ZP.TOP3 // x2
                                 Emit.PushWord();
                             }
                         } // switch
@@ -1531,7 +1531,7 @@ unit Compiler // Compiler.asm
                                else
                                {
                                    STZ ZP.TOP2
-                                   STZ ZP.TOP3
+                                   STZ ZP.TOP3 // x2
                                }
                            }
                            else // WORD
@@ -1541,7 +1541,7 @@ unit Compiler // Compiler.asm
                                LDA ZP.TOP1
                                STA compilerOperand2  // MSB
                                STZ ZP.TOP2
-                               STZ ZP.TOP3
+                               STZ ZP.TOP3 // x2
                            }
                            Emit.PushWord();
                            CheckErrorAndSetFailure();
