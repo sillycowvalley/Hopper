@@ -1396,356 +1396,347 @@ unit Compiler // Compiler.asm
        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
        
-       loop // Single exit pattern
+       LDA ZP.CurrentToken
+       switch (A)
        {
-           LDA ZP.CurrentToken
-           switch (A)
+           case Token.TRUE:
            {
-               case Token.TRUE:
+               // Emit PUSHBIT with value 1
+               LDA #1
+               STA ZP.TOP0
+               Emit.PushBit();
+               CheckErrorAndSetFailure();
+               if (NC) { return; }
+               
+               if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                {
-                   // Emit PUSHBIT with value 1
-                   LDA #1
-                   STA ZP.TOP0
-                   Emit.PushBit();
-                   CheckError();
-                   if (NC) { break; }
-                   
-                   // Get next token
-                   Tokenizer.NextTokenCheck();
-                   
-                   if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
-                   {
-                       Long.ZeroTop3();
-                       LDA #BASICType.BIT
-                       STA ZP.TOPT
-                       Long.PushTop();
-                   }
-                   
-                   break;
+                   Long.ZeroTop3();
+                   LDA #BASICType.BIT
+                   STA ZP.TOPT
+                   Long.PushTop();
                }
-               case Token.FALSE:
+               
+               // Get next token
+               Tokenizer.NextTokenCheckSetFailure();
+               return;
+           }
+           case Token.FALSE:
+           {
+               // Emit PUSHBIT with value 0
+               LDA #0
+               STA ZP.TOP0
+               Emit.PushBit();
+               CheckErrorAndSetFailure();
+               if (NC) { return; }
+               
+               if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                {
-                   // Emit PUSHBIT with value 0
-                   LDA #0
-                   STA ZP.TOP0
-                   Emit.PushBit();
-                   CheckError();
-                   if (NC) { break; }
-                   
-                   // Get next token
-                   Tokenizer.NextTokenCheck();
-                   
-                   if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
-                   {
-                       Long.ZeroTop3();
-                       LDA #BASICType.BIT
-                       STA ZP.TOPT
-                       Long.PushTop();
-                   }
-                   
-                   break;
+                   Long.ZeroTop3();
+                   LDA #BASICType.BIT
+                   STA ZP.TOPT
+                   Long.PushTop();
                }
-               case Token.NUMBER:
-               {
+               // Get next token
+               Tokenizer.NextTokenCheckSetFailure();
+               return;
+           }
+           case Token.NUMBER:
+           {
 
-                   // Get number value and type
-                   Tokenizer.GetTokenNumber(); // Result in ZP.TOP, type in ZP.TOPT
-                   CheckError();
-                   if (NC) { break; }
-                   
-                   // Emit appropriate push opcode based on type and value
-                   LDA ZP.TOPT
-                   CMP #BASICType.BIT
-                   if (Z)
+               // Get number value and type
+               Tokenizer.GetTokenNumber(); // Result in ZP.TOP, type in ZP.TOPT
+               CheckErrorAndSetFailure();
+               if (NC) { return; }
+               
+               // Emit appropriate push opcode based on type and value
+               LDA ZP.TOPT
+               CMP #BASICType.BIT
+               if (Z)
+               {
+                   LDA ZP.TOPL // BIT values are single byte
+                   Emit.PushBit();
+                   CheckErrorAndSetFailure();
+                   if (NC) { return; }
+               }
+               else
+               {
+                   if (BBS3, ZP.TOPT) // Bit 3 - LONG
                    {
-                       LDA ZP.TOPL // BIT values are single byte
-                       Emit.PushBit();
-                       CheckError();
-                       if (NC) { break; }
+                       LDA ZP.TOP0
+                       STA compilerOperand1  // LSB
+                       LDA ZP.TOP1
+                       STA compilerOperand2  // MSB
+                       
+                       LDA # BASICType.WORD
+                       STA ZP.TOPT
+                       Emit.PushWord();
+                       CheckErrorAndSetFailure();
+                       if (NC) { return; }
+                       
+                       LDA ZP.TOP2
+                       STA compilerOperand1  // LSB
+                       LDA ZP.TOP3
+                       STA compilerOperand2  // MSB
+                       
+                       LDA # BASICType.LONG
+                       STA ZP.TOPT
+                       Emit.PushWord();
+                       CheckErrorAndSetFailure();
+                       if (NC) { return; }
                    }
                    else
                    {
-                       if (BBS3, ZP.TOPT) // Bit 3 - LONG
+                       CMP #BASICType.BYTE
+                       if (Z)
                        {
                            LDA ZP.TOP0
-                           STA compilerOperand1  // LSB
-                           LDA ZP.TOP1
-                           STA compilerOperand2  // MSB
+                           Long.ZeroTop3();
                            
-                           LDA # BASICType.WORD
-                           STA ZP.TOPT
-                           Emit.PushWord();
-                           CheckError();
-                           if (NC) { break; }
-                           
-                           LDA ZP.TOP2
-                           STA compilerOperand1  // LSB
-                           LDA ZP.TOP3
-                           STA compilerOperand2  // MSB
-                           
-                           LDA # BASICType.LONG
-                           STA ZP.TOPT
-                           Emit.PushWord();
-                           CheckError();
-                           if (NC) { break; }
+                           Emit.PushByte();
+                           CheckErrorAndSetFailure();
+                           if (NC) { return; }
                        }
                        else
                        {
-                           CMP #BASICType.BYTE
-                           if (Z)
+                           CMP #BASICType.INT
+                           if (Z) // INT
                            {
                                LDA ZP.TOP0
-                               Long.ZeroTop3();
-                               
-                               Emit.PushByte();
-                               CheckError();
-                               if (NC) { break; }
-                           }
-                           else
-                           {
-                               CMP #BASICType.INT
-                               if (Z) // INT
+                               STA compilerOperand1  // LSB
+                               LDA ZP.TOP1
+                               STA compilerOperand2  // MSB
+                               // TODO TYPE SIGN EXTENSION
+                               if (MI)
                                {
-                                   LDA ZP.TOP0
-                                   STA compilerOperand1  // LSB
-                                   LDA ZP.TOP1
-                                   STA compilerOperand2  // MSB
-                                   // TODO TYPE SIGN EXTENSION
-                                   if (MI)
-                                   {
-                                       LDA #0xFF
-                                       STA ZP.TOP2
-                                       STA ZP.TOP3
-                                   }
-                                   else
-                                   {
-                                       STZ ZP.TOP2
-                                       STZ ZP.TOP3
-                                   }
+                                   LDA #0xFF
+                                   STA ZP.TOP2
+                                   STA ZP.TOP3
                                }
-                               else // WORD
+                               else
                                {
-                                   LDA ZP.TOP0
-                                   STA compilerOperand1  // LSB
-                                   LDA ZP.TOP1
-                                   STA compilerOperand2  // MSB
                                    STZ ZP.TOP2
                                    STZ ZP.TOP3
                                }
-                               Emit.PushWord();
-                               CheckError();
-                               if (NC) { break; }
                            }
+                           else // WORD
+                           {
+                               LDA ZP.TOP0
+                               STA compilerOperand1  // LSB
+                               LDA ZP.TOP1
+                               STA compilerOperand2  // MSB
+                               STZ ZP.TOP2
+                               STZ ZP.TOP3
+                           }
+                           Emit.PushWord();
+                           CheckErrorAndSetFailure();
+                           if (NC) { return; }
                        }
                    }
-                   if (BBS0, ZP.CompilerFlags) // constant expression: NUMBER: PUSH numeric literal
-                   {
-                       LDA #BASICType.LONG
-                       STA ZP.TOPT
-                       Long.PushTop();
-                   }
+               }
+               if (BBS0, ZP.CompilerFlags) // constant expression: NUMBER: PUSH numeric literal
+               {
+                   LDA #BASICType.LONG
+                   STA ZP.TOPT
+                   Long.PushTop();
+               }
 
-                   // Get next token
-                   Tokenizer.NextToken(); // no
-                   break;
-               }
-               case Token.STRINGLIT:
-               {
-                   RMB0 ZP.CompilerFlags // constant expression: STRINGLIT: not an integral constant expression
-                   
-                   // OFFSET : compiling STRINGLIT
-                   // Emit PUSHCSTRING with pointer to string content from token stream
-                   LDA ZP.TokenLiteralPosL
-                   STA Compiler.compilerOperand1  // LSB
-                   LDA ZP.TokenLiteralPosH
-                   STA Compiler.compilerOperand2  // MSB
-                    
-                   Emit.PushCString();
-                   CheckError();
-                   if (NC) { break; }
-                   
-                   // Get next token
-                   Tokenizer.NextToken(); // no
-                   break;
-               }
-               case Token.CHARLIT:
-                {
-                    
-                    // The character byte is stored inline after the CHARLIT token
-                    
-                    // Calculate address of character value in token buffer
-                    LDA ZP.TokenBufferL
-                    CLC
-                    ADC ZP.TokenLiteralPosL
-                    STA ZP.IDXL
-                    LDA ZP.TokenBufferH
-                    ADC ZP.TokenLiteralPosH
-                    STA ZP.IDXH
-                    
-                    // Get the character value
-                    LDY #0
-                    LDA [ZP.IDX], Y
-                    STA ZP.TOP0
-                    
-                    Emit.PushChar();
-                    CheckError();
-                    if (NC) { break; }
-                    
-                    // Get next token
-                    Tokenizer.NextTokenCheck();
-                    
-                    if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
-                    {
-                        Long.ZeroTop3();
-                        LDA #BASICType.CHAR
-                        STA ZP.TOPT
-                        Long.PushTop();
-                    }
-                    break;
-                }
-                case Token.INPUT:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
-                    LDA #SysCallType.Input
-                    compileSysCall();
-                    return;
-                }
+               // Get next token
+               Tokenizer.NextTokenCheckSetFailure();
+               return;
+           }
+           case Token.STRINGLIT:
+           {
+               RMB0 ZP.CompilerFlags // constant expression: STRINGLIT: not an integral constant expression
                
-               case Token.IDENTIFIER:
-               {
-                   compileFunctionCallOrVariable();
-                   break;
-               }
-               case Token.LPAREN:
-               {
-                   // Get next token (start of sub-expression)
-                   Tokenizer.NextTokenCheck();
-                   if (NC) { break; }
-                   
-                   // Parse the sub-expression
-                   compileExpressionTree();
-                   CheckError();
-                   if (NC) { break; }
-                   
-                   // Expect closing parenthesis
-                   LDA ZP.CurrentToken
-                   CMP #Token.RPAREN
-                   if (NZ)
-                   {
-                       Error.SyntaxError(); BIT ZP.EmulatorPCL
-                       break;
-                   }
-                   
-                   // Get next token
-                   Tokenizer.NextToken(); // no
-                   break;
-               }
+               // OFFSET : compiling STRINGLIT
+               // Emit PUSHCSTRING with pointer to string content from token stream
+               LDA ZP.TokenLiteralPosL
+               STA Compiler.compilerOperand1  // LSB
+               LDA ZP.TokenLiteralPosH
+               STA Compiler.compilerOperand2  // MSB
+                
+               Emit.PushCString();
+               CheckErrorAndSetFailure();
+               if (NC) { return; }
                
-                case Token.I2CFIND:
+               // Get next token
+               Tokenizer.NextTokenCheckSetFailure();
+               return;
+           }
+           case Token.CHARLIT:
+            {
+                
+                // The character byte is stored inline after the CHARLIT token
+                
+                // Calculate address of character value in token buffer
+                LDA ZP.TokenBufferL
+                CLC
+                ADC ZP.TokenLiteralPosL
+                STA ZP.IDXL
+                LDA ZP.TokenBufferH
+                ADC ZP.TokenLiteralPosH
+                STA ZP.IDXH
+                
+                // Get the character value
+                LDY #0
+                LDA [ZP.IDX], Y
+                STA ZP.TOP0
+                
+                Emit.PushChar();
+                CheckErrorAndSetFailure();
+                if (NC) { return; }
+                
+                if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                 {
-                    RMB0 ZP.CompilerFlags // constant expression: I2CFIND: not an integral constant expression
-                    LDA #SysCallType.I2CFind
-                    compileSysCall();
-                    return;
-                }
-                case Token.I2CEND:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: I2CEND: not an integral constant expression
-                    LDA #SysCallType.I2CEnd
-                    compileSysCall();
-                    return;
-                }
-                case Token.I2CGET:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: I2CGET: not an integral constant expression
-                    LDA #SysCallType.I2CGet
-                    compileSysCall();
-                    return;
-                }
-                case Token.I2CNEXT:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: I2CNEXT: not an integral constant expression
-                    LDA #SysCallType.I2CNext
-                    compileSysCall();
-                    return;
+                    Long.ZeroTop3();
+                    LDA #BASICType.CHAR
+                    STA ZP.TOPT
+                    Long.PushTop();
                 }
                 
-                case Token.MILLIS:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
-                    LDA #SysCallType.Millis
-                    compileSysCall();
-                    return;
-                }
-                case Token.SECONDS:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: SECONDS: not an integral constant expression
-                    LDA #SysCallType.Seconds
-                    compileSysCall();
-                    return;
-                }
-                case Token.ABS:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
-                    LDA #SysCallType.Abs
-                    compileSysCall();
-                    return;
-                }
-                case Token.RND:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
-                    LDA #SysCallType.Rnd
-                    compileSysCall();
-                    return;
-                }
-                case Token.PEEK:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression
-                    LDA #SysCallType.Peek
-                    compileSysCall();
-                    return;
-                }
-                case Token.READ:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: READ: not an integral constant expression
-                    LDA #SysCallType.Read
-                    compileSysCall();
-                    return;
-                }
-                case Token.CHR:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
-                    LDA #SysCallType.Chr
-                    compileSysCall();
-                    return;
-                }
-                case Token.ASC:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
-                    LDA #SysCallType.Asc
-                    compileSysCall();
-                    return;
-                }
-                case Token.LEN:
-                {
-                    RMB0 ZP.CompilerFlags // constant expression: LEN: not an integral constant expression
-                    LDA #SysCallType.Len
-                    compileSysCall();
-                    return;
-                }
+                // Get next token
+                Tokenizer.NextTokenCheckSetFailure();
+                return;
+            }
+            case Token.INPUT:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
+                LDA #SysCallType.Input
+                compileSysCall();
+                return;
+            }
+           
+           case Token.LPAREN:
+           {
+               // Get next token (start of sub-expression)
+               Tokenizer.NextTokenCheck();
+               if (NC) { return; }
                
+               // Parse the sub-expression
+               compileExpressionTree();
+               CheckErrorAndSetFailure();
+               if (NC) { return; }
                
-               default:
+               // Expect closing parenthesis
+               LDA ZP.CurrentToken
+               CMP #Token.RPAREN
+               if (NZ)
                {
-                   // Unexpected token
                    Error.SyntaxError(); BIT ZP.EmulatorPCL
-                   break;
+                   CheckErrorAndSetFailure();
+                   return;
                }
+               
+               // Get next token
+               Tokenizer.NextTokenCheckSetFailure();
+               return;
            }
            
-           break;
-       } // NOT SINGLE EXIT
-       CheckError();       
+            case Token.I2CFIND:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: I2CFIND: not an integral constant expression
+                LDA #SysCallType.I2CFind
+                compileSysCall();
+                return;
+            }
+            case Token.I2CEND:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: I2CEND: not an integral constant expression
+                LDA #SysCallType.I2CEnd
+                compileSysCall();
+                return;
+            }
+            case Token.I2CGET:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: I2CGET: not an integral constant expression
+                LDA #SysCallType.I2CGet
+                compileSysCall();
+                return;
+            }
+            case Token.I2CNEXT:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: I2CNEXT: not an integral constant expression
+                LDA #SysCallType.I2CNext
+                compileSysCall();
+                return;
+            }
+            
+            case Token.MILLIS:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: MILLIS: not an integral constant expression
+                LDA #SysCallType.Millis
+                compileSysCall();
+                return;
+            }
+            case Token.SECONDS:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: SECONDS: not an integral constant expression
+                LDA #SysCallType.Seconds
+                compileSysCall();
+                return;
+            }
+            case Token.ABS:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: ABS: not an integral constant expression
+                LDA #SysCallType.Abs
+                compileSysCall();
+                return;
+            }
+            case Token.RND:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: RND: not an integral constant expression
+                LDA #SysCallType.Rnd
+                compileSysCall();
+                return;
+            }
+            case Token.PEEK:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: PEEK: not an integral constant expression
+                LDA #SysCallType.Peek
+                compileSysCall();
+                return;
+            }
+            case Token.READ:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: READ: not an integral constant expression
+                LDA #SysCallType.Read
+                compileSysCall();
+                return;
+            }
+            case Token.CHR:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: CHR: not an integral constant expression
+                LDA #SysCallType.Chr
+                compileSysCall();
+                return;
+            }
+            case Token.ASC:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: ASC: not an integral constant expression
+                LDA #SysCallType.Asc
+                compileSysCall();
+                return;
+            }
+            case Token.LEN:
+            {
+                RMB0 ZP.CompilerFlags // constant expression: LEN: not an integral constant expression
+                LDA #SysCallType.Len
+                compileSysCall();
+                return;
+            }
+
+           // the only two cases that don't "return":                
+           case Token.IDENTIFIER:
+           {
+               compileFunctionCallOrVariable();
+           }
+           default:
+           {
+               // Unexpected token
+               Error.SyntaxError(); BIT ZP.EmulatorPCL
+           }
+       } // switch
+       CheckErrorAndSetFailure();       
 
 #ifdef TRACEPARSE
        LDA #(compilePrimaryTrace % 256) STA ZP.TraceMessageL LDA #(compilePrimaryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
