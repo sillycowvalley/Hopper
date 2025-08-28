@@ -55,7 +55,6 @@ FUNC ReadSector(sector)
     
     DELAY(5) ! wait 5ms for EEPROM..
     bytes = I2CGET(EEPROM, 128)
-PRINT "bytes=",bytes
     FOR i = 0 TO 127
         buffer[i] = I2CNEXT()
     NEXT I
@@ -122,10 +121,18 @@ ENDFUNC
 
 FUNC PadSpaces(size)
     PRINT "  ";
-    IF size < 10000 THEN PRINT " " ENDIF
-    IF size < 1000 THEN PRINT " " ENDIF
-    IF size < 100 THEN PRINT " " ENDIF
-    IF size < 10 THEN PRINT " " ENDIF
+    IF size < 10000 THEN
+        PRINT " ";
+    ENDIF
+    IF size < 1000 THEN
+        PRINT " ";
+    ENDIF
+    IF size < 100 THEN
+        PRINT " ";
+    ENDIF
+    IF size < 10 THEN
+        PRINT " ";
+    ENDIF
     PRINT size; " bytes";
 ENDFUNC
 
@@ -145,7 +152,9 @@ FUNC Entry(number)
         RETURN
     ENDIF
     
-    IF number < 10 THEN PRINT " " ENDIF
+    IF number < 10 THEN
+        PRINT " ";
+    ENDIF
     PRINT number; ": ";
     
     length = Name()
@@ -180,7 +189,7 @@ BEGIN
     PRINT "================"
     PRINT
     ReadSector(1) ! sector 1 is directory
-    DumpBuffer()
+    ! DumpBuffer()
     Directory()
     Summary()
 END

@@ -767,8 +767,8 @@ unit BASICSysCalls
                     validateTopBYTE();
                     if (NC) { break; }
                     
-                    STA ZP.TOPL  // number of bytes to read
-                    LDA ZP.NEXTL // I2C address
+                    // number of bytes to read is in ZP.TOPL
+                    LDA ZP.NEXTL // I2C address -> A
                     RequestFromTOPA(); // A has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
                     
                     // Convert result to LONG
