@@ -230,7 +230,6 @@ unit CompilerFlow
             {
                 // Multi-line: use statement block (handles ELSE/ENDIF termination)
                 CompileStatementBlock();
-                CheckErrorAndSetFailure();
                 if (NC) { break; }
             }
             
@@ -294,7 +293,6 @@ unit CompilerFlow
                 {
                     // Multi-line: use statement block (handles ENDIF termination)
                     CompileStatementBlock();
-                    CheckErrorAndSetFailure();
                     if (NC) { break; }
                 }
                 
@@ -444,7 +442,6 @@ unit CompilerFlow
            if (NC) { break; }
            
            CompileStatementBlock();
-           CheckErrorAndSetFailure();
            if (NC) { break; }
             
            // Validate we got WEND
@@ -541,7 +538,6 @@ unit CompilerFlow
             saveCurrentPosition();
             
             CompileStatementBlock();
-            CheckErrorAndSetFailure();
             if (NC) { break; }
             
             // Validate we got WEND
@@ -1208,7 +1204,6 @@ unit CompilerFlow
            
            // Compile loop body statements until NEXT
            CompileStatementBlock();
-           CheckError();
            if (NC) { break; }
             
            // Validate we got NEXT

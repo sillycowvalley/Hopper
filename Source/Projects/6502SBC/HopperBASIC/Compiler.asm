@@ -1934,6 +1934,7 @@ unit Compiler // Compiler.asm
                 case Token.ENDIF:
                 {
                     States.SetSuccess();
+                    CheckErrorAndSetFailure();
                     break; // Exit main loop
                 }
                 
@@ -2027,7 +2028,6 @@ unit Compiler // Compiler.asm
            
            // Replace the statement loop with:
            CompileStatementBlock();
-           CheckErrorAndSetFailure();
            if (NC) { break; }
             
            // Validate we got EOF
