@@ -316,8 +316,8 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit logical OR opcode
-               LDA #Token.OR
-               Emit.LogicalOp();
+               LDA # OpCode.LOGICAL_OR
+               Emit.OpCode();
                CheckError();
                if (NC) { break; }
            } // loop
@@ -358,8 +358,8 @@ unit Compiler // Compiler.asm
                 if (NC) { break; }
                 
                 // Emit logical NOT opcode
-                LDA #Token.NOT
-                Emit.LogicalOp();
+                LDA # OpCode.LOGICAL_NOT
+                Emit.OpCode();
                 CheckError();
                 if (NC) { break; }
             }
@@ -415,8 +415,8 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit logical AND opcode
-               LDA #Token.AND
-               Emit.LogicalOp();
+               LDA # OpCode.LOGICAL_AND
+               Emit.OpCode();
                CheckError();
                if (NC) { break; }
            } // loop
@@ -483,7 +483,16 @@ unit Compiler // Compiler.asm
                        
                        // Emit comparison opcode
                        PLA // Retrieve operator
-                       Emit.ComparisonOp();
+                       switch (A)
+                       {
+                           case Token.EQUALS:   { LDA # OpCode.EQ }
+                           case Token.NOTEQUAL: { LDA # OpCode.NE }
+                           case Token.LT:       { LDA # OpCode.LT }
+                           case Token.GT:       { LDA # OpCode.GT }
+                           case Token.LE:       { LDA # OpCode.LE }
+                           case Token.GE:       { LDA # OpCode.GE }
+                       }
+                       Emit.OpCode();
                        CheckError();
                        if (NC) { break; }
                        
@@ -542,8 +551,8 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit bitwise AND opcode
-               LDA #Token.BITWISE_AND
-               Emit.BitwiseOp();
+               LDA # OpCode.BITWISE_AND
+               Emit.OpCode();
                CheckError();
                if (NC) { break; }
            } // loop
@@ -593,8 +602,8 @@ unit Compiler // Compiler.asm
                if (NC) { break; }
                
                // Emit bitwise OR opcode
-               LDA #Token.BITWISE_OR
-               Emit.BitwiseOp();
+               LDA # OpCode.BITWISE_OR
+               Emit.OpCode();
                CheckError();
                if (NC) { break; }
            } // loop
@@ -643,8 +652,8 @@ unit Compiler // Compiler.asm
 
 
                    // Emit addition opcode
-                   LDA #Token.PLUS
-                   Emit.ArithmeticOp();
+                   LDA # OpCode.ADD
+                   Emit.OpCode();
                    CheckError();
                    if (NC) { break; }
                    
@@ -672,8 +681,8 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit subtraction opcode
-                   LDA #Token.MINUS
-                   Emit.ArithmeticOp();
+                   LDA # OpCode.SUB
+                   Emit.OpCode();
                    CheckError();
                    if (NC) { break; }
                    
@@ -751,7 +760,13 @@ unit Compiler // Compiler.asm
                        
                        // Emit arithmetic opcode
                        PLA // Retrieve operator
-                       Emit.ArithmeticOp();
+                       switch (A)
+                       {
+                           case Token.MULTIPLY: { LDA # OpCode.MUL }
+                           case Token.DIVIDE:   { LDA # OpCode.DIV }
+                           case Token.MOD:      { LDA # OpCode.MOD }
+                       }
+                       Emit.OpCode();
                        CheckError();
                        if (NC) { break; }
                        
@@ -825,7 +840,8 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit unary minus opcode
-                   Emit.UnaryMinus();
+                   LDA # OpCode.NEG
+                   Emit.OpCode();
                    CheckError();
                    if (NC) { break; }
                }
@@ -842,8 +858,8 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Emit logical NOT opcode
-                   LDA #Token.BITWISE_NOT
-                   Emit.BitwiseOp();
+                   LDA # OpCode.BITWISE_NOT
+                   Emit.OpCode();
                    CheckError();
                    if (NC) { break; }
                }
@@ -2020,7 +2036,8 @@ unit Compiler // Compiler.asm
            if (NC) { break; }
            
            
-           Emit.Enter();
+           LDA #OpCode.ENTER
+           Emit.OpCode();
            CheckErrorAndSetFailure();
            if (NC) { break; }
            
@@ -2605,7 +2622,6 @@ unit Compiler // Compiler.asm
                     
                     // Emit PUSHCSTRING with this offset
                     LDA #OpCode.PUSHCSTRING
-                    STA compilerOpCode
                     Emit.OpCodeWithWord();
                 }
                 case BASICType.BIT:
@@ -2886,12 +2902,11 @@ unit Compiler // Compiler.asm
                         if (Z)
                         {
                             // Stack now has: [value]
-                            LDA #OpCode.SETITEMGG
-                            STA Compiler.compilerOpCode
                             LDA Compiler.compilerSetItemObjOffset
                             STA Compiler.compilerOperand1
                             LDA Compiler.compilerSetItemIndexOffset
                             STA Compiler.compilerOperand2
+                            LDA #OpCode.SETITEMGG
                             Emit.OpCodeWithWord();
                             break;
                         }
@@ -2899,12 +2914,11 @@ unit Compiler // Compiler.asm
                         if (Z)
                         {
                             // Stack now has: [value]
-                            LDA #OpCode.SETITEMGL
-                            STA Compiler.compilerOpCode
                             LDA Compiler.compilerSetItemObjOffset
                             STA Compiler.compilerOperand1
                             LDA Compiler.compilerSetItemIndexOffset
                             STA Compiler.compilerOperand2
+                            LDA #OpCode.SETITEMGL
                             Emit.OpCodeWithWord();
                             break;
                         }
@@ -2917,12 +2931,11 @@ unit Compiler // Compiler.asm
                         if (Z)
                         {
                             // Stack now has: [value]
-                            LDA #OpCode.SETITEMLG
-                            STA Compiler.compilerOpCode
                             LDA Compiler.compilerSetItemObjOffset
                             STA Compiler.compilerOperand1
                             LDA Compiler.compilerSetItemIndexOffset
                             STA Compiler.compilerOperand2
+                            LDA #OpCode.SETITEMLG
                             Emit.OpCodeWithWord();
                             break;
                         }
@@ -2930,12 +2943,11 @@ unit Compiler // Compiler.asm
                         if (Z)
                         {
                             // Stack now has: [value]
-                            LDA #OpCode.SETITEMLL
-                            STA Compiler.compilerOpCode
                             LDA Compiler.compilerSetItemObjOffset
                             STA Compiler.compilerOperand1
                             LDA Compiler.compilerSetItemIndexOffset
                             STA Compiler.compilerOperand2
+                            LDA #OpCode.SETITEMLL
                             Emit.OpCodeWithWord();
                             break;
                         }
@@ -2944,7 +2956,6 @@ unit Compiler // Compiler.asm
                     // Stack now has: [array_ptr][index][value]
                     // Emit SETITEM opcode
                     LDA #OpCode.SETITEM
-                    STA Compiler.compilerOpCode
                     Emit.OpCode();
                     break;
                 } 

@@ -207,10 +207,9 @@ unit CompilerFlow
             
             // Emit conditional jump to ELSE/ENDIF (placeholder - will be patched)
             // JUMPZW: Jump if condition is zero/FALSE (skip THEN block)
-            LDA #OpCode.JUMPZW
-            STA Compiler.compilerOpCode
             STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
             STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
+            LDA #OpCode.JUMPZW
             Emit.OpCodeWithWord();
             CheckErrorAndSetFailure();
             if (NC) { break; }
@@ -245,10 +244,9 @@ unit CompilerFlow
                 saveCurrentPosition();
                 
                 // Emit unconditional jump to ENDIF (placeholder - will be patched)
-                LDA #OpCode.JUMPW
-                STA Compiler.compilerOpCode
                 STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
                 STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
+                LDA #OpCode.JUMPW
                 Emit.OpCodeWithWord();
                 CheckErrorAndSetFailure();
                 if (NC) { break; }
@@ -433,10 +431,9 @@ unit CompilerFlow
            
            // Emit conditional exit jump (placeholder - will be patched after WEND)
            // JUMPZW: Jump if condition is zero/FALSE (exit loop when condition fails)
-           LDA # OpCode.JUMPZW
-           STA Compiler.compilerOpCode
            STZ Compiler.compilerOperand1  // Placeholder LSB (will be patched)
            STZ Compiler.compilerOperand2  // Placeholder MSB (will be patched)
+           LDA # OpCode.JUMPZW
            Emit.OpCodeWithWord();
            CheckErrorAndSetFailure();
            if (NC) { break; }
@@ -493,12 +490,11 @@ unit CompilerFlow
            // the 3-byte instruction, so offset is from position after JUMPW
            //
            // Emit unconditional jump back to condition evaluation
-           LDA #OpCode.JUMPW
-           STA Compiler.compilerOpCode
            LDA ZP.TOPL    // Backward offset LSB
            STA Compiler.compilerOperand1
            LDA ZP.TOPH    // Backward offset MSB
            STA Compiler.compilerOperand2
+           LDA #OpCode.JUMPW
            Emit.OpCodeWithWord();
            
            // Final error check
@@ -598,12 +594,11 @@ unit CompilerFlow
                         
             // Emit JUMPZW with backward offset
             // Jump if condition is FALSE (i.e., UNTIL condition not met yet)
-            LDA #OpCode.JUMPZW
-            STA Compiler.compilerOpCode
             LDA ZP.TOPL  // Backward offset LSB
             STA Compiler.compilerOperand1
             LDA ZP.TOPH  // Backward offset MSB
             STA Compiler.compilerOperand2
+            LDA #OpCode.JUMPZW
             Emit.OpCodeWithWord();
             CheckErrorAndSetFailure();
             if (NC) { break; }
@@ -727,7 +722,6 @@ unit CompilerFlow
                     STA Compiler.compilerGlobalIteratorSlot // SAVE for NEXT name verification!
                     STA Compiler.compilerOperand1
                     LDA #OpCode.PUSHGLOBAL
-                    STA Compiler.compilerOpCode
                     Emit.OpCodeWithByte();
                     CheckErrorAndSetFailure();
                     if (NC) { break; }
@@ -766,7 +760,6 @@ unit CompilerFlow
                     LDA Compiler.compilerForIteratorOffset
                     STA Compiler.compilerOperand1
                     LDA #OpCode.POPLOCAL
-                    STA Compiler.compilerOpCode
                     Emit.OpCodeWithByte();
                     CheckErrorAndSetFailure();
                     if (NC) { break; }
@@ -884,7 +877,6 @@ unit CompilerFlow
            LDA Compiler.compilerForIteratorOffset
            STA Compiler.compilerOperand1
            LDA #OpCode.POPLOCAL
-           STA Compiler.compilerOpCode
            Emit.OpCodeWithByte();
            CheckErrorAndSetFailure();
            if (NC) { break; }
@@ -1040,7 +1032,6 @@ unit CompilerFlow
            {
                // No STEP specified - default to 1
                LDA #OpCode.PUSH1
-               STA Compiler.compilerOpCode
                Emit.OpCode();
                CheckErrorAndSetFailure();
                if (NC) { break; }
@@ -1362,7 +1353,6 @@ unit CompilerFlow
                LDA ZP.IDYL  // The global slot from Find()
                STA Compiler.compilerOperand1
                LDA #OpCode.POPGLOBAL
-               STA Compiler.compilerOpCode
                Emit.OpCodeWithByte();
                CheckErrorAndSetFailure();
                if (NC) { break; }

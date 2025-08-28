@@ -100,6 +100,7 @@ unit BASICSysCalls
             }
             
             // Show argument count and return type in parentheses
+            LDA #'(' COut();
             TXA
             AND #0x03  // Extract argument count
             if (NZ)

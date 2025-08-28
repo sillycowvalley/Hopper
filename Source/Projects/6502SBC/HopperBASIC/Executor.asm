@@ -508,7 +508,10 @@ unit Executor // Executor.asm
            {
                executePushLong();
            }
-           
+           case OpCode.PUSHLONG0:
+           {
+               executePushLong0();
+           }
            case OpCode.GETITEM:
            {
                executeGetItem();
@@ -3525,7 +3528,26 @@ Debug.NL(); TLOut(); Space(); YOut();
     #endif
     }
     
-    
+    const string executePushLong0Trace = "PUSHLONG0";
+    executePushLong0()
+    {
+    #ifdef TRACE
+        LDA #(executePushLong0Trace % 256) STA ZP.TraceMessageL 
+        LDA #(executePushLong0Trace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Stacks.PopTop();
+        Long.PushTopStrictLONG();
+        
+    #ifdef TRACE
+        LDA #(executePushLong0Trace % 256) STA ZP.TraceMessageL 
+        LDA #(executePushLong0Trace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
     
     const string executePushLongTrace = "PUSHLONG";
     executePushLong()
@@ -3536,22 +3558,13 @@ Debug.NL(); TLOut(); Space(); YOut();
         Trace.MethodEntry();
     #endif
         
-        loop // Single exit block
-        {
-            // Pop the LSW from stack
-            Stacks.PopTop();
-            Error.CheckError();
-            if (NC) { break; }
-            
-            FetchOperandWord();
-            LDA executorOperandL
-            STA ZP.TOP2
-            LDA executorOperandH
-            STA ZP.TOP3
-            
-            Long.PushTopStrictLONG();
-            break;
-        } // Single exit block
+        FetchOperandWord();
+        LDA executorOperandL
+        STA ZP.TOP2
+        LDA executorOperandH
+        STA ZP.TOP3
+        Stacks.PopTop();
+        Long.PushTopStrictLONG();
         
     #ifdef TRACE
         LDA #(executePushLongTrace % 256) STA ZP.TraceMessageL 

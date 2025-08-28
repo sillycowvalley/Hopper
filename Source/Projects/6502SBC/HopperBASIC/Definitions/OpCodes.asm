@@ -55,17 +55,18 @@ unit OpCodes
        PUSH0        = 0x15,  // Push INT 0 (very common literal, no operand)
        PUSH1        = 0x16,  // Push INT 1 (very common literal, no operand)
        PUSHVOID     = 0x17,  // Push VOID 0 (very common literal, no operand)
+       PUSHLONG0    = 0x18,  // like PUSHLONG only the MSW is zero (saving 2 bytes)
        
-       HALT         = 0x18,  // end of REPL opcode stream
+       HALT         = 0x19,  // end of REPL opcode stream
        
        // Function frame management
-       ENTER        = 0x19,  // Enter function frame - push BP, SP->BP
+       ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
        
-       CLEARSCREEN  = 0x1A,
-       PUSHEMPTYVAR = 0x1B,  // create a stack slot with 0 value and type VAR|INT
+       CLEARSCREEN  = 0x1B,
+       PUSHEMPTYVAR = 0x1C,  // create a stack slot with 0 value and type VAR|INT
        
-       GETITEM      = 0x1C,  // Generic indexing: container[index]
-       SETITEM      = 0x1D,  // Generic assignment: container[index] = value
+       GETITEM      = 0x1D,  // Generic indexing: container[index]
+       SETITEM      = 0x1E,  // Generic assignment: container[index] = value
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)
@@ -196,6 +197,7 @@ unit OpCodes
    const string opcodePUSHINT = "PUSHINT";
    const string opcodePUSHWORD = "PUSHWORD";
    const string opcodePUSHLONG = "PUSHLONG";
+   const string opcodePUSHLONG0 = "PUSHLONG0";
    const string opcodePUSHCSTRING = "PUSHCSTRING";
    const string opcodeCALL = "CALL";
    const string opcodeCALLF = "CALLF";
@@ -634,6 +636,13 @@ unit OpCodes
                 LDA #(opcodePUSHLONG % 256)
                 STA ZP.STRL
                 LDA #(opcodePUSHLONG / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHLONG0:
+            {
+                LDA #(opcodePUSHLONG0 % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHLONG0 / 256)
                 STA ZP.STRH
             }
             case OpCode.PUSHCSTRING:
