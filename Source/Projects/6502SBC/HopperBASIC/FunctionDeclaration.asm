@@ -54,8 +54,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA (Statement.stmtObjectPtr + 1)
             
             // Get next token after BEGIN
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             // Check if this is an incomplete BEGIN block (ends with EOL)
@@ -99,8 +98,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
         loop // Single exit block for clean error handling
         {
             // Get next token - should be function name
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             // Check that we have an identifier
@@ -172,8 +170,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STA ZP.TOPH
             
             // Get next token - should be opening parenthesis
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             LDA ZP.CurrentToken
@@ -223,8 +220,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             }
             
             // Get next token - start of function body or EOL
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             // Check if this is an incomplete function (ends with EOL)
@@ -267,8 +263,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
         loop // Single exit block
         {
             // Get next token after opening parenthesis
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             // Check for empty parameter list
@@ -313,8 +308,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 if (NC) { break; }
                 
                 // Get next token
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
                 
                 // Check what comes next
@@ -335,8 +329,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 }
                 
                 // Get next token after comma
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
                 
                 // Continue parsing parameters
@@ -392,13 +385,8 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 }
                 
                 // Get next token
-                Tokenizer.NextToken();
-                CheckError();
-                if (NC) 
-                { 
-                    CLC
-                    break; 
-                }
+                Tokenizer.NextTokenCheck();
+                if (NC) { break; }
             }
             
             if (NC) { break; } // Error during scanning
@@ -430,8 +418,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
             // Get next token after END
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             SEC // Success
@@ -485,8 +472,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 }
                 
                 // Get next token
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) 
                 { 
                     CLC
@@ -525,8 +511,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             Functions.FreeAllOpCodes(); // compiled FUNCs potentially stale now
             
             // Get next token after ENDFUNC
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             SEC // Success
@@ -557,8 +542,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             STZ ZP.TokenizerPosH
             
             // Skip FUNC token
-            Tokenizer.NextToken(); // Gets FIRST token (should be FUNC)
-            CheckError();
+            Tokenizer.NextTokenCheck(); // Gets FIRST token (should be FUNC)
             if (NC) { break; }
             
             LDA ZP.CurrentToken
@@ -566,8 +550,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (Z)
             {
                 // Get function name
-                Tokenizer.NextToken(); // Gets SECOND token (should be function name)
-                CheckError();
+                Tokenizer.NextTokenCheck(); // Gets SECOND token (should be function name)
                 if (NC) { break; }
                 
                 LDA ZP.CurrentToken
@@ -586,16 +569,14 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 // Skip to end of function signature (past closing parenthesis)
                 loop
                 {
-                    Tokenizer.NextToken();
-                    CheckError();
+                    Tokenizer.NextTokenCheck();
                     if (NC) { break; }
                     
                     LDA ZP.CurrentToken
                     CMP #Token.RPAREN
                     if (Z) 
                     { 
-                        Tokenizer.NextToken(); // Move past RPAREN to start of body
-                        CheckError();
+                        Tokenizer.NextTokenCheck(); // Move past RPAREN to start of body
                         if (NC) { break; }
                         break; 
                     }
@@ -621,8 +602,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 Messages.Main(); // point ZP.TOP -> "$MAIN"
                 
                 // Skip EOL after BEGIN if present (from multi-line capture)
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
             }
             
@@ -668,8 +648,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 LDA ZP.TokenizerPosH
                 PHA
                 
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) 
                 { 
                     PLA  // Clean up stack

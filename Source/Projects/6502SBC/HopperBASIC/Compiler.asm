@@ -307,8 +307,7 @@ unit Compiler // Compiler.asm
                RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
                
                // Get next token for right operand
-               Tokenizer.NextToken();
-               CheckError();
+               Tokenizer.NextTokenCheck();
                if (NC) { break; }
                
                // Compile right operand
@@ -350,8 +349,7 @@ unit Compiler // Compiler.asm
                 RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
                 
                 // Get next token for operand
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
                 
                 // Compile the operand (recursive call to handle multiple NOTs)
@@ -408,8 +406,7 @@ unit Compiler // Compiler.asm
                RMB0 ZP.CompilerFlags // constant expression: BIT: not an integral constant expression
                
                // Get next token for right operand
-               Tokenizer.NextToken();
-               CheckError();
+               Tokenizer.NextTokenCheck();
                if (NC) { break; }
                
                // Compile right operand
@@ -468,8 +465,7 @@ unit Compiler // Compiler.asm
                        PHA // Save operator on stack
                        
                        // Get next token for right operand
-                       Tokenizer.NextToken();
-                       CheckError();
+                       Tokenizer.NextTokenCheck();
                        if (NC) 
                        { 
                            PLA // Clean up stack
@@ -536,7 +532,7 @@ unit Compiler // Compiler.asm
                RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
                
                // Get next token for right operand
-               Tokenizer.NextToken();
+               Tokenizer.NextTokenCheck();
                CheckError();
                if (NC) { break; }
                
@@ -588,8 +584,7 @@ unit Compiler // Compiler.asm
                RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
                
                // Get next token for right operand
-               Tokenizer.NextToken();
-               CheckError();
+               Tokenizer.NextTokenCheck();
                if (NC) { break; }
                
                // Compile right operand
@@ -637,7 +632,7 @@ unit Compiler // Compiler.asm
                if (Z)
                {
                    // Get next token for right operand
-                   Tokenizer.NextToken();
+                   Tokenizer.NextTokenCheck();
                    CheckError();
                    if (NC) { break; }
                    
@@ -667,8 +662,7 @@ unit Compiler // Compiler.asm
                if (Z)
                {
                    // Get next token for right operand
-                   Tokenizer.NextToken();
-                   CheckError();
+                   Tokenizer.NextTokenCheck();
                    if (NC) { break; }
                    
                    // Compile right operand
@@ -739,8 +733,7 @@ unit Compiler // Compiler.asm
                        PHA // Save operator on stack
                        
                        // Get next token for right operand
-                       Tokenizer.NextToken();
-                       CheckError();
+                       Tokenizer.NextTokenCheck();
                        if (NC) 
                        { 
                            PLA // Clean up stack
@@ -824,8 +817,7 @@ unit Compiler // Compiler.asm
                    RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
                    
                    // Get next token for operand
-                   Tokenizer.NextToken();
-                   CheckError();
+                   Tokenizer.NextTokenCheck();
                    if (NC) { break; }
                    
                    // Compile the operand
@@ -842,8 +834,7 @@ unit Compiler // Compiler.asm
                    RMB0 ZP.CompilerFlags // constant expression: TODO: expand constant folding
                    
                    // Get next token for operand
-                   Tokenizer.NextToken();
-                   CheckError();
+                   Tokenizer.NextTokenCheck();
                    if (NC) { break; }
                    
                    // Compile the operand
@@ -873,8 +864,7 @@ unit Compiler // Compiler.asm
                         RMB0 ZP.CompilerFlags // constant expression: LBRACKET not a constant expression
                         
                         // Get next token after '['
-                        Tokenizer.NextToken();
-                        CheckError();
+                        Tokenizer.NextTokenCheck();
                         if (NC) { break; }
                         
                         // Compile index expression
@@ -897,9 +887,7 @@ unit Compiler // Compiler.asm
                         if (NC) { break; }
                         
                         // Get next token
-                        Tokenizer.NextToken();
-                        CheckError();
-                        
+                        Tokenizer.NextTokenCheck();
                         break;
                     }
                 }
@@ -930,8 +918,7 @@ unit Compiler // Compiler.asm
        loop // Single exit
        {
            // Get token after opening parenthesis
-           Tokenizer.NextToken();
-           CheckError();
+           Tokenizer.NextTokenCheck();
            if (NC) { break; }
            
            // Check for empty argument list
@@ -969,8 +956,7 @@ unit Compiler // Compiler.asm
                }
                
                // Get token after comma
-               Tokenizer.NextToken();
-               CheckError();
+               Tokenizer.NextTokenCheck();
                if (NC) { break; }
                
                // Continue with next argument
@@ -1224,7 +1210,7 @@ unit Compiler // Compiler.asm
                 
                 STZ compilerCurrentArgCount
                    
-                Tokenizer.NextToken(); // consume LPAREN
+                Tokenizer.NextTokenCheck(); // consume LPAREN
                 CheckError();
                 if (NC) 
                 { 
@@ -1247,8 +1233,7 @@ unit Compiler // Compiler.asm
                     }
                 }
                 // Get next token after LPAREN to start argument parsing
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) 
                 { 
                     Stacks.PopA(); // clean up VM stack slot
@@ -1292,8 +1277,7 @@ unit Compiler // Compiler.asm
                         }
                         
                         // Get token after comma
-                        Tokenizer.NextToken();
-                        CheckError();
+                        Tokenizer.NextTokenCheck();
                         if (NC) 
                         { 
                             Stacks.PopA(); // clean up VM stack slot
@@ -1349,8 +1333,7 @@ unit Compiler // Compiler.asm
                 if (NC) { break; }
                 
                 // Get next token after closing parenthesis
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
             }
             else
@@ -1371,8 +1354,7 @@ unit Compiler // Compiler.asm
                 }
                 
                 // Get the identifier token
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
 
                 // Compile as variable or argument
@@ -1429,8 +1411,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Get next token
-                   Tokenizer.NextToken();
-                   CheckError();
+                   Tokenizer.NextTokenCheck();
                    
                    if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                    {
@@ -1452,8 +1433,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Get next token
-                   Tokenizer.NextToken();
-                   CheckError();
+                   Tokenizer.NextTokenCheck();
                    
                    if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                    {
@@ -1566,7 +1546,7 @@ unit Compiler // Compiler.asm
                    }
 
                    // Get next token
-                   Tokenizer.NextToken();
+                   Tokenizer.NextToken(); // no
                    break;
                }
                case Token.STRINGLIT:
@@ -1585,7 +1565,7 @@ unit Compiler // Compiler.asm
                    if (NC) { break; }
                    
                    // Get next token
-                   Tokenizer.NextToken();
+                   Tokenizer.NextToken(); // no
                    break;
                }
                case Token.CHARLIT:
@@ -1612,8 +1592,7 @@ unit Compiler // Compiler.asm
                     if (NC) { break; }
                     
                     // Get next token
-                    Tokenizer.NextToken();
-                    CheckError();
+                    Tokenizer.NextTokenCheck();
                     
                     if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                     {
@@ -1640,8 +1619,7 @@ unit Compiler // Compiler.asm
                case Token.LPAREN:
                {
                    // Get next token (start of sub-expression)
-                   Tokenizer.NextToken();
-                   CheckError();
+                   Tokenizer.NextTokenCheck();
                    if (NC) { break; }
                    
                    // Parse the sub-expression
@@ -1659,7 +1637,7 @@ unit Compiler // Compiler.asm
                    }
                    
                    // Get next token
-                   Tokenizer.NextToken();
+                   Tokenizer.NextToken(); // no
                    break;
                }
                
@@ -1807,8 +1785,7 @@ unit Compiler // Compiler.asm
         loop // Single exit
         {
             // Parse opening parenthesis
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) 
             { 
                 PLA  // Clean stack before exit
@@ -1836,8 +1813,7 @@ unit Compiler // Compiler.asm
             if (Z)
             {
                 // No arguments - expect immediate closing parenthesis
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) 
                 { 
                     PLA  // Clean stack before exit
@@ -1851,8 +1827,7 @@ unit Compiler // Compiler.asm
                 loop
                 {
                     // Get next token (start of argument expression)
-                    Tokenizer.NextToken();
-                    CheckError();
+                    Tokenizer.NextTokenCheck();
                     if (NC) { break; }  // Exit argument loop on error
                     
                     // Compile the argument expression
@@ -1898,8 +1873,7 @@ unit Compiler // Compiler.asm
             }
             
             // Move past closing parenthesis
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) 
             { 
                 PLA  // Clean stack before exit
@@ -1988,8 +1962,7 @@ unit Compiler // Compiler.asm
                 case Token.EOL:
                 {
                     // Skip empty lines
-                    Tokenizer.NextToken();
-                    CheckErrorAndSetFailure();
+                    Tokenizer.NextTokenCheckSetFailure();
                     if (NC) { break; }
                     continue; // Continue main loop
                 }
@@ -2006,8 +1979,7 @@ unit Compiler // Compiler.asm
                     CMP #Token.COLON
                     if (Z)
                     {
-                        Tokenizer.NextToken();
-                        CheckErrorAndSetFailure();
+                        Tokenizer.NextTokenCheckSetFailure();
                         if (NC) { break; }
                     }
                     continue; // Continue main loop
@@ -2065,8 +2037,7 @@ unit Compiler // Compiler.asm
            STZ ZP.TokenizerPosH
            
            // Get first token of function body
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            
@@ -2212,8 +2183,7 @@ unit Compiler // Compiler.asm
                case Token.COMMENT:
                {
                    // Skip comments - advance to next token
-                   Tokenizer.NextToken();
-                   CheckErrorAndSetFailure();
+                   Tokenizer.NextTokenCheckSetFailure();
                    if (NC) { break; }
                }
                
@@ -2347,8 +2317,7 @@ unit Compiler // Compiler.asm
         loop // Single exit block
         {
             // Get next token (should be start of expression, separator, or EOL)
-            Tokenizer.NextToken();
-            CheckErrorAndSetFailure();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
             // Check for PRINT with no arguments (just newline)
@@ -2374,8 +2343,7 @@ unit Compiler // Compiler.asm
                 CheckErrorAndSetFailure();
                 if (NC) { break; }
                 
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 States.SetSuccess();
                 break;
@@ -2385,8 +2353,7 @@ unit Compiler // Compiler.asm
             if (Z)
             {
                 // PRINT; - no space, no newline
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 States.SetSuccess();
                 break;
@@ -2417,8 +2384,7 @@ unit Compiler // Compiler.asm
                     if (NC) { break; }
                     
                     // Get next token for next expression
-                    Tokenizer.NextToken();
-                    CheckErrorAndSetFailure();
+                    Tokenizer.NextTokenCheckSetFailure();
                     if (NC) { break; }
                     
                     // Check if this is a trailing comma (followed by EOL)
@@ -2440,8 +2406,7 @@ unit Compiler // Compiler.asm
                 {
                     // Semicolon separator - no space, continue with next expression
                     // Get next token for next expression
-                    Tokenizer.NextToken();
-                    CheckErrorAndSetFailure();
+                    Tokenizer.NextTokenCheckSetFailure();
                     if (NC) { break; }
                     
                     // Check if this is a trailing semicolon (followed by EOL)
@@ -2490,8 +2455,7 @@ unit Compiler // Compiler.asm
        loop
        {
            // Get next token
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            // Check if there's a return expression
@@ -2570,8 +2534,7 @@ unit Compiler // Compiler.asm
             STA ZP.NEXTT // save type
             
             // Move to identifier
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             // Verify we have an identifier
@@ -2716,8 +2679,7 @@ unit Compiler // Compiler.asm
             if (NC) { break; }
             
             // Move past identifier
-            Tokenizer.NextToken();
-            CheckError();
+            Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
             // Check for initialization
@@ -2726,8 +2688,7 @@ unit Compiler // Compiler.asm
             if (Z)
             {
                 // Move past '='
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; }
                 
                 // Compile initialization expression
@@ -2833,12 +2794,10 @@ unit Compiler // Compiler.asm
                     }
 #endif     
                     // Move past '[' and compile index expression
-                    Tokenizer.NextToken();
-                    CheckErrorAndSetFailure();
+                    Tokenizer.NextTokenCheckSetFailure();
                     if (NC) { break; }
                     
-                    Tokenizer.NextToken();
-                    CheckErrorAndSetFailure();
+                    Tokenizer.NextTokenCheckSetFailure();
                     if (NC) { break; }
                     
                     // Index value on stack
@@ -2887,8 +2846,7 @@ unit Compiler // Compiler.asm
             loop
             {
                 // Move to next token - should be '='
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 
                 
@@ -2903,8 +2861,7 @@ unit Compiler // Compiler.asm
                 }
                 
                 // Move past '=' to the expression
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 
                 // Compile the RHS expression (this WILL munt ZP.IDX and ZP.ACCL)
@@ -3185,8 +3142,7 @@ unit Compiler // Compiler.asm
         loop // Single exit block
         {
             // Get next token - should be EOL or COLON (CLS takes no arguments)
-            Tokenizer.NextToken();
-            CheckErrorAndSetFailure();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
             // Emit the CLS opcode

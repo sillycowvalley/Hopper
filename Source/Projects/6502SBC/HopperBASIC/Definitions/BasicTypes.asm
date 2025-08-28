@@ -156,9 +156,9 @@ unit BASICTypes // BASICTypes.asm
                     break;
                 }
             }
-            SEC
             break;
         } // single exit
+        CheckError();
     }
     
     // Input:   LONG: NEXT0-3, NEXT, desired type ACCT
@@ -231,9 +231,9 @@ unit BASICTypes // BASICTypes.asm
                     break;
                 }
             }
-            SEC
             break;
         } // single exit
+        CheckError();
     }
     
     // Print BasicType enum value as readable string

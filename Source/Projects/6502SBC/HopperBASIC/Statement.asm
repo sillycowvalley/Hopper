@@ -352,7 +352,7 @@ unit Statement // Statement.asm
             case Token.COMMENT:
             {
                 // Comments are no-ops - just advance to next token
-                Tokenizer.NextToken();
+                Tokenizer.NextToken(); // no
                 SEC  // Success
             }
             case Token.FUNC:
@@ -410,14 +410,14 @@ unit Statement // Statement.asm
             CMP #Token.REM
             if (Z)
             {
-                Tokenizer.NextToken(); // Skip REM and consume comment text
+                Tokenizer.NextToken(); // no, Skip REM and consume comment text
             }
             else
             {
                 CMP #Token.COMMENT  
                 if (Z)
                 {
-                    Tokenizer.NextToken(); // Skip COMMENT and consume comment text
+                    Tokenizer.NextToken(); // no, Skip COMMENT and consume comment text
                 }
             }
         }
@@ -443,7 +443,7 @@ unit Statement // Statement.asm
     #endif
         loop
         {
-            Tokenizer.NextToken(); // consume 'CONST'
+            Tokenizer.NextToken(); // no, consume 'CONST'
             if (NC) 
             {
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
@@ -551,8 +551,7 @@ unit Statement // Statement.asm
                         }
                         
                         // advance to the IDENTIFIER
-                        Tokenizer.NextToken();                      
-                        CheckError();
+                        Tokenizer.NextTokenCheck();                      
                         if (NC) { break; } // error exit
                         
                     }
@@ -570,8 +569,7 @@ unit Statement // Statement.asm
                         }
                         
                         // advance to the IDENTIFIER
-                        Tokenizer.NextToken();                      
-                        CheckError();
+                        Tokenizer.NextTokenCheck();                      
                         if (NC) { break; } // error exit
                     }
                     default:
@@ -676,8 +674,7 @@ unit Statement // Statement.asm
                     if (NC) { break; }
                 }
                 
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { break; } // error exit
                 
                 //STZ ZP.TOPT // set RHS type to 0 if there is no initializer
@@ -703,8 +700,7 @@ unit Statement // Statement.asm
                         PHA
                         
                         // Get next token (start of expression)
-                        Tokenizer.NextToken();
-                        CheckError();
+                        Tokenizer.NextTokenCheck();
                         if (C)
                         {
                             SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
@@ -785,8 +781,7 @@ unit Statement // Statement.asm
                         }
                         
                         // Move past RBRACKET
-                        Tokenizer.NextToken();
-                        CheckError();
+                        Tokenizer.NextTokenCheck();
                         if (NC) { break; }
                     }
                     case Token.EQUALS:
@@ -812,8 +807,7 @@ unit Statement // Statement.asm
                         PHA
                                                
                         // Get next token (start of expression)
-                        Tokenizer.NextToken();
-                        CheckError();
+                        Tokenizer.NextTokenCheck();
                         if (C)
                         {
                             SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)

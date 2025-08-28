@@ -878,7 +878,23 @@ unit Tokenizer // Tokenizer.asm
         // Append mode - DON'T reset position (keep pointing to function start)
         
         SEC  // Success
-    }    
+    }
+    
+    NextTokenCheck()
+    {
+        NextToken();
+        CheckError();
+    }
+    
+    NextTokenCheckSetFailure()
+    {
+        NextTokenCheck();
+        if (NC) 
+        {
+            States.SetFailure();
+        }
+    }
+    
     // Get next token from BasicTokenizerBuffer using 16-bit addressing
     // Input: ZP.TokenizerPos = current position in token buffer
     // Output: A = token type, ZP.CurrentToken = token type

@@ -4,6 +4,13 @@ unit Console // Console.asm
     uses "Statement"
     uses "Commands"
     
+    validateNextToken()
+    {
+        Tokenizer.NextToken();
+        validateEndOfCommand();
+        CheckError();
+    }
+    
     // Initialize console system
     Initialize()
     {
@@ -105,8 +112,7 @@ unit Console // Console.asm
             // Exactly one token - check if it's EOL by getting first token
             STZ ZP.TokenizerPosL
             STZ ZP.TokenizerPosH
-            Tokenizer.NextToken();
-            LDA ZP.CurrentToken
+            Tokenizer.NextToken(); // no
             CMP #Token.EOL
             if (Z)
             {
@@ -167,9 +173,8 @@ unit Console // Console.asm
         STZ ZP.TokenizerPosH
         
         // Get first token
-        Tokenizer.NextToken();
+        Tokenizer.NextToken(); // no
         
-        LDA ZP.CurrentToken
         CMP #Token.FUNC
         if (NZ)
         {
@@ -187,8 +192,7 @@ unit Console // Console.asm
                 // BEGIN case - scan for END
                 loop
                 {
-                    Tokenizer.NextToken();
-                    LDA ZP.CurrentToken
+                    Tokenizer.NextToken(); // no
                     CMP #Token.EOL
                     if (Z) 
                     { 
@@ -220,8 +224,7 @@ unit Console // Console.asm
             // FUNC case - scan for ENDFUNC
             loop
             {
-                Tokenizer.NextToken();
-                LDA ZP.CurrentToken
+                Tokenizer.NextToken(); // no
                 CMP #Token.EOL
                 if (Z) 
                 { 
@@ -320,8 +323,7 @@ unit Console // Console.asm
                 Tokenizer.CompareTokenizerPosToLength();
                 if (C) { CLC break; } // Reached end of buffer - not found
                 
-                Tokenizer.NextToken();
-                LDA ZP.CurrentToken
+                Tokenizer.NextToken(); // no
                 CMP #Token.ENDFUNC
                 if (Z) { SEC break; } // Found completion
             }
@@ -334,8 +336,7 @@ unit Console // Console.asm
                 Tokenizer.CompareTokenizerPosToLength();
                 if (C) { CLC break; } // Reached end of buffer - not found
                 
-                Tokenizer.NextToken();
-                LDA ZP.CurrentToken
+                Tokenizer.NextToken(); // no
                 CMP #Token.END
                 if (Z) { SEC break; } // Found completion
             }
@@ -392,8 +393,7 @@ unit Console // Console.asm
             if (BBS1, ZP.FLAGS) { break; } // Exit if bit 1 is set
             
             // Get current token
-            Tokenizer.NextToken();  // Returns token in A, updates ZP.CurrentToken
-            LDA ZP.CurrentToken
+            Tokenizer.NextToken();  // no, Returns token in A, updates ZP.CurrentToken
             
             // Check for end of line first
             CMP #Token.EOL
@@ -531,7 +531,7 @@ unit Console // Console.asm
                 // ========== BASIC LANGUAGE RUN ==========
                 case Token.RUN:
                 {
-                    Tokenizer.NextToken(); // consume 'RUN'
+                    Tokenizer.NextToken(); // no, consume 'RUN'
                     CmdRun();
                     SMB1 ZP.FLAGS  // Always exit after RUN
                 }
@@ -544,8 +544,7 @@ unit Console // Console.asm
                     // Skip to end of line or next colon
                     loop
                     {
-                        Tokenizer.NextToken();
-                        LDA ZP.CurrentToken
+                        Tokenizer.NextToken(); // no
                         CMP #Token.EOL
                         if (Z) { break; }
                         CMP #Token.COLON
@@ -571,8 +570,7 @@ unit Console // Console.asm
                         File.Exists(); // Input: ZP.STR, Output: C if exists
                         if (C)
                         {
-                            Tokenizer.NextToken(); // consume filename - point of no return in terms of default processing below
-                            CheckError();
+                            Tokenizer.NextTokenCheck(); // consume filename - point of no return in terms of default processing below
                             if (C)
                             {
                                 validateEndOfCommand();
@@ -598,8 +596,7 @@ unit Console // Console.asm
                         Tokenizer.Rollback();
                         
                         // Load the token at the new position
-                        Tokenizer.NextToken(); // preserves X
-                        CheckError();    // preserves X
+                        Tokenizer.NextTokenCheck(); // preserves X
                         if (NC)
                         { 
                             SMB1 ZP.FLAGS // Set exit flag on error
@@ -650,8 +647,7 @@ unit Console // Console.asm
         {
             loop // Single exit
             {
-                Tokenizer.NextToken(); // consume 'SAVE'
-                CheckError();
+                Tokenizer.NextTokenCheck(); // consume 'SAVE'
                 if (NC) { break; }
                 
                 // Expect string literal filename
@@ -663,15 +659,9 @@ unit Console // Console.asm
                     break;
                 }
                 
-                Tokenizer.GetTokenString(); // Result in ZP.TOP
-                LDA ZP.TOPL
-                STA ZP.STRL
-                LDA ZP.TOPH
-                STA ZP.STRH
+                Tokenizer.GetTokenStringSTR();
                 
-                Tokenizer.NextToken(); // consume string
-                validateEndOfCommand();
-                CheckError();
+                validateNextToken();// consume string
                 if (C) { Commands.CmdSave(); } // Uses ZP.STR
                 break;
             }
@@ -690,8 +680,7 @@ unit Console // Console.asm
         {
             loop // Single exit
             {
-                Tokenizer.NextToken(); // consume 'LOAD'
-                CheckError();
+                Tokenizer.NextTokenCheck(); // consume 'LOAD'
                 if (NC) { break; }
                 
                 // Expect string literal filename
@@ -703,15 +692,9 @@ unit Console // Console.asm
                     break;
                 }
                 
-                Tokenizer.GetTokenString(); // Result in ZP.TOP
-                LDA ZP.TOPL
-                STA ZP.STRL
-                LDA ZP.TOPH
-                STA ZP.STRH
+                Tokenizer.GetTokenStringSTR(); // Result in ZP.STR
                 
-                Tokenizer.NextToken(); // consume string
-                validateEndOfCommand();
-                CheckError();
+                validateNextToken(); // consume string
                 if (C) { Commands.CmdLoad(); } // Uses ZP.STR
                 break;
             }
@@ -728,9 +711,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'DIR'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'DIR'
             if (C) { Commands.CmdDir(); }
         }
     }
@@ -747,8 +728,7 @@ unit Console // Console.asm
         {
             loop // Single exit
             {
-                Tokenizer.NextToken(); // consume 'DEL'
-                CheckError();
+                Tokenizer.NextTokenCheck(); // consume 'DEL'
                 if (NC) { break; }
                 
                 // Expect string literal filename
@@ -760,15 +740,9 @@ unit Console // Console.asm
                     break;
                 }
                 
-                Tokenizer.GetTokenString(); // Result in ZP.TOP
-                LDA ZP.TOPL
-                STA ZP.STRL
-                LDA ZP.TOPH
-                STA ZP.STRH
+                Tokenizer.GetTokenStringSTR();
                 
-                Tokenizer.NextToken(); // consume string
-                validateEndOfCommand();
-                CheckError();
+                validateNextToken(); // consume string
                 if (C) { Commands.CmdDel(); } // Uses ZP.STR
                 break;
             }
@@ -785,9 +759,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'FORMAT'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'FORMAT'
             if (C) { Commands.CmdFormat(); }
         }
     }
@@ -803,9 +775,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'NEW'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'NEW'
             if (C) { Commands.CmdNew(); }
         }
     }
@@ -820,9 +790,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'CLEAR'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'CLEAR'
             if (C) { Commands.CmdClear(); }
         }
     }
@@ -839,8 +807,7 @@ unit Console // Console.asm
         {
             loop // Single exit
             {
-                Tokenizer.NextToken(); // consume 'FORGET'
-                CheckError();
+                Tokenizer.NextTokenCheck(); // consume 'FORGET'
                 if (NC) { break; }
                 
                 // Expect identifier name
@@ -852,15 +819,9 @@ unit Console // Console.asm
                     break;
                 }
                 
-                Tokenizer.GetTokenString(); // Result in ZP.TOP
-                LDA ZP.TOPL
-                STA ZP.STRL
-                LDA ZP.TOPH
-                STA ZP.STRH
+                Tokenizer.GetTokenStringSTR();
                 
-                Tokenizer.NextToken(); // consume identifier
-                validateEndOfCommand();
-                CheckError();
+                validateNextToken(); // consume identifier
                 if (C) { Commands.CmdForget(); } // Uses ZP.STR
                 break;
             }
@@ -877,9 +838,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'VARS'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'VARS'
             if (C) { Commands.CmdVars(); }
         }
     }
@@ -894,7 +853,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'LIST'
+            Tokenizer.NextToken(); // no, consume 'LIST'
             parseOptionalIdentifier(); // Sets ZP.STR or null
             validateEndOfCommand();
             CheckError();
@@ -912,7 +871,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'FUNCS'
+            Tokenizer.NextToken(); // no, consume 'FUNCS'
             parseOptionalIdentifier(); // Sets ZP.STR or null
             validateEndOfCommand();
             CheckError();
@@ -930,9 +889,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'MEM'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'MEM'
             if (C) { Commands.CmdMem(); }
         }
     }
@@ -940,9 +897,7 @@ unit Console // Console.asm
     // Parse and execute BYE command
     parseBye()
     {
-        Tokenizer.NextToken(); // consume 'BYE'
-        validateEndOfCommand();
-        CheckError();
+        validateNextToken(); // consume 'BYE'
         if (C) { Commands.CmdBye(); }
     }
     
@@ -957,9 +912,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'HEAP'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'HEAP'
             if (C) { Commands.CmdHeap(); }
         }
     }
@@ -974,9 +927,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'BUFFERS'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'BUFFERS'
             if (C) { Commands.CmdBuffers(); }
         }
     }
@@ -993,15 +944,14 @@ unit Console // Console.asm
         {
             loop // Single exit
             {
-                Tokenizer.NextToken(); // consume 'DUMP'
+                Tokenizer.NextToken(); // no, consume 'DUMP'
                 
                 // Check for optional page number
-                LDA ZP.CurrentToken
                 CMP #Token.NUMBER
                 if (Z)
                 {
                     Tokenizer.GetTokenNumber(); // Result in ZP.ACC
-                    Tokenizer.NextToken(); // consume number
+                    Tokenizer.NextToken(); // no, consume number
                 }
                 else
                 {
@@ -1039,9 +989,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'TRON'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'TRON'
             if (C) { Commands.CmdTron(); }
         }
     }
@@ -1056,9 +1004,7 @@ unit Console // Console.asm
         }
         else
         {
-            Tokenizer.NextToken(); // consume 'TROFF'
-            validateEndOfCommand();
-            CheckError();
+            validateNextToken(); // consume 'TROFF'
             if (C) { Commands.CmdTroff(); }
         }
     }
@@ -1078,13 +1024,9 @@ unit Console // Console.asm
         CMP #Token.IDENTIFIER
         if (Z)
         {
-            Tokenizer.GetTokenString(); // Result in ZP.TOP
-            LDA ZP.TOPL
-            STA ZP.STRL
-            LDA ZP.TOPH
-            STA ZP.STRH
+            Tokenizer.GetTokenStringSTR();
             
-            Tokenizer.NextToken(); // consume identifier
+            Tokenizer.NextToken(); // no, consume identifier
         }
         else
         {
@@ -1209,7 +1151,7 @@ unit Console // Console.asm
                 STZ ZP.TokenizerPosH
                 
                 // Execute the initialization statement
-                Tokenizer.NextToken(); // Get first token
+                Tokenizer.NextToken(); // no, Get first token
                 
                 RMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - except for ZP.GVI
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
@@ -1324,7 +1266,7 @@ unit Console // Console.asm
                 STZ ZP.TokenizerPosH
                 
                 // Execute the initialization statement
-                Tokenizer.NextToken(); // Get first token
+                Tokenizer.NextToken(); // on, Get first token
                 
                 SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes) - except for ZP.GVI
                 SMB5 ZP.FLAGS // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
@@ -1434,7 +1376,7 @@ unit Console // Console.asm
                 Tokenizer.appendToTokenBuffer();
                 
                 // Execute the function call
-                Tokenizer.NextToken();
+                Tokenizer.NextToken(); // no
                 
                 
                 SMB4 ZP.FLAGS // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)

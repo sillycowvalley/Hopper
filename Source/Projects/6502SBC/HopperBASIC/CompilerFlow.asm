@@ -145,8 +145,7 @@ unit CompilerFlow
         loop // Single exit block
         {
             // Skip IF token and compile condition expression
-            Tokenizer.NextToken();
-            CheckErrorAndSetFailure();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
             // Compile condition expression (e.g., "X > 10")
@@ -176,8 +175,7 @@ unit CompilerFlow
                 break;
             }
             
-            Tokenizer.NextToken();
-            CheckErrorAndSetFailure();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
             // Detect single-line vs multi-line form by peeking ahead
@@ -192,8 +190,7 @@ unit CompilerFlow
                     AND #0xFE  // Clear BIT0 for multi-line
                     STA Compiler.compilerIfClauses
                     
-                    Tokenizer.NextToken();  // Skip the EOL/comment
-                    CheckErrorAndSetFailure();
+                    Tokenizer.NextTokenCheckSetFailure();  // Skip the EOL/comment
                     if (NC) { break; }
                 }
                 default:
@@ -279,8 +276,7 @@ unit CompilerFlow
                 patchWordOperand();
                 
                 // Skip ELSE token
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 
                 // === COMPILE ELSE CLAUSE ===
@@ -313,8 +309,7 @@ unit CompilerFlow
                 }
                 
                 // Skip ENDIF token
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 
                 // === PATCH JUMPW (end of THEN -> after ENDIF) ===
@@ -351,8 +346,7 @@ unit CompilerFlow
                 }
                 
                 // Skip ENDIF token
-                Tokenizer.NextToken();
-                CheckErrorAndSetFailure();
+                Tokenizer.NextTokenCheckSetFailure();
                 if (NC) { break; }
                 
                 // === PATCH JUMPZW (condition false -> after ENDIF) ===
@@ -408,8 +402,7 @@ unit CompilerFlow
        loop // Single exit block
        {
            // Get and compile condition expression
-           Tokenizer.NextToken();  // Skip WHILE token
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();  // Skip WHILE token
            if (NC) { break; }
            
            // Mark loop start position for backward jump (start of condition evaluation)
@@ -462,8 +455,7 @@ unit CompilerFlow
                Error.SyntaxError(); BIT ZP.EmulatorPCL
                break;
            }
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            // === OFFSET CALCULATION PHASE ===
@@ -542,8 +534,7 @@ unit CompilerFlow
         loop // Single exit block
         {
             // Skip DO token
-            Tokenizer.NextToken();
-            CheckErrorAndSetFailure();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
             // Mark loop start position for backward jump
@@ -573,8 +564,7 @@ unit CompilerFlow
             }
             
             // Skip UNTIL token and compile condition expression
-            Tokenizer.NextToken();
-            CheckErrorAndSetFailure();
+            Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
             // Compile condition expression (e.g., "I = 10")
@@ -687,8 +677,7 @@ unit CompilerFlow
            SMB3 ZP.CompilerFlags // assume we can optimize to use FORITF until proven otherwize
            
            // Skip FOR token
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            // Expect iterator identifier
@@ -856,8 +845,7 @@ unit CompilerFlow
            STZ Compiler.compilerCanDeclareLocals // no more locals after this
            
            // Skip iterator name
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            // Expect '=' token
@@ -871,8 +859,7 @@ unit CompilerFlow
            }
            
            // Skip '=' and compile FROM expression
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            Compiler.CompileFoldedExpressionTree();  // Compile FROM expression
@@ -917,8 +904,7 @@ unit CompilerFlow
            }
            
            // Skip TO and compile TO expression
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            Compiler.CompileFoldedExpressionTree();  // Compile TO expression (leaves on stack)
@@ -992,8 +978,7 @@ unit CompilerFlow
            if (Z)
            {
                // Skip STEP and compile STEP expression
-               Tokenizer.NextToken();
-               CheckErrorAndSetFailure();
+               Tokenizer.NextTokenCheckSetFailure();
                if (NC) { break; }
                
                Compiler.CompileFoldedExpressionTree();  // Compile STEP expression (leaves on stack)
@@ -1217,8 +1202,7 @@ unit CompilerFlow
                CMP #Token.EOL
                if (NZ) { break; }
                
-               Tokenizer.NextToken();
-               CheckErrorAndSetFailure();
+               Tokenizer.NextTokenCheckSetFailure();
                if (NC) { break; }
            }
            
@@ -1251,8 +1235,7 @@ unit CompilerFlow
            }
            
            // Skip NEXT token
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            // Expect iterator identifier
@@ -1299,8 +1282,7 @@ unit CompilerFlow
            
            
            // Skip iterator name
-           Tokenizer.NextToken();
-           CheckErrorAndSetFailure();
+           Tokenizer.NextTokenCheckSetFailure();
            if (NC) { break; }
            
            // === EMIT FORIT WITH BACKWARD JUMP ===

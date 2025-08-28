@@ -430,8 +430,7 @@ unit BASICSysCalls
                             if (C) 
                             { 
                                 // Get the first token
-                                Tokenizer.NextToken();
-                                CheckError();
+                                Tokenizer.NextTokenCheck();
                                 if (C) 
                                 { 
                                     // is it a NUMBER?
@@ -519,13 +518,11 @@ unit BASICSysCalls
                    LDA # BASICType.WORD
                    STA ZP.ACCT
                    BASICTypes.CoerceNext();
-                   CheckError();
                    if (NC) { break; }
 
                    LDA # BASICType.BYTE
                    STA ZP.ACCT
                    BASICTypes.Coerce();
-                   CheckError();
                    if (NC) { break; }
                    
                    // Write byte to memory address
@@ -541,7 +538,6 @@ unit BASICSysCalls
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.CoerceNext();
-                    CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.NEXT0
@@ -555,7 +551,6 @@ unit BASICSysCalls
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.TOP0
@@ -581,7 +576,6 @@ unit BASICSysCalls
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     LDA ZP.TOP0
@@ -608,7 +602,6 @@ unit BASICSysCalls
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.CoerceNext();
-                    CheckError();
                     if (NC) { break; }
                             
                     LDA ZP.NEXT0
@@ -642,7 +635,6 @@ unit BASICSysCalls
                     LDA # BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     // Value is valid, convert to CHAR
@@ -737,7 +729,6 @@ unit BASICSysCalls
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     // Validate address (0-127)
@@ -763,7 +754,6 @@ unit BASICSysCalls
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     // Validate address (0-127)
@@ -786,7 +776,6 @@ unit BASICSysCalls
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     // Push byte and call I2C
@@ -820,7 +809,6 @@ unit BASICSysCalls
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.CoerceNext();
-                    CheckError();
                     if (NC) { break; }
                     
                     if (BBS7, ZP.NEXT0)  // Address > 127
@@ -833,7 +821,6 @@ unit BASICSysCalls
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
                     BASICTypes.Coerce();
-                    CheckError();
                     if (NC) { break; }
                     
                     // Push count (TOP0), then address (NEXT0) for RequestFrom

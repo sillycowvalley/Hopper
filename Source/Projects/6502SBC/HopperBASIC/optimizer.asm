@@ -649,8 +649,7 @@ unit Optimizer
                 
                 
                 // Get first token
-                Tokenizer.NextToken();
-                CheckError();
+                Tokenizer.NextTokenCheck();
                 if (NC) { CLC break; }
                 
                 // Check if it's a literal
@@ -669,7 +668,7 @@ unit Optimizer
                         // Get the literal value
                         Tokenizer.GetTokenNumber(); // Output: ZP.TOP = value, ZP.TOPT = type
                         // Check next token is EOL
-                        Tokenizer.NextToken(); 
+                        Tokenizer.NextToken(); // no
                         LDA ZP.CurrentToken
                         CMP #Token.EOL
                         if (Z)
@@ -690,7 +689,7 @@ unit Optimizer
                         STA ZP.TOPT
                         
                         // Check next token is EOF
-                        Tokenizer.NextToken();
+                        Tokenizer.NextToken(); // no
                         LDA ZP.CurrentToken
                         CMP #Token.EOL
                         if (Z)
@@ -710,7 +709,7 @@ unit Optimizer
                         STA ZP.TOPT
                         
                         // Check next token is EOF
-                        Tokenizer.NextToken();
+                        Tokenizer.NextToken(); // no
                         LDA ZP.CurrentToken
                         CMP #Token.EOL
                         if (Z)
