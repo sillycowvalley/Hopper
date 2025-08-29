@@ -2309,17 +2309,16 @@ unit Compiler // Compiler.asm
                default:
                {
 #ifdef DEBUG
-                   Tokens.PrintKeyword();
+                   PHA Tokens.PrintKeyword(); PLA
 #endif      
                    CMP # Token.afterConsoleCommands
-                   if (NC)
+                   if (C)
                    {
-                       Error.IllegalInFunction(); BIT ZP.EmulatorPCL // console command
+                       Error.SyntaxError(); BIT ZP.EmulatorPCL
                    }
                    else
                    {
-                       // TODO: Add more statement types as needed
-                       Error.SyntaxError(); BIT ZP.EmulatorPCL
+                       Error.IllegalInFunction(); BIT ZP.EmulatorPCL // console command    
                    }
                    States.SetFailure();
                    break;
