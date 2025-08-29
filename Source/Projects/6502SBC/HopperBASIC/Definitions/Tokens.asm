@@ -38,6 +38,8 @@ unit Tokens
         // only defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
         TRON     = 0x92,
         TROFF    = 0x93,
+        
+        afterConsoleCommands    = 0x94,
 
         REM      = 0x94,
         COMMENT  = 0x95,

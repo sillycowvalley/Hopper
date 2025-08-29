@@ -639,7 +639,7 @@ unit Tokenizer // Tokenizer.asm
                     if (NC)
                     {
                         // Invalid character
-                        Error.SyntaxError(); BIT ZP.EmulatorPCL
+                        Error.IllegalCharacter(); BIT ZP.EmulatorPCL
                         CLC  // Error
                         return;
                     }
@@ -678,7 +678,7 @@ unit Tokenizer // Tokenizer.asm
                         CPY #Limits.BasicProcessBufferSize
                         if (Z) 
                         { 
-                            Error.SyntaxError(); BIT ZP.EmulatorPCL
+                            Error.BufferOverflow(); BIT ZP.EmulatorPCL
                             CLC  // Error
                             return;
                         }

@@ -474,15 +474,14 @@ unit Compiler // Compiler.asm
                        
                        // Compile right operand
                        compileAdditive();
+                       PLA // Retrieve operator
                        CheckError();
                        if (NC) 
                        { 
-                           PLA // Clean up stack
                            break; 
                        }
                        
                        // Emit comparison opcode
-                       PLA // Retrieve operator
                        switch (A)
                        {
                            case Token.EQUALS:   { LDA # OpCode.EQ }
@@ -494,6 +493,7 @@ unit Compiler // Compiler.asm
                        }
                        Emit.OpCode();
                        CheckError();
+                       
                        if (NC) { break; }
                        
                        continue; // Check for more comparisons
@@ -656,7 +656,6 @@ unit Compiler // Compiler.asm
                    Emit.OpCode();
                    CheckError();
                    if (NC) { break; }
-                   
                    if (BBS0, ZP.CompilerFlags) // constant expression:  ADD: both sides are still constant
                    {
                        Instructions.Addition(); // Pop Pop + Push
@@ -685,7 +684,6 @@ unit Compiler // Compiler.asm
                    Emit.OpCode();
                    CheckError();
                    if (NC) { break; }
-                   
                    if (BBS0, ZP.CompilerFlags) // constant expression:  SUB: both sides are still constant
                    {
                        Instructions.Subtraction(); // Pop Pop + Push
@@ -752,14 +750,13 @@ unit Compiler // Compiler.asm
                        // Compile right operand
                        compileExponential();
                        CheckError();
+                       PLA // Retrieve operator
                        if (NC) 
                        { 
-                           PLA // Clean up stack
                            break; 
                        }
                        
                        // Emit arithmetic opcode
-                       PLA // Retrieve operator
                        switch (A)
                        {
                            case Token.MULTIPLY: { LDA # OpCode.MUL }
@@ -768,27 +765,25 @@ unit Compiler // Compiler.asm
                        }
                        Emit.OpCode();
                        CheckError();
-                       if (NC) { break; }
                        
+                       if (NC) { break; }
                        if (BBS0, ZP.CompilerFlags) // constant expression:  ADD: both sides are still constant
                        {
-
                            switch (A)
                            {
-                               case Token.MULTIPLY:
+                               case OpCode.MUL:
                                {
                                    Instructions.Multiply(); // Pop Pop + Push
                                }
-                               case Token.DIVIDE:
+                               case OpCode.DIV:
                                {
                                    Instructions.Divide(); // Pop Pop + Push
                                }
-                               case Token.MOD:
+                               case OpCode.MOD:
                                {
                                    Instructions.Modulo(); // Pop Pop + Push
                                }
                            }
-Debug.NL(); LDA ZP.LastError HOut();
                            CheckError();
                            if (NC) { break; }
                        }
@@ -2316,8 +2311,16 @@ Debug.NL(); LDA ZP.LastError HOut();
 #ifdef DEBUG
                    Tokens.PrintKeyword();
 #endif      
-                   // TODO: Add more statement types as needed
-                   Error.SyntaxError(); BIT ZP.EmulatorPCL
+                   CMP # Token.afterConsoleCommands
+                   if (NC)
+                   {
+                       Error.IllegalInFunction(); BIT ZP.EmulatorPCL // console command
+                   }
+                   else
+                   {
+                       // TODO: Add more statement types as needed
+                       Error.SyntaxError(); BIT ZP.EmulatorPCL
+                   }
                    States.SetFailure();
                    break;
                }

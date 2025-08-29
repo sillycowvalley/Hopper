@@ -7,6 +7,7 @@ unit Emit
    // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented), ZP.XPC (incremented)
    OpCode()
    {
+       PHA
        loop
        {
            STA Compiler.compilerOpCode
@@ -38,6 +39,7 @@ unit Emit
            SEC // Success
            break;
        }
+       PLA
    }
    
    // Emit opcode with one byte operand

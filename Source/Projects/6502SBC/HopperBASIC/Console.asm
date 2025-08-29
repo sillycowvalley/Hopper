@@ -635,6 +635,37 @@ unit Console // Console.asm
     // These parse arguments and call the Commands unit implementations
     // ========================================================================
     
+    checkFilename()
+    {
+        loop
+        {
+            LDA ZP.CurrentToken
+            CMP # Token.IDENTIFIER
+            if (NZ)
+            {
+                Error.IllegalFilename(); // default
+                LDA ZP.CurrentToken
+                CMP # Token.STRINGLIT
+                if (Z)
+                {
+                    Error.IdentifierExpected();
+                }
+                else
+                {
+                    CMP # Token.EOL
+                    if (Z)
+                    {
+                        Error.FilenameExpected();
+                    }
+                }
+                CLC
+                break;
+            }
+            SEC
+            break;
+        } // single exit
+    }
+    
     // Parse and execute SAVE command with string filename
     parseSave()
     {
@@ -650,14 +681,9 @@ unit Console // Console.asm
                 Tokenizer.NextTokenCheck(); // consume 'SAVE'
                 if (NC) { break; }
                 
-                // Expect string literal filename
-                LDA ZP.CurrentToken
-                CMP #Token.IDENTIFIER
-                if (NZ)
-                {
-                    Error.FilenameExpected(); BIT ZP.EmulatorPCL
-                    break;
-                }
+                // Expect string filename identifier
+                checkFilename();
+                if (NC) { BIT ZP.EmulatorPCL break; }
                 
                 Tokenizer.GetTokenStringSTR();
                 
@@ -683,14 +709,9 @@ unit Console // Console.asm
                 Tokenizer.NextTokenCheck(); // consume 'LOAD'
                 if (NC) { break; }
                 
-                // Expect string literal filename
-                LDA ZP.CurrentToken
-                CMP #Token.IDENTIFIER
-                if (NZ)
-                {
-                    Error.FilenameExpected(); BIT ZP.EmulatorPCL
-                    break;
-                }
+                // Expect string filename identifier
+                checkFilename();
+                if (NC) { BIT ZP.EmulatorPCL break; }
                 
                 Tokenizer.GetTokenStringSTR(); // Result in ZP.STR
                 
@@ -731,14 +752,9 @@ unit Console // Console.asm
                 Tokenizer.NextTokenCheck(); // consume 'DEL'
                 if (NC) { break; }
                 
-                // Expect string literal filename
-                LDA ZP.CurrentToken
-                CMP #Token.IDENTIFIER
-                if (NZ)
-                {
-                    Error.FilenameExpected(); BIT ZP.EmulatorPCL
-                    break;
-                }
+                // Expect string filename identifier
+                checkFilename();
+                if (NC) { BIT ZP.EmulatorPCL break; }
                 
                 Tokenizer.GetTokenStringSTR();
                 

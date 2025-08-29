@@ -214,6 +214,8 @@ unit Error // ErrorID.asm
         StringTooLong,
         BadIndex,
         UndefinedIdentifier,
+        IdentifierExpected,
+        IllegalInFunction,
         ConstantExpected,
         ConstantExpressionExpected,
         ExpectedThen,
@@ -248,23 +250,22 @@ unit Error // ErrorID.asm
       FileExists,
       EEPROMError,
         
-        FormatWarning,
+        NoProgram,
+        
+        FormatWarning = 0x80, // start of errorMessages1
         OverwriteWarning,
         ContinueWarning,
         YesNo,
-        NoProgram,
-        
+        Files,
+        BytesLabel,
+        BytesUsedLabel,
+        BadStep,
         ReadyPrompt,
         OKPrompt,
-        
         MemoryMessage,
         BytesMessage,
         EEPROMLabel,
         
-        Files = 0x80, // start of errorMessages1
-        BytesLabel,
-        BytesUsedLabel,
-        BadStep,
     }
     
     const byte[] errorMessages0 = {
@@ -290,6 +291,7 @@ unit Error // ErrorID.asm
         2, ErrorID.ExpectedThen,               Token.THEN, ErrorWord.EXPECTED,
         2, ErrorID.ExpectedEndif,              Token.ENDIF, ErrorWord.EXPECTED,
         2, ErrorID.IllegalIdentifier,          ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
+        3, ErrorID.IllegalInFunction,          ErrorWord.ILLEGAL, ErrorWord.IN, Token.FUNC,
         2, ErrorID.IllegalAssignment,          ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
         2, ErrorID.IllegalCharacter,           ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
         2, ErrorID.InvalidOperator,            ErrorWord.INVALID, ErrorWord.OPERATOR,
@@ -313,8 +315,22 @@ unit Error // ErrorID.asm
         2, ErrorID.FilenameExpected,           ErrorWord.FILENAME, ErrorWord.EXPECTED,
         3, ErrorID.FilenameTooLong,            ErrorWord.FILENAME, ErrorWord.TOO, Token.LONG,
         2, ErrorID.IllegalFilename,            ErrorWord.ILLEGAL,  ErrorWord.FILENAME,
+        2, ErrorID.IdentifierExpected,         ErrorWord.IDENTIFIER,   ErrorWord.EXPECTED,
+        
+        2, ErrorID.DirectoryFull,              ErrorWord.DIRECTORY, ErrorWord.FULL,
+        2, ErrorID.EEPROMFull,                 ErrorWord.EEPROM, ErrorWord.FULL,
+        3, ErrorID.NoProgram,                  ErrorWord.NO, ErrorWord.MAIN, ErrorWord.PROGRAM,
+        2, ErrorID.FileExists,                 ErrorWord.FILE, ErrorWord.EXISTS,
+        2, ErrorID.EEPROMError,                ErrorWord.EEPROM, ErrorWord.ERROR,
         
         
+        
+        
+        
+        0  // End marker
+    };
+    
+    const byte[] errorMessages1 = {
         2, ErrorID.DirectoryFull,              ErrorWord.DIRECTORY, ErrorWord.FULL,
         2, ErrorID.EEPROMFull,                 ErrorWord.EEPROM, ErrorWord.FULL,
         2, ErrorID.FileExists,                 ErrorWord.FILE, ErrorWord.EXISTS,
@@ -326,6 +342,11 @@ unit Error // ErrorID.asm
         1, ErrorID.YesNo,                      ErrorWord.YN,
         3, ErrorID.NoProgram,                  ErrorWord.NO, ErrorWord.MAIN, ErrorWord.PROGRAM,
         
+    
+        1, ErrorID.Files,                      ErrorWord.FILES,
+        1, ErrorID.BytesLabel,                 ErrorWord.BYTES,
+        2, ErrorID.BytesUsedLabel,             ErrorWord.BYTES, ErrorWord.USED,
+        2, ErrorID.BadStep,                    ErrorWord.BAD,   Token.STEP,
         1, ErrorID.ReadyPrompt,                ErrorWord.READY,
         1, ErrorID.OKPrompt,                   ErrorWord.OK,
         
@@ -333,14 +354,6 @@ unit Error // ErrorID.asm
         2, ErrorID.BytesMessage,               ErrorWord.BYTES, ErrorWord.AVAILABLE,
         1, ErrorID.EEPROMLabel,                ErrorWord.EEPROM, 
         
-        0  // End marker
-    };
-    
-    const byte[] errorMessages1 = {
-        1, ErrorID.Files,                      ErrorWord.FILES,
-        1, ErrorID.BytesLabel,                 ErrorWord.BYTES,
-        2, ErrorID.BytesUsedLabel,             ErrorWord.BYTES, ErrorWord.USED,
-        2, ErrorID.BadStep,                    ErrorWord.BAD,   Token.STEP,
         0  // End marker
     };
     
@@ -535,24 +548,35 @@ unit Error // ErrorID.asm
     // General errors
     SyntaxError() 
     { 
-        LDA #ErrorID.SyntaxError
+        LDA # ErrorID.SyntaxError
+        commonError();        
+    }
+    
+    IdentifierExpected() 
+    { 
+        LDA # ErrorID.IdentifierExpected
+        commonError();        
+    }
+    IllegalInFunction() 
+    { 
+        LDA # ErrorID.IllegalInFunction
         commonError();        
     }
     
     // File system errors
     FileNotFound() 
     { 
-        LDA #ErrorID.FileNotFound
+        LDA # ErrorID.FileNotFound
         commonError();
     }
     FilenameExpected()
     {
-        LDA #ErrorID.FilenameExpected
+        LDA # ErrorID.FilenameExpected
         commonError();
     }
     FilenameTooLong()
     {
-        LDA #ErrorID.FilenameTooLong
+        LDA # ErrorID.FilenameTooLong
         commonError();
     }
     IllegalFilename()

@@ -745,7 +745,11 @@ Space(); TLOut();
             Long.ZeroCheckTop();
             if (Z)  // Divisor is zero
             {
+#ifdef MULDIVDEBUG
+Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
+#endif
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
+                CheckError();
                 break;
             }
             
@@ -925,7 +929,7 @@ Space(); TLOut();
             break; // 32 bit exit
         } // loop
 #ifdef MULDIVDEBUG
-Debug.NL(); NLOut(); RLOut();
+PHP Debug.NL(); NLOut(); RLOut(); PLP
 #endif
     }
     NegateLongTOP()
