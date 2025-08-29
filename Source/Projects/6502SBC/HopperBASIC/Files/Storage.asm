@@ -138,7 +138,7 @@ Debug.NL();
                     {
 #ifdef DEBUG
                         Storage.dumpBuffers();
-                        TODO(); BIT ZP.EmulatorPCL CLC // what's this?
+                        TODO(); BIT ZP.EmulatorPCL CLC // what's this?, DEBUG
                         
                         loop {  }
                         break;
@@ -1133,7 +1133,7 @@ Debug.NL();
                 default:
                 {
 #ifdef DEBUG
-                    TODO(); BIT ZP.EmulatorPCL CLC // what's this?
+                    TODO(); BIT ZP.EmulatorPCL CLC // what's this?, DEBUG
                     break;
 #endif
                 }

@@ -797,7 +797,7 @@ unit Executor // Executor.asm
        TYA Debug.HOut();
        Debug.DumpBuffers();
 
-       TODO(); BIT ZP.EmulatorPCL // Unknown opcode
+       TODO(); BIT ZP.EmulatorPCL // Unknown opcode, DEBUG
        States.SetFailure();
 #endif
 

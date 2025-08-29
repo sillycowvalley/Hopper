@@ -2618,6 +2618,7 @@ unit Compiler // Compiler.asm
             {
                 case BASICType.STRING:
                 {
+                    TODO(); BIT ZP.EmulatorPCL 
                     // Find a null byte to use as empty string:
                     // The identifier we just parsed has a null terminator after it
 
@@ -2655,6 +2656,7 @@ unit Compiler // Compiler.asm
                 }
                 case BASICType.BIT:
                 {
+                    TODO(); BIT ZP.EmulatorPCL 
                     LDA #0
                     Emit.PushBit();
                 }
@@ -2667,12 +2669,14 @@ unit Compiler // Compiler.asm
                 }
                 case BASICType.CHAR:
                 {
+                    TODO(); BIT ZP.EmulatorPCL 
                     // Emit PUSHCHAR 0
                     LDA #0
                     Emit.PushChar();
                 }
                 case BASICType.LONG:
                 {
+                    TODO(); BIT ZP.EmulatorPCL 
                     // For LONG locals, push LONG 0 using TOLONG conversion
                     // Emit PUSHBYTE 0
                     LDA #0

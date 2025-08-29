@@ -1267,7 +1267,7 @@ unit Console // Console.asm
                             {
 #ifdef DEBUG
                                 // should never get here (see case above)
-                                Error.TODO(); BIT ZP.EmulatorPCL
+                                Error.TODO(); BIT ZP.EmulatorPCL // DEBUG
                                 States.SetFailure();
                                 break;
 #endif

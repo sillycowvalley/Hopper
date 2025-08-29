@@ -514,7 +514,7 @@ unit Optimizer
                 default:
                 {
 #ifdef DEBUG
-                    Error.TODO(); BIT ZP.EmulatorPCL // Peephole: unsupported NewOperands type
+                    Error.TODO(); BIT ZP.EmulatorPCL // Peephole: unsupported NewOperands type, DEBUG
 #endif
                 }
             }

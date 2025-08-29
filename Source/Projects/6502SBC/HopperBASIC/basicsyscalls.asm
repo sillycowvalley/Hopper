@@ -352,7 +352,7 @@ unit BASICSysCalls
                { 
 #ifdef DEBUG
                    // Handle 3-argument functions (future expansion)
-                   TODO(); BIT ZP.EmulatorPCL
+                   TODO(); BIT ZP.EmulatorPCL // DEBUG
                    break;
 #endif
                }
@@ -824,7 +824,7 @@ unit BASICSysCalls
                default:
                {
 #ifdef DEBUG
-                   TODO(); BIT ZP.EmulatorPCL // unknown SysCall
+                   TODO(); BIT ZP.EmulatorPCL // unknown SysCall, DEBUG
                    break;
 #endif
                }
