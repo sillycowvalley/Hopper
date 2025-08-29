@@ -220,103 +220,6 @@ unit Tokenizer // Tokenizer.asm
         if (NC) { return; }
     }
     
-    // Parse hex number from token buffer
-    // Input: ZP.IDX = pointer to "0x..." string, Y = 1 (pointing at 'x')
-    // Output: ZP.TOP = 16-bit hex value, ZP.TOPT = determined type (INT or WORD)
-    // Munts: ZP.TOP, ZP.TOPT, ZP.ACC, A, Y
-    // Error: Sets ZP.LastError if invalid hex or overflow
-    parseHexNumber()
-    {
-        INY  // Skip 'x' or 'X'
-        
-        loop
-        {
-            LDA [ZP.IDX], Y
-            if (Z) { break; }  // Null terminator
-            
-            Char.IsHex();
-            if (NC)  // Not hex digit
-            {
-                // Set syntax error and return
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
-                return;
-            }
-            
-            // Convert hex char to value (0-15)
-            LDA [ZP.IDX], Y
-            Char.IsDigit();
-            if (C)
-            {
-                SEC
-                SBC #'0'  // '0'-'9' -> 0-9
-            }
-            else
-            {
-                IsLower();
-                if (C)
-                {
-                    SEC
-                    SBC #'a'
-                    CLC
-                    ADC #10  // 'a'-'f' -> 10-15
-                }
-                else
-                {
-                    SEC
-                    SBC #'A'  
-                    CLC
-                    ADC #10  // 'A'-'F' -> 10-15
-                }
-            }
-            
-            STA ZP.ACCL  // Store hex digit value (0-15)
-            
-            // Check overflow: TOP > 0x0FFF would overflow when shifted left 4 bits
-            LDA ZP.TOPH
-            CMP #0x10
-            if (C)  // >= 0x10, would overflow
-            {
-                Error.NumericOverflow(); BIT ZP.EmulatorPCL
-                return;
-            }
-            
-            // Shift TOP left 4 bits (multiply by 16)
-            ASL ZP.TOPL
-            ROL ZP.TOPH
-            ASL ZP.TOPL
-            ROL ZP.TOPH
-            ASL ZP.TOPL
-            ROL ZP.TOPH
-            ASL ZP.TOPL
-            ROL ZP.TOPH
-            
-            // Add hex digit
-            LDA ZP.ACCL
-            CLC
-            ADC ZP.TOPL
-            STA ZP.TOPL
-            if (C)
-            {
-                INC ZP.TOPH
-            }
-            INY
-        }
-        
-        // Set type based on value (same as decimal)
-        BIT ZP.TOPH
-        if (MI)
-        {
-            LDA #BASICType.WORD   // 32768-65535
-        }
-        else
-        {
-            LDA #BASICType.INT    // 0-32767
-        }
-        STA ZP.TOPT
-    }
-    
-    
-    
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length, mode in A
     // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferContentSize = total length
@@ -998,126 +901,67 @@ unit Tokenizer // Tokenizer.asm
         // Return it in A
     }    
     
-    
     // Get current token as number (assumes current token is NUMBER)
     // Input: ZP.TokenLiteralPos = position of number string in token buffer
-    // Output: ZP.TOP = number value, ZP.TOPT = determined type (BYTE/INT/WORD/LONG)
-    //         For LONG: ZP.TOP0-3 contains full 32-bit value
-    //         For others: ZP.TOP0-1 contains 16-bit value, ZP.TOP2-3 cleared
-    // Munts: ZP.TOP0-3, ZP.TOPT, ZP.IDX, ZP.NEXT0-3, ZP.RESULT0-7, A, Y
-    // Error: Sets ZP.LastError if number is invalid or overflows 32-bit
+    // Output: ZP.TOP = number value, ZP.TOPT = determined type
+    // Munts: ZP.TOP0-3, ZP.TOPT, ZP.STR, ZP.NEXT0-3, ZP.RESULT0-7, A, Y
     GetTokenNumber()
     {
-        // Initialize to zero
-        Long.ZeroTop();
-        LDA # BASICType.LONG
-        STA ZP.TOPT
-        
-        // Set up 16-bit pointer to saved literal position in token buffer
+        // Set up pointer to number string
         LDA ZP.TokenBufferL
         CLC
         ADC ZP.TokenLiteralPosL
-        STA ZP.IDXL
+        STA ZP.STRL
         LDA ZP.TokenBufferH
         ADC ZP.TokenLiteralPosH
-        STA ZP.IDXH
-
-#ifdef MULDIVDEBUG
-LDA ZP.IDXL
-STA ZP.STRL        
-LDA ZP.IDXH
-STA ZP.STRH
-Debug.NL(); Print.String();
-#endif
-                
-        LDY #0  // Index into the number string
+        STA ZP.STRH
         
-        // Check for hex format (0x prefix)
-        LDA [ZP.IDX], Y
+#ifdef MULDIVDEBUG
+Debug.NL(); LDA #'"' COut(); Print.String(); LDA #'"' COut(); 
+#endif
+        
+        LDY #0
+        
+        // Check for hex format
+        LDA [ZP.STR], Y
         CMP #'0'
         if (Z)
         {
             INY
-            LDA [ZP.IDX], Y
-            CMP #'x'
-            if (Z) { parseHexNumber(); return; }
+            LDA [ZP.STR], Y
+            AND #0xDF  // Convert to uppercase
             CMP #'X'
-            if (Z) { parseHexNumber(); return; }
-            DEY  // Back up
-        }
-        
-        loop
-        {
-            LDA [ZP.IDX], Y
-            if (Z) { break; }  // Hit null terminator
-            
-            // Check if character is a digit
-            LDA [ZP.IDX], Y
-            Char.IsDigit();
-            if (NC) { break; }  // Not a digit
-            
-            // Convert ASCII to digit value (0-9)
-            LDA [ZP.IDX], Y
-            SEC
-            SBC #'0'
-            PHA  // Save digit
-            
-            // Multiply current value by 10
-            Long.MultiplyBy10(); // TOP = TOP * 10 (munts RESULT and NEXT)
-            if (NC)  // 32-bit overflow
+            if (Z)
             {
-                PLA  // Clean up stack
-                Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                INY  // Skip 'x'
+                Long.FromHex();
+                if (NC)
+                {
+                    Error.NumericOverflow(); 
+                    BIT ZP.EmulatorPCL
+                    return;
+                }
+                Long.DetermineType();
                 return;
             }
-            
-            // Add the digit
-            PLA  // Restore digit (0-9)
-            Long.AddDigit(); // uses TOP
-            if (NC)  // 32-bit overflow or invalid digit
-            {
-                Error.NumericOverflow(); BIT ZP.EmulatorPCL
-                return;
-            }
-            INY
+            DEY  // Back up, not hex
         }
         
-        LDA ZP.TOP3
-        ORA ZP.TOP2
-        if (NZ)
+        // Parse decimal
+        Long.FromDecimal();
+        if (NC)
         {
-            // Value requires LONG (65536-4294967295)
-            LDA #BASICType.LONG
-            STA ZP.TOPT
+            Error.NumericOverflow();
+            BIT ZP.EmulatorPCL
+            return;
         }
-        else
-        {
-            LDA ZP.TOP1
-            if (NZ)
-            {
-                // Value > 255
-                BIT ZP.TOP1          // Check high bit
-                if (MI)
-                {
-                    LDA #BASICType.WORD   // Large positive (32768-65535)
-                    STA ZP.TOPT
-                }
-                else
-                {
-                    LDA #BASICType.INT    // Medium positive (256-32767)
-                    STA ZP.TOPT       
-                }
-            }
-            else
-            {
-                LDA #BASICType.BYTE   // Values 0-255 are BYTE
-                STA ZP.TOPT
-            }
-        }
+        
+        Long.DetermineType();
         
 #ifdef MULDIVDEBUG
-Debug.NL(); TLOut();
+Debug.NL(); LDA #'-' COut(); LDA #'>' COut(); TLOut();
 #endif
+
         
     }
     

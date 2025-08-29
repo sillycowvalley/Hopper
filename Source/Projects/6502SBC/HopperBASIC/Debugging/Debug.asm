@@ -141,6 +141,20 @@ unit Debug // Debug.asm
         }
         PLY
     }
+    // Print string from STR2
+    printString2()
+    {
+        PHY
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR2], Y
+            if (Z) { break; }
+            Serial.WriteChar();
+            INY
+        }
+        PLY
+    }
     
     // Print null-terminated string from IDX
     printStringIDX()
@@ -202,10 +216,10 @@ unit Debug // Debug.asm
     tpOut()  // Output TokenBuffer register
     {
         LDA #(regTP % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regTP / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.TokenBufferH
         hOut();
         LDA ZP.TokenBufferL
@@ -216,10 +230,10 @@ unit Debug // Debug.asm
     opOut()  // Output OpCodeBuffer register
     {
         LDA #(regOP % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regOP / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.OpCodeBufferH
         hOut();
         LDA ZP.OpCodeBufferL
@@ -230,10 +244,10 @@ unit Debug // Debug.asm
     xOut()  // Output IDX register
     {
         LDA #(regIDX % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regIDX / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.IDXH
         hOut();
         LDA ZP.IDXL
@@ -243,10 +257,10 @@ unit Debug // Debug.asm
     xiOut()  // Output XID register
     {
         LDA #(regXID % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regXID / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.XIDH
         hOut();
         LDA ZP.XIDL
@@ -257,10 +271,10 @@ unit Debug // Debug.asm
     yOut()  // Output IDY register
     {
         LDA #(regIDY % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regIDY / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.IDYH
         hOut();
         LDA ZP.IDYL
@@ -271,10 +285,10 @@ unit Debug // Debug.asm
     aOut()  // Output ACC register
     {
         LDA #(regACC % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regACC / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.ACCT
         BASICTypes.PrintType();
         LDA #':'
@@ -289,10 +303,10 @@ unit Debug // Debug.asm
     atOut()  // Output ACCT register
     {
         LDA #(regACCT % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regACCT / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.ACCT
         hOut();
         space();
@@ -301,10 +315,10 @@ unit Debug // Debug.asm
     nOut()  // Output NEXT register with type
     {
         LDA #(regNXT % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regNXT / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.NEXTT
         BASICTypes.PrintType();
         LDA #':'
@@ -319,10 +333,10 @@ unit Debug // Debug.asm
     tOut()  // Output TOP register with type
     {
         LDA #(regTOP % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regTOP / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.TOPT
         BASICTypes.PrintType();
         LDA #':'
@@ -337,10 +351,10 @@ unit Debug // Debug.asm
     nlOut()  // Output NEXT register with type
     {
         LDA #(regNXT % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regNXT / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.NEXTT
         BASICTypes.PrintType();
         LDA #':'
@@ -358,10 +372,10 @@ unit Debug // Debug.asm
     rlOut()  // Output RESULT register
     {
         LDA #(regRES % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regRES / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.RESULT3
         hOut();
         LDA ZP.RESULT2
@@ -376,10 +390,10 @@ unit Debug // Debug.asm
     tlOut()  // Output TOP register with type
     {
         LDA #(regTOP % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regTOP / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.TOPT
         BASICTypes.PrintType();
         LDA #':'
@@ -398,10 +412,10 @@ unit Debug // Debug.asm
     pcOut()  // Output PC register
     {
         LDA #(regPC % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regPC / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.PCH
         hOut();
         LDA ZP.PCL
@@ -412,10 +426,10 @@ unit Debug // Debug.asm
     bpOut()  // Output BP register
     {
         LDA #(regBP % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regBP / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.BP
         hOut();
         space();
@@ -424,10 +438,10 @@ unit Debug // Debug.asm
     spOut()  // Output SP register
     {
         LDA #(regSP % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regSP / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         LDA ZP.SP
         hOut();
         space();
@@ -439,10 +453,10 @@ unit Debug // Debug.asm
         STA ZP.DB15  // Save value to print
         
         LDA #(regACCL % 256)
-        STA ZP.STR
+        STA ZP.STR2
         LDA #(regACCL / 256)
-        STA ZP.STRH
-        printString();
+        STA ZP.STR2H
+        printString2();
         
         LDA ZP.DB15
         hOut();
@@ -458,10 +472,10 @@ unit Debug // Debug.asm
         else
         {
             LDA #(statusNC % 256)
-            STA ZP.STR
+            STA ZP.STR2
             LDA #(statusNC / 256)
-            STA ZP.STRH
-            printString();
+            STA ZP.STR2H
+            printString2();
         }
     }
     
@@ -474,10 +488,10 @@ unit Debug // Debug.asm
         else
         {
             LDA #(statusNZ % 256)
-            STA ZP.STR
+            STA ZP.STR2
             LDA #(statusNZ / 256)
-            STA ZP.STRH
-            printString();
+            STA ZP.STR2H
+            printString2();
         }
     }
     

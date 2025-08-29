@@ -1057,7 +1057,7 @@ Debug.NL(); TLOut(); LDA #'x' COut(); Space(); NLOut();
                     { 
                         commonSwapNEXTTOP(); 
 #ifdef MULDIVDEBUG
-LDA #'(' COut(); LDA #'1' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space();
+PHA LDA #'(' COut(); LDA #'1' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space(); PLA
 #endif
                     }
                     case 10:
@@ -1082,7 +1082,7 @@ LDA #'(' COut(); LDA #'1' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' CO
                                 {
                                     commonSwapNEXTTOP();
 #ifdef MULDIVDEBUG 
-LDA #'(' COut(); LDA #'2' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space();
+PHA LDA #'(' COut(); LDA #'2' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space(); PLA
 #endif
                                 }
                             }
@@ -1091,7 +1091,7 @@ LDA #'(' COut(); LDA #'2' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' CO
                         {
                             commonSwapNEXTTOP(); 
 #ifdef MULDIVDEBUG
-LDA #'(' COut(); LDA #'3' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space();
+PHA LDA #'(' COut(); LDA #'3' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space(); PLA
 #endif
                         }
                     }
@@ -1240,36 +1240,6 @@ RLOut();
 #endif
     }
     
-    // Multiply 32-bit value by 10 in place
-    // Input: ZP.TOP0-3 = 32-bit value to multiply
-    // Output: ZP.TOP0-3 = input * 10, C set on success, NC on 32-bit overflow
-    // Error: Returns NC if result > 0xFFFFFFFF
-    MultiplyBy10()
-    {
-        // ZP.RESULT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
-        LDA #10
-        STA ZP.NEXT0
-        ZeroNext3();
-        LDA # BASICType.LONG
-        STA ZP.NEXTT
-        
-        utilityLongMUL();
-        moveResultToTop(); // RESULT0-3 -> TOP0-3
-        
-        LDA ZP.RESULT4
-        ORA ZP.RESULT5  // Check if any high bytes 
-        ORA ZP.RESULT6  // are non-zero
-        ORA ZP.RESULT7
-        if (NZ)
-        {
-            CLC
-        }
-        else
-        {
-            SEC
-        }
-    }
-    
     // Add single digit (0-9) to 32-bit value
     // Input: ZP.TOP0-3 = 32-bit value, A = digit (0-9)
     // Output: ZP.TOP0-3 = input + digit, C set on success, NC on 32-bit overflow  
@@ -1304,4 +1274,174 @@ RLOut();
             SEC // Return C for success
         }
     }
+    
+    // Parse decimal string to 32-bit value
+    // Input: ZP.STR = pointer to decimal string, Y = starting offset
+    // Output: ZP.TOP0-3 = parsed value, Y = position after last digit
+    //         C set on success, NC on overflow
+    // Munts: ZP.TOP0-3, ZP.NEXT0-3, ZP.RESULT0-7, A, Y
+    FromDecimal()
+    {
+        Long.ZeroTop();
+#ifdef DEBUG
+        // just to make the debug output prettier:
+        LDA #BASICType.LONG
+        STA ZP.TOPT
+        STA ZP.NEXTT
+#endif
+        loop
+        {
+            LDA [ZP.STR], Y
+            
+//PHA TYA HOut(); LDA #'\'' COut(); PLA PHA COut(); LDA #'\'' COut(); LDA ZP.STRH HOut();LDA ZP.STRL HOut(); PLA
+            
+            if (Z) { break; }  // Null terminator
+            
+            Char.IsDigit();
+            if (NC) { break; }  // Not a digit
+            
+            // Convert ASCII to digit
+            LDA [ZP.STR], Y
+            SEC
+            SBC #'0'
+            PHA  // Save digit
+            
+            // Multiply TOP by 10
+            LDA #10
+            STA ZP.NEXT0
+            ZeroNext3();
+            
+            PHY
+            utilityLongMUL();  // RESULT = NEXT * TOP, munts Y
+            PLY
+            
+            // Check for overflow
+            LDA ZP.RESULT4
+            ORA ZP.RESULT5
+            ORA ZP.RESULT6
+            ORA ZP.RESULT7
+            if (NZ)  // Overflow
+            {
+                PLA  // Clean up stack
+                CLC
+                return;
+            }
+            
+            // Move result back to TOP
+            moveResultToTop(); // preserves Y
+            
+            // Add the digit
+            PLA
+            Long.AddDigit(); // preserves Y
+            if (NC)  // Overflow
+            {
+                CLC
+                return;
+            }
+            INY
+        } // loop
+        SEC  // Success
+    }
+
+    // Parse hex string to 32-bit value  
+    // Input: ZP.STR = pointer to hex string (after "0x"), Y = starting offset
+    // Output: ZP.TOP0-3 = parsed value, Y = position after last hex digit
+    //         C set on success, NC on error
+    // Munts: ZP.TOP0-3, A, Y
+    FromHex()
+    {
+        Long.ZeroTop();
+        
+        loop
+        {
+            LDA [ZP.STR], Y
+            if (Z) { break; }  // Null terminator
+            
+            Char.IsHex();
+            if (NC) { break; }  // Not hex digit
+            
+            // Shift TOP left 4 bits (multiply by 16)
+            LDX #4
+            loop
+            {
+                ASL ZP.TOP0
+                ROL ZP.TOP1
+                ROL ZP.TOP2
+                ROL ZP.TOP3
+                if (C)  // Overflow
+                {
+                    CLC
+                    return;
+                }
+                DEX
+                if (Z) { break; }
+            }
+            
+            // Convert hex char to value
+            LDA [ZP.STR], Y
+            Char.IsDigit();
+            if (C)
+            {
+                SEC
+                SBC #'0'
+            }
+            else
+            {
+                Char.IsLower();
+                if (C)
+                {
+                    SEC
+                    SBC #('a' - 10)
+                }
+                else
+                {
+                    SEC
+                    SBC #('A' - 10)
+                }
+            }
+            
+            // Add to TOP
+            ORA ZP.TOP0
+            STA ZP.TOP0
+            
+            INY
+        }
+        SEC  // Success
+    }
+    
+    // Determine minimum type needed for value in TOP
+    // Input: ZP.TOP0-3 = 32-bit value
+    // Output: ZP.TOPT = BASICType (BYTE/INT/WORD/LONG)
+    // Munts: A
+    DetermineType()
+    {
+        LDA ZP.TOP3
+        ORA ZP.TOP2
+        if (NZ)
+        {
+            LDA #BASICType.LONG
+            STA ZP.TOPT
+            return;
+        }
+        
+        LDA ZP.TOP1
+        if (NZ)
+        {
+            BIT ZP.TOP1
+            if (MI)
+            {
+                LDA #BASICType.WORD  // 32768-65535
+            }
+            else
+            {
+                LDA #BASICType.INT   // 256-32767
+            }
+            STA ZP.TOPT
+            return;
+        }
+        
+        LDA #BASICType.BYTE  // 0-255
+        STA ZP.TOPT
+    }
+    
 }
