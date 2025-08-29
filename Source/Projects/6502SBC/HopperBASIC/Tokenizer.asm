@@ -1010,6 +1010,8 @@ unit Tokenizer // Tokenizer.asm
     {
         // Initialize to zero
         Long.ZeroTop();
+        LDA # BASICType.LONG
+        STA ZP.TOPT
         
         // Set up 16-bit pointer to saved literal position in token buffer
         LDA ZP.TokenBufferL
@@ -1019,12 +1021,14 @@ unit Tokenizer // Tokenizer.asm
         LDA ZP.TokenBufferH
         ADC ZP.TokenLiteralPosH
         STA ZP.IDXH
-        
-//LDA ZP.IDXL
-//STA ZP.STRL        
-//LDA ZP.IDXH
-//STA ZP.STRH
-//Debug.NL(); Print.String();
+
+#ifdef MULDIVDEBUG
+LDA ZP.IDXL
+STA ZP.STRL        
+LDA ZP.IDXH
+STA ZP.STRH
+Debug.NL(); Print.String();
+#endif
                 
         LDY #0  // Index into the number string
         
@@ -1059,7 +1063,7 @@ unit Tokenizer // Tokenizer.asm
             PHA  // Save digit
             
             // Multiply current value by 10
-            Long.MultiplyBy10();
+            Long.MultiplyBy10(); // TOP = TOP * 10 (munts RESULT and NEXT)
             if (NC)  // 32-bit overflow
             {
                 PLA  // Clean up stack
@@ -1069,7 +1073,7 @@ unit Tokenizer // Tokenizer.asm
             
             // Add the digit
             PLA  // Restore digit (0-9)
-            Long.AddDigit();
+            Long.AddDigit(); // uses TOP
             if (NC)  // 32-bit overflow or invalid digit
             {
                 Error.NumericOverflow(); BIT ZP.EmulatorPCL
@@ -1110,7 +1114,12 @@ unit Tokenizer // Tokenizer.asm
                 STA ZP.TOPT
             }
         }
-    }    
+        
+#ifdef MULDIVDEBUG
+Debug.NL(); TLOut();
+#endif
+        
+    }
     
     // Skip past null-terminated string at current tokenizer position
     // Input: ZP.TokenizerPos = current position in token buffer

@@ -45,7 +45,17 @@ unit Long
         STZ ZP.TOP2
         STZ ZP.TOP3
     }
-    
+    ZeroNext()
+    {
+        STZ ZP.NEXT0
+        ZeroNext3();
+    }
+    ZeroNext3()
+    {
+        STZ ZP.NEXT1
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
+    }
     ZeroCheckTop()
     {
         LDA ZP.TOP0
@@ -54,6 +64,78 @@ unit Long
         ORA ZP.TOP3
     }
     
+    zeroResult()
+    {
+        STZ ZP.RESULT0
+        STZ ZP.RESULT1
+        STZ ZP.RESULT2
+        STZ ZP.RESULT3
+    }
+    zeroResult8()
+    {
+        zeroResult();
+        STZ ZP.RESULT4
+        STZ ZP.RESULT5
+        STZ ZP.RESULT6
+        STZ ZP.RESULT7
+    }    
+    
+    moveNextToResult()
+    {
+        LDA ZP.NEXT0
+        STA ZP.RESULT0
+        LDA ZP.NEXT1
+        STA ZP.RESULT1
+        LDA ZP.NEXT2
+        STA ZP.RESULT2
+        LDA ZP.NEXT3
+        STA ZP.RESULT3
+    }
+    moveResultToTop()
+    {
+        LDA ZP.RESULT0
+        STA ZP.TOP0
+        LDA ZP.RESULT1
+        STA ZP.TOP1
+        LDA ZP.RESULT2
+        STA ZP.TOP2
+        LDA ZP.RESULT3
+        STA ZP.TOP3
+    }
+    moveResultToNext()
+    {
+        LDA ZP.RESULT0
+        STA ZP.NEXT0
+        LDA ZP.RESULT1
+        STA ZP.NEXT1
+        LDA ZP.RESULT2
+        STA ZP.NEXT2
+        LDA ZP.RESULT3
+        STA ZP.NEXT3
+    }
+    commonSwapNEXTTOP()
+    {
+        LDY ZP.TOP0
+        LDA ZP.NEXT0
+        STA ZP.TOP0
+        STY ZP.NEXT0
+        
+        LDY ZP.TOP1
+        LDA ZP.NEXT1
+        STA ZP.TOP1
+        STY ZP.NEXT1
+        
+        LDY ZP.TOP2
+        LDA ZP.NEXT2
+        STA ZP.TOP2
+        STY ZP.NEXT2
+        
+        LDY ZP.TOP3
+        LDA ZP.NEXT3
+        STA ZP.TOP3
+        STY ZP.NEXT3
+    }
+        
 #ifndef #DEBUG
     PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
     {
@@ -309,14 +391,7 @@ unit Long
         LDX #1 // Mod
         DivMod(); // RESULT = NEXT % TOP
         // RESULT0-3 -> NEXT0-3
-        LDA ZP.RESULT0
-        STA ZP.NEXT0
-        LDA ZP.RESULT1
-        STA ZP.NEXT1
-        LDA ZP.RESULT2
-        STA ZP.NEXT2
-        LDA ZP.RESULT3
-        STA ZP.NEXT3
+        moveResultToNext();
         
         PLA // take the sign from the divisor (NEXT)
         if (MI)
@@ -346,16 +421,8 @@ unit Long
         // http://www.6502.org/source/integers/32muldiv.htm
     
         utilityLongMUL();
-        // RESULT0-3 -> NEXT0-3
-        LDA ZP.RESULT0
-        STA ZP.NEXT0
-        LDA ZP.RESULT1
-        STA ZP.NEXT1
-        LDA ZP.RESULT2
-        STA ZP.NEXT2
-        LDA ZP.RESULT3
-        STA ZP.NEXT3
-    
+        moveResultToNext(); // RESULT0-3 -> NEXT0-3
+        
         LDA ZP.FSIGN // load the sign count
         CMP # 1
         if (Z)
@@ -451,29 +518,6 @@ unit Long
             INX
         }
     }
-    commonSwapNEXTTOP()
-    {
-        LDA ZP.TOP0
-        TAY
-        LDA ZP.NEXT0
-        STA ZP.TOP0
-        STY ZP.NEXT0
-        LDA ZP.TOP1
-        TAY
-        LDA ZP.NEXT1
-        STA ZP.TOP1
-        STY ZP.NEXT1
-        LDA ZP.TOP2
-        TAY
-        LDA ZP.NEXT2
-        STA ZP.TOP2
-        STY ZP.NEXT2
-        LDA ZP.TOP3
-        TAY
-        LDA ZP.NEXT3
-        STA ZP.TOP3
-        STY ZP.NEXT3
-    }
     LT()
     {
         commonLT();
@@ -544,7 +588,7 @@ unit Long
         }
     }
     
-    shiftNEXTright()  // 9 bytesincluding RTS
+    shiftNEXTright()  // 9 bytesincluding RTS
     {
         LSR ZP.NEXT3
         ROR ZP.NEXT2
@@ -634,13 +678,23 @@ unit Long
         // #### https://llx.com/Neil/a2/mult.html ####
         // http://www.6502.org/source/integers/32muldiv.htm
         
-        // TODO : optimize for TOP = 1, 2, 4, 8, 16
-        
         // Initialize remainder to 0
-        STZ RESULT0
-        STZ RESULT1
-        STZ RESULT2
-        STZ RESULT3 // x4
+        zeroResult();
+        
+#ifdef MULDIVDEBUG
+Debug.NL(); NLOut();
+CPX #0
+if (Z)
+{
+    LDA #'/'
+}
+else
+{
+    LDA #'%'
+}
+COut(); 
+Space(); TLOut();
+#endif
 
         loop
         {
@@ -652,76 +706,108 @@ unit Long
                 break;
             }
             
-            // only do 16 bit optimizations in Div (X = 0) mode, not Mod (X = 1) mode
+            // only do optimizations in Div (X = 0) mode, not Mod (X = 1) mode since we don't calculate remainder
             CPX #0
             if (Z)
             {
-                // Check if both operands fit in 16 bits
-                LDA NEXT3
-                ORA TOP3
-                ORA NEXT2  
-                ORA TOP2
-                if (Z)  // All high bytes are zero - use 16-bit division
+                LDA ZP.TOP2
+                ORA ZP.TOP3
+                if (Z) // 16 bit denominator
                 {
-                    // Clear upper bytes and initialize remainder
-                    STZ NEXT2
-                    STZ NEXT3
-                    
                     LDA ZP.TOP1
                     if (Z)
                     {
+                        // denominator 0..255
                         LDA ZP.TOP0
-                        CMP # 10
+                        CMP #1
                         if (Z)
                         {
-                            utility16BitDiv10(); //  / 10
-                            break; // 16 bit exit
-                        }
-                        CMP # 50
-                        if (Z)
-                        {
-                            utility16BitDiv10(); //  / 10
-                            ASL ZP.NEXT0         //  * 2
-                            ROL ZP.NEXT1
-                            utility16BitDiv10(); //  / 10
-                            break; // 16 bit exit
-                        }
-                        CMP # 100
-                        if (Z)
-                        {
-                            utility16BitDiv10(); //  / 10
-                            utility16BitDiv10(); //  / 10
-                            break; // 16 bit exit
+#ifdef MULDIVDEBUG
+    LDA #'a' COut();
+#endif
+                            // / 1 -> NEXT is already the answer
+                            break; // exit
                         }
                     }
                     
-                    LDX #16       // 16 iterations instead of 32
-                    loop
+                    // Check if both numerator and denominator fit in 16 bits
+                    LDA ZP.NEXT2
+                    ORA ZP.NEXT3  
+                    if (Z)  // All high bytes are zero - use 16-bit division
                     {
-                        ASL NEXT0    // shift hi bit of dividend into remainder
-                        ROL NEXT1    
-                        ROL RESULT0
-                        ROL RESULT1
+                        // Clear upper bytes and initialize remainder
+                        STZ ZP.NEXT2
+                        STZ ZP.NEXT3
                         
-                        SEC           // trial subtraction
-                        LDA RESULT0
-                        SBC TOP0
-                        TAY          // temp storage
-                        LDA RESULT1
-                        SBC TOP1
-                        if (C)        // did subtraction succeed?
+                        LDA ZP.TOP1
+                        if (Z)
                         {
-                            STA RESULT1  // if yes, save it
-                            STY RESULT0
-                            INC NEXT0    // and record a 1 in the quotient
+                            LDA ZP.TOP0
+                            CMP # 10
+                            if (Z)
+                            {
+                                utility16BitDiv10(); //  / 10
+#ifdef MULDIVDEBUG
+    LDA #'b' COut();
+#endif
+                                break; // 16 bit exit
+                            }
+                            CMP # 50
+                            if (Z)
+                            {
+                                utility16BitDiv10(); //  / 10
+                                ASL ZP.NEXT0         //  * 2
+                                ROL ZP.NEXT1
+                                utility16BitDiv10(); //  / 10
+#ifdef MULDIVDEBUG
+    LDA #'c' COut();
+#endif
+                                break; // 16 bit exit
+                            }
+                            CMP # 100
+                            if (Z)
+                            {
+                                utility16BitDiv10(); //  / 10
+                                utility16BitDiv10(); //  / 10
+#ifdef MULDIVDEBUG
+    LDA #'d' COut();
+#endif
+
+                                break; // 16 bit exit
+                            }
                         }
-                        DEX
-                        if (Z) { break; }
-                    }
-                
-                    break; // 16 bit exit
-                }
-            }
+                        
+                        LDX #16       // 16 iterations instead of 32
+                        loop
+                        {
+                            ASL NEXT0    // shift hi bit of dividend into remainder
+                            ROL NEXT1    
+                            ROL RESULT0
+                            ROL RESULT1
+                            
+                            SEC           // trial subtraction
+                            LDA RESULT0
+                            SBC TOP0
+                            TAY          // temp storage
+                            LDA RESULT1
+                            SBC TOP1
+                            if (C)        // did subtraction succeed?
+                            {
+                                STA RESULT1  // if yes, save it
+                                STY RESULT0
+                                INC NEXT0    // and record a 1 in the quotient
+                            }
+                            DEX
+                            if (Z) { break; }
+                        }
+#ifdef MULDIVDEBUG
+    LDA #'e' COut();
+#endif
+                        break; // 16 bit exit
+                    } // 16 bit numerator and denominator
+                } // 16 bit denominator
+            } // optimizations (bypassed for Mod)
+            
             LDX #32       // there are 16 bits in N
             loop
             {
@@ -762,8 +848,14 @@ unit Long
                 DEX
                 if (Z) { break; }
             } // loop
+#ifdef MULDIVDEBUG
+    LDA #'f' COut();
+#endif
             break; // 32 bit exit
         } // loop
+#ifdef MULDIVDEBUG
+Debug.NL(); NLOut(); RLOut();
+#endif
     }
     NegateLongTOP()
     {
@@ -934,79 +1026,178 @@ unit Long
     // APIs for Tokenizer.GetTokenNumber() 
     utilityLongMUL()
     {
-        // ZP.NEXT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
+        // ZP.RESULT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
         
         // https://llx.com/Neil/a2/mult.html
         // http://www.6502.org/source/integers/32muldiv.htm
         
-        // TODO : optimize for 0, 1, 2, 4, 8, 16
-        STZ ZP.RESULT0
-        STZ ZP.RESULT1
-        STZ ZP.RESULT2
-        STZ ZP.RESULT3
+        zeroResult8();
         
-        STZ ZP.RESULT4   // Clear upper half of
-        STZ ZP.RESULT5   // product
-        STZ ZP.RESULT6
-        STZ ZP.RESULT7
         loop
         {
-            // Check if both operands fit in 16 bits
-            LDA ZP.NEXT3
-            ORA ZP.TOP3
-            ORA ZP.NEXT2  
-            ORA ZP.TOP2
-            if (Z)  // All high bytes are zero - use 16-bit multiply
+#ifdef MULDIVDEBUG
+Debug.NL(); TLOut(); LDA #'x' COut(); Space(); NLOut();
+#endif
+            // Check if NEXT has a special multiplier - swap if so
+            LDA ZP.NEXT1
+            ORA ZP.NEXT2
+            ORA ZP.NEXT3
+            if (Z)  // NEXT is 8-bit
             {
-                LDA ZP.NEXT1
-                ORA ZP.TOP1
+
+                LDA ZP.NEXT0
+                switch (A)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 4:
+                    case 8:
+                    case 16:
+                    { 
+                        commonSwapNEXTTOP(); 
+#ifdef MULDIVDEBUG
+LDA #'(' COut(); LDA #'1' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space();
+#endif
+                    }
+                    case 10:
+                    {
+                        // Check if TOP has a 'better' special multiplier (0,1, and multiples of 2 are better than 10)
+                        LDA ZP.TOP1
+                        ORA ZP.TOP2
+                        ORA ZP.TOP3
+                        if (Z)  // TOP is 8-bit
+                        {
+                            LDA ZP.TOP0
+                            switch (A)
+                            {
+                                case  0:
+                                case  1:
+                                case  2:
+                                case  4:
+                                case  8:
+                                case 16:
+                                { } // keep TOP
+                                default:
+                                {
+                                    commonSwapNEXTTOP();
+#ifdef MULDIVDEBUG 
+LDA #'(' COut(); LDA #'2' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space();
+#endif
+                                }
+                            }
+                        }
+                        else
+                        {
+                            commonSwapNEXTTOP(); 
+#ifdef MULDIVDEBUG
+LDA #'(' COut(); LDA #'3' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space();
+#endif
+                        }
+                    }
+                }
+            }
+#ifdef MULDIVDEBUG
+LDA #'-' COut(); LDA #'>' COut(); Space();
+#endif
+            // TOP is now the number to compare to..
+            
+            LDA ZP.TOP2
+            ORA ZP.TOP3
+            if (Z)
+            {
+                // TOP is 16 bit
+                LDA ZP.TOP1
                 if (Z)
                 {
-                    LDA #0
-                    LDX #8        // Only 8 iterations!
-                    loop
+                    // TOP is 0..255
+                    LDA ZP.TOP0
+                    CMP #0
+                    if (Z)
                     {
-                        LSR ZP.NEXT0
-                        if (C)
-                        {
-                            CLC
-                            ADC ZP.TOP0  // Simple 8-bit add
-                        }
-                        ROR A            // Rotate into result
-                        ROR ZP.RESULT0
-                        DEX
-                        if (Z) { break; }
+#ifdef MULDIVDEBUG
+LDA #'a' COut();
+#endif
+                        // x 0  (RESULT is already zero)
+                        break; // exit
                     }
-                    STA ZP.RESULT1   // Upper byte of 16-bit result
-                    break; // 8 bit exit
+                    CMP #1
+                    if (Z)
+                    {
+                        // x 1 -> NEXT -> RESULT
+#ifdef MULDIVDEBUG
+LDA #'b' COut();
+#endif
+                        moveNextToResult();
+                        break; // exit
+                    }
                 }
                 
-                LDA #0
-                LDX #16                // 16 bits instead of 32
-                loop
+                // Check if both operands fit in 16 bits
+                LDA ZP.NEXT2
+                ORA ZP.NEXT3
+                if (Z)  // All high bytes are zero - use 16-bit multiply
                 {
-                    LSR ZP.NEXT1       // shift 16-bit multiplier right
-                    ROR ZP.NEXT0
-                    if (C)             // Go rotate right if c = 0
+                    LDA ZP.NEXT1
+                    ORA ZP.TOP1
+                    if (Z)
                     {
-                        LDA ZP.RESULT2   // get upper half of product and add multiplicand to it
-                        CLC               
-                        ADC ZP.TOP0
-                        STA ZP.RESULT2
-                        LDA ZP.RESULT3
-                        ADC ZP.TOP1
+                        LDA #0
+                        LDX #8        // Only 8 iterations!
+                        loop
+                        {
+                            LSR ZP.NEXT0
+                            if (C)
+                            {
+                                LDA ZP.RESULT1   // get upper half of product
+                                CLC               
+                                ADC ZP.TOP0      // add multiplicand to it
+                                STA ZP.RESULT1   // (carry may be set from this add)
+                            }
+                            ROR ZP.RESULT1       // rotate partial product right
+                            ROR ZP.RESULT0       // through both bytes
+                            DEX                  // decrement bit count
+                            if (Z) { break; }    // exit loop when 8 bits are done
+                        }
+#ifdef MULDIVDEBUG
+LDA #'c' COut();
+#endif
+                        break; // 8 bit exit
                     }
-                    ROR A              // rotate partial product
-                    STA ZP.RESULT3     // right
-                    ROR ZP.RESULT2
-                    ROR ZP.RESULT1
-                    ROR ZP.RESULT0
-                    DEX                // decrement bit count and
-                    if (Z) { break; }  // exit loop when 16 bits are done
-                }
-                break; // 16 bit exit
-            }
-            
+                    
+                    LDA #0
+                    LDX #16                // 16 bits instead of 32
+                    loop
+                    {
+                        LSR ZP.NEXT1       // shift 16-bit multiplier right
+                        ROR ZP.NEXT0
+                        if (C)             // Go rotate right if c = 0
+                        {
+                            LDA ZP.RESULT2   // get upper half of product and add multiplicand to it
+                            CLC               
+                            ADC ZP.TOP0
+                            STA ZP.RESULT2
+                            LDA ZP.RESULT3
+                            ADC ZP.TOP1
+                        }
+                        ROR A              // rotate partial product
+                        STA ZP.RESULT3     // right
+                        ROR ZP.RESULT2
+                        ROR ZP.RESULT1
+                        ROR ZP.RESULT0
+                        DEX                // decrement bit count and
+                        if (Z) { break; }  // exit loop when 16 bits are done
+                    }
+#ifdef MULDIVDEBUG
+LDA #'d' COut();
+#endif
+                    break; // 16 bit exit
+                } // both 16 bit
+                
+            } // TOP 16 bitLDA
+#ifdef MULDIVDEBUG
+LDA #'e' COut();            
+#endif
             LDA # 0
             LDX # 32
             loop
@@ -1044,6 +1235,9 @@ unit Long
             }
             break; // 32 bit exit
         }
+#ifdef MULDIVDEBUG        
+RLOut();        
+#endif
     }
     
     // Multiply 32-bit value by 10 in place
@@ -1055,20 +1249,12 @@ unit Long
         // ZP.RESULT = ZP.NEXT0..ZP.NEXT3 * ZP.TOP0..ZP.TOP3
         LDA #10
         STA ZP.NEXT0
-        STZ ZP.NEXT1
-        STZ ZP.NEXT2
-        STZ ZP.NEXT3 // 3x
-        utilityLongMUL();
+        ZeroNext3();
+        LDA # BASICType.LONG
+        STA ZP.NEXTT
         
-        // RESULT0-3 -> TOP0-3
-        LDA ZP.RESULT0
-        STA ZP.TOP0
-        LDA ZP.RESULT1
-        STA ZP.TOP1
-        LDA ZP.RESULT2
-        STA ZP.TOP2
-        LDA ZP.RESULT3
-        STA ZP.TOP3
+        utilityLongMUL();
+        moveResultToTop(); // RESULT0-3 -> TOP0-3
         
         LDA ZP.RESULT4
         ORA ZP.RESULT5  // Check if any high bytes 

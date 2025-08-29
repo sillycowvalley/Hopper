@@ -18,6 +18,7 @@ unit Debug // Debug.asm
     // Register and status labels (3+ characters only)
     const string regTOP = "TOP:";
     const string regNXT = "NEXT:";
+    const string regRES = "RESULT:";
     const string regACC = "ACC:";
     const string regIDX = "IDX:";
     const string regIDY = "IDY:";
@@ -354,6 +355,23 @@ unit Debug // Debug.asm
         hOut();
         space();
     }
+    rlOut()  // Output RESULT register
+    {
+        LDA #(regRES % 256)
+        STA ZP.STR
+        LDA #(regRES / 256)
+        STA ZP.STRH
+        printString();
+        LDA ZP.RESULT3
+        hOut();
+        LDA ZP.RESULT2
+        hOut();
+        LDA ZP.RESULT1
+        hOut();
+        LDA ZP.RESULT0
+        hOut();
+        space();
+    }
     
     tlOut()  // Output TOP register with type
     {
@@ -529,6 +547,12 @@ unit Debug // Debug.asm
     {
         PHP PHA PHY
         nlOut();
+        PLY PLA PLP
+    }
+    RLOut()
+    {
+        PHP PHA PHY
+        rlOut();
         PLY PLA PLP
     }
     

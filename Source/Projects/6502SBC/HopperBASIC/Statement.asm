@@ -897,10 +897,7 @@ unit Statement // Statement.asm
                         }
                         
                         // Pure VAR variable without initialization
-                        STZ ZP.NEXT0
-                        STZ ZP.NEXT1
-                        STZ ZP.NEXT2
-                        STZ ZP.NEXT3 // 4x
+                        Long.ZeroNext();
                         
                         // Default VAR to LONG with value 0
                         LDA #BASICType.LONG

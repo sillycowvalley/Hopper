@@ -7,6 +7,7 @@ program HopperBASIC
         
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     //#define DEBUG
+    //#define MULDIVDEBUG
     //#define VERBOSEDEBUG // debug the keyword table limits
     
     //#define TRACE  // Compiler and Executor call tree walks
