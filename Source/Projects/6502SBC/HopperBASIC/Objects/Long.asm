@@ -135,6 +135,32 @@ unit Long
         STA ZP.TOP3
         STY ZP.NEXT3
     }
+    
+    shiftNEXTleft()
+    {
+        ASL ZP.NEXT0
+        ROL ZP.NEXT1
+        ROL ZP.NEXT2
+        ROL ZP.NEXT3
+        ROL ZP.RESULT4
+        ROL ZP.RESULT5
+        ROL ZP.RESULT6
+        ROL ZP.RESULT7
+        
+        if (C)
+        {
+            Error.NumericOverflow(); 
+            BIT ZP.EmulatorPCL
+        }
+    }
+    shiftNEXTright()  // 9 bytesincluding RTS
+    {
+        LSR ZP.NEXT3
+        ROR ZP.NEXT2
+        ROR ZP.NEXT1
+        ROR ZP.NEXT0
+    }
+    
         
 #ifndef #DEBUG
     PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
@@ -571,37 +597,13 @@ unit Long
         Stacks.PushX(); // as Type.Bool
     }
     
-    shiftNEXTleft()  // 11 bytes
-    {
-        ASL ZP.NEXT0
-        ROL ZP.NEXT1
-        ROL ZP.NEXT2
-        ROL ZP.NEXT3
-        ROL ZP.RESULT4
-        ROL ZP.RESULT5
-        ROL ZP.RESULT6
-        ROL ZP.RESULT7
-        
-        if (C)
-        {
-            Error.NumericOverflow(); BIT ZP.EmulatorPCL
-        }
-    }
-    
-    shiftNEXTright()  // 9 bytesincluding RTS
-    {
-        LSR ZP.NEXT3
-        ROR ZP.NEXT2
-        ROR ZP.NEXT1
-        ROR ZP.NEXT0
-    }
         
     const byte[] modRemaining  = { 0x00, 0x06, 0x02, 0x08, 0x04, 0x00, 0x06, 0x02, 0x08, 0x04 };
     const byte[] tensRemaining = { 0,      25,   51,   76,  102,  128,  153,  179,  204,  230 };
     
     utility16BitDiv10()
     {
-        // NEXT = NEXT / 10
+        // NEXT = NEXT / 10, remainder in RESULT
         LDA ZP.NEXT0
         STA ZP.TOP0
         LDA ZP.NEXT1
@@ -635,6 +637,12 @@ unit Long
             SBC    ZP.TOP1
             EOR    # 0xFF
             TAY                          // mod 10 result!
+            
+            // save remainder:
+            TYA
+            STA    ZP.RESULT0            // Save mod 10
+            STZ    ZP.RESULT1
+            
             LDA    tensRemaining, Y      // Fill the low byte with the tens it should
             STA    ZP.NEXT0                 // have at this point from the high byte divide.
             LDA    ZP.TOP0
@@ -712,12 +720,12 @@ Space(); TLOut();
             {
                 LDA ZP.TOP2
                 ORA ZP.TOP3
-                if (Z) // 16 bit denominator
+                if (Z) // 16 bit divisor
                 {
                     LDA ZP.TOP1
                     if (Z)
                     {
-                        // denominator 0..255
+                        // TOP is the divisor (0..255)
                         LDA ZP.TOP0
                         CMP #1
                         if (Z)
@@ -728,9 +736,37 @@ Space(); TLOut();
                             // / 1 -> NEXT is already the answer
                             break; // exit
                         }
+                        CMP #16
+                        if (Z)
+                        {
+                            shiftNEXTright(); // NEXT >> 1
+                            LDA #8            // Set up for next CMP
+                        }
+                        CMP #8
+                        if (Z)
+                        {
+                            shiftNEXTright(); // NEXT >> 1
+                            LDA #4            // Set up for next CMP
+                        }
+                        CMP #4
+                        if (Z)
+                        {
+                            shiftNEXTright(); // NEXT >> 1
+                            LDA #2            // Set up for next CMP
+                        }
+                        CMP #2
+                        if (Z)
+                        {
+                            shiftNEXTright(); // NEXT >> 1 (final shift)
+                            // NEXT now has quotient, RESULT stays 0 for remainder
+#ifdef MULDIVDEBUG
+    LDA #'b' COut();
+#endif
+                            break; // ÷2, ÷4, ÷8, ÷16 all exit here
+                        }                  
                     }
                     
-                    // Check if both numerator and denominator fit in 16 bits
+                    // Check if both dividend and divisor fit in 16 bits
                     LDA ZP.NEXT2
                     ORA ZP.NEXT3  
                     if (Z)  // All high bytes are zero - use 16-bit division
@@ -748,7 +784,7 @@ Space(); TLOut();
                             {
                                 utility16BitDiv10(); //  / 10
 #ifdef MULDIVDEBUG
-    LDA #'b' COut();
+    LDA #'c' COut();
 #endif
                                 break; // 16 bit exit
                             }
@@ -760,7 +796,7 @@ Space(); TLOut();
                                 ROL ZP.NEXT1
                                 utility16BitDiv10(); //  / 10
 #ifdef MULDIVDEBUG
-    LDA #'c' COut();
+    LDA #'d' COut();
 #endif
                                 break; // 16 bit exit
                             }
@@ -770,7 +806,7 @@ Space(); TLOut();
                                 utility16BitDiv10(); //  / 10
                                 utility16BitDiv10(); //  / 10
 #ifdef MULDIVDEBUG
-    LDA #'d' COut();
+    LDA #'e' COut();
 #endif
 
                                 break; // 16 bit exit
@@ -801,7 +837,7 @@ Space(); TLOut();
                             if (Z) { break; }
                         }
 #ifdef MULDIVDEBUG
-    LDA #'e' COut();
+    LDA #'f' COut();
 #endif
                         break; // 16 bit exit
                     } // 16 bit numerator and denominator
@@ -849,7 +885,7 @@ Space(); TLOut();
                 if (Z) { break; }
             } // loop
 #ifdef MULDIVDEBUG
-    LDA #'f' COut();
+    LDA #'g' COut();
 #endif
             break; // 32 bit exit
         } // loop
@@ -1100,8 +1136,8 @@ PHA LDA #'(' COut(); LDA #'3' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')
 #ifdef MULDIVDEBUG
 LDA #'-' COut(); LDA #'>' COut(); Space();
 #endif
+
             // TOP is now the number to compare to..
-            
             LDA ZP.TOP2
             ORA ZP.TOP3
             if (Z)
@@ -1130,6 +1166,40 @@ LDA #'b' COut();
 #endif
                         moveNextToResult();
                         break; // exit
+                    }
+                    CMP #16 
+                    if (Z)
+                    {
+                        shiftNEXTleft(); // NEXT << 1, can set overflow error
+                        LDA #8
+                    }
+                    CMP #8
+                    if (Z)
+                    {
+                        shiftNEXTleft(); // NEXT << 1, can set overflow error
+                        LDA #4
+                    }
+                    CMP #4
+                    if (Z)
+                    {
+                        shiftNEXTleft(); // NEXT << 1, can set overflow error
+                        LDA #2
+                    }
+                    CMP #2
+                    if (Z)
+                    {
+                        shiftNEXTleft(); // NEXT << 1, can set overflow error
+                        CheckError();
+                        moveNextToResult();
+#ifdef MULDIVDEBUG
+LDA #'c' COut();
+#endif
+                        break; // x2, x4, x8, x16 exit 
+                    }
+                    CMP #10
+                    if (Z)
+                    {
+                        // TODO : (NEXT << 3) + (NEXT << 1)
                     }
                 }
                 
@@ -1160,7 +1230,7 @@ LDA #'b' COut();
                             if (Z) { break; }    // exit loop when 8 bits are done
                         }
 #ifdef MULDIVDEBUG
-LDA #'c' COut();
+LDA #'d' COut();
 #endif
                         break; // 8 bit exit
                     }
@@ -1189,14 +1259,14 @@ LDA #'c' COut();
                         if (Z) { break; }  // exit loop when 16 bits are done
                     }
 #ifdef MULDIVDEBUG
-LDA #'d' COut();
+LDA #'e' COut();
 #endif
                     break; // 16 bit exit
                 } // both 16 bit
                 
             } // TOP 16 bitLDA
 #ifdef MULDIVDEBUG
-LDA #'e' COut();            
+LDA #'f' COut();            
 #endif
             LDA # 0
             LDX # 32
