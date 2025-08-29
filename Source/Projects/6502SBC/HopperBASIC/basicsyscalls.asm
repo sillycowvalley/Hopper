@@ -243,10 +243,6 @@ unit BASICSysCalls
             if (Z)  // max == 0
             {
                 // Return 0 for invalid range
-                STZ ZP.TOP0
-                STZ ZP.TOP1
-                STZ ZP.TOP2
-                STZ ZP.TOP3 // x4
                 CLC  // Error condition
                 break;
             }

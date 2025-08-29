@@ -285,14 +285,6 @@ unit Instructions // Instructions.asm
             Long.PopTopNextStrict();
             if (NC) { break; }
             
-            // Check for division by zero
-            Long.ZeroCheckTop();
-            if (Z)  // Divisor is zero
-            {
-                Error.DivisionByZero(); BIT ZP.EmulatorPCL
-                break;
-            }
-            
             Long.Div();
             if (NC) { break; }
             SEC
@@ -317,14 +309,6 @@ unit Instructions // Instructions.asm
         {
             Long.PopTopNextStrict();
             if (NC) { break; }
-            
-            // Check for division by zero
-            Long.ZeroCheckTop();
-            if (Z)  // Divisor is zero
-            {
-                Error.DivisionByZero(); BIT ZP.EmulatorPCL
-                break;
-            }
             
             Long.Mod();
             if (NC) { break; }

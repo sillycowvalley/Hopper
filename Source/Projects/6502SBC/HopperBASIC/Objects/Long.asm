@@ -527,6 +527,31 @@ unit Long
         Stacks.PushX(); // as Type.Bool
     }
     
+    shiftNEXTleft()  // 11 bytes
+    {
+        ASL ZP.NEXT0
+        ROL ZP.NEXT1
+        ROL ZP.NEXT2
+        ROL ZP.NEXT3
+        ROL ZP.RESULT4
+        ROL ZP.RESULT5
+        ROL ZP.RESULT6
+        ROL ZP.RESULT7
+        
+        if (C)
+        {
+            Error.NumericOverflow(); BIT ZP.EmulatorPCL
+        }
+    }
+    
+    shiftNEXTright()  // 9 bytesincluding RTS
+    {
+        LSR ZP.NEXT3
+        ROR ZP.NEXT2
+        ROR ZP.NEXT1
+        ROR ZP.NEXT0
+    }
+        
     const byte[] modRemaining  = { 0x00, 0x06, 0x02, 0x08, 0x04, 0x00, 0x06, 0x02, 0x08, 0x04 };
     const byte[] tensRemaining = { 0,      25,   51,   76,  102,  128,  153,  179,  204,  230 };
     
@@ -619,6 +644,14 @@ unit Long
 
         loop
         {
+            // Check for division by zero
+            Long.ZeroCheckTop();
+            if (Z)  // Divisor is zero
+            {
+                Error.DivisionByZero(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
             // only do 16 bit optimizations in Div (X = 0) mode, not Mod (X = 1) mode
             CPX #0
             if (Z)

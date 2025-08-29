@@ -543,13 +543,13 @@ FUNC TestPerfNonOpt()
     PRINT "1K loops (11,997): "; elapsed; "ms ! expect ~6498ms"
 ENDFUNC
 
-! ===== TEST 28: Performance - Optimizable Multiply =====
-FUNC TestPerfOptMul()
+! ===== TEST 28A: Performance - Optimizable Multiply (16-bit) =====
+FUNC TestPerfOptMul16()
     VAR start, elapsed
-    VAR sum = 1000
+    VAR sum = 1000  ! 16-bit range
     VAR i, loops = 1000
     
-    PRINT "Performance - Optimizable Multiply:"
+    PRINT "Performance - Optimizable Multiply (16-bit):"
     
     ! Power of 2 multiplications (shift candidates)
     start = MILLIS()
@@ -562,7 +562,7 @@ FUNC TestPerfOptMul()
         sum = sum / 8
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops (*2,*4,*8): "; elapsed; "ms ! expect ~11479ms"
+    PRINT "1K loops 16-bit (*2,*4,*8): "; elapsed; "ms ! expect ~11504ms"
     
     ! Special cases: *0, *1, *10
     sum = 42
@@ -575,18 +575,53 @@ FUNC TestPerfOptMul()
         sum = 42  ! restore
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops (*0,*1,*10): "; elapsed; "ms ! expect ~6351ms"
+    PRINT "1K loops 16-bit (*0,*1,*10): "; elapsed; "ms ! expect ~6351ms"
 ENDFUNC
 
-! ===== TEST 29: Performance - Optimizable Divide =====
-FUNC TestPerfOptDiv()
+! ===== TEST 28B: Performance - Optimizable Multiply (32-bit) =====
+FUNC TestPerfOptMul32()
     VAR start, elapsed
-    VAR sum = 100000
+    VAR sum = 100000  ! 32-bit range
     VAR i, loops = 1000
     
-    PRINT "Performance - Optimizable Divide:"
+    PRINT "Performance - Optimizable Multiply (32-bit):"
     
-    ! Power of 2 divisions (shift candidates)
+    ! Power of 2 multiplications (shift candidates)
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum * 2
+        sum = sum / 2
+        sum = sum * 4
+        sum = sum / 4
+        sum = sum * 8
+        sum = sum / 8
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops 32-bit (*2,*4,*8): "; elapsed; "ms ! expect ~22550ms"
+    
+    ! Special cases: *0, *1, *10
+    sum = 50000
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum * 1
+        sum = sum * 10
+        sum = sum / 10
+        sum = sum * 0
+        sum = 50000  ! restore
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops 32-bit (*0,*1,*10): "; elapsed; "ms ! expect ~10623ms"
+ENDFUNC
+
+! ===== TEST 29A: Performance - Optimizable Divide (16-bit) =====
+FUNC TestPerfOptDiv16()
+    VAR start, elapsed
+    VAR sum = 10000  ! 16-bit range
+    VAR i, loops = 1000
+    
+    PRINT "Performance - Optimizable Divide (16-bit):"
+    
+    ! Power of 2 divisions with 16-bit values
     start = MILLIS()
     FOR i = 1 TO loops
         sum = sum / 2
@@ -597,9 +632,9 @@ FUNC TestPerfOptDiv()
         sum = sum * 8
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops (/2,/4,/8): "; elapsed; "ms ! expect ~17520ms"
+    PRINT "1K loops 16-bit (/2,/4,/8): "; elapsed; "ms ! expect ~11423ms"
     
-    ! Common divisors
+    ! Common divisors with 16-bit values
     sum = 10000
     start = MILLIS()
     FOR i = 1 TO loops
@@ -610,12 +645,49 @@ FUNC TestPerfOptDiv()
         sum = sum * 100
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops (/1,/10,/100): "; elapsed; "ms ! expect ~8135ms"
+    PRINT "1K loops 16-bit (/1,/10,/100): "; elapsed; "ms ! expect ~8153ms"
+ENDFUNC
+
+! ===== TEST 29B: Performance - Optimizable Divide (32-bit) =====
+FUNC TestPerfOptDiv32()
+    VAR start, elapsed
+    VAR sum = 100000  ! 32-bit range
+    VAR i, loops = 1000
+    
+    PRINT "Performance - Optimizable Divide (32-bit):"
+    
+    ! Power of 2 divisions with 32-bit values
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum / 2
+        sum = sum * 2
+        sum = sum / 4
+        sum = sum * 4
+        sum = sum / 8
+        sum = sum * 8
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops 32-bit (/2,/4,/8): "; elapsed; "ms ! expect ~17520ms"
+    
+    ! Common divisors with 32-bit values
+    sum = 100000
+    start = MILLIS()
+    FOR i = 1 TO loops
+        sum = sum / 1
+        sum = sum / 10
+        sum = sum * 10
+        sum = sum / 100
+        sum = sum * 100
+    NEXT i
+    elapsed = MILLIS() - start
+    PRINT "1K loops 32-bit (/1,/10,/100): "; elapsed; "ms ! expect ~15843ms"
 ENDFUNC
 BEGIN
     TestPerfNonOpt()
-    TestPerfOptMul()
-    TestPerfOptDiv()
+    TestPerfOptMul16()
+    TestPerfOptMul32()
+    TestPerfOptDiv16()
+    TestPerfOptDiv32()
 END
 
 ! Division by zero tests at REPL
