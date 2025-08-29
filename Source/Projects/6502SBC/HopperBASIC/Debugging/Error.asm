@@ -238,11 +238,15 @@ unit Error // ErrorID.asm
         ForIteratorLocal,
         RangeError,
         ExpectedRightBracket,
-        InvalidFilename,
-        DirectoryFull,
-        EEPROMFull,
-        FileExists,
-        EEPROMError,
+        
+        FilenameExpected,
+        FilenameTooLong,
+        IllegalFilename,
+        
+      DirectoryFull,
+      EEPROMFull,
+      FileExists,
+      EEPROMError,
         
         FormatWarning,
         OverwriteWarning,
@@ -305,7 +309,12 @@ unit Error // ErrorID.asm
         5, ErrorID.ForIteratorLocal,           Token.FOR, ErrorWord.ITERATOR, ErrorWord.MUST, ErrorWord.BE, ErrorWord.LOCAL,
         4, ErrorID.RangeError,                 ErrorWord.VALUE, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
         2, ErrorID.ExpectedRightBracket,       ErrorWord.RBRACKET, ErrorWord.EXPECTED,
-        2, ErrorID.InvalidFilename,            ErrorWord.INVALID, ErrorWord.FILENAME,
+        
+        2, ErrorID.FilenameExpected,           ErrorWord.FILENAME, ErrorWord.EXPECTED,
+        3, ErrorID.FilenameTooLong,            ErrorWord.FILENAME, ErrorWord.TOO, Token.LONG,
+        2, ErrorID.IllegalFilename,            ErrorWord.ILLEGAL,  ErrorWord.FILENAME,
+        
+        
         2, ErrorID.DirectoryFull,              ErrorWord.DIRECTORY, ErrorWord.FULL,
         2, ErrorID.EEPROMFull,                 ErrorWord.EEPROM, ErrorWord.FULL,
         2, ErrorID.FileExists,                 ErrorWord.FILE, ErrorWord.EXISTS,
@@ -521,11 +530,68 @@ unit Error // ErrorID.asm
         CLC
     }
     
+    // #### New Errors ####
+    
+    // General errors
     SyntaxError() 
     { 
         LDA #ErrorID.SyntaxError
         commonError();        
     }
+    
+    // File system errors
+    FileNotFound() 
+    { 
+        LDA #ErrorID.FileNotFound
+        commonError();
+    }
+    FilenameExpected()
+    {
+        LDA #ErrorID.FilenameExpected
+        commonError();
+    }
+    FilenameTooLong()
+    {
+        LDA #ErrorID.FilenameTooLong
+        commonError();
+    }
+    IllegalFilename()
+    {
+        LDA #ErrorID.IllegalFilename
+        commonError();
+    }
+    
+    // #### Old Errors ####
+    DirectoryFull() inline
+    {
+        LDA #ErrorID.DirectoryFull
+        commonError();
+    }
+    EEPROMFull()
+    {
+        LDA #ErrorID.EEPROMFull
+        commonError();
+    }
+    FileExists()
+    {
+        LDA #ErrorID.FileExists
+        commonError();
+    }
+    EEPROMError()
+    {
+        LDA #ErrorID.EEPROMError
+        commonError();
+    }
+    
+    
+    
+    IllegalIdentifier() 
+    { 
+        LDA #ErrorID.IllegalIdentifier
+        commonError();
+    }
+       
+    
 
     InternalError() 
     { 
@@ -629,13 +695,7 @@ unit Error // ErrorID.asm
         LDA #ErrorID.OutOfMemory
         commonError();
     }
-
-    FileNotFound() 
-    { 
-        LDA #ErrorID.FileNotFound
-        commonError();
-    }
-
+    
     NextWithoutFor() 
     { 
         LDA #ErrorID.NextWithoutFor
@@ -702,11 +762,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    IllegalIdentifier() 
-    { 
-        LDA #ErrorID.IllegalIdentifier
-        commonError();
-    }
+    
 
     IllegalAssignment() 
     { 
@@ -774,36 +830,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    InvalidFilename()
-    {
-        LDA #ErrorID.InvalidFilename
-        commonError();
-    }
-
-    DirectoryFull() inline
-    {
-        LDA #ErrorID.DirectoryFull
-        commonError();
-    }
-
-    EEPROMFull()
-    {
-        LDA #ErrorID.EEPROMFull
-        commonError();
-    }
-
-    FileExists()
-    {
-        LDA #ErrorID.FileExists
-        commonError();
-    }
-
-    EEPROMError()
-    {
-        LDA #ErrorID.EEPROMError
-        commonError();
-    }
-    
+      
     // Clear error state
     // Input: None
     // Output: ZP.LastError cleared (set to 0x0000)

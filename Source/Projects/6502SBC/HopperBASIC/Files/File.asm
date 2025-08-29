@@ -118,6 +118,7 @@ unit File
             LDA [ZP.STR], Y
             if (Z)
             {
+                Error.FilenameExpected();
                 CLC  // Empty filename invalid
                 break;
             }
@@ -132,31 +133,27 @@ unit File
                 Char.IsAlphaNumeric();
                 if (NC)
                 {
+                    Error.IllegalFilename();
                     CLC  // Invalid character found
-                    PLY
-#ifdef TRACEFILE
-                    LDA #(validateFilenameTrace % 256) STA ZP.TraceMessageL LDA #(validateFilenameTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                    return;
+                    break;
                 }
                 
                 INY
                 CPY #14  // Max 13 characters + null terminator
                 if (Z)
                 {
+                    Error.FilenameTooLong();
                     CLC  // Filename too long
-                    PLY
-#ifdef TRACEFILE
-                    LDA #(validateFilenameTrace % 256) STA ZP.TraceMessageL LDA #(validateFilenameTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                    return;
+                    break;
                 }
+                SEC
             }
+            if (NC) { break; }
             
             // Filename is valid (1-13 chars, valid characters)
             SEC
             break;
-        }
+        } // single exit
         
         PLY
 #ifdef TRACEFILE
@@ -265,11 +262,7 @@ unit File
         {
             // Validate filename format
             File.ValidateFilename();
-            if (NC)
-            {
-                Error.InvalidFilename(); BIT ZP.EmulatorPCL
-                break;
-            }
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Load directory and FAT into buffers
             loadDirectory();
@@ -473,7 +466,7 @@ unit File
             // Print summary
             printDirectorySummary();
             
-#ifdef DEBUG
+#ifdef FILEDEBUG
             Print.NewLine();
             printDebugDiagnostics();
             
@@ -519,12 +512,8 @@ unit File
         loop // Single exit for cleanup
         {
             // Validate filename format
-            ValidateFilename();
-            if (NC)
-            {
-                Error.InvalidFilename(); BIT ZP.EmulatorPCL
-                break;
-            }
+            File.ValidateFilename();
+            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Load directory and FAT from EEPROM
             loadDirectory();
@@ -599,12 +588,9 @@ unit File
         loop // Single exit for cleanup
         {
             // Validate filename format
-            ValidateFilename();
-            if (NC)
-            {
-                Error.InvalidFilename(); BIT ZP.EmulatorPCL
-                break;
-            }
+            File.ValidateFilename();
+            if (NC) { BIT ZP.EmulatorPCL break; }
+            
             
             // Load directory and FAT from EEPROM
             loadDirectory();
@@ -1294,7 +1280,7 @@ unit File
                 // Print filename
                 printFileEntry(); // Input: X = directory entry offset
                 
-#ifdef DEBUG
+#ifdef FILEDEBUG
                 // Print hex dump of first 32 bytes
                 printFileHexDump(); // Input: X = directory entry offset
 #endif
@@ -1440,6 +1426,7 @@ unit File
         PLX
         
         Print.Decimal();
+        
 #ifdef TRACEFILE
         LDA #(printFileSizeFromDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(printFileSizeFromDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
@@ -1993,7 +1980,7 @@ unit File
 #endif
     }
 
-#ifdef DEBUG
+#ifdef FILEDEBUG
     // Diagnostic dump of drive state
     // Input:  A = 1 to load from EEPROM, A = 0 to just show current RAM
     // Output: Drive state printed to serial, C set if successful
@@ -2115,8 +2102,6 @@ unit File
             ORA DirectoryBuffer + 1, Y
             if (NZ)
             {
-                 
-                
                 // Print entry number
                 TXA
                 CLC
@@ -2128,7 +2113,7 @@ unit File
                 
                 // Print filename (scan until high bit found)
                 printFilenameFromDirectory();
-                
+
                 // Print file info
                 Print.Space();
                 printFileSizeFromDirectory();

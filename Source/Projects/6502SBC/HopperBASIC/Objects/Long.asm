@@ -1555,66 +1555,74 @@ RLOut();
     // Input: ZP.TOP0-3 = 32-bit number to print
     //        ZP.TOPT = LONG (only support LONG)
     // Output: Decimal number printed to serial
-    // Munts: ZP.NEXT, ZP.RESULT, ZP.ACC, A, X, Y
+    // Munts: ZP.NEXT, ZP.RESULT, ZP.ACC, A
     Print()
     {
-        if (BBR3, ZP.TOPT) // Bit 3 - LONG
-        {
-            Error.TypeMismatch(); BIT ZP.EmulatorPCL // only allow LONG
-            CheckError();
-            return;
-        }
-        
-        moveTopToNext();
-        if (BBS7, ZP.NEXT3)
-        {
-            LDA #'-'
-            Serial.WriteChar();
-            negateLongNEXT();
-        }
-        
-        // Check for zero special case
-        Long.ZeroCheckNext();
-        if (Z)
-        {
-            LDA #'0'
-            Serial.WriteChar();
-            return;
-        }
-        
-        // Extract digits by repeated division by 10
-        LDY #0  // Digit counter (also stack depth)
+        PHX
+        PHY
         loop
         {
-            // Setup for DivMod: NEXT = value, TOP = 10
+            if (BBR3, ZP.TOPT) // Bit 3 - LONG
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL // only allow LONG
+                CheckError();
+                break;
+            }
             
-            LDA #10
-            LoadTopByte();
+            moveTopToNext();
+            if (BBS7, ZP.NEXT3)
+            {
+                LDA #'-'
+                Serial.WriteChar();
+                negateLongNEXT();
+            }
             
-            PHY
-            LDX #1          // X=1 for mod (ensures we get remainder)
-            DivMod();       // NEXT = quotient, RESULT = remainder
-            PLY
-            
-            // Push digit (remainder) onto stack
-            LDA ZP.RESULT0  // Remainder is 0-9
-            ORA #'0'        // Convert to ASCII
-            PHA
-            INY             // Count digits
-            
-            // Check if quotient is zero
+            // Check for zero special case
             Long.ZeroCheckNext();
-            if (Z) { break; }  // Done extracting digits
-        }
-        
-        // Pop and print digits (they're in reverse order on stack)
-        loop
-        {
-            PLA
-            Serial.WriteChar();
-            DEY
-            if (Z) { break; }
-        }
-        SEC
+            if (Z)
+            {
+                LDA #'0'
+                Serial.WriteChar();
+                break;
+            }
+            
+            // Extract digits by repeated division by 10
+            LDY #0  // Digit counter (also stack depth)
+            loop
+            {
+                // Setup for DivMod: NEXT = value, TOP = 10
+                
+                LDA #10
+                LoadTopByte();
+                
+                PHY
+                LDX #1          // X=1 for mod (ensures we get remainder)
+                DivMod();       // NEXT = quotient, RESULT = remainder
+                PLY
+                
+                // Push digit (remainder) onto stack
+                LDA ZP.RESULT0  // Remainder is 0-9
+                ORA #'0'        // Convert to ASCII
+                PHA
+                INY             // Count digits
+                
+                // Check if quotient is zero
+                Long.ZeroCheckNext();
+                if (Z) { break; }  // Done extracting digits
+            }
+            
+            // Pop and print digits (they're in reverse order on stack)
+            loop
+            {
+                PLA
+                Serial.WriteChar();
+                DEY
+                if (Z) { break; }
+            }
+            SEC
+            break;
+        } // single exit
+        PLY
+        PLX
     }
 }

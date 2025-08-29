@@ -286,6 +286,9 @@ unit Instructions // Instructions.asm
             if (NC) { break; }
             
             Long.Div();
+            
+Debug.NL(); LDA ZP.LastError HOut();
+
             if (NC) { break; }
             SEC
             break;

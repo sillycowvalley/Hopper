@@ -655,7 +655,7 @@ unit Console // Console.asm
                 CMP #Token.IDENTIFIER
                 if (NZ)
                 {
-                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    Error.FilenameExpected(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -688,7 +688,7 @@ unit Console // Console.asm
                 CMP #Token.IDENTIFIER
                 if (NZ)
                 {
-                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    Error.FilenameExpected(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
@@ -736,7 +736,7 @@ unit Console // Console.asm
                 CMP #Token.IDENTIFIER
                 if (NZ)
                 {
-                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    Error.FilenameExpected(); BIT ZP.EmulatorPCL
                     break;
                 }
                 

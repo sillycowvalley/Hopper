@@ -788,6 +788,7 @@ unit Compiler // Compiler.asm
                                    Instructions.Modulo(); // Pop Pop + Push
                                }
                            }
+Debug.NL(); LDA ZP.LastError HOut();
                            CheckError();
                            if (NC) { break; }
                        }
