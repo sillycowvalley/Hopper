@@ -510,6 +510,7 @@ PRINT
 ! ===== PERFORMANCE TESTS - RUN LAST =====
 ! These may interfere with serial I/O
 
+
 ! ===== TEST 27: Performance - Non-Optimizable =====
 NEW
 FUNC TestPerfNonOpt()
@@ -528,7 +529,7 @@ FUNC TestPerfNonOpt()
         sum = sum / 3
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops (17,13,7,3): "; elapsed; "ms ! expect ~10655ms"
+    PRINT "1K loops (17,13,7,3): "; elapsed; "ms ! expect ~10800ms"
     
     ! Reset for next test
     sum = 1000
@@ -540,7 +541,7 @@ FUNC TestPerfNonOpt()
         sum = sum - 997
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops (11,997): "; elapsed; "ms ! expect ~6498ms"
+    PRINT "1K loops (11,997): "; elapsed; "ms ! expect ~6600ms"
 ENDFUNC
 
 ! ===== TEST 28A: Performance - Optimizable Multiply (16-bit) =====
@@ -562,7 +563,7 @@ FUNC TestPerfOptMul16()
         sum = sum / 8
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 16-bit (*2,*4,*8): "; elapsed; "ms ! expect ~11504ms"
+    PRINT "1K loops 16-bit (*2,*4,*8): "; elapsed; "ms ! expect ~8050ms"
     
     ! Special cases: *0, *1, *10
     sum = 42
@@ -575,7 +576,7 @@ FUNC TestPerfOptMul16()
         sum = 42  ! restore
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 16-bit (*0,*1,*10): "; elapsed; "ms ! expect ~6351ms"
+    PRINT "1K loops 16-bit (*0,*1,*10): "; elapsed; "ms ! expect ~6380ms"
 ENDFUNC
 
 ! ===== TEST 28B: Performance - Optimizable Multiply (32-bit) =====
@@ -597,7 +598,7 @@ FUNC TestPerfOptMul32()
         sum = sum / 8
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 32-bit (*2,*4,*8): "; elapsed; "ms ! expect ~22550ms"
+    PRINT "1K loops 32-bit (*2,*4,*8): "; elapsed; "ms ! expect ~8050ms"
     
     ! Special cases: *0, *1, *10
     sum = 50000
@@ -610,7 +611,7 @@ FUNC TestPerfOptMul32()
         sum = 50000  ! restore
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 32-bit (*0,*1,*10): "; elapsed; "ms ! expect ~10623ms"
+    PRINT "1K loops 32-bit (*0,*1,*10): "; elapsed; "ms ! expect ~9450ms"
 ENDFUNC
 
 ! ===== TEST 29A: Performance - Optimizable Divide (16-bit) =====
@@ -632,7 +633,7 @@ FUNC TestPerfOptDiv16()
         sum = sum * 8
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 16-bit (/2,/4,/8): "; elapsed; "ms ! expect ~11423ms"
+    PRINT "1K loops 16-bit (/2,/4,/8): "; elapsed; "ms ! expect ~8050ms"
     
     ! Common divisors with 16-bit values
     sum = 10000
@@ -645,7 +646,7 @@ FUNC TestPerfOptDiv16()
         sum = sum * 100
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 16-bit (/1,/10,/100): "; elapsed; "ms ! expect ~8153ms"
+    PRINT "1K loops 16-bit (/1,/10,/100): "; elapsed; "ms ! expect ~7700ms"
 ENDFUNC
 
 ! ===== TEST 29B: Performance - Optimizable Divide (32-bit) =====
@@ -667,7 +668,7 @@ FUNC TestPerfOptDiv32()
         sum = sum * 8
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 32-bit (/2,/4,/8): "; elapsed; "ms ! expect ~17520ms"
+    PRINT "1K loops 32-bit (/2,/4,/8): "; elapsed; "ms ! expect ~8050ms"
     
     ! Common divisors with 32-bit values
     sum = 100000
@@ -680,8 +681,11 @@ FUNC TestPerfOptDiv32()
         sum = sum * 100
     NEXT i
     elapsed = MILLIS() - start
-    PRINT "1K loops 32-bit (/1,/10,/100): "; elapsed; "ms ! expect ~15843ms"
+    PRINT "1K loops 32-bit (/1,/10,/100): "; elapsed; "ms ! expect ~13300ms"
 ENDFUNC
+
+
+
 BEGIN
     TestPerfNonOpt()
     TestPerfOptMul16()
