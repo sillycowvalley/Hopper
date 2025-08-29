@@ -2542,7 +2542,7 @@ unit Compiler // Compiler.asm
    
     
     // Compile local variable declaration inside a function
-    // Input: ZP.CurrentToken = type token (INT, WORD, BYTE, CHAR, BIT, VAR)
+    // Input: ZP.CurrentToken = type token (only VAR)
     // Output: Local variable created and added to function's locals list
     //         ZP.CurrentToken = token after declaration
     // Modifies: compilerFuncLocals, ZP.CurrentToken, heap allocation
@@ -2562,16 +2562,6 @@ unit Compiler // Compiler.asm
         
         loop // Single exit
         {
-            // Get the type from current token
-            LDX ZP.CurrentToken
-            BASICTypes.FromToken();  // Output: C set if valid type, A = BASICType
-            if (NC)
-            {
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
-                break;
-            }
-            STA ZP.NEXTT // save type
-            
             // Move to identifier
             Tokenizer.NextTokenCheck();
             if (NC) { break; }
@@ -2610,98 +2600,14 @@ unit Compiler // Compiler.asm
             STZ compilerOperand2
                     
             // Create the slot by pushing appropriate default value
-            LDA ZP.NEXTT          // Get the type we saved
-            
-            AND #BASICType.MASK   // Mask off any VAR bit
-            PHA
-            switch (A)
-            {
-                case BASICType.STRING:
-                {
-                    TODO(); BIT ZP.EmulatorPCL 
-                    // Find a null byte to use as empty string:
-                    // The identifier we just parsed has a null terminator after it
-
-                    LDA ZP.TokenizerPosH
-                    STA ZP.ACCH
-                    LDA ZP.TokenizerPosL
-                    STA ZP.ACCL
-                    if (Z)
-                    {
-                        DEC ZP.ACCH
-                    }
-                    DEC ZP.ACCL
-#ifdef DEBUG             
-                    // Verify in case something changes in future:
-                    PHY
-                    LDY ZP.ACCL
-                    LDA [TokenBuffer], Y
-                    if (NZ)
-                    {
-                        PLY
-                        Error.InternalError(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    PLY
-                    LDA ZP.ACCL
-                    
-#endif        
-                    STA compilerOperand1  // LSB of offset to null
-                    LDA ZP.ACCH
-                    STA compilerOperand2  // MSB of offset to null
-                    
-                    // Emit PUSHCSTRING with this offset
-                    LDA #OpCode.PUSHCSTRING
-                    Emit.OpCodeWithWord();
-                }
-                case BASICType.BIT:
-                {
-                    TODO(); BIT ZP.EmulatorPCL 
-                    LDA #0
-                    Emit.PushBit();
-                }
-                case BASICType.BYTE:
-                {
-                    TODO(); BIT ZP.EmulatorPCL // TODO LONG
-                    // Emit PUSHBYTE 0
-                    //LDA #0
-                    //Emit.PushByte();
-                }
-                case BASICType.CHAR:
-                {
-                    TODO(); BIT ZP.EmulatorPCL 
-                    // Emit PUSHCHAR 0
-                    LDA #0
-                    Emit.PushChar();
-                }
-                case BASICType.LONG:
-                {
-                    TODO(); BIT ZP.EmulatorPCL 
-                    // For LONG locals, push LONG 0 using TOLONG conversion
-                    // Emit PUSHBYTE 0
-                    LDA #0
-                    Emit.PushByte();
-                }
-                case BASICType.VAR:
-                {
-                    Emit.PushEmptyVar(); // value zero, type with be (BASICType.INT|BASICType.VAR) by default
-                }
-                default:
-                {
-                    TODO(); BIT ZP.EmulatorPCL // TODO LONG
-                    // WORD, INT
-                    //STA ZP.TOPT
-                    //Emit.PushWord();
-                }
-            } // switch
-            PLA
-            
+            Emit.PushEmptyVar(); // value zero, type with be (BASICType.LONG|BASICType.VAR) by default
             CheckError();
             if (NC) { break; }
 
             // Create local using Locals.Add (it handles allocation and linking)
             // Need to set up the type in the node
-            ORA #SymbolType.LOCAL  // Combine with LOCAL
+            LDA #BASICType.VAR
+            ORA # SymbolType.LOCAL  // Combine with LOCAL
             STA ZP.SymbolType  // argument for Locals.Add()
             
             // ZP.IDX still has function node, ZP.TOP has name
