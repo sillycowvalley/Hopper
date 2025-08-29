@@ -81,10 +81,10 @@ unit OpCodes
        PUSHLOCAL    = 0x43,  // Push local variable [signed_offset]
        POPLOCAL     = 0x44,  // Pop to local variable [signed_offset]
        
-       // Control flow (short jumps)
-       JUMPB        = 0x45,  // Unconditional jump [signed_delta]
-       JUMPZB       = 0x46,  // Jump if zero [signed_delta]
-       JUMPNZB      = 0x47,  // Jump if non-zero [signed_delta]
+       // Control flow (short jumps) - requires better optimizer phase
+       //JUMPB      = 0x45,  // Unconditional jump [signed_delta]
+       //JUMPZB     = 0x46,  // Jump if zero [signed_delta]
+       //JUMPNZB    = 0x47,  // Jump if non-zero [signed_delta]
        
        // System calls
        SYSCALL      = 0x48,  // System call [function_id]
@@ -118,7 +118,7 @@ unit OpCodes
        // Control flow (long jumps)
        JUMPW        = 0x87,  // Unconditional jump [lsb] [msb]
        JUMPZW       = 0x88,  // Jump if zero [lsb] [msb]
-       JUMPNZW      = 0x89,  // Jump if non-zero [lsb] [msb]
+       //JUMPNZW    = 0x89,  // Jump if non-zero [lsb] [msb]
        
        ADDLOCALS    = 0x8A, 
        ADDGLOBALS   = 0x8B,
@@ -575,6 +575,7 @@ unit OpCodes
                 LDA #(opcodePOPLOCAL / 256)
                 STA ZP.STRH
             }
+            /*
             case OpCode.JUMPB:
             {
                 LDA #(opcodeJUMPB % 256)
@@ -596,6 +597,7 @@ unit OpCodes
                 LDA #(opcodeJUMPNZB / 256)
                 STA ZP.STRH
             }
+            */
             case OpCode.SYSCALL:
             {
                 LDA #(opcodeSYSCALL % 256)
@@ -694,6 +696,7 @@ unit OpCodes
                 LDA #(opcodeJUMPZW / 256)
                 STA ZP.STRH
             }
+            /*
             case OpCode.JUMPNZW:
             {
                 LDA #(opcodeJUMPNZW % 256)
@@ -701,6 +704,7 @@ unit OpCodes
                 LDA #(opcodeJUMPNZW / 256)
                 STA ZP.STRH
             }
+            */
             case OpCode.FORCHK:
             {
                 LDA #(opcodeFORCHK % 256)

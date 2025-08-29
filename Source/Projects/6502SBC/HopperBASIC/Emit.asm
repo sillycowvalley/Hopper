@@ -87,9 +87,9 @@ unit Emit
            LDA Compiler.compilerOpCode
            switch (A)
            {
-               case OpCode.JUMPZB:
-               case OpCode.JUMPB:
-               case OpCode.JUMPNZB:
+               //case OpCode.JUMPZB:
+               //case OpCode.JUMPB:
+               //case OpCode.JUMPNZB:
                case OpCode.RETURN:
                case OpCode.RETURNVAL:
                {
@@ -165,7 +165,7 @@ unit Emit
            {
                case OpCode.JUMPZW:
                case OpCode.JUMPW:
-               case OpCode.JUMPNZW:
+               //case OpCode.JUMPNZW:
                case OpCode.CALL:
                case OpCode.CALLF: 
                {

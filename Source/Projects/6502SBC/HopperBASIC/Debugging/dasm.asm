@@ -245,6 +245,7 @@ unit Dasm
                                 
                                 LDA #']' COut();
                             }
+                            /*
                             case OpCode.JUMPB:
                             case OpCode.JUMPZB:
                             case OpCode.JUMPNZB:
@@ -300,6 +301,7 @@ unit Dasm
                                 
                                 LDA #')' COut();
                             }
+                            */
                         }
                     }
                     case 0x80:  // two byte operands
@@ -396,7 +398,7 @@ unit Dasm
                             }
                             case OpCode.JUMPW:
                             case OpCode.JUMPZW:
-                            case OpCode.JUMPNZW:
+                            //case OpCode.JUMPNZW:
                             {
                                 LDA #'(' COut();
                                 LDA # BASICType.INT

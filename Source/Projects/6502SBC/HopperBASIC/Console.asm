@@ -442,11 +442,12 @@ unit Console // Console.asm
 #ifdef DEBUG
                     LDX #1 // DASM
                     parseList();
-#else
-                    parseDasm();
-#endif
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+#else
+                    Commands.NotAvailable();
+#endif
+                    
                 }
                 case Token.FUNCS:
                 {
@@ -468,33 +469,53 @@ unit Console // Console.asm
                 
                 case Token.HEAP:
                 {
+#ifdef DEBUG                    
                     parseHeap();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+#else                    
+                    Commands.NotAvailable();
+#endif
                 }
                 case Token.BUFFERS:
                 {
+#ifdef DEBUG
                     parseBuffers();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+#else
+                    Commands.NotAvailable();
+#endif
                 }
                 case Token.DUMP:
                 {
+#ifdef DEBUG
                     parseDump();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+#else
+                    Commands.NotAvailable();
+#endif
                 }
                 case Token.TRON:
                 {
+#ifdef TRACE
                     parseTron();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+#else
+                    Commands.NotAvailable();
+#endif
                 }
                 case Token.TROFF:
                 {
+#ifdef TRACE
                     parseTroff();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
+#else
+                    Commands.NotAvailable();
+#endif
                 }
                 
                 case Token.SAVE:
@@ -986,12 +1007,6 @@ unit Console // Console.asm
             }
         }
     }
-#else
-    // Stubs for non-debug builds
-    parseHeap()    { Commands.NotAvailable(); } // only in DEBUG
-    parseBuffers() { Commands.NotAvailable(); } // only in DEBUG
-    parseDump()    { Commands.NotAvailable(); } // only in DEBUG
-    parseDasm()    { Commands.NotAvailable(); } // only in DEBUG
 #endif
 
 #if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
@@ -1024,10 +1039,6 @@ unit Console // Console.asm
             if (C) { Commands.CmdTroff(); }
         }
     }
-#else
-    // Stubs for non-trace builds
-    parseTron()  { Commands.NotAvailable(); } // only in TRACE
-    parseTroff() { Commands.NotAvailable(); } // only in TRACE
 #endif
     
     // Parse optional identifier argument

@@ -1079,6 +1079,7 @@ unit Compiler // Compiler.asm
                         {
                             case BASICType.LONG:
                             {
+                                // DEAD ?
                                 LDA ZP.TOP0
                                 STA Compiler.compilerOperand1
                                 LDA ZP.TOP1
@@ -1108,11 +1109,13 @@ unit Compiler // Compiler.asm
                             }
                             case BASICType.CHAR:
                             {
+                                // DEAD ?
                                 LDA ZP.TOPL
                                 Emit.PushChar();
                             }
                             case BASICType.INT:
                             {
+                                // DEAD ?
                                 LDA ZP.TOP0
                                 STA Compiler.compilerOperand1
                                 LDA ZP.TOP1
@@ -1161,6 +1164,7 @@ unit Compiler // Compiler.asm
                 } // found
                 else
                 {
+                    // DEAD ?
                     Functions.Find();  // Input: ZP.TOP = name pointer, Output: ZP.IDX = function node
                     if (C)
                     {

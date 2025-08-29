@@ -531,45 +531,27 @@ unit BASICTypes // BASICTypes.asm
                     {
                         LDA #'\\' Serial.WriteChar(); 
                         LDX ZP.TOPL
-                        switch (X)
+                        loop
                         {
-                            case 0x00:
+                            switch (X)
                             {
-                                LDA #'0' Serial.WriteChar();
+                                case 0x00: { LDA #'0' }
+                                case 0x07: { LDA #'a' }
+                                case 0x08: { LDA #'b' }
+                                case 0x09: { LDA #'t' }
+                                case 0x0A: { LDA #'n' }
+                                case 0x0C: { LDA #'f' }
+                                case 0x0D: { LDA #'r' }
+                                case 0x27: { LDA #'e' }
+                                default:
+                                {
+                                    LDA #'x' Serial.WriteChar(); TXA Serial.HexOut();
+                                    break;
+                                }
                             }
-                            case 0x07:
-                            {
-                                LDA #'a' Serial.WriteChar();
-                            }
-                            case 0x08:
-                            {
-                                LDA #'b' Serial.WriteChar();
-                            }
-                            case 0x09:
-                            {
-                                LDA #'t' Serial.WriteChar();
-                            }
-                            case 0x0A:
-                            {
-                                LDA #'n' Serial.WriteChar();
-                            }
-                            case 0x0C:
-                            {
-                                LDA #'f' Serial.WriteChar();
-                            }
-                            case 0x0D:
-                            {
-                                LDA #'r' Serial.WriteChar();
-                            }
-                            case 0x27:
-                            {
-                                LDA #'e' Serial.WriteChar();
-                            }
-                            default:
-                            {
-                                LDA #'x' Serial.WriteChar(); TXA Serial.HexOut();
-                            }
-                        }
+                            Serial.WriteChar();
+                            break;
+                        } // loop
                     }
                     LDA #'\'' Serial.WriteChar();
                 }

@@ -537,6 +537,7 @@ unit Statement // Statement.asm
             BASICTypes.FromToken();
             if (C)
             {
+                // TODO : make this a much simpler "if"
                 switch (A)
                 {
                     case BASICType.CHAR:
@@ -579,23 +580,9 @@ unit Statement // Statement.asm
                     }
                     default:
                     {
-                        // must be a constant, type defined by inference later
-                        LDA # BASICType.VOID
-                        STA stmtType
-                        
-                        LDA stmtSymbol
-                        CMP #SymbolType.CONSTANT
-                        if (NZ)
-                        {
-                            Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
-                        }
-                        TAX
-                        CMP #Token.EQUALS
-                        if (NZ)
-                        {
-                            Error.ExpectedEqual(); BIT ZP.EmulatorPCL
-                        }
-                        
+#ifdef DEBUG                        
+                        Error.InternalError(); BIT ZP.EmulatorPCL                        
+#endif
                     }
                 }
             }

@@ -159,7 +159,7 @@ unit Utilities // Utilities.asm
         {
             INC ZP.FLENGTHH
         }
-    }
+    }  
     IncSIZE()
     {
         INC ZP.FSIZEL
@@ -176,6 +176,15 @@ unit Utilities // Utilities.asm
             DEC FSOURCEADDRESSH
         }
         DEC FSOURCEADDRESSL
+    }
+    DecLENGTH()
+    {
+        LDA FLENGTHL
+        if (Z)
+        {
+            DEC FLENGTHH
+        }
+        DEC FLENGTHL
     }
     
     // copy LCOUNT bytes from FSOURCEADDRESS to FDESTINATIONADDRESS

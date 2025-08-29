@@ -14,12 +14,11 @@ CONST K3 = 'Q'
 CONST K4 = TRUE
 CONST K5 = "const"
 
-! Array declarations - all types
-BIT flags[5]
-CHAR buf[10]
-BYTE bytes[8]
-WORD words[4]
-INT ints[6]
+FUNC ClearScreen()
+    CLS
+ENDFUNC
+ClearScreen()
+
 
 ! Test all operators
 FUNC TestOps()
@@ -44,6 +43,7 @@ FUNC TestOps()
     r = a * 4
     r = a * 10
     r = a * 16
+    r = r + a
     
     r = -a
     r = -b
@@ -173,6 +173,46 @@ FUNC TestFlow()
 ENDFUNC
 TestFlow()
 FORGET TestFlow
+
+! Array declarations - all types
+
+BYTE bytes[8]
+VAR ig
+VAR bg
+FUNC TestArraysOpt(bytesl)
+    VAR il
+    VAR bl
+    bytes[il] = 0
+    bytes[ig] = 0
+    bytes[il] = bl
+    bytes[ig] = bl
+    bytes[il] = bg
+    bytes[ig] = bg
+    bl = bytes[il]
+    bl = bytes[ig]
+    bg = bytes[il]
+    bg = bytes[ig]
+    bytesl[il] = 0
+    bytesl[ig] = 0
+    bytesl[il] = bl
+    bytesl[ig] = bl
+    bytesl[il] = bg
+    bytesl[ig] = bg
+    bl = bytesl[il]
+    bl = bytesl[ig]
+    bg = bytesl[il]
+    bg = bytesl[ig]
+    bg = bg + ig
+    bg = ig + bg
+ENDFUNC
+TestArraysOpt(bytes)
+FORGET TestArraysOpt
+
+
+BIT flags[5]
+CHAR buf[10]
+WORD words[4]
+INT ints[6]
 
 ! Test all array operations
 FUNC TestArrays()
@@ -413,6 +453,7 @@ ENDFUNC
 FUNC ToForget()
     PRINT "Will be forgotten"
 ENDFUNC
+ToForget()
 
 ! Test FUNCS before FORGET
 FUNCS
@@ -491,6 +532,9 @@ VAR G = 10
 G = G + 1
 G = G / 0
 H = 0
+CONST G = 10
+CONST C = 10
+VAR C = 10
 BEGIN
     FOR I = -1 TO 1
     NEXT I
@@ -498,23 +542,33 @@ BEGIN
 END
 RUN
 BYTE B[10]
+BYTE W[C]
 B[11] = 0
 B[-1] = 0
 PRINT "A" + 10
+C
 
+func single() print "hello" endfunc
+single()
 
+FUNCS SINGLE
+
+DUMP
+BUFFERS
+HEAP
+DASM
+TRON
+TROFF
 
 
 ! Test file operations
-FUNC MyFunc(A,B)
-    PRINT A, B
-ENDFUNC
-BEGIN
-    MyFunc("Hello", "World")
-END
+FUNC MyFunc(A,B) PRINT A, B ENDFUNC
+BEGIN PRint("hello") END
+RUN
 
 FORMAT
-Y
+N
+DEL coverage
 SAVE coverage
 
 ! errors
@@ -530,3 +584,9 @@ DEL coverage
 ! Final cleanup
 CLEAR
 NEW
+
+NRL
+SIEVE
+FIBO
+
+BYE

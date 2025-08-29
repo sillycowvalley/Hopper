@@ -710,6 +710,7 @@ unit Executor // Executor.asm
 #endif
            }
            // Control flow (short jumps)
+           /*
            case OpCode.JUMPB:
            {
                executeJumpB();
@@ -722,6 +723,7 @@ unit Executor // Executor.asm
            {
                executeJumpNZB();
            }
+           */
            
            // Function and system calls
            case OpCode.CALL:
@@ -758,10 +760,12 @@ unit Executor // Executor.asm
            {
                executeJumpZW();
            }
+           /*
            case OpCode.JUMPNZW:
            {
                executeJumpNZW();
            }
+           */
            
            // === THREE BYTE OPERAND OPCODES (0xC0-0xFF) ===
            case OpCode.FORCHK:
@@ -2499,7 +2503,6 @@ unit Executor // Executor.asm
                 INC ZP.PCH
             }
 #endif   
-            if (NC) { break; }
             
             // Calculate local position: BP + offset
             CLC
@@ -2536,7 +2539,7 @@ unit Executor // Executor.asm
             STA ZP.IDYH
             LDA Address.TypeStackLSB, Y
             STA ZP.TOPT
-            
+
             // Inputs: ZP.ACCT = array/string type, ZP.IDX = array/string pointer, ZP.TOPT = index type, ZP.IDY = index
             commonGetItem();
             break;

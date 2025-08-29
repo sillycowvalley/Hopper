@@ -269,6 +269,8 @@ unit Commands
         // - HASEEPROM not defined?
         
         Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+        CheckError();
+        SMB1 ZP.FLAGS
     }
     
 #ifdef DEBUG

@@ -400,6 +400,10 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             SBC ZP.FSOURCEADDRESSH
             STA ZP.FLENGTHH
             
+            // - don't miss the first token
+            // - do skip the END (by decreasing FLENGTH)
+            DecSOURCEADDRESS(); 
+            
             // Create token stream copy
             Tools.CreateTokenStream(); // captureBeginBody() : Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
             CheckError();
@@ -491,6 +495,10 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             LDA ZP.TokenizerPosH
             SBC ZP.FSOURCEADDRESSH
             STA ZP.FLENGTHH
+            
+            // - don't miss the first token
+            // - do skip the ENDFUNC (by not increasing FLENGTH)
+            DecSOURCEADDRESS(); 
             
             // Create token stream copy using existing pattern
             Tools.CreateTokenStream(); // captureFunctionBody(): Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
