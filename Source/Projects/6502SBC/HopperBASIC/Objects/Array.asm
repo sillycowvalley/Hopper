@@ -315,8 +315,7 @@ unit BASICArray
                 {
                     // Read single byte
                     LDA [IDY], Y
-                    STA ZP.TOP0
-                    Long.ZeroTop3();
+                    Long.LoadTopByte();  // A = byte value
                 }
                 default:
                 {

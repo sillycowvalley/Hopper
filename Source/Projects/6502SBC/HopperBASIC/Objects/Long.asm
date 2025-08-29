@@ -34,6 +34,11 @@ unit Long
         STA ZP.TOPT
         Long.PushTopStrict();
     }
+    LoadTopByte()  // A = byte value
+    {
+        STA ZP.TOP0
+        Long.ZeroTop3();
+    }
     ZeroTop()
     {
         STZ ZP.TOP0
@@ -63,6 +68,13 @@ unit Long
         ORA ZP.TOP2
         ORA ZP.TOP3
     }
+    ZeroCheckNext()
+    {
+        LDA ZP.NEXT0
+        ORA ZP.NEXT1
+        ORA ZP.NEXT2
+        ORA ZP.NEXT3
+    }
     
     zeroResult()
     {
@@ -90,6 +102,28 @@ unit Long
         STA ZP.RESULT2
         LDA ZP.NEXT3
         STA ZP.RESULT3
+    }
+    moveNextToTop()
+    {
+        LDA ZP.NEXT0
+        STA ZP.TOP0
+        LDA ZP.NEXT1
+        STA ZP.TOP1
+        LDA ZP.NEXT2
+        STA ZP.TOP2
+        LDA ZP.NEXT3
+        STA ZP.TOP3
+    }
+    moveTopToNext()
+    {
+        LDA ZP.TOP0
+        STA ZP.NEXT0
+        LDA ZP.TOP1
+        STA ZP.NEXT1
+        LDA ZP.TOP2
+        STA ZP.NEXT2
+        LDA ZP.TOP3
+        STA ZP.NEXT3
     }
     moveResultToTop()
     {
@@ -475,7 +509,7 @@ unit Long
         SBC ZP.NEXT3
         STA ZP.NEXT3
     }
-    
+        
     utilityDoLongSigns()
     {
         PHX
@@ -603,7 +637,7 @@ unit Long
     
     utility16BitDiv10()
     {
-        // NEXT = NEXT / 10, remainder in RESULT
+        // NEXT = NEXT / 10 (could remainder in RESULT : see below)
         LDA ZP.NEXT0
         STA ZP.TOP0
         LDA ZP.NEXT1
@@ -639,9 +673,8 @@ unit Long
             TAY                          // mod 10 result!
             
             // save remainder:
-            TYA
-            STA    ZP.RESULT0            // Save mod 10
-            STZ    ZP.RESULT1
+            //STA    ZP.RESULT0            // Save mod 10
+            //STZ    ZP.RESULT1
             
             LDA    tensRemaining, Y      // Fill the low byte with the tens it should
             STA    ZP.NEXT0                 // have at this point from the high byte divide.
@@ -679,6 +712,8 @@ unit Long
         STA    ZP.NEXT0
     }
 
+    // X = 0 means you only care about the / result in NEXT
+    // X = 1 means you care about the % result in RESULT (and you'll get the / result in NEXT)
     DivMod()
     {
         // NEXT = NEXT / TOP + RESULT
@@ -911,6 +946,7 @@ Debug.NL(); NLOut(); RLOut();
     }
     
 
+    /*
     // Powers of 10 table for 32-bit LONG values (little-endian format)
     // Each entry is 4 bytes: LSB, byte1, byte2, MSB
     const byte[] PrDec32Tens = { 
@@ -1058,6 +1094,7 @@ Debug.NL(); NLOut(); RLOut();
         PLX
         PLA
     }
+    */
     
     // APIs for Tokenizer.GetTokenNumber() 
     utilityLongMUL()
@@ -1514,4 +1551,70 @@ RLOut();
         STA ZP.TOPT
     }
     
+    // Print 32-bit LONG decimal number
+    // Input: ZP.TOP0-3 = 32-bit number to print
+    //        ZP.TOPT = LONG (only support LONG)
+    // Output: Decimal number printed to serial
+    // Munts: ZP.NEXT, ZP.RESULT, ZP.ACC, A, X, Y
+    Print()
+    {
+        if (BBR3, ZP.TOPT) // Bit 3 - LONG
+        {
+            Error.TypeMismatch(); BIT ZP.EmulatorPCL // only allow LONG
+            CheckError();
+            return;
+        }
+        
+        moveTopToNext();
+        if (BBS7, ZP.NEXT3)
+        {
+            LDA #'-'
+            Serial.WriteChar();
+            negateLongNEXT();
+        }
+        
+        // Check for zero special case
+        Long.ZeroCheckNext();
+        if (Z)
+        {
+            LDA #'0'
+            Serial.WriteChar();
+            return;
+        }
+        
+        // Extract digits by repeated division by 10
+        LDY #0  // Digit counter (also stack depth)
+        loop
+        {
+            // Setup for DivMod: NEXT = value, TOP = 10
+            
+            LDA #10
+            LoadTopByte();
+            
+            PHY
+            LDX #1          // X=1 for mod (ensures we get remainder)
+            DivMod();       // NEXT = quotient, RESULT = remainder
+            PLY
+            
+            // Push digit (remainder) onto stack
+            LDA ZP.RESULT0  // Remainder is 0-9
+            ORA #'0'        // Convert to ASCII
+            PHA
+            INY             // Count digits
+            
+            // Check if quotient is zero
+            Long.ZeroCheckNext();
+            if (Z) { break; }  // Done extracting digits
+        }
+        
+        // Pop and print digits (they're in reverse order on stack)
+        loop
+        {
+            PLA
+            Serial.WriteChar();
+            DEY
+            if (Z) { break; }
+        }
+        SEC
+    }
 }

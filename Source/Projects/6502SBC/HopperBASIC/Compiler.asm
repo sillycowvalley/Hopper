@@ -1101,13 +1101,13 @@ unit Compiler // Compiler.asm
                             }
                             case BASICType.BIT:
                             {
-                                LDA ZP.TOPL
+                                LDA ZP.TOP0
                                 Emit.PushBit();
                             }
                             case BASICType.BYTE:
                             {
+                                Long.ZeroTop3(); // needed?
                                 LDA ZP.TOP0
-                                Long.ZeroTop3();
                                 Emit.PushByte();
                             }
                             case BASICType.CHAR:
@@ -1505,9 +1505,8 @@ unit Compiler // Compiler.asm
                        CMP #BASICType.BYTE
                        if (Z)
                        {
+                           Long.ZeroTop3(); // needed?
                            LDA ZP.TOP0
-                           Long.ZeroTop3();
-                           
                            Emit.PushByte();
                            CheckErrorAndSetFailure();
                            if (NC) { return; }

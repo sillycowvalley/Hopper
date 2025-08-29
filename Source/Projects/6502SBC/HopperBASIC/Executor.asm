@@ -1022,8 +1022,7 @@ unit Executor // Executor.asm
        
        // Store INT 1 in ZP.TOP
        LDA #1
-       STA ZP.TOP0
-       Long.ZeroTop3();
+       Long.LoadTopByte();
        
        Long.PushTopStrictLONG();
        
@@ -1128,9 +1127,8 @@ unit Executor // Executor.asm
             INC ZP.PCH
         }
 #endif
-       STA ZP.TOP0
-       Long.ZeroTop3();
        
+       Long.LoadTopByte();  // A = byte value
        Long.PushTopStrictLONG(); // sets TOPT = LONG
        
 #ifdef TRACE
