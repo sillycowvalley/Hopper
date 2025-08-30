@@ -20,6 +20,7 @@ unit File
     const byte FileStartSector      = ZP.FS5;                  // First sector of current file
     const byte CurrentFileEntry     = ZP.FS6;                  // Directory entry index (0-15)
     
+    // FilePosition is used in: StartSave(initializeSaveState), AppendStream, EndSave, DumpFileState
     const byte FilePosition         = ZP.FS7;                  // Current byte position in file (16-bit), for use with LDA [FilePosition]
     const byte FilePositionL        = ZP.FS7;                  //    "
     const byte FilePositionH        = ZP.FS8;                  //    "
@@ -37,8 +38,12 @@ unit File
     const byte SectorPositionL      = ZP.FS12;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
     const byte SectorPositionH      = ZP.FS13;
     
-    const byte StreamBytesAvailable = ZP.FS14;                // used only within NextStream()
-    const byte CurrentDirectorySector = ZP.FS15;              // Current directory sector being accessed
+    const byte CurrentDirectorySector = ZP.FS14;              // Current directory sector being accessed
+    
+    // used by Delete (compaction)
+    const byte LastOccupiedEntry      = ZP.FS15;              
+    const byte LastOccupiedSector     = ZP.FS7;               // alias of FilePositionL (see above)
+    const byte PreviousSector         = ZP.FS8;               // alias of FilePositionH (see above)
 
     
     
@@ -519,8 +524,163 @@ unit File
     
     
     
+    // Find last occupied entry in directory chain for compaction
+    // Input: CurrentFileEntry = deleted slot, CurrentDirectorySector = its sector
+    // Output: C set if replacement found (last entry != deleted entry)
+    //         NC if no replacement needed (deleted was last, or no other entries)
+    //         If C set: LastOccupiedEntry, LastOccupiedSector, PreviousSector filled
+    // Munts: A, X, Y
+    findLastOccupiedEntry()
+    {
+        STZ LastOccupiedEntry
+        STZ LastOccupiedSector
+        STZ PreviousSector
+        
+        LDA #1                       // Start from first directory sector
+        STA CurrentDirectorySector
+        
+        loop // Walk entire chain
+        {
+            // A = CurrentDirectorySector
+            loadDirectorySector();
+            
+            // Scan this sector backwards from entry 15
+            LDY #15
+            loop
+            {
+                // Check if occupied (length != 0)
+                entryToOffset();     // Y * 16 -> X
+                LDA DirectoryBuffer + 0, X
+                ORA DirectoryBuffer + 1, X
+                if (NZ)
+                {
+                    // Found occupied entry - update tracking
+                    STY LastOccupiedEntry
+                    LDA CurrentDirectorySector
+                    STA LastOccupiedSector
+                    break;  // Move to next sector immediately
+                }
+                DEY
+                if (MI) { break; }  // Done with this sector
+            }
+            
+            // Get next sector and track previous
+            LDA CurrentDirectorySector
+            getNextDirectorySector();  // A = next sector (or 1 for end)
+            CMP #1                     // End of chain?
+            if (Z) { break; }          // Done walking
+            
+            // Only update previous if we're continuing
+            LDX CurrentDirectorySector
+            STX PreviousSector   
+            
+            STA CurrentDirectorySector // Continue with next sector(A)
+        }// loop
+        
+        // Set C if we found an entry to move
+        LDA LastOccupiedSector
+        if (NZ) { SEC } else { CLC }
+    }
     
-    
+    // Move directory entry from last occupied to deleted slot
+    // Input: LastOccupiedEntry/Sector = source, CurrentFileEntry/CurrentDirectorySector = dest
+    // Uses: FileDataBuffer for source read, DirectoryBuffer for dest write
+    // Munts: A, X, Y
+    moveDirectoryEntry()
+    {
+        // Load destination sector into DirectoryBuffer
+        LDA CurrentDirectorySector
+        loadDirectorySector();
+        LDA #(DirectoryBuffer % 256)
+        STA ZP.FDESTINATIONADDRESSL
+        LDA #(DirectoryBuffer / 256)
+        STA ZP.FDESTINATIONADDRESSH
+        
+        // Check if same sector
+        LDA CurrentDirectorySector
+        CMP LastOccupiedSector
+        if (Z)
+        {
+            // Same sector - both in DirectoryBuffer
+            LDA ZP.FDESTINATIONADDRESSL
+            STA ZP.FSOURCEADDRESSL
+            LDA ZP.FDESTINATIONADDRESSH
+            STA ZP.FSOURCEADDRESSH
+        }
+        else
+        {    
+            // Load source sector into FileDataBuffer
+            LDA LastOccupiedSector
+            readSector();
+            
+            LDA #(FileDataBuffer  % 256)
+            STA ZP.FSOURCEADDRESSL
+            LDA #(FileDataBuffer  / 256)
+            STA ZP.FSOURCEADDRESSH
+        }
+        
+        // Get source offset
+        LDA LastOccupiedEntry
+        AND #0x0F
+        TAY
+        entryToOffset();             // Y * 16 -> X
+        
+        CLC
+        TXA
+        ADC ZP.FSOURCEADDRESSL
+        STA ZP.FSOURCEADDRESSL
+        LDA ZP.FSOURCEADDRESSH
+        ADC #0
+        STA ZP.FSOURCEADDRESSH
+        
+        // Get dest offset
+        fileEntryToDirectoryEntry() // (CurrentFileEntry & 0x0F) * 16 -> Y
+        
+        CLC
+        TYA
+        ADC ZP.FDESTINATIONADDRESSL
+        STA ZP.FDESTINATIONADDRESSL
+        LDA ZP.FDESTINATIONADDRESSH
+        ADC #0
+        STA ZP.FDESTINATIONADDRESSH
+        
+        // Copy 16 bytes
+        LDY #16
+        loop
+        {
+            DEY
+            if (Z) { break;
+            LDA [ZP.FSOURCEADDRESS], Y
+            STA [ZP.FDESTINATIONADDRESS], Y
+        } // loop
+        
+        // Clear source entry
+        LDY #16
+        LDA #0
+        loop
+        {
+            DEY
+            if (Z) { break;
+            STA [ZP.FSOURCEADDRESS], Y
+        } // loop
+        
+        // Write both sectors back
+        LDA CurrentDirectorySector
+        CMP LastOccupiedSector
+        if (Z)
+        {
+            // Same sector - only write the one we modified
+            writeDirectorySector();
+        }
+        else
+        {
+            // Different sectors - write both
+            writeDirectorySector();
+            
+            LDA LastOccupiedSector
+            writeSector();
+        }
+    }
     
     // Delete file from EEPROM file system
     // Input: ZP.STR = pointer to filename (null-terminated)
@@ -571,6 +731,66 @@ unit File
             LDA CurrentDirectorySector 
             writeDirectorySector();
             writeFAT();
+            
+            // Save deleted entry location for compaction
+            LDA CurrentFileEntry
+            PHA
+            LDA CurrentDirectorySector  
+            PHA
+            
+            findLastOccupiedEntry();
+            if (C)
+            {
+Debug.NL();                        
+LDA #'E' COut(); LDA #':' COut(); LDA LastOccupiedEntry HOut(); Space();
+LDA #'O' COut(); LDA #':' COut(); LDA LastOccupiedSector HOut(); Space();
+LDA #'P' COut(); LDA #':' COut(); LDA PreviousSector HOut(); Space();
+                // Restore deleted entry location
+                PLA
+                STA CurrentDirectorySector
+                PLA
+                STA CurrentFileEntry
+                
+                // Move last entry to fill the deleted slot
+                moveDirectoryEntry();
+                
+                // Check if last sector is now empty
+                LDA LastOccupiedSector
+                CMP #1                   // Never unlink sector 1
+                if (NZ)
+                {
+Debug.NL();                        
+LDA #'?' COut();    
+                    LDA LastOccupiedEntry
+                    AND #0x0F            // Was it slot 0?
+                    if (Z)               // Yes - sector is now empty
+                    {
+LDA #'U' COut();    
+                        // Unlink the empty sector
+                        LDY PreviousSector
+                        LDA #1               // End-of-chain marker
+                        STA FATBuffer, Y
+                        
+                        // Free the empty sector
+                        LDY LastOccupiedSector
+                        LDA #0
+                        STA FATBuffer, Y
+                        
+                        writeFAT();
+                    }
+                }
+
+
+            }
+            else
+            {
+Debug.NL();                        
+LDA #'N' COut();
+                // Clean up stack if no move needed
+                PLA
+                PLA
+            }
+            
             
             SEC // Success
             break;
@@ -1253,7 +1473,7 @@ unit File
                     printFileEntry();    // Uses X = entry offset
 #ifdef FILEDEBUG
                     // Print hex dump of first 32 bytes
-                    printFileHexDump(); // Input: X = directory entry offset
+                    // printFileHexDump(); // Input: X = directory entry offset
 #endif                    
                 }
                 
@@ -2199,6 +2419,7 @@ unit File
                 if (NZ)
                 {
                     // Print entry number (handle multi-digit)
+                    /*
                     TXA
                     PHA                  // Save X
                     TYA
@@ -2213,6 +2434,33 @@ unit File
                     LDA #':'
                     Print.Char();
                     Print.Space();
+                    */
+                    
+                    
+                    // Print entry number as #global [local]
+                    TXA
+                    PHA                  // Save X
+                    TYA
+                    PHA                  // Save Y
+                    
+                    // Print #global
+                    LDA #'#'
+                    Print.Char();
+                    TXA                  // Global entry number to A
+                    STA ZP.TOPL         
+                    STZ ZP.TOPH
+                    STZ ZP.TOPT
+                    Print.Decimal();    // Print global index
+                    
+                    Print.Space();
+                    
+                    // Print [local]
+                    LDA #'['
+                    Print.Char();
+                    TYA                  // Local entry within sector
+                    Print.Hex();        // Just hex for 0-F
+                    LDA #']'
+                    Print.Char();
                     
                     PLA                  // Restore Y
                     TAY
