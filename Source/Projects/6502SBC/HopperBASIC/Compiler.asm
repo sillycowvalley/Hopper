@@ -2126,7 +2126,120 @@ unit Compiler // Compiler.asm
        PLA
    }
    
-   
+    compileSysCallStatements()
+    {
+        loop
+        {
+            switch (A)
+            {
+                case Token.I2CBEGIN:
+                {
+                    LDA #SysCallType.I2CBegin
+                }
+                case Token.I2CPUT:
+                {
+                    LDA #SysCallType.I2CPut
+                }
+                
+                // include these so you can ignore/discard the return values (treat them like statements):
+                case Token.I2CEND:
+                {
+                    LDA #SysCallType.I2CEnd
+                }
+                case Token.I2CGET:
+                {
+                    LDA #SysCallType.I2CGet
+                }
+                case Token.I2CNEXT:
+                {
+                    LDA #SysCallType.I2CNext
+                }
+                
+                // VOID syscalls (procedures that don't return values)
+                case Token.DELAY:
+                {
+                    LDA #SysCallType.Delay
+                }
+                case Token.POKE:
+                {
+                    LDA #SysCallType.Poke
+                }
+                case Token.WRITE:
+                {
+                    LDA #SysCallType.Write
+                }
+                case Token.PINMODE:
+                {
+                    LDA #SysCallType.PinMode
+                }
+                default:
+                {
+                    LDA #0 // not processed
+                    break;
+                }
+            } // switch
+            compileSysCall();
+            LDA #1 // processed
+            break;
+        } // loop
+    }
+    compileMinorStatements()
+    {
+        loop
+        {
+            switch (A)
+            {
+                case Token.WHILE:
+                {
+                   STZ compilerCanDeclareLocals // no more locals after this
+                   CompilerFlow.CompileWhileStatement();
+                }
+                case Token.DO:
+                {
+                   STZ compilerCanDeclareLocals // no more locals after this
+                   CompilerFlow.CompileDoUntilStatement();
+                }
+                case Token.RETURN:
+                {
+                   STZ compilerCanDeclareLocals // no more locals after this
+                   compileReturnStatement();
+                }
+                case Token.IF:
+                {
+                   STZ compilerCanDeclareLocals // no more locals after this
+                   CompilerFlow.CompileIfStatement();
+                }
+                case Token.REM:
+                case Token.COMMENT:
+                {
+                    Tokenizer.NextToken(); // Skip comments - advance to next token
+                }
+                case Token.IDENTIFIER:
+                {
+                    compileIdentifierStatement();   // Could be assignment or function call
+                }
+                case Token.FOR:
+                {
+                   CompilerFlow.CompileForStatement();
+                }
+                case Token.PRINT:
+                {
+                   compilePrintStatement();
+                }
+                case Token.CLS:
+                {
+                   compileCLSStatement();
+                }
+                default:
+                {
+                    LDA #0 // not processed
+                    break;
+                }
+            } // switch
+            LDA #1 // processed
+            break;
+        } // loop
+    }
 
    // Compile a single statement within a function
    // Input: ZP.CurrentToken = first token of statement
@@ -2144,132 +2257,22 @@ unit Compiler // Compiler.asm
        loop // Single exit block
        {
            LDA ZP.CurrentToken
+           compileMinorStatements();
+           if (Z) // not processed
+           {
+               LDA ZP.CurrentToken
+               compileSysCallStatements();
+           }
+           if (NZ) // processed 
+           {
+               CheckErrorAndSetFailure();
+               if (C) { States.SetSuccess(); }
+               return; 
+           } 
+           
+           LDA ZP.CurrentToken
            switch (A)
            {
-               case Token.WHILE:
-               {
-                   STZ compilerCanDeclareLocals // no more locals after this
-                   CompilerFlow.CompileWhileStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.DO:
-               {
-                   STZ compilerCanDeclareLocals // no more locals after this
-                   CompilerFlow.CompileDoUntilStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.PRINT:
-               {
-                   compilePrintStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.CLS:
-               {
-                   compileCLSStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.RETURN:
-               {
-                   STZ compilerCanDeclareLocals // no more locals after this
-                   compileReturnStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.IF:
-               {
-                   STZ compilerCanDeclareLocals // no more locals after this
-                   CompilerFlow.CompileIfStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-               case Token.FOR:
-               {
-                   CompilerFlow.CompileForStatement();
-                   CheckErrorAndSetFailure();
-                   if (NC) { break; }
-               }
-                case Token.IDENTIFIER:
-                {
-                    // Could be assignment or function call
-                    compileIdentifierStatement();
-                    CheckErrorAndSetFailure();
-                    if (NC) { break; }
-                }
-                case Token.REM:
-                case Token.COMMENT:
-                {
-                    // Skip comments - advance to next token
-                    Tokenizer.NextTokenCheckSetFailure();
-                    if (NC) { break; }
-                }
-               
-                case Token.I2CBEGIN:
-                {
-                    LDA #SysCallType.I2CBegin
-                    compileSysCall();
-                    CheckErrorAndSetFailure();
-                    if (NC) { break; }
-                }
-                case Token.I2CPUT:
-                {
-                    LDA #SysCallType.I2CPut
-                    compileSysCall();
-                    CheckErrorAndSetFailure();
-                    if (NC) { break; }
-                }
-                // include these so you can ignore/discard the return values (treat them like statements):
-                case Token.I2CEND:
-                {
-                    LDA #SysCallType.I2CEnd
-                    compileSysCall();
-                    CheckErrorAndSetFailure();
-                    if (NC) { break; }
-                }
-                case Token.I2CGET:
-                {
-                    LDA #SysCallType.I2CGet
-                    compileSysCall();
-                    CheckErrorAndSetFailure();
-                    if (NC) { break; }
-                }
-                case Token.I2CNEXT:
-                {
-                    LDA #SysCallType.I2CNext
-                    compileSysCall();
-                    CheckErrorAndSetFailure();
-                    if (NC) { break; }
-                }
-               
-                // VOID syscalls (procedures that don't return values)
-                case Token.DELAY:
-                {
-                    LDA #SysCallType.Delay
-                    compileSysCall();
-                    if (NC) { break; }
-                }
-                case Token.POKE:
-                {
-                    LDA #SysCallType.Poke
-                    compileSysCall();
-                    if (NC) { break; }
-                }
-                case Token.WRITE:
-                {
-                    LDA #SysCallType.Write
-                    compileSysCall();
-                    if (NC) { break; }
-                }
-                case Token.PINMODE:
-                {
-                    LDA #SysCallType.PinMode
-                    compileSysCall();
-                    if (NC) { break; }
-                }
-               
                case Token.INT:
                case Token.WORD:
                case Token.BYTE:
@@ -2328,9 +2331,11 @@ unit Compiler // Compiler.asm
                    break;
                }
            }
-           
-           States.SetSuccess();
+//#ifdef DEBUG
+           Error.InternalError(); BIT ZP.EmulatorPCL // all cases should break
+           //States.SetSuccess();
            break;
+//#endif
        } // loop
        
 #ifdef TRACEPARSE

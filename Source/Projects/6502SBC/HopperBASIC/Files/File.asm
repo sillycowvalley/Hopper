@@ -1166,8 +1166,7 @@ unit File
                         // Found the file!
                         // CurrentFileEntry = (CurrentDirectorySector - 1) * 16 + Y
                         LDA CurrentDirectorySector
-                        SEC
-                        SBC #1                   // Sector 1 = entries 0-15
+                        DEC                      // Sector 1 = entries 0-15
                         ASL A ASL A ASL A ASL A  // * 16
                         STA CurrentFileEntry
                         TYA
@@ -2167,8 +2166,7 @@ unit File
                     // Found free entry!
                     // CurrentFileEntry = (CurrentDirectorySector - 1) * 16 + Y
                     LDA CurrentDirectorySector
-                    SEC
-                    SBC #1                  // Sector 1 = entries 0-15
+                    DEC                     // Sector 1 = entries 0-15
                     ASL A ASL A ASL A ASL A // * 16
                     STA CurrentFileEntry
                     TYA                     // Add local entry index
@@ -2209,8 +2207,7 @@ unit File
                 
                 // First entry in new sector is free
                 LDA CurrentDirectorySector
-                SEC
-                SBC #1
+                DEC
                 ASL A ASL A ASL A ASL A          // * 16
                 STA CurrentFileEntry
                 
