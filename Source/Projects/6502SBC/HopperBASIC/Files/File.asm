@@ -905,52 +905,73 @@ unit File
     // Input: ZP.STR = filename to find
     // Output: C set if found, NC if not found
     //         CurrentFileEntry = directory entry index if found
-    // Munts: A, Y
+    // Munts:  A, Y
     findFileInDirectory()
     {
 #ifdef TRACEFILE
         LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        LDY #0                   // Directory entry index (0-15)
+
+        LDA #1                           // Start with first directory sector
+        STA CurrentDirectorySector
+        STZ CurrentFileEntry             // Start with global entry 0
         
         loop
         {
-            // Calculate directory entry byte offset: Y * 16
-            TYA
-            ASL A ASL A ASL A ASL A // Y * 16
-            TAX                     // X = byte offset in DirectoryBuffer
-            
-            // Check if entry is in use (fileLength != 0)
-            LDA DirectoryBuffer + 0, X  // Length LSB
-            ORA DirectoryBuffer + 1, X  // Length MSB
-            if (NZ)
+            // Load current directory sector
+            LDA CurrentDirectorySector
+            loadDirectorySector();
+        
+            LDY #0                       // Entry index within sector (0-15)
+            loop // Check entries in current sector
             {
-                // Entry is in use, check filename match
-                compareFilenames(); // Uses X = dir entry offset, ZP.STR = filename
-                if (C)
+                // Calculate directory entry byte offset: Y * 16
+                TYA
+                ASL A ASL A ASL A ASL A // Y * 16
+                TAX                     // X = byte offset in DirectoryBuffer
+                
+                // Check if entry is in use (fileLength != 0)
+                LDA (DirectoryBuffer + 0), X  // Length LSB
+                ORA (DirectoryBuffer + 1), X  // Length MSB
+                if (NZ)
                 {
-                    // Found the file
-                    STY CurrentFileEntry
-                    SEC
-#ifdef TRACEFILE
-                    LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                    return;
+                    // Entry in use - check filename match
+                    checkFilenameMatch(); // Compares filename at X with ZP.STR
+                    if (C)
+                    {
+                        // Found the file!
+                        // CurrentFileEntry = (CurrentDirectorySector - 1) * 16 + Y
+                        LDA CurrentDirectorySector
+                        SEC
+                        SBC #1                   // Sector 1 = entries 0-15
+                        ASL A ASL A ASL A ASL A  // * 16
+                        STA CurrentFileEntry
+                        TYA
+                        CLC
+                        ADC CurrentFileEntry
+                        STA CurrentFileEntry
+                        SEC break;           // Exit main loop, FOUND
+                    }
                 }
-            }
+                INY
+                CPY #16
+                if (Z) { CLC break; }        // Checked all entries in this sector, NOT FOUND
+            } // sector loop
             
-            INY
-            CPY #16              // 16 directory entries maximum
-            if (Z)
-            {
-                // Not found
-                CLC
+            // Check if we found the file
+            if (C) { break; }            // Exit with found file
+            
+            // Check for next directory sector
+            LDA CurrentDirectorySector
+            getNextDirectorySector();
+            
+            CMP #1                       // End-of-chain?
+            if (Z) { CLC break; }        // More sectors to process, NOT FOUND
+        } // main loop
+        
 #ifdef TRACEFILE
-                LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                return;
-            }
-        }
+    LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
     }
     
     // Compare filename in directory entry with input filename
@@ -1031,91 +1052,6 @@ unit File
         LDA #(compareFilenamesTrace % 256) STA ZP.TraceMessageL LDA #(compareFilenamesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-    
-    
-    // Compare filename in directory entry with input filename
-    // Input: X = directory entry byte offset, ZP.STR = filename to match
-    // Output: C set if match, NC if no match
-    // Preserves: X, Y
-    // Munts: A
-    /*
-    compareFilenames()
-    {
-        PHX
-        PHY
-        
-        // Point to filename field in directory entry (offset +3)
-        TXA
-        CLC
-        ADC #3
-        TAX                      // X = filename field start in DirectoryBuffer
-        
-        LDY #0                   // Index into input filename
-        
-        loop
-        {
-            // Get character from input filename
-            LDA [ZP.STR], Y
-            if (Z)                // End of input filename
-            {
-                // Input filename ended - check if directory filename also ends here
-                LDA DirectoryBuffer, X
-                if (MI)              // High bit set = last char in directory
-                {
-                    SEC              // Perfect match
-                }
-                else
-                {
-                    CLC              // Input ended but directory continues
-                }
-                break;
-            }
-            
-            // Get character from directory filename and clear high bit for comparison
-            LDA DirectoryBuffer, X
-            AND #0x7F                // Clear high bit for comparison
-            
-            // Compare characters
-            CMP [ZP.STR], Y
-            if (NZ)
-            {
-                CLC                  // No match
-                break;
-            }
-            
-            LDA DirectoryBuffer, X
-            // Check if this was the last character in directory filename
-            if (MI)                  // High bit set = last character
-            {
-                // Directory filename ended - check if input also ends
-                INY
-                LDA [ZP.STR], Y
-                if (Z)
-                {
-                    SEC              // Perfect match
-                }
-                else
-                {
-                    CLC              // Directory ended but input continues
-                }
-                break;
-            }
-            
-            // Move to next character
-            INY
-            INX
-            CPY #13                  // Max filename length check
-            if (Z)
-            {
-                CLC                  // Filename too long - no match
-                break;
-            }
-        }
-        
-        PLY
-        PLX
-    }
-    */
     
     // Get start sector from current directory entry
     // Input: CurrentFileEntry = directory entry index
@@ -1205,8 +1141,7 @@ unit File
             STA DirectoryBuffer, X
             INX
             CPY #0
-            if (NZ) { continue; }
-            break;
+            if (Z) { break; }
         }
 #ifdef TRACEFILE
         LDA #(clearDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(clearDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1267,43 +1202,65 @@ unit File
 #endif
     }
     
-    // Print all file entries with optional debug info
+    // Print all file entries (traverses all directory sectors)
     // Munts: A, X, Y
     printAllFileEntries()
     {
-#ifdef TRACEFILE
-        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        LDY #0                   // Directory entry offset
+    #ifdef TRACEFILE
+        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL 
+        LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
         
-        loop
+        LDA #1                       // Start with first directory sector
+        
+        loop // Traverse directory chain
         {
-            // Calculate byte offset: Y * 16
-            TYA
-            ASL ASL ASL ASL      // Y * 16 = directory entry offset
-            TAX                  // X = byte offset in directory
+            PHA                      // Save current sector
+            loadDirectorySector();   // Load it
+            PLA
+            PHA                      // Keep sector on stack
             
-            // Check if entry is in use (fileLength != 0)
-            LDA DirectoryBuffer + 0, X  // Length LSB
-            ORA DirectoryBuffer + 1, X  // Length MSB
-            if (NZ)
+            LDY #0                   // Entry offset within sector
+            
+            loop // Process entries in current sector
             {
-                // Print filename
-                printFileEntry(); // Input: X = directory entry offset
-                
+                // Check if entry is in use (length != 0)
+                LDA DirectoryBuffer + 0, Y
+                ORA DirectoryBuffer + 1, Y
+                if (NZ)
+                {
+                    // Print this file entry
+                    TYA                  // Y has the byte offset
+                    TAX                  // X = directory entry byte offset
+                    printFileEntry();    // Uses X = entry offset
 #ifdef FILEDEBUG
-                // Print hex dump of first 32 bytes
-                printFileHexDump(); // Input: X = directory entry offset
-#endif
-            }
+                    // Print hex dump of first 32 bytes
+                    printFileHexDump(); // Input: X = directory entry offset
+#endif                    
+                }
+                
+                // Move to next directory entry
+                TYA
+                CLC
+                ADC #16                  // Next entry
+                TAY
+                if (Z) { break; }        // Y wrapped - no more entries
+            }// loop
             
-            INY
-            CPY #16              // 16 entries maximum
-            if (Z) { break; }
-        }
-#ifdef TRACEFILE
-        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+            // Get next directory sector
+            PLA                          // Current sector
+            getNextDirectorySector();
+            
+            CMP #1                       // End-of-chain?
+            if (Z) { break; }            // No more sectors to process
+        }// loop
+        
+    #ifdef TRACEFILE
+        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL 
+        LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
     }
     
     // Print single file entry: "FILENAME.EXT    1234 bytes"
@@ -1641,105 +1598,98 @@ unit File
     }
         
     // Check if current directory entry filename matches ZP.STR
-    // Input: X = directory entry byte offset, ZP.STR = filename to match
+    // Input: X = directory entry byte offset (0, 16, 32...), ZP.STR = filename to match
     // Output: C set if match, NC if no match
     // Preserves: X, Y
     // Munts: A
     checkFilenameMatch()
     {
-#ifdef TRACEFILE
-        LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+    #ifdef TRACEFILE
+        LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL 
+        LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
         PHA
         PHY
         
+        
+//LDA #(DirectoryBuffer / 256)        
+//DumpPage();
+//Debug.NL();
+
         // Point to filename field in directory entry (offset +3)
         TXA
         CLC
         ADC #3
-        TAY                      // Y = filename start in DirectoryBuffer
-        
+        TAX                      // X = filename start in DirectoryBuffer
+
         LDY #0                   // Index into ZP.STR filename
-        LDX #3                   // Index into directory filename field
-        
         loop
         {
             // Get character from input filename
             LDA [ZP.STR], Y
-            if (Z)                // End of input filename
+            if (Z)               // End of input filename?
             {
-                // Check if directory filename also ends here
-                TXA
-                CLC
-                ADC CurrentFileEntry
-                ASL ASL ASL ASL      // * 16 for entry offset
-                CLC
-                ADC #3               // + 3 for filename field
-                TAX
-                LDA DirectoryBuffer, X
-                if (MI)              // High bit set = last char
+Debug.NL(); COut(); Space(); HOut(); Space(); LDA DirectoryBuffer, X COut(); Space(); HOut(); Space(); TYA HOut(); Space(); TXA HOut(); Space();
+                
+                // Input ended - check if PREVIOUS directory character was the last
+                LDA (DirectoryBuffer-1), X
+                if (MI)          // High bit set = that was the last char
                 {
-                    SEC              // Perfect match
+LDA #'Y' COut(); 
+                    SEC          // Perfect match
                 }
                 else
                 {
-                    CLC              // Input ended but directory name continues
+LDA #'N' COut();
+                    CLC          // Input ended but directory continues
                 }
                 break;
             }
             
-            // Get character from directory filename
-            TXA
-            CLC
-            ADC CurrentFileEntry
-            ASL ASL ASL ASL          // * 16 for entry offset  
-            TAX
+            // Compare with directory character (clear high bit)
             LDA DirectoryBuffer, X
-            AND #0x7F                // Clear high bit for comparison
-            
-            // Compare characters
+            PHA                  // Save original with high bit
+            AND #0x7F           // Clear high bit for comparison
             CMP [ZP.STR], Y
             if (NZ)
             {
-                CLC                  // No match
+                PLA             // clean stack
+                CLC             // Characters don't match
                 break;
             }
+            PLA             // Get original back
             
             // Check if this was last character in directory name
-            LDA DirectoryBuffer, X
-            if (MI)                  // High bit set = last character
+            if (MI)             // High bit set = last character
             {
                 // Directory name ended, check if input also ends
                 INY
                 LDA [ZP.STR], Y
                 if (Z)
                 {
-                    SEC              // Perfect match
+                    SEC         // Perfect match
                 }
                 else
                 {
-                    CLC              // Directory ended but input continues  
+                    CLC         // Directory ended but input continues
                 }
                 break;
             }
             
-            INY                      // Next character
+            // Advance both pointers
+            INY
             INX
-            CPX #16                  // Max filename length (13 + 3 header bytes)
-            if (Z)
-            {
-                CLC                  // Filename too long - no match
-                break;
-            }
         }
         
         PLY
         PLA
-#ifdef TRACEFILE
-        LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
+    #ifdef TRACEFILE
+        PHP LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL 
+        LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH PLP
+        Trace.MethodExit();
+    #endif
+    }   
     
     
     // Initialize file state for save operation
@@ -2212,13 +2162,16 @@ unit File
     const string sectorLabel         = "  Sector ";
     const string sectorsLabel        = " sectors)";
     const string freeSectorsLabel    = "Free sectors: ";
+    const string dirSectorsLabel = "Directory sectors: ";
     
-    // Dump directory entries (assumes directory loaded in DirectoryBuffer)
+    // Dump directory entries (traverses all directory sectors)
     dumpDirectoryEntries()
     {
-#ifdef TRACEFILE
-        LDA #(dumpDirectoryEntriesTrace % 256) STA ZP.TraceMessageL LDA #(dumpDirectoryEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+    #ifdef TRACEFILE
+        LDA #(dumpDirectoryEntriesTrace % 256) STA ZP.TraceMessageL 
+        LDA #(dumpDirectoryEntriesTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
         LDA #(dirHeader % 256)
         STA ZP.STRL
         LDA #(dirHeader / 256)
@@ -2226,63 +2179,101 @@ unit File
         Print.String();
         Print.NewLine();
         
-        LDY #0                   // Directory entry offset
-        LDX #0                   // Entry number counter
+        LDX #0                       // Global entry counter (0-255)
+        LDA #1                       // Start with first directory sector
         
-        loop
+        loop // Traverse directory chain
         {
-            // Check if entry is in use (length != 0)
-            LDA DirectoryBuffer + 0, Y
-            ORA DirectoryBuffer + 1, Y
-            if (NZ)
+            PHA                      // Save current sector
+            loadDirectorySector();   // Load it
+            PLA
+            PHA                      // Keep sector on stack
+            
+            LDY #0                   // Entry offset within sector
+            
+            loop // Process entries in current sector
             {
-                // Print entry number
-                TXA
+                // Check if entry is in use (length != 0)
+                LDA DirectoryBuffer + 0, Y
+                ORA DirectoryBuffer + 1, Y
+                if (NZ)
+                {
+                    // Print entry number (handle multi-digit)
+                    TXA
+                    PHA                  // Save X
+                    TYA
+                    PHA                  // Save Y
+                    
+                    TXA                  // Entry number to A
+                    STA ZP.TOPH         // Entry number in ZP.TOP for decimal
+                    STZ ZP.TOPL
+                    STZ ZP.TOPT
+                    Print.Decimal();    // Print proper decimal number
+                    
+                    LDA #':'
+                    Print.Char();
+                    Print.Space();
+                    
+                    PLA                  // Restore Y
+                    TAY
+                    
+                    // Print filename (Y = entry offset)
+                    printFilenameFromDirectory();
+                    
+                    // Print file info
+                    Print.Space();
+                    printFileSizeFromDirectory();  // Also uses Y
+                    Print.Space();
+                    LDA #'@'
+                    Print.Char();
+                    LDA DirectoryBuffer + 2, Y  // Start sector
+                    Print.Hex();
+                    
+                    Print.NewLine();
+                    
+                    PLA                  // Restore X
+                    TAX
+                }
+                
+                INX                      // Next global entry number
+                
+                // Move to next directory entry
+                TYA
                 CLC
-                ADC #'0'                // Convert to ASCII digit
-                Print.Char();
-                LDA #':'
-                Print.Char();
-                Print.Space();
-                
-                // Print filename (scan until high bit found)
-                printFilenameFromDirectory();
-
-                // Print file info
-                Print.Space();
-                printFileSizeFromDirectory();
-                Print.Space();
-                LDA #'@'
-                Print.Char();
-                LDA DirectoryBuffer + 2, Y  // Start sector
-                Print.Hex();
-                
-                Print.NewLine();
-                INX                  // Next entry number
-            }
+                ADC #16                  // Next entry
+                TAY
+                if (Z) { break; }        // Y wrapped - no more entries in this sector
+            }// loop
             
-            // Move to next directory entry
-            TYA
-            CLC
-            ADC #16              // Next entry (16 bytes per entry)
-            TAY
+            // Get next directory sector
+            PLA                          // Current sector
+            getNextDirectorySector();
             
-            CPY #240
-            if (C) { break; }   // if Y >= 240, we've checked all entries
-        }
+            CMP #1                       // End-of-chain?
+            if (Z) { break; }            // No more sectors to process
+        }// loop
         
-        Print.NewLine();
-#ifdef TRACEFILE
-        LDA #(dumpDirectoryEntriesTrace % 256) STA ZP.TraceMessageL LDA #(dumpDirectoryEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
+    #ifdef TRACEFILE
+        LDA #(dumpDirectoryEntriesTrace % 256) STA ZP.TraceMessageL 
+        LDA #(dumpDirectoryEntriesTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }   
     
     // Dump FAT allocation map
+    // Output: Visual FAT map printed to serial
+    // Munts: A, X, Y
     dumpFATMap()
     {
-#ifdef TRACEFILE
-        LDA #(dumpFATMapTrace % 256) STA ZP.TraceMessageL LDA #(dumpFATMapTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
+    #ifdef TRACEFILE
+        LDA #(dumpFATMapTrace % 256) STA ZP.TraceMessageL 
+        LDA #(dumpFATMapTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        PHX
+        PHY
+        
+        // Print header
         LDA #(fatHeader % 256)
         STA ZP.STRL
         LDA #(fatHeader / 256)
@@ -2290,50 +2281,73 @@ unit File
         Print.String();
         Print.NewLine();
         
-        LDY #0                   // FAT entry index
-        LDX #0                   // Line counter
+        LDY #0                           // Sector counter
         
-        loop
+        loop // Print all sectors
         {
-            // Print line header every 16 entries
+            // Print row header every 16 sectors
             TYA
             AND #0x0F
             if (Z)
             {
-                // Print two-digit hex line number
-                TYA                     // Current index
-                LSR A LSR A LSR A LSR A // Divide by 16 for line number
+                TYA
                 Print.Hex();
                 LDA #':'
                 Print.Char();
                 Print.Space();
             }
             
-            // Print FAT entry status
-            LDA FATBuffer, Y
-            if (Z)
+            // Check if this is a directory sector by walking the directory chain
+            STY ZP.M0                    // Save Y (current sector being printed)
+            LDA #1                       // Start with first directory sector
+            
+            loop // Walk directory chain
             {
-                LDA #'.'             // Free sector
-                Print.Char();
-            }
-            else
-            {
-                CMP #1
+                CMP ZP.M0                // Is this our sector?
                 if (Z)
                 {
-                    LDA #'E'         // End of chain
+                    // This is a directory sector
+                    LDA #'D'
                     Print.Char();
+                    break;
                 }
-                else
+                
+                // Get next in chain
+                getNextDirectorySector();
+                
+                CMP #1                   // End-of-chain?
+                if (Z)
                 {
-                    LDA #'*'         // Used sector (points to another)
-                    Print.Char();
+                    // Not a directory sector - check FAT value
+                    LDY ZP.M0            // Restore sector number
+                    LDA FATBuffer, Y
+                    if (Z)
+                    {
+                        LDA #'.'         // Free sector
+                        Print.Char();
+                    }
+                    else
+                    {
+                        CMP #1
+                        if (Z)
+                        {
+                            LDA #'E'     // End-of-chain
+                        }
+                        else
+                        {
+                            LDA #'*'     // Used (linked)
+                        }
+                        Print.Char();
+                    }
+                    break;
                 }
+                // Continue walking directory chain
             }
             
-            INY
+            LDY ZP.M0                    // Restore Y (sector counter)
             
-            // Check if line is complete (16 entries)
+            // End of row?
+            INY
             TYA
             AND #0x0F
             if (Z)
@@ -2341,23 +2355,35 @@ unit File
                 Print.NewLine();
             }
             
-            // Check if all sectors processed
-            CPY #0               // Y wrapped around to 0
-            if (Z) { break; }
+            TYA
+            if (Z) { break; }            // Wrapped to 0 - done all 256 sectors
         }
         
-        Print.NewLine();
-#ifdef TRACEFILE
-        LDA #(dumpFATMapTrace % 256) STA ZP.TraceMessageL LDA #(dumpFATMapTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+        PLY
+        PLX
+    #ifdef TRACEFILE
+        LDA #(dumpFATMapTrace % 256) STA ZP.TraceMessageL 
+        LDA #(dumpFATMapTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
     }
     
-    // Calculate and dump sector statistics
+    
+    
+    // Dump sector usage statistics
+    // Output: Sector counts printed to serial
+    // Munts: A, X, Y
     dumpSectorStats()
     {
-#ifdef TRACEFILE
-        LDA #(dumpSectorStatsTrace % 256) STA ZP.TraceMessageL LDA #(dumpSectorStatsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+    #ifdef TRACEFILE
+        LDA #(dumpSectorStatsTrace % 256) STA ZP.TraceMessageL 
+        LDA #(dumpSectorStatsTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        PHX
+        PHY
+        
+        // Print header
         LDA #(statsHeader % 256)
         STA ZP.STRL
         LDA #(statsHeader / 256)
@@ -2365,79 +2391,106 @@ unit File
         Print.String();
         Print.NewLine();
         
-        // Count free, used, and end-of-chain sectors
-        STZ TransferLengthL      // Free count
-        STZ TransferLengthH      // Used count (sectors pointing to others)
-        STZ TransferLength + 1   // End-of-chain count
+        // UWIDE0-3 are only used by the INT MATH (currently unused in this project)
+        STZ ZP.UWIDE0 // directory sectors
+        STZ ZP.UWIDE1 // free sectors
+        STZ ZP.UWIDE2 // used sectors
+        STZ ZP.UWIDE3 // end of chain sectors
         
-        LDY #2                   // Start from sector 2 (skip system sectors)
-        
-        loop
+        LDY #0
+        loop // Count all sectors
         {
             LDA FATBuffer, Y
             if (Z)
             {
-                INC TransferLengthL  // Free sector
+                INC ZP.UWIDE1 // free sector
             }
             else
             {
+                INC ZP.UWIDE2                // not free
                 CMP #1
                 if (Z)
                 {
-                    INC TransferLength + 1  // End-of-chain sector
-                }
-                else
-                {
-                    INC TransferLengthH     // Used sector (part of chain)
+                    INC ZP.UWIDE3            // End-of-chain sector
                 }
             }
-            
             INY
-            if (Z) { break; }    // Y wrapped to 0 - done
+            if (Z) { break; }            // Wrapped to 0 - done all 256
         }
         
-        // Print free sectors
+        // Now, walk directory sectors
+        LDA #1                           // Start with first directory sector
+        loop // Count directory sectors
+        {
+            INC ZP.UWIDE0
+            getNextDirectorySector();    // Get next in chain
+            CMP #1                       // End-of-chain?
+            if (Z) { break; }            // Yes, stop counting
+        }       
+                 
+        // Print statistics
+        
+        // Directory sectors
+        LDA #(dirSectorsLabel % 256)
+        STA ZP.STRL
+        LDA #(dirSectorsLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        STZ ZP.TOP1
+        LDA ZP.UWIDE0
+        STA ZP.TOP0
+        STZ ZP.TOPT
+        Print.Decimal();
+        Print.NewLine();
+        
+        // Free sectors
         LDA #(freeLabel % 256)
         STA ZP.STRL
         LDA #(freeLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA TransferLengthL
-        STA ZP.TOPL
-        STZ ZP.TOPH
+        STZ ZP.TOP1
+        LDA ZP.UWIDE1
+        STA ZP.TOP0
         STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
         
-        // Print used sectors  
+        // Used sectors (linked)
         LDA #(usedLabel % 256)
         STA ZP.STRL
         LDA #(usedLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA TransferLengthH
-        STA ZP.TOPL
-        STZ ZP.TOPH
+        STZ ZP.TOP1
+        LDA ZP.UWIDE2
+        STA ZP.TOP0
         STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
         
-        // Print end-of-chain sectors  
+        // End-of-chain sectors
         LDA #(endLabel % 256)
         STA ZP.STRL
         LDA #(endLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA TransferLength + 1
-        STA ZP.TOPL
-        STZ ZP.TOPH
+        STZ ZP.TOP1
+        LDA ZP.UWIDE3
+        STA ZP.TOP0
         STZ ZP.TOPT
         Print.Decimal();
         Print.NewLine();
-#ifdef TRACEFILE
-        LDA #(dumpSectorStatsTrace % 256) STA ZP.TraceMessageL LDA #(dumpSectorStatsTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+        
+        PLY
+        PLX
+    #ifdef TRACEFILE
+        LDA #(dumpSectorStatsTrace % 256) STA ZP.TraceMessageL 
+        LDA #(dumpSectorStatsTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
     }
+    
     
         
     // Dump current file operation state (ZP variables)
