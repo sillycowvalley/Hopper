@@ -418,7 +418,10 @@ unit BASICSysCalls
                    // PEEK function - read memory byte
                    // Input: ZP.TOP* contains address
                    // Output: ZP.TOP* contains byte value
-                   validateTopBYTE();
+                   
+                   LDA # BASICType.WORD
+                   STA ZP.ACCT
+                   BASICTypes.Coerce(); // WORD
                    if (NC) { break; }
                    
                    // Read byte from memory address
@@ -829,13 +832,12 @@ unit BASICSysCalls
 #endif
                }
            } // switch
-           
+
            // Handle return value (bit 2)
            LDA ZP.CURRENTSYSCALL
            AND # 0b00000100 // Test return value bit
            if (NZ) 
            {
-               
                // type in ZP.TOPT
                Long.PushTop(); // Push return value from ZP.TOP0..ZP.TOP3
                if (NC) { break; }

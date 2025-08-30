@@ -749,24 +749,26 @@ unit TokenIterator // TokenIterator.asm
             case Token.STRINGLIT:
             {
                 renderOptionalSpace();
-                LDA #'"'
-                Serial.WriteChar();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to string content
-                Print.String();
-                LDA #'"'
-                Serial.WriteChar();
+                LDA ZP.STRL
+                STA ZP.TOP0
+                LDA ZP.STRH
+                STA ZP.TOP1
+                LDA # BASICType.STRING
+                STA ZP.TOPT
+                SEC
+                BASICTypes.PrintValue();
             }
             case Token.CHARLIT:
             {
                 renderOptionalSpace();
-                LDA #'\''
-                Serial.WriteChar();
                 GetCurrentData(); // ZP.STR* = pointer to character value
-                LDY #0
-                LDA [ZP.STR], Y   // Get the character
-                Serial.WriteChar();
-                LDA #'\''
-                Serial.WriteChar();
+                LDA [ZP.STR]
+                STA ZP.TOP0
+                LDA # BASICType.CHAR
+                STA ZP.TOPT
+                SEC
+                BASICTypes.PrintValue();
             }
             case Token.REM:
             {

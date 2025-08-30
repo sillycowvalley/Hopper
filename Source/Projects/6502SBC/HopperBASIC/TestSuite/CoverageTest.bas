@@ -452,6 +452,7 @@ ENDFUNC
 ! Function to be forgotten
 FUNC ToForget()
     PRINT "Will be forgotten"
+    RETURN 0
 ENDFUNC
 ToForget()
 
@@ -530,23 +531,61 @@ PRINT
 
 VAR G = 10
 G = G + 1
+CONST C = 10
+BYTE B[10]
+BYTE W[C]
+VARS
+
 G = G / 0
 H = 0
 CONST G = 10
-CONST C = 10
 VAR C = 10
+
+
 BEGIN
     FOR I = -1 TO 1
     NEXT I
     VAR A
 END
 RUN
-BYTE B[10]
-BYTE W[C]
 B[11] = 0
 B[-1] = 0
 PRINT "A" + 10
 C
+
+
+VAR Z = CHR(0)
+VAR A = CHR(7)
+VAR B = CHR(8)
+VAR T = CHR(9)
+VAR N = CHR(10)
+VAR F = CHR(12)
+VAR R = CHR(13)
+VAR E = CHR(27)
+VAR S = CHR(32)
+VAR X = CHR(200)
+VAR BS = CHR(0x5C)
+VAR Q = CHR(0x27)
+VAR DQ = CHR(0x22)
+VAR D = 10
+VARS
+
+VAR B = '\b'
+VAR T = '\t'
+VAR N = '\n'
+VAR F = '\f'
+VAR R = '\r'
+VAR BS = '\\'
+VAR Q = '\''
+VAR DQ = '\"'
+VAR S = ' '
+VARS
+
+VAR ES = "\b \t \n \f \r \\ \' \" "
+VARS
+
+
+
 
 func single() print "hello" endfunc
 single()

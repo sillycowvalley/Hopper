@@ -220,6 +220,65 @@ unit Tokenizer // Tokenizer.asm
         if (NC) { return; }
     }
     
+    // Process escape sequence from input buffer
+    // Input: X = current position in input buffer (pointing at potential backslash)
+    // Output: A = converted byte value, X = updated position after escape sequence
+    //         C set if valid character/sequence, NC if error
+    // Modifies: A, X
+    processEscapeCharacter()
+    {
+        LDA Address.BasicInputBuffer, X  // Get current character
+        loop
+        {
+            CMP #'\\'
+            if (NZ) // Not an escape sequence, return character as-is
+            {
+                // Check for valid ASCII range
+                CMP #0x80
+                if (C)  // >= 128, invalid character
+                {
+                    Error.IllegalCharacter(); CLC
+                    break;
+                }
+                // Success - regular character
+            }
+            else
+            {
+                // Found backslash - process escape sequence
+                INX  // Move to character after backslash
+                CPX ZP.BasicInputLength
+                if (Z) // End of input after backslash
+                {
+                    Error.UnexpectedEOL(); CLC
+                    break;
+                }
+                
+                LDA Address.BasicInputBuffer, X  // Get escape character
+                
+                // Convert escape sequence to actual byte value
+                switch (A)
+                {
+                    case 'b':  { LDA #0x08 } // Backspace
+                    case 't':  { LDA #0x09 } // Tab
+                    case 'n':  { LDA #0x0A } // Newline
+                    case 'f':  { LDA #0x0C } // Formfeed
+                    case 'r':  { LDA #0x0D } // Carriage return
+                    case '\\': { LDA #0x5C } // Backslash
+                    case '"':  { LDA #0x22 } // Double quote
+                    case '\'': { LDA #0x27 } // Single quote
+                    default:
+                    {
+                        Error.IllegalCharacter(); CLC  // Invalid escape sequence: TODO better message
+                        break;
+                    }
+                }
+                // Success - converted escape sequence
+            }
+            SEC
+            break;
+        }
+    }
+    
     // Tokenize complete line from BasicInputBuffer into BasicTokenizerBuffer
     // Input: BasicInputBuffer contains raw input, ZP.BasicInputLength = input length, mode in A
     // Output: Tokens stored in BasicTokenizerBuffer, ZP.TokenBufferContentSize = total length
@@ -457,15 +516,8 @@ unit Tokenizer // Tokenizer.asm
                             return;
                         }
                         
-                        CMP # 0x80
-                        if (C)  // >= 128, invalid character
-                        {
-                            Error.IllegalCharacter(); BIT ZP.EmulatorPCL
-                            CLC
-                            return;
-                        }
-                        
-                        LDA Address.BasicInputBuffer, X  // Read from input buffer
+                        // Check for closing quote first (before processing escapes)
+                        LDA Address.BasicInputBuffer, X
                         CMP #'"'
                         if (Z) // Found closing quote
                         {
@@ -477,6 +529,15 @@ unit Tokenizer // Tokenizer.asm
                             
                             INX  // Skip closing quote in input buffer
                             break;
+                        }
+                        
+                        // Process character (handles escapes and regular characters)
+                        processEscapeCharacter();  // Input: X, Output: A = byte value, X updated
+                        if (NC) // Error in escape sequence or invalid character
+                        {
+                            BIT ZP.EmulatorPCL
+                            CLC
+                            return;
                         }
                         
                         // Add character to string content in token buffer
@@ -507,14 +568,11 @@ unit Tokenizer // Tokenizer.asm
                         return;
                     }
                     
-                    // Get the character
-                    LDA Address.BasicInputBuffer, X
-                    
-                    // Check for valid ASCII range (0-127)
-                    CMP #0x80
-                    if (C)  // >= 128, invalid character
+                    // Process the character (handles escapes and regular characters)
+                    processEscapeCharacter();  // Input: X, Output: A = byte value, X updated
+                    if (NC)  // Error in escape sequence or invalid character
                     {
-                        Error.IllegalCharacter(); BIT ZP.EmulatorPCL
+                        BIT ZP.EmulatorPCL
                         CLC
                         return;
                     }

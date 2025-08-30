@@ -103,8 +103,19 @@ unit BASICTypes // BASICTypes.asm
             switch (A)
             {
                 case BASICType.BYTE:
+                {
+                    LDA ZP.TOP1
+                    ORA ZP.TOP2
+                    ORA ZP.TOP3 // x3
+                    if (NZ)
+                    {
+                        Error.RangeError(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                }
                 case BASICType.CHAR:
                 {
+                    STA ZP.TOPT
                     LDA ZP.TOP1
                     ORA ZP.TOP2
                     ORA ZP.TOP3 // x3
@@ -484,6 +495,55 @@ unit BASICTypes // BASICTypes.asm
         }
     }
     
+    // CHAR is in A, TOPT = CHAR|STRING
+    printEscapedChar()
+    {
+        PHA
+        PHX
+        
+        LDX ZP.TOPT 
+        
+        loop
+        {
+            switch (A)
+            {
+                case 0x00: { LDA #'0'  }
+                case 0x07: { LDA #'a'  }
+                case 0x08: { LDA #'b'  }
+                case 0x09: { LDA #'t'  }
+                case 0x0A: { LDA #'n'  }
+                case 0x0C: { LDA #'f'  }
+                case 0x0D: { LDA #'r'  }
+                case 0x1B: { LDA #'e'  }
+                case '\'': 
+                {
+                    CPX # BASICType.STRING
+                    if (Z) { break;    } // no \
+                }
+                case '"':  
+                {
+                    CPX # BASICType.CHAR
+                    if (Z) { break;    }  // no \
+                }
+                case '\\': {           }
+                default:
+                {
+                    Tools.IsPrintable();
+                    if (C) { break; }  // no \
+                }
+            }
+            PHA LDA #'\\' Serial.WriteChar(); PLA
+            break;
+        } // loop
+        Tools.IsPrintable();
+        if (C) { Serial.WriteChar(); }
+        else   { PHA LDA #'x' Serial.WriteChar(); PLA Serial.HexOut(); }
+        SEC
+        
+        PLX
+        PLA
+    }
+    
     // Print variable value with proper type formatting
     // Input: ZP.TOP = value, ZP.TOPT = type, C =  quote strings, NC = no quotes
     // Output: Value printed to serial (TRUE/FALSE for BIT, numeric for others)
@@ -521,38 +581,7 @@ unit BASICTypes // BASICTypes.asm
                 {
                     LDA #'\'' Serial.WriteChar();
                     LDA ZP.TOPL
-                    Tools.IsPrintable();
-                    if (C)
-                    {
-                        LDA ZP.TOPL
-                        Serial.WriteChar();
-                    }
-                    else
-                    {
-                        LDA #'\\' Serial.WriteChar(); 
-                        LDX ZP.TOPL
-                        loop
-                        {
-                            switch (X)
-                            {
-                                case 0x00: { LDA #'0' }
-                                case 0x07: { LDA #'a' }
-                                case 0x08: { LDA #'b' }
-                                case 0x09: { LDA #'t' }
-                                case 0x0A: { LDA #'n' }
-                                case 0x0C: { LDA #'f' }
-                                case 0x0D: { LDA #'r' }
-                                case 0x27: { LDA #'e' }
-                                default:
-                                {
-                                    LDA #'x' Serial.WriteChar(); TXA Serial.HexOut();
-                                    break;
-                                }
-                            }
-                            Serial.WriteChar();
-                            break;
-                        } // loop
-                    }
+                    printEscapedChar();
                     LDA #'\'' Serial.WriteChar();
                 }
                 else
@@ -570,10 +599,22 @@ unit BASICTypes // BASICTypes.asm
                 STA ZP.STRL
                 LDA ZP.TOPH
                 STA ZP.STRH
+                
                 if (C)
                 {
                     LDA #'"' Serial.WriteChar();
-                    Print.String();  // Print the actual string content
+                    
+                    PHY
+                    LDY # 0               // Initialize string index
+                    loop                  // Print each character until null terminator
+                    {
+                        LDA [ZP.STR], Y   // Load character from string
+                        if (Z) { break; } // Exit if null terminator found (\0 doesn't work within STRING)
+                        printEscapedChar();
+                        INY               // Move to next character
+                    } // loop
+                    PLY
+                    
                     LDA #'"' Serial.WriteChar();
                 }
                 else
@@ -595,6 +636,8 @@ Debug.NL(); TLOut();
                 // Print.Decimal(); // Numeric types
             }
         }
+        
+        SMB6 ZP.FLAGS // Bit 6 - output was produced
         
         PLP
         PLX

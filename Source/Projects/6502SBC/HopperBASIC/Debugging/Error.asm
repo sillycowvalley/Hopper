@@ -828,7 +828,7 @@ unit Error // ErrorID.asm
 
     UnexpectedEOL() 
     { 
-        LDA #ErrorID.UnexpectedEOL
+        LDA # ErrorID.UnexpectedEOL
         commonError();
     }
 

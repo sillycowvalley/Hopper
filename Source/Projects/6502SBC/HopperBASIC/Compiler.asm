@@ -1448,7 +1448,7 @@ unit Compiler // Compiler.asm
                if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                {
                    Long.ZeroTop3();
-                   LDA #BASICType.BIT
+                   LDA # BASICType.BIT
                    STA ZP.TOPT
                    Long.PushTop();
                }
@@ -1604,7 +1604,7 @@ unit Compiler // Compiler.asm
                 if (BBS0, ZP.CompilerFlags) // constant expression: FALSE
                 {
                     Long.ZeroTop3();
-                    LDA #BASICType.CHAR
+                    LDA # BASICType.CHAR
                     STA ZP.TOPT
                     Long.PushTop();
                 }
