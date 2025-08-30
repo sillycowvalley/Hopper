@@ -5,11 +5,11 @@ program HopperBASIC
     #define HASEEPROM // include EEPROM storage
     #define HASI2C    // include 6502SBC I2C support
         
-    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    #define DEBUG
+    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    //#define DEBUG
     //#define MULDIVDEBUG
     //#define VERBOSEDEBUG // debug the keyword table limits
-    #define FILEDEBUG
+    //#define FILEDEBUG
     
     //#define TRACE  // Compiler and Executor call tree walks
     //#define TRACEFILE  // Storage and File
@@ -21,14 +21,11 @@ program HopperBASIC
     #define CPU_65C02S
     #define HOPPER_BASIC
     
-    
-    
-    
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    //#define ROM_48K    
-    #define ROM_32K
+    #define ROM_48K    
+    //#define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"

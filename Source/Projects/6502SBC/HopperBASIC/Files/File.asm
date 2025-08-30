@@ -535,15 +535,16 @@ unit File
         STZ LastOccupiedEntry
         STZ LastOccupiedSector
         STZ PreviousSector
+        STZ ZP.ACCL              // Chain position counter (0, 1, 2...)
         
         LDA #1                       // Start from first directory sector
         STA CurrentDirectorySector
         
         loop // Walk entire chain
         {
-            // A = CurrentDirectorySector
+            LDA CurrentDirectorySector
             loadDirectorySector();
-            
+           
             // Scan this sector backwards from entry 15
             LDY #15
             loop
@@ -555,14 +556,17 @@ unit File
                 if (NZ)
                 {
                     // Found occupied entry - update tracking
-                    STY LastOccupiedEntry
+                    TYA
+                    ORA ZP.ACCL
+                    STA LastOccupiedEntry
+                    
                     LDA CurrentDirectorySector
                     STA LastOccupiedSector
                     break;  // Move to next sector immediately
                 }
                 DEY
                 if (MI) { break; }  // Done with this sector
-            }
+            } // loop
             
             // Get next sector and track previous
             LDA CurrentDirectorySector
@@ -575,6 +579,11 @@ unit File
             STX PreviousSector   
             
             STA CurrentDirectorySector // Continue with next sector(A)
+            
+            CLC
+            LDA ZP.ACCL          // Increment chain position
+            ADC #16
+            STA ZP.ACCL
         }// loop
         
         // Set C if we found an entry to move
@@ -634,7 +643,7 @@ unit File
         STA ZP.FSOURCEADDRESSH
         
         // Get dest offset
-        fileEntryToDirectoryEntry() // (CurrentFileEntry & 0x0F) * 16 -> Y
+        fileEntryToDirectoryEntry(); // (CurrentFileEntry & 0x0F) * 16 -> Y
         
         CLC
         TYA
@@ -644,24 +653,16 @@ unit File
         ADC #0
         STA ZP.FDESTINATIONADDRESSH
         
-        // Copy 16 bytes
-        LDY #16
+        // Copy 16 bytes, and clear source entry
+        LDY #15
         loop
         {
-            DEY
-            if (Z) { break;
             LDA [ZP.FSOURCEADDRESS], Y
             STA [ZP.FDESTINATIONADDRESS], Y
-        } // loop
-        
-        // Clear source entry
-        LDY #16
-        LDA #0
-        loop
-        {
-            DEY
-            if (Z) { break;
+            LDA #0
             STA [ZP.FSOURCEADDRESS], Y
+            DEY
+            if (MI) { break; } // Break when Y goes negative
         } // loop
         
         // Write both sectors back
@@ -739,18 +740,22 @@ unit File
             PHA
             
             findLastOccupiedEntry();
+            
+            // Restore deleted entry location
+            PLA
+            STA CurrentDirectorySector
+            PLA
+            STA CurrentFileEntry
+            
             if (C)
             {
-Debug.NL();                        
-LDA #'E' COut(); LDA #':' COut(); LDA LastOccupiedEntry HOut(); Space();
-LDA #'O' COut(); LDA #':' COut(); LDA LastOccupiedSector HOut(); Space();
-LDA #'P' COut(); LDA #':' COut(); LDA PreviousSector HOut(); Space();
-                // Restore deleted entry location
-                PLA
-                STA CurrentDirectorySector
-                PLA
-                STA CurrentFileEntry
+                // Only move if the last entry is AFTER the deleted entry
+                LDA LastOccupiedEntry
+                CMP CurrentFileEntry
+                if (NC) { break; }  // LastOccupiedEntry <= CurrentFileEntry, no move
+                if (Z)  { break; }  // LastOccupiedEntry == CurrentFileEntry, no move
                 
+                // LastOccupiedEntry > CurrentFileEntry
                 // Move last entry to fill the deleted slot
                 moveDirectoryEntry();
                 
@@ -759,13 +764,10 @@ LDA #'P' COut(); LDA #':' COut(); LDA PreviousSector HOut(); Space();
                 CMP #1                   // Never unlink sector 1
                 if (NZ)
                 {
-Debug.NL();                        
-LDA #'?' COut();    
                     LDA LastOccupiedEntry
                     AND #0x0F            // Was it slot 0?
                     if (Z)               // Yes - sector is now empty
                     {
-LDA #'U' COut();    
                         // Unlink the empty sector
                         LDY PreviousSector
                         LDA #1               // End-of-chain marker
@@ -779,16 +781,6 @@ LDA #'U' COut();
                         writeFAT();
                     }
                 }
-
-
-            }
-            else
-            {
-Debug.NL();                        
-LDA #'N' COut();
-                // Clean up stack if no move needed
-                PLA
-                PLA
             }
             
             
