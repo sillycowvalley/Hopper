@@ -1131,7 +1131,35 @@ unit File
     // Input: ZP.STR = filename to find
     // Output: C set if found, NC if not found
     //         CurrentFileEntry = directory entry index if found
-    // Munts:  A, Y
+    findFileInDirectory()
+    {
+#ifdef TRACEFILE
+        LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+
+        LDA # DirWalkAction.FindFile
+        STA ZP.ACCH
+        walkDirectoryChain();
+        // NC if early exit (found), CurrentFileEntry already set by callback
+        if (C) 
+        { 
+            CLC  // Not found
+        }
+        else
+        {
+            SEC  // Found
+        }
+        
+#ifdef TRACEFILE
+        LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
+    }
+    
+    /*
+    // Find file in directory by filename
+    // Input: ZP.STR = filename to find
+    // Output: C set if found, NC if not found
+    //         CurrentFileEntry = directory entry index if found
     findFileInDirectory()
     {
 #ifdef TRACEFILE
@@ -1195,6 +1223,7 @@ unit File
     LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif        
     }
+    */
     
     // Compare filename in directory entry with input filename
     // Input: X = directory entry byte offset, ZP.STR = filename to match
@@ -1370,6 +1399,7 @@ unit File
     {
         Count = 0,
         Print = 1,
+        FindFile = 2,
     } 
     
     
@@ -1403,11 +1433,15 @@ unit File
                     {
                         case DirWalkAction.Count:
                         {
-                            processCountEntry();  // X still has offset
+                            processCountEntry();    // X still has offset
                         }
                         case DirWalkAction.Print:
                         {
-                            processPrintEntry();  // Y has slot, X has offset
+                            processPrintEntry();    // Y has slot, X has offset
+                        }
+                        case DirWalkAction.FindFile:
+                        {
+                            processFindFileEntry(); // Y has slot, X has offset
                         }
                     }
                     
@@ -1420,7 +1454,7 @@ unit File
                 INY
                 CPY #16
                 if (Z) { break; }
-            }
+            } // loop
             
             if (NC) { break; }  // Propagate early exit
             
@@ -1428,12 +1462,44 @@ unit File
             LDA CurrentDirectorySector
             getNextDirectorySector();
             CMP #1
-            if (Z) { break; }  // End of chain
+            if (Z) 
+            {
+                SEC    // made it through the entire iteration
+                break; // End of chain
+            }  
             STA CurrentDirectorySector
-        }
+        } // loop
     }
     
     // Callback methods
+    
+    processFindFileEntry()  // X = offset, Y = slot
+    {
+        PHY                 // Save slot on stack
+        
+        checkFilenameMatch();  // Compare ZP.STR with DirectoryBuffer, X
+        
+        PLA                 // Get slot back in A
+        
+        if (C)  // Match found
+        {
+            // Calculate global entry index
+            PHA                      // Save slot again
+            LDA CurrentDirectorySector
+            DEC
+            ASL A ASL A ASL A ASL A
+            STA CurrentFileEntry
+            PLA                      // Get slot
+            CLC
+            ADC CurrentFileEntry
+            STA CurrentFileEntry
+            
+            CLC                 // Signal stop scanning
+            return;
+        }
+        
+        SEC                     // Continue scanning
+    }  
     processCountEntry()  // X = directory offset
     {
         INC TransferLengthL          // Count file
@@ -1453,10 +1519,6 @@ unit File
     processPrintEntry()  // Y = slot, X = offset
     {
         // Print entry at DirectoryBuffer + X
-        
-        PHY
-        PHX
-        
         TXA // X = directory entry byte offset
         TAY
         
@@ -1471,9 +1533,6 @@ unit File
         
         // " BYTES"
         LDA # ErrorID.BytesLabel LDX # MessageExtras.PrefixSpace Error.MessageNL();
-        
-        PLX
-        PLY
         
         INC ZP.ACCL         // Increment printed count  
         SEC                 // Continue scanning
@@ -1519,128 +1578,6 @@ unit File
 #endif        
     }
     
-    
-    /*
-    // Count files and calculate total bytes used
-    // Output: TransferLengthL = file count
-    //         TransferLengthH/BytesRemainingL = total bytes (16-bit)
-    // Munts: A, Y
-    countFilesAndBytes()
-    {
-#ifdef TRACEFILE
-        LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        STZ TransferLengthL      // File count
-        STZ TransferLengthH      // Total bytes high
-        STZ BytesRemainingL      // Total bytes low
-        
-        LDA #1                   // Start with first directory sector
-        loop // Add outer loop for directory chain
-        {
-            PHA                  // Save current sector
-            loadDirectorySector();
-            PLA
-            PHA                  // Keep sector on stack
-            
-            LDY #0               // Directory entry offset
-            loop
-            {
-                entryToOffset(); // Y * 16 -> X, munts A
-                
-                // Check if entry is in use (fileLength != 0)
-                LDA DirectoryBuffer + 0, X  // Length LSB
-                ORA DirectoryBuffer + 1, X  // Length MSB
-                if (NZ)
-                {
-                    INC TransferLengthL      // Increment file count
-                    
-                    // Add file size to total
-                    CLC
-                    LDA BytesRemainingL
-                    ADC DirectoryBuffer + 0, X  // Add length LSB
-                    STA BytesRemainingL
-                    LDA TransferLengthH
-                    ADC DirectoryBuffer + 1, X  // Add length MSB
-                    STA TransferLengthH
-                }
-                
-                INY
-                CPY #16              // 16 entries maximum
-                if (Z) { break; }
-            }
-            // Get next directory sector
-            PLA                  // Current sector
-            getNextDirectorySector();
-            
-            CMP #1               // End-of-chain?
-            if (Z) { break; }    // No more sectors
-        }
-#ifdef TRACEFILE
-        LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    // Print all file entries (traverses all directory sectors)
-    // Munts: A, X, Y
-    printAllFileEntries()
-    {
-    #ifdef TRACEFILE
-        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL 
-        LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodEntry();
-    #endif
-        
-        LDA #1                       // Start with first directory sector
-        
-        loop // Traverse directory chain
-        {
-            PHA                      // Save current sector
-            loadDirectorySector();   // Load it
-            PLA
-            PHA                      // Keep sector on stack
-            
-            LDY #0                   // Entry offset within sector
-            
-            loop // Process entries in current sector
-            {
-                // Check if entry is in use (length != 0)
-                LDA DirectoryBuffer + 0, Y
-                ORA DirectoryBuffer + 1, Y
-                if (NZ)
-                {
-                    // Print this file entry
-                    TYA                  // Y has the byte offset
-                    TAX                  // X = directory entry byte offset
-                    printFileEntry();    // Uses X = entry offset
-#ifdef FILEDEBUG
-                    // Print hex dump of first 32 bytes
-                    // printFileHexDump(); // Input: X = directory entry offset
-#endif                    
-                }
-                
-                // Move to next directory entry
-                TYA
-                CLC
-                ADC #16                  // Next entry
-                TAY
-                if (Z) { break; }        // Y wrapped - no more entries
-            }// loop
-            
-            // Get next directory sector
-            PLA                          // Current sector
-            getNextDirectorySector();
-            
-            CMP #1                       // End-of-chain?
-            if (Z) { break; }            // No more sectors to process
-        }// loop
-        
-    #ifdef TRACEFILE
-        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL 
-        LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH 
-        Trace.MethodExit();
-    #endif
-    }
-    */
     
     // Print filename from current directory entry 
     // Input: Y = directory entry byte offset (0, 16, 32, 48, ...)
@@ -1941,8 +1878,6 @@ unit File
     // Check if current directory entry filename matches ZP.STR
     // Input: X = directory entry byte offset (0, 16, 32...), ZP.STR = filename to match
     // Output: C set if match, NC if no match
-    // Preserves: X, Y
-    // Munts: A
     checkFilenameMatch()
     {
     #ifdef TRACEFILE
@@ -1950,9 +1885,7 @@ unit File
         LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
     #endif
-        PHA
-        PHY
-
+    
         // Point to filename field in directory entry (offset +3)
         TXA
         CLC
@@ -1978,6 +1911,8 @@ unit File
                 }
                 break;
             }
+            
+
             
             // Compare with directory character (clear high bit)
             LDA DirectoryBuffer, X
@@ -2014,8 +1949,6 @@ unit File
             INX
         }
         
-        PLY
-        PLA
     #ifdef TRACEFILE
         PHP LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL 
         LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH PLP
