@@ -523,7 +523,6 @@ unit File
     }
     
     
-    
     // Find last occupied entry in directory chain for compaction
     // Input: CurrentFileEntry = deleted slot, CurrentDirectorySector = its sector
     // Output: C set if replacement found (last entry != deleted entry)
@@ -1366,11 +1365,162 @@ unit File
     }
     
     
+    // Directory walker actions
+    enum DirWalkAction
+    {
+        Count = 0,
+        Print = 1,
+    } 
     
     
+    walkDirectoryChain()
+    {
+        LDA #1
+        STA CurrentDirectorySector
+        
+        loop 
+        {
+            LDA CurrentDirectorySector
+            loadDirectorySector();
+            
+            // Process 16 entries
+            LDY #0
+            loop
+            {
+                entryToOffset();     // Y * 16 -> X
+                
+                // Check if entry occupied
+                LDA DirectoryBuffer + 0, X
+                ORA DirectoryBuffer + 1, X
+                if (NZ)
+                {
+                    // Entry occupied - call appropriate handler
+                    PHY
+                    PHX
+                    
+                    LDA ZP.ACCH
+                    switch (A)
+                    {
+                        case DirWalkAction.Count:
+                        {
+                            processCountEntry();  // X still has offset
+                        }
+                        case DirWalkAction.Print:
+                        {
+                            processPrintEntry();  // Y has slot, X has offset
+                        }
+                    }
+                    
+                    PLX
+                    PLY
+                    
+                    if (NC) { break; }  // Early exit if found
+                }
+                
+                INY
+                CPY #16
+                if (Z) { break; }
+            }
+            
+            if (NC) { break; }  // Propagate early exit
+            
+            // Next sector
+            LDA CurrentDirectorySector
+            getNextDirectorySector();
+            CMP #1
+            if (Z) { break; }  // End of chain
+            STA CurrentDirectorySector
+        }
+    }
+    
+    // Callback methods
+    processCountEntry()  // X = directory offset
+    {
+        INC TransferLengthL          // Count file
+        
+        // Add file size to total
+        CLC
+        LDA BytesRemainingL
+        ADC DirectoryBuffer + 0, X
+        STA BytesRemainingL
+        LDA TransferLengthH
+        ADC DirectoryBuffer + 1, X
+        STA TransferLengthH
+        
+        SEC  // Continue scanning
+    }
+    
+    processPrintEntry()  // Y = slot, X = offset
+    {
+        // Print entry at DirectoryBuffer + X
+        
+        PHY
+        PHX
+        
+        TXA // X = directory entry byte offset
+        TAY
+        
+        LDX #4
+        Print.Spaces();
+        
+        printFilenameFromDirectory(); // Uses Y = filename start offset, preserves X, Y
+        
+        // Print file size
+        // Y already has directory entry offset 
+        printFileSizeFromDirectory(); // Uses Y = directory entry offset, preserves X, Y
+        
+        // " BYTES"
+        LDA # ErrorID.BytesLabel LDX # MessageExtras.PrefixSpace Error.MessageNL();
+        
+        PLX
+        PLY
+        
+        INC ZP.ACCL         // Increment printed count  
+        SEC                 // Continue scanning
+    }
+    
+    // Count files and calculate total bytes used
+    // Output: TransferLengthL = file count
+    //         TransferLengthH/BytesRemainingL = total bytes (16-bit)
+    countFilesAndBytes()
+    {
+#ifdef TRACEFILE
+        LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif        
+        STZ TransferLengthL      // Initialize file count
+        STZ TransferLengthH      // Initialize byte count MSB
+        STZ BytesRemainingL      // Initialize byte count LSB
+        
+        LDA #DirWalkAction.Count
+        STA ZP.ACCH
+        walkDirectoryChain();
+        
+#ifdef TRACEFILE
+        LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
+    }
+    
+    // Print all file entries (traverses all directory sectors)
+    // Munts: A, X, Y
+    printAllFileEntries()
+    {
+#ifdef TRACEFILE
+    LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        STZ ZP.ACCL              // Entry counter
+        
+        LDA #DirWalkAction.Print
+        STA ZP.ACCH
+        
+        walkDirectoryChain();
+        
+#ifdef TRACEFILE
+        LDA #(printAllFileEntriesTrace % 256) STA ZP.TraceMessageL LDA #(printAllFileEntriesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
+    }
     
     
-    
+    /*
     // Count files and calculate total bytes used
     // Output: TransferLengthL = file count
     //         TransferLengthH/BytesRemainingL = total bytes (16-bit)
@@ -1490,39 +1640,7 @@ unit File
         Trace.MethodExit();
     #endif
     }
-    
-    // Print single file entry: "FILENAME.EXT    1234 bytes"
-    // Input: X = directory entry byte offset
-    // Munts: A, Y
-    printFileEntry()
-    {
-#ifdef TRACEFILE
-        LDA #(printFileEntryTrace % 256) STA ZP.TraceMessageL LDA #(printFileEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        PHY
-        PHX
-        
-        TXA
-        TAY
-        
-        LDX #4
-        Print.Spaces();
-        
-        printFilenameFromDirectory(); // Uses Y = filename start offset
-        
-        // Print file size
-        // Y already has directory entry offset 
-        printFileSizeFromDirectory(); // Uses Y = directory entry offset
-        
-        // " BYTES"
-        LDA # ErrorID.BytesLabel LDX # MessageExtras.PrefixSpace Error.MessageNL();
-        
-        PLX
-        PLY
-#ifdef TRACEFILE
-        LDA #(printFileEntryTrace % 256) STA ZP.TraceMessageL LDA #(printFileEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
+    */
     
     // Print filename from current directory entry 
     // Input: Y = directory entry byte offset (0, 16, 32, 48, ...)
