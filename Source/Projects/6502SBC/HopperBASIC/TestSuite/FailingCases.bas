@@ -1,34 +1,54 @@
-FUNC TestPrint()
-    PRINT
-    PRINT "string literal"
-    PRINT 42
-    PRINT -100
-    PRINT TRUE
-    PRINT FALSE
-    PRINT 'X'
-    ! Comma separator
-    PRINT 1, 2, 3
-    PRINT "a", "b", "c"
-    ! Semicolon separator
-    PRINT 1; 2; 3
-    PRINT "a"; "b"; "c"
-    ! Mixed
-    PRINT "Value:", 42, "OK"
-    PRINT "X="; 10; " Y="; 20
-    ! Trailing comma
-    PRINT "No newline",
-    PRINT "continues"
-    ! Trailing semicolon
-    PRINT "No space";
-    PRINT "tight"
-    ! Variables
-    VAR pv = 999
-    VAR ps = "test"
-    PRINT pv
-    PRINT ps
-    PRINT pv, ps
-    PRINT "pv="; pv; " ps="; ps
-ENDFUNC
-TestPrint()
-LIST
+NEW
+CLS
+MEM
+
+! Noel's RetroLab Benchmark
+
+BEGIN
+    VAR START = MILLIS()
+    VAR ST = SECONDS()
+    VAR S
+    FOR i=1 TO 10
+        s=0
+        FOR j=1 TO 1000
+            s=s+j
+        NEXT j
+        PRINT ".";
+    NEXT i
+    PRINT s
+    PRINT MILLIS() - START; " ms"
+    PRINT SECONDS() - ST; " seconds"
+END
+
+FORMAT
+Y
+
+SAVE NRL0
+SAVE NRL1
+SAVE NRL2
+SAVE NRL3
+SAVE NRL4
+SAVE NRL5
+SAVE NRL6
+SAVE NRL7
+SAVE NRL8
+SAVE NRL9
+SAVE NRL10
+SAVE NRL11
+SAVE NRL12
+SAVE NRL13
+SAVE NRL14
+SAVE NRL15
+SAVE NRL16
+SAVE NRL17
+SAVE NRL18
+SAVE NRL19
+
+DEL NRL4
+SAVE NRL
+
+
+NEW
+
+NRL
 

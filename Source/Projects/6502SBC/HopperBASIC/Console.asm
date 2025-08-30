@@ -499,7 +499,7 @@ unit Console // Console.asm
                 }
                 case Token.TRON:
                 {
-#ifdef TRACE
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
                     parseTron();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error
@@ -509,7 +509,7 @@ unit Console // Console.asm
                 }
                 case Token.TROFF:
                 {
-#ifdef TRACE
+#if defined(TRACE) || defined(TRACEEXE) || defined(TRACEFILE) || defined(TRACEPARSE)
                     parseTroff();
                     CheckError();
                     if (NC) { SMB1 ZP.FLAGS } // Set exit flag on error

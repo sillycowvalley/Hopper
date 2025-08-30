@@ -81,8 +81,6 @@ unit File
     const string clearDirectoryBufferTrace = "clearDir";
     const string loadFATTrace = "loadFAT";
     const string writeFATTrace = "writeFAT";
-    const string loadDirectoryTrace = "loadDir";
-    const string writeDirectoryTrace = "writeDir";
     const string readSectorTrace = "readSector";
     const string writeSectorTrace = "writeSector";
     const string dumpDriveStateTrace = "DumpDrive";
@@ -98,6 +96,10 @@ unit File
     const string printPerFileSectorAllocationTrace = "printPerFile";
     const string printFileSectorInfoTrace = "printSecInfo";
     const string printFreeSpaceSummaryTrace = "printFree";
+    
+    const string loadDirectorySectorTrace = "loadDirSec";
+    const string writeDirectorySectorTrace = "writeDirSec";
+    const string allocateDirectorySectorTrace = "allocDirSec";
 #endif
     
     // Validate filename format (alphanumeric + period, 1-13 chars)
@@ -239,7 +241,8 @@ unit File
             
             // Clear and write empty directory
             clearDirectoryBuffer();
-            writeDirectory();
+            LDA #1                           // Default to sector 1
+            writeDirectorySector();
             
             // Success - file system initialized
             SEC
@@ -267,7 +270,8 @@ unit File
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Load directory and FAT into buffers
-            loadDirectory();
+            LDA #1                           // Default to sector 1
+            loadDirectorySector();
             loadFAT();
             
             // Find free directory entry (or existing file to overwrite)
@@ -423,7 +427,8 @@ unit File
             
             // Flush metadata to EEPROM
             writeFAT();
-            writeDirectory();
+            LDA #1                           // Default to sector 1
+            writeDirectorySector();
             
             SEC // Success
             break;
@@ -451,7 +456,8 @@ unit File
         loop // Single exit
         {
             // Load directory from EEPROM
-            loadDirectory();
+            LDA #1                           // Default to sector 1
+            loadDirectorySector();
             
             // Count files and calculate total bytes
             countFilesAndBytes(); // -> TransferLengthL = file count, TransferLengthH/BytesRemainingL = total bytes
@@ -518,7 +524,8 @@ unit File
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Load directory and FAT from EEPROM
-            loadDirectory();
+            LDA #1                           // Default to sector 1
+            loadDirectorySector();
             loadFAT();
             
             // Find the file in directory
@@ -540,7 +547,8 @@ unit File
             clearDirectoryEntry();
             
             // Write updated directory and FAT back to EEPROM
-            writeDirectory();
+            LDA #1                           // Default to sector 1
+            writeDirectorySector();
             writeFAT();
             
             SEC // Success
@@ -595,7 +603,8 @@ unit File
             
             
             // Load directory and FAT from EEPROM
-            loadDirectory();
+            LDA #1                           // Default to sector 1
+            loadDirectorySector();
             loadFAT();
             
             // Find the file in directory
@@ -1630,68 +1639,7 @@ unit File
         LDA #(allocateFirstFreeSectorTrace % 256) STA ZP.TraceMessageL LDA #(allocateFirstFreeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-    
-    
-    
-    // Find free directory entry (or existing file to overwrite)
-    // Output: C set if entry found, NC if directory full
-    //         CurrentFileEntry = entry index (0-15) if found
-    // Munts: A, Y
-    findFreeDirectoryEntry()
-    {
-#ifdef TRACEFILE
-        LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        LDY #0                   // Directory entry index (0, 1, 2, ..., 15)
         
-        loop
-        {
-            // Calculate byte offset: Y * 16
-            TYA
-            ASL ASL ASL ASL      // Y * 16 = directory entry offset
-            TAX                  // X = byte offset in directory
-            
-            // Check if entry is free (fileLength == 0)
-            LDA DirectoryBuffer + 0, X  // Length LSB
-            ORA DirectoryBuffer + 1, X  // Length MSB
-            if (Z)
-            {
-                // Found free entry
-                STY CurrentFileEntry
-                SEC
-#ifdef TRACEFILE
-                LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                return;
-            }
-            
-            // Check if filename matches (for overwrite)
-            checkFilenameMatch();
-            if (C)
-            {
-                // Found existing file - overwrite it
-                STY CurrentFileEntry
-                SEC
-#ifdef TRACEFILE
-                LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                return;
-            }
-            
-            INY
-            CPY #16              // 16 entries maximum
-            if (Z)
-            {
-                // Directory full
-                CLC
-#ifdef TRACEFILE
-                LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-                return;
-            }
-        }
-    }
-    
     // Check if current directory entry filename matches ZP.STR
     // Input: X = directory entry byte offset, ZP.STR = filename to match
     // Output: C set if match, NC if no match
@@ -1898,49 +1846,232 @@ unit File
 #endif
     }
     
-    // Load directory from EEPROM sector 1 into DirectoryBuffer
-    // Input: None
-    // Output: DirectoryBuffer loaded with directory data
+    // Input: A = directory sector number to load
+    // Output: DirectoryBuffer contains specified directory sector
     // Munts: A, EEPROM operation registers
-    loadDirectory()
+    loadDirectorySector()
     {
-#ifdef TRACEFILE
-        LDA #(loadDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(loadDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        LDA #1                           // EEPROM address MSB = sector 1  (must be page aligned)
-        STA ZP.IDYH              
+    #ifdef TRACEFILE
+        PHA LDA #(loadDirectorySectorTrace % 256) STA ZP.TraceMessageL 
+        LDA #(loadDirectorySectorTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry(); PLA
+    #endif
+        STA ZP.IDYH                      // EEPROM address MSB = sector number
+        STA CurrentDirectorySector       // Remember which sector we loaded
         
-        LDA #(DirectoryBuffer / 256)     // RAM address MSB = DirectoryBuffer (must be page aligned)
+        LDA #(DirectoryBuffer / 256)    // RAM address MSB = DirectoryBuffer
         STA ZP.IDXH
-
+        
         EEPROM.ReadPage();
         
-        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
-#ifdef TRACEFILE
-        LDA #(loadDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(loadDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+    #ifdef TRACEFILE
+        LDA #(loadDirectorySectorTrace % 256) STA ZP.TraceMessageL 
+        LDA #(loadDirectorySectorTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
     }
     
-    // Write DirectoryBuffer to EEPROM sector 1
-    writeDirectory()
+    // New parameterized writeDirectory (takes sector in A)
+    // Input: A = directory sector number to write
+    // Output: DirectoryBuffer written to specified sector
+    // Munts: A, EEPROM operation registers  
+    writeDirectorySector()
     {
-#ifdef TRACEFILE
-        LDA #(writeDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        LDA #1                           // EEPROM address MSB = sector 1  (must be page aligned)
-        STA ZP.IDYH             
+    #ifdef TRACEFILE
+        PHA LDA #(writeDirectorySectorTrace % 256) STA ZP.TraceMessageL 
+        LDA #(writeDirectorySectorTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry(); PLA
+    #endif
+        STA ZP.IDYH                      // EEPROM address MSB = sector number
         
-        LDA #(DirectoryBuffer / 256)     // RAM address MSB = DirectoryBuffer (must be page aligned)
+        LDA #(DirectoryBuffer / 256)    // RAM address MSB = DirectoryBuffer
         STA ZP.IDXH
         
         EEPROM.WritePage();
         
-        //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
-#ifdef TRACEFILE
-        LDA #(writeDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(writeDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
+    #ifdef TRACEFILE
+        LDA #(writeDirectorySectorTrace % 256) STA ZP.TraceMessageL 
+        LDA #(writeDirectorySectorTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
     }
     
+    // Get next directory sector from FAT chain
+    // Input: A = current directory sector
+    // Output: A = next directory sector (0 if none, 1 if end-of-chain)
+    // Munts: A, Y
+    getNextDirectorySector()
+    {
+        TAY                              // Y = current sector
+        LDA FATBuffer, Y                 // Get next sector from FAT
+    }
+    
+    // Allocate new directory sector and link it to chain
+    // Input: A = current last directory sector
+    // Output: C set if successful, NC if disk full
+    //         A = new directory sector number if successful
+    // Munts: A, Y
+    allocateDirectorySector()
+    {
+    #ifdef TRACEFILE
+        PHA LDA #(allocateDirectorySectorTrace % 256) STA ZP.TraceMessageL 
+        LDA #(allocateDirectorySectorTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry(); PLA
+    #endif
+        PHA                              // Save current last sector
+        
+        loop // Single exit
+        {
+            // Find and allocate a free sector
+            allocateFirstFreeSector();   // Returns Y = new sector
+            if (NC) 
+            { 
+                PLA                      // Clean stack
+                CLC                      // Disk full
+                break;
+            }
+            
+            // Link previous directory sector to new one
+            PLA                          // A = previous last sector
+            TAX                          // X = previous sector
+            TYA                          // A = new sector
+            STA FATBuffer, X             // Link previous to new
+            
+            // Mark new sector as end-of-chain
+            TAY
+            LDA #1                       // End-of-chain marker
+            STA FATBuffer, Y
+            
+            // Clear the new directory sector
+            TYA                          // A = new sector number
+            PHA                          // Save for return value
+            
+            // Load empty data into FileDataBuffer and write to new sector
+            clearFileDataBuffer();
+            PLA
+            PHA
+            writeSector();               // Write cleared buffer to new sector
+            
+            PLA                          // Return new sector number in A
+            SEC                          // Success
+            break;
+        }
+        
+    #ifdef TRACEFILE
+        PHA LDA #(allocateDirectorySectorTrace % 256) STA ZP.TraceMessageL 
+        LDA #(allocateDirectorySectorTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit(); PLA
+    #endif
+    }  
+    
+    // Find free directory entry across all directory sectors
+    // Output: C set if entry found, NC if directory full
+    //         CurrentFileEntry = global entry index (0-255) if found
+    //         CurrentDirectorySector = sector containing the entry
+    // Munts: A, X, Y
+    findFreeDirectoryEntry()
+    {
+    #ifdef TRACEFILE
+        LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL 
+        LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodEntry();
+    #endif
+        
+        LDA #1                           // Start with first directory sector
+        STA CurrentDirectorySector
+        STZ CurrentFileEntry             // Start with entry 0
+        
+        loop // Single exit - main search loop
+        {
+            // Load current directory sector
+            LDA CurrentDirectorySector
+            loadDirectorySector();
+            
+            // Search entries in this sector
+            LDY #0                       // Entry index within sector (0-15)
+            
+            loop // Search entries in current sector
+            {
+                // Calculate byte offset: Y * 16
+                TYA
+                ASL ASL ASL ASL          // Y * 16 = directory entry offset
+                TAX                      // X = byte offset in directory
+                
+                // Check if entry is free (fileLength == 0)
+                LDA DirectoryBuffer + 0, X  // Length LSB
+                ORA DirectoryBuffer + 1, X  // Length MSB
+                if (Z)
+                {
+                    // Found free entry!
+                    // CurrentFileEntry = (CurrentDirectorySector - 1) * 16 + Y
+                    LDA CurrentDirectorySector
+                    SEC
+                    SBC #1               // Sector 1 = entries 0-15
+                    ASL ASL ASL ASL      // * 16
+                    STA CurrentFileEntry
+                    TYA                  // Add local entry index
+                    CLC
+                    ADC CurrentFileEntry
+                    STA CurrentFileEntry
+                    SEC                  // Success - found entry
+                    break;               // Exit main loop with success
+                }
+                
+                INY
+                CPY #16
+                if (Z) { break; }        // Checked all entries in this sector
+            }
+            
+            // Check if we found an entry (C will be set if we did)
+            if (C) { break; }            // Exit with found entry
+            
+            // No free entry in this sector, check for next
+            LDA CurrentDirectorySector
+            getNextDirectorySector();
+            
+            CMP #1                       // End-of-chain?
+            if (Z)
+            {
+                // Need to allocate new directory sector
+                LDA CurrentDirectorySector
+                allocateDirectorySector();
+                if (NC)
+                {
+                    // Disk full - can't allocate new directory sector
+                    CLC
+                    break;               // Exit with failure
+                }
+                
+                // New sector allocated in A
+                STA CurrentDirectorySector
+                
+                // First entry in new sector is free
+                LDA CurrentDirectorySector
+                SEC
+                SBC #1
+                ASL ASL ASL ASL          // * 16
+                STA CurrentFileEntry
+                
+                // Need to write the FAT with the new link
+                writeFAT();
+                
+                SEC                      // Success
+                break;                   // Exit with new entry
+            }
+            
+            // Move to next existing directory sector
+            STA CurrentDirectorySector
+            // Continue to next iteration of main loop
+        }
+        
+    #ifdef TRACEFILE
+        LDA #(findFreeDirectoryEntryTrace % 256) STA ZP.TraceMessageL 
+        LDA #(findFreeDirectoryEntryTrace / 256) STA ZP.TraceMessageH 
+        Trace.MethodExit();
+    #endif
+    }
+    
+        
     // Read arbitrary sector into FileDataBuffer
     // Input: A = sector number (0-255)
     // Output: 256 bytes copied from EEPROM to FileDataBuffer
@@ -2027,7 +2158,8 @@ unit File
                 Print.String();
             }
             
-            loadDirectory();
+            LDA #1                           // Default to sector 1
+            loadDirectorySector();
             
             Print.NewLine();
             

@@ -374,7 +374,7 @@ unit ZP // ZeroPage.asm
     const byte FS12                 = 0x98;
     const byte FS13                 = 0x99;
     const byte FS14                 = 0x9A;
-    const byte FS14                 = 0x9B;
+    const byte FS15                 = 0x9B;
     
     // Storage.LoadProgram(), Tokenizer.FindKeyword()
     const byte SS0                  = 0x9C;
