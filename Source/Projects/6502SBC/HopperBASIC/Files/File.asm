@@ -1266,38 +1266,50 @@ unit File
     // Directory walker actions
     enum DirWalkAction
     {
-        Count = 0,
-        Print = 1,
-        FindFile = 2,
-        FindLast = 3,
-    } 
+        Count = 0,        // Count files and total bytes
+        Print = 1,        // Print directory entries
+        FindFile = 2,     // Find specific file by name
+        FindLast = 3,     // Find last occupied entry for compaction
+    }
     
-    
+    // Generic directory chain walker
+    // Iterates through all directory sectors and entries, calling action-specific callbacks
+    // Input:  ZP.ACCH = DirWalkAction to perform
+    //         ZP.STR = filename to find (for FindFile action)
+    // Output: C = completed full iteration (not found/done)
+    //         NC = early exit (found target)
+    //         Action-specific side effects via callbacks:
+    //           Count: TransferLengthL = file count, TransferLengthH:BytesRemainingL = total bytes
+    //           Print: Entries printed to console
+    //           FindFile: CurrentFileEntry = global entry index if found
+    //           FindLast: LastOccupiedEntry/Sector = last occupied position, PreviousSector set
+    // Uses:   CurrentDirectorySector, DirectoryBuffer, ZP.ACCL (sector position counter)
+    // Munts:  A, X, Y, CurrentDirectorySector, PreviousSector, ZP.ACCL
     walkDirectoryChain()
     {
         LDA #1
         STA CurrentDirectorySector
-        STZ ZP.ACCL              // Initialize chain position for FindLast
-        STZ PreviousSector       // Initialize for FindLast
+        STZ ZP.ACCL              // Tracks position in chain (0x00, 0x10, 0x20...)
+        STZ PreviousSector       // Tracks previous sector for unlinking
         
         loop 
         {
             LDA CurrentDirectorySector
             loadDirectorySector();
             
-            // Process 16 entries
-            LDY #0
+            // Process all 16 entries in current sector
+            LDY #0                       // Slot index (0-15)
             loop
             {
-                entryToOffset();     // Y * 16 -> X
+                entryToOffset();         // Y * 16 -> X (byte offset)
                 
-                // Check if entry occupied
+                // Check if entry occupied (length != 0)
                 LDA DirectoryBuffer + 0, X
                 ORA DirectoryBuffer + 1, X
                 if (NZ)
                 {
-                    // Entry occupied - call appropriate handler
-                    PHY
+                    // Entry occupied - dispatch to action handler
+                    PHY                  // Preserve slot and offset
                     PHX
                     
                     LDA ZP.ACCH
@@ -1305,56 +1317,57 @@ unit File
                     {
                         case DirWalkAction.Count:
                         {
-                            processCountEntry();
+                            processCountEntry();      // X = offset
                         }
                         case DirWalkAction.Print:
                         {
-                            processPrintEntry();
+                            processPrintEntry();      // X = offset
                         }
                         case DirWalkAction.FindFile:
                         {
-                            processFindFileEntry();
+                            processFindFileEntry();   // X = offset, Y = slot
                         }
                         case DirWalkAction.FindLast:
                         {
-                            processFindLastEntry();
+                            processFindLastEntry();   // X = offset, Y = slot
                         }
                     }
                     
                     PLX
                     PLY
                     
-                    if (NC) { break; }  // Early exit if found
+                    // Callback returns: C = continue scanning, NC = stop (found)
+                    if (NC) { break; }
                 }
                 
                 INY
                 CPY #16
                 if (Z) { break; }
-            } // loop
+            } // inner loop
             
-            if (NC) { break; }  // Propagate early exit
+            if (NC) { break; }  // Propagate early exit from callback
             
-            // Track previous sector before moving to next
+            // Move to next directory sector in chain
             LDA CurrentDirectorySector
-            getNextDirectorySector();
+            getNextDirectorySector();    // Returns next sector in A (1 = end-of-chain)
             CMP #1
             if (Z) 
             {
-                SEC    // made it through the entire iteration
-                break; // End of chain
-            }  
-            // Only update previous if continuing
-            LDX CurrentDirectorySector
-            STX PreviousSector
-            STA CurrentDirectorySector   // A has next sector
+                SEC                       // Set C = completed full iteration
+                break;
+            }
             
-            // Increment for FindLast
+            // Continue to next sector
+            LDX CurrentDirectorySector
+            STX PreviousSector           // Save for potential unlinking
+            STA CurrentDirectorySector   // A still has next sector
+            
+            // Increment sector position counter (used by FindLast to calculate global indices)
             CLC
             LDA ZP.ACCL
-            ADC #16
+            ADC #16                      // Each sector adds 16 to global entry index
             STA ZP.ACCL
-
-        } // loop
+        } // outer loop
     }
     
     // Callback methods
