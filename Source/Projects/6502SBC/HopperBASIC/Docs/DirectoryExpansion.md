@@ -4,8 +4,38 @@
 
 Transform the File unit from single-sector directory (16 files max) to chained directory sectors (unlimited files) through three incremental stages. Each stage builds robust, reusable infrastructure while maintaining full backward compatibility.
 
-**Current State:** 262 bytes ROM available, 16-file limit  
-**Target:** Elegant chained directory system with automatic growth/cleanup
+**Current State:** 367 bytes ROM available, 16-file limit  
+**Recommended Path:** Implement Stages 1+2 together for unlimited files with excellent bug fix margin  
+**Future:** Stage 3 cleanup optimization when ready
+
+---
+
+## Recommended Implementation Path
+
+With 367 bytes available, the optimal approach is to implement **Stages 1+2 together** as a single development effort:
+
+### Phase 1: Core Infrastructure + Growth (~150 bytes)
+Combine Stage 1 infrastructure with Stage 2 growth capability for immediate unlimited file support:
+
+1. **Infrastructure Setup** (Stage 1 items)
+   - Add sector-aware directory operations
+   - Parameterize `loadDirectory()/writeDirectory()`  
+   - Build entry-to-sector mapping functions
+
+2. **Growth Implementation** (Stage 2 items)
+   - Enable automatic directory sector allocation
+   - Modify `findFreeDirectoryEntry()` for chaining
+   - Update directory iteration methods
+
+**Result:** Unlimited files, 217+ bytes ROM remaining for bug fixes
+
+### Phase 2: Cleanup Optimization (Future - ~90 bytes)
+Implement Stage 3 when ready for the complete elegant solution:
+- Automatic cleanup of empty directory sectors
+- Optimal disk space utilization
+- Production-ready robustness
+
+This approach maximizes immediate value while maintaining excellent safety margins.
 
 ---
 
@@ -199,36 +229,46 @@ All methods that scan directory entries need sector-aware updates:
 
 | Stage | New Code | Cumulative | ROM Remaining |
 |-------|----------|------------|---------------|
-| Start | -        | -          | 262 bytes     |
-| Stage 1 | ~80 bytes | 80 bytes   | ~180 bytes    |
-| Stage 2 | ~70 bytes | 150 bytes  | ~110 bytes    |  
-| Stage 3 | ~90 bytes | 240 bytes  | ~20 bytes     |
+| **Current** | -        | -          | **367 bytes**     |
+| Stage 1 | ~80 bytes | 80 bytes   | ~287 bytes    |
+| **Stages 1+2** | **~150 bytes** | **150 bytes**  | **~217 bytes**    |  
+| Stage 3 | ~90 bytes | 240 bytes  | ~127 bytes     |
 
-### Risk Mitigation
-- Each stage is fully functional stopping point
-- Conservative size estimates (likely smaller in practice)
-- Can optimize existing code if space becomes critical
-- Bug fix space available until Stage 3
+### Recommended Implementation Strategy
+- **Primary Goal:** Implement Stages 1+2 together (~150 bytes, 217 bytes remaining)
+- **Result:** Unlimited file support with excellent bug fix margin
+- **Future:** Stage 3 cleanup when confident in core chaining functionality
+
+### Risk Assessment
+- Conservative size estimates (actual implementation likely smaller)
+- Excellent bug fix space available (217+ bytes after Stages 1+2)
+- Can implement all stages with comfort margin (127+ bytes remaining)
+- Each stage remains a functional stopping point
 
 ---
 
 ## Success Criteria
 
-### Stage 1 Complete
-- ✅ All directory operations sector-parameterized  
-- ✅ Zero behavior change for existing functionality
-- ✅ Infrastructure ready for multi-sector expansion
+### Phase 1 Complete (Stages 1+2)
+- ✅ All directory operations are sector-aware and parameterized
+- ✅ Files beyond 16 can be created and saved successfully  
+- ✅ DIR command shows all files across multiple directory sectors
+- ✅ Automatic directory sector allocation working reliably
+- ✅ FAT chain integrity maintained throughout operations
+- ✅ Zero regressions in existing functionality
+- ✅ Unlimited file capacity achieved
 
-### Stage 2 Complete  
-- ✅ Files beyond 16 can be created and saved
-- ✅ DIR command shows all files across sectors
-- ✅ Automatic directory sector allocation working
-- ✅ FAT chain integrity maintained
+### Phase 2 Complete (Stage 3) - Future Enhancement
+- ✅ Empty directory sectors automatically cleaned up after deletion
+- ✅ Optimal disk space utilization maintained
+- ✅ Robust directory chain management with full error handling
+- ✅ Production-ready elegant solution suitable for future projects
 
-### Stage 3 Complete
-- ✅ Empty directory sectors automatically cleaned up
-- ✅ Optimal disk space utilization  
-- ✅ Robust directory chain management
-- ✅ Production-ready elegant solution
+### Intermediate Testing Milestones
+1. **Infrastructure Verification:** All existing operations work identically
+2. **Growth Testing:** Successfully create 17th, 20th, 30th files  
+3. **Chain Integrity:** DIR command correctly traverses multiple sectors
+4. **Error Handling:** Graceful behavior when disk becomes full
+5. **Persistence:** Save/load cycles maintain directory chain structure
 
 This incremental approach builds a solid, reusable component suitable for future projects while respecting current ROM constraints.

@@ -25,6 +25,7 @@ HopperBASIC was created with four core principles:
 - **Modern Precedence**: Bitwise operators bind tighter than arithmetic, matching assembly expectations
 - **Interactive Functions**: Define and test functions interactively without line numbers
 - **JIT Compilation**: Expressions compile to stack-based opcodes for fast execution
+- **Peephole Optimization**: Automatic bytecode optimizations for better performance
 - **I2C Support**: Native commands for I2C device communication and control
 
 ---
@@ -78,6 +79,8 @@ Comments help document your code:
 > VAR radius = 5  ! Circle radius in pixels
 OK
 > REM This is a full-line comment
+OK
+> ' This is also a comment (alternative syntax)
 OK
 ```
 
@@ -246,7 +249,7 @@ OK
 
 ### Main Program
 
-The main program is defined with BEGIN/END:
+The main program is defined with BEGIN/END and is stored as the hidden function `$MAIN`:
 
 ```basic
 > BEGIN
@@ -326,6 +329,8 @@ World
 ABC
 > PRINT 1, 2, 3          ! Comma for spaced values
 1 2 3
+> PRINT                  ! Empty PRINT for newline only
+
 ```
 
 #### INPUT Function
@@ -533,7 +538,60 @@ separator := "," | ";"
 
 comment_statement := REM [ any_text ] 
                    | "!" [ any_text ]
+                   | "'" [ any_text ]
 ```
+
+### Literals and Data Formats
+
+#### Numeric Literals
+
+HopperBASIC supports multiple numeric formats:
+
+| Format | Example | Description |
+|--------|---------|-------------|
+| Decimal | `42`, `1000` | Standard decimal numbers |
+| Hexadecimal | `0xFF`, `0x1234` | C-style hex with `0x` prefix |
+
+#### Character Literals
+
+Character literals support C-style escape sequences:
+
+```basic
+> VAR ch = 'A'           ! Regular character
+OK
+> VAR tab = '\t'        ! Tab character
+OK
+> VAR newline = '\n'     ! Newline character
+OK
+> VAR quote = '\''       ! Single quote
+OK
+```
+
+#### String Literals
+
+String literals also support escape sequences:
+
+```basic
+> VAR msg = "Hello\nWorld"       ! Newline in string
+OK
+> VAR path = "C:\\Users\\Me"     ! Backslashes
+OK
+> VAR quoted = "He said \"Hi\""  ! Embedded quotes
+OK
+```
+
+#### Escape Sequences
+
+| Sequence | Character | ASCII Value |
+|----------|-----------|-------------|
+| `\b` | Backspace | 0x08 |
+| `\t` | Tab | 0x09 |
+| `\n` | Newline | 0x0A |
+| `\f` | Form feed | 0x0C |
+| `\r` | Carriage return | 0x0D |
+| `\\` | Backslash | 0x5C |
+| `\"` | Double quote | 0x22 |
+| `\'` | Single quote | 0x27 |
 
 ### Console Commands
 
@@ -551,7 +609,7 @@ comment_statement := REM [ any_text ]
 | Command | Description | Example |
 |---------|-------------|---------|
 | `VARS` | Show all variables and constants | `> VARS` |
-| `FUNCS` | Show all defined functions | `> FUNCS` |
+| `FUNCS` | Show all functions  | `> FUNCS` |
 | `MEM` | Display available memory | `> MEM` |
 | `FORGET name` | Remove a variable or function | `> FORGET x` |
 
@@ -578,6 +636,8 @@ comment_statement := REM [ any_text ]
 | `HEAP` | Show heap memory layout | `> HEAP` |
 | `BUFFERS` | Display buffer contents | `> BUFFERS` |
 | `DUMP [page]` | Hex dump of memory page | `> DUMP 0` |
+| `TRON` | Enable execution trace | `> TRON` |
+| `TROFF` | Disable execution trace | `> TROFF` |
 
 ### Data Types
 
@@ -679,6 +739,7 @@ Arrays use compact storage types for memory efficiency:
 | Function | Description | Type Signature | Example |
 |----------|-------------|----------------|---------|
 | `ABS(x)` | Absolute value | LONG → LONG | `ABS(-42)` returns `42` |
+| `RND(max)` | Random number 1 to max | LONG → LONG | `RND(100)` returns 1-100 |
 
 #### String/Array Functions
 
@@ -727,6 +788,7 @@ Arrays use compact storage types for memory efficiency:
 - `SYNTAX ERROR` - Invalid statement or expression
 - `UNDEFINED VARIABLE` - Reference to non-existent variable
 - `UNDEFINED FUNCTION` - Call to non-existent function
+- `ILLEGAL CHARACTER` - Invalid character or escape sequence
 
 #### Runtime Errors
 - `TYPE MISMATCH` - Incompatible types in operation
@@ -735,6 +797,7 @@ Arrays use compact storage types for memory efficiency:
 - `STACK OVERFLOW` - Too many nested calls
 - `OUT OF MEMORY` - Insufficient memory
 - `RANGE ERROR` - Value out of valid range (e.g., I2C address > 127)
+- `NUMERIC OVERFLOW` - Number too large for LONG type
 
 #### Storage Errors
 - `FILE NOT FOUND` - Requested file doesn't exist
@@ -797,11 +860,14 @@ HopperBASIC manages memory efficiently:
 #### JIT Compilation
 Expressions are compiled to stack-based opcodes for efficient execution, providing performance comparable to classic 6502 BASICs.
 
-#### Optimization
+#### Peephole Optimization
+The compiler automatically performs bytecode optimizations:
+- **INCGLOBAL/INCLOCAL**: Optimizes increment operations
+- **ADDLOCALS/ADDGLOBALS**: Optimizes addition of two variables
+- **GETITEM/SETITEM optimizations**: Optimizes array access patterns
 - FOR loops with STEP 1 use optimized FORITF opcode
 - String comparisons use pointer comparison when possible
 - Local variables use BP-relative addressing
-- I2C operations use buffered reads for efficiency
 
 #### Memory Efficiency
 - Arrays use compact storage types
@@ -849,7 +915,7 @@ END
 
 ```basic
 FUNC Game()
-    VAR target = 42  ! In real version, use RND
+    VAR target = RND(100)  ! Random number 1-100
     VAR guess, tries = 0
     
     PRINT "Guess the number (1-100)"
@@ -907,8 +973,8 @@ BEGIN
     FOR addr = 8 TO 119
         IF I2CFIND(addr) THEN
             PRINT "Device found at address ", addr, " (0x";
+            ! Print hex address (simplified)
             IF addr < 16 THEN PRINT "0" ENDIF
-            ! Would print hex here in full version
             PRINT ")"
             found = found + 1
         ENDIF
@@ -1007,6 +1073,41 @@ BEGIN
 END
 ```
 
+### Using Hexadecimal Numbers
+
+```basic
+! Demonstrate hexadecimal number support
+BEGIN
+    VAR mask = 0xFF         ! 255 in decimal
+    VAR addr = 0x8000       ! Memory address
+    VAR flags = 0b11001100  ! Binary notation also supported
+    
+    PRINT "Mask: ", mask
+    PRINT "Address: ", addr
+    PRINT "Flags: ", flags
+    
+    ! Bitwise operations with hex
+    VAR result = addr & 0xFF00
+    PRINT "High byte: ", result / 256
+END
+```
+
+### Escape Sequences Demo
+
+```basic
+! Demonstrate character and string escape sequences
+BEGIN
+    PRINT "Line 1\nLine 2\nLine 3"
+    PRINT "Tab\tSeparated\tValues"
+    PRINT "Path: C:\\Users\\Me\\Documents"
+    PRINT "He said \"Hello!\""
+    
+    VAR bell = '\b'  ! Backspace character
+    VAR tab = '\t'   ! Tab character
+    PRINT "Alert", bell, "Tab", tab, "Done"
+END
+```
+
 ---
 
 ## Quick Reference Card
@@ -1020,6 +1121,13 @@ VARS        - Show variables         BYE         - Exit
 FUNCS       - Show functions         MEM         - Show memory
 ```
 
+### Debug Commands (DEBUG builds)
+```
+HEAP        - Show heap dump         TRON        - Enable trace
+BUFFERS     - Show buffers          TROFF       - Disable trace
+DUMP [n]    - Dump memory page n
+```
+
 ### Variable Declaration
 ```basic
 VAR x = 42              ! Single variable
@@ -1027,6 +1135,20 @@ VAR a, b, c            ! Multiple (default 0)
 VAR x = 1, y = 2       ! Multiple with init
 CONST PI = 3           ! Constant
 INT data[100]          ! Array
+```
+
+### Numeric Formats
+```basic
+42                     ! Decimal
+0xFF                   ! Hexadecimal
+0x1234                 ! Hex (any size)
+```
+
+### Character & String Escapes
+```basic
+'\n'  '\r'  '\t'      ! Newline, Return, Tab
+'\b'  '\f'            ! Backspace, Form feed
+'\\'  '\''  '\"'      ! Backslash, Quotes
 ```
 
 ### Control Flow
@@ -1057,7 +1179,7 @@ END
 ```basic
 ! Math & Type Conversion
 ABS(x)          CHR(n)          LEN(s)
-ASC(c)          INPUT()         
+ASC(c)          INPUT()         RND(max)
 
 ! Time & Memory
 MILLIS()        SECONDS()       DELAY(ms)
@@ -1091,6 +1213,12 @@ CONST OLED = 60      ! SSD1306 OLED (0x3C)
 CONST EEPROM = 80    ! 24C256 EEPROM (0x50)
 CONST RTC = 104      ! DS3231 RTC (0x68)
 CONST TEMP = 72      ! LM75 Temp (0x48)
+```
+
+### Comment Styles
+```basic
+REM Traditional BASIC comment
+VAR x = 5  ! Modern inline comment
 ```
 
 ---

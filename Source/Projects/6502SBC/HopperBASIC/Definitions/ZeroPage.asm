@@ -374,21 +374,22 @@ unit ZP // ZeroPage.asm
     const byte FS12                 = 0x98;
     const byte FS13                 = 0x99;
     const byte FS14                 = 0x9A;
+    const byte FS14                 = 0x9B;
     
     // Storage.LoadProgram(), Tokenizer.FindKeyword()
-    const byte SS0                  = 0x9B;
-    const byte SS1                  = 0x9C;
-    const byte SS2                  = 0x9D;
-    const byte SS3                  = 0x9E;
-    const byte SS4                  = 0x9F;
-    const byte SS5                  = 0xA0;
-    const byte SS6                  = 0xA1;
+    const byte SS0                  = 0x9C;
+    const byte SS1                  = 0x9D;
+    const byte SS2                  = 0x9E;
+    const byte SS3                  = 0x9F;
+    const byte SS4                  = 0xA0;
+    const byte SS5                  = 0xA1;
+    const byte SS6                  = 0xA2;
     
     // Random Number Generator Seed (16-bit)
-    const byte RANDOMSEEDL          = 0xA2;  // LSB of random seed  
-    const byte RANDOMSEEDH          = 0xA3;  // MSB of random seed
+    const byte RANDOMSEEDL          = 0xA3;  // LSB of random seed  
+    const byte RANDOMSEEDH          = 0xA4;  // MSB of random seed
     
-    const byte CURRENTSYSCALL       = 0xA4;
+    const byte CURRENTSYSCALL       = 0xA5;
     
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
     // Shared with Storage.LoadProgram

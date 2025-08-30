@@ -38,6 +38,8 @@ unit File
     const byte SectorPositionH      = ZP.FS13;
     
     const byte StreamBytesAvailable = ZP.FS14;                // used only within NextStream()
+    const byte CurrentDirectorySector = ZP.FS15;              // Current directory sector being accessed
+
     
     
 #ifdef TRACEFILE
