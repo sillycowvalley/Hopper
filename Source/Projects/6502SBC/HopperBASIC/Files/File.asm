@@ -173,6 +173,29 @@ unit File
         loadDirectorySector();
     }
     
+    // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+    // Input:  CurrentFileEntry
+    // Output: Y = offset in current sector
+    fileEntryToDirectoryEntry()
+    {
+        PHA
+        LDA CurrentFileEntry
+        AND #0x0F                    // Convert global to local (0-15)
+        ASL A ASL A ASL A ASL A      // * 16
+        TAY                          // Y = directory entry offset
+        PLA
+    }
+    
+    // Calculate directory entry byte offset: Y * 16
+    // Input:  Y - directory entry in sector
+    // Output: X - offset in sector
+    entryToOffset()
+    {
+        TYA
+        ASL A ASL A ASL A ASL A // Y * 16
+        TAX                     // X = byte offset in DirectoryBuffer
+    }
+    
     // Get available free space in bytes
     // Output: TOPH:TOPL = free bytes (16-bit)
     //         C set if successful, NC if error accessing FAT
@@ -392,19 +415,6 @@ unit File
 #ifdef TRACEFILE
         LDA #(appendStreamTrace % 256) STA ZP.TraceMessageL LDA #(appendStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
-    }
-    
-    // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
-    // Input:  CurrentFileEntry
-    // Output: Y = offset in current sector
-    fileEntryToDirectoryEntry()
-    {
-        PHA
-        LDA CurrentFileEntry
-        AND #0x0F                    // Convert global to local (0-15)
-        ASL A ASL A ASL A ASL A      // * 16
-        TAY                          // Y = directory entry offset
-        PLA
     }
     
     // Close and finalize current save file
@@ -930,10 +940,7 @@ unit File
             LDY #0                       // Entry index within sector (0-15)
             loop // Check entries in current sector
             {
-                // Calculate directory entry byte offset: Y * 16
-                TYA
-                ASL A ASL A ASL A ASL A // Y * 16
-                TAX                     // X = byte offset in DirectoryBuffer
+                entryToOffset(); // Y * 16 -> X, munts A
                 
                 // Check if entry is in use (fileLength != 0)
                 LDA (DirectoryBuffer + 0), X  // Length LSB
@@ -1177,10 +1184,7 @@ unit File
             LDY #0               // Directory entry offset
             loop
             {
-                // Calculate byte offset: Y * 16
-                TYA
-                ASL ASL ASL ASL      // Y * 16 = directory entry offset
-                TAX                  // X = byte offset in directory
+                entryToOffset(); // Y * 16 -> X, munts A
                 
                 // Check if entry is in use (fileLength != 0)
                 LDA DirectoryBuffer + 0, X  // Length LSB
@@ -1941,10 +1945,7 @@ unit File
             
             loop // Search entries in current sector
             {
-                // Calculate byte offset: Y * 16
-                TYA
-                ASL A ASL A ASL A ASL A  // Y * 16 = directory entry offset
-                TAX                      // X = byte offset in directory
+                entryToOffset(); // Y * 16 -> X, munts A
                 
                 // Check if entry is free (fileLength == 0)
                 LDA DirectoryBuffer + 0, X  // Length LSB
@@ -2819,10 +2820,7 @@ unit File
         
         loop
         {
-            // Convert entry index to byte offset
-            TYA
-            ASL A ASL A ASL A ASL A  // Y * 16 = directory entry offset
-            TAX                      // X = byte offset in directory
+            entryToOffset(); // Y * 16 -> X, munts A
             
             // Check if entry is in use
             LDA DirectoryBuffer + 0, X  // Length LSB
@@ -2873,8 +2871,6 @@ unit File
         Print.Space();
         
         // Print filename
-        //TYA
-        //ASL A ASL A ASL A ASL A
         TXA TAY // X -> A
         printFilenameFromDirectory(); // Expects Y = entry offset (0, 16, 32...)
         

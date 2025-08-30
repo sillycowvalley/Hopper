@@ -9,10 +9,10 @@ program HopperBASIC
     #define DEBUG
     //#define MULDIVDEBUG
     //#define VERBOSEDEBUG // debug the keyword table limits
-    //#define FILEDEBUG
+    #define FILEDEBUG
     
     //#define TRACE  // Compiler and Executor call tree walks
-    #define TRACEFILE  // Storage and File
+    //#define TRACEFILE  // Storage and File
     //#define TRACEPARSE // Compiler and CompilerFlow
     //#define TRACEEXE // instructions in Executor
 
