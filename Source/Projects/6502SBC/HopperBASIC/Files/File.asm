@@ -522,6 +522,7 @@ unit File
     }
     
     
+    /*
     // Find last occupied entry in directory chain for compaction
     // Input: CurrentFileEntry = deleted slot, CurrentDirectorySector = its sector
     // Output: C set if replacement found (last entry != deleted entry)
@@ -583,6 +584,22 @@ unit File
             ADC #16
             STA ZP.ACCL
         }// loop
+        
+        // Set C if we found an entry to move
+        LDA LastOccupiedSector
+        if (NZ) { SEC } else { CLC }
+    }
+    */
+    
+    findLastOccupiedEntry()
+    {
+        STZ LastOccupiedEntry
+        STZ LastOccupiedSector
+        STZ PreviousSector       // Still needed for unlinking
+        
+        LDA #DirWalkAction.FindLast
+        STA ZP.ACCH
+        walkDirectoryChain();    // Walker handles ACCL increment
         
         // Set C if we found an entry to move
         LDA LastOccupiedSector
@@ -1252,6 +1269,7 @@ unit File
         Count = 0,
         Print = 1,
         FindFile = 2,
+        FindLast = 3,
     } 
     
     
@@ -1259,6 +1277,8 @@ unit File
     {
         LDA #1
         STA CurrentDirectorySector
+        STZ ZP.ACCL              // Initialize chain position for FindLast
+        STZ PreviousSector       // Initialize for FindLast
         
         loop 
         {
@@ -1285,15 +1305,19 @@ unit File
                     {
                         case DirWalkAction.Count:
                         {
-                            processCountEntry();    // X still has offset
+                            processCountEntry();
                         }
                         case DirWalkAction.Print:
                         {
-                            processPrintEntry();    // Y has slot, X has offset
+                            processPrintEntry();
                         }
                         case DirWalkAction.FindFile:
                         {
-                            processFindFileEntry(); // Y has slot, X has offset
+                            processFindFileEntry();
+                        }
+                        case DirWalkAction.FindLast:
+                        {
+                            processFindLastEntry();
                         }
                     }
                     
@@ -1310,7 +1334,7 @@ unit File
             
             if (NC) { break; }  // Propagate early exit
             
-            // Next sector
+            // Track previous sector before moving to next
             LDA CurrentDirectorySector
             getNextDirectorySector();
             CMP #1
@@ -1319,11 +1343,33 @@ unit File
                 SEC    // made it through the entire iteration
                 break; // End of chain
             }  
-            STA CurrentDirectorySector
+            // Only update previous if continuing
+            LDX CurrentDirectorySector
+            STX PreviousSector
+            STA CurrentDirectorySector   // A has next sector
+            
+            // Increment for FindLast
+            CLC
+            LDA ZP.ACCL
+            ADC #16
+            STA ZP.ACCL
+
         } // loop
     }
     
     // Callback methods
+    processFindLastEntry()  // X = offset, Y = slot
+    {
+        // Update tracking for last occupied entry
+        TYA
+        ORA ZP.ACCL          // Combine with sector position
+        STA LastOccupiedEntry
+        
+        LDA CurrentDirectorySector
+        STA LastOccupiedSector
+        
+        SEC                  // Always continue scanning
+    }
     
     processFindFileEntry()  // X = offset, Y = slot
     {
