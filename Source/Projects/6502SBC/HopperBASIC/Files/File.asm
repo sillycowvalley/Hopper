@@ -165,6 +165,14 @@ unit File
 #endif
     }
     
+    initializeFATandDirectory()
+    {
+        // Reload FAT and directory from EEPROM
+        loadFAT();
+        LDA #1    // Default to sector 1
+        loadDirectorySector();
+    }
+    
     // Get available free space in bytes
     // Output: TOPH:TOPL = free bytes (16-bit)
     //         C set if successful, NC if error accessing FAT
@@ -180,8 +188,7 @@ unit File
         
         loop // Single exit for cleanup
         {
-            // Load FAT from EEPROM
-            loadFAT();
+            initializeFATandDirectory();
             
             // Count free sectors
             LDY #2                   // Start from sector 2 (skip FAT and directory)
@@ -269,10 +276,7 @@ unit File
             File.ValidateFilename();
             if (NC) { BIT ZP.EmulatorPCL break; }
             
-            // Load directory and FAT into buffers
-            LDA #1                           // Default to sector 1
-            loadDirectorySector();
-            loadFAT();
+            initializeFATandDirectory();
             
             // Find free directory entry (or existing file to overwrite)
             findFreeDirectoryEntry();
@@ -390,6 +394,19 @@ unit File
 #endif
     }
     
+    // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+    // Input:  CurrentFileEntry
+    // Output: Y = offset in current sector
+    fileEntryToDirectoryEntry()
+    {
+        PHA
+        LDA CurrentFileEntry
+        AND #0x0F                    // Convert global to local (0-15)
+        ASL A ASL A ASL A ASL A      // * 16
+        TAY                          // Y = directory entry offset
+        PLA
+    }
+    
     // Close and finalize current save file
     // Output: C set if successful, NC if error
     // Preserves: X, Y  
@@ -414,10 +431,8 @@ unit File
             }
             
             // Update directory entry with final file length
-            // Calculate directory entry offset: CurrentFileEntry * 16
-            LDA CurrentFileEntry
-            ASL A ASL A ASL A ASL A      // * 16
-            TAY                          // Y = directory entry offset
+            // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+            fileEntryToDirectoryEntry(); // -> Y
             
             // Set file length (FilePosition)
             LDA FilePositionL
@@ -427,7 +442,8 @@ unit File
             
             // Flush metadata to EEPROM
             writeFAT();
-            LDA #1                           // Default to sector 1
+            
+            LDA CurrentDirectorySector
             writeDirectorySector();
             
             SEC // Success
@@ -455,9 +471,7 @@ unit File
         
         loop // Single exit
         {
-            // Load directory from EEPROM
-            LDA #1                           // Default to sector 1
-            loadDirectorySector();
+            initializeFATandDirectory();
             
             // Count files and calculate total bytes
             countFilesAndBytes(); // -> TransferLengthL = file count, TransferLengthH/BytesRemainingL = total bytes
@@ -523,10 +537,7 @@ unit File
             File.ValidateFilename();
             if (NC) { BIT ZP.EmulatorPCL break; }
             
-            // Load directory and FAT from EEPROM
-            LDA #1                           // Default to sector 1
-            loadDirectorySector();
-            loadFAT();
+            initializeFATandDirectory();
             
             // Find the file in directory
             findFileInDirectory();
@@ -547,7 +558,7 @@ unit File
             clearDirectoryEntry();
             
             // Write updated directory and FAT back to EEPROM
-            LDA #1                           // Default to sector 1
+            LDA CurrentDirectorySector 
             writeDirectorySector();
             writeFAT();
             
@@ -601,11 +612,7 @@ unit File
             File.ValidateFilename();
             if (NC) { BIT ZP.EmulatorPCL break; }
             
-            
-            // Load directory and FAT from EEPROM
-            LDA #1                           // Default to sector 1
-            loadDirectorySector();
-            loadFAT();
+            initializeFATandDirectory();
             
             // Find the file in directory
             findFileInDirectory();
@@ -810,10 +817,8 @@ unit File
 #ifdef TRACEFILE
         LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        // Calculate directory entry offset: CurrentFileEntry * 16
-        LDA CurrentFileEntry
-        ASL A ASL A ASL A ASL A                 // * 16
-        TAY                                     // Y = directory entry offset
+        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        fileEntryToDirectoryEntry(); // -> Y
         
         // Read file length from directory entry (bytes 0-1)
         LDA DirectoryBuffer + 0, Y              // Length LSB
@@ -964,9 +969,9 @@ unit File
             // Check for next directory sector
             LDA CurrentDirectorySector
             getNextDirectorySector();
-            
             CMP #1                       // End-of-chain?
             if (Z) { CLC break; }        // More sectors to process, NOT FOUND
+            STA CurrentDirectorySector
         } // main loop
         
 #ifdef TRACEFILE
@@ -1062,12 +1067,9 @@ unit File
 #ifdef TRACEFILE
         LDA #(getFileStartSectorTrace % 256) STA ZP.TraceMessageL LDA #(getFileStartSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        // Calculate directory entry offset: CurrentFileEntry * 16 + 2 (start sector field)
-        LDA CurrentFileEntry
-        ASL ASL ASL ASL          // * 16
-        CLC
-        ADC #2                   // + 2 for start sector field offset
-        TAY                      // Y = start sector field offset
+        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        fileEntryToDirectoryEntry(); // -> Y
+        INY INY                      // + 2 (start sector field)
         
         // Read start sector from directory entry
         LDA DirectoryBuffer, Y
@@ -1127,20 +1129,17 @@ unit File
 #ifdef TRACEFILE
         LDA #(clearDirectoryEntryTrace % 256) STA ZP.TraceMessageL LDA #(clearDirectoryEntryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        // Calculate directory entry offset: CurrentFileEntry * 16
-        LDA CurrentFileEntry
-        ASL ASL ASL ASL          // * 16
-        TAX                      // X = directory entry start offset
+        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        fileEntryToDirectoryEntry(); // -> Y
         
         // Clear 16 bytes of directory entry
         LDA #0
-        LDY #16
+        LDX #16
         loop
         {
-            DEY
-            STA DirectoryBuffer, X
-            INX
-            CPY #0
+            STA DirectoryBuffer, Y
+            INY
+            DEX
             if (Z) { break; }
         }
 #ifdef TRACEFILE
@@ -1167,35 +1166,49 @@ unit File
         STZ TransferLengthH      // Total bytes high
         STZ BytesRemainingL      // Total bytes low
         
-        LDY #0                   // Directory entry offset
-        
-        loop
+        LDA #1                   // Start with first directory sector
+        loop // Add outer loop for directory chain
         {
-            // Calculate byte offset: Y * 16
-            TYA
-            ASL ASL ASL ASL      // Y * 16 = directory entry offset
-            TAX                  // X = byte offset in directory
+            PHA                  // Save current sector
+            loadDirectorySector();
+            PLA
+            PHA                  // Keep sector on stack
             
-            // Check if entry is in use (fileLength != 0)
-            LDA DirectoryBuffer + 0, X  // Length LSB
-            ORA DirectoryBuffer + 1, X  // Length MSB
-            if (NZ)
+            LDY #0               // Directory entry offset
+            loop
             {
-                INC TransferLengthL      // Increment file count
+                // Calculate byte offset: Y * 16
+                TYA
+                ASL ASL ASL ASL      // Y * 16 = directory entry offset
+                TAX                  // X = byte offset in directory
                 
-                // Add file size to total
-                CLC
-                LDA BytesRemainingL
-                ADC DirectoryBuffer + 0, X  // Add length LSB
-                STA BytesRemainingL
-                LDA TransferLengthH
-                ADC DirectoryBuffer + 1, X  // Add length MSB
-                STA TransferLengthH
+                // Check if entry is in use (fileLength != 0)
+                LDA DirectoryBuffer + 0, X  // Length LSB
+                ORA DirectoryBuffer + 1, X  // Length MSB
+                if (NZ)
+                {
+                    INC TransferLengthL      // Increment file count
+                    
+                    // Add file size to total
+                    CLC
+                    LDA BytesRemainingL
+                    ADC DirectoryBuffer + 0, X  // Add length LSB
+                    STA BytesRemainingL
+                    LDA TransferLengthH
+                    ADC DirectoryBuffer + 1, X  // Add length MSB
+                    STA TransferLengthH
+                }
+                
+                INY
+                CPY #16              // 16 entries maximum
+                if (Z) { break; }
             }
+            // Get next directory sector
+            PLA                  // Current sector
+            getNextDirectorySector();
             
-            INY
-            CPY #16              // 16 entries maximum
-            if (Z) { break; }
+            CMP #1               // End-of-chain?
+            if (Z) { break; }    // No more sectors
         }
 #ifdef TRACEFILE
         LDA #(countFilesAndBytesTrace % 256) STA ZP.TraceMessageL LDA #(countFilesAndBytesTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1444,12 +1457,10 @@ unit File
 #endif
         PHY
         
-        // Calculate directory entry offset: CurrentFileEntry * 16 + 3 (filename field)
-        LDA CurrentFileEntry
-        ASL ASL ASL ASL          // * 16
-        CLC
-        ADC #3                   // + 3 for filename field offset
-        TAX                      // X = filename field offset
+        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        fileEntryToDirectoryEntry(); // -> Y
+        TYA TAX
+        INX INX INX // + 3 (filename field)
         
         // Copy filename from ZP.STR to DirectoryBuffer
         LDY #0
@@ -1495,12 +1506,9 @@ unit File
 #ifdef TRACEFILE
         LDA #(updateDirectoryStartSectorTrace % 256) STA ZP.TraceMessageL LDA #(updateDirectoryStartSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        // Calculate directory entry offset: CurrentFileEntry * 16 + 2 (start sector field)
-        LDA CurrentFileEntry
-        ASL ASL ASL ASL          // * 16
-        CLC
-        ADC #2                   // + 2 for start sector field offset
-        TAY                      // Y = start sector field offset
+        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        fileEntryToDirectoryEntry(); // -> Y
+        INY INY                      // + 2 for start sector field offset
         
         // Write start sector to directory entry
         LDA FileStartSector
@@ -1611,11 +1619,6 @@ unit File
     #endif
         PHA
         PHY
-        
-        
-//LDA #(DirectoryBuffer / 256)        
-//DumpPage();
-//Debug.NL();
 
         // Point to filename field in directory entry (offset +3)
         TXA
@@ -1630,18 +1633,14 @@ unit File
             LDA [ZP.STR], Y
             if (Z)               // End of input filename?
             {
-Debug.NL(); COut(); Space(); HOut(); Space(); LDA DirectoryBuffer, X COut(); Space(); HOut(); Space(); TYA HOut(); Space(); TXA HOut(); Space();
-                
                 // Input ended - check if PREVIOUS directory character was the last
                 LDA (DirectoryBuffer-1), X
                 if (MI)          // High bit set = that was the last char
                 {
-LDA #'Y' COut(); 
                     SEC          // Perfect match
                 }
                 else
                 {
-LDA #'N' COut();
                     CLC          // Input ended but directory continues
                 }
                 break;
@@ -1934,8 +1933,8 @@ LDA #'N' COut();
         loop // Single exit - main search loop
         {
             // Load current directory sector
-            LDA CurrentDirectorySector
-            loadDirectorySector();
+            LDA CurrentDirectorySector 
+            loadDirectorySector(); 
             
             // Search entries in this sector
             LDY #0                       // Entry index within sector (0-15)
@@ -1944,7 +1943,7 @@ LDA #'N' COut();
             {
                 // Calculate byte offset: Y * 16
                 TYA
-                ASL ASL ASL ASL          // Y * 16 = directory entry offset
+                ASL A ASL A ASL A ASL A  // Y * 16 = directory entry offset
                 TAX                      // X = byte offset in directory
                 
                 // Check if entry is free (fileLength == 0)
@@ -1956,20 +1955,20 @@ LDA #'N' COut();
                     // CurrentFileEntry = (CurrentDirectorySector - 1) * 16 + Y
                     LDA CurrentDirectorySector
                     SEC
-                    SBC #1               // Sector 1 = entries 0-15
-                    ASL ASL ASL ASL      // * 16
+                    SBC #1                  // Sector 1 = entries 0-15
+                    ASL A ASL A ASL A ASL A // * 16
                     STA CurrentFileEntry
-                    TYA                  // Add local entry index
+                    TYA                     // Add local entry index
                     CLC
                     ADC CurrentFileEntry
                     STA CurrentFileEntry
-                    SEC                  // Success - found entry
-                    break;               // Exit main loop with success
+                    SEC                    // Success - found entry
+                    break;                 // Exit main loop with success
                 }
                 
                 INY
                 CPY #16
-                if (Z) { break; }        // Checked all entries in this sector
+                if (Z) { CLC break; }        // Checked all entries in this sector
             }
             
             // Check if we found an entry (C will be set if we did)
@@ -1978,7 +1977,6 @@ LDA #'N' COut();
             // No free entry in this sector, check for next
             LDA CurrentDirectorySector
             getNextDirectorySector();
-            
             CMP #1                       // End-of-chain?
             if (Z)
             {
@@ -1994,12 +1992,13 @@ LDA #'N' COut();
                 
                 // New sector allocated in A
                 STA CurrentDirectorySector
+                loadDirectorySector();
                 
                 // First entry in new sector is free
                 LDA CurrentDirectorySector
                 SEC
                 SBC #1
-                ASL ASL ASL ASL          // * 16
+                ASL A ASL A ASL A ASL A          // * 16
                 STA CurrentFileEntry
                 
                 // Need to write the FAT with the new link
@@ -2426,6 +2425,7 @@ LDA #'N' COut();
             getNextDirectorySector();    // Get next in chain
             CMP #1                       // End-of-chain?
             if (Z) { break; }            // Yes, stop counting
+            // A already has next sector for next iteration
         }       
                  
         // Print statistics
