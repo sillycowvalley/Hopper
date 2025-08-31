@@ -89,8 +89,6 @@ unit Commands
     // Output: Named symbol removed from appropriate table, or error if not found
     CmdForget()
     {
-        PHA
-        
         // Try to remove as variable/constant first
         LDA ZP.STRL
         STA ZP.TOPL
@@ -113,8 +111,6 @@ unit Commands
                 Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
             }
         }
-        
-        PLA
     }
     
     // Execute VARS command - display all variables and constants
@@ -170,8 +166,6 @@ unit Commands
     // Output: Function(s) displayed to serial
     CmdList()
     {
-        PHA
-        
         loop
         {
             Statement.IsCaptureModeOn();
@@ -228,8 +222,6 @@ unit Commands
             }
             break;
         }
-        
-        PLA
     }
     
     // Execute FUNCS command - display all functions or specific function
@@ -237,8 +229,6 @@ unit Commands
     // Output: Function(s) displayed to serial
     CmdFuncs()
     {
-        PHA
-        
         // Check if specific function requested
         LDA ZP.STRL
         ORA ZP.STRH
@@ -252,8 +242,6 @@ unit Commands
             // ZP.STR contains function name - show specific function
             displaySpecificFunction();
         }
-        
-        PLA
     }
     
     // ============================================================================

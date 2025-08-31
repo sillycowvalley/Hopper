@@ -1721,7 +1721,7 @@ unit Compiler // Compiler.asm
         Trace.MethodEntry(); PLA
 #endif
         
-        PHA  // Save SysCallType value
+        STA ZP.CURRENTSYSCALL
         
         loop // Single exit
         {
@@ -1729,7 +1729,6 @@ unit Compiler // Compiler.asm
             Tokenizer.NextTokenCheck();
             if (NC) 
             { 
-                PLA  // Clean stack before exit
                 break; 
             }
             
@@ -1739,13 +1738,12 @@ unit Compiler // Compiler.asm
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 CheckErrorAndSetFailure();
-                PLA  // Clean stack before exit
                 break; 
             }
             
             // Extract argument count from bits 1-0 of SysCallType
-            PLA
-            PHA  // Keep it on stack for later
+            
+            LDA ZP.CURRENTSYSCALL
             AND #0b00000011  // Extract arg count bits
             TAX  // X = argument count
             
@@ -1757,7 +1755,6 @@ unit Compiler // Compiler.asm
                 Tokenizer.NextTokenCheckSetFailure();
                 if (NC) 
                 { 
-                    PLA  // Clean stack before exit
                     break; 
                 }
             }
@@ -1797,7 +1794,6 @@ unit Compiler // Compiler.asm
                 // Check if argument loop exited with error
                 if (NC) 
                 { 
-                    PLA  // Clean SysCallType from stack
                     break;  // Exit main loop on error
                 }
             }
@@ -1809,7 +1805,6 @@ unit Compiler // Compiler.asm
             { 
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 CheckErrorAndSetFailure();
-                PLA  // Clean stack before exit
                 break; 
             }
             
@@ -1817,12 +1812,11 @@ unit Compiler // Compiler.asm
             Tokenizer.NextTokenCheckSetFailure();
             if (NC) 
             { 
-                PLA  // Clean stack before exit
                 break; 
             }
             
             // Emit the SYSCALL with original value
-            PLA  // Get SysCallType value
+            LDA ZP.CURRENTSYSCALL
             Emit.SysCall();  // A = SysCallType
             
             SEC // Success

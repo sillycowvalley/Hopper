@@ -79,7 +79,7 @@ ENDFUNC
 
 FUNC GetSize()
     VAR lo = GetByte()
-    VAR hi = GetByte()
+    VAR hi = GetByte() & 0x7F
     VAR size = lo + (hi * 256)
     
     IF size > 0 THEN
