@@ -938,59 +938,59 @@ unit Error // ErrorID.asm
         PHX  // Preserve X register  
         PHY  // Preserve Y register
         
-        // Returns C if no error, NC if error was printed
-        CheckError();
-        if (C) 
-        { 
-            // Restore registers
-            PLY
-            PLX
+        loop
+        {
+            // Returns C if no error, NC if error was printed
+            CheckError();
+            if (C) 
+            { 
+                break;  // No error
+            }
+            
+            LDA ZP.ACCL
+            PHA
+            LDA ZP.ACCH
+            PHA
+            
+            // Print the error message
+            
+            LDA ZP.LastError
+            
+            
+    #if defined(RELEASE)
+            LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
+            Error.MessageNL();
+    #else
+            LDX # MessageExtras.PrefixSpace
+            Message();
+            // 6502 PC
+            LDA #' '
+            Serial.WriteChar();
+            LDA #'('
+            Serial.WriteChar();
+            LDA #'0'
+            Serial.WriteChar();
+            LDA #'x'
+            Serial.WriteChar();
+            LDA ZP.EmulatorPCH
+            Serial.HexOut();
+            LDA ZP.EmulatorPCL
+            Serial.HexOut();
+            LDA #')'
+            Serial.WriteChar();
+            Print.NewLine(); // '\n' suffix
+    #endif        
+            
+            
             PLA
-            return;  // No error
-        }
-        
-        LDA ZP.ACCL
-        PHA
-        LDA ZP.ACCH
-        PHA
-        
-        // Print the error message
-        
-        LDA ZP.LastError
-        
-        
-#if defined(RELEASE)
-        LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
-        Error.MessageNL();
-#else
-        LDX # MessageExtras.PrefixSpace
-        Message();
-        // 6502 PC
-        LDA #' '
-        Serial.WriteChar();
-        LDA #'('
-        Serial.WriteChar();
-        LDA #'0'
-        Serial.WriteChar();
-        LDA #'x'
-        Serial.WriteChar();
-        LDA ZP.EmulatorPCH
-        Serial.HexOut();
-        LDA ZP.EmulatorPCL
-        Serial.HexOut();
-        LDA #')'
-        Serial.WriteChar();
-        Print.NewLine(); // '\n' suffix
-#endif        
-        
-        
-        PLA
-        STA ZP.ACCH
-        PLA
-        STA ZP.ACCL
-        
-        Error.ClearError();  // Clear error state before next command
-        States.SetSuccess();  // Reset state for clean start
+            STA ZP.ACCH
+            PLA
+            STA ZP.ACCL
+            
+            Error.ClearError();  // Clear error state before next command
+            States.SetSuccess();  // Reset state for clean start
+            break;
+        } // single exit
         
         // Restore registers
         PLY
