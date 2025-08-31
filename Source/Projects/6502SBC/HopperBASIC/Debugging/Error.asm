@@ -733,7 +733,7 @@ unit Error // ErrorID.asm
     }
     
 
-    FunctionExists() inline
+    FunctionExists()
     { 
         LDA #ErrorID.FunctionExists // name is in ZP.TOP
         commonErrorTOPtoERRSTR();

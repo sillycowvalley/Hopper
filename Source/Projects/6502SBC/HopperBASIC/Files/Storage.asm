@@ -207,6 +207,7 @@ Debug.NL();
             flushTokenBuffer();
 
             // 6. Finalize file
+            LDA #0x80 // executable file
             File.EndSave();
             if (NC) { break; }
                                     

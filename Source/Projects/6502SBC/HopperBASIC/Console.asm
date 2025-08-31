@@ -588,7 +588,7 @@ unit Console // Console.asm
                         PHX // preserve X for default processing
                                  
                         Tokenizer.GetTokenStringSTR();
-                        // FILETYPE: LDA #1 here to call File.Exists() for LOAD and RUN <identifier> in Console.processTokens()
+                        LDA # DirWalkAction.FindExecutable  // only interested in executables
                         File.Exists(); // Input: ZP.STR, Output: C if exists
                         if (C)
                         {

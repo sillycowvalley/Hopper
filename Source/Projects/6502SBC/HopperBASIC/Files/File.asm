@@ -559,7 +559,7 @@ unit File
 #endif
     }
     
-    // FILETYPE: argument to EndSave() to say if executable or data
+    // Input: A = 0x80 for executable file, A = 0x00 for data file
     // Close and finalize current save file
     // Output: C set if successful, NC if error
     // Preserves: X, Y  
@@ -567,10 +567,12 @@ unit File
     EndSave()
     {
 #ifdef TRACEFILE
-        LDA #(endSaveTrace % 256) STA ZP.TraceMessageL LDA #(endSaveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(endSaveTrace % 256) STA ZP.TraceMessageL LDA #(endSaveTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
         PHX
         PHY
+        
+        STA ZP.ACCH
         
         loop // Single exit
         {
@@ -591,6 +593,7 @@ unit File
             LDA FilePositionL
             STA DirectoryBuffer + 0, Y
             LDA FilePositionH  
+            ORA ZP.ACCH                    // or 0x80 if executable type
             STA DirectoryBuffer + 1, Y
             
             // Flush metadata to EEPROM
@@ -659,76 +662,6 @@ unit File
         LDA #(dirTrace % 256) STA ZP.TraceMessageL LDA #(dirTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-    
-    
-    /*
-    // Find last occupied entry in directory chain for compaction
-    // Input: CurrentFileEntry = deleted slot, CurrentDirectorySector = its sector
-    // Output: C set if replacement found (last entry != deleted entry)
-    //         NC if no replacement needed (deleted was last, or no other entries)
-    //         If C set: LastOccupiedEntry, LastOccupiedSector, PreviousSector filled
-    // Munts: A, X, Y
-    findLastOccupiedEntry()
-    {
-        STZ LastOccupiedEntry
-        STZ LastOccupiedSector
-        STZ PreviousSector
-        STZ ZP.ACCL              // Chain position counter (0, 1, 2...)
-        
-        LDA #1                       // Start from first directory sector
-        STA CurrentDirectorySector
-        
-        loop // Walk entire chain
-        {
-            LDA CurrentDirectorySector
-            loadDirectorySector();
-           
-            // Scan this sector backwards from entry 15
-            LDY #15
-            loop
-            {
-                // Check if occupied (length != 0)
-                entryToOffset();     // Y * 16 -> X
-                LDA DirectoryBuffer + 0, X
-                ORA DirectoryBuffer + 1, X
-                if (NZ)
-                {
-                    // Found occupied entry - update tracking
-                    TYA
-                    ORA ZP.ACCL
-                    STA LastOccupiedEntry
-                    
-                    LDA CurrentDirectorySector
-                    STA LastOccupiedSector
-                    break;  // Move to next sector immediately
-                }
-                DEY
-                if (MI) { break; }  // Done with this sector
-            } // loop
-            
-            // Get next sector and track previous
-            LDA CurrentDirectorySector
-            getNextDirectorySector();  // A = next sector (or 1 for end)
-            CMP #1                     // End of chain?
-            if (Z) { break; }          // Done walking
-            
-            // Only update previous if we're continuing
-            LDX CurrentDirectorySector
-            STX PreviousSector   
-            
-            STA CurrentDirectorySector // Continue with next sector(A)
-            
-            CLC
-            LDA ZP.ACCL          // Increment chain position
-            ADC #16
-            STA ZP.ACCL
-        }// loop
-        
-        // Set C if we found an entry to move
-        LDA LastOccupiedSector
-        if (NZ) { SEC } else { CLC }
-    }
-    */
     
     findLastOccupiedEntry()
     {
@@ -865,6 +798,8 @@ unit File
             initializeFATandDirectory();
             
             // Find the file in directory
+            LDA # DirWalkAction.FindFile // all files
+            STA ZP.ACCH
             findFileInDirectory();
             if (NC)
             {
@@ -957,9 +892,9 @@ unit File
     
     
 
-    // FILETYPE: Exists() should also return type of file (executable or data)
     // Check if file exists in directory
-    // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+    // Input: ZP.STR = pointer to filename (uppercase, null-terminated), 
+    //             A =  DirWalkAction.FindFile (all files) or DirWalkAction.FindExecutable (executables only)
     // Output: C set if file exists, NC if file not found
     //         CurrentFileEntry = directory entry index if found
     // Preserves: X, Y
@@ -968,10 +903,12 @@ unit File
     Exists()
     {
     #ifdef TRACEFILE
-        LDA #(fileExistsTrace % 256) STA ZP.TraceMessageL LDA #(fileExistsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+        PHA LDA #(fileExistsTrace % 256) STA ZP.TraceMessageL LDA #(fileExistsTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
     #endif
         PHX
         PHY
+        
+        STA ZP.ACCH
         
         // preserve the file name
         LDA ZP.STRL
@@ -1029,7 +966,7 @@ unit File
         loop // Single exit for cleanup
         {
             // Check if file exists (validates filename and loads metadata)
-            // FILETYPE: LDA #1 here to call File.Exists() for StartLoad() <identifier>
+            LDA # DirWalkAction.FindExecutable  // only interested in executables
             File.Exists();
             if (NC)
             {
@@ -1181,7 +1118,6 @@ unit File
               
 
     
-    // FILETYPE: strip high bit from value returned by getFileLength()
     // Get file length from current directory entry
     // Input: CurrentFileEntry = directory entry index
     // Output: BytesRemainingL/H = file length (16-bit)
@@ -1198,6 +1134,7 @@ unit File
         LDA DirectoryBuffer + 0, Y              // Length LSB
         STA BytesRemainingL
         LDA DirectoryBuffer + 1, Y              // Length MSB
+        AND # 0x7F // strip bit 15 - file type
         STA BytesRemainingH
 #ifdef TRACEFILE
         PHA LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
@@ -1290,8 +1227,6 @@ unit File
         LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
 
-        LDA # DirWalkAction.FindFile
-        STA ZP.ACCH
         walkDirectoryChain();
         // NC if early exit (found), CurrentFileEntry already set by callback
         if (C) 
@@ -1403,10 +1338,11 @@ unit File
     // Directory walker actions
     enum DirWalkAction
     {
-        Count = 0,        // Count files and total bytes
-        Print = 1,        // Print directory entries
-        FindFile = 2,     // Find specific file by name
-        FindLast = 3,     // Find last occupied entry for compaction
+        Count = 0,           // Count files and total bytes
+        Print = 1,           // Print directory entries
+        FindFile = 2,        // Find specific file by name
+        FindExecutable = 3,  // Find specific executable file by name
+        FindLast = 4,        // Find last occupied entry for compaction
     }
     
     // Generic directory chain walker
@@ -1460,6 +1396,7 @@ unit File
                         {
                             processPrintEntry();      // X = offset
                         }
+                        case DirWalkAction.FindExecutable:
                         case DirWalkAction.FindFile:
                         {
                             processFindFileEntry();   // X = offset, Y = slot
@@ -1525,7 +1462,9 @@ unit File
     {
         PHY                 // Save slot on stack
         
-        checkFilenameMatch();  // Compare ZP.STR with DirectoryBuffer, X
+        // if ZP.ACCL == DirWalkAction.FindExecutable, only find executable files
+        
+        checkFilenameAndTypeMatch();  // Compare ZP.STR with DirectoryBuffer, X
         
         PLA                 // Get slot back in A
         
@@ -1549,18 +1488,18 @@ unit File
         SEC                     // Continue scanning
     }  
     
-    // FILETYPE: strip high bit from length before adding in processCountEntry()
     processCountEntry()  // X = directory offset
     {
         INC TransferLengthL          // Count file
         
         // Add file size to total
         CLC
-        LDA BytesRemainingL
-        ADC DirectoryBuffer + 0, X
+        LDA DirectoryBuffer + 0, X
+        ADC BytesRemainingL
         STA BytesRemainingL
-        LDA TransferLengthH
-        ADC DirectoryBuffer + 1, X
+        LDA DirectoryBuffer + 1, X
+        AND # 0x7F // strip bit 15 - file type (AND does not affect C flag)
+        ADC TransferLengthH
         STA TransferLengthH
         
         SEC  // Continue scanning
@@ -1646,7 +1585,9 @@ unit File
         ADC #3                   // Offset to filename field
         TAY
         
-        LDX #16
+        PHY // store name position
+        
+        LDX #(13 + 2 + 1) // filename + optional " *" + at least one space
         loop
         {
             LDA DirectoryBuffer, Y
@@ -1661,6 +1602,19 @@ unit File
             INY
             
         } // single exit
+        
+        PLY // restore name position
+        
+        // Check if executable and print appropriate suffix
+        LDA (DirectoryBuffer - 2), Y  // Size high byte
+        if (MI)  // Bit 7 set = executable
+        {
+            Space();
+            LDA #'*'
+            Print.Char();
+            DEX DEX
+        }
+        
         loop
         {
             Print.Space();
@@ -1675,7 +1629,6 @@ unit File
 #endif
     }
     
-    // FILETYPE: strip high bit from length value before printing in printFileSizeFromDirectory()
     // Print file size from current directory entry
     // Input: Y = directory entry byte offset (0, 16, 32, 48, ...)  
     // Output: File size printed to serial as decimal
@@ -1688,6 +1641,7 @@ unit File
         LDA DirectoryBuffer + 0, Y  // Length LSB
         STA ZP.TOPL
         LDA DirectoryBuffer + 1, Y  // Length MSB
+        AND #0x7F                   // strip file type bit from size
         STA ZP.TOPH
         STZ ZP.TOPT
         
@@ -1925,80 +1879,98 @@ unit File
         LDA #(allocateFirstFreeSectorTrace % 256) STA ZP.TraceMessageL LDA #(allocateFirstFreeSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-        
+    
     // Check if current directory entry filename matches ZP.STR
     // Input: X = directory entry byte offset (0, 16, 32...), ZP.STR = filename to match
+    //        ZP.ACCH = DirWalkAction (FindFile or FindExecutable)
     // Output: C set if match, NC if no match
-    checkFilenameMatch()
+    checkFilenameAndTypeMatch()
     {
     #ifdef TRACEFILE
         LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL 
         LDA #(checkFilenameMatchTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry();
     #endif
-    
-        // Point to filename field in directory entry (offset +3)
-        TXA
-        CLC
-        ADC #3
-        TAX                      // X = filename start in DirectoryBuffer
-
-        LDY #0                   // Index into ZP.STR filename
         loop
         {
-            // Get character from input filename
-            LDA [ZP.STR], Y
-            if (Z)               // End of input filename?
+            // Check if we need to match executable type
+            LDA ZP.ACCH
+            CMP #DirWalkAction.FindExecutable
+            if (Z)  // Looking for executable files only
             {
-                // Input ended - check if PREVIOUS directory character was the last
-                LDA (DirectoryBuffer-1), X
-                if (MI)          // High bit set = that was the last char
+                // Check if this file is executable (bit 7 of size high byte)
+                LDA (DirectoryBuffer + 1), X  // Size high byte at offset 1
+                if (PL)  // Bit 7 not set (not executable)
                 {
-                    SEC          // Perfect match
+                    CLC  // Not a match - wrong file type
+                    break;
                 }
-                else
-                {
-                    CLC          // Input ended but directory continues
-                }
-                break;
             }
             
-
-            
-            // Compare with directory character (clear high bit)
-            LDA DirectoryBuffer, X
-            PHA                  // Save original with high bit
-            AND #0x7F           // Clear high bit for comparison
-            CMP [ZP.STR], Y
-            if (NZ)
+            // Point to filename field in directory entry (offset +3)
+            TXA
+            CLC
+            ADC #3
+            TAX                      // X = filename start in DirectoryBuffer
+    
+            LDY #0                   // Index into ZP.STR filename
+            loop
             {
-                PLA             // clean stack
-                CLC             // Characters don't match
-                break;
-            }
-            PLA             // Get original back
-            
-            // Check if this was last character in directory name
-            if (MI)             // High bit set = last character
-            {
-                // Directory name ended, check if input also ends
-                INY
+                // Get character from input filename
                 LDA [ZP.STR], Y
-                if (Z)
+                if (Z)               // End of input filename?
                 {
-                    SEC         // Perfect match
+                    // Input ended - check if PREVIOUS directory character was the last
+                    LDA (DirectoryBuffer-1), X
+                    if (MI)          // High bit set = that was the last char
+                    {
+                        SEC          // Perfect match
+                    }
+                    else
+                    {
+                        CLC          // Input ended but directory continues
+                    }
+                    break;
                 }
-                else
+                
+    
+                
+                // Compare with directory character (clear high bit)
+                LDA DirectoryBuffer, X
+                PHA                  // Save original with high bit
+                AND #0x7F           // Clear high bit for comparison
+                CMP [ZP.STR], Y
+                if (NZ)
                 {
-                    CLC         // Directory ended but input continues
+                    PLA             // clean stack
+                    CLC             // Characters don't match
+                    break;
                 }
-                break;
+                PLA             // Get original back
+                
+                // Check if this was last character in directory name
+                if (MI)             // High bit set = last character
+                {
+                    // Directory name ended, check if input also ends
+                    INY
+                    LDA [ZP.STR], Y
+                    if (Z)
+                    {
+                        SEC         // Perfect match
+                    }
+                    else
+                    {
+                        CLC         // Directory ended but input continues
+                    }
+                    break;
+                }
+                
+                // Advance both pointers
+                INY
+                INX
             }
-            
-            // Advance both pointers
-            INY
-            INX
-        }
+            break;
+        } // single exit
         
     #ifdef TRACEFILE
         PHP LDA #(checkFilenameMatchTrace % 256) STA ZP.TraceMessageL 

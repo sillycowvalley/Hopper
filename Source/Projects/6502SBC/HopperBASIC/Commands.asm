@@ -982,7 +982,7 @@ unit Commands
 #ifdef HASEEPROM      
         loop
         {
-            // FILETYPE: LDA #0 here to call File.Exists() for File.Save()
+            LDA # DirWalkAction.FindFile  // warn for overwrite of either executable or data
             File.Exists(); // preserves ZP.STR
             if (C)
             {
