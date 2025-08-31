@@ -161,6 +161,7 @@ program HopperBASIC
         STA ZP.STRL
         LDA #(Messages.AutoexecName / 256)  
         STA ZP.STRH
+        // FILETYPE: LDA #1 here to call File.Exists() for AUTOEXEC
         File.Exists();
         if (C) 
         { 

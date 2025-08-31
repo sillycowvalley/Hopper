@@ -982,6 +982,7 @@ unit Commands
 #ifdef HASEEPROM      
         loop
         {
+            // FILETYPE: LDA #0 here to call File.Exists() for File.Save()
             File.Exists(); // preserves ZP.STR
             if (C)
             {
