@@ -913,81 +913,7 @@ unit Compiler // Compiler.asm
 #endif
    }
    
-   /*
-   // Parse and compile function argument list
-   // Input: ZP.CurrentToken = LPAREN (opening parenthesis)
-   // Output: Arguments compiled and pushed to stack in correct order, ZP.CurrentToken = RPAREN
-   // Modifies: ZP.CurrentToken, buffer state, compilation state
-   const string compileArgumentListTrace = "CompArgs // (...)";
-   compileArgumentList()
-   {
-       PHA
-       PHX
-       PHY
-       
-#ifdef TRACEPARSE
-       LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop // Single exit
-       {
-           // Get token after opening parenthesis
-           Tokenizer.NextTokenCheck();
-           if (NC) { break; }
-           
-           // Check for empty argument list
-           LDA ZP.CurrentToken
-           CMP #Token.RPAREN
-           if (Z)
-           {
-               SEC // Success - empty argument list
-               break;
-           }
-           
-           // Compile arguments separated by commas
-           loop
-           {
-               // Compile argument expression
-               compileExpressionTree(); // Use full expression compilation
-               CheckError();
-               if (NC) { break; }
-               
-               // Check what comes next
-               LDA ZP.CurrentToken
-               CMP #Token.RPAREN
-               if (Z)
-               {
-                   SEC // Success - end of argument list
-                   break;
-               }
-               
-               // Expect comma for more arguments
-               CMP #Token.COMMA
-               if (NZ)
-               {
-                   Error.SyntaxError(); BIT ZP.EmulatorPCL
-                   break;
-               }
-               
-               // Get token after comma
-               Tokenizer.NextTokenCheck();
-               if (NC) { break; }
-               
-               // Continue with next argument
-           }
-           
-           break; // Exit outer loop
-       }
-#ifdef TRACEPARSE
-       LDA #(compileArgumentListTrace % 256) STA ZP.TraceMessageL LDA #(compileArgumentListTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-       
-       PLY
-       PLX
-       PLA
-   }
-    */
-   
+ 
     // Compile variable reference or function argument
     // Input: ZP.CurrentToken = IDENTIFIER token
     // Output: PUSHGLOBAL or PUSHLOCAL opcode emitted
@@ -995,7 +921,6 @@ unit Compiler // Compiler.asm
     const string compileVariableOrArgumentTrace = "CompVarArg // <identifier>";
     compileVariableOrArgument()
     {
-        PHA
         PHX
         PHY
         
@@ -1190,7 +1115,6 @@ unit Compiler // Compiler.asm
         
         PLY
         PLX
-        PLA
     }
 
 
