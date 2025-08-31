@@ -154,11 +154,11 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 CMP #SymbolType.CONSTANT
                 if (Z)
                 {
-                    Error.ConstantExists(); BIT ZP.EmulatorPCL
+                    Error.ConstantExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                 }
                 else
                 {
-                    Error.VariableExists(); BIT ZP.EmulatorPCL
+                    Error.VariableExists(); BIT ZP.EmulatorPCL  // name is in ZP.TOP
                 }
                 break;
             }

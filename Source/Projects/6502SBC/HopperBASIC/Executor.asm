@@ -868,7 +868,10 @@ unit Executor // Executor.asm
            if (Z) // CallStack pointer == 0?
            {
                PLX // discard
-               States.SetReturn(); // popped back down to entry call
+               
+               //States.SetReturn(); // popped back down to entry call
+               LDA #State.Return
+               STA ZP.SystemState
            }
            else
            {

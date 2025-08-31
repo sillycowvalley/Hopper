@@ -141,6 +141,7 @@ unit ZP // ZeroPage.asm
                                              //     BIT 4 - as "array assignment" flag
                                              //     BIT 5 - in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
                                              //     BIT 6 - used in Tokenizer.TokenizeLineWithMode()
+                                             //     BIT 7 - error string is in ZP.STR
                                              
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
@@ -320,9 +321,15 @@ unit ZP // ZeroPage.asm
     const byte STRL                 = 0x79;  // String low (alias)
     const byte STRH                 = 0x7A;  // String high
     
+    // used only in Debug unit as STR2
     const byte STR2                 = 0x7B;  // String pointer 2
     const byte STR2L                = 0x7B;  // String 2 low (alias)
     const byte STR2H                = 0x7C;  // String 2 high
+    
+    const byte ERRSTR               = STR2;  // Error String pointer
+    const byte ERRSTRL              = STR2L; // Error String 2 low (alias)
+    const byte ERRSTRH              = STR2H; // Error String 2 high
+
 
     // TODO : move to Compiler section
     const byte XPC                  = 0x7D;  // Compiler Program counter low

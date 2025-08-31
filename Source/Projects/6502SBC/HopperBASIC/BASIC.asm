@@ -54,7 +54,6 @@ program HopperBASIC
     
     uses "./Objects/Char"
     uses "./Objects/Long"
-    uses "./Objects/String"
     
     uses "./Objects/Table"
     uses "./Objects/Objects"

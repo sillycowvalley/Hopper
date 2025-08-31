@@ -548,6 +548,16 @@ unit Error // ErrorID.asm
         STA ZP.LastError
         CLC
     }
+    commonErrorTOPtoERRSTR()
+    {
+        STA ZP.LastError
+        LDA ZP.TOPL
+        STA ZP.ERRSTRL
+        LDA ZP.TOPH
+        STA ZP.ERRSTRH
+        SMB7 ZP.CompilerFlags //     BIT 7 - error string is in ZP.STR
+        CLC
+    }
     
     // #### New Errors ####
     
@@ -725,20 +735,20 @@ unit Error // ErrorID.asm
 
     FunctionExists() inline
     { 
-        LDA #ErrorID.FunctionExists
-        commonError();
+        LDA #ErrorID.FunctionExists // name is in ZP.TOP
+        commonErrorTOPtoERRSTR();
     }
 
     ConstantExists() 
     { 
-        LDA #ErrorID.ConstantExists
-        commonError();
+        LDA #ErrorID.ConstantExists // name is in ZP.TOP
+        commonErrorTOPtoERRSTR();
     }
 
     VariableExists() 
     { 
-        LDA #ErrorID.VariableExists
-        commonError();
+        LDA #ErrorID.VariableExists // name is in ZP.TOP
+        commonErrorTOPtoERRSTR();
     }
 
     OutOfMemory() inline
@@ -888,7 +898,8 @@ unit Error // ErrorID.asm
     ClearError()
     {
         STZ ZP.LastError
-        RMB0 ZP.SerialFlags   // Clear the BREAK flag
+        RMB0 ZP.SerialFlags    // Clear the BREAK flag
+        RMB7 ZP.CompilerFlags  // Clear string STR in error message flag
         States.SetSuccess();
     }
     
@@ -980,16 +991,24 @@ unit Error // ErrorID.asm
             // Print the error message
             
             LDA ZP.LastError
-            
-            
-    #if defined(RELEASE)
-            LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
-            Error.MessageNL();
-    #else
-            LDX # MessageExtras.PrefixSpace
-            Message();
+            if (BBS7, ZP.CompilerFlags) //     BIT 7 - error string is in ZP.STR
+            {
+                LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest|MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
+                Error.Message();
+                LDA ZP.ERRSTRL
+                STA ZP.STRL
+                LDA ZP.ERRSTRH
+                STA ZP.STRH
+                Print.String(); // STR
+                Print.NewLine();
+            }
+            else
+            {
+                LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
+                Error.MessageNL();
+            }
+#if !defined(RELEASE)
             // 6502 PC
-            LDA #' '
             Serial.WriteChar();
             LDA #'('
             Serial.WriteChar();
@@ -1003,8 +1022,8 @@ unit Error // ErrorID.asm
             Serial.HexOut();
             LDA #')'
             Serial.WriteChar();
-            Print.NewLine(); // '\n' suffix
-    #endif        
+            Print.NewLine();
+#endif        
             
             
             PLA

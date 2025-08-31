@@ -2518,7 +2518,7 @@ unit Compiler // Compiler.asm
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {
-                Error.VariableExists(); BIT ZP.EmulatorPCL
+                Error.VariableExists(); BIT ZP.EmulatorPCL // name is in TOP
                 break;
             }
             SEC

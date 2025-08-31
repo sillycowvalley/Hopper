@@ -41,7 +41,7 @@ unit Functions
                 STA ZP.IDYH
                 PLA
                 STA ZP.IDYL
-                Error.SyntaxError(); BIT ZP.EmulatorPCL
+                Error.FunctionExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                 break;
             }
             
@@ -547,71 +547,6 @@ unit Functions
         SEC
     }   
     
-    // Helper method to copy function tokens to ZP.TokenBuffer and set up tokenizer
-    // Input: ZP.IDX = function node address
-    // Output: Tokenizer configured with function's tokens copied to ZP.TokenBuffer
-    //         ZP.ACCL/H = length of function tokens
-    // Modifies: ZP.IDY, ZP.ACC, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, ZP.FLENGTH
-    // Preserves: ZP.IDX (function node address)
-    /*
-    copyFunctionTokensToBuffer()
-    {
-        PHA
-        PHX
-        PHY
-        loop
-        {
-            // Get function body tokens
-            Functions.GetBody(); // Input: ZP.IDX = function node, Output: ZP.IDY = tokens pointer
-            
-            // Check if function has a body
-            LDA ZP.IDYL
-            ORA ZP.IDYH
-            if (Z)
-            {
-                Error.InternalError(); BIT ZP.EmulatorPCL
-                break;
-            }
-            
-            LDA ZP.TokenBufferL
-            STA ZP.FDESTINATIONADDRESSL   // Destination: ZP.TokenBuffer
-            LDA ZP.TokenBufferH
-            STA ZP.FDESTINATIONADDRESSH
-            
-            // Length of function tokens
-            STZ ZP.FLENGTHL
-            STZ ZP.FLENGTHH
-            
-            // Copy function's token stream to ZP.TokenBuffer for compilation
-            loop
-            {
-                IncLENGTH();
-                LDA [ZP.IDY]
-                STA [ZP.FDESTINATIONADDRESS]
-                CMP #Token.EOF  
-                if (Z) { break; }
-                IncIDY();
-                IncDESTINATIONADDRESS();
-            }
-            
-            // Configure tokenizer to read copied function tokens
-            LDA ZP.FLENGTHL                   // Length of function tokens
-            STA ZP.TokenBufferContentSizeL
-            LDA ZP.FLENGTHH
-            STA ZP.TokenBufferContentSizeH
-            
-            STZ ZP.TokenizerPosL          // Start at beginning of copied tokens
-            STZ ZP.TokenizerPosH
-            
-            break;
-        } // single exit
-        
-        PLY
-        PLX
-        PLA
-    }
-    */
-
     const string functionCompile = "FuncComp";
     Compile()
     {

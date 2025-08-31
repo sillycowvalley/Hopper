@@ -1,6 +1,5 @@
 unit GPIO
 {
-    
     // Pin mode constants
     enum PINMODE
     {
@@ -11,81 +10,54 @@ unit GPIO
     // Configure pin mode (INPUT or OUTPUT)
     // Input: A = pin number (0-15), X = mode (PinMode.INPUT or PinMode.OUTPUT)
     // Output: None
-    // Modifies: A, Y
     PinMode()
     {
-        PHY
-        
         // Determine which port and create bit mask
         CMP #8
         if (C)
         {
             // Pin 8-15: Use DDRB
             SEC
-            SBC #8           // Convert to 0-7 range
-            TAY              // Save bit position
-            LDA #1
-            loop
-            {
-                CPY #0
-                if (Z) { break; }
-                ASL              // Shift left to create mask
-                DEY
-            }
-            TAY              // Y = bit mask
+            SBC #8                        // Convert to 0-7 range
+            TAY                           // Use as index
+            LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
             // Set or clear the DDR bit based on mode
-            CPX # PINMODE.INPUT
+            CPX #PINMODE.INPUT
             if (Z)
             {
                 // INPUT mode: Clear bit in DDR
-                TYA
                 EOR #0xFF        // Invert mask
                 AND ZP.DDRB
-                STA ZP.DDRB
             }
             else
             {
                 // OUTPUT mode: Set bit in DDR
-                TYA
                 ORA ZP.DDRB
-                STA ZP.DDRB
             }
+            STA ZP.DDRB
         }
         else
         {
             // Pin 0-7: Use DDRA
-            TAY              // Save bit position
-            LDA #1
-            loop
-            {
-                CPY #0
-                if (Z) { break; }
-                ASL              // Shift left to create mask
-                DEY
-            }
-            TAY              // Y = bit mask
+            TAY                           // Use as index
+            LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
             // Set or clear the DDR bit based on mode
-            CPX # PINMODE.INPUT
+            CPX #PINMODE.INPUT
             if (Z)
             {
                 // INPUT mode: Clear bit in DDR
-                TYA
                 EOR #0xFF        // Invert mask
                 AND ZP.DDRA
-                STA ZP.DDRA
             }
             else
             {
                 // OUTPUT mode: Set bit in DDR
-                TYA
                 ORA ZP.DDRA
-                STA ZP.DDRA
             }
+            STA ZP.DDRA
         }
-        
-        PLY
     }
     
     // Write digital value to pin
@@ -94,78 +66,52 @@ unit GPIO
     // Modifies: A, Y
     PinWrite()
     {
-        PHY
-        
         // Determine which port and create bit mask
         CMP #8
         if (C)
         {
             // Pin 8-15: Use PORTB
             SEC
-            SBC #8           // Convert to 0-7 range
-            TAY              // Save bit position
-            LDA #1
-            loop
-            {
-                CPY #0
-                if (Z) { break; }
-                ASL              // Shift left to create mask
-                DEY
-            }
-            TAY              // Y = bit mask
+            SBC #8                        // Convert to 0-7 range
+            TAY                           // Use as index
+            LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
             // Set or clear the port bit based on value
             CPX #0
             if (Z)
             {
                 // Write LOW: Clear bit
-                TYA
                 EOR #0xFF        // Invert mask
                 AND ZP.PORTB
-                STA ZP.PORTB
             }
             else
             {
                 // Write HIGH: Set bit
-                TYA
                 ORA ZP.PORTB
-                STA ZP.PORTB
             }
+            STA ZP.PORTB
         }
         else
         {
             // Pin 0-7: Use PORTA
-            TAY              // Save bit position
-            LDA #1
-            loop
-            {
-                CPY #0
-                if (Z) { break; }
-                ASL              // Shift left to create mask
-                DEY
-            }
-            TAY              // Y = bit mask
+            TAY                           // Use as index
+            LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
             // Set or clear the port bit based on value
             CPX #0
             if (Z)
             {
                 // Write LOW: Clear bit
-                TYA
                 EOR #0xFF        // Invert mask
                 AND ZP.PORTA
-                STA ZP.PORTA
             }
             else
             {
                 // Write HIGH: Set bit
-                TYA
                 ORA ZP.PORTA
-                STA ZP.PORTA
             }
+            STA ZP.PORTA
         }
-        
-        PLY
     }
     
     // Read digital value from pin
@@ -174,24 +120,15 @@ unit GPIO
     // Modifies: A, Y
     PinRead()
     {
-        PHY
-        
         // Determine which port and create bit mask
         CMP #8
         if (C)
         {
             // Pin 8-15: Use PORTB
             SEC
-            SBC #8           // Convert to 0-7 range
-            TAY              // Save bit position
-            LDA #1
-            loop
-            {
-                CPY #0
-                if (Z) { break; }
-                ASL              // Shift left to create mask
-                DEY
-            }
+            SBC #8                        // Convert to 0-7 range
+            TAY                           // Use as index
+            LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
             // Read the port and mask the bit
             AND ZP.PORTB
@@ -207,15 +144,8 @@ unit GPIO
         else
         {
             // Pin 0-7: Use PORTA
-            TAY              // Save bit position
-            LDA #1
-            loop
-            {
-                CPY #0
-                if (Z) { break; }
-                ASL              // Shift left to create mask
-                DEY
-            }
+            TAY                           // Use as index
+            LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
             // Read the port and mask the bit
             AND ZP.PORTA
@@ -228,8 +158,6 @@ unit GPIO
                 LDA #1       // Return 1 for HIGH
             }
         }
-        
-        PLY
         // A contains result, Z flag set appropriately
     }
 }

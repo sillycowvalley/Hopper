@@ -465,11 +465,30 @@ unit BASICSysCalls
                     CMP # BASICType.STRING
                     if (Z)
                     {
-                        LDA ZP.TOPL
-                        STA ZP.STRL
-                        LDA ZP.TOPH
-                        STA ZP.STRH
-                        String.Length();
+                        // Check for null pointer
+                        LDA ZP.TOP0
+                        ORA ZP.TOP1
+                        if (Z)
+                        {
+                            // Null pointer - return length 0
+                            STZ ZP.TOP0
+                        }
+                        else
+                        {
+                            LDY #0
+                            loop
+                            {
+                                LDA [ZP.TOP], Y
+                                if (Z) { break; }
+                                INY
+#ifdef DEBUG
+                                if (Z) // wrapped around from 0xFF to 0x00
+                                {
+                                    LDA # 0x04  Debug.Crash(); // runaway SysCallType.Len calculation
+                                }
+#endif
+                            } // loop
+                        }
                         STY ZP.TOP0
                         STZ ZP.TOP1
                     }

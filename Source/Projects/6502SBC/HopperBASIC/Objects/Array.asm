@@ -19,7 +19,7 @@ unit BASICArray
     const uint aiElements = 3;  // Offset to first element
     
     // Lookup table for bit masking operations
-    const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
+    const byte[] BitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
                               0b00010000, 0b00100000, 0b01000000, 0b10000000 };
                               
     const byte ACARRY = ZP.FSIGN;
@@ -300,7 +300,7 @@ unit BASICArray
                 {
                     // Extract bit value using mask
                     LDA [IDY], Y           
-                    AND bitMasks, X
+                    AND BitMasks, X
                     if (Z)
                     {
                         STA ZP.TOP0    // Bit is 0
@@ -394,14 +394,14 @@ unit BASICArray
                     if (NZ)
                     {
                         // Set the bit to 1
-                        LDA bitMasks, X
+                        LDA BitMasks, X
                         ORA [IDY], Y    
                         STA [IDY], Y
                     }
                     else
                     {
                         // Clear the bit to 0
-                        LDA bitMasks, X
+                        LDA BitMasks, X
                         EOR # 0xFF     // Invert mask
                         AND [IDY], Y    
                         STA [IDY], Y       
