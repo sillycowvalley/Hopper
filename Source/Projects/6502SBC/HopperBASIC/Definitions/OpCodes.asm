@@ -62,11 +62,10 @@ unit OpCodes
        // Function frame management
        ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
        
-       CLEARSCREEN  = 0x1B,
-       PUSHEMPTYVAR = 0x1C,  // create a stack slot with 0 value and type VAR|INT
+       PUSHEMPTYVAR = 0x1B,  // create a stack slot with 0 value and type VAR|INT
        
-       GETITEM      = 0x1D,  // Generic indexing: container[index]
-       SETITEM      = 0x1E,  // Generic assignment: container[index] = value
+       GETITEM      = 0x1C,  // Generic indexing: container[index]
+       SETITEM      = 0x1D,  // Generic assignment: container[index] = value
        
        // === OPCODES WITH ONE BYTE OPERAND (0x40-0x7F) ===
        // Bits 7-6: 01 (one byte operand)

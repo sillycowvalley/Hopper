@@ -590,10 +590,6 @@ unit Executor // Executor.asm
            {
                executeHalt();
            }
-           case OpCode.CLEARSCREEN:
-           {
-               executeClearScreen();
-           }
            case OpCode.PUSHEMPTYVAR:
            {
                executePushEmptyVar();
@@ -2008,13 +2004,6 @@ unit Executor // Executor.asm
         LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     } 
-    
-    executeClearScreen()
-    {
-        // Send ANSI escape sequence to clear screen
-        LDA #0x0C  // Form feed
-        Serial.WriteChar();
-    }
     
     // Execute FORCHK opcode - FOR loop initial check
     // Stack layout: Iterator at BP+offset, TO at BP+offset+1, STEP at BP+offset+2

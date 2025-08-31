@@ -232,7 +232,7 @@ unit Serial // Serial.asm
         PHA
         
         // most significant nibble
-        LSR LSR LSR LSR
+        LSR A LSR A LSR A LSR A
         CMP #0x0A
         if (C)
         {

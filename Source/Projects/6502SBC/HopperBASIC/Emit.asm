@@ -352,17 +352,6 @@ unit Emit
         } // single exit
     }
    
-    // Emit CLS (clear screen) opcode
-    // Input: None
-    // Output: CLEARSCREEN opcode added to buffer
-    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
-    ClearScreen()
-    {        
-        LDA # OpCode.CLEARSCREEN
-        Emit.OpCode();
-    }
-   
-  
    // In emit.asm
 
    // Emit PUSHGLOBAL opcode for identifier
@@ -455,6 +444,7 @@ unit Emit
        }
    }
    
+      
    // Emit PUSHBYTE opcode with immediate value
    // Input: A = byte value
    // Output: PUSHBYTE opcode emitted with value
@@ -609,6 +599,26 @@ unit Emit
         STA Compiler.compilerOperand1      // Store ID as operand
         LDA #OpCode.SYSCALL
         Emit.OpCodeWithByte();
+    }
+    
+    
+    VT100Escape() // single code in A
+    {
+        loop
+        {
+            TAX
+            LDA #0x1B        // ESC
+            Emit.PrintChar();
+            if (NC) { break; }
+            
+            LDA #'['
+            Emit.PrintChar();
+            if (NC) { break; }
+            
+            TXA
+            Emit.PrintChar();
+            break;
+        }
     }
     
     // Emit PRINTCHAR SYSCALL with specific character

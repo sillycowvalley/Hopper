@@ -3068,6 +3068,7 @@ unit Compiler // Compiler.asm
         PLA
     }
     
+    
     // Compile CLS statement - clear screen
     // Input: ZP.CurrentToken = CLS token
     // Output: CLS opcode emitted to buffer
@@ -3085,8 +3086,14 @@ unit Compiler // Compiler.asm
             Tokenizer.NextTokenCheckSetFailure();
             if (NC) { break; }
             
-            // Emit the CLS opcode
-            Emit.ClearScreen();
+            
+         
+            LDA #'H' // "ESC[H" : move cursor to (1,1)
+            Emit.VT100Escape();
+            CheckErrorAndSetFailure();
+            if (NC) { break; }
+            LDA #'J' // "ESC[J" : clear from cursor to end of screen
+            Emit.VT100Escape();
             CheckErrorAndSetFailure();
             if (NC) { break; }
             

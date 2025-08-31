@@ -363,83 +363,69 @@ unit Tokenizer // Tokenizer.asm
             if (Z) { break; }  // End of input
             
             // Check for operators and punctuation
+            SMB6 ZP.CompilerFlags // assume it is a simple token
             LDA Address.BasicInputBuffer, X
             switch (A)
             {
                 case ':':
                 {
                     LDA #Token.COLON
-                    SMB6 ZP.CompilerFlags
                 }
                 case ',':
                 {
                     LDA #Token.COMMA
-                    SMB6 ZP.CompilerFlags
                 }
                 case ';':
                 {
                     LDA #Token.SEMICOLON
-                    SMB6 ZP.CompilerFlags
                 }
                 case '=':
                 {
                     LDA #Token.EQUALS
-                    SMB6 ZP.CompilerFlags
                 }
                 case '+':
                 {
                     LDA #Token.PLUS
-                    SMB6 ZP.CompilerFlags
                 }
                 case '-':
                 {
                     LDA #Token.MINUS
-                    SMB6 ZP.CompilerFlags
                 }
                 case '*':
                 {
                     LDA #Token.MULTIPLY
-                    SMB6 ZP.CompilerFlags
                 }
                 case '/':
                 {
                     LDA #Token.DIVIDE
-                    SMB6 ZP.CompilerFlags
                 }
                 case '&':
                 {
                     LDA #Token.BITWISE_AND
-                    SMB6 ZP.CompilerFlags
                 }
                 case '|':
                 {
                     LDA #Token.BITWISE_OR
-                    SMB6 ZP.CompilerFlags
                 }
                 case '~':
                 {
                     LDA #Token.BITWISE_NOT
-                    SMB6 ZP.CompilerFlags
                 }
                 case '(':
                 {
                     LDA #Token.LPAREN
-                    SMB6 ZP.CompilerFlags
                 }
                 case ')':
                 {
                     LDA #Token.RPAREN
-                    SMB6 ZP.CompilerFlags
                 }
                 case '[':
                 {
                     LDA #Token.LBRACKET
-                    SMB6 ZP.CompilerFlags
                 }
                 case ']':
                 {
                     LDA #Token.RBRACKET
-                    SMB6 ZP.CompilerFlags
                 }
                 case '<':
                 {
@@ -453,24 +439,21 @@ unit Tokenizer // Tokenizer.asm
                         if (Z)
                         {
                             LDA #Token.LE
-                            SMB6 ZP.CompilerFlags
                             continue;
                         }
                         CMP #'>'
                         if (Z)
                         {
                             LDA #Token.NOTEQUAL
-                            SMB6 ZP.CompilerFlags
                             continue;
                         }
                     }
                     // Just '<'
                     DEX  // Back up to point at '<'
                     LDA #Token.LT
-                    SMB6 ZP.CompilerFlags
                 }
                 case '>':
-                {
+                {              
                     // Check for >=
                     INX
                     CPX ZP.BasicInputLength
@@ -481,17 +464,17 @@ unit Tokenizer // Tokenizer.asm
                         if (Z)
                         {
                             LDA #Token.GE
-                            SMB6 ZP.CompilerFlags
                             continue;
                         }
                     }
                     // Just '>'
                     DEX  // Back up to point at '>'
                     LDA #Token.GT
-                    SMB6 ZP.CompilerFlags
                 }
                 case '"':
                 {
+                    RMB6 ZP.CompilerFlags // not a simple token
+                    
                     // String literal tokenization
                     LDA # Token.STRINGLIT
                     appendToTokenBuffer();
@@ -551,6 +534,8 @@ unit Tokenizer // Tokenizer.asm
                 }
                 case '\'':
                 {
+                    RMB6 ZP.CompilerFlags // not a simple token
+                    
                     // Character literal tokenization
                     LDA #Token.CHARLIT
                     appendToTokenBuffer();
@@ -607,6 +592,8 @@ unit Tokenizer // Tokenizer.asm
                 }
                 case '!':
                 {
+                    RMB6 ZP.CompilerFlags // not a simple token
+                    
                     // Single quote comment
                     LDA #Token.COMMENT
                     appendToTokenBuffer();
@@ -639,6 +626,8 @@ unit Tokenizer // Tokenizer.asm
                 }
                 default:
                 {
+                    RMB6 ZP.CompilerFlags // not a simple token
+                    
                     // Check for hex number (0x prefix)
                     LDA Address.BasicInputBuffer, X
                     CMP #'0'
