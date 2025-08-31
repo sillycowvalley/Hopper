@@ -24,8 +24,8 @@ program HopperBASIC
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    //#define ROM_48K    
-    #define ROM_32K
+    #define ROM_48K    
+    //#define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"

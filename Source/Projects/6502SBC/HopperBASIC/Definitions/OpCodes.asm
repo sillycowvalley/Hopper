@@ -209,7 +209,6 @@ unit OpCodes
    const string opcodeFORIT  = "FORIT";
    const string opcodeFORITF  = "FORITF";
    const string opcodePUSHEMPTYVAR  = "PUSHEMPTYVAR";
-   const string opcodeCLEARSCREEN  = "CLEARSCREEN";
    const string opcodeGETITEM = "GETITEM";
    const string opcodeSETITEM = "SETITEM";
    const string opcodeINCLOCAL = "INCLOCAL";
@@ -348,13 +347,6 @@ unit OpCodes
                 LDA #(opcodePUSHEMPTYVAR % 256)
                 STA ZP.STRL
                 LDA #(opcodePUSHEMPTYVAR / 256)
-                STA ZP.STRH
-            }
-            case OpCode.CLEARSCREEN:
-            {
-                LDA #(opcodeCLEARSCREEN % 256)
-                STA ZP.STRL
-                LDA #(opcodeCLEARSCREEN / 256)
                 STA ZP.STRH
             }
             case OpCode.ADD:

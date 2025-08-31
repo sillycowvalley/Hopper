@@ -65,15 +65,20 @@ Debug.NL();
     
     
     // Load program from EEPROM file
-    // Input: ZP.STR = filename
+    // Input: ZP.STR = filename, A = 0 for no NEW, A = 1 for NEW first
     // Output: C set if successful, program state restored
     LoadProgram()
     {
         loop // Single exit block
         {
-            // 1. Clear current program state (like NEW)
-            Variables.Clear();
-            Functions.Clear();
+            
+            CMP #0
+            if (NZ) // Non-zero means do NEW first
+            {
+                // 1. Clear current program state (like NEW)
+                Variables.Clear();
+                Functions.Clear();
+            }
             
             // 2. Open file for reading
             File.StartLoad(); // Input: ZP.STR = filename

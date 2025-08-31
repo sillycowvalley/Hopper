@@ -591,21 +591,27 @@ unit Console // Console.asm
                         File.Exists(); // Input: ZP.STR, Output: C if exists
                         if (C)
                         {
-                            Tokenizer.NextTokenCheck(); // consume filename - point of no return in terms of default processing below
-                            if (C)
+                            Tokenizer.PeekToken(); // just the identifier?  HEXDUMP vs HEXDUMP(1) or HEX = 10
+                            CMP # Token.EOL
+                            if (Z)
                             {
-                                validateEndOfCommand();
+                                Tokenizer.NextTokenCheck(); // consume filename - point of no return in terms of default processing below
                                 if (C)
                                 {
-                                    Storage.LoadProgram(); // Input: ZP.STR
-                                    CheckError();
-                                    if (C) 
+                                    validateEndOfCommand();
+                                    if (C)
                                     {
-                                        CmdRun();                            
+                                        LDA #1 // NEW first
+                                        Storage.LoadProgram(); // Execute Identifier: Input: ZP.STR
+                                        CheckError();
+                                        if (C) 
+                                        {
+                                            CmdRun();                            
+                                        }
                                     }
                                 }
+                                SMB1 ZP.FLAGS  // Always exit after auto load/run
                             }
-                            SMB1 ZP.FLAGS  // Always exit after auto load/run
                         }
                         
                         PLX

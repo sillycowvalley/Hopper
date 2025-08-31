@@ -1012,8 +1012,9 @@ unit Commands
     // Output: Program loaded or error message  
     CmdLoad()
     {
-#ifdef HASEEPROM        
-        Storage.LoadProgram(); // Input: ZP.STR
+#ifdef HASEEPROM
+        LDA #0 // no NEW first
+        Storage.LoadProgram(); // CmdLoad: Input: ZP.STR
 #else
         Commands.NotAvailable();
 #endif                
