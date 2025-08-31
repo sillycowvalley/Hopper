@@ -141,7 +141,7 @@ unit ZP // ZeroPage.asm
                                              //     BIT 4 - as "array assignment" flag
                                              //     BIT 5 - in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
                                              //     BIT 6 - used in Tokenizer.TokenizeLineWithMode()
-                                             //     BIT 7 - error string is in ZP.STR
+                                             //     BIT 7 - unused
                                              
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     

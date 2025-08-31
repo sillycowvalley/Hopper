@@ -516,7 +516,6 @@ unit Error // ErrorID.asm
             }
         } // single exit
         
-        
         if (BBS7, ZP.ACCH) // InParens
         {
             LDA #')' Print.Char();
@@ -551,11 +550,10 @@ unit Error // ErrorID.asm
     commonErrorTOPtoERRSTR()
     {
         STA ZP.LastError
-        LDA ZP.TOPL
-        STA ZP.ERRSTRL
         LDA ZP.TOPH
         STA ZP.ERRSTRH
-        SMB7 ZP.CompilerFlags //     BIT 7 - error string is in ZP.STR
+        LDA ZP.TOPL
+        STA ZP.ERRSTRL
         CLC
     }
     
@@ -898,8 +896,9 @@ unit Error // ErrorID.asm
     ClearError()
     {
         STZ ZP.LastError
+        STZ ZP.ERRSTRL
+        STZ ZP.ERRSTRH
         RMB0 ZP.SerialFlags    // Clear the BREAK flag
-        RMB7 ZP.CompilerFlags  // Clear string STR in error message flag
         States.SetSuccess();
     }
     
@@ -990,9 +989,11 @@ unit Error // ErrorID.asm
             
             // Print the error message
             
-            LDA ZP.LastError
-            if (BBS7, ZP.CompilerFlags) //     BIT 7 - error string is in ZP.STR
+            LDA ZP.ERRSTRH
+            ORA ZP.ERRSTRL
+            if (NZ)
             {
+                LDA ZP.LastError
                 LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest|MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
                 Error.Message();
                 LDA ZP.ERRSTRL
@@ -1004,9 +1005,11 @@ unit Error // ErrorID.asm
             }
             else
             {
+                LDA ZP.LastError
                 LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
                 Error.MessageNL();
             }
+            
 #if !defined(RELEASE)
             // 6502 PC
             Serial.WriteChar();

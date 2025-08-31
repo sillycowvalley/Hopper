@@ -639,7 +639,7 @@ unit Console // Console.asm
                             }
                         }
                     }
-                }
+                } // default
             } // switch
             
             // Check for statement separator (only if not exiting)
