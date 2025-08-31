@@ -1,5 +1,118 @@
 unit File
 {
+    // ==============================================================================
+    // HOPPER BASIC FILE SYSTEM SPECIFICATION
+    // ==============================================================================
+    //
+    // The Hopper Basic file system is a simple FAT-based file system designed for
+    // 64KB EEPROM storage (256 sectors × 256 bytes per sector).
+    //
+    // OVERALL STRUCTURE:
+    // ------------------
+    // Sector 0:    FAT (File Allocation Table)
+    // Sector 1:    Root Directory (first sector, can chain to more)
+    // Sectors 2-255: Data sectors (files and additional directory sectors)
+    //
+    // ==============================================================================
+    // FAT (FILE ALLOCATION TABLE) - Sector 0
+    // ==============================================================================
+    // The FAT occupies sector 0 and contains 256 bytes, one per sector.
+    // Each byte indicates the sector's status and linking:
+    //
+    // FAT[n] values:
+    //   0x00:     Free sector (available for allocation)
+    //   0x01:     End-of-chain marker (last sector in file or directory)
+    //   0x02-0xFF: Next sector number in chain
+    //
+    // Reserved sectors:
+    //   FAT[0] = 0x01  (FAT sector itself - reserved)
+    //   FAT[1] = 0x01  (Root directory - initially end-of-chain)
+    //
+    // ==============================================================================
+    // DIRECTORY STRUCTURE
+    // ==============================================================================
+    // Directories start at sector 1 and can chain to additional sectors as needed.
+    // Each directory sector contains 16 entries of 16 bytes each (256 bytes total).
+    //
+    // Directory chaining:
+    // - FAT[directory_sector] = next_directory_sector (or 0x01 for end)
+    // - New directory sectors allocated as needed when all 16 slots are full
+    // - Directory sectors marked with 'D' in diagnostic output
+    //
+    // ==============================================================================
+    // DIRECTORY ENTRY FORMAT (16 bytes)
+    // ==============================================================================
+    // Offset  Size  Description
+    // ------  ----  -----------
+    // 0x00    2     File length in bytes (16-bit, little-endian)
+    //               0x0000 = empty/deleted entry
+    // 0x02    1     Start sector of file (first sector in chain)
+    // 0x03    13    Filename (up to 13 ASCII characters)
+    //               - Alphanumeric characters only (A-Z, 0-9, uppercase)
+    //               - Last character has high bit (0x80) set as terminator
+    //               - Unused bytes after terminator are undefined
+    //
+    // Example entry for "HELLO.BAS" (68 bytes, starting at sector 5):
+    //   00-01: 44 00        (0x0044 = 68 bytes)
+    //   02:    05           (start sector 5)
+    //   03-0F: 48 45 4C 4C 4F 2E 42 41 D3 xx xx xx xx
+    //          H  E  L  L  O  .  B  A  S(0x80 set)
+    //
+    // ==============================================================================
+    // FILE SECTOR CHAINS
+    // ==============================================================================
+    // Files are stored as chains of 256-byte sectors linked through the FAT:
+    //
+    // 1. Directory entry specifies the file's start sector
+    // 2. FAT[start_sector] points to next sector (or 0x01 if single sector)
+    // 3. Chain continues: FAT[sector_n] -> sector_n+1
+    // 4. Last sector marked with FAT[last_sector] = 0x01
+    //
+    // Example file chain for 600-byte file:
+    //   Directory: start_sector = 5
+    //   FAT[5] = 8   (sector 5 -> sector 8)
+    //   FAT[8] = 12  (sector 8 -> sector 12)
+    //   FAT[12] = 1  (sector 12 is last, partial data)
+    //
+    // ==============================================================================
+    // FILE OPERATIONS
+    // ==============================================================================
+    // Save operation:
+    // 1. Validate filename (1-13 chars, alphanumeric)
+    // 2. Find free directory entry (or overwrite existing)
+    // 3. Allocate first data sector
+    // 4. Write data in 256-byte chunks, allocating sectors as needed
+    // 5. Update directory entry with final length
+    // 6. Write FAT and directory back to EEPROM
+    //
+    // Load operation:
+    // 1. Find file in directory by name
+    // 2. Read start sector and file length
+    // 3. Follow FAT chain to read all sectors
+    // 4. Return data via NextStream() calls
+    //
+    // Delete operation:
+    // 1. Find file in directory
+    // 2. Free all sectors in FAT chain (mark as 0x00)
+    // 3. Clear directory entry (set length to 0x0000)
+    // 4. Compact directory by moving last entry to deleted slot
+    // 5. Unlink empty directory sectors if last entry was moved
+    //
+    // ==============================================================================
+    // LIMITS AND CONSTRAINTS
+    // ==============================================================================
+    // - Maximum 254 data sectors (256 - 2 system sectors)
+    // - Maximum file size: 65,535 bytes (16-bit length field)
+    // - Maximum filename: 13 characters
+    // - Directory can grow to multiple sectors (16 entries each)
+    // - No subdirectories (flat file system)
+    // - No file attributes or timestamps
+    //
+    // ==============================================================================
+    
+    
+    
+    
     // Buffer allocation (3 x 256 bytes)
     const uint FATBuffer            = Address.FileSystemBuffers;        // [0-255]
     const uint DirectoryBuffer      = Address.FileSystemBuffers + 256;  // [256-511]  

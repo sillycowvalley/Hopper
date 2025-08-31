@@ -912,6 +912,7 @@ unit Compiler // Compiler.asm
 #endif
    }
    
+   /*
    // Parse and compile function argument list
    // Input: ZP.CurrentToken = LPAREN (opening parenthesis)
    // Output: Arguments compiled and pushed to stack in correct order, ZP.CurrentToken = RPAREN
@@ -984,7 +985,7 @@ unit Compiler // Compiler.asm
        PLX
        PLA
    }
-    
+    */
    
     // Compile variable reference or function argument
     // Input: ZP.CurrentToken = IDENTIFIER token
@@ -1195,7 +1196,6 @@ unit Compiler // Compiler.asm
     const string compileFunctionCallOrVariableTrace = "CompFuncVar // <identifier>";
     compileFunctionCallOrVariable()
     {
-        PHA
         PHX
         PHY
         
@@ -1393,11 +1393,8 @@ unit Compiler // Compiler.asm
         PLA
         STA compilerCurrentArgCount
         
-        
-        
         PLY
         PLX
-        PLA
     }
       
    

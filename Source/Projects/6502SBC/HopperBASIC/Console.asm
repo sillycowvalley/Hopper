@@ -1102,7 +1102,6 @@ unit Console // Console.asm
     const string initGlobsTrace = "initGlobs";
     InitializeGlobals()
     {
-        PHA
         PHX
         PHY
         
@@ -1330,7 +1329,6 @@ unit Console // Console.asm
 #endif
         PLY
         PLX
-        PLA
     }
     
     // ========================================================================
