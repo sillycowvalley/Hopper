@@ -1,10 +1,10 @@
 program HopperBASIC
 {
     // Optional Features
-    #define PEEPHOLE  // include the peephole optimizer
-    #define HASEEPROM // include EEPROM storage
-    #define HASI2C    // include 6502SBC I2C support
-        
+    #define PEEPHOLE    // include the peephole optimizer
+    #define HASEEPROM   // include EEPROM storage
+    #define HASI2C      // include 6502SBC I2C support
+    
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
     //#define DEBUG
     //#define MULDIVDEBUG
@@ -24,8 +24,8 @@ program HopperBASIC
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    #define ROM_48K    
-    //#define ROM_32K
+    //#define ROM_48K    
+    #define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"
@@ -254,8 +254,8 @@ program HopperBASIC
     
     NMI()
     {
-        // Hardware break - could be used for BASIC BREAK functionality
-        SMB0 ZP.SerialBreakFlag
+        // Hardware break - used for BASIC BREAK functionality: NMI -> <ctrl><C>
+        SMB0 ZP.SerialFlags
     }
     
     // Main entry point

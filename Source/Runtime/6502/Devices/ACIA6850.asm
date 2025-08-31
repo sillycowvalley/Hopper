@@ -57,7 +57,45 @@ unit SerialDevice
         STA DataRegister           // output character to TDRE
 #endif
     }
-    
+
+#ifdef HOPPER_BASIC
+    isr()
+    {
+#if !defined(ZEROPAGE_IO)
+        TODO
+#endif
+        loop
+        {
+            if (BBS7, StatusRegister) // interrupt request by 6850
+            {
+                if (BBS0, StatusRegister) // RDRF : receive data register full
+                {
+                    PHA
+                    LDA DataRegister        // read serial byte
+                    CMP #0x03               // is it break? (<ctrl><C>)
+                    if (Z)
+                    {
+                        SMB0 ZP.SerialFlags
+                        PLA
+                    }
+                    else
+                    {
+                        PHX
+                        LDX Serial.InWritePointer    // push it into serial input buffer
+                        STA Serial.InBuffer, X
+                        INC Serial.InWritePointer
+                        PLX
+                        PLA
+                        SEC // Byte added to buffer
+                        break;
+                    }
+                }
+            }
+            CLC             // No byte added
+            break;
+        } // single exit
+    }
+#else
     isr()
     {
 #if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
@@ -112,6 +150,7 @@ unit SerialDevice
         PLA
 #endif        
     }
+#endif
     
 #ifndef HAS_SERIAL_ISR    
     pollRead()

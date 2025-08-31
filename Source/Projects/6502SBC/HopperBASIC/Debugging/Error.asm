@@ -863,7 +863,7 @@ unit Error // ErrorID.asm
     ClearError()
     {
         STZ ZP.LastError
-        RMB0 ZP.SerialBreakFlag   // Clear the BREAK flag
+        RMB0 ZP.SerialFlags   // Clear the BREAK flag
         States.SetSuccess();
     }
     

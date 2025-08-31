@@ -3,12 +3,17 @@ unit Serial // Serial.asm
     // Zero Page locations used by Serial:
     const byte InWritePointer        = ZP.SerialInWritePointer;
     const byte InReadPointer         = ZP.SerialInReadPointer;
-    const byte BreakFlag             = ZP.SerialBreakFlag;
+    
 #ifndef HOPPER_BASIC
+    const byte BreakFlag             = ZP.SerialBreakFlag;
     const byte WorkSpaceHexIn        = ZP.W0;
   #ifndef CPU_65C02S    
     const byte WorkSpaceWaitForChar  = ZP.W1;
   #endif
+#else
+    const byte XOFF = 0x13;  // Ctrl-S
+    const byte XON  = 0x11;  // Ctrl-Q
+  
 #endif
     
     // Location of the Serial input buffer (256 bytes)
@@ -30,7 +35,11 @@ unit Serial // Serial.asm
 #ifdef CPU_65C02S
         STZ Serial.InWritePointer
         STZ Serial.InReadPointer
+  #ifdef HOPPER_BASIC
+        STZ ZP.SerialFlags
+  #else        
         STZ Serial.BreakFlag
+  #endif
 #else
         LDA #0
         STA Serial.InWritePointer
@@ -42,13 +51,6 @@ unit Serial // Serial.asm
         SerialDevice.initialize(); // device-specific initialization
     }
     
-    ISR()
-    {
-#ifdef HAS_SERIAL_ISR        
-        SerialDevice.isr();
-#endif        
-    }
-    
     EmptyTheBuffer()
     {
         loop
@@ -57,6 +59,105 @@ unit Serial // Serial.asm
             if (Z) { break; }
             WaitForChar();
         }
+    }
+    
+        
+    
+#ifdef HOPPER_BASIC
+
+    ISR()
+    {
+        SerialDevice.isr();
+        if (C)                       // Byte was added to buffer?
+        {
+            // Check if we need to send XOFF
+            PHA
+            LDA InWritePointer
+            SEC
+            SBC InReadPointer
+            CMP #240              // Nearly full? (240/256 bytes used)
+            if (C)                // Carry set if >= 240
+            {
+                if (BBR1, SerialFlags)  // Bit 1 clear? (not stopped yet)
+                {
+                    PHX
+                    LDA #0x13     // XOFF
+                    SerialDevice.writeChar();  // Send XOFF
+                    PLX
+                    
+                    SMB1 SerialFlags     // Set bit 1 (XOFF sent)
+                }
+            }
+            PLA
+        }
+    }
+
+    // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
+    IsAvailable()
+    {
+        SEI
+        if (BBS0, ZP.SerialFlags)   // Bit 0 set? (break detected)
+        {
+            LDA #1 // <ctrl><C> is avaiable    
+        }
+        else
+        {
+            LDA InReadPointer
+            CMP InWritePointer
+            // NZ means characters available in buffer
+        }
+        CLI
+    }
+    
+    // consumes the next character from the buffer and returns value in A
+    //     munts X on CPU_6502
+    WaitForChar()
+    {
+        loop
+        {
+            IsAvailable();
+            if (NZ) { break; }
+        }
+        if (BBS0, ZP.SerialFlags) // break?
+        {
+            RMB0 ZP.SerialFlags
+            LDA #0x03 // <ctrl><C>
+        }
+        else
+        {
+            PHX
+            LDX Serial.InReadPointer
+            LDA Serial.InBuffer, X
+            INC Serial.InReadPointer
+            PLX     
+            
+            // Check if we can send XON after consuming byte
+            if (BBS1, ZP.SerialFlags)      // Bit 1 set? (currently stopped)
+            {
+                PHA
+                LDA Serial.InWritePointer
+                SEC
+                SBC Serial.InReadPointer
+                CMP #16                  // Mostly empty? (only 16/256 bytes used)
+                if (NC)                  // Carry clear if < 16
+                {
+                    LDA #XON
+                    SerialDevice.writeChar();  // Send XON
+                    
+                    RMB1 SerialFlags     // Clear bit 1 (resume flow)
+                }
+                PLA
+            }
+        }
+    }
+    
+#else  
+
+    ISR()
+    {
+#ifdef HAS_SERIAL_ISR        
+        SerialDevice.isr();
+#endif        
     }
     
     // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
@@ -76,7 +177,7 @@ unit Serial // Serial.asm
     }
     
     // consumes the next character from the buffer and returns value in A
-    //     munts X on CPU_6502
+    //     munts X on CPU_6502 
     WaitForChar()
     {
         loop
@@ -111,6 +212,7 @@ unit Serial // Serial.asm
 #endif
         }
     }
+#endif
        
     // transmits A
     WriteChar()

@@ -57,7 +57,9 @@ unit ZP // ZeroPage.asm
     
     const byte SerialInWritePointer = 0x0A;  // Serial buffer write position
     const byte SerialInReadPointer  = 0x0B;  // Serial buffer read position
-    const byte SerialBreakFlag      = 0x0C;  // Serial break detected flag
+    const byte SerialFlags          = 0x0C;  // Serial flags
+                                             // Bit 0 - break detected : set if break detected
+                                             // Bit 1 - XON / XOFF     : set if stopped
 
     const byte TraceIndent          = 0x0D;  // Debug trace indentation level
 

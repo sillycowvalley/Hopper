@@ -238,10 +238,10 @@ unit Executor // Executor.asm
                 }
                 PLP
 #endif
-                if (BBS0, ZP.SerialBreakFlag) 
+                if (BBS0, ZP.SerialFlags) 
                 {
-                    RMB0 ZP.SerialBreakFlag   // Clear the BREAK flag
-                    Error.Break();            // "BREAK" error message
+                    RMB0 ZP.SerialFlags   // Clear the BREAK flag
+                    Error.Break();        // "BREAK" error message
                     States.SetFailure();
                     CLC
                     break;
