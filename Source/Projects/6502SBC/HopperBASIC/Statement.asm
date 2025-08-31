@@ -537,63 +537,36 @@ unit Statement // Statement.asm
             BASICTypes.FromToken();
             if (C)
             {
-                // TODO : make this a much simpler "if"
-                switch (A)
+                CMP # BASICType.VAR
+                if (Z)
                 {
-                    case BASICType.CHAR:
-                    case BASICType.BIT:
-                    case BASICType.BYTE:
-                    case BASICType.WORD:
-                    case BASICType.INT:
-                    {
-                        // ARRAY type?
-                        STA stmtType // LHS type
-                        
-                        LDA stmtSymbol
-                        CMP #SymbolType.CONSTANT
-                        if (Z)
-                        {
-                            Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
-                        }
-                        
-                        // advance to the IDENTIFIER
-                        Tokenizer.NextTokenCheck();                      
-                        if (NC) { break; } // error exit
-                        
-                    }
-                    case BASICType.VAR:
-                    {
-                        // variable type
-                        ORA # BASICType.LONG // good default until assignment says otherwise
-                        STA stmtType // LHS type
-                        
-                        LDA stmtSymbol
-                        CMP #SymbolType.CONSTANT
-                        if (Z)
-                        {
-                            Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
-                        }
-                        
-                        // advance to the IDENTIFIER
-                        Tokenizer.NextTokenCheck();                      
-                        if (NC) { break; } // error exit
-                    }
-                    default:
-                    {
-#ifdef DEBUG                        
-                        Error.InternalError(); BIT ZP.EmulatorPCL                        
-#endif
-                    }
+                    ORA # BASICType.LONG // good default until assignment says otherwise
                 }
+                else 
+                {
+                    // ARRAY types: CHAR, BIT, BYTE, WORD, INT
+                }
+                
+                STA stmtType // LHS type
+                LDA stmtSymbol
+                CMP #SymbolType.CONSTANT
+                if (Z)
+                {
+                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                }
+                
+                // advance to the IDENTIFIER
+                Tokenizer.NextTokenCheck();                      
+                if (NC) { break; } // error exit
             }
             
-            LDX ZP.CurrentToken // IDENTIFIER token
+            LDX ZP.CurrentToken // IDENTIFIER token?
             
             // Check that we have an identifier
-            LDA ZP.CurrentToken
-            CMP # Token.IDENTIFIER
+            CPX # Token.IDENTIFIER
             if (NZ)
             {
+                TXA
                 Tokens.IsKeyword();
                 if (C)
                 {
