@@ -45,41 +45,19 @@ unit File
     // Offset  Size  Description
     // ------  ----  -----------
     // 0x00    2     File length in bytes (16-bit, little-endian)
-    //               Bit 15 (MSB bit 7): File type flag
-    //                 0 = Data file
-    //                 1 = Executable file
-    //               Bits 14-0: Actual file length (0-32767 bytes)
     //               0x0000 = empty/deleted entry
     // 0x02    1     Start sector of file (first sector in chain)
     // 0x03    13    Filename (up to 13 ASCII characters)
+    //               - starts with a letter (A-Z) like an IDENTIFIER
     //               - Alphanumeric characters only (A-Z, 0-9, uppercase)
     //               - Last character has high bit (0x80) set as terminator
     //               - Unused bytes after terminator are undefined
     //
-    // Example data file "HELLO.BAS" (68 bytes, starting at sector 5):
-    //   00-01: 44 00        (0x0044 = 68 bytes, bit 15 clear = data file)
+    // Example entry for "HELLO.BAS" (68 bytes, starting at sector 5):
+    //   00-01: 44 00        (0x0044 = 68 bytes)
     //   02:    05           (start sector 5)
     //   03-0F: 48 45 4C 4C 4F 2E 42 41 D3 xx xx xx xx
     //          H  E  L  L  O  .  B  A  S(0x80 set)
-    //
-    // Example executable "GAME.PRG" (4096 bytes, starting at sector 8):
-    //   00-01: 00 90        (0x9000 = bit 15 set + 0x1000 = executable, 4096 bytes)
-    //   02:    08           (start sector 8)
-    //   03-0F: 47 41 4D 45 2E 50 52 C7 xx xx xx xx xx
-    //          G  A  M  E  .  P  R  G(0x80 set)
-    //
-    // ==============================================================================
-    // FILE TYPE DETERMINATION
-    // ==============================================================================
-    // The high bit of the 16-bit length field indicates file type:
-    // - Bit 15 = 0: Data file (text, BASIC source, etc.)
-    // - Bit 15 = 1: Executable file (compiled program)
-    //
-    // To extract actual length: length_value & 0x7FFF
-    // To check if executable: (length_high_byte & 0x80) != 0
-    //
-    // This limits file sizes to 32,767 bytes (sufficient for this system where
-    // executables will never exceed 32KB and data files are typically small).
     //
     // ==============================================================================
     // FILE SECTOR CHAINS
@@ -105,12 +83,12 @@ unit File
     // 2. Find free directory entry (or overwrite existing)
     // 3. Allocate first data sector
     // 4. Write data in 256-byte chunks, allocating sectors as needed
-    // 5. Update directory entry with final length (set bit 15 if executable)
+    // 5. Update directory entry with final length
     // 6. Write FAT and directory back to EEPROM
     //
     // Load operation:
     // 1. Find file in directory by name
-    // 2. Read start sector and file length (mask bit 15 to get actual length)
+    // 2. Read start sector and file length
     // 3. Follow FAT chain to read all sectors
     // 4. Return data via NextStream() calls
     //
@@ -125,16 +103,13 @@ unit File
     // LIMITS AND CONSTRAINTS
     // ==============================================================================
     // - Maximum 254 data sectors (256 - 2 system sectors)
-    // - Maximum file size: 32,767 bytes (15-bit length field, bit 15 is type flag)
+    // - Maximum file size: 65,535 bytes (16-bit length field)
     // - Maximum filename: 13 characters
     // - Directory can grow to multiple sectors (16 entries each)
     // - No subdirectories (flat file system)
     // - No file attributes or timestamps
-    // - Executable files limited to 32KB (sufficient for 6502 programs)
     //
     // ==============================================================================
-
-
     
     
     
@@ -560,7 +535,6 @@ unit File
 #endif
     }
     
-    // FILETYPE: argument to EndSave() to say if executable or data
     // Close and finalize current save file
     // Output: C set if successful, NC if error
     // Preserves: X, Y  
@@ -961,7 +935,7 @@ unit File
 
     
 
-    // FILETYPE: Exists() should also return type of file (executable or data)
+
     // Check if file exists in directory
     // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
     // Output: C set if file exists, NC if file not found
@@ -1033,7 +1007,6 @@ unit File
         loop // Single exit for cleanup
         {
             // Check if file exists (validates filename and loads metadata)
-            // FILETYPE: LDA #1 here to call File.Exists() for StartLoad() <identifier>
             File.Exists();
             if (NC)
             {
@@ -1183,8 +1156,9 @@ unit File
 #endif
     }
               
+
     
-    // FILETYPE: strip high bit from value returned by getFileLength()
+    
     // Get file length from current directory entry
     // Input: CurrentFileEntry = directory entry index
     // Output: BytesRemainingL/H = file length (16-bit)
@@ -1551,8 +1525,6 @@ unit File
         
         SEC                     // Continue scanning
     }  
-    
-    // FILETYPE: strip high bit from length before adding in processCountEntry()
     processCountEntry()  // X = directory offset
     {
         INC TransferLengthL          // Count file
@@ -1678,7 +1650,6 @@ unit File
 #endif
     }
     
-    // FILETYPE: strip high bit from length value before printing in printFileSizeFromDirectory()
     // Print file size from current directory entry
     // Input: Y = directory entry byte offset (0, 16, 32, 48, ...)  
     // Output: File size printed to serial as decimal

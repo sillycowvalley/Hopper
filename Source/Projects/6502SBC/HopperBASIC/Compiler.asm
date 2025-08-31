@@ -894,7 +894,8 @@ unit Compiler // Compiler.asm
                         }
                         
                         // Emit GETITEM opcode
-                        Emit.GetItem();
+                        LDA #OpCode.GETITEM
+                        Emit.OpCode();
                         CheckError();
                         if (NC) { break; }
                         

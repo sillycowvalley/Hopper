@@ -360,7 +360,6 @@ unit Emit
    // Modifies: A, X, Y, ZP.TOP, ZP.IDX, compilerOperand1
    PushGlobal()
    {
-       PHA
        PHX
        PHY
        
@@ -379,7 +378,6 @@ unit Emit
        
        PLY
        PLX
-       PLA
    }
    
    
@@ -693,7 +691,6 @@ unit Emit
    // Modifies: compilerOpCode, compilerOperand1/2, buffer state
    Call()
    {
-       PHA
        PHX
        PHY
        
@@ -712,7 +709,6 @@ unit Emit
        
        PLY
        PLX
-       PLA
    }
    
    
@@ -722,8 +718,6 @@ unit Emit
    // Modifies: A, ZP.OpCodeBufferContentSizeL/H, buffer state
    PushCString()
    {
-       PHA
-       
        loop
        {
             // Get string content pointer
@@ -736,8 +730,6 @@ unit Emit
             Emit.OpCodeWithWord();
             break;
        } // loop
-       
-       PLA
    }
    
    // Emit PUSHLOCAL opcode to load argument/local
@@ -811,23 +803,5 @@ unit Emit
         Emit.OpCodeWithThreeBytes();
     }
     
-    // Emit GETITEM opcode for string/array indexing
-    // Input: None (operates on stack values)
-    // Output: GETITEM opcode emitted
-    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
-    GetItem()
-    {        
-        LDA #OpCode.GETITEM
-        Emit.OpCode();
-    }
     
-    // Emit SETITEM opcode for array element assignment
-    // Input: None (operates on stack values)
-    // Output: SETITEM opcode emitted
-    // Modifies: compilerOpCode, buffer state via Emit.OpCode()
-    SetItem()
-    {        
-        LDA #OpCode.SETITEM
-        Emit.OpCode();
-    }
 }
