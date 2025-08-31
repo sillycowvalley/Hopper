@@ -174,7 +174,7 @@ unit Compiler // Compiler.asm
            CMP #0x02
            if (C) // >= 0x0200, overflow
            {
-               Error.BufferOverflow(); BIT ZP.EmulatorPCL
+               Error.FunctionTooBig(); BIT ZP.EmulatorPCL
                break;
            }
            

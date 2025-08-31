@@ -59,7 +59,7 @@ unit Error // ErrorID.asm
         CONSOLE    = 0x30,  // "CONSOLE"
         HEAP       = 0x31,  // "HEAP"
         CORRUPT    = 0x32,  // "CORRUPT"
-        CANNOT     = 0x33,  // "CANNOT"
+        //CANNOT     = 0x33,  // "CANNOT"
         BREAK      = 0x35,  // "BREAK"
         NO         = 0x36,  // "NO"
         MORE       = 0x37,  // "MORE"
@@ -93,6 +93,7 @@ unit Error // ErrorID.asm
         USED       = 0x51,  // "USED"
         YN         = 0x52,  // "(Y/N)"
         CONTINUE   = 0x53,  // "CONTINUE"
+        BIG        = 0x54,  // "BIG"
         
         // Tables 2 & 3 available for future expansion (0x53-0x7F)
     }
@@ -155,7 +156,7 @@ unit Error // ErrorID.asm
         7,  ErrorWord.CONSOLE,    'C', 'O', 'N', 'S', 'O', 'L', 'E',
         4,  ErrorWord.HEAP,       'H', 'E', 'A', 'P',
         7,  ErrorWord.CORRUPT,    'C', 'O', 'R', 'R', 'U', 'P', 'T',
-        6,  ErrorWord.CANNOT,     'C', 'A', 'N', 'N', 'O', 'T',
+        //6,  ErrorWord.CANNOT,     'C', 'A', 'N', 'N', 'O', 'T',
         2,  ErrorWord.NO,         'N', 'O',
         4,  ErrorWord.MORE,       'M', 'O', 'R', 'E',
         6,  ErrorWord.LOCALS,     'L', 'O', 'C', 'A', 'L', 'S',
@@ -179,7 +180,7 @@ unit Error // ErrorID.asm
         5,  ErrorWord.BYTES,      'B', 'Y', 'T', 'E', 'S',
         9,  ErrorWord.AVAILABLE,  'A', 'V', 'A', 'I', 'L', 'A', 'B', 'L', 'E',
         7,  ErrorWord.READY,      'R', 'E', 'A', 'D', 'Y', '\n', '>',
-        3,  ErrorWord.OK,         'O', 'K', '\n',
+        2,  ErrorWord.OK,         'O', 'K',
         4,  ErrorWord.MAIN,       'M', 'A', 'I', 'N',
         7,  ErrorWord.PROGRAM,    'P', 'R', 'O', 'G', 'R', 'A', 'M',
         4,  ErrorWord.VOID,       'V', 'O', 'I', 'D',
@@ -191,6 +192,7 @@ unit Error // ErrorID.asm
         4,  ErrorWord.USED,       'U', 'S', 'E', 'D',
         8,  ErrorWord.CONTINUE,   'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E',
         3,  ErrorWord.YN,         'Y', '/', 'N',
+        3,  ErrorWord.BIG,        'B', 'I', 'G',
         0  // End marker
     };
     
@@ -216,6 +218,7 @@ unit Error // ErrorID.asm
         UndefinedIdentifier,
         IdentifierExpected,
         IllegalInFunction,
+        FunctionTooBig,
         ConstantExpected,
         ConstantExpressionExpected,
         ExpectedThen,
@@ -292,6 +295,7 @@ unit Error // ErrorID.asm
         2, ErrorID.ExpectedEndif,              Token.ENDIF, ErrorWord.EXPECTED,
         2, ErrorID.IllegalIdentifier,          ErrorWord.ILLEGAL, ErrorWord.IDENTIFIER,
         3, ErrorID.IllegalInFunction,          ErrorWord.ILLEGAL, ErrorWord.IN, Token.FUNC,
+        3, ErrorID.FunctionTooBig,             Token.FUNC, ErrorWord.TOO, ErrorWord.BIG,
         2, ErrorID.IllegalAssignment,          ErrorWord.ILLEGAL, ErrorWord.ASSIGNMENT,
         2, ErrorID.IllegalCharacter,           ErrorWord.ILLEGAL, ErrorWord.CHARACTER,
         2, ErrorID.InvalidOperator,            ErrorWord.INVALID, ErrorWord.OPERATOR,
@@ -427,12 +431,14 @@ unit Error // ErrorID.asm
     }
     
     // same as Message() but followed by '\n'
+    // Munts: Y
     MessageNL()
     {
         Message();
         Print.NewLine();
     }
     // Input A = error ID, X = MessageExtras
+    // Munts: Y
     Message()
     {
         STA ZP.ACCL  // Store target error ID
@@ -560,6 +566,25 @@ unit Error // ErrorID.asm
     IllegalInFunction() 
     { 
         LDA # ErrorID.IllegalInFunction
+        commonError();        
+    }
+    
+    FunctionTooBig() 
+    { 
+        /*
+        Compiler.PrintFunctionName();
+        LDA compilerSavedNodeAddrL
+        STA ZP.IDXL
+        LDA compilerSavedNodeAddrH
+        STA ZP.IDXH
+        LDA ZP.IDXL
+        ORA ZP.IDXH
+        if (NZ)  // We have a function node
+        {
+            Functions.GetName();
+        }
+*/
+        LDA # ErrorID.FunctionTooBig
         commonError();        
     }
     

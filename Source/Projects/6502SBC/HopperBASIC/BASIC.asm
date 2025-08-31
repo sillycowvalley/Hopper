@@ -230,7 +230,7 @@ program HopperBASIC
                     if (C)
                     {
                         LDX # MessageExtras.None
-                        LDA # ErrorID.OKPrompt Error.Message();
+                        LDA # ErrorID.OKPrompt Error.MessageNL();
                     }
                 }
             }

@@ -1083,7 +1083,7 @@ unit Commands
                 PHA
                 // Echo the character
                 Serial.WriteChar();
-                Print.NewLine();
+                Print.NewLine();    // munts A
                 PLA
                 switch (A)
                 {
