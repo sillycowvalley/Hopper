@@ -27,6 +27,7 @@ HopperBASIC was created with four core principles:
 - **JIT Compilation**: Expressions compile to stack-based opcodes for fast execution
 - **Peephole Optimization**: Automatic bytecode optimizations for better performance
 - **I2C Support**: Native commands for I2C device communication and control
+- **Array Persistence**: IMPORT/EXPORT functions for saving and loading array data
 
 ---
 
@@ -333,26 +334,65 @@ ABC
 
 ```
 
-#### INPUT Function
+### Array Storage
 
-INPUT reads user input:
+#### EXPORT - Save Arrays to Files
+
+The EXPORT function saves array data to EEPROM files for persistent storage:
 
 ```basic
-> PRINT "Enter your age: ";
-Enter your age: > VAR age = INPUT()
-*   [User types: 25]
+> INT scores[10]
 OK
-> PRINT "You are ", age, " years old"
-You are 25 years old
-
-! Single character input returns ASCII value
-> PRINT "Press a key: ";
-Press a key: > VAR key = INPUT()
-*   [User types: A]
+> scores[0] = 100
 OK
-> PRINT "You pressed: ", CHR(key)
-You pressed: A
+> scores[1] = 95
+OK
+> scores[2] = 87
+OK
+> EXPORT(scores, "HISCORE")
+OK
 ```
+
+#### IMPORT - Load Arrays from Files
+
+The IMPORT function loads previously saved array data. The array type determines how the raw data is interpreted, and the array is automatically resized to fit all the data:
+
+```basic
+> CHAR data[0]  ! Declare zero-sized array
+OK
+> VAR count = IMPORT(data, "MYFILE")
+OK
+> PRINT count, " elements loaded"
+256 elements loaded
+
+! Or with a pre-sized array that will be resized if needed
+> INT scores[10]
+OK
+> VAR count = IMPORT(scores, "HISCORE")
+OK
+> IF count > 0 THEN
+*   PRINT count, " elements loaded"
+*   FOR i = 0 TO count - 1
+*     PRINT "Score ", i, ": ", scores[i]
+*   NEXT i
+* ELSE
+*   PRINT "Failed to load scores"
+* ENDIF
+3 elements loaded
+Score 0: 100
+Score 1: 95
+Score 2: 87
+```
+
+#### Storage Notes
+
+- The array type passed to IMPORT determines how the data is interpreted (e.g., BIT arrays read 8 bits per byte, WORD arrays read 2 bytes per element)
+- Arrays are automatically resized to accommodate all imported data
+- You can declare zero-sized arrays for importing: `CHAR data[0]`
+- File names follow standard HopperBASIC naming rules (1-13 characters)
+- Files created with EXPORT appear in DIR listings
+- Use DEL to remove exported array files
+- IMPORT returns the number of elements loaded, or 0 on error
 
 ### Hardware I/O
 
@@ -413,7 +453,8 @@ OK
 > DIR
 MYPROG      (256 bytes)
 HELLO       (128 bytes)
-2 files, 384 bytes used, 64128 bytes free
+HISCORE     (20 bytes)     ! Array data file
+3 files, 404 bytes used, 64108 bytes free
 OK
 > DEL HELLO
 OK
@@ -746,6 +787,8 @@ Arrays use compact storage types for memory efficiency:
 | Function | Description | Type Signature | Example |
 |----------|-------------|----------------|---------|
 | `LEN(x)` | Length of string or array | STRING/Array → LONG | `LEN("Hello")` returns `5` |
+| `IMPORT(array, "file")` | Load array data from file | Array, STRING → LONG | `count = IMPORT(data, "MYDATA")` |
+| `EXPORT(array, "file")` | Save array data to file | Array, STRING → | `EXPORT(scores, "HISCORE")` |
 
 #### Time Functions
 
@@ -766,7 +809,6 @@ Arrays use compact storage types for memory efficiency:
 
 | Function | Description | Type Signature | Example |
 |----------|-------------|----------------|---------|
-| `INPUT()` | Read user input | → LONG | `age = INPUT()` |
 | `READ(pin)` | Read digital pin | LONG → BIT | `state = READ(13)` |
 | `WRITE(pin, val)` | Write digital pin | LONG, BIT → | `WRITE(13, TRUE)` |
 | `PINMODE(pin, mode)` | Configure pin | LONG, LONG → | `PINMODE(13, 1)` |
@@ -911,34 +953,140 @@ BEGIN
 END
 ```
 
-### Number Guessing Game
+### High Score Table
 
 ```basic
-FUNC Game()
-    VAR target = RND(100)  ! Random number 1-100
-    VAR guess, tries = 0
-    
-    PRINT "Guess the number (1-100)"
-    
-    DO
-        PRINT "Your guess: ";
-        guess = INPUT()
-        tries = tries + 1
-        
-        IF guess < target THEN
-            PRINT "Too low!"
-        ELSE
-            IF guess > target THEN
-                PRINT "Too high!"
-            ENDIF
+! Persistent high score table
+INT highscores[5]
+VAR newscore
+
+FUNC ShowScores()
+    PRINT "HIGH SCORES:"
+    FOR i = 0 TO 4
+        PRINT i + 1, ". ", highscores[i]
+    NEXT i
+ENDFUNC
+
+FUNC AddScore(score)
+    VAR pos = 5
+    ! Find position for new score
+    FOR i = 0 TO 4
+        IF score > highscores[i] THEN
+            pos = i
+            i = 5  ! Exit loop
         ENDIF
-    UNTIL guess = target
+    NEXT i
     
-    PRINT "Correct! It took ", tries, " tries"
+    ! Insert if in top 5
+    IF pos < 5 THEN
+        ! Shift scores down
+        FOR i = 4 TO pos + 1 STEP -1
+            highscores[i] = highscores[i - 1]
+        NEXT i
+        highscores[pos] = score
+        PRINT "New high score #", pos + 1
+        EXPORT(highscores, "HISCORES")
+    ENDIF
 ENDFUNC
 
 BEGIN
-    Game()
+    ! Load existing scores
+    IF IMPORT(highscores, "HISCORES") = 0 THEN
+        PRINT "No saved scores, initializing..."
+        FOR i = 0 TO 4
+            highscores[i] = 0
+        NEXT i
+    ENDIF
+    
+    ShowScores()
+    
+    ! Simulate adding a new score
+    newscore = RND(1000)
+    PRINT "Your score: ", newscore
+    AddScore(newscore)
+    ShowScores()
+END
+```
+
+### Temperature Data Logger
+
+```basic
+! Temperature data logger with automatic array resizing
+WORD temps[100]
+VAR count = 0
+
+FUNC LogTemp()
+    IF count < 100 THEN
+        ! Simulate temperature reading
+        temps[count] = 200 + RND(100)  ! 20.0-29.9°C
+        count = count + 1
+        RETURN TRUE
+    ELSE
+        PRINT "Buffer full!"
+        RETURN FALSE
+    ENDIF
+ENDFUNC
+
+FUNC SaveLog()
+    ! Only export the elements we've logged
+    WORD toSave[100]
+    FOR i = 0 TO count - 1
+        toSave[i] = temps[i]
+    NEXT i
+    EXPORT(toSave, "TEMPLOG")
+    PRINT "Saved ", count, " readings"
+ENDFUNC
+
+FUNC LoadLog()
+    ! Use zero-sized array - will be resized automatically
+    WORD loaded[0]
+    count = IMPORT(loaded, "TEMPLOG")
+    IF count > 0 THEN
+        PRINT "Loaded ", count, " readings"
+        ! Copy to working array
+        FOR i = 0 TO count - 1
+            temps[i] = loaded[i]
+        NEXT i
+    ELSE
+        PRINT "No saved data"
+    ENDIF
+ENDFUNC
+
+FUNC ShowStats()
+    IF count = 0 THEN
+        PRINT "No data"
+        RETURN
+    ENDIF
+    
+    VAR min = temps[0]
+    VAR max = temps[0]
+    VAR sum = 0
+    
+    FOR i = 0 TO count - 1
+        IF temps[i] < min THEN min = temps[i] ENDIF
+        IF temps[i] > max THEN max = temps[i] ENDIF
+        sum = sum + temps[i]
+    NEXT i
+    
+    PRINT "Readings: ", count
+    PRINT "Min: ", min / 10, ".", min MOD 10, "°C"
+    PRINT "Max: ", max / 10, ".", max MOD 10, "°C"
+    PRINT "Avg: ", (sum / count) / 10, "°C"
+ENDFUNC
+
+BEGIN
+    LoadLog()
+    
+    ! Take some readings
+    FOR i = 1 TO 10
+        IF LogTemp() THEN
+            PRINT "Reading ", count, " logged"
+        ENDIF
+        DELAY(100)
+    NEXT i
+    
+    ShowStats()
+    SaveLog()
 END
 ```
 
@@ -972,10 +1120,7 @@ BEGIN
     
     FOR addr = 8 TO 119
         IF I2CFIND(addr) THEN
-            PRINT "Device found at address ", addr, " (0x";
-            ! Print hex address (simplified)
-            IF addr < 16 THEN PRINT "0" ENDIF
-            PRINT ")"
+            PRINT "Device found at address ", addr
             found = found + 1
         ENDIF
     NEXT addr
@@ -1080,15 +1225,45 @@ END
 BEGIN
     VAR mask = 0xFF         ! 255 in decimal
     VAR addr = 0x8000       ! Memory address
-    VAR flags = 0b11001100  ! Binary notation also supported
     
     PRINT "Mask: ", mask
     PRINT "Address: ", addr
-    PRINT "Flags: ", flags
     
     ! Bitwise operations with hex
     VAR result = addr & 0xFF00
     PRINT "High byte: ", result / 256
+END
+```
+
+### Dynamic Array Import
+
+```basic
+! Demonstrate automatic array resizing with IMPORT
+BEGIN
+    ! Save some data first
+    BYTE original[5]
+    FOR i = 0 TO 4
+        original[i] = i * 10
+    NEXT i
+    EXPORT(original, "TESTDATA")
+    
+    ! Now import into different array types to show interpretation
+    
+    ! Import as BYTE array (5 elements)
+    BYTE asBytes[0]  ! Zero-sized, will be resized
+    VAR count = IMPORT(asBytes, "TESTDATA")
+    PRINT "As BYTE array: ", count, " elements"
+    FOR i = 0 TO count - 1
+        PRINT asBytes[i];
+    NEXT i
+    
+    ! Import same data as WORD array (2 or 3 elements)
+    WORD asWords[0]  ! Zero-sized, will be resized
+    count = IMPORT(asWords, "TESTDATA")  
+    PRINT "As WORD array: ", count, " elements"
+    FOR i = 0 TO count - 1
+        PRINT asWords[i];
+    NEXT i
 END
 ```
 
@@ -1179,7 +1354,10 @@ END
 ```basic
 ! Math & Type Conversion
 ABS(x)          CHR(n)          LEN(s)
-ASC(c)          INPUT()         RND(max)
+ASC(c)          RND(max)
+
+! Array Storage
+IMPORT(arr,"file")              EXPORT(arr,"file")
 
 ! Time & Memory
 MILLIS()        SECONDS()       DELAY(ms)
@@ -1209,10 +1387,10 @@ OR                 Logical OR
 
 ### Common I2C Device Addresses
 ```basic
-CONST OLED = 60      ! SSD1306 OLED (0x3C)
-CONST EEPROM = 80    ! 24C256 EEPROM (0x50)
-CONST RTC = 104      ! DS3231 RTC (0x68)
-CONST TEMP = 72      ! LM75 Temp (0x48)
+CONST OLED = 0x3C      ! SSD1306 OLED
+CONST EEPROM = 0x50    ! 24C256 EEPROM
+CONST RTC = 0x68       ! DS3231 RTC
+CONST TEMP = 0x48      ! LM75 Temp
 ```
 
 ### Comment Styles
