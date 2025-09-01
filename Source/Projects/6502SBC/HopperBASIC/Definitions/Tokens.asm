@@ -57,7 +57,6 @@ unit Tokens
         
         // Language keywords
         PRINT    = 0x9F,
-        //INPUT    = 0xA0,
         IF       = 0xA1,
         THEN     = 0xA2,
         ELSE     = 0xA3,
@@ -179,7 +178,6 @@ unit Tokens
         
         // FREQUENT (Rank 11-20)
         3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND (0xB8)
-        //5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
         3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value (0xC0)
         4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch (0xA3)
         2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops (0xB0)

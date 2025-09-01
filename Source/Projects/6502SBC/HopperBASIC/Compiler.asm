@@ -1546,15 +1546,6 @@ unit Compiler // Compiler.asm
                 Tokenizer.NextTokenCheckSetFailure();
                 return;
             }
-            /*
-            case Token.INPUT:
-            {
-                RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
-                LDA #SysCallType.Input
-                compileSysCall();
-                return;
-            }
-            */
            
            case Token.LPAREN:
            {

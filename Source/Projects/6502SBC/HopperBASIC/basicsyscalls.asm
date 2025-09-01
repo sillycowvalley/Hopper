@@ -73,7 +73,6 @@ unit BASICSysCalls
                     Print.String();
                     LDA #0
                 } 
-                //case SysCallType.Input:     { LDA #Token.INPUT   }
                 case SysCallType.Abs:       { LDA #Token.ABS     }
                 case SysCallType.Rnd:       { LDA #Token.RND     }
                 case SysCallType.Millis:    { LDA #Token.MILLIS  }
@@ -154,7 +153,6 @@ unit BASICSysCalls
                     case SysCallType.Abs:
                     case SysCallType.Rnd:
                     case SysCallType.Millis:
-                    //case SysCallType.Input:
                     case SysCallType.Seconds:
                     case SysCallType.Len:
                     case SysCallType.Peek:
@@ -550,63 +548,6 @@ unit BASICSysCalls
                    LDA ZP.TOPL
                    Serial.WriteChar();
                 }
-                /*
-                case SysCallType.Input:          // ID = 16
-                {
-                    // INPUT function - read user input and parse as literal
-                    // Input: No arguments (uses previous PRINT as prompt)
-                    // Output: ZP.TOP* contains parsed value (LONG)
-                    loop
-                    {
-                        // Read line using existing infrastructure
-                        Tokenizer.ReadLine();    // Returns length in A, input in BasicInputBuffer
-                        
-                        STZ ZP.TOP0
-                        LDA # BASICType.BYTE
-                        STA ZP.TOPT
-                                
-                        // Check for empty input - return CHAR(0)
-                        LDA ZP.BasicInputLength
-                        if (NZ)
-                        {
-                            // Tokenize the single input line
-                            LDX #0
-                            STX ZP.OpCodeTemp  // Replace mode = 0
-                            Tokenizer.TokenizeLineWithMode();
-                            CheckError();
-                            if (C) 
-                            { 
-                                // Get the first token
-                                Tokenizer.NextTokenCheck();
-                                if (C) 
-                                { 
-                                    // is it a NUMBER?
-                                    LDA ZP.CurrentToken
-                                    CMP #Token.NUMBER
-                                    if (Z)
-                                    {
-                                        // Parse as LONG literal
-                                        Tokenizer.GetTokenNumber();    // Parse into ZP.TOP*, sets ZP.TOPT
-                                        CheckError();
-                                        if (C)
-                                        {
-                                            break; // return the number (BYTE|INT|WORD|LONG)
-                                        }
-                                    }
-                                }
-                            }
-                            Error.ClearError();
-                            // Well, tokenizing a NUMBER didn't work so ..
-                            // just return ASCII for the first character:
-                            LDA Address.BasicInputBuffer
-                            STA ZP.TOP0
-                        }
-                        break;
-                    } // single exit
-                    BASICTypes.Promote(); // -> LONG 
-                    if (NC) { break; }
-                }
-               */
                
                case SysCallType.Poke:          // ID = 9
                {
@@ -996,7 +937,6 @@ unit BASICSysCalls
             // convert STR to uppercase
             File.ToUpperSTR();
 
-//Debug.NL(); Print.String();  
             LDA # DirWalkAction.FindFile  // all files
             File.Exists(); // Input: ZP.STR, Output: C if exists
             if (NC)
@@ -1008,8 +948,6 @@ unit BASICSysCalls
             
             // Get file size (set by Exists/getFileLength)
             File.GetFileLength(); // -> BytesRemainingL/H
-            
-//Debug.NL(); LDA #'F' COut(); LDA #'S' COut(); LDA #':' COut(); LDA BytesRemainingH HOut(); LDA BytesRemainingL HOut();
             
             // Get owner pointer from old array
             LDY # BASICArray.aiOwner
@@ -1069,7 +1007,6 @@ unit BASICSysCalls
             STZ ZP.TOP3
             LDA #BASICType.LONG
             STA ZP.TOPT
-//Debug.NL(); TLOut();
             
             // Create new array (ACC = count, ACCT = type)
             BASICArray.New();
@@ -1097,8 +1034,15 @@ unit BASICSysCalls
             LDA ZP.IDYH
             STA [ZP.IDX], Y
             
-//Debug.NL(); Print.String();  
-//Debug.NL();          
+            // Setup destination for loading (before IDX and IDY are munted in EEPROM routines)
+            CLC
+            LDA ZP.IDXL
+            ADC # BASICArray.aiElements
+            STA ZP.FDESTINATIONADDRESSL
+            LDA ZP.IDXH
+            ADC # 0
+            STA ZP.FDESTINATIONADDRESSH
+            
             // Start loading file
             LDA # DirWalkAction.FindFile
             File.StartLoad(); // Uses ZP.STR
@@ -1106,27 +1050,15 @@ unit BASICSysCalls
             {
                 break;
             }
-
-            
-            // Setup destination for loading (skip array header)
-            CLC
-            LDA ZP.IDXL
-            ADC # BASICArray.aiElements  // Now 5 with owner field
-            STA ZP.FDESTINATIONADDRESSL                 // Save destination
-            LDA ZP.IDXH
-            ADC # 0
-            STA ZP.FDESTINATIONADDRESSH
-            
-//Debug.NL(); XOut(); Space(); LDA ZP.FDESTINATIONADDRESSH HOut(); LDA ZP.FDESTINATIONADDRESSL HOut();         
-//DumpHeap();
             
             // Load file data directly into array
             loop
             {
                 File.NextStream();
-                if (NC) { break; } // End of file
-                
-//Debug.NL(); LDA File.SectorSourceH HOut(); LDA File.SectorSourceL HOut(); Space(); LDA File.TransferLengthH HOut(); LDA File.TransferLengthL HOut();
+                if (NC) 
+                {
+                    break; // End of file
+                }
                 
                 // Copy from FileDataBuffer to array
                 LDA #(File.FileDataBuffer % 256)
@@ -1138,11 +1070,9 @@ unit BASICSysCalls
                 STA ZP.FLENGTHL
                 LDA File.TransferLengthH
                 STA ZP.FLENGTHH
-                
                 Memory.Copy();
             } // loop
             
-//Debug.NL(); TLOut();            
             SEC  // Success
             break;
         }

@@ -963,9 +963,6 @@ unit File
     #endif
     }
     
-    
-    
-    /*
     // Open file for reading
     // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
     //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile
@@ -975,8 +972,7 @@ unit File
     // Munts: A, file system state
     StartLoad()
     {
-        STA ZP.ACCH // DirWalkAction.FindExecutable or DirWalkAction.FindFile
-        
+        STA ZP.ACCH
     #ifdef TRACEFILE
         LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
     #endif
@@ -993,72 +989,6 @@ unit File
         {
             // Check if file exists (validates filename and loads metadata)
             LDA ZP.ACCH
-            File.Exists();
-            if (NC)
-            {
-                Error.FileNotFound(); BIT ZP.EmulatorPCL
-                break;
-            }
-            // CurrentFileEntry now contains the directory entry index
-            
-            // Get start sector from directory entry
-            getFileStartSector(); // -> FileStartSector
-            
-            // Get file length from directory entry
-            GetFileLength(); // -> BytesRemainingL/H
-            
-            // Initialize load state
-            STZ SectorPositionL
-            STZ SectorPositionH
-            
-            // Read first sector into FileDataBuffer
-            LDA FileStartSector
-            readSector();
-            LDA FileStartSector
-            STA CurrentFileSector
-            
-            // Success - file ready for NextStream() calls
-            SEC
-            break;
-        }
-        
-        PLA
-        STA ZP.STRH
-        PLA
-        STA ZP.STRL
-        
-        PLY
-        PLX
-    #ifdef TRACEFILE
-        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-    #endif
-    }
-    */
-    // Open file for reading
-    // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
-    //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile
-    // Output: C set if successful, NC if error (file not found)
-    //         File ready for reading via NextStream()
-    // Preserves: X, Y
-    // Munts: A, file system state
-    StartLoad()
-    {
-    #ifdef TRACEFILE
-        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-    #endif
-        PHX
-        PHY
-        
-        // preserve the file name in case you are just being used to verify the file exists
-        LDA ZP.STRL
-        PHA
-        LDA ZP.STRH
-        PHA
-        
-        loop // Single exit for cleanup
-        {
-            // Check if file exists (validates filename and loads metadata)
-            LDA # DirWalkAction.FindExecutable  // only interested in executables
             File.Exists();
             if (NC)
             {
@@ -1179,123 +1109,7 @@ unit File
         LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif        
     }
-    
-    /*
-    // Read next chunk of data from current load file
-    // Prerequisites: StartLoad() must be called first to initialize file state
-    // Output: C set if data available, NC if end of file or error
-    //         SectorSource = pointer to current position in FileDataBuffer (if C set)
-    //         SectorSourceL/H = 16-bit address within FileDataBuffer
-    //         TransferLength = number of bytes available in this chunk (if C set)
-    //         TransferLengthL/H = 16-bit byte count (max 256 per call)
-    //         States.Success flag set appropriately
-    // Preserves: X, Y
-    // Munts: A, file system state (BytesRemaining, SectorPosition, CurrentFileSector)
-    // Note: - Caller must process data before next call as buffer will be overwritten
-    //       - Automatically handles sector boundaries and FAT chain traversal
-    //       - Returns chunks up to 256 bytes (one sector) at a time
-    //       - When SectorPosition reaches 256, advances to next sector in FAT chain
-    NextStream()
-    {
-#ifdef TRACEFILE
-        LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        PHX
-        PHY
-        
-        loop // Single exit
-        {
-            // Check if any bytes remaining in file
-            LDA BytesRemainingL
-            ORA BytesRemainingH
-            if (Z)
-            {
-                States.SetSuccess();
-                CLC  // End of file
-                break;
-            }
-            
-            // If SectorPosition >= 256, advance to next sector
-            LDA SectorPositionH
-            if (NZ)
-            {
-                advanceToNextSector();
-                if (NC)
-                {
-                    States.SetFailure();
-                    Error.EEPROMError(); BIT ZP.EmulatorPCL
-                    break;
-                }
-                continue;
-            }
-            
-            // Calculate available bytes in sector: 256 - SectorPosition
-            SEC
-            LDA #0
-            SBC SectorPositionL
-            STA TransferLengthL
-            LDA #1
-            SBC #0
-            STA TransferLengthH
-            
-            // Use minimum of (available, remaining)
-            // 16-bit compare: TransferLength vs BytesRemaining
-            LDA BytesRemainingH
-            CMP TransferLengthH
-            if (C)  // BytesRemaining >= TransferLength
-            {
-                if (Z)  // High bytes equal, compare low
-                {
-                    LDA BytesRemainingL
-                    CMP TransferLengthL
-                    if (C)  // BytesRemaining >= TransferLength
-                    {
-                        // Keep TransferLength (smaller or equal)
-                    }
-                    else
-                    {
-                        // Use BytesRemaining (smaller)
-                        LDA BytesRemainingL
-                        STA TransferLengthL
-                        LDA BytesRemainingH
-                        STA TransferLengthH
-                    }
-                }
-                // else BytesRemaining > TransferLength, keep TransferLength
-            }
-            else
-            {
-                // BytesRemaining < TransferLength, use BytesRemaining
-                LDA BytesRemainingL
-                STA TransferLengthL
-                LDA BytesRemainingH
-                STA TransferLengthH
-            }
-            
-            // Set pointer to data
-            LDA #(FileDataBuffer % 256)
-            CLC
-            ADC SectorPositionL
-            STA SectorSourceL
-            LDA #(FileDataBuffer / 256)
-            ADC #0
-            STA SectorSourceH
-            
-            // Update counters
-            updateStreamPosition();
-     
-            States.SetSuccess();
-            SEC  // Success
-            break;
-        }
-        
-        PLY
-        PLX
-#ifdef TRACEFILE
-        LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    */          
+          
 
     
     // Get file length from current directory entry
@@ -1320,83 +1134,7 @@ unit File
         PHA LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
-    /*
-    // Advance to next sector in FAT chain
-    // Output: C set if successful, NC if end of chain or error
-    // Munts: A, Y, file system state
-    advanceToNextSector()
-    {
-#ifdef TRACEFILE
-        LDA #(advanceToNextSectorTrace % 256) STA ZP.TraceMessageL LDA #(advanceToNextSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        loop // Single exit
-        {
-            // Get next sector from FAT
-            LDY CurrentFileSector
-            LDA FATBuffer, Y
-            STA NextFileSector
-            
-            // Check for end of chain
-            CMP #1                              // 1 = end-of-chain marker
-            if (Z)
-            {
-                // Reached end of file chain
-                CLC
-                break;
-            }
-            
-            // Update current sector and reset position
-            LDA NextFileSector
-            STA CurrentFileSector
-            
-            // Read next sector
-            readSector();
-            
-            STZ SectorPositionL
-            STZ SectorPositionH
-            
-            // Success
-            SEC
-            break;
-        }
-#ifdef TRACEFILE
-        LDA #(advanceToNextSectorTrace % 256) STA ZP.TraceMessageL LDA #(advanceToNextSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    */
-    
-    // Update position counters after NextStream() call
-    // Input: TransferLength = bytes being returned to caller
-    // Output: SectorPosition and BytesRemaining updated
-    // Munts: A
-    updateStreamPosition()
-    {
-#ifdef TRACEFILE
-        LDA #(updateStreamPositionTrace % 256) STA ZP.TraceMessageL LDA #(updateStreamPositionTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-        // Update sector position (16-bit addition)
-        CLC
-        LDA SectorPositionL
-        ADC TransferLengthL
-        STA SectorPositionL
-        LDA SectorPositionH
-        ADC TransferLengthH
-        STA SectorPositionH
         
-        // Update file bytes remaining (16-bit subtraction)
-        SEC
-        LDA BytesRemainingL
-        SBC TransferLengthL
-        STA BytesRemainingL
-        LDA BytesRemainingH
-        SBC TransferLengthH
-        STA BytesRemainingH
-#ifdef TRACEFILE
-        LDA #(updateStreamPositionTrace % 256) STA ZP.TraceMessageL LDA #(updateStreamPositionTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-    }
-    
-    
     
     // Find file in directory by filename
     // Input: ZP.STR = filename to find
@@ -1423,7 +1161,6 @@ unit File
         LDA #(findFileInDirectoryTrace % 256) STA ZP.TraceMessageL LDA #(findFileInDirectoryTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif        
     }
-    
     
     
     // Get start sector from current directory entry
