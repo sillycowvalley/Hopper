@@ -552,6 +552,7 @@ unit Error // ErrorID.asm
     commonErrorTOPtoERRSTR()
     {
         STA ZP.LastError
+        // TOP -> ERRSTR
         LDA ZP.TOPH
         STA ZP.ERRSTRH
         LDA ZP.TOPL
@@ -561,6 +562,7 @@ unit Error // ErrorID.asm
     commonErrorSTRtoERRSTR()
     {
         STA ZP.LastError
+        // STR -> ERRSTR
         LDA ZP.STRH
         STA ZP.ERRSTRH
         LDA ZP.STRL
@@ -610,6 +612,7 @@ unit Error // ErrorID.asm
         // TODO : get name from node
         /*
         Compiler.PrintFunctionName();
+        // compilerSavedNodeAddr -> IDX
         LDA compilerSavedNodeAddrL
         STA ZP.IDXL
         LDA compilerSavedNodeAddrH

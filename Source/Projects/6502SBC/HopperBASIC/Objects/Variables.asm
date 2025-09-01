@@ -764,6 +764,7 @@ unit Variables
             STA ZP.IDYH
 
             // Set up copy parameters
+            // TOP -> FSOURCEADDRESS
             LDA ZP.TOPL
             STA ZP.FSOURCEADDRESSL
             LDA ZP.TOPH

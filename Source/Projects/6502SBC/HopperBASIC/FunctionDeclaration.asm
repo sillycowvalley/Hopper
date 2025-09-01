@@ -294,6 +294,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Add argument to function
                 // Restore function node address to ZP.IDX
+                // stmtObjectPtr -> IDX
                 LDA (Statement.stmtObjectPtr + 0)
                 STA ZP.IDXL
                 LDA (Statement.stmtObjectPtr + 1)
@@ -410,6 +411,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Set function body tokens in function node
+            // stmtObjectPtr -> IDX
             LDA (Statement.stmtObjectPtr + 0)
             STA ZP.IDXL
             LDA (Statement.stmtObjectPtr + 1)
@@ -507,6 +509,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Set function body tokens in function node
             // Restore function node address to ZP.IDX
+            // stmtObjectPtr -> IDX
             LDA (Statement.stmtObjectPtr + 0)
             STA ZP.IDXL
             LDA (Statement.stmtObjectPtr + 1)
@@ -717,6 +720,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Restore function node address
+            // stmtObjectPtr -> IDX
             LDA (Statement.stmtObjectPtr + 0)
             STA ZP.IDXL
             LDA (Statement.stmtObjectPtr + 1)

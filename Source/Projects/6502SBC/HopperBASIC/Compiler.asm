@@ -941,6 +941,7 @@ unit Compiler // Compiler.asm
             {
                 // Try to find this identifier as an argument
                 // Get the function node being compiled
+                // compilerSavedNodeAddr -> IDX
                 LDA (compilerSavedNodeAddrL + 0)
                 STA ZP.IDXL
                 LDA (compilerSavedNodeAddrH + 0)
@@ -969,10 +970,7 @@ unit Compiler // Compiler.asm
             SEC
             
             LDA (Compiler.compilerSavedNodeAddrL + 0)
-            STA ZP.IDXL
             ORA (Compiler.compilerSavedNodeAddrH + 0)
-            STA ZP.IDXH
-            ORA ZP.IDXL
             if (Z)
             {
                 // no function node, REPL level
@@ -1253,6 +1251,7 @@ unit Compiler // Compiler.asm
                 
                 // Restore the saved literal position for CALL emission (from VM stack slot)
                 Stacks.PopTop();
+                // TOP -> TokenLiteralPos
                 LDA ZP.TOPH
                 STA ZP.TokenLiteralPosH
                 LDA ZP.TOPL
@@ -1285,6 +1284,7 @@ unit Compiler // Compiler.asm
             else
             {
                 Stacks.PopTop();
+                // TOP -> TokenLiteralPos
                 LDA ZP.TOPH
                 STA ZP.TokenLiteralPosH
                 LDA ZP.TOPL
@@ -2034,6 +2034,7 @@ unit Compiler // Compiler.asm
        
        if (BBS5, ZP.CompilerFlags) // in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
        {
+           // compilerSavedNodeAddr -> IDX
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
@@ -2523,10 +2524,7 @@ unit Compiler // Compiler.asm
             if (NC) { break; }
             
             // Check for duplicate among existing locals/arguments
-            LDA compilerSavedNodeAddrL
-            STA ZP.IDXL
-            LDA compilerSavedNodeAddrH
-            STA ZP.IDXH
+            moveSavedNodeAddrToIDX();
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {
@@ -2863,10 +2861,7 @@ unit Compiler // Compiler.asm
                     Variables.GetName();  // Returns name in ZP.STR
                     
                     // Copy to ZP.TOP for PopGlobal
-                    LDA ZP.STRL
-                    STA ZP.TOPL
-                    LDA ZP.STRH
-                    STA ZP.TOPH
+                    MoveSTRtoTOP();
                     
                     // Call the new PopGlobal that finds by name and uses index
                     Emit.PopGlobal();

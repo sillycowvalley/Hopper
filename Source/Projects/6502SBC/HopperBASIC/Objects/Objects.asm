@@ -67,6 +67,7 @@ unit Objects
             LDA ZP.ACCT
             STA ZP.SymbolType   // Save symbolType|dataType
             
+            // TOP -> SymbolName
             LDA ZP.TOPL
             STA ZP.SymbolNameL  // Save name pointer low
             LDA ZP.TOPH

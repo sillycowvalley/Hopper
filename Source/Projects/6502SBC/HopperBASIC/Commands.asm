@@ -90,10 +90,7 @@ unit Commands
     CmdForget()
     {
         // Try to remove as variable/constant first
-        LDA ZP.STRL
-        STA ZP.TOPL
-        LDA ZP.STRH
-        STA ZP.TOPH
+        MoveSTRtoTOP();
         
         Variables.Remove(); // Input: ZP.TOP = name pointer
         if (C)
@@ -118,9 +115,9 @@ unit Commands
     // Output: All variables displayed to serial
     CmdVars()
     {
-        PHA
-        PHX
-        PHY
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         loop // Single exit pattern
         {
@@ -155,10 +152,9 @@ unit Commands
             }
             break;
         }
-        
-        PLY
-        PLX
-        PLA
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Execute LIST command - list program or specific function
@@ -183,10 +179,7 @@ unit Commands
             {
                 // Specific function requested - just show that one
                 // Need to copy ZP.STR to ZP.TOP for Functions.Find()
-                LDA ZP.STRL
-                STA ZP.TOPL
-                LDA ZP.STRH
-                STA ZP.TOPH
+                MoveSTRtoTOP();
                 
                 Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
                 if (NC)
@@ -325,24 +318,20 @@ unit Commands
     // Helper Functions for Display
     // ============================================================================
     
-    // Check if function name starts with '$' (hidden function)
-    IsVisibleFunctionTOP()
-    {
-        PHA
-        LDA [ZP.TOP]  // Get first character
-        CMP #'$'
-        if (Z) { CLC } else { SEC }
-        PLA
-    }
-    
-    // Check if function name starts with '$' (hidden function)
+    // Check if function name starts with '$' (hidden function), munts A
     IsVisibleFunctionSTR()
     {
-        PHA
         LDA [ZP.STR]  // Get first character
         CMP #'$'
         if (Z) { CLC } else { SEC }
-        PLA
+    }
+    
+    MoveSTRtoTOP()
+    {
+        LDA ZP.STRL
+        STA ZP.TOPL
+        LDA ZP.STRH
+        STA ZP.TOPH
     }
     
     // Display an array variable declaration with contents
@@ -350,7 +339,9 @@ unit Commands
     // Output: Array info and contents printed to serial
     displayArrayVariable()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Save the variable node pointer - we need it intact for iteration!
         LDA ZP.IDXL
@@ -371,6 +362,7 @@ unit Commands
         Print.String();
         
         // Save array pointer in IDX for Array APIs
+        // TOP -> IDX
         LDA ZP.TOPL
         STA ZP.IDXL
         LDA ZP.TOPH
@@ -471,7 +463,9 @@ unit Commands
         PLA
         STA ZP.IDXL
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display a variable declaration
@@ -479,7 +473,9 @@ unit Commands
     // In Commands.asm, displayVariable() method:
     displayVariable()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Get variable type
         Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
@@ -534,14 +530,18 @@ unit Commands
             Print.NewLine();
         }
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display a constant declaration
     // Input: ZP.IDX = constant node
     displayConstant()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Print CONST keyword
         LDA #Token.CONST
@@ -573,14 +573,18 @@ unit Commands
         BASICTypes.PrintValue();
         Print.NewLine();
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display all functions (signatures only)
     // X=0 for LIST, X=1 for DASM
     displayAllFunctions()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Check if we have any functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function, C set if found
@@ -592,7 +596,7 @@ unit Commands
                 if (NC) { break; }  // No more functions
                 
                 Functions.GetName(); // -> ZP.STR = name pointer
-                IsVisibleFunctionSTR();
+                IsVisibleFunctionSTR(); // munts A
                 if (C)
                 {
                     DisplayFunctionSignature(); // Input: ZP.IDX = function node
@@ -601,20 +605,21 @@ unit Commands
             }
         }
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display specific function (signature only)
     // X=0 for LIST, X=1 for DASM
     displaySpecificFunction()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Find the function
-        LDA ZP.STRL
-        STA ZP.TOPL
-        LDA ZP.STRH
-        STA ZP.TOPH
+        MoveSTRtoTOP();
         
         Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
         if (NC)
@@ -636,14 +641,18 @@ unit Commands
             }
         }
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display all functions with bodies (for LIST command)
     // X=0 for LIST, X=1 for DASM
     displayAllFunctionsWithBodies()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Iterate through functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function, C set if found
@@ -660,20 +669,21 @@ unit Commands
             Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
         }
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display specific function with body (for LIST command)
     // X=0 for LIST, X=1 for DASM
     displaySpecificFunctionWithBody()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Find the function
-        LDA ZP.STRL
-        STA ZP.TOPL
-        LDA ZP.STRH
-        STA ZP.TOPH
+        MoveSTRtoTOP();
         
         Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
         if (NC)
@@ -695,14 +705,18 @@ unit Commands
             }
         }
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display function signature only
     // Input: ZP.IDX = function node
     DisplayFunctionSignature()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         LDA ZP.IDYH
         PHA
@@ -713,7 +727,7 @@ unit Commands
         Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
         
         // Check if this is the special "BEGIN" function (main program)
-        checkForBeginFunctionSTR(); // Input: ZP.STR, Returns C if this is the BEGIN function
+        checkForBeginFunctionSTR(); // Input: ZP.STR, Returns C if this is the BEGIN function, munts:  A, Y, ZP.ACCL, ZP.TOP
         if (C)
         {
             // Display as BEGIN
@@ -744,14 +758,16 @@ unit Commands
         PLA
         STA ZP.IDYH
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     DisplayFunctionSuffix()
     {
         // Get function name to check if it's BEGIN
         Functions.GetName(); // Input: ZP.IDX, Output: ZP.STR = name pointer
-        checkForBeginFunctionSTR();
+        checkForBeginFunctionSTR(); // Input: ZP.STR, Returns C if this is the BEGIN function, munts:  A, Y, ZP.ACCL, ZP.TOP
         if (C)
         {
             // Print END for BEGIN function
@@ -772,7 +788,9 @@ unit Commands
     // Input: ZP.IDX = function node
     displayFunctionWithBody()
     {
-        PHX
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         
         // Save function node
         LDA ZP.IDXL
@@ -788,7 +806,8 @@ unit Commands
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
-        
+
+#ifdef DEBUG                
         TXA
         if (Z) // X == 0 for LIST
         {
@@ -808,19 +827,35 @@ unit Commands
         {
             Dasm.DisassembleFunctionOpCodes();
         }
+#else
+        // Display body
+        Functions.GetBody(); // Input: ZP.IDX, Output: ZP.IDY = tokens pointer
+        LDA ZP.IDYL
+        ORA ZP.IDYH
+        if (NZ)
+        {
+            // Use TokenIterator to render the function body
+            STZ ZP.TOKERRORH
+            STZ ZP.TOKERRORL
+            TokenIterator.RenderTokenStream(); // Input: ZP.IDY = tokens pointer
+        }
+#endif        
             
         DisplayFunctionSuffix();
         Print.NewLine(); // Extra blank line after function
         
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Display function arguments
     // Input: ZP.IDY = arguments list head pointer (or null)
     displayArguments()
     {
-        PHX
-        
+#ifdef DEBUG
+        PHX // mode: LIST or DASM
+#endif
         LDX #0
         
         LDA ZP.IDYL
@@ -828,7 +863,7 @@ unit Commands
         if (NZ)
         {
             // Has arguments - iterate through them
-            Locals.IterateStart(); // Input: ZP.IDX = function node, Output: ZP.IDY = first argument
+            Locals.IterateStart(); // Input: ZP.IDX = function node, Output: ZP.IDY = first argument, munts Y
             loop
             {
                 if (NC) { break; } // No more arguments (handles empty list case)
@@ -856,18 +891,18 @@ unit Commands
                 Locals.IterateNext(); // Input: ZP.IDY = current arg, Output: ZP.IDY = next arg
             }
         }
-        
-        PLX
+#ifdef DEBUG
+        PLX // mode: LIST or DASM
+#endif
     }
     
     // Check if function name is "BEGIN" ($MAIN)
     // Input: ZP.STR = function name pointer
     // Output: C set if name is "$MAIN", NC otherwise
+    // Munts:  A, Y, ZP.ACCL, ZP.TOP
     checkForBeginFunctionSTR()
     {
-        PHX
-        
-        Messages.Main(); // point ZP.TOP -> "$MAIN"
+        Messages.Main(); // point ZP.TOP -> "$MAIN", munts A
         
         // Compare strings character by character
         LDY #0
@@ -891,8 +926,6 @@ unit Commands
             }
             INY
         }
-        
-        PLX
     }
     
     // Execute DIR command - list files in EEPROM

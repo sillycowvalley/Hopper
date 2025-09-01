@@ -372,6 +372,7 @@ unit Dasm
                             }
                             case OpCode.CALLF:
                             {
+                                // ACC -> IDX
                                 LDA ZP.ACCL
                                 STA ZP.IDXL
                                 LDA ZP.ACCH

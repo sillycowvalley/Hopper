@@ -559,6 +559,7 @@ unit BASICArray
             LDA ZP.NEXTH
             STA ZP.ACCH
             
+            // TOP -> IDX
             LDA ZP.TOPL
             STA ZP.IDXL
             LDA ZP.TOPH

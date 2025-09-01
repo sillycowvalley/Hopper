@@ -490,6 +490,7 @@ unit CompilerFlow
            // the 3-byte instruction, so offset is from position after JUMPW
            //
            // Emit unconditional jump back to condition evaluation
+           // TOP -> compilerOperand 1 & 2
            LDA ZP.TOPL    // Backward offset LSB
            STA Compiler.compilerOperand1
            LDA ZP.TOPH    // Backward offset MSB
@@ -594,6 +595,7 @@ unit CompilerFlow
                         
             // Emit JUMPZW with backward offset
             // Jump if condition is FALSE (i.e., UNTIL condition not met yet)
+            // TOP -> compilerOperand 1 & 2
             LDA ZP.TOPL  // Backward offset LSB
             STA Compiler.compilerOperand1
             LDA ZP.TOPH  // Backward offset MSB
@@ -628,6 +630,14 @@ unit CompilerFlow
         STA ZP.TOPH
         Locals.Add();
     }     
+    
+    moveSavedNodeAddrToIDX()
+    {
+        LDA Compiler.compilerSavedNodeAddrL
+        STA ZP.IDXL
+        LDA Compiler.compilerSavedNodeAddrH
+        STA ZP.IDXH
+    }
 
     // Compile FOR...NEXT statement
     // Input: ZP.CurrentToken = FOR token
@@ -687,12 +697,14 @@ unit CompilerFlow
            if (NC) { break; }
            
            // Check if iterator is already a local
+           // TOP -> ACC
            LDA ZP.TOPL
            STA ZP.ACCL
            LDA ZP.TOPH
            STA ZP.ACCH
            
            // ZP.IDX should contain function node address
+           // compilerSavedNodeAddr -> IDX
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
@@ -727,6 +739,7 @@ unit CompilerFlow
                     if (NC) { break; }
                     
                     // Create a shadow local with same name
+                    // TOP -> SymbolName
                     LDA ZP.TOPL
                     STA ZP.SymbolNameL
                     LDA ZP.TOPH
@@ -736,6 +749,7 @@ unit CompilerFlow
                     STA Compiler.compilerForIteratorType
                     
                     // restore ZP.IDX after Variables.Find()
+                    // compilerSavedNodeAddr -> IDX
                     LDA Compiler.compilerSavedNodeAddrL
                     STA ZP.IDXL
                     LDA Compiler.compilerSavedNodeAddrH
@@ -774,6 +788,7 @@ unit CompilerFlow
                else
                {
                    // restore ZP.IDX after Variables.Find()
+                   // compilerSavedNodeAddr -> IDX
                    LDA Compiler.compilerSavedNodeAddrL
                    STA ZP.IDXL
                    LDA Compiler.compilerSavedNodeAddrH
@@ -921,6 +936,7 @@ unit CompilerFlow
            PHA
            
            // placeholder slot
+           // compilerSavedNodeAddr -> IDX
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
@@ -991,6 +1007,7 @@ unit CompilerFlow
                }
                
                // placeholder slot
+               // compilerSavedNodeAddr -> IDX
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH
@@ -1034,6 +1051,7 @@ unit CompilerFlow
                if (NC) { break; }
                
                // placeholder slot
+               // compilerSavedNodeAddr -> IDX
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH
@@ -1237,6 +1255,7 @@ unit CompilerFlow
            if (NC) { break; }
            
            // Find the iterator to get its BP offset
+           // compilerSavedNodeAddr -> IDX
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
@@ -1328,6 +1347,7 @@ unit CompilerFlow
            DEC Compiler.compilerFuncLocals
            DEC Compiler.compilerFuncLocals  // Decrement twice since we're removing 2 locals
            
+           // compilerSavedNodeAddr -> IDX
            LDA Compiler.compilerSavedNodeAddrL
            STA ZP.IDXL
            LDA Compiler.compilerSavedNodeAddrH
@@ -1354,6 +1374,7 @@ unit CompilerFlow
                CheckErrorAndSetFailure();
                if (NC) { break; }
                
+               // compilerSavedNodeAddr -> IDX
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH
@@ -1370,6 +1391,7 @@ unit CompilerFlow
                CheckErrorAndSetFailure();
                if (NC) { break; }
                
+               // compilerSavedNodeAddr -> IDX
                LDA Compiler.compilerSavedNodeAddrL
                STA ZP.IDXL
                LDA Compiler.compilerSavedNodeAddrH

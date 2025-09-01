@@ -508,6 +508,7 @@ unit BASICSysCalls
                         if (BBS5, ZP.TOPT) // Bit 5 - ARRAY
                         {
                             // Array handling
+                            // TOP -> IDX
                             LDA ZP.TOPL
                             STA ZP.IDXL
                             LDA ZP.TOPH

@@ -34,6 +34,7 @@ unit Locals
             LDA ZP.IDXH
             STA ZP.LHEADH
             
+            // TOP -> SymbolName
             LDA ZP.TOPL
             STA ZP.SymbolNameL      // Argument name pointer
             LDA ZP.TOPH
@@ -108,6 +109,7 @@ unit Locals
         } // end of single exit block
         
         // RESTORE original IDX before exit
+        // LHEAD -> IDX
         LDA ZP.LHEADL
         STA ZP.IDXL
         LDA ZP.LHEADH
@@ -388,7 +390,7 @@ unit Locals
     // Start iteration over locals in function's list
     // Input: ZP.IDX = function node address
     // Output: ZP.IDY = first local node, C set if found, NC if no locals
-    // Munts: -
+    // Munts: Y
     IterateStart()
     {
         PHA
@@ -628,6 +630,7 @@ unit Locals
             {
                 // Found - ZP.ACCL already has BP offset
                 // ZP.IDY has node address, copy to IDX
+                // IDY -> IDX
                 LDA ZP.IDYL
                 STA ZP.IDXL
                 LDA ZP.IDYH
@@ -714,6 +717,7 @@ unit Locals
                     STA [ZP.LPREVIOUS], Y
                     
                     // Free the node
+                    // LCURRENT -> IDX
                     LDA ZP.LCURRENTL
                     STA ZP.IDXL
                     LDA ZP.LCURRENTH
@@ -723,6 +727,7 @@ unit Locals
                 }
                 
                 // Not the last - move forward
+                // LCURRENT -> LPREVIOUS
                 LDA ZP.LCURRENTL
                 STA ZP.LPREVIOUSL
                 LDA ZP.LCURRENTH

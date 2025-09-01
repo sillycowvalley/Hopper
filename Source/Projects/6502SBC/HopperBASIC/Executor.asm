@@ -2396,6 +2396,7 @@ unit Executor // Executor.asm
             TAY  // Y = index global index
             
             // Load array pointer and type
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2468,6 +2469,7 @@ unit Executor // Executor.asm
             TAY  // Y = index local position
             
             // Load array pointer and type
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2540,6 +2542,7 @@ unit Executor // Executor.asm
             TAY  // Y = index global index
             
             // Load array pointer and type from local
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2615,6 +2618,7 @@ unit Executor // Executor.asm
             TAY  // Y = index local position
             
             // Load array pointer and type from local
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2669,6 +2673,7 @@ unit Executor // Executor.asm
             // Pop collection reference from stack
             DEC ZP.SP
             LDX ZP.SP
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2847,6 +2852,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             // Pop array pointer into IDX
             DEX
             STX ZP.SP
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2904,6 +2910,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             
             // Load array value from global address
             TAX  // global index LSB
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -2984,6 +2991,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             TAX  // X = stack position
             
             // Load array value from local position
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -3060,6 +3068,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             TAX  // X = stack position
             
             // Load array value from local position
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
@@ -3137,6 +3146,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             
             // Load array value from global address
             TAX
+            // ValueStackLSB -> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X

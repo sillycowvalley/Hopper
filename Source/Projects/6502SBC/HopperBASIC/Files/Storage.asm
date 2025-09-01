@@ -1148,10 +1148,7 @@ Debug.NL();
             RMB1 LoaderFlags
             
             // name from IDENTIFIER
-            LDA ZP.STRL
-            STA ZP.TOPL
-            LDA ZP.STRH
-            STA ZP.TOPH
+            MoveSTRtoTOP();
             
             Variables.Declare(); // -> C or NC
             CheckError();
@@ -1205,10 +1202,7 @@ Debug.NL();
             if (NC) { break; }
             
             // name from IDENTIFIER
-            LDA ZP.STRL
-            STA ZP.TOPL
-            LDA ZP.STRH
-            STA ZP.TOPH
+            MoveSTRtoTOP();
             
             // create argument list in ZP.NEXT
             STZ ZP.NEXTL
@@ -1242,10 +1236,7 @@ Debug.NL();
                 parseIdentifier();
                 
                 // argument from IDENTIFIER
-                LDA ZP.STRL
-                STA ZP.TOPL
-                LDA ZP.STRH
-                STA ZP.TOPH
+                MoveSTRtoTOP();
                 
                 LDA #SymbolType.ARGUMENT
                 ORA #BASICType.VAR 

@@ -750,10 +750,8 @@ unit TokenIterator // TokenIterator.asm
             {
                 renderOptionalSpace();
                 GetCurrentData(); // ZP.TOKADDR* = pointer to string content
-                LDA ZP.STRL
-                STA ZP.TOP0
-                LDA ZP.STRH
-                STA ZP.TOP1
+                MoveSTRtoTOP();
+                
                 LDA # BASICType.STRING
                 STA ZP.TOPT
                 SEC
