@@ -333,6 +333,13 @@ unit Commands
         LDA ZP.STRH
         STA ZP.TOPH
     }
+    MoveTOPtoSTR()
+    {
+        LDA ZP.TOPL
+        STA ZP.STRL
+        LDA ZP.TOPH
+        STA ZP.STRH
+    }
     
     // Display an array variable declaration with contents
     // Input: ZP.IDX = variable node, A = full type (with ARRAY flag)

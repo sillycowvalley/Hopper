@@ -175,7 +175,7 @@ unit File
     const byte SectorPosition       = ZP.FS12;                // for use with LDA [SectorPosition]
     const byte SectorPositionL      = ZP.FS12;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
     const byte SectorPositionH      = ZP.FS13;
-    
+     
     const byte CurrentDirectorySector = ZP.FS14;              // Current directory sector being accessed
     
     // used by Delete (compaction)
@@ -198,7 +198,7 @@ unit File
     const string deleteFileTrace = "Delete";
     const string startLoadTrace = "StartLoad";
     const string nextStreamTrace = "NextStream";
-    const string getFileLengthTrace = "getFileLen";
+    const string getFileLengthTrace = "GetFileLen";
     const string advanceToNextSectorTrace = "advanceNext";
     const string updateStreamPositionTrace = "updateStream";
     const string findFileInDirectoryTrace = "findFile";
@@ -890,6 +890,27 @@ unit File
 #endif
     }
     
+    // Convert string to uppercase in place (compact version)
+    // Input: ZP.STR = pointer to null-terminated string
+    // Output: String converted to uppercase
+    // Munts: A, Y
+    ToUpperSTR()
+    {
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            if (Z) { break; }  // Null terminator
+            Char.IsLower();    // preserves A
+            if (C)
+            {
+                AND #0xDF      // Convert to uppercase by stripping bit 5
+                STA [ZP.STR], Y
+            }
+            INY
+            if (Z) { break; }  // Prevent overflow
+        }
+    }
     
 
     // Check if file exists in directory
@@ -942,9 +963,80 @@ unit File
     #endif
     }
     
-    // Refactored StartLoad method:
+    
+    
+    /*
     // Open file for reading
     // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+    //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile
+    // Output: C set if successful, NC if error (file not found)
+    //         File ready for reading via NextStream()
+    // Preserves: X, Y
+    // Munts: A, file system state
+    StartLoad()
+    {
+        STA ZP.ACCH // DirWalkAction.FindExecutable or DirWalkAction.FindFile
+        
+    #ifdef TRACEFILE
+        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        PHX
+        PHY
+        
+        // preserve the file name in case you are just being used to verify the file exists
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
+        
+        loop // Single exit for cleanup
+        {
+            // Check if file exists (validates filename and loads metadata)
+            LDA ZP.ACCH
+            File.Exists();
+            if (NC)
+            {
+                Error.FileNotFound(); BIT ZP.EmulatorPCL
+                break;
+            }
+            // CurrentFileEntry now contains the directory entry index
+            
+            // Get start sector from directory entry
+            getFileStartSector(); // -> FileStartSector
+            
+            // Get file length from directory entry
+            GetFileLength(); // -> BytesRemainingL/H
+            
+            // Initialize load state
+            STZ SectorPositionL
+            STZ SectorPositionH
+            
+            // Read first sector into FileDataBuffer
+            LDA FileStartSector
+            readSector();
+            LDA FileStartSector
+            STA CurrentFileSector
+            
+            // Success - file ready for NextStream() calls
+            SEC
+            break;
+        }
+        
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        
+        PLY
+        PLX
+    #ifdef TRACEFILE
+        LDA #(startLoadTrace % 256) STA ZP.TraceMessageL LDA #(startLoadTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
+    */
+    // Open file for reading
+    // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+    //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile
     // Output: C set if successful, NC if error (file not found)
     //         File ready for reading via NextStream()
     // Preserves: X, Y
@@ -979,15 +1071,9 @@ unit File
             getFileStartSector(); // -> FileStartSector
             
             // Get file length from directory entry
-            getFileLength(); // -> BytesRemainingL/H
+            GetFileLength(); // -> BytesRemainingL/H
             
-            // Initialize load state
-            STZ SectorPositionL
-            STZ SectorPositionH
-            
-            // Read first sector into FileDataBuffer
-            LDA FileStartSector
-            readSector();
+            // Initialize for first NextStream() call
             LDA FileStartSector
             STA CurrentFileSector
             
@@ -1008,13 +1094,107 @@ unit File
     #endif
     }
     
+    
     // Read next chunk of data from current load file
-    // Output: C set if data available, NC if end of file
-    //         SectorSource = pointer to data buffer (if C set)
-    //         TransferLength = number of bytes available (if C set)
+    // Prerequisites: StartLoad() must be called first to initialize file state
+    //                Caller must consume all returned data before calling again
+    // Output: C set if data available, NC if end of file or error
+    //         Data is always in FileDataBuffer starting at offset 0
+    //         TransferLength = number of valid bytes in FileDataBuffer (if C set)
+    //         TransferLengthL/H = 16-bit byte count (max 256 per call)
+    //         States.Success flag set appropriately
     // Preserves: X, Y
-    // Munts: A, file system state
-    // Note: Caller must process data before next call
+    // Munts: A, BytesRemaining, CurrentFileSector, NextFileSector
+    // Note: - Returns up to 256 bytes (one sector) per call
+    //       - Pre-reads next sector after returning data (if more exists)
+    //       - FileDataBuffer will be overwritten on next call
+    //       - No partial read support - caller must consume entire TransferLength
+    NextStream()
+    {
+#ifdef TRACEFILE
+        LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+        PHX
+        PHY
+        
+        loop // Single exit
+        {
+            // Check if any bytes remaining
+            LDA BytesRemainingL
+            ORA BytesRemainingH
+            if (Z)
+            {
+                CLC  // End of file
+                break;
+            }
+            
+            // Load current sector
+            LDA CurrentFileSector
+            readSector();  // Load into FileDataBuffer
+            
+            // Calculate transfer: min(256, BytesRemaining)
+            LDA BytesRemainingH
+            if (Z)  // BytesRemaining < 256
+            {
+                LDA BytesRemainingL
+                STA TransferLengthL
+                STZ TransferLengthH
+                // Don't invalidate buffer - partial read
+            }
+            else  // BytesRemaining >= 256
+            {
+                STZ TransferLengthL
+                LDA #1
+                STA TransferLengthH
+                
+                // Get next sector from FAT for next call
+                LDY CurrentFileSector
+                LDA FATBuffer, Y
+                CMP #1                      // End-of-chain marker?
+                if (Z)
+                {
+                    // Shouldn't happen if BytesRemaining is correct
+                    Error.EEPROMError();
+                    break;
+                }
+                STA CurrentFileSector       // Ready for next call
+            }
+            
+            // Update BytesRemaining
+            SEC
+            LDA BytesRemainingL
+            SBC TransferLengthL
+            STA BytesRemainingL
+            LDA BytesRemainingH
+            SBC TransferLengthH
+            STA BytesRemainingH
+            
+            SEC  // Success
+            break;
+        }
+        
+        PLY
+        PLX
+#ifdef TRACEFILE
+        LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif        
+    }
+    
+    /*
+    // Read next chunk of data from current load file
+    // Prerequisites: StartLoad() must be called first to initialize file state
+    // Output: C set if data available, NC if end of file or error
+    //         SectorSource = pointer to current position in FileDataBuffer (if C set)
+    //         SectorSourceL/H = 16-bit address within FileDataBuffer
+    //         TransferLength = number of bytes available in this chunk (if C set)
+    //         TransferLengthL/H = 16-bit byte count (max 256 per call)
+    //         States.Success flag set appropriately
+    // Preserves: X, Y
+    // Munts: A, file system state (BytesRemaining, SectorPosition, CurrentFileSector)
+    // Note: - Caller must process data before next call as buffer will be overwritten
+    //       - Automatically handles sector boundaries and FAT chain traversal
+    //       - Returns chunks up to 256 bytes (one sector) at a time
+    //       - When SectorPosition reaches 256, advances to next sector in FAT chain
     NextStream()
     {
 #ifdef TRACEFILE
@@ -1115,14 +1295,14 @@ unit File
         LDA #(nextStreamTrace % 256) STA ZP.TraceMessageL LDA #(nextStreamTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
-              
+    */          
 
     
     // Get file length from current directory entry
     // Input: CurrentFileEntry = directory entry index
     // Output: BytesRemainingL/H = file length (16-bit)
     // Munts: A, Y
-    getFileLength()
+    GetFileLength()
     {
 #ifdef TRACEFILE
         LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
@@ -1140,7 +1320,7 @@ unit File
         PHA LDA #(getFileLengthTrace % 256) STA ZP.TraceMessageL LDA #(getFileLengthTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
     }
-    
+    /*
     // Advance to next sector in FAT chain
     // Output: C set if successful, NC if end of chain or error
     // Munts: A, Y, file system state
@@ -1183,6 +1363,7 @@ unit File
         LDA #(advanceToNextSectorTrace % 256) STA ZP.TraceMessageL LDA #(advanceToNextSectorTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
     }
+    */
     
     // Update position counters after NextStream() call
     // Input: TransferLength = bytes being returned to caller
@@ -2481,25 +2662,6 @@ unit File
                 ORA DirectoryBuffer + 1, Y
                 if (NZ)
                 {
-                    // Print entry number (handle multi-digit)
-                    /*
-                    TXA
-                    PHA                  // Save X
-                    TYA
-                    PHA                  // Save Y
-                    
-                    TXA                  // Entry number to A
-                    STA ZP.TOPH         // Entry number in ZP.TOP for decimal
-                    STZ ZP.TOPL
-                    STZ ZP.TOPT
-                    Print.Decimal();    // Print proper decimal number
-                    
-                    LDA #':'
-                    Print.Char();
-                    Print.Space();
-                    */
-                    
-                    
                     // Print entry number as #global [local]
                     TXA
                     PHA                  // Save X

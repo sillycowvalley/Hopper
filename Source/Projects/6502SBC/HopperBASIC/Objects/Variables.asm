@@ -348,7 +348,14 @@ unit Variables
             if (BBS5, ZP.ACCT) // Bit 5 - ARRAY
             {
                 // ARRAY management happens elsewhere, just overwrite ptr              
-                // Non-STRING - use value (TOP)
+                
+                // Set owner pointer in array to point back to this variable
+                LDY #BASICArray.aiOwner
+                LDA ZP.IDXL  // Variable node address
+                STA [ZP.TOP], Y
+                INY
+                LDA ZP.IDXH
+                STA [ZP.TOP], Y
             }
             else
             {

@@ -712,11 +712,10 @@ unit Tokenizer // Tokenizer.asm
                         if (NC) { break; }  // Not alphanumeric
                         
                         // Convert to uppercase and store in working buffer
-                        IsLower();
+                        Char.IsLower(); // preserves A
                         if (C)
                         {
-                            SEC
-                            SBC #('a'-'A')  // Convert to uppercase
+                            AND #0xDF      // Convert to uppercase by stripping bit 5
                         }
                         STA Address.BasicProcessBuffer, Y  // FIXED: Use Y for working buffer
                         

@@ -39,6 +39,16 @@ unit Compiler // Compiler.asm
    
 #endif
    
+   
+    moveSavedNodeAddrToIDX()
+    {
+        LDA Compiler.compilerSavedNodeAddrL
+        STA ZP.IDXL
+        LDA Compiler.compilerSavedNodeAddrH
+        STA ZP.IDXH
+    }
+
+
    // Initialize the opcode buffer for compilation
    // Output: OpCode buffer ready for emission
    // Modifies: ZP.OpCodeBufferContentLengthL/H (set to 0), ZP.CompilerTokenPosL/H (set to current), ZP.CompilerFlags (cleared), ZP.XPC (set to buffer start)
@@ -941,11 +951,7 @@ unit Compiler // Compiler.asm
             {
                 // Try to find this identifier as an argument
                 // Get the function node being compiled
-                // compilerSavedNodeAddr -> IDX
-                LDA (compilerSavedNodeAddrL + 0)
-                STA ZP.IDXL
-                LDA (compilerSavedNodeAddrH + 0)
-                STA ZP.IDXH
+                Compiler.moveSavedNodeAddrToIDX();
                 
                 // Look for argument/local by name
                 Locals.Find();  // Input: ZP.IDX = function, ZP.TOP = name
@@ -1540,6 +1546,7 @@ unit Compiler // Compiler.asm
                 Tokenizer.NextTokenCheckSetFailure();
                 return;
             }
+            /*
             case Token.INPUT:
             {
                 RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
@@ -1547,14 +1554,7 @@ unit Compiler // Compiler.asm
                 compileSysCall();
                 return;
             }
-            case Token.LOAD:
-            {
-                // LOAD function for data files (not console command)
-                RMB0 ZP.CompilerFlags // not a constant expression
-                LDA #SysCallType.LoadData
-                compileSysCall();  // handles '(' expr ')' syntax
-                return;
-            }
+            */
            
            case Token.LPAREN:
            {
@@ -1581,6 +1581,15 @@ unit Compiler // Compiler.asm
                Tokenizer.NextTokenCheckSetFailure();
                return;
            }
+           
+            case Token.IMPORT:
+            {
+                // LOAD function - returns number of elements loaded
+                RMB0 ZP.CompilerFlags // not a constant expression
+                LDA #SysCallType.Import
+                compileSysCall();  // handles '(' array ',' filename ')' syntax
+                return;
+            }
            
             case Token.I2CFIND:
             {
@@ -2034,11 +2043,7 @@ unit Compiler // Compiler.asm
        
        if (BBS5, ZP.CompilerFlags) // in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
        {
-           // compilerSavedNodeAddr -> IDX
-           LDA Compiler.compilerSavedNodeAddrL
-           STA ZP.IDXL
-           LDA Compiler.compilerSavedNodeAddrH
-           STA ZP.IDXH
+           Compiler.moveSavedNodeAddrToIDX();
            Locals.RemoveLast();
        }
        
@@ -2071,12 +2076,17 @@ unit Compiler // Compiler.asm
                     LDA #SysCallType.I2CPut
                 }
                 
-                case Token.SAVE:
+                case Token.EXPORT:
                 {
-                    LDA #SysCallType.SaveData
+                    LDA #SysCallType.Export
                 }
                 
                 // include these so you can ignore/discard the return values (treat them like statements):
+                case Token.IMPORT:
+                {
+                    LDA #SysCallType.Import
+                }
+                
                 case Token.I2CEND:
                 {
                     LDA #SysCallType.I2CEnd
@@ -2202,7 +2212,7 @@ unit Compiler // Compiler.asm
            {
                CheckErrorAndSetFailure();
                if (C) { States.SetSuccess(); }
-               return; 
+               break; 
            } 
            
            LDA ZP.CurrentToken
@@ -2524,7 +2534,7 @@ unit Compiler // Compiler.asm
             if (NC) { break; }
             
             // Check for duplicate among existing locals/arguments
-            moveSavedNodeAddrToIDX();
+            Compiler.moveSavedNodeAddrToIDX();
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {

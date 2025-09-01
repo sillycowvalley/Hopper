@@ -595,11 +595,7 @@ unit BASICTypes // BASICTypes.asm
             case BASICType.STRING:
             {
                 PLP
-                // TOP -> STR
-                LDA ZP.TOPL
-                STA ZP.STRL
-                LDA ZP.TOPH
-                STA ZP.STRH
+                MoveTOPtoSTR();
                 
                 if (C)
                 {

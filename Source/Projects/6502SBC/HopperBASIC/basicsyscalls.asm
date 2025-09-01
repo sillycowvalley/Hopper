@@ -12,7 +12,7 @@ unit BASICSysCalls
         
         // Built-in functions (ID 3-9)
         Abs          = (0b00011 << 3) | (1 << 2) | 0b01,  // ID=3, returns,  1 arg  = 0x1D
-        Input        = (0b00100 << 3) | (1 << 2) | 0b00,  // ID=4, returns,  0 args = 0x24
+        //Input        = (0b00100 << 3) | (1 << 2) | 0b00,  // ID=4, returns,  0 args = 0x24
         Millis       = (0b00101 << 3) | (1 << 2) | 0b00,  // ID=5, returns,  0 args = 0x2C  
         Seconds      = (0b00110 << 3) | (1 << 2) | 0b00,  // ID=6, returns,  0 args = 0x34
         Delay        = (0b00111 << 3) | (0 << 2) | 0b01,  // ID=7, void,     1 arg  = 0x39
@@ -38,8 +38,8 @@ unit BASICSysCalls
         I2CGet       = (0b10101 << 3) | (1 << 2) | 0b10,  // ID=21, returns, 2 args = 0xAE
         I2CNext      = (0b10110 << 3) | (1 << 2) | 0b00,  // ID=22, returns, 0 args = 0xB4
         
-        LoadData     = (0b10111 << 3) | (1 << 2) | 0b01,  // ID=23, returns, 1 arg  = 0xBD
-        SaveData     = (0b11000 << 3) | (0 << 2) | 0b10,  // ID=24, void,    2 args = 0xC2
+        Import       = (0b10111 << 3) | (1 << 2) | 0b10,  // ID=23, returns, 2 args = 0xBA
+        Export       = (0b11000 << 3) | (0 << 2) | 0b10,  // ID=24, void,    2 args = 0xC2
     }
    
     // SYSCALL formatting for DASM:
@@ -73,22 +73,22 @@ unit BASICSysCalls
                     Print.String();
                     LDA #0
                 } 
-                case SysCallType.Input:   { LDA #Token.INPUT   }  // INPUT
-                case SysCallType.Abs:     { LDA #Token.ABS     }  // ABS
-                case SysCallType.Rnd:     { LDA #Token.RND     }  // RND
-                case SysCallType.Millis:  { LDA #Token.MILLIS  }  // MILLIS
-                case SysCallType.Seconds: { LDA #Token.SECONDS }  // SECONDS
-                case SysCallType.Delay:   { LDA #Token.DELAY   }  // DELAY
-                case SysCallType.Peek:    { LDA #Token.PEEK    }  // PEEK
-                case SysCallType.Poke:    { LDA #Token.POKE    }  // POKE
-                case SysCallType.PinMode: { LDA #Token.PINMODE }  // PINMODE
-                case SysCallType.Read:    { LDA #Token.READ    }  // READ
-                case SysCallType.Write:   { LDA #Token.WRITE   }  // WRITE
-                case SysCallType.Chr:     { LDA #Token.CHR     }  // CHR
-                case SysCallType.Asc:     { LDA #Token.ASC     }  // ASC
-                case SysCallType.Len:     { LDA #Token.LEN     }  // LEN
-                case SysCallType.LoadData:  { LDA #Token.LOAD }   // LOAD
-                case SysCallType.SaveData:  { LDA #Token.SAVE }   // SAVE
+                //case SysCallType.Input:     { LDA #Token.INPUT   }
+                case SysCallType.Abs:       { LDA #Token.ABS     }
+                case SysCallType.Rnd:       { LDA #Token.RND     }
+                case SysCallType.Millis:    { LDA #Token.MILLIS  }
+                case SysCallType.Seconds:   { LDA #Token.SECONDS }
+                case SysCallType.Delay:     { LDA #Token.DELAY   }
+                case SysCallType.Peek:      { LDA #Token.PEEK    }
+                case SysCallType.Poke:      { LDA #Token.POKE    }
+                case SysCallType.PinMode:   { LDA #Token.PINMODE }
+                case SysCallType.Read:      { LDA #Token.READ    }
+                case SysCallType.Write:     { LDA #Token.WRITE   }
+                case SysCallType.Chr:       { LDA #Token.CHR     }
+                case SysCallType.Asc:       { LDA #Token.ASC     }
+                case SysCallType.Len:       { LDA #Token.LEN     }
+                case SysCallType.Import:    { LDA #Token.IMPORT  }
+                case SysCallType.Export:    { LDA #Token.EXPORT  }
                 
                 case SysCallType.I2CFind: { LDA #Token.I2CFIND  }
                 case SysCallType.I2CBegin:{ LDA #Token.I2CBEGIN }
@@ -136,9 +136,8 @@ unit BASICSysCalls
                     case SysCallType.Asc:
                         { LDA #Token.CHAR        }
                     case SysCallType.Len:
-                    case SysCallType.LoadData:
-                        { LDA #Token.STRING      }
-                    case SysCallType.SaveData:
+                    case SysCallType.Import:
+                    case SysCallType.Export:
                         { LDA #Token.ARRAY      Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.STRING }
                 }
                 Tokens.PrintKeyword();
@@ -155,13 +154,14 @@ unit BASICSysCalls
                     case SysCallType.Abs:
                     case SysCallType.Rnd:
                     case SysCallType.Millis:
-                    case SysCallType.Input:
+                    //case SysCallType.Input:
                     case SysCallType.Seconds:
                     case SysCallType.Len:
                     case SysCallType.Peek:
                     case SysCallType.Asc:
                     case SysCallType.I2CGet:
                     case SysCallType.I2CNext:
+                    case SysCallType.Import:
                         { LDA #Token.LONG  }
                             
                     case SysCallType.I2CFind:
@@ -170,8 +170,6 @@ unit BASICSysCalls
                         { LDA #Token.BIT   }
                     case SysCallType.Chr:
                         { LDA #Token.CHAR  }
-                    case SysCallType.LoadData:
-                        { LDA #Token.ARRAY }
                 }
                 Tokens.PrintKeyword(); 
             }
@@ -355,7 +353,7 @@ unit BASICSysCalls
                { 
                    // don't use PopTopNext() - it requires both types to be LONG if one is LONG
                    Long.PopTop();  // second arg in ZP.TOP*, munts X
-                   Long.PopNext(); // first arg in ZP.TOP*, munts X
+                   Long.PopNext(); // first arg in ZP.NEXT*, munts X
                    if (NC) { break; }
                }
                case 3: 
@@ -552,7 +550,7 @@ unit BASICSysCalls
                    LDA ZP.TOPL
                    Serial.WriteChar();
                 }
-                
+                /*
                 case SysCallType.Input:          // ID = 16
                 {
                     // INPUT function - read user input and parse as literal
@@ -608,7 +606,7 @@ unit BASICSysCalls
                     BASICTypes.Promote(); // -> LONG 
                     if (NC) { break; }
                 }
-               
+               */
                
                case SysCallType.Poke:          // ID = 9
                {
@@ -852,6 +850,23 @@ unit BASICSysCalls
                     STA ZP.TOPT
                 }
                 
+                case SysCallType.Import:  // ID = 23
+                {
+                    // IMPORT procedure - load data file into array
+                    // Stack has [array][filename]
+                    executeImport();
+                    if (NC) { break; }
+                    // Element count is in ZP.TOP, fall through to push
+                }
+
+                case SysCallType.Export:  // ID = 24  
+                {
+                    // EXPORT procedure - save array to data file
+                    // Stack has [array][filename]
+                    executeExport();
+                    if (NC) { break; }
+                }
+                
                 
                
                default:
@@ -882,4 +897,254 @@ unit BASICSysCalls
        LDA #(executeSysCallTrace % 256) STA ZP.TraceMessageL LDA #(executeSysCallTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
 #endif
    }
+   
+   
+
+    // Helper stub for EXPORT(array, "filename")
+    // Input: ZP.NEXT contains array, ZP.TOP contains filename (already popped)
+    // Output: Nothing returned, file saved
+    executeExport()
+    {
+        loop
+        {
+            // Validate filename (in TOP) is STRING type
+            LDA ZP.TOPT
+            AND #BASICType.TYPEMASK
+            CMP #BASICType.STRING
+            if (NZ)
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            // Save filename pointer from TOP
+            MoveTOPtoSTR();
+            
+            // Validate array (in NEXT) has array type (bit 5 set)
+            if (BBR5, ZP.NEXTT) // Bit 5 = ARRAY flag
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                break;
+            }
+            
+            // convert STR to uppercase
+            File.ToUpperSTR();
+
+            LDA # DirWalkAction.FindFile
+            File.Exists(); // preserves ZP.STR
+            if (C)
+            {
+                // file exits
+                File.Delete();
+            }
+
+
+
+            // 1. Create file (filename in STR)
+            File.StartSave();
+            if (NC) { break; }
+            
+            // 2. setup data pointer and length (array in NEXT)
+            BASICArray.GetExportPointers();
+            
+            // 3. stream all data (SectorSource = pointer to data, TransferLength = number of bytes to write)
+            File.AppendStream();
+            if (NC) { break; }
+
+            // 4. Finalize as data file
+            LDA #0x00  // Data file (not executable)
+            File.EndSave();
+            if (NC) { break; }
+            
+
+            
+            SEC // all good
+            break;
+        }
+    }
+    
+    
+    // Helper for IMPORT(array, "filename") -> count
+    // Input: ZP.NEXT contains array, ZP.TOP contains filename (already popped)
+    // Output: Array resized and filled, ZP.TOP contains element count
+    executeImport()
+    {
+        loop
+        {
+            // Validate filename (in TOP) is STRING type
+            LDA ZP.TOPT
+            AND #BASICType.TYPEMASK
+            CMP #BASICType.STRING
+            if (NZ)
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break;
+            }
+            
+            // Validate array (in NEXT) has array type (bit 5 set)
+            if (BBR5, ZP.NEXTT) // Bit 5 = ARRAY flag
+            {
+                Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                CLC
+                break;
+            }
+            
+            // Save filename pointer from TOP
+            MoveTOPtoSTR();
+
+            // convert STR to uppercase
+            File.ToUpperSTR();
+
+//Debug.NL(); Print.String();  
+            LDA # DirWalkAction.FindFile  // all files
+            File.Exists(); // Input: ZP.STR, Output: C if exists
+            if (NC)
+            {
+                Error.FileNotFound(); BIT ZP.EmulatorPCL
+                CLC 
+                break;
+            }
+            
+            // Get file size (set by Exists/getFileLength)
+            File.GetFileLength(); // -> BytesRemainingL/H
+            
+//Debug.NL(); LDA #'F' COut(); LDA #'S' COut(); LDA #':' COut(); LDA BytesRemainingH HOut(); LDA BytesRemainingL HOut();
+            
+            // Get owner pointer from old array
+            LDY # BASICArray.aiOwner
+            LDA [ZP.NEXT], Y
+            STA ZP.IDYL       // Variable node
+            INY
+            LDA [ZP.NEXT], Y
+            STA ZP.IDYH
+            
+            // Get element type from old array
+            LDY # BASICArray.aiType
+            LDA [ZP.NEXT], Y
+            STA ZP.ACCT
+            
+            // Free the old array
+            LDA ZP.NEXTL
+            STA ZP.IDXL       // Array to free
+            LDA ZP.NEXTH
+            STA ZP.IDXH
+            Memory.Free();    // Input: ZP.IDX, Munts: A, ZP.IDX, ZP.M* -> C on success
+            
+            // Calculate element count from byte count
+            LDA File.BytesRemainingL
+            STA ZP.ACCL
+            LDA File.BytesRemainingH
+            STA ZP.ACCH
+            
+            // Convert bytes to elements based on type
+            LDA ZP.ACCT
+            switch (A)
+            {
+                case BASICType.BIT:
+                {
+                    // Elements = bytes * 8
+                    ASL ZP.ACCL
+                    ROL ZP.ACCH
+                    ASL ZP.ACCL
+                    ROL ZP.ACCH
+                    ASL ZP.ACCL
+                    ROL ZP.ACCH
+                }
+                case BASICType.INT:
+                case BASICType.WORD:
+                {
+                    // Elements = bytes / 2
+                    LSR ZP.ACCH
+                    ROR ZP.ACCL
+                }
+            }
+            
+            // Save element count for return value
+            LDA ZP.ACCL
+            STA ZP.TOP0
+            LDA ZP.ACCH
+            STA ZP.TOP1
+            STZ ZP.TOP2
+            STZ ZP.TOP3
+            LDA #BASICType.LONG
+            STA ZP.TOPT
+//Debug.NL(); TLOut();
+            
+            // Create new array (ACC = count, ACCT = type)
+            BASICArray.New();
+            if (NC) 
+            {
+                Error.OutOfMemory(); BIT ZP.EmulatorPCL
+                CLC
+                break;
+            }
+            // IDX now has new array pointer
+            
+            // Update variable to point to new array
+            LDY # Objects.snValue
+            LDA ZP.IDXL       // New array
+            STA [ZP.IDY], Y   // Variable node (saved in IDY earlier)
+            INY
+            LDA ZP.IDXH
+            STA [ZP.IDY], Y
+            
+            // Set owner pointer in new array
+            LDY #BASICArray.aiOwner
+            LDA ZP.IDYL       // Variable node
+            STA [ZP.IDX], Y   // New array
+            INY
+            LDA ZP.IDYH
+            STA [ZP.IDX], Y
+            
+//Debug.NL(); Print.String();  
+//Debug.NL();          
+            // Start loading file
+            LDA # DirWalkAction.FindFile
+            File.StartLoad(); // Uses ZP.STR
+            if (NC) 
+            {
+                break;
+            }
+
+            
+            // Setup destination for loading (skip array header)
+            CLC
+            LDA ZP.IDXL
+            ADC # BASICArray.aiElements  // Now 5 with owner field
+            STA ZP.FDESTINATIONADDRESSL                 // Save destination
+            LDA ZP.IDXH
+            ADC # 0
+            STA ZP.FDESTINATIONADDRESSH
+            
+//Debug.NL(); XOut(); Space(); LDA ZP.FDESTINATIONADDRESSH HOut(); LDA ZP.FDESTINATIONADDRESSL HOut();         
+//DumpHeap();
+            
+            // Load file data directly into array
+            loop
+            {
+                File.NextStream();
+                if (NC) { break; } // End of file
+                
+//Debug.NL(); LDA File.SectorSourceH HOut(); LDA File.SectorSourceL HOut(); Space(); LDA File.TransferLengthH HOut(); LDA File.TransferLengthL HOut();
+                
+                // Copy from FileDataBuffer to array
+                LDA #(File.FileDataBuffer % 256)
+                STA ZP.FSOURCEADDRESSL
+                LDA #(File.FileDataBuffer / 256)
+                STA ZP.FSOURCEADDRESSH
+                
+                LDA File.TransferLengthL
+                STA ZP.FLENGTHL
+                LDA File.TransferLengthH
+                STA ZP.FLENGTHH
+                
+                Memory.Copy();
+            } // loop
+            
+//Debug.NL(); TLOut();            
+            SEC  // Success
+            break;
+        }
+    }
 }

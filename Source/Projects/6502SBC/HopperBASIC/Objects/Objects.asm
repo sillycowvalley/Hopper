@@ -1,6 +1,6 @@
 unit Objects
 {
-    friend Variables, Functions, Locals, Executor, Debug;
+    friend Variables, Functions, Locals, Executor, Debug, BASICSysCalls;
     
     // Symbol table implementation using Table foundation
     // ZP.VariableListL/H stores the variables/constants table head pointer

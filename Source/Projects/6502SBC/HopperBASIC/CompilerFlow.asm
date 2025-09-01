@@ -629,16 +629,8 @@ unit CompilerFlow
         LDA #(Messages.ForVarName / 256)
         STA ZP.TOPH
         Locals.Add();
-    }     
-    
-    moveSavedNodeAddrToIDX()
-    {
-        LDA Compiler.compilerSavedNodeAddrL
-        STA ZP.IDXL
-        LDA Compiler.compilerSavedNodeAddrH
-        STA ZP.IDXH
     }
-
+    
     // Compile FOR...NEXT statement
     // Input: ZP.CurrentToken = FOR token
     // Output: FOR...NEXT loop compiled to opcodes with FORCHK and FORIT
@@ -704,11 +696,7 @@ unit CompilerFlow
            STA ZP.ACCH
            
            // ZP.IDX should contain function node address
-           // compilerSavedNodeAddr -> IDX
-           LDA Compiler.compilerSavedNodeAddrL
-           STA ZP.IDXL
-           LDA Compiler.compilerSavedNodeAddrH
-           STA ZP.IDXH
+           Compiler.moveSavedNodeAddrToIDX();
            
            // ZP.TOP already contains name pointer from GetTokenString
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
@@ -749,11 +737,7 @@ unit CompilerFlow
                     STA Compiler.compilerForIteratorType
                     
                     // restore ZP.IDX after Variables.Find()
-                    // compilerSavedNodeAddr -> IDX
-                    LDA Compiler.compilerSavedNodeAddrL
-                    STA ZP.IDXL
-                    LDA Compiler.compilerSavedNodeAddrH
-                    STA ZP.IDXH
+                    Compiler.moveSavedNodeAddrToIDX();
 
                     Locals.Add();          // Creates local
                     CheckErrorAndSetFailure();
@@ -788,22 +772,7 @@ unit CompilerFlow
                else
                {
                    // restore ZP.IDX after Variables.Find()
-                   // compilerSavedNodeAddr -> IDX
-                   LDA Compiler.compilerSavedNodeAddrL
-                   STA ZP.IDXL
-                   LDA Compiler.compilerSavedNodeAddrH
-                   STA ZP.IDXH
-                    
-                   // Iterator not found - check if we can create implicit local
-                   /* IMPLICIT SCOPE
-                   LDA Compiler.compilerCanDeclareLocals
-                   if (Z)  // Can't create new locals
-                   {
-                       Error.LateDeclaration(); BIT ZP.EmulatorPCL
-                       States.SetFailure();
-                       break;
-                   }
-                   */
+                   Compiler.moveSavedNodeAddrToIDX();
                     
                    // Iterator not found - create implicit local
                    // First push a default value to create the stack slot
@@ -936,11 +905,7 @@ unit CompilerFlow
            PHA
            
            // placeholder slot
-           // compilerSavedNodeAddr -> IDX
-           LDA Compiler.compilerSavedNodeAddrL
-           STA ZP.IDXL
-           LDA Compiler.compilerSavedNodeAddrH
-           STA ZP.IDXH
+           Compiler.moveSavedNodeAddrToIDX();
            addForVar(); // Locals.Add() a variable called "$F"
            
            PLA
@@ -1007,11 +972,7 @@ unit CompilerFlow
                }
                
                // placeholder slot
-               // compilerSavedNodeAddr -> IDX
-               LDA Compiler.compilerSavedNodeAddrL
-               STA ZP.IDXL
-               LDA Compiler.compilerSavedNodeAddrH
-               STA ZP.IDXH
+               Compiler.moveSavedNodeAddrToIDX();
                addForVar(); // Locals.Add() a variable called "$F"
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
                CheckErrorAndSetFailure();
@@ -1051,11 +1012,7 @@ unit CompilerFlow
                if (NC) { break; }
                
                // placeholder slot
-               // compilerSavedNodeAddr -> IDX
-               LDA Compiler.compilerSavedNodeAddrL
-               STA ZP.IDXL
-               LDA Compiler.compilerSavedNodeAddrH
-               STA ZP.IDXH
+               Compiler.moveSavedNodeAddrToIDX();
                addForVar(); // Locals.Add() a variable called "$F"
                INC Compiler.compilerFuncLocals   // consider a RETURN from within the loop needing to clean the stack
            }
@@ -1255,11 +1212,7 @@ unit CompilerFlow
            if (NC) { break; }
            
            // Find the iterator to get its BP offset
-           // compilerSavedNodeAddr -> IDX
-           LDA Compiler.compilerSavedNodeAddrL
-           STA ZP.IDXL
-           LDA Compiler.compilerSavedNodeAddrH
-           STA ZP.IDXH
+           Compiler.moveSavedNodeAddrToIDX();
            
            // ZP.TOP already contains name pointer from GetTokenString
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
@@ -1347,11 +1300,7 @@ unit CompilerFlow
            DEC Compiler.compilerFuncLocals
            DEC Compiler.compilerFuncLocals  // Decrement twice since we're removing 2 locals
            
-           // compilerSavedNodeAddr -> IDX
-           LDA Compiler.compilerSavedNodeAddrL
-           STA ZP.IDXL
-           LDA Compiler.compilerSavedNodeAddrH
-           STA ZP.IDXH
+           Compiler.moveSavedNodeAddrToIDX();
            Locals.RemoveLast(); 
            Locals.RemoveLast();
            
@@ -1374,11 +1323,7 @@ unit CompilerFlow
                CheckErrorAndSetFailure();
                if (NC) { break; }
                
-               // compilerSavedNodeAddr -> IDX
-               LDA Compiler.compilerSavedNodeAddrL
-               STA ZP.IDXL
-               LDA Compiler.compilerSavedNodeAddrH
-               STA ZP.IDXH
+               Compiler.moveSavedNodeAddrToIDX();
                Locals.RemoveLast();
                DEC Compiler.compilerFuncLocals
           }
@@ -1391,11 +1336,7 @@ unit CompilerFlow
                CheckErrorAndSetFailure();
                if (NC) { break; }
                
-               // compilerSavedNodeAddr -> IDX
-               LDA Compiler.compilerSavedNodeAddrL
-               STA ZP.IDXL
-               LDA Compiler.compilerSavedNodeAddrH
-               STA ZP.IDXH
+               Compiler.moveSavedNodeAddrToIDX();
                Locals.RemoveLast();
                DEC Compiler.compilerFuncLocals
            }

@@ -688,13 +688,11 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-#ifdef DEBUG
     TODO() 
     { 
         LDA #ErrorID.NotImplemented
         commonError();
     }
-#endif
 
     ExpectedRightBracket()
     {

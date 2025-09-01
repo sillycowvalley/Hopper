@@ -81,6 +81,7 @@ Debug.NL();
             }
             
             // 2. Open file for reading
+            LDA # DirWalkAction.FindExecutable
             File.StartLoad(); // Input: ZP.STR = filename
             if (NC) { break; }
             

@@ -369,6 +369,9 @@ unit Statement // Statement.asm
             case Token.DELAY:
             case Token.PINMODE:
             
+            case Token.EXPORT:
+            case Token.IMPORT:
+            
             case Token.PRINT:
             case Token.CLS:
             case Token.IDENTIFIER: // Could be assignment or function call

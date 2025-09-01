@@ -57,7 +57,7 @@ unit Tokens
         
         // Language keywords
         PRINT    = 0x9F,
-        INPUT    = 0xA0,
+        //INPUT    = 0xA0,
         IF       = 0xA1,
         THEN     = 0xA2,
         ELSE     = 0xA3,
@@ -116,52 +116,56 @@ unit Tokens
         I2CGET   = 0xD3,
         I2CNEXT  = 0xD4,
         
-        lastKeyword = 0xD4,  // Updated from 0xCE
+        // File I/O functions (NEW)
+        IMPORT   = 0xD5,
+        EXPORT   = 0xD6,
         
-        // Literals and identifiers (shifted down by 6)
-        NUMBER     = 0xD5,  // was 0xCF
-        STRINGLIT  = 0xD6,  // was 0xD0
-        CHARLIT    = 0xD7,  // was 0xD1
-        IDENTIFIER = 0xD8,  // was 0xD2
+        lastKeyword = 0xD6,  // Updated from 0xD4
+        
+        // Literals and identifiers (shifted down by 2)
+        NUMBER     = 0xD7,  // was 0xD5
+        STRINGLIT  = 0xD8,  // was 0xD6
+        CHARLIT    = 0xD9,  // was 0xD7
+        IDENTIFIER = 0xDA,  // was 0xD8
         
         // Stream/File control tokens
-        EOF      = 0xD9,  // was 0xD3
-        EOL      = 0xDA,  // was 0xD4
-        EOE      = 0xDB,  // was 0xD5
+        EOF      = 0xDB,  // was 0xD9
+        EOL      = 0xDC,  // was 0xDA
+        EOE      = 0xDD,  // was 0xDB
         
         // Basic punctuation
-        COLON     = 0xDC,  // was 0xD6
-        COMMA     = 0xDD,  // was 0xD7
-        SEMICOLON = 0xDE,  // was 0xD8
+        COLON     = 0xDE,  // was 0xDC
+        COMMA     = 0xDF,  // was 0xDD
+        SEMICOLON = 0xE0,  // was 0xDE
         
         // Basic operators
-        EQUALS   = 0xDF,  // was 0xD9
-        PLUS     = 0xE0,  // was 0xDA
-        MINUS    = 0xE1,  // was 0xDB
-        LPAREN   = 0xE2,  // was 0xDC
-        RPAREN   = 0xE3,  // was 0xDD
+        EQUALS   = 0xE1,  // was 0xDF
+        PLUS     = 0xE2,  // was 0xE0
+        MINUS    = 0xE3,  // was 0xE1
+        LPAREN   = 0xE4,  // was 0xE2
+        RPAREN   = 0xE5,  // was 0xE3
         
         // Additional comparison operators
-        NOTEQUAL = 0xE4,  // was 0xDE
-        LT       = 0xE5,  // was 0xDF
-        GT       = 0xE6,  // was 0xE0
-        LE       = 0xE7,  // was 0xE1
-        GE       = 0xE8,  // was 0xE2
+        NOTEQUAL = 0xE6,  // was 0xE4
+        LT       = 0xE7,  // was 0xE5
+        GT       = 0xE8,  // was 0xE6
+        LE       = 0xE9,  // was 0xE7
+        GE       = 0xEA,  // was 0xE8
         
         // Arithmetic operators  
-        MULTIPLY = 0xE9,  // was 0xE3
-        DIVIDE   = 0xEA,  // was 0xE4
+        MULTIPLY = 0xEB,  // was 0xE9
+        DIVIDE   = 0xEC,  // was 0xEA
         
         // Bitwise operators
-        BITWISE_AND = 0xEB,  // was 0xE5
-        BITWISE_OR  = 0xEC,  // was 0xE6
-        BITWISE_NOT = 0xED,  // was 0xE7
+        BITWISE_AND = 0xED,  // was 0xEB
+        BITWISE_OR  = 0xEE,  // was 0xEC
+        BITWISE_NOT = 0xEF,  // was 0xED
         
         // Array and string operators
-        LBRACKET = 0xEE,  // was 0xE8
-        RBRACKET = 0xEF,  // was 0xE9
-        LBRACE   = 0xF0,  // was 0xEA
-        RBRACE   = 0xF1,  // was 0xEB
+        LBRACKET = 0xF0,  // was 0xEE
+        RBRACKET = 0xF1,  // was 0xEF
+        LBRACE   = 0xF2,  // was 0xF0
+        RBRACE   = 0xF3,  // was 0xF1
     }
     
         
@@ -175,7 +179,7 @@ unit Tokens
         
         // FREQUENT (Rank 11-20)
         3, Token.AND, 'A', 'N', 'D',             // Rank 11 - Logical AND (0xB8)
-        5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
+        //5, Token.INPUT, 'I', 'N', 'P', 'U', 'T', // Rank 12 - User input (0xA0)
         3, Token.ABS, 'A', 'B', 'S',             // Rank 13 - Absolute value (0xC0)
         4, Token.ELSE, 'E', 'L', 'S', 'E',       // Rank 14 - Alternative branch (0xA3)
         2, Token.DO, 'D', 'O',                   // Rank 15 - DO/UNTIL loops (0xB0)
@@ -205,6 +209,8 @@ unit Tokens
         6, Token.FORGET, 'F', 'O', 'R', 'G', 'E', 'T', // Remove symbol (0x86)
         6, Token.FORMAT, 'F', 'O', 'R', 'M', 'A', 'T', // Format file system (0x8B)
         5, Token.FUNCS, 'F', 'U', 'N', 'C', 'S', // List functions (0x85)
+        6, Token.IMPORT, 'I', 'M', 'P', 'O', 'R', 'T',
+        6, Token.EXPORT, 'E', 'X', 'P', 'O', 'R', 'T',
         
         // I2C functions
         7, Token.I2CFIND,  'I', '2', 'C', 'F', 'I', 'N', 'D',      // I2C device discovery (0xCF)

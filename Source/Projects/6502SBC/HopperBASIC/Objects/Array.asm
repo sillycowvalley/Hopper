@@ -12,11 +12,12 @@ unit BASICArray
     //   - BYTE/CHAR: one byte per element  
     //   - INT/WORD: two bytes per element (LSB first)
     
-    friend Debug, Commands;
+    friend Debug, Commands, Variables, BASICSysCalls;
     
     const uint aiCount    = 0;  // Offset to element count field
     const uint aiType     = 2;  // Offset to element type field
-    const uint aiElements = 3;  // Offset to first element
+    const uint aiOwner    = 3;  // Owner variable node pointer (2 bytes) NEW!
+    const uint aiElements = 5;  // First element (was 3, now 5)
     
     // Lookup table for bit masking operations
     const byte[] BitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
@@ -106,10 +107,10 @@ unit BASICArray
             // Output: ACCL for bytes required          
             elementsToBytes();
                        
-            // Add header overhead: 2 bytes count + 1 byte type = 3 bytes total
+            // Add header overhead: 2 bytes count + 1 byte type + 2 byte owner = 5 bytes total (same as aiElements offset)
             CLC
             LDA ZP.ACCL
-            ADC #3
+            ADC # aiElements
             STA ACCL
             LDA ZP.ACCH
             ADC #0
@@ -165,6 +166,8 @@ unit BASICArray
             LDA ZP.ACCT
             STA [ZP.IDX], Y
             
+            // TODO : write owner?
+            
             SEC  // Success
             break;
         } // single exit
@@ -189,6 +192,7 @@ unit BASICArray
         STA ZP.ACCH
         PLY
     }
+
     
     // Get array element type
     // Input:  ZP.IDX = array pointer (popped from stack)
@@ -588,4 +592,40 @@ unit BASICArray
         PLX
         PLA
     }
+    
+    // Setup pointers for exporting array data
+    // Input: ZP.NEXT contains array pointer
+    // Output: File.SectorSource = pointer to array data (past header)
+    //         File.TransferLength = number of bytes to export
+    // Munts: ZP.IDX, ZP.ACC, ZP.ACCT, A
+    GetExportPointers()
+    {
+        LDY # aiCount
+        LDA [ZP.NEXT], Y
+        STA ZP.ACCL
+        INY
+        LDA [ZP.NEXT], Y
+        STA ZP.ACCH
+        INY               // taking advantage that aiType follows aiCount
+        LDA [ZP.NEXT], Y
+        STA ZP.ACCT
+        
+        elementsToBytes();    // Convert count to bytes -> ZP.ACC
+        
+        // Set transfer length
+        LDA ZP.ACCL
+        STA File.TransferLengthL
+        LDA ZP.ACCH
+        STA File.TransferLengthH
+        
+        // Set source pointer to array data (skip 3-byte header)
+        CLC
+        LDA ZP.NEXTL
+        ADC # aiElements  // #3
+        STA File.SectorSourceL
+        LDA ZP.NEXTH
+        ADC # 0
+        STA File.SectorSourceH
+    }
+    
 }
