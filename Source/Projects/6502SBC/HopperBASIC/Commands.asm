@@ -350,9 +350,7 @@ unit Commands
     // Output: Array info and contents printed to serial
     displayArrayVariable()
     {
-        PHA
         PHX
-        PHY
         
         // Save the variable node pointer - we need it intact for iteration!
         LDA ZP.IDXL
@@ -461,7 +459,7 @@ unit Commands
             BASICTypes.PrintValue(); // preserves X
             
             INX
-        }
+        } // single exit
         
         LDA #'>' Serial.WriteChar();
         
@@ -473,18 +471,15 @@ unit Commands
         PLA
         STA ZP.IDXL
         
-        PLY
         PLX
-        PLA
     }
+    
     // Display a variable declaration
     // Input: ZP.IDX = variable node
     // In Commands.asm, displayVariable() method:
     displayVariable()
     {
-        PHA
         PHX
-        PHY
         
         // Get variable type
         Variables.GetType(); // Input: ZP.IDX, Output: ZP.ACCT = type
@@ -539,18 +534,14 @@ unit Commands
             Print.NewLine();
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Display a constant declaration
     // Input: ZP.IDX = constant node
     displayConstant()
     {
-        PHA
         PHX
-        PHY
         
         // Print CONST keyword
         LDA #Token.CONST
@@ -582,18 +573,14 @@ unit Commands
         BASICTypes.PrintValue();
         Print.NewLine();
         
-        PLY
         PLX
-        PLA
     }
     
     // Display all functions (signatures only)
     // X=0 for LIST, X=1 for DASM
     displayAllFunctions()
     {
-        PHA
         PHX
-        PHY
         
         // Check if we have any functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function, C set if found
@@ -614,18 +601,14 @@ unit Commands
             }
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Display specific function (signature only)
     // X=0 for LIST, X=1 for DASM
     displaySpecificFunction()
     {
-        PHA
         PHX
-        PHY
         
         // Find the function
         LDA ZP.STRL
@@ -653,18 +636,14 @@ unit Commands
             }
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Display all functions with bodies (for LIST command)
     // X=0 for LIST, X=1 for DASM
     displayAllFunctionsWithBodies()
     {
-        PHA
         PHX
-        PHY
         
         // Iterate through functions
         Functions.IterateFunctions(); // Output: ZP.IDX = first function, C set if found
@@ -681,18 +660,14 @@ unit Commands
             Functions.IterateNext(); // Input: ZP.IDX = current, Output: ZP.IDX = next
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Display specific function with body (for LIST command)
     // X=0 for LIST, X=1 for DASM
     displaySpecificFunctionWithBody()
     {
-        PHA
         PHX
-        PHY
         
         // Find the function
         LDA ZP.STRL
@@ -720,18 +695,14 @@ unit Commands
             }
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Display function signature only
     // Input: ZP.IDX = function node
     DisplayFunctionSignature()
     {
-        PHA
         PHX
-        PHY
         
         LDA ZP.IDYH
         PHA
@@ -773,9 +744,7 @@ unit Commands
         PLA
         STA ZP.IDYH
         
-        PLY
         PLX
-        PLA
     }
     
     DisplayFunctionSuffix()
@@ -803,9 +772,7 @@ unit Commands
     // Input: ZP.IDX = function node
     displayFunctionWithBody()
     {
-        PHA
         PHX
-        PHY
         
         // Save function node
         LDA ZP.IDXL
@@ -845,18 +812,14 @@ unit Commands
         DisplayFunctionSuffix();
         Print.NewLine(); // Extra blank line after function
         
-        PLY
         PLX
-        PLA
     }
     
     // Display function arguments
     // Input: ZP.IDY = arguments list head pointer (or null)
     displayArguments()
     {
-        PHA
         PHX
-        PHY
         
         LDX #0
         
@@ -894,9 +857,7 @@ unit Commands
             }
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Check if function name is "BEGIN" ($MAIN)
@@ -904,9 +865,7 @@ unit Commands
     // Output: C set if name is "$MAIN", NC otherwise
     checkForBeginFunctionSTR()
     {
-        PHA
         PHX
-        PHY
         
         Messages.Main(); // point ZP.TOP -> "$MAIN"
         
@@ -933,9 +892,7 @@ unit Commands
             INY
         }
         
-        PLY
         PLX
-        PLA
     }
     
     // Execute DIR command - list files in EEPROM
