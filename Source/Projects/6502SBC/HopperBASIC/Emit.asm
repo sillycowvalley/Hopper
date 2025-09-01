@@ -398,7 +398,7 @@ unit Emit
            if (NC)
            {
                // Variable not found or is a constant
-               Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+               Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
                break;
            }
            

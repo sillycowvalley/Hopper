@@ -108,7 +108,7 @@ unit Commands
             if (NC)
             {
                 // Not found anywhere
-                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
             }
         }
     }
@@ -191,7 +191,7 @@ unit Commands
                 Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
                 if (NC)
                 {
-                    Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                    Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
                     States.SetFailure();
                     break;
                 }
@@ -256,7 +256,7 @@ unit Commands
         // - not TRACE build?
         // - HASEEPROM not defined?
         
-        Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+        Error.NotInReleaseBuild(); BIT ZP.EmulatorPCL
         CheckError();
         SMB1 ZP.FLAGS
     }
@@ -636,7 +636,7 @@ unit Commands
         Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
         if (NC)
         {
-            Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+            Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
         }
         else
         {
@@ -645,7 +645,7 @@ unit Commands
             IsVisibleFunctionSTR();
             if (NC)
             {
-                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                Error.UndefinedFunctionSTR(); BIT ZP.EmulatorPCL 
             }
             else
             {
@@ -703,7 +703,7 @@ unit Commands
         Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = node
         if (NC)
         {
-            Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+            Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
         }
         else
         {
@@ -712,7 +712,7 @@ unit Commands
             IsVisibleFunctionSTR();
             if (NC)
             {
-                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                Error.UndefinedFunctionSTR(); BIT ZP.EmulatorPCL
             }
             else
             {

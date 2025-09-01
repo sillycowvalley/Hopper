@@ -216,6 +216,7 @@ unit Error // ErrorID.asm
         StringTooLong,
         BadIndex,
         UndefinedIdentifier,
+        UndefinedFunction,
         IdentifierExpected,
         IllegalInFunction,
         FunctionTooBig,
@@ -289,6 +290,7 @@ unit Error // ErrorID.asm
         3, ErrorID.StringTooLong,              Token.STRING, ErrorWord.TOO, ErrorWord.LONG,
         2, ErrorID.BadIndex,                   ErrorWord.BAD, ErrorWord.INDEX,
         2, ErrorID.UndefinedIdentifier,        ErrorWord.UNDEFINED, ErrorWord.IDENTIFIER,
+        2, ErrorID.UndefinedFunction,          ErrorWord.UNDEFINED, Token.FUNC,
         2, ErrorID.ConstantExpected,           Token.CONST, ErrorWord.EXPECTED,
         3, ErrorID.ConstantExpressionExpected, Token.CONST, ErrorWord.EXPRESSION, ErrorWord.EXPECTED,
         2, ErrorID.ExpectedThen,               Token.THEN, ErrorWord.EXPECTED,
@@ -556,6 +558,15 @@ unit Error // ErrorID.asm
         STA ZP.ERRSTRL
         CLC
     }
+    commonErrorSTRtoERRSTR()
+    {
+        STA ZP.LastError
+        LDA ZP.STRH
+        STA ZP.ERRSTRH
+        LDA ZP.STRL
+        STA ZP.ERRSTRL
+        CLC
+    }
     
     // #### New Errors ####
     
@@ -577,8 +588,26 @@ unit Error // ErrorID.asm
         commonError();        
     }
     
+    UndefinedIdentifierTOP() 
+    { 
+        LDA #ErrorID.UndefinedIdentifier
+        commonErrorTOPtoERRSTR();
+    }
+    UndefinedFunctionSTR() 
+    { 
+        LDA #ErrorID.UndefinedFunction
+        commonErrorSTRtoERRSTR();
+    }
+    
+    NotInReleaseBuild() inline
+    {
+        LDA #ErrorID.UndefinedIdentifier // TODO: better message
+        commonError();
+    }
+    
     FunctionTooBig() 
     { 
+        // TODO : get name from node
         /*
         Compiler.PrintFunctionName();
         LDA compilerSavedNodeAddrL
@@ -731,19 +760,19 @@ unit Error // ErrorID.asm
     }
     
 
-    FunctionExists()
+    FunctionExistsTOP()
     { 
         LDA #ErrorID.FunctionExists // name is in ZP.TOP
         commonErrorTOPtoERRSTR();
     }
 
-    ConstantExists() 
+    ConstantExistsTOP() 
     { 
         LDA #ErrorID.ConstantExists // name is in ZP.TOP
         commonErrorTOPtoERRSTR();
     }
 
-    VariableExists() 
+    VariableExistsTOP() 
     { 
         LDA #ErrorID.VariableExists // name is in ZP.TOP
         commonErrorTOPtoERRSTR();
@@ -797,11 +826,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    UndefinedIdentifier() 
-    { 
-        LDA #ErrorID.UndefinedIdentifier
-        commonError();
-    }
+    
 
     ConstantExpected() 
     { 

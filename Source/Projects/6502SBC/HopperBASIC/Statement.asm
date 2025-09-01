@@ -596,7 +596,7 @@ unit Statement // Statement.asm
                 Objects.Find(); // ZP.IDX = symbol node address
                 if (C)  
                 {
-                    Error.FunctionExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
+                    Error.FunctionExistsTOP(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                     CLC  // Error
                     break;
                 }
@@ -624,11 +624,11 @@ unit Statement // Statement.asm
                         CMP # SymbolType.CONSTANT
                         if (Z)
                         {
-                            Error.ConstantExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
+                            Error.ConstantExistsTOP(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                         }
                         else
                         {
-                            Error.VariableExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
+                            Error.VariableExistsTOP(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                         }
                         CLC
                         break;

@@ -1264,7 +1264,7 @@ unit Executor // Executor.asm
            Functions.Find(); // Input: ZP.TOP = name
            if (NC)
            {
-               Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+               Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
                States.SetFailure();
                break;
            }

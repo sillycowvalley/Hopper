@@ -975,19 +975,24 @@ unit Compiler // Compiler.asm
             ORA ZP.IDXL
             if (Z)
             {
-                // no function node?
+                // no function node, REPL level
                 // declaring the constant, like BYTE arr[<const>]
+                // evualating an expression, like PRINT <var>
                 STZ ZP.SymbolIteratorFilter // variables and constants
                 Variables.Find(); // ZP.TOP = name, -> ZP.IDX = symbol node address, ZP.IDY is node index
-                
+                if (NC)
+                {
+                    Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL break;
+                }
                 Emit.PushGlobal();
                 CheckError();
                 if (NC) { break; }
                 RMB0 ZP.CompilerFlags // constant expression: PUSHGLOBAL not an integral constant expression
 
                 SEC // Success
-            }
-            else
+            } // REPL scope
+            
+            else // function scope
             {
                 // Try to find this identifier as a global
                 // Not found in locals, try globals (input is name in TOP)
@@ -1100,12 +1105,12 @@ unit Compiler // Compiler.asm
                     else
                     {
                         // not found?!
-                        Error.UndefinedIdentifier();
+                        Error.UndefinedIdentifierTOP();
                     }
                     BIT ZP.EmulatorPCL
                     States.SetFailure();
                 }
-            }
+            } // function scope
             break;
         } // single exit
         
@@ -1540,6 +1545,14 @@ unit Compiler // Compiler.asm
                 RMB0 ZP.CompilerFlags // constant expression: INPUT: not an integral constant expression
                 LDA #SysCallType.Input
                 compileSysCall();
+                return;
+            }
+            case Token.LOAD:
+            {
+                // LOAD function for data files (not console command)
+                RMB0 ZP.CompilerFlags // not a constant expression
+                LDA #SysCallType.LoadData
+                compileSysCall();  // handles '(' expr ')' syntax
                 return;
             }
            
@@ -2057,6 +2070,11 @@ unit Compiler // Compiler.asm
                     LDA #SysCallType.I2CPut
                 }
                 
+                case Token.SAVE:
+                {
+                    LDA #SysCallType.SaveData
+                }
+                
                 // include these so you can ignore/discard the return values (treat them like statements):
                 case Token.I2CEND:
                 {
@@ -2512,7 +2530,7 @@ unit Compiler // Compiler.asm
             Locals.Find();  // Uses existing Find with compareNames
             if (C)  // Found - duplicate
             {
-                Error.VariableExists(); BIT ZP.EmulatorPCL // name is in TOP
+                Error.VariableExistsTOP(); BIT ZP.EmulatorPCL // name is in TOP
                 break;
             }
             SEC
@@ -2946,7 +2964,7 @@ unit Compiler // Compiler.asm
                default:
                {
                    // Unknown identifier type
-                   Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                   Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL // if ResolveIdentifier failed, TOP
                    States.SetFailure();
                    break;
                }

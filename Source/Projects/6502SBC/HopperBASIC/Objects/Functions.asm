@@ -41,7 +41,7 @@ unit Functions
                 STA ZP.IDYH
                 PLA
                 STA ZP.IDYL
-                Error.FunctionExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
+                Error.FunctionExistsTOP(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                 break;
             }
             

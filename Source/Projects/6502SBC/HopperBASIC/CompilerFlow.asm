@@ -1246,7 +1246,7 @@ unit CompilerFlow
            Locals.Find(); // Input: ZP.IDX = function node, ZP.TOP = name, Output: C set if found, ZP.ACCL = BP offset
            if (NC)
            {
-               Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL  // Iterator not found
+               Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL  // Iterator not found
                States.SetFailure();
                break;
            }

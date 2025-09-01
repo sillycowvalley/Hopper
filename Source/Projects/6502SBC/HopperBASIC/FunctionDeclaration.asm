@@ -154,11 +154,11 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 CMP #SymbolType.CONSTANT
                 if (Z)
                 {
-                    Error.ConstantExists(); BIT ZP.EmulatorPCL // name is in ZP.TOP
+                    Error.ConstantExistsTOP(); BIT ZP.EmulatorPCL // name is in ZP.TOP
                 }
                 else
                 {
-                    Error.VariableExists(); BIT ZP.EmulatorPCL  // name is in ZP.TOP
+                    Error.VariableExistsTOP(); BIT ZP.EmulatorPCL  // name is in ZP.TOP
                 }
                 break;
             }
@@ -632,7 +632,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             Functions.Find(); // Input: ZP.TOP = name, Output: ZP.IDX = function node
             if (NC)
             {
-                Error.UndefinedIdentifier(); BIT ZP.EmulatorPCL
+                Error.UndefinedIdentifierTOP(); BIT ZP.EmulatorPCL
                 break;
             }
             

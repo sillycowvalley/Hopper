@@ -37,6 +37,9 @@ unit BASICSysCalls
         I2CEnd       = (0b10100 << 3) | (1 << 2) | 0b00,  // ID=20, returns, 0 args = 0xA4
         I2CGet       = (0b10101 << 3) | (1 << 2) | 0b10,  // ID=21, returns, 2 args = 0xAE
         I2CNext      = (0b10110 << 3) | (1 << 2) | 0b00,  // ID=22, returns, 0 args = 0xB4
+        
+        LoadData     = (0b10111 << 3) | (1 << 2) | 0b01,  // ID=23, returns, 1 arg  = 0xBD
+        SaveData     = (0b11000 << 3) | (0 << 2) | 0b10,  // ID=24, void,    2 args = 0xC2
     }
    
     // SYSCALL formatting for DASM:
@@ -84,6 +87,8 @@ unit BASICSysCalls
                 case SysCallType.Chr:     { LDA #Token.CHR     }  // CHR
                 case SysCallType.Asc:     { LDA #Token.ASC     }  // ASC
                 case SysCallType.Len:     { LDA #Token.LEN     }  // LEN
+                case SysCallType.LoadData:  { LDA #Token.LOAD }   // LOAD
+                case SysCallType.SaveData:  { LDA #Token.SAVE }   // SAVE
                 
                 case SysCallType.I2CFind: { LDA #Token.I2CFIND  }
                 case SysCallType.I2CBegin:{ LDA #Token.I2CBEGIN }
@@ -131,7 +136,10 @@ unit BASICSysCalls
                     case SysCallType.Asc:
                         { LDA #Token.CHAR        }
                     case SysCallType.Len:
+                    case SysCallType.LoadData:
                         { LDA #Token.STRING      }
+                    case SysCallType.SaveData:
+                        { LDA #Token.ARRAY      Tokens.PrintKeyword(); LDA #',' COut(); Space(); LDA #Token.STRING }
                 }
                 Tokens.PrintKeyword();
             }
@@ -162,6 +170,8 @@ unit BASICSysCalls
                         { LDA #Token.BIT   }
                     case SysCallType.Chr:
                         { LDA #Token.CHAR  }
+                    case SysCallType.LoadData:
+                        { LDA #Token.ARRAY }
                 }
                 Tokens.PrintKeyword(); 
             }
