@@ -527,6 +527,7 @@ unit Variables
         Objects.GetTokens(); // node address in IDX, -> tokens pointer in ZP.IDY, Munts: A
         
         // Copy to ZP.NEXT for consistency with interface
+        // IDY -->NEXT
         LDA ZP.IDYL
         STA ZP.NEXTL
         LDA ZP.IDYH
@@ -765,23 +766,26 @@ unit Variables
            if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Move allocated pointer to ZP.IDY for return
+            // IDX --> IDY
             LDA ZP.IDXL
             STA ZP.IDYL
             LDA ZP.IDXH
             STA ZP.IDYH
 
             // Set up copy parameters
-            // TOP -> FSOURCEADDRESS
+            // TOP --> FSOURCEADDRESS
             LDA ZP.TOPL
             STA ZP.FSOURCEADDRESSL
             LDA ZP.TOPH
             STA ZP.FSOURCEADDRESSH
             
+            // IDY --> FDESTINATIONADDRESS
             LDA ZP.IDYL
             STA ZP.FDESTINATIONADDRESSL
             LDA ZP.IDYH
             STA ZP.FDESTINATIONADDRESSH
             
+            // ACCL --> FLENGTH
             LDA ZP.ACCL  // Length + 1 (includes null terminator)
             STA ZP.FLENGTHL
             LDA ZP.ACCH
@@ -867,6 +871,7 @@ unit Variables
                 SEC // Success (no-op)
                 break;
             }
+            // TOP --> IDY
             LDA ZP.TOP0
             STA ZP.IDYL
             LDA ZP.TOP1

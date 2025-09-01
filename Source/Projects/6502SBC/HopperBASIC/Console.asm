@@ -1192,7 +1192,7 @@ unit Console // Console.asm
                 }
                 
                 // Restore the current variable node
-                // GVI -> IDX
+                // GVI --> IDX
                 LDA ZP.GVIL
                 STA ZP.IDXL
                 LDA ZP.GVIH
@@ -1309,7 +1309,7 @@ unit Console // Console.asm
                 }
                 
                 // Restore the current variable node
-                // GVI -> IDX
+                // GVI --> IDX
                 LDA ZP.GVIL
                 STA ZP.IDXL
                 LDA ZP.GVIH

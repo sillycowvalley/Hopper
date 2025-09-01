@@ -97,6 +97,7 @@ unit BASICArray
         loop
         {
             // Save element count for array header
+            // ACC --> FLENGTH
             LDA ZP.ACCL   
             STA ZP.FLENGTHL
             LDA ZP.ACCH  
@@ -558,12 +559,13 @@ unit BASICArray
                 }
             }
             // desired new size (since ACC is preserved over Free)
+            // NEXT --> ACC
             LDA ZP.NEXTL
             STA ZP.ACCL
             LDA ZP.NEXTH
             STA ZP.ACCH
             
-            // TOP -> IDX
+            // TOP --> IDX
             LDA ZP.TOPL
             STA ZP.IDXL
             LDA ZP.TOPH

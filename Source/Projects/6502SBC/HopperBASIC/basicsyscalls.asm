@@ -504,7 +504,7 @@ unit BASICSysCalls
                         if (BBS5, ZP.TOPT) // Bit 5 - ARRAY
                         {
                             // Array handling
-                            // TOP -> IDX
+                            // TOP --> IDX
                             LDA ZP.TOPL
                             STA ZP.IDXL
                             LDA ZP.TOPH
@@ -1061,11 +1061,13 @@ unit BASICSysCalls
                 }
                 
                 // Copy from FileDataBuffer to array
+                // #FileDataBuffer --> FSOURCEADDRESSL
                 LDA #(File.FileDataBuffer % 256)
                 STA ZP.FSOURCEADDRESSL
                 LDA #(File.FileDataBuffer / 256)
                 STA ZP.FSOURCEADDRESSH
                 
+                // TransferLengthL --> FLENGTH
                 LDA File.TransferLengthL
                 STA ZP.FLENGTHL
                 LDA File.TransferLengthH

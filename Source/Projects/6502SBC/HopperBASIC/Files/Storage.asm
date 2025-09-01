@@ -344,6 +344,7 @@ Debug.NL();
                     
                     // Stream initialization tokens directly (includes EOF which is stripped)
                     Variables.GetTokens(); // Input: ZP.IDX, Output: ZP.ACC = tokens pointer or null
+                    // NEXT --> IDY
                     LDA ZP.NEXTL
                     STA ZP.IDYL
                     LDA ZP.NEXTH
@@ -387,6 +388,7 @@ Debug.NL();
             if (NZ) // Has dimension tokens
             {
                 // Stream dimension expression directly
+                // NEXT --> IDY
                 LDA ZP.NEXTL
                 STA ZP.IDYL
                 LDA ZP.NEXTH
@@ -1002,6 +1004,7 @@ Debug.NL();
             
             IncLENGTH();
             
+            // FLENGTH --> ACC
             LDA ZP.FLENGTHL
             STA ZP.ACCL
             LDA ZP.FLENGTHH
@@ -1019,6 +1022,8 @@ Debug.NL();
             Memory.Allocate(); // Input: ZP.ACC = size, Munts: ZP.M*, ZP.FREELIST, ZP.ACCL, -> ZP.IDX
             if (NC) { BIT ZP.EmulatorPCL break; }
             
+            // IDX --> FDESTINATIONADDRESS
+            // IDX --> IDY
             LDA ZP.IDXL
             STA ZP.FDESTINATIONADDRESSL
             STA ZP.IDYL
@@ -1336,6 +1341,7 @@ Debug.NL();
         STZ LoadBufferPosL
         STZ LoadBufferPosH
         
+        // LoadBufferLength --> FLENGTH
         LDA LoadBufferLengthL
         STA ZP.FLENGTHL
         LDA LoadBufferLengthH
@@ -1457,12 +1463,13 @@ Debug.NL();
         STA ZP.FDESTINATIONADDRESSH
         
         // Source = FileDataBuffer
+        // #FileDataBuffer --> FSOURCEADDRESSL
         LDA #(File.FileDataBuffer % 256)
         STA ZP.FSOURCEADDRESSL
         LDA #(File.FileDataBuffer / 256)
         STA ZP.FSOURCEADDRESSH
         
-        // Length = File.TransferLength
+        // TransferLength --> FLENGTH
         LDA File.TransferLengthL
         STA ZP.FLENGTHL
         LDA File.TransferLengthH

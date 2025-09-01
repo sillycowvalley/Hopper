@@ -709,9 +709,10 @@ unit File
             LDA LastOccupiedSector
             readSector();
             
-            LDA #(FileDataBuffer  % 256)
+            // #FileDataBuffer --> FSOURCEADDRESSL
+            LDA #(FileDataBuffer % 256)
             STA ZP.FSOURCEADDRESSL
-            LDA #(FileDataBuffer  / 256)
+            LDA #(FileDataBuffer / 256)
             STA ZP.FSOURCEADDRESSH
         }
         

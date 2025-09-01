@@ -178,6 +178,7 @@ unit Tools // Tools.asm
         loop
         {
             // Allocate memory for token stream
+            // FLENGTH --> ACC
             LDA ZP.FLENGTHL
             STA ZP.ACCL
             LDA ZP.FLENGTHH
@@ -187,6 +188,7 @@ unit Tools // Tools.asm
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Set up copy source = TokenizerBuffer + saved position
+            // TokenBuffer + FSOURCEADDRESS --> FSOURCEADDRESS
             CLC
             LDA ZP.TokenBufferL
             ADC ZP.FSOURCEADDRESSL
@@ -196,6 +198,8 @@ unit Tools // Tools.asm
             STA ZP.FSOURCEADDRESSH
             
             // Allocated memory IDX -> result and copy destination
+            // IDX --> IDY
+            // IDX --> FDESTINATIONADDRESS
             LDA ZP.IDXL
             STA ZP.IDYL
             STA ZP.FDESTINATIONADDRESSL

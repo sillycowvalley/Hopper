@@ -1257,7 +1257,7 @@ unit Compiler // Compiler.asm
                 
                 // Restore the saved literal position for CALL emission (from VM stack slot)
                 Stacks.PopTop();
-                // TOP -> TokenLiteralPos
+                // TOP --> TokenLiteralPos
                 LDA ZP.TOPH
                 STA ZP.TokenLiteralPosH
                 LDA ZP.TOPL
@@ -1290,7 +1290,7 @@ unit Compiler // Compiler.asm
             else
             {
                 Stacks.PopTop();
-                // TOP -> TokenLiteralPos
+                // TOP --> TokenLiteralPos
                 LDA ZP.TOPH
                 STA ZP.TokenLiteralPosH
                 LDA ZP.TOPL

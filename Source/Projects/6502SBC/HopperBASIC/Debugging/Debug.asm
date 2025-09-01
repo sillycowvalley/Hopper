@@ -3366,7 +3366,7 @@ unit Debug // Debug.asm
             }
             
             // Move pointer to IDX for accessing node
-            // IDY -> IDX
+            // IDY --> IDX
             LDA ZP.IDYL STA ZP.IDXL
             LDA ZP.IDYH STA ZP.IDXH
             

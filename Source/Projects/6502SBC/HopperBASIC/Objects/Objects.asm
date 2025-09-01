@@ -507,6 +507,7 @@ unit Objects
         STA ZP.FDESTINATIONADDRESSH
         
         // Copy length (already in ZP.SymbolLength)
+        // SymbolLength --> FLENGTH
         LDA ZP.SymbolLength
         STA ZP.FLENGTHL
         STZ ZP.FLENGTHH

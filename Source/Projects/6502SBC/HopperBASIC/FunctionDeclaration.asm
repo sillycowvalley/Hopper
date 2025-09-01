@@ -4,6 +4,20 @@ unit FunctionDeclaration // FunctionDeclaration.asm
     uses "Instructions"
     
     
+    stmtObjectPtrToIDX()
+    {
+        LDA (Statement.stmtObjectPtr + 0)
+        STA ZP.IDXL
+        LDA (Statement.stmtObjectPtr + 1)
+        STA ZP.IDXH
+    }
+    IDXtoStmtObjectPtr()
+    {
+        LDA ZP.IDXL
+        STA (Statement.stmtObjectPtr + 0)
+        LDA ZP.IDXH
+        STA (Statement.stmtObjectPtr + 1)
+    }
     // Execute BEGIN declaration statement (main program)
     // Input: ZP.CurrentToken = BEGIN token
     // Output: Main program declared as special "BEGIN" function
@@ -48,10 +62,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Save function node address
-            LDA ZP.IDXL
-            STA (Statement.stmtObjectPtr + 0)
-            LDA ZP.IDXH
-            STA (Statement.stmtObjectPtr + 1)
+            IDXtoStmtObjectPtr();
             
             // Get next token after BEGIN
             Tokenizer.NextTokenCheck();
@@ -200,10 +211,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Save function node address for adding arguments
-            LDA ZP.IDXL
-            STA (Statement.stmtObjectPtr + 0)
-            LDA ZP.IDXH
-            STA (Statement.stmtObjectPtr + 1)
+            IDXtoStmtObjectPtr();
             
             // Parse parameters
             parseParameterList();
@@ -294,11 +302,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 
                 // Add argument to function
                 // Restore function node address to ZP.IDX
-                // stmtObjectPtr -> IDX
-                LDA (Statement.stmtObjectPtr + 0)
-                STA ZP.IDXL
-                LDA (Statement.stmtObjectPtr + 1)
-                STA ZP.IDXH
+                stmtObjectPtrToIDX();
                 
                 LDA #SymbolType.ARGUMENT
                 ORA #BASICType.VAR 
@@ -393,13 +397,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; } // Error during scanning
             
             // Calculate length of BEGIN body tokens
-            SEC
-            LDA ZP.TokenizerPosL
-            SBC ZP.FSOURCEADDRESSL
-            STA ZP.FLENGTHL
-            LDA ZP.TokenizerPosH
-            SBC ZP.FSOURCEADDRESSH
-            STA ZP.FLENGTHH
+            Statement.calculateTokensLength();
             
             // - don't miss the first token
             // - do skip the END (by decreasing FLENGTH)
@@ -411,11 +409,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Set function body tokens in function node
-            // stmtObjectPtr -> IDX
-            LDA (Statement.stmtObjectPtr + 0)
-            STA ZP.IDXL
-            LDA (Statement.stmtObjectPtr + 1)
-            STA ZP.IDXH
+            stmtObjectPtrToIDX();
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             CheckError();
@@ -490,13 +484,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Calculate length of function body tokens
             // Current position is at ENDFUNC, subtract start position
-            SEC
-            LDA ZP.TokenizerPosL
-            SBC ZP.FSOURCEADDRESSL
-            STA ZP.FLENGTHL
-            LDA ZP.TokenizerPosH
-            SBC ZP.FSOURCEADDRESSH
-            STA ZP.FLENGTHH
+            Statement.calculateTokensLength();
             
             // - don't miss the first token
             // - do skip the ENDFUNC (by not increasing FLENGTH)
@@ -509,11 +497,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             
             // Set function body tokens in function node
             // Restore function node address to ZP.IDX
-            // stmtObjectPtr -> IDX
-            LDA (Statement.stmtObjectPtr + 0)
-            STA ZP.IDXL
-            LDA (Statement.stmtObjectPtr + 1)
-            STA ZP.IDXH
+            stmtObjectPtrToIDX();
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             CheckError();
@@ -640,10 +624,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             }
             
             // Save function node address in statement storage
-            LDA ZP.IDXL
-            STA (Statement.stmtObjectPtr + 0)
-            LDA ZP.IDXH
-            STA (Statement.stmtObjectPtr + 1)
+            IDXtoStmtObjectPtr();
             
             LDA ZP.TokenizerPosL
             STA ZP.FSOURCEADDRESSL
@@ -706,13 +687,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Calculate body length (position BEFORE terminator - start pos)
-            SEC
-            LDA ZP.TokenizerPosL
-            SBC ZP.FSOURCEADDRESSL
-            STA ZP.FLENGTHL
-            LDA ZP.TokenizerPosH
-            SBC ZP.FSOURCEADDRESSH
-            STA ZP.FLENGTHH
+            Statement.calculateTokensLength();
             
             // Create token stream for function body (without ENDFUNC/END)
             Tools.CreateTokenStream(); // CompletePartialFunction(): Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
@@ -720,11 +695,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             if (NC) { break; }
             
             // Restore function node address
-            // stmtObjectPtr -> IDX
-            LDA (Statement.stmtObjectPtr + 0)
-            STA ZP.IDXL
-            LDA (Statement.stmtObjectPtr + 1)
-            STA ZP.IDXH
+            stmtObjectPtrToIDX();
             
             Functions.SetBody(); // Input: ZP.IDX = function node, ZP.IDY = body tokens
             CheckError();

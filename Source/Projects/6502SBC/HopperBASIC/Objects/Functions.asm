@@ -677,7 +677,7 @@ unit Functions
                     }
                 }
                 // POS != SIZE
-                
+                // TokenBuffer --> IDY
                 LDA ZP.TokenBufferH
                 STA ZP.IDYH
                 LDA ZP.TokenBufferL
@@ -767,6 +767,7 @@ unit Functions
             }
             
             // Allocate memory for opcode storage
+            // OpCodeBufferContentLength --> ACC
             LDA ZP.OpCodeBufferContentLengthL
             STA ZP.ACCL
             LDA ZP.OpCodeBufferContentLengthH
@@ -776,22 +777,26 @@ unit Functions
             if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Save allocated opcode storage address
+            // IDX --> ACC
             LDA ZP.IDXL
             STA ZP.ACCL  // Temporarily store opcode storage address
             LDA ZP.IDXH
             STA ZP.ACCH
             
             // Set up copy parameters
+            // OpCodeBuffer --> FSOURCEADDRESS
             LDA ZP.OpCodeBufferL
             STA ZP.FSOURCEADDRESSL        // Source: BasicOpCodeBuffer
             LDA ZP.OpCodeBufferH
             STA ZP.FSOURCEADDRESSH
             
+            // ACC --> FDESTINATIONADDRESS
             LDA ZP.ACCL
             STA ZP.FDESTINATIONADDRESSL   // Destination: allocated storage
             LDA ZP.ACCH
             STA ZP.FDESTINATIONADDRESSH
             
+            // OpCodeBufferContentLength --> FLENGTH
             LDA ZP.OpCodeBufferContentLengthL    // Length: opcode buffer length
             STA ZP.FLENGTHL
             LDA ZP.OpCodeBufferContentLengthH

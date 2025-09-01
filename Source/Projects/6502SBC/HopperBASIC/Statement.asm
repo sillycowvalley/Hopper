@@ -35,6 +35,17 @@ unit Statement // Statement.asm
         Begin = 2
     }
     
+    calculateTokensLength()
+    {
+        SEC
+        LDA ZP.TokenizerPosL
+        SBC ZP.FSOURCEADDRESSL
+        STA ZP.FLENGTHL  // Length low
+        LDA ZP.TokenizerPosH
+        SBC ZP.FSOURCEADDRESSH
+        STA ZP.FLENGTHH  // Length high
+    }
+    
     SetCaptureMode()
     {
         STA funcCaptureMode
@@ -686,13 +697,7 @@ unit Statement // Statement.asm
                         if (NC) { break; } // error exit
                         
                         // subtract current tokenizer position
-                        SEC
-                        LDA ZP.TokenizerPosL
-                        SBC ZP.FSOURCEADDRESSL
-                        STA ZP.FLENGTHL  // Length low
-                        LDA ZP.TokenizerPosH
-                        SBC ZP.FSOURCEADDRESSH
-                        STA ZP.FLENGTHH  // Length high
+                        calculateTokensLength();
                         
                         // strip the RBRACKET
                         LDA ZP.FLENGTHL
@@ -793,13 +798,8 @@ unit Statement // Statement.asm
                         if (NC) { break; } // error exit
                         
                         // subtract current tokenizer position
-                        SEC
-                        LDA ZP.TokenizerPosL
-                        SBC ZP.FSOURCEADDRESSL
-                        STA ZP.FLENGTHL  // Length low
-                        LDA ZP.TokenizerPosH
-                        SBC ZP.FSOURCEADDRESSH
-                        STA ZP.FLENGTHH  // Length high
+                        calculateTokensLength();
+                        
                         Tools.CreateTokenStream(); // Munts: A, ZP.IDY, ZP.ACC, ZP.FLENGTH, ZP.FSOURCEADDRESS, ZP.FDESTINATIONADDRESS, -> ZP.IDY
                         if (NC) { break; } // error exit
                         

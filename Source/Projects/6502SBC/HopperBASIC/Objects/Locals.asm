@@ -29,12 +29,13 @@ unit Locals
         loop // start of single exit block
         {
             // Save function node address IMMEDIATELY (before it gets munted)
+            // IDX --> LHEAD
             LDA ZP.IDXL
             STA ZP.LHEADL           // Function node address
             LDA ZP.IDXH
             STA ZP.LHEADH
             
-            // TOP -> SymbolName
+            // TOP --> SymbolName
             LDA ZP.TOPL
             STA ZP.SymbolNameL      // Argument name pointer
             LDA ZP.TOPH
@@ -109,7 +110,7 @@ unit Locals
         } // end of single exit block
         
         // RESTORE original IDX before exit
-        // LHEAD -> IDX
+        // LHEAD --> IDX
         LDA ZP.LHEADL
         STA ZP.IDXL
         LDA ZP.LHEADH
@@ -185,6 +186,7 @@ unit Locals
                     }
                     
                     // Copy node address to IDY
+                    // LCURRENT --> IDY
                     LDA ZP.LCURRENTL
                     STA ZP.IDYL
                     LDA ZP.LCURRENTH
@@ -308,6 +310,7 @@ unit Locals
                 if (Z)  // Found the target index
                 {
                     // Copy node address to IDY
+                    // LCURRENT --> IDY
                     LDA ZP.LCURRENTL
                     STA ZP.IDYL
                     LDA ZP.LCURRENTH
@@ -556,6 +559,7 @@ unit Locals
         STA ZP.FDESTINATIONADDRESSH
         
         // Use pre-calculated length
+        // SymbolLength --> FLENGTH
         LDA ZP.SymbolLength
         STA ZP.FLENGTHL
         STZ ZP.FLENGTHH
@@ -630,7 +634,7 @@ unit Locals
             {
                 // Found - ZP.ACCL already has BP offset
                 // ZP.IDY has node address, copy to IDX
-                // IDY -> IDX
+                // IDY --> IDX
                 LDA ZP.IDYL
                 STA ZP.IDXL
                 LDA ZP.IDYH
@@ -717,7 +721,7 @@ unit Locals
                     STA [ZP.LPREVIOUS], Y
                     
                     // Free the node
-                    // LCURRENT -> IDX
+                    // LCURRENT --> IDX
                     LDA ZP.LCURRENTL
                     STA ZP.IDXL
                     LDA ZP.LCURRENTH
@@ -727,7 +731,7 @@ unit Locals
                 }
                 
                 // Not the last - move forward
-                // LCURRENT -> LPREVIOUS
+                // LCURRENT --> LPREVIOUS
                 LDA ZP.LCURRENTL
                 STA ZP.LPREVIOUSL
                 LDA ZP.LCURRENTH

@@ -369,7 +369,7 @@ unit Commands
         Print.String();
         
         // Save array pointer in IDX for Array APIs
-        // TOP -> IDX
+        // TOP --> IDX
         LDA ZP.TOPL
         STA ZP.IDXL
         LDA ZP.TOPH

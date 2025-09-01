@@ -490,7 +490,7 @@ unit CompilerFlow
            // the 3-byte instruction, so offset is from position after JUMPW
            //
            // Emit unconditional jump back to condition evaluation
-           // TOP -> compilerOperand 1 & 2
+           // TOP --> compilerOperand 1 & 2
            LDA ZP.TOPL    // Backward offset LSB
            STA Compiler.compilerOperand1
            LDA ZP.TOPH    // Backward offset MSB
@@ -595,7 +595,7 @@ unit CompilerFlow
                         
             // Emit JUMPZW with backward offset
             // Jump if condition is FALSE (i.e., UNTIL condition not met yet)
-            // TOP -> compilerOperand 1 & 2
+            // TOP --> compilerOperand 1 & 2
             LDA ZP.TOPL  // Backward offset LSB
             STA Compiler.compilerOperand1
             LDA ZP.TOPH  // Backward offset MSB
@@ -689,7 +689,7 @@ unit CompilerFlow
            if (NC) { break; }
            
            // Check if iterator is already a local
-           // TOP -> ACC
+           // TOP --> ACC
            LDA ZP.TOPL
            STA ZP.ACCL
            LDA ZP.TOPH
@@ -727,7 +727,7 @@ unit CompilerFlow
                     if (NC) { break; }
                     
                     // Create a shadow local with same name
-                    // TOP -> SymbolName
+                    // TOP --> SymbolName
                     LDA ZP.TOPL
                     STA ZP.SymbolNameL
                     LDA ZP.TOPH
