@@ -361,6 +361,8 @@ unit BASICArray
         
         loop
         {
+//Debug.NL(); XOut(); Space(); YOut(); TLOut();
+            
             // Bounds check: index < element count?
             LDY # aiCount+1
             LDA ZP.IDYH        // Index MSB

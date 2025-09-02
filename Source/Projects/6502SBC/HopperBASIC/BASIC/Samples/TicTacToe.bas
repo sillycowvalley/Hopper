@@ -145,27 +145,65 @@ FUNC GetPlayerMove()
     RETURN pos
 ENDFUNC
 
-! Simple computer move - just take first available
+! Smarter computer move
 FUNC GetComputerMove()
-    ! Try center first
+    VAR pos
+    
+    ! 1. Check if computer can win
+    pos = FindWinningMove(2)  ! 2 = O (computer)
+    IF pos >= 0 THEN
+        RETURN pos
+    ENDIF
+    
+    ! 2. Check if player is about to win and block
+    pos = FindWinningMove(1)  ! 1 = X (player)
+    IF pos >= 0 THEN
+        RETURN pos
+    ENDIF
+    
+    ! 3. Try center
     IF board[4] = 0 THEN
         RETURN 4
     ENDIF
     
-    ! Try corners
+    ! 4. Try corners
     IF board[0] = 0 THEN RETURN 0 ENDIF
     IF board[2] = 0 THEN RETURN 2 ENDIF
     IF board[6] = 0 THEN RETURN 6 ENDIF
     IF board[8] = 0 THEN RETURN 8 ENDIF
     
-    ! Take any available
+    ! 5. Try edges
+    IF board[1] = 0 THEN RETURN 1 ENDIF
+    IF board[3] = 0 THEN RETURN 3 ENDIF
+    IF board[5] = 0 THEN RETURN 5 ENDIF
+    IF board[7] = 0 THEN RETURN 7 ENDIF
+    
+    RETURN -1
+ENDFUNC
+
+! Find a winning move for the given player
+FUNC FindWinningMove(player)
+    VAR i
+    
+    ! Try each empty position
     FOR i = 0 TO 8
         IF board[i] = 0 THEN
-            RETURN i
+            ! Temporarily place piece
+            board[i] = player
+            
+            ! Check if this creates a win
+            IF CheckWinner() = player THEN
+                ! Undo the move and return this position
+                board[i] = 0
+                RETURN i
+            ENDIF
+            
+            ! Undo the temporary move
+            board[i] = 0
         ENDIF
     NEXT i
     
-    RETURN -1
+    RETURN -1  ! No winning move found
 ENDFUNC
 
 ! Main game
