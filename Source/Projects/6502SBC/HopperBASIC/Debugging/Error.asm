@@ -243,6 +243,7 @@ unit Error // ErrorID.asm
         NextMismatch,
         ForIteratorLocal,
         RangeError,
+        IndexOutOfRange,
         ExpectedRightBracket,
         
         FilenameExpected,
@@ -316,6 +317,7 @@ unit Error // ErrorID.asm
         2, ErrorID.NextMismatch,               Token.NEXT, ErrorWord.MISMATCH,
         5, ErrorID.ForIteratorLocal,           Token.FOR, ErrorWord.ITERATOR, ErrorWord.MUST, ErrorWord.BE, ErrorWord.LOCAL,
         4, ErrorID.RangeError,                 ErrorWord.VALUE, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
+        4, ErrorID.IndexOutOfRange,            ErrorWord.INDEX, ErrorWord.OUT, ErrorWord.OF, ErrorWord.RANGE,
         2, ErrorID.ExpectedRightBracket,       ErrorWord.RBRACKET, ErrorWord.EXPECTED,
         
         2, ErrorID.FilenameExpected,           ErrorWord.FILENAME, ErrorWord.EXPECTED,
@@ -703,6 +705,11 @@ unit Error // ErrorID.asm
     RangeError()
     {
         LDA #ErrorID.RangeError
+        commonError();
+    }
+    IndexOutOfRange()
+    {
+        LDA #ErrorID.IndexOutOfRange
         commonError();
     }
 

@@ -1,5 +1,4 @@
-! Tic Tac Toe for Hopper BASIC (no INPUT)
-! Uses direct keyboard reading from serial buffer
+! Tic Tac Toe for Hopper BASIC
 
 CONST InWritePtr = 0x0A   ! Serial buffer write position
 CONST InReadPtr  = 0x0B   ! Serial buffer read position
@@ -206,63 +205,128 @@ FUNC FindWinningMove(player)
     RETURN -1  ! No winning move found
 ENDFUNC
 
+! Play one turn (player move + check + computer move + check)
+FUNC PlayPlayerFirst()
+    VAR pos
+    ! Player move
+    pos = GetPlayerMove()
+    board[pos] = 1  ! X
+    moves = moves + 1
+    DrawBoard()
+    
+    ! Check for win or draw
+    winner = CheckWinner()
+    IF winner <> 0 THEN
+        gameOver = TRUE
+        RETURN
+    ENDIF
+    IF moves = 9 THEN
+        gameOver = TRUE
+        RETURN
+    ENDIF
+    
+    ! Computer move
+    PRINT "Computer is thinking..."
+    DELAY(500)
+    pos = GetComputerMove()
+    IF pos >= 0 THEN
+        board[pos] = 2  ! O
+        moves = moves + 1
+        DrawBoard()
+        
+        winner = CheckWinner()
+        IF winner <> 0 THEN
+            gameOver = TRUE
+        ELSE
+            IF moves = 9 THEN
+                gameOver = TRUE
+            ENDIF
+        ENDIF
+    ENDIF
+ENDFUNC
+
+! Play one turn (computer move + check + player move + check)
+FUNC PlayComputerFirst()
+    VAR pos
+    ! Computer move
+    PRINT "Computer is thinking..."
+    DELAY(500)
+    pos = GetComputerMove()
+    IF pos >= 0 THEN
+        board[pos] = 2  ! O
+        moves = moves + 1
+        DrawBoard()
+        
+        winner = CheckWinner()
+        IF winner <> 0 THEN
+            gameOver = TRUE
+            RETURN
+        ENDIF
+        IF moves = 9 THEN
+            gameOver = TRUE
+            RETURN
+        ENDIF
+        
+        ! Player move
+        pos = GetPlayerMove()
+        board[pos] = 1  ! X
+        moves = moves + 1
+        DrawBoard()
+        
+        winner = CheckWinner()
+        IF winner <> 0 THEN
+            gameOver = TRUE
+        ELSE
+            IF moves = 9 THEN
+                gameOver = TRUE
+            ENDIF
+        ENDIF
+    ENDIF
+ENDFUNC
+
 ! Main game
 BEGIN
     VAR playAgain = TRUE
-    VAR key, pos
+    VAR key
+    VAR playerStarts
+    VAR firstGame = TRUE
     
     PRINT "TIC TAC TOE"
     PRINT "==========="
     PRINT
-    PRINT "You are X, Computer is O"
-    PRINT
     
     WHILE playAgain
+        ! Determine who starts
+        IF firstGame THEN
+            playerStarts = RND(2) = 1
+            firstGame = FALSE
+        ELSE
+            playerStarts = NOT playerStarts
+        ENDIF
+        
+        IF playerStarts THEN
+            PRINT "You are X and go first, Computer is O"
+        ELSE
+            PRINT "Computer is O and goes first, You are X"
+        ENDIF
+        PRINT
+        
         ClearBoard()
         gameOver = FALSE
         winner = 0
         moves = 0
-        
         DrawBoard()
         
+        ! Play the game
         WHILE NOT gameOver
-            ! Player move
-            pos = GetPlayerMove()
-            board[pos] = 1  ! X
-            moves = moves + 1
-            DrawBoard()
-            
-            ! Check for win or draw
-            winner = CheckWinner()
-            IF winner <> 0 THEN
-                gameOver = TRUE
+            IF playerStarts THEN
+                PlayPlayerFirst()
             ELSE
-                IF moves = 9 THEN
-                    gameOver = TRUE
-                ELSE
-                    ! Computer move
-                    PRINT "Computer is thinking..."
-                    DELAY(500)
-                    pos = GetComputerMove()
-                    IF pos >= 0 THEN
-                        board[pos] = 2  ! O
-                        moves = moves + 1
-                        DrawBoard()
-                        
-                        winner = CheckWinner()
-                        IF winner <> 0 THEN
-                            gameOver = TRUE
-                        ELSE
-                            IF moves = 9 THEN
-                                gameOver = TRUE
-                            ENDIF
-                        ENDIF
-                    ENDIF
-                ENDIF
+                PlayComputerFirst()
             ENDIF
         WEND
         
-        ! Game over
+        ! Show result
         IF winner = 1 THEN
             PRINT "You win!"
         ELSE

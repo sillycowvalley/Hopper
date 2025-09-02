@@ -875,10 +875,14 @@ unit Executor // Executor.asm
            {
                // Store return value in return slot
                PLX
-               LDA ZP.TOPL
-               STA Address.ValueStackLSB, X
-               LDA ZP.TOPH
-               STA Address.ValueStackMSB, X
+               LDA ZP.TOP0
+               STA Address.ValueStackB0, X
+               LDA ZP.TOP1
+               STA Address.ValueStackB1, X
+               LDA ZP.TOP2
+               STA Address.ValueStackB2, X
+               LDA ZP.TOP3
+               STA Address.ValueStackB3, X
                LDA ZP.TOPT
                STA Address.TypeStackLSB, X
            }
@@ -927,7 +931,7 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(executeReturnValTrace % 256) STA ZP.TraceMessageL LDA #(executeReturnValTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-       Stacks.PopTop(); // ReturnVal
+       Long.PopTop(); // ReturnVal
        commonReturn();        
        
 #ifdef TRACE
@@ -2506,6 +2510,8 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'G' COut();LDA #'G' COut();LDA #'G' COut();
+            
 #ifdef TRACEEXE            
             FetchOperandByte();
 #else
@@ -2559,6 +2565,8 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'G' COut();LDA #'G' COut();LDA #'L' COut();
+            
 #ifdef TRACEEXE            
             FetchOperandByte();
 #else
@@ -2615,6 +2623,8 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'G' COut();LDA #'L' COut();LDA #'G' COut();
+            
 #ifdef TRACEEXE            
             FetchOperandByte();
 #else
@@ -2671,6 +2681,8 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'G' COut();LDA #'L' COut();LDA #'L' COut();
+            
 #ifdef TRACEEXE            
             FetchOperandByte();
 #else
@@ -2733,6 +2745,8 @@ unit Executor // Executor.asm
         
         loop // Single exit block
         {
+//Debug.NL(); LDA #'G' COut();
+
             // Pop index value from stack
             DEC ZP.SP
             LDY ZP.SP
@@ -2768,6 +2782,7 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'S' COut();
             // Pop value into TOP (includes type)
             LDX ZP.SP
             DEX
@@ -2818,6 +2833,7 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'S' COut();LDA #'G' COut();LDA #'L' COut();
             // Pop value from stack into TOP
             Long.PopTop();
             
@@ -2882,6 +2898,7 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'S' COut();LDA #'L' COut();LDA #'G' COut();
             // Pop value from stack into TOP
             Long.PopTop();
             
@@ -2944,6 +2961,8 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'S' COut();LDA #'L' COut();LDA #'L' COut();
+
             // Pop value from stack into TOP
             Long.PopTop();
             
@@ -3009,6 +3028,8 @@ unit Executor // Executor.asm
         
         loop
         {
+//Debug.NL(); LDA #'S' COut();LDA #'G' COut();LDA #'G' COut();
+
             // Pop value from stack into TOP
             Long.PopTop();
             

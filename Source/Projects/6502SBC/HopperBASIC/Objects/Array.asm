@@ -279,7 +279,7 @@ unit BASICArray
             }
             if (C) // Set C if index >= count (out of bounds)
             {
-                Error.RangeError(); BIT ZP.EmulatorPCL
+                Error.IndexOutOfRange(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
@@ -375,7 +375,9 @@ unit BASICArray
             }
             if (C) // Set C if index >= count (out of bounds)
             {
-                Error.RangeError(); BIT ZP.EmulatorPCL
+//Space(); LDY # aiCount+1 LDA [ZP.IDX], Y HOut(); DEY LDA [ZP.IDX], Y HOut();
+                
+                Error.IndexOutOfRange(); BIT ZP.EmulatorPCL
                 States.SetFailure();
                 break;
             }
