@@ -230,11 +230,9 @@ program HopperBASIC
                     // runtime error inside compiled function
                     CompileForError();
                 }
-                else
-                {
-                    // compile time error or REPL runtime error
-                    Error.CheckAndPrint();
-                }
+                
+                // compile time error or REPL runtime error
+                Error.CheckAndPrint();
             }
             else
             {

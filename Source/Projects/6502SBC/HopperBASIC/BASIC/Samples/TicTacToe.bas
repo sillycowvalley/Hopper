@@ -1,5 +1,3 @@
-NEW
-CLS
 ! Tic Tac Toe for Hopper BASIC (no INPUT)
 ! Uses direct keyboard reading from serial buffer
 
@@ -7,9 +5,9 @@ CONST InWritePtr = 0x0A   ! Serial buffer write position
 CONST InReadPtr  = 0x0B   ! Serial buffer read position
 CONST InBuffer   = 0x0200 ! actual Serial input buffer
 
-! Board represented as CHAR array
+! Board represented as BYTE array
 ! 0=empty, 1=X, 2=O
-CHAR board[9]
+BYTE board[9]
 VAR gameOver
 VAR winner
 VAR moves
@@ -34,7 +32,7 @@ ENDFUNC
 ! Clear the board
 FUNC ClearBoard()
     FOR i = 0 TO 8
-        board[i] = CHR(0)
+        board[i] = 0
     NEXT i
 ENDFUNC
 

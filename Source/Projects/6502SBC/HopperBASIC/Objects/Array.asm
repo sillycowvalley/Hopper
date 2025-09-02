@@ -295,7 +295,7 @@ unit BASICArray
             // Read element value based on type
             LDY # aiElements
             LDA # 0
-            STA ZP.TOPH        // Default high byte = 0
+            Long.ZeroTop3();        // Default high bytes = 0
 
             LDA ZP.ACCT
             STA ZP.TOPT

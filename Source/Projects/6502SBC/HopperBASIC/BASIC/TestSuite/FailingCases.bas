@@ -1,33 +1,26 @@
-NEW
+BYTE board[9]
 
-CHAR board[9]
-
-FUNC CLEARBOARD()
-     FOR I = 0 TO 8
-         BOARD[I] = 0
-     NEXT I
+FUNC DRAWBOARD()
+     VAR CH
+     PRINT
+     PRINT "     1   2   3"
+     PRINT "   +---+---+---+"
+     FOR ROW = 0 TO 2
+         PRINT " "; CHR(ASC('A') + ROW); " ";
+         FOR COL = 0 TO 2
+             PRINT "|";
+             CH = BOARD[ROW * 3 + COL]
+         NEXT COL
+     NEXT ROW
 ENDFUNC
 
-BEGIN
-    CLEARBOARD()
-END
-RUN
+DRAWBOARD()
 
+FUNC GetByte(bufpos)
+    VAR b = BOARD[bufpos]
+    bufpos = bufpos + 1
+    RETURN b
+ENDFUNC
 
+print "=", GetByte(0), "="
 
-
-! Run time
-NEW
-VAR A = 0
-BEGIN
-   PRINT "HELLO"
-   PRINT 100 / A
-END
-RUN
-
-NEW
-VAR ROW = 0
-PRINT CHR(ASC('A') + ROW)
-
-
-! PRINT " "; CHR(ASC('A') + ROW); " "; 

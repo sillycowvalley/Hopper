@@ -2366,25 +2366,32 @@ unit Executor // Executor.asm
             STA ZP.ACCT
             
             // Load index value from local  
-            LDA Address.ValueStackLSB, Y
+            LDA Address.ValueStackB0, Y
             STA ZP.IDYL
-            LDA Address.ValueStackMSB, Y
+            LDA Address.ValueStackB1, Y
             STA ZP.IDYH
+            LDA Address.ValueStackB2, Y
+            STA ZP.NEXT2
+            LDA Address.ValueStackB3, Y
+            STA ZP.NEXT3
             LDA Address.TypeStackLSB, Y
-            STA ZP.TOPT
+            STA ZP.NEXTT
         
             // ZP.ACCT = array/string type, ZP.IDX = array/string pointer
             // ZP.TOPT = index type, ZP.IDY = index
-        
+
+//Debug.NL(); TYA HOut(); Space(); TXA HOut(); Space(); LDA ZP.NEXTT HOut(); Space(); LDA ZP.NEXT3 HOut(); LDA ZP.NEXT2 HOut(); Space(); YOut(); Space(); LDA ZP.ACCT HOut(); XOut();
+                        
             // Check index type is numeric (LONG)
-            LDA ZP.TOPT
+            LDA ZP.NEXTT
             AND #BASICType.TYPEMASK  // Remove VAR bit if present
             CMP #BASICType.LONG
             if (Z) 
             { 
-                // INT type - check if negative
-                LDA ZP.TOP3
-                if (MI)  // Negative index
+                // Check if negative or out of range
+                LDA ZP.NEXT2
+                ORA ZP.NEXT3
+                if (NZ)
                 {
                     Error.RangeError(); BIT ZP.EmulatorPCL
                     States.SetFailure();
@@ -2393,9 +2400,6 @@ unit Executor // Executor.asm
             }
             else
             {
-#ifdef DEBUG
-Debug.NL(); TLOut(); Space(); YOut();
-#endif                
                 // Invalid index type
                 Error.TypeMismatch(); BIT ZP.EmulatorPCL
                 States.SetFailure();
@@ -2422,7 +2426,7 @@ Debug.NL(); TLOut(); Space(); YOut();
                     }
         #endif
                 }
-                STY ZP.TOPL
+                STY ZP.TOP0
                                         
                 // Check if index is within bounds (index < length)
                 // Compare index (IDY) with length (TOP)
@@ -2434,8 +2438,8 @@ Debug.NL(); TLOut(); Space(); YOut();
                     break;
                 }
                 LDA ZP.IDYL
-                CMP ZP.TOPL
-                if (C)   // IDYL >= TOPL (index >= length
+                CMP ZP.TOP0
+                if (C)   // IDYL >= TOP0 (index >= length
                 {
                     Error.RangeError(); BIT ZP.EmulatorPCL
                     States.SetFailure();
@@ -2447,8 +2451,8 @@ Debug.NL(); TLOut(); Space(); YOut();
                 LDA [ZP.IDX], Y
                 
                 // Store character value in ZP.TOP as CHAR type
-                STA ZP.TOPL
-                STZ ZP.TOPH  // Clear high byte
+                STA ZP.TOP0
+                STZ ZP.TOP1  // Clear high byte
                 LDA #BASICType.CHAR
                 STA ZP.TOPT
             }
@@ -2731,7 +2735,7 @@ Debug.NL(); TLOut(); Space(); YOut();
         {
             // Pop index value from stack
             DEC ZP.SP
-            LDX ZP.SP
+            LDY ZP.SP
             
             // Pop collection reference from stack
             DEC ZP.SP
