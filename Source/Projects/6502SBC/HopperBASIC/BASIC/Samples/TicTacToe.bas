@@ -101,6 +101,51 @@ FUNC CheckWinner()
     RETURN 0
 ENDFUNC
 
+! Check if either player can still win
+FUNC CanEitherPlayerWin()
+    ! Check all 8 winning lines: 3 rows, 3 columns, 2 diagonals
+    
+    ! Check rows
+    FOR row = 0 TO 2
+        IF CanPlayerWinLine(row * 3, row * 3 + 1, row * 3 + 2) THEN
+            RETURN TRUE
+        ENDIF
+    NEXT row
+    
+    ! Check columns  
+    FOR col = 0 TO 2
+        IF CanPlayerWinLine(col, col + 3, col + 6) THEN
+            RETURN TRUE
+        ENDIF
+    NEXT col
+    
+    ! Check diagonals
+    IF CanPlayerWinLine(0, 4, 8) THEN RETURN TRUE ENDIF  ! Top-left to bottom-right
+    IF CanPlayerWinLine(2, 4, 6) THEN RETURN TRUE ENDIF  ! Top-right to bottom-left
+    
+    RETURN FALSE  ! No winning moves possible for either player
+ENDFUNC
+
+! Check if either player can win on a specific line of 3 positions
+FUNC CanPlayerWinLine(pos1, pos2, pos3)
+    VAR xCount = 0
+    VAR oCount = 0
+    
+    ! Count X's and O's in this line
+    IF board[pos1] = 1 THEN xCount = xCount + 1 ENDIF
+    IF board[pos1] = 2 THEN oCount = oCount + 1 ENDIF
+    
+    IF board[pos2] = 1 THEN xCount = xCount + 1 ENDIF
+    IF board[pos2] = 2 THEN oCount = oCount + 1 ENDIF
+    
+    IF board[pos3] = 1 THEN xCount = xCount + 1 ENDIF
+    IF board[pos3] = 2 THEN oCount = oCount + 1 ENDIF
+    
+    ! A line is winnable by X if it has no O's (only X's and empty spaces)
+    ! A line is winnable by O if it has no X's (only O's and empty spaces)
+    RETURN (xCount > 0 AND oCount = 0) OR (oCount > 0 AND xCount = 0)
+ENDFUNC
+
 ! Get player move
 FUNC GetPlayerMove()
     VAR row, col, pos, key
@@ -214,12 +259,19 @@ FUNC PlayPlayerFirst()
     moves = moves + 1
     DrawBoard()
     
-    ! Check for win or draw
+    ! Check for win
     winner = CheckWinner()
     IF winner <> 0 THEN
         gameOver = TRUE
         RETURN
     ENDIF
+    
+    ! Check for early draw
+    IF NOT CanEitherPlayerWin() THEN
+        gameOver = TRUE
+        RETURN
+    ENDIF
+    
     IF moves = 9 THEN
         gameOver = TRUE
         RETURN
@@ -238,8 +290,13 @@ FUNC PlayPlayerFirst()
         IF winner <> 0 THEN
             gameOver = TRUE
         ELSE
-            IF moves = 9 THEN
+            ! Check for early draw after computer move too
+            IF NOT CanEitherPlayerWin() THEN
                 gameOver = TRUE
+            ELSE
+                IF moves = 9 THEN
+                    gameOver = TRUE
+                ENDIF
             ENDIF
         ENDIF
     ENDIF
@@ -262,6 +319,13 @@ FUNC PlayComputerFirst()
             gameOver = TRUE
             RETURN
         ENDIF
+        
+        ! Check for early draw
+        IF NOT CanEitherPlayerWin() THEN
+            gameOver = TRUE
+            RETURN
+        ENDIF
+        
         IF moves = 9 THEN
             gameOver = TRUE
             RETURN
@@ -277,8 +341,13 @@ FUNC PlayComputerFirst()
         IF winner <> 0 THEN
             gameOver = TRUE
         ELSE
-            IF moves = 9 THEN
+            ! Check for early draw after player move too
+            IF NOT CanEitherPlayerWin() THEN
                 gameOver = TRUE
+            ELSE
+                IF moves = 9 THEN
+                    gameOver = TRUE
+                ENDIF
             ENDIF
         ENDIF
     ENDIF
@@ -333,7 +402,11 @@ BEGIN
             IF winner = 2 THEN
                 PRINT "Computer wins!"
             ELSE
-                PRINT "It's a draw!"
+                IF moves = 9 THEN
+                    PRINT "It's a draw!"
+                ELSE
+                    PRINT "Draw detected early! No winning moves left."
+                ENDIF
             ENDIF
         ENDIF
         
