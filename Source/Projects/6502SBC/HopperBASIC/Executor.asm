@@ -2778,23 +2778,16 @@ Debug.NL(); TLOut(); Space(); YOut();
             LDA Address.TypeStackLSB, X
             STA ZP.TOPT
             
-            // Pop index into IDY
+            // Pop index into Y
             DEX
             TXA
             TAY
             
-            // Pop array pointer into IDX
+            // Pop array pointer into X
             DEX
             STX ZP.SP
             
-            // ValueStackLSB --> IDX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDXL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDXH
-            LDA Address.TypeStackLSB, X
-            
-            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
+            // Set up for commonSetItem: X - array ptr on stack - index position on stack, value in TOP including type
             commonSetItem();
             break;
         }
@@ -2839,13 +2832,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             
             // Load array value from global address
             TAX  // global index LSB
-            // ValueStackLSB --> IDX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDXL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDXH
-            LDA Address.TypeStackLSB, X
-            STA ZP.ACCT  // array type
+            
             
 #ifdef TRACEEXE            
             FetchOperandByte();
@@ -2865,8 +2852,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             ADC ZP.BP
             TAY  // Y = stack position
             
-            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
-            LDA ZP.ACCT
+            // Set up for commonSetItem: X - array ptr on stack - index position on stack, value in TOP including type
             commonSetItem();
             break;
         }
@@ -2913,14 +2899,6 @@ Debug.NL(); TLOut(); Space(); YOut();
             ADC ZP.BP
             TAX  // X = stack position
             
-            // Load array value from local position
-            // ValueStackLSB --> IDX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDXL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDXH
-            LDA Address.TypeStackLSB, X
-            STA ZP.ACCT  // array type
             
 #ifdef TRACEEXE            
             FetchOperandByte();
@@ -2936,8 +2914,7 @@ Debug.NL(); TLOut(); Space(); YOut();
 #endif   
             TAY  // Y = stack position
             
-            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
-            LDA ZP.ACCT
+            // Set up for commonSetItem: X - array ptr on stack - index position on stack, value in TOP including type
             commonSetItem();
             break;
         }
@@ -2984,15 +2961,6 @@ Debug.NL(); TLOut(); Space(); YOut();
             ADC ZP.BP
             TAX  // X = stack position
             
-            // Load array value from local position
-            // ValueStackLSB --> IDX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDXL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDXH
-            LDA Address.TypeStackLSB, X
-            STA ZP.ACCT  // array type
-            
 #ifdef TRACEEXE            
             FetchOperandByte();
 #else
@@ -3011,8 +2979,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             ADC ZP.BP
             TAY  // Y = stack position
             
-            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
-            LDA ZP.ACCT
+            // Set up for commonSetItem: X - array ptr on stack - index position on stack, value in TOP including type
             commonSetItem();
             break;
         }
@@ -3041,7 +3008,6 @@ Debug.NL(); TLOut(); Space(); YOut();
             // Pop value from stack into TOP
             Long.PopTop();
             
-            
 #ifdef TRACEEXE            
             FetchOperandByte();
 #else
@@ -3057,13 +3023,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             
             // Load array value from global address
             TAX
-            // ValueStackLSB --> IDX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDXL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDXH
-            LDA Address.TypeStackLSB, X
-            STA ZP.ACCT  // array type
+            
             
 #ifdef TRACEEXE            
             FetchOperandByte();
@@ -3079,8 +3039,7 @@ Debug.NL(); TLOut(); Space(); YOut();
 #endif   
             TAY  // Y = stack position
             
-            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
-            LDA ZP.ACCT
+            // Set up for commonSetItem: X - array ptr on stack - index position on stack, value in TOP including type
             commonSetItem();
             break;
         }
@@ -3093,14 +3052,20 @@ Debug.NL(); TLOut(); Space(); YOut();
     }
     
     // Inputs:
-    //     - ARRAY type in A
-    //     - ARRAY ptr in IDX
+    //     - ARRAY ptr on stack at X
     //     - <index> in on stack at Y
     //     - <value> in TOP (including TOPT)
     commonSetItem()
     {
         loop
         {
+            // array --> IDX
+            LDA Address.ValueStackLSB, X
+            STA ZP.IDXL
+            LDA Address.ValueStackMSB, X
+            STA ZP.IDXH
+            LDA Address.TypeStackLSB, X // Array type
+        
             AND # BASICType.ARRAY
             if (Z)
             {
@@ -3112,7 +3077,7 @@ Debug.NL(); TLOut(); Space(); YOut();
             // Get array element type for type checking
             BASICArray.GetItemType(); // Returns type in ZP.ACCT
             
-            // ValueStack -> IDY
+            // index -> IDY
             LDA Address.ValueStackLSB, Y
             STA ZP.IDYL
             LDA Address.ValueStackMSB, Y
