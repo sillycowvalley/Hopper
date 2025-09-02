@@ -2780,28 +2780,21 @@ Debug.NL(); TLOut(); Space(); YOut();
             
             // Pop index into IDY
             DEX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDYL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDYH
+            TXA
+            TAY
             
             // Pop array pointer into IDX
             DEX
             STX ZP.SP
+            
             // ValueStackLSB --> IDX
             LDA Address.ValueStackLSB, X
             STA ZP.IDXL
             LDA Address.ValueStackMSB, X
             STA ZP.IDXH
-            
-            // Verify this is actually an array
             LDA Address.TypeStackLSB, X
             
-            // Inputs:
-            //     - ARRAY type in A
-            //     - ARRAY ptr in IDX
-            //     - <index> in IDY
-            //     - <value> in TOP (including TOPT)
+            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
             commonSetItem();
             break;
         }
@@ -2870,17 +2863,9 @@ Debug.NL(); TLOut(); Space(); YOut();
             // Calculate stack position: BP + offset
             CLC
             ADC ZP.BP
+            TAY  // Y = stack position
             
-            
-            // Load index value from local position
-            // ValueStack -> IDY
-            TAX  // X = stack position
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDYL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDYH
-            
-            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
             LDA ZP.ACCT
             commonSetItem();
             break;
@@ -2949,16 +2934,9 @@ Debug.NL(); TLOut(); Space(); YOut();
                 INC ZP.PCH
             }
 #endif   
+            TAY  // Y = stack position
             
-            // Load index value from global address
-            // ValueStack -> IDY
-            TAX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDYL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDYH
-            
-            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
             LDA ZP.ACCT
             commonSetItem();
             break;
@@ -3031,16 +3009,9 @@ Debug.NL(); TLOut(); Space(); YOut();
             // Calculate stack position: BP + offset
             CLC
             ADC ZP.BP
+            TAY  // Y = stack position
             
-            // Load index value from local position
-            // ValueStack -> IDY
-            TAX  // X = stack position
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDYL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDYH
-            
-            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
             LDA ZP.ACCT
             commonSetItem();
             break;
@@ -3106,16 +3077,9 @@ Debug.NL(); TLOut(); Space(); YOut();
                 INC ZP.PCH
             }
 #endif   
-
-            // Load index value from global address
-            // ValueStack -> IDY
-            TAX
-            LDA Address.ValueStackLSB, X
-            STA ZP.IDYL
-            LDA Address.ValueStackMSB, X
-            STA ZP.IDYH
+            TAY  // Y = stack position
             
-            // Set up for commonSetItem: array type in A, array ptr in IDX, index in IDY, value in TOP
+            // Set up for commonSetItem: array type in A, array ptr in IDX, Y - index position on stack, value in TOP
             LDA ZP.ACCT
             commonSetItem();
             break;
@@ -3131,7 +3095,7 @@ Debug.NL(); TLOut(); Space(); YOut();
     // Inputs:
     //     - ARRAY type in A
     //     - ARRAY ptr in IDX
-    //     - <index> in IDY
+    //     - <index> in on stack at Y
     //     - <value> in TOP (including TOPT)
     commonSetItem()
     {
@@ -3147,6 +3111,12 @@ Debug.NL(); TLOut(); Space(); YOut();
             
             // Get array element type for type checking
             BASICArray.GetItemType(); // Returns type in ZP.ACCT
+            
+            // ValueStack -> IDY
+            LDA Address.ValueStackLSB, Y
+            STA ZP.IDYL
+            LDA Address.ValueStackMSB, Y
+            STA ZP.IDYH
             
             // TODO TYPE DEMOTION
             LDA ZP.ACCT
