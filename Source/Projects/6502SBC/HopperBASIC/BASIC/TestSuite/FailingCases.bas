@@ -1,26 +1,14 @@
-BYTE board[9]
+CLS
+NEW
+MEM
 
-FUNC DRAWBOARD()
-     VAR CH
-     PRINT
-     PRINT "     1   2   3"
-     PRINT "   +---+---+---+"
-     FOR ROW = 0 TO 2
-         PRINT " "; CHR(ASC('A') + ROW); " ";
-         FOR COL = 0 TO 2
-             PRINT "|";
-             CH = BOARD[ROW * 3 + COL]
-         NEXT COL
-     NEXT ROW
-ENDFUNC
+CHAR globCharArray[10] 
+INT globIntArray[10]
 
-DRAWBOARD()
-
-FUNC GetByte(bufpos)
-    VAR b = BOARD[bufpos]
-    bufpos = bufpos + 1
-    RETURN b
-ENDFUNC
-
-print "=", GetByte(0), "="
-
+BEGIN
+    FOR i = 0 TO 9
+        globCharArray[i] = 'A'
+        globIntArray[i] = i - 5
+    NEXT i
+END
+RUN

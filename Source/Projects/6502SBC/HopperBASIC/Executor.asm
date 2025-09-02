@@ -3087,31 +3087,10 @@ unit Executor // Executor.asm
             LDA Address.ValueStackMSB, Y
             STA ZP.IDYH
             
-            LDA ZP.ACCT
-            switch (A)
-            {
-                case BASICType.CHAR:
-                case BASICType.BIT:
-                {
-                    CMP ZP.TOPT // strict: RHS type = LHS type
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                }
-                default:
-                {
-                    // Input:   LONG: TOP0-3, TOPT = LONG, desired type ACCT
-                    // Output:  C, or NC if out of range
-                    BASICTypes.Coerce();
-                    if (NC) { BIT ZP.EmulatorPCL break; }
-                }
-            }
-            
             // BASICArray.SetItem expects: 
             // Input: ZP.IDX = array ptr, ZP.IDY = index, ZP.TOP = value
             // Output: C set on success
+            // Does range checking on TOP value
             BASICArray.SetItem();
             if (NC)
             {

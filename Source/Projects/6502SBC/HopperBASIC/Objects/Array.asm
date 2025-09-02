@@ -390,14 +390,19 @@ unit BASICArray
                     
             // Write element value based on type
             LDY # aiElements
-            STZ ZP.NEXTH       // Clear for safety
-            // TODO TYPE DEMOTION
+            
             LDA ZP.ACCT
             switch (A)
             {
                 case BASICType.BIT:
                 {
-                    LDA ZP.TOPL
+                    CMP ZP.TOPT // strict: RHS type = LHS type
+                    if (NZ)
+                    {
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        break;
+                    }
+                    LDA ZP.TOP0
                     if (NZ)
                     {
                         // Set the bit to 1
@@ -415,63 +420,47 @@ unit BASICArray
                     }
                 }
                 case BASICType.CHAR:
-                case BASICType.BYTE:
                 {
-                    LDA ZP.TOP1
-                    ORA ZP.TOP2
-                    ORA ZP.TOP3 // x3
+                    CMP ZP.TOPT // strict: RHS type = LHS type
                     if (NZ)
                     {
-                        Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
+                        CLC
+                        break;
                     }
                     // Write single byte
                     LDA ZP.TOP0
                     STA [IDY], Y
                 }
-                case BASICType.INT:
-                {
-                    LDA ZP.TOP2
-                    ORA ZP.TOP3 // x2
-                    if (NZ)
-                    {
-                        LDA ZP.TOP2
-                        CMP #0xFF
-                        if (NZ)
-                        {
-                            Error.NumericOverflow(); BIT ZP.EmulatorPCL
-                        }
-                        LDA ZP.TOP3
-                        CMP #0xFF
-                        if (NZ)
-                        {
-                            Error.NumericOverflow(); BIT ZP.EmulatorPCL
-                        }
-                    }
-                    // Write two-byte value (LSB first)
-                    LDA ZP.TOP0
-                    STA [IDY], Y
-                    INY
-                    LDA ZP.TOP1
-                    STA [IDY], Y
-                }
                 default:
                 {
-                    LDA ZP.TOP2
-                    ORA ZP.TOP3 // x2
-                    if (NZ)
+                    // Input:   LONG: TOP0-3, TOPT = LONG, desired type ACCT
+                    // Output:  C, or NC if out of range
+                    BASICTypes.Coerce();
+                    if (NC) 
                     {
-                        Error.NumericOverflow(); BIT ZP.EmulatorPCL
+                        BIT ZP.EmulatorPCL break; 
                     }
-                    
-                    // Write two-byte value (LSB first)
-                    LDA ZP.TOP0
-                    STA [IDY], Y
-                    INY
-                    LDA ZP.TOP1
-                    STA [IDY], Y
+                    LDA ZP.ACCT
+                    CMP #BASICType.BYTE
+                    if (Z)
+                    {
+                        // Write single byte
+                        LDA ZP.TOP0
+                        STA [IDY], Y
+                    }
+                    else
+                    {
+                        // Write two-byte value (LSB first)
+                        LDA ZP.TOP0
+                        STA [IDY], Y
+                        INY
+                        LDA ZP.TOP1
+                        STA [IDY], Y
+                    }
                 }
-            } 
-            
+            }
+                      
             SEC                // Success
             break;
         } // single exit     
