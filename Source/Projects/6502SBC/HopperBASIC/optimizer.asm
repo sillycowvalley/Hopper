@@ -459,13 +459,17 @@ unit Optimizer
                 DEX
                 if (Z) { break; }
             }
-            
+           
             // Emit ZP.PEEPREPLACE opcode
             // Write opcode
             LDA ZP.PEEPREPLACE
             STA Compiler.compilerOpCode
             STA [ZP.XPC]
             STA Compiler.compilerLastOpCode
+            
+//Debug.NL(); LDA #'p' COut();
+//          Emit.RuntimeErrorCheck(); if (NC) { break; }
+            
             incXPC();
             
             pushPeepOp(); // Compiler.compilerOpCode is the new PEEP0

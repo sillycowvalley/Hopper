@@ -2,7 +2,7 @@ unit Limits
 {
     // Buffer size constants for HopperBASIC
     const byte BasicInputSize            = 128;  // Raw input line buffer
-    const uint TokenizerBufferSize       = 1024; // Tokenized line storage (16-bit size)
+    const uint TokenizerBufferSize       = 2048; // Tokenized line storage (16-bit size)
     const uint OpCodeBufferSize          = 512;  // JITted OpCode storage (16-bit size)
     const uint FileSystemBufferSize      = 768;  // File system buffers
     

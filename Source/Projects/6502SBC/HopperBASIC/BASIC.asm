@@ -24,8 +24,8 @@ program HopperBASIC
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    //#define ROM_48K    
-    #define ROM_32K
+    #define ROM_48K    
+    //#define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"
@@ -208,6 +208,9 @@ program HopperBASIC
             // Clear output flag before processing statement
             RMB6 ZP.FLAGS // Bit 6 - track output was produced by REPL command
             
+            STZ ZP.IDCALLL // No function has been
+            STZ ZP.IDCALLH
+            
             // Process non-empty line
             Console.ProcessLine();
             
@@ -219,7 +222,19 @@ program HopperBASIC
             Error.CheckError();
             if (NC)
             {
-                Error.CheckAndPrint();
+                // Runtime Error?  (IDCALL != 0, reset to zero in ExecuteOpCodes)
+                LDA ZP.IDCALLL
+                ORA ZP.IDCALLH
+                if (NZ)
+                {
+                    // runtime error inside compiled function
+                    CompileForError();
+                }
+                else
+                {
+                    // compile time error or REPL runtime error
+                    Error.CheckAndPrint();
+                }
             }
             else
             {

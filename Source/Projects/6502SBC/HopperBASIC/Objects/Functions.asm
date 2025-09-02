@@ -518,34 +518,89 @@ unit Functions
         // assume we are compiled and good
         Executor.FetchOperandWord();
         LDA Executor.executorOperandL
-        STA ZP.IDXL
+        STA ZP.IDCALLL
         LDA Executor.executorOperandH
-        STA ZP.IDXH
+        STA ZP.IDCALLH
         
         Stacks.PushPC(); // after FetchOperandWord
-        
-//Debug.NL(); LDA #'>' COut(); Space(); XIOut();        
 
         Stacks.PushXID();
                 
         LDY #Objects.snOpCodes
-        LDA [ZP.IDX], Y
+        LDA [ZP.IDCALL], Y
         STA ZP.PCL
         INY
-        LDA [ZP.IDX], Y
+        LDA [ZP.IDCALL], Y
         STA ZP.PCH
         
         LDY #Objects.snTokens
-        LDA [ZP.IDX], Y
+        LDA [ZP.IDCALL], Y
         STA ZP.XIDL
         INY
-        LDA [ZP.IDX], Y
+        LDA [ZP.IDCALL], Y
         STA ZP.XIDH
-        
-//Debug.NL(); LDA #':' COut(); Space(); XIOut();        
     
         SEC
-    }   
+    }
+    
+    // Input: IDX = function node
+    // remove Locals from the back of the list until there are only Arguments remaining
+    RemoveLocals()
+    {
+        Locals.GetArgumentsCount(); // ZP.IDX -> ZP.ACCL
+        loop
+        {
+            Locals.FindByIndex(); // function IDX, index ZP.ACCL -> local IDY, C or NC
+            if (NC) { break; }    // no more locals -> exit loop
+            Locals.RemoveLast();  // Clear locals for function in ZP.IDX
+        }
+    }
+    
+    CompileForError()
+    {
+        LDA ZP.LastError
+        STA ZP.RuntimeError
+        STZ ZP.LastError
+        States.SetSuccess();
+        
+        // recompile the function we failed in to set TOKERROR from ZP.PC 
+        LDA ZP.IDCALLL
+        STA ZP.IDXL
+        LDA ZP.IDCALLH
+        STA ZP.IDXH
+        
+        Functions.RemoveLocals();
+        
+        Functions.GetOpCodes(); // IDX -> IDY
+
+//Debug.NL(); LDA ZP.PCH HOut();  LDA ZP.PCL HOut();
+//Debug.NL(); YOut(); Space(); LDA #(Address.FunctionOpCodeBuffer / 256) HOut(); LDA #(Address.FunctionOpCodeBuffer % 256) HOut();
+
+        // 0-based PC relative to opcode stream
+        SEC
+        LDA ZP.PCL
+        SBC ZP.IDYL
+        STA ZP.PCL
+        LDA ZP.PCH
+        SBC ZP.IDYH
+        STA ZP.PCH
+        
+        // PC relative to compilation buffer
+        CLC
+        LDA ZP.PCL
+        ADC #(Address.FunctionOpCodeBuffer % 256)
+        STA ZP.PCL
+        LDA ZP.PCH
+        ADC #(Address.FunctionOpCodeBuffer / 256)
+        STA ZP.PCH
+        
+        // now we are at the opcode after the one that caused the runtime error
+//Debug.NL(); LDA ZP.PCH HOut();  LDA ZP.PCL HOut();
+
+        SMB7 ZP.FLAGS // Bit 7 - compiling to find error location
+        Functions.Compile();
+        RMB7 ZP.FLAGS
+    }
     
     const string functionCompile = "FuncComp";
     Compile()
@@ -687,6 +742,7 @@ unit Functions
                 ORA ZP.IDYH
                 if (NZ)
                 {
+                    // render the source and compilation error location
                     LDA ZP.TokenizerPosH
                     STA ZP.TOKERRORH
                     LDA ZP.TokenizerPosL

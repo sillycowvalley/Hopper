@@ -1,6 +1,37 @@
 unit Emit
 {
-
+   // looks at the current compilation PC (ZP.XPC) and comparse to the runtime error PC (ZP.PC)
+   RuntimeErrorCheck()
+   {
+       loop
+       {
+           if (BBS7, ZP.FLAGS) // compiling to find error location?
+           {
+//Debug.NL(); LDA ZP.XPCH HOut(); LDA ZP.XPCL HOut(); Space(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); Space(); LDA ZP.TokenizerPosH HOut(); LDA ZP.TokenizerPosL HOut(); 
+//Space(); LDA Compiler.compilerOpCode HOut(); TAX OpCodes.ToString(); Space(); Print.String();
+   
+                // have we reached the runtime error location?
+                LDA ZP.XPCH
+                CMP ZP.PCH
+                if (Z)
+                {
+                    LDA ZP.XPCL
+                    CMP ZP.PCL
+                }
+                if (C) //C set if XPC >= PC
+                {
+                    // set error so Functions.Compile will emit it
+                    LDA ZP.RuntimeError
+                    STA ZP.LastError
+                    CheckError();
+                    break;
+                }
+            }
+            SEC
+            break;
+       } // single exit
+   }
+   
    // Emit a single-byte opcode (no operands)
    // Input:  A = opcode value
    // Output: OpCode written to buffer, C or NC depending on success or failure
@@ -20,7 +51,9 @@ unit Emit
                CheckError();
                break; 
            } // Buffer overflow
-       
+           
+           RuntimeErrorCheck(); if (NC) { break; }
+                 
            // Write opcode to buffer
            LDA Compiler.compilerOpCode
            STA [ZP.XPC]
@@ -59,7 +92,9 @@ unit Emit
            { 
                break; 
            } // Buffer overflow
-       
+           
+           RuntimeErrorCheck(); if (NC) { break; }
+           
            // Write opcode
            LDA Compiler.compilerOpCode
            STA [ZP.XPC]
@@ -124,7 +159,9 @@ unit Emit
            { 
                break; 
            } // Buffer overflow
-           
+
+           RuntimeErrorCheck(); if (NC) { break; }
+
            // Write opcode
            LDA Compiler.compilerOpCode
            STA [ZP.XPC]
@@ -203,7 +240,9 @@ unit Emit
            { 
                break; 
            } // Buffer overflow
-           
+
+           RuntimeErrorCheck(); if (NC) { break; }           
+
            // Write opcode
            LDA Compiler.compilerOpCode
            STA [ZP.XPC]

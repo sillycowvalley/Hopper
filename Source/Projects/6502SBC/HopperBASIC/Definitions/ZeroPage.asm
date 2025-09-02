@@ -35,7 +35,7 @@ unit ZP // ZeroPage.asm
     
     const byte FLAGS                = 0x02;  // System flags register
     // FLAGS bits:
-    // Bit 7 - (unused in BASIC)
+    // BIT 7 - set to know when we are recompiling to find error location
     // Bit 6 - output was produced by the most recent REPL command (so no need to print "OK")
     // Bit 5 - initialization mode: do not create a RETURN slot for REPL calls (in compileFunctionCallOrVariable)
     // Bit 4 - initialization mode: Load and Save globals to stack (ExecuteOpCodes)
@@ -141,7 +141,6 @@ unit ZP // ZeroPage.asm
                                              //     BIT 4 - as "array assignment" flag
                                              //     BIT 5 - in CompileForStatement, we created an implicit local that needs to be removed at the end of the function
                                              //     BIT 6 - used in Tokenizer.TokenizeLineWithMode()
-                                             //     BIT 7 - unused
                                              
     const byte OpCodeTemp           = 0x37;  // Temporary opcode construction
     
@@ -264,8 +263,8 @@ unit ZP // ZeroPage.asm
     const byte TOKPOSH    = M5;  // Token position/offset high
     const byte TOKPREV    = M6;  // Previous token value
     const byte TOKCOLON   = M7;  // We had a colon, no newline
-    const byte TOKERRORL  = M8;  // Error position low (copy of ACCL)
-    const byte TOKERRORH  = M9;  // Error position high (copy of ACCH)
+    const byte TOKERRORL  = M8;  // Error position low
+    const byte TOKERRORH  = M9;  // Error position high
     const byte TOKERRORFLAG = M10; // Flag: error marker printed for this line
     const byte TOKSINGLEIF = M11;  // Flag: currently in single-line IF (bit 0)
     
@@ -321,14 +320,9 @@ unit ZP // ZeroPage.asm
     const byte STRL                 = 0x79;  // String low (alias)
     const byte STRH                 = 0x7A;  // String high
     
-    // used only in Debug unit as STR2
-    const byte STR2                 = 0x7B;  // String pointer 2
-    const byte STR2L                = 0x7B;  // String 2 low (alias)
-    const byte STR2H                = 0x7C;  // String 2 high
-    
-    const byte ERRSTR               = STR2;  // Error String pointer
-    const byte ERRSTRL              = STR2L; // Error String 2 low (alias)
-    const byte ERRSTRH              = STR2H; // Error String 2 high
+    const byte ERRSTR               = 0x7B;  // Error String pointer
+    const byte ERRSTRL              = 0x7C;  // Error String 2 low (alias)
+    const byte ERRSTRH              = 0x7C;  // Error String 2 high
 
 
     // TODO : move to Compiler section
@@ -399,6 +393,20 @@ unit ZP // ZeroPage.asm
     const byte RANDOMSEEDH          = 0xA4;  // MSB of random seed
     
     const byte CURRENTSYSCALL       = 0xA5;
+    
+    // last function called during execution
+    const byte IDCALL               = 0xA6;
+    const byte IDCALLL              = 0xA6;
+    const byte IDCALLH              = 0xA7;
+    
+    const byte RuntimeError         = 0xA8;
+    
+    // used only in Debug unit as STR2
+#ifdef DEBUG
+    const byte STR2                 = 0xA9;  // String pointer 2
+    const byte STR2L                = 0xA9;  // String 2 low (alias)
+    const byte STR2H                = 0xAA;  // String 2 high
+#endif
     
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
     // Shared with Storage.LoadProgram

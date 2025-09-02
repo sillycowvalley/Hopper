@@ -1,14 +1,18 @@
-TRON
-WORD ARR[2000]
-BEGIN
-    FOR I = 0 TO 1999
-        ARR[I] = I
-    NEXT I
-    EXPORT(ARR, "TEST")
-END
+
+! Compile time
 
 NEW
-WORD ARR[0]
-PRINT IMPORT(ARR, "TEST"), " elements loaded"
-VARS
+BEGIN
+   PRINT "HELLO"
+   BLAH
+END
 
+
+! Run time
+NEW
+VAR A = 0
+BEGIN
+   PRINT "HELLO"
+   PRINT 100 / A
+END
+RUN

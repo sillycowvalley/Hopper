@@ -13,14 +13,17 @@ unit Executor // Executor.asm
    const uint executorTokenAddrH    = Address.BasicExecutorWorkspace + 12;  // token fetch addr high
    const uint executorOperandBP     = Address.BasicExecutorWorkspace + 13;  // BP offset operand (FORCHK and FORIT)
    
-   // Reset Hopper VM to clean state before REPL execution
+    // Reset Hopper VM to clean state before REPL execution
     Reset()
     {
         // Reset stacks (already proven to work in ExecuteOpCodes)
         STZ ZP.SP    // Reset value/type stack pointer to 0
         STZ ZP.BP    // Reset base pointer to 0
         STZ ZP.CSP   // Reset call stack pointer to 0
-
+        
+        STZ ZP.IDCALLL // No function has been called yet
+        STZ ZP.IDCALLH
+        
         // Initialize 16-bit random seed with current time (millis)
         LDA ZP.TICK3 // trigger a millis update in the emulator
         LDA ZP.TICK0
@@ -33,15 +36,9 @@ unit Executor // Executor.asm
         loop
         {
             if (NC) { break; } // No more functions
-            Locals.GetArgumentsCount(); // -> ZP.ACCL
             
             // remove Locals from the back of the list until there are only Arguments remaining
-            loop
-            {
-                Locals.FindByIndex(); // function IDX, index ZP.ACCL -> local IDY, C or NC
-                if (NC) { break; }    // no more locals -> exit loop
-                Locals.RemoveLast();  // Clear locals for function in ZP.IDX
-            }
+            Functions.RemoveLocals(); // IDX = function node
             Functions.IterateNext(); // Get next function
         }
        
@@ -224,7 +221,7 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(strExecuteOpCodes % 256) STA ZP.TraceMessageL LDA #(strExecuteOpCodes / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
-        
+
        // CRITICAL: Reset stacks before execution to ensure clean state
        // Previous expression errors or interruptions could leave stacks inconsistent
        Executor.Reset();
@@ -244,6 +241,7 @@ unit Executor // Executor.asm
            {
                 // Fetch and execute next opcode
                 LDA [ZP.PC]
+                
                 // Advance PC
                 INC ZP.PCL
                 if (Z)

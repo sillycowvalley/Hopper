@@ -1,5 +1,12 @@
 NEW
 
+CONST NAMELEN = 12
+CHAR Op00Names[0]  ! Opcodes 0x00-0x1D (30 entries)
+CHAR Op40Names[0]  ! Opcodes 0x40-0x4F (16 entries)
+CHAR Op80Names[0]  ! Opcodes 0x80-0x94 (21 entries)
+CHAR OpC0Names[0]  ! Opcodes 0xC0-0xC2 (3 entries)
+VAR OpcodesLoaded = FALSE
+
 FUNC HexB(b)
     VAR h = b / 16
     VAR l = b & 15
@@ -38,96 +45,126 @@ FUNC PStr(a)
     UNTIL c = 0
 ENDFUNC
 
-FUNC PrOp00(op)
-    VAR n = "?"
+FUNC LoadOpcodes()
+    VAR count
     
-    IF op = 0x00 THEN n = "INVALID" ENDIF
-    IF op = 0x01 THEN n = "ADD" ENDIF
-    IF op = 0x02 THEN n = "SUB" ENDIF
-    IF op = 0x03 THEN n = "MUL" ENDIF
-    IF op = 0x04 THEN n = "DIV" ENDIF
-    IF op = 0x05 THEN n = "MOD" ENDIF
-    IF op = 0x06 THEN n = "NEG" ENDIF
-    IF op = 0x07 THEN n = "BITWISE_AND" ENDIF
-    IF op = 0x08 THEN n = "BITWISE_OR" ENDIF
-    IF op = 0x09 THEN n = "BITWISE_NOT" ENDIF
-    IF op = 0x0A THEN n = "LOGICAL_AND" ENDIF
-    IF op = 0x0B THEN n = "LOGICAL_OR" ENDIF
-    IF op = 0x0C THEN n = "LOGICAL_NOT" ENDIF
-    IF op = 0x0D THEN n = "EQ" ENDIF
-    IF op = 0x0E THEN n = "NE" ENDIF
-    IF op = 0x0F THEN n = "LT" ENDIF
-    IF op = 0x10 THEN n = "GT" ENDIF
-    IF op = 0x11 THEN n = "LE" ENDIF
-    IF op = 0x12 THEN n = "GE" ENDIF
-    IF op = 0x13 THEN n = "DUP" ENDIF
-    IF op = 0x14 THEN n = "NOP" ENDIF
-    IF op = 0x15 THEN n = "PUSH0" ENDIF
-    IF op = 0x16 THEN n = "PUSH1" ENDIF
-    IF op = 0x17 THEN n = "PUSHVOID" ENDIF
-    IF op = 0x18 THEN n = "PUSHLONG0" ENDIF
-    IF op = 0x19 THEN n = "HALT" ENDIF
-    IF op = 0x1A THEN n = "ENTER" ENDIF
-    IF op = 0x1B THEN n = "PUSHEMPTYVAR" ENDIF
-    IF op = 0x1C THEN n = "GETITEM" ENDIF
-    IF op = 0x1D THEN n = "SETITEM" ENDIF
+    IF OpcodesLoaded THEN
+        RETURN TRUE
+    ENDIF
     
-    PRINT n;
+    ! Load the 4 opcode tables
+    count = IMPORT(Op00Names, "OPCODES00")
+    IF count = 0 THEN
+        PRINT "Error: OPCODES00 file not found!"
+        RETURN FALSE
+    ENDIF
+    
+    count = IMPORT(Op40Names, "OPCODES40")
+    IF count = 0 THEN
+        PRINT "Error: OPCODES40 file not found!"
+        RETURN FALSE
+    ENDIF
+    
+    count = IMPORT(Op80Names, "OPCODES80")
+    IF count = 0 THEN
+        PRINT "Error: OPCODES80 file not found!"
+        RETURN FALSE
+    ENDIF
+    
+    count = IMPORT(OpC0Names, "OPCODESC0")
+    IF count = 0 THEN
+        PRINT "Error: OPCODESC0 file not found!"
+        RETURN FALSE
+    ENDIF
+    
+    OpcodesLoaded = TRUE
+    RETURN TRUE
 ENDFUNC
 
-FUNC PrOp40(op)
-    VAR n = "?"
+FUNC PrOpName(opc)
+    VAR idx
+    VAR c
+    VAR printed = FALSE
     
-    IF op = 0x40 THEN n = "PUSHBIT" ENDIF
-    IF op = 0x41 THEN n = "PUSHBYTE" ENDIF
-    IF op = 0x42 THEN n = "PUSHCHAR" ENDIF
-    IF op = 0x43 THEN n = "PUSHLOCAL" ENDIF
-    IF op = 0x44 THEN n = "POPLOCAL" ENDIF
-    IF op = 0x48 THEN n = "SYSCALL" ENDIF
-    IF op = 0x49 THEN n = "RETURN" ENDIF
-    IF op = 0x4A THEN n = "RETURNVAL" ENDIF
-    IF op = 0x4B THEN n = "PUSHGLOBAL" ENDIF
-    IF op = 0x4C THEN n = "POPGLOBAL" ENDIF
-    IF op = 0x4D THEN n = "INCGLOBAL" ENDIF
-    IF op = 0x4E THEN n = "INCLOCAL" ENDIF
-    IF op = 0x4F THEN n = "DECSP" ENDIF
+    ! Select the right array based on opcode range
+    IF opc <= 0x1D THEN
+        idx = opc * NAMELEN
+        FOR i = 0 TO NAMELEN - 1
+            c = Op00Names[idx + i]
+            IF c <> ' ' THEN
+                PRINT c;
+                printed = TRUE
+            ELSE
+                IF printed THEN
+                    RETURN
+                ENDIF
+            ENDIF
+        NEXT i
+        IF NOT printed THEN
+            PRINT "?";
+        ENDIF
+        RETURN
+    ENDIF
     
-    PRINT n;
-ENDFUNC
-
-FUNC PrOp80(op)
-    VAR n = "?"
+    IF (opc >= 0x40) AND (opc <= 0x4F) THEN
+        idx = (opc - 0x40) * NAMELEN
+        FOR i = 0 TO NAMELEN - 1
+            c = Op40Names[idx + i]
+            IF c <> ' ' THEN
+                PRINT c;
+                printed = TRUE
+            ELSE
+                IF printed THEN
+                    RETURN
+                ENDIF
+            ENDIF
+        NEXT i
+        IF NOT printed THEN
+            PRINT "?";
+        ENDIF
+        RETURN
+    ENDIF
     
-    IF op = 0x80 THEN n = "PUSHINT" ENDIF
-    IF op = 0x81 THEN n = "PUSHWORD" ENDIF
-    IF op = 0x82 THEN n = "PUSHCSTRING" ENDIF
-    IF op = 0x83 THEN n = "CALL" ENDIF
-    IF op = 0x84 THEN n = "CALLF" ENDIF
-    IF op = 0x87 THEN n = "JUMPW" ENDIF
-    IF op = 0x88 THEN n = "JUMPZW" ENDIF
-    IF op = 0x8A THEN n = "ADDLOCALS" ENDIF
-    IF op = 0x8B THEN n = "ADDGLOBALS" ENDIF
-    IF op = 0x8C THEN n = "GETITEMGG" ENDIF
-    IF op = 0x8D THEN n = "GETITEMGL" ENDIF
-    IF op = 0x8E THEN n = "GETITEMLG" ENDIF
-    IF op = 0x8F THEN n = "GETITEMLL" ENDIF
-    IF op = 0x90 THEN n = "SETITEMGG" ENDIF
-    IF op = 0x91 THEN n = "SETITEMGL" ENDIF
-    IF op = 0x92 THEN n = "SETITEMLG" ENDIF
-    IF op = 0x93 THEN n = "SETITEMLL" ENDIF
-    IF op = 0x94 THEN n = "PUSHLONG" ENDIF
+    IF (opc >= 0x80) AND (opc <= 0x94) THEN
+        idx = (opc - 0x80) * NAMELEN
+        FOR i = 0 TO NAMELEN - 1
+            c = Op80Names[idx + i]
+            IF c <> ' ' THEN
+                PRINT c;
+                printed = TRUE
+            ELSE
+                IF printed THEN
+                    RETURN
+                ENDIF
+            ENDIF
+        NEXT i
+        IF NOT printed THEN
+            PRINT "?";
+        ENDIF
+        RETURN
+    ENDIF
     
-    PRINT n;
-ENDFUNC
-
-FUNC PrOpC0(op)
-    VAR n = "?"
+    IF (opc >= 0xC0) AND (opc <= 0xC2) THEN
+        idx = (opc - 0xC0) * NAMELEN
+        FOR i = 0 TO NAMELEN - 1
+            c = OpC0Names[idx + i]
+            IF c <> ' ' THEN
+                PRINT c;
+                printed = TRUE
+            ELSE
+                IF printed THEN
+                    RETURN
+                ENDIF
+            ENDIF
+        NEXT i
+        IF NOT printed THEN
+            PRINT "?"; 
+        ENDIF
+        RETURN
+    ENDIF
     
-    IF op = 0xC0 THEN n = "FORCHK" ENDIF
-    IF op = 0xC1 THEN n = "FORIT" ENDIF
-    IF op = 0xC2 THEN n = "FORITF" ENDIF
-    
-    PRINT n;
+    ! Unknown opcode range
+    PRINT "?";
 ENDFUNC
 
 FUNC PrOpc(addr, opc)
@@ -274,18 +311,7 @@ FUNC DmpOp(a)
         pc = PrOpr(cnt, op, pc)
         
         PRINT " ";
-        IF cnt = 0 THEN
-            PrOp00(opc)
-        ENDIF
-        IF cnt = 1 THEN
-            PrOp40(opc)
-        ENDIF
-        IF cnt = 2 THEN
-            PrOp80(opc)
-        ENDIF
-        IF cnt = 3 THEN
-            PrOpC0(opc)
-        ENDIF
+        PrOpName(opc)
         
         DecOpr(opc, op, oldpc, cnt)
         PRINT
@@ -355,7 +381,7 @@ FUNC StrEq(a1, s2)
         IF i >= sz THEN
             c2 = 0
         ELSE
-            c2 = ASC(s2[i])
+            c2 = ASC(s2[i])  ! Need ASC here because PEEK returns LONG
         ENDIF
         
         IF c1 <> c2 THEN
@@ -372,12 +398,19 @@ FUNC StrEq(a1, s2)
 ENDFUNC
 
 FUNC DSM(name)
-    VAR hL = PEEK(0x3E)
-    VAR hH = PEEK(0x3F)
-    VAR c = hL + (hH * 256)
+    VAR hL, hH, c
     VAR cnt = 0
     VAR all = (name = "*")
     VAR nL, nH
+    
+    ! Load opcode tables if not already loaded
+    IF NOT LoadOpcodes() THEN
+        RETURN
+    ENDIF
+    
+    hL = PEEK(0x3E)
+    hH = PEEK(0x3F)
+    c = hL + (hH * 256)
     
     IF c = 0 THEN
         PRINT "None"
@@ -415,5 +448,3 @@ FUNC DSM(name)
         PRINT "Not found: "; name
     ENDIF
 ENDFUNC
-
-
