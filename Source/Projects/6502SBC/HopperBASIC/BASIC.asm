@@ -208,7 +208,7 @@ program HopperBASIC
             // Clear output flag before processing statement
             RMB6 ZP.FLAGS // Bit 6 - track output was produced by REPL command
             
-            STZ ZP.IDCALLL // No function has been
+            STZ ZP.IDCALLL // No function has been called
             STZ ZP.IDCALLH
             
             // Process non-empty line
@@ -228,7 +228,8 @@ program HopperBASIC
                 if (NZ)
                 {
                     // runtime error inside compiled function
-                    CompileForError();
+Debug.NL(); LDA #'R' COut();                    
+                    Functions.CompileForError();
                 }
                 
                 // compile time error or REPL runtime error

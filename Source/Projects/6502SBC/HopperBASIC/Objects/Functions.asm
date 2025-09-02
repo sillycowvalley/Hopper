@@ -752,6 +752,10 @@ unit Functions
                     TokenIterator.RenderTokenStream();   // Input: ZP.IDY = tokens pointer
                     Commands.DisplayFunctionSuffix();    // Input: ZP.IDX = function node, munts IDY
                     Print.NewLine();
+
+                    // don't make compile-time errors look like run-time errors                    
+                    STZ ZP.IDCALLL
+                    STZ ZP.IDCALLH
                 }
             }
             break;
