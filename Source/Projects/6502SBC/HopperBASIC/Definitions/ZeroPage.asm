@@ -321,7 +321,7 @@ unit ZP // ZeroPage.asm
     const byte STRH                 = 0x7A;  // String high
     
     const byte ERRSTR               = 0x7B;  // Error String pointer
-    const byte ERRSTRL              = 0x7C;  // Error String 2 low (alias)
+    const byte ERRSTRL              = 0x7B;  // Error String 2 low (alias)
     const byte ERRSTRH              = 0x7C;  // Error String 2 high
 
 

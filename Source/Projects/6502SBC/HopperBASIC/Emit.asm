@@ -9,7 +9,7 @@ unit Emit
            {
 //Debug.NL(); LDA ZP.XPCH HOut(); LDA ZP.XPCL HOut(); Space(); LDA ZP.PCH HOut(); LDA ZP.PCL HOut(); Space(); LDA ZP.TokenizerPosH HOut(); LDA ZP.TokenizerPosL HOut(); 
 //Space(); LDA Compiler.compilerOpCode HOut(); TAX OpCodes.ToString(); Space(); Print.String();
-   
+
                 // have we reached the runtime error location?
                 LDA ZP.XPCH
                 CMP ZP.PCH
@@ -23,6 +23,9 @@ unit Emit
                     // set error so Functions.Compile will emit it
                     LDA ZP.RuntimeError
                     STA ZP.LastError
+                    
+                    STZ ZP.RuntimeError  // we're done with it so clear it
+                    
                     CheckError();
                     break;
                 }

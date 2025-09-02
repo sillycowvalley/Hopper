@@ -24,8 +24,8 @@ program HopperBASIC
 #ifdef DEBUG    
     #define ROM_48K
 #else
-    #define ROM_48K    
-    //#define ROM_32K
+    //#define ROM_48K    
+    #define ROM_32K
 #endif
     
     uses "./Definitions/ZeroPage"
@@ -218,8 +218,8 @@ program HopperBASIC
             States.IsExiting();
             if (C) { break; } // BYE command - clean exit
             
-            // Then check for errors
-            Error.CheckError();
+            SEC // still ok, just not exiting
+            Error.CheckError(); // but check for IsFailure or ZP.LastError ..
             if (NC)
             {
                 // Runtime Error?  (IDCALL != 0, reset to zero in ExecuteOpCodes)

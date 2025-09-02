@@ -988,6 +988,30 @@ unit Error // ErrorID.asm
         PLA
     }
     
+    // returns C if:
+    // - ERRSTR != null
+    // - ERRSTR is on the heap (not in the token buffer like with REPL)
+    validateERRSTR()
+    {
+        loop
+        {
+            LDA ZP.ERRSTRH
+            ORA ZP.ERRSTRL
+            if (NZ)
+            {
+                LDA ZP.ERRSTRH
+                CMP ZP.HEAPSTART
+                if (C) // ERRSTR >= HEAPSTART
+                {
+                    SEC
+                    break;
+                }
+            }
+            CLC
+            break;
+        }
+    }        
+    
     // Check for error and print it if found
     // Input: None
     // Output: C set if no error, NC if error was printed
@@ -1014,10 +1038,8 @@ unit Error // ErrorID.asm
             PHA
             
             // Print the error message
-            
-            LDA ZP.ERRSTRH
-            ORA ZP.ERRSTRL
-            if (NZ)
+            validateERRSTR();
+            if (C)
             {
                 LDA ZP.LastError
                 LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest|MessageExtras.SuffixSpace|MessageExtras.SuffixColon)

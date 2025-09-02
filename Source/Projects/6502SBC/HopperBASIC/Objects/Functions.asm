@@ -569,7 +569,7 @@ unit Functions
         LDA ZP.IDCALLH
         STA ZP.IDXH
         
-        Functions.RemoveLocals();
+        Functions.RemoveLocals(); // IDX = function node
         
         Functions.GetOpCodes(); // IDX -> IDY
 
@@ -600,6 +600,8 @@ unit Functions
         SMB7 ZP.FLAGS // Bit 7 - compiling to find error location
         Functions.Compile();
         RMB7 ZP.FLAGS
+
+        Functions.FreeAllOpCodes(); // clear all code (because it will have the wrong CALLF address for this function)
     }
     
     const string functionCompile = "FuncComp";
@@ -634,8 +636,6 @@ unit Functions
         PHA
         LDA ZP.OpCodeBufferH
         PHA
-        
-        
         
         loop // Single exit block
         {
@@ -679,7 +679,6 @@ unit Functions
             STA ZP.IDXH
             PLA
             STA ZP.IDXL
-            
 
             States.GetState();
             switch (A)
@@ -707,8 +706,8 @@ unit Functions
             
             States.SetSuccess(); // should already be the case
             break;
-        }
-        
+        } // loop
+
         loop
         {
             Trace.IsTracing();
@@ -756,7 +755,7 @@ unit Functions
                 }
             }
             break;
-        }
+        } // loop
         
         // restore buffers (they may be REPL or Function)
         PLA
