@@ -167,7 +167,7 @@ unit Compiler // Compiler.asm
    CheckBufferSpace()
    {
 #ifdef TRACEPARSE
-       PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
+       //PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry(); PLA
 #endif
        loop
        {
@@ -193,7 +193,7 @@ unit Compiler // Compiler.asm
        }
        
 #ifdef TRACEPARSE
-       PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
+       //PHA LDA #(checkBufferSpaceTrace % 256) STA ZP.TraceMessageL LDA #(checkBufferSpaceTrace / 256) STA ZP.TraceMessageH Trace.MethodExit(); PLA
 #endif
    }
    
@@ -1597,8 +1597,8 @@ unit Compiler // Compiler.asm
                     // The character byte is stored inline after the CHARLIT token
                     
                     // Calculate address of character value in token buffer
-                    LDA ZP.TokenBufferL
                     CLC
+                    LDA ZP.TokenBufferL
                     ADC ZP.TokenLiteralPosL
                     STA ZP.IDXL
                     LDA ZP.TokenBufferH
@@ -1824,7 +1824,8 @@ unit Compiler // Compiler.asm
                         BASICTypes.Coerce();
                         CheckErrorAndSetFailure();
                         Long.PushTop();
-                    }  
+                    }
+                    
     #ifdef TRACEPARSE
                    break;
     #else
@@ -1852,7 +1853,7 @@ unit Compiler // Compiler.asm
                             Error.TypeMismatch(); BIT ZP.EmulatorPCL
                             CheckErrorAndSetFailure();
                         }
-                    }               
+                    }   
     #ifdef TRACEPARSE
                    break;
     #else
@@ -1900,13 +1901,19 @@ unit Compiler // Compiler.asm
     const string compileSysCallTrace = "CompSysCall";
     compileSysCall()
     {
+        TAX
+        
+        // recursive SysCalls
+        LDA ZP.CURRENTSYSCALL
+        PHA
+        
+        STX ZP.CURRENTSYSCALL
+        
 #ifdef TRACEPARSE
         PHA LDA #(compileSysCallTrace % 256) STA ZP.TraceMessageL 
         LDA #(compileSysCallTrace / 256) STA ZP.TraceMessageH 
         Trace.MethodEntry(); PLA
 #endif
-        
-        STA ZP.CURRENTSYSCALL
         
         loop // Single exit
         {
@@ -1983,6 +1990,7 @@ unit Compiler // Compiler.asm
                 }
             }
             
+            
             // Expect closing parenthesis
             LDA ZP.CurrentToken
             CMP #Token.RPAREN
@@ -2007,6 +2015,10 @@ unit Compiler // Compiler.asm
             SEC // Success
             break;
         }
+        
+        // recursive syscalls
+        PLA
+        STA ZP.CURRENTSYSCALL
         
 #ifdef TRACEPARSE
         LDA #(compileSysCallTrace % 256) STA ZP.TraceMessageL 
@@ -2519,7 +2531,6 @@ unit Compiler // Compiler.asm
             // Must have expression(s) - compile argument list
             loop // Argument processing loop
             {
-
                 // Compile current expression
                 CompileFoldedExpressionTree(); // PRINT arguments, use full expression compilation
                 CheckErrorAndSetFailure();

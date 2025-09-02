@@ -5,8 +5,8 @@ program HopperBASIC
     #define HASEEPROM   // include EEPROM storage
     #define HASI2C      // include 6502SBC I2C support
     
-    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    #define DEBUG
+    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    //#define DEBUG
     //#define MULDIVDEBUG
     //#define VERBOSEDEBUG // debug the keyword table limits
     //#define FILEDEBUG
@@ -14,7 +14,7 @@ program HopperBASIC
     //#define TRACE      // Compiler and Executor call tree walks
     //#define TRACEFILE  // Storage and File
     //#define TRACEPARSE // Compiler and CompilerFlow
-    #define TRACEEXE   // instructions in Executor
+    //#define TRACEEXE   // instructions in Executor
 
     //#define TRACECONSOLE // trace output for Console.asm and Command.asm
     
