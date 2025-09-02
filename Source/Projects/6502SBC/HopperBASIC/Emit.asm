@@ -24,8 +24,6 @@ unit Emit
                     LDA ZP.RuntimeError
                     STA ZP.LastError
                     
-                    STZ ZP.RuntimeError  // we're done with it so clear it
-                    
                     CheckError();
                     break;
                 }

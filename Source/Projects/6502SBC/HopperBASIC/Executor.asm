@@ -3083,88 +3083,25 @@ Debug.NL(); TLOut(); Space(); YOut();
             LDA Address.ValueStackMSB, Y
             STA ZP.IDYH
             
-            // TODO TYPE DEMOTION
             LDA ZP.ACCT
             switch (A)
             {
                 case BASICType.CHAR:
                 case BASICType.BIT:
                 {
-                    CMP ZP.TOPT
+                    CMP ZP.TOPT // strict: RHS type = LHS type
                     if (NZ)
                     {
                         Error.TypeMismatch(); BIT ZP.EmulatorPCL
                         break;
-                    }
-                }
-                case BASICType.BYTE:
-                {
-                    if (BBR3, ZP.TOPT) // Bit 3 - LONG
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    LDA ZP.TOP1
-                    ORA ZP.TOP2
-                    ORA ZP.TOP3 // x3
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    }
-                }
-                case BASICType.WORD:
-                {
-                    if (BBR3, ZP.TOPT) // Bit 3 - LONG
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    LDA ZP.TOP2
-                    ORA ZP.TOP3 // x2
-                    if (NZ)
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    }
-                }
-                case BASICType.INT:
-                {
-                    if (BBR3, ZP.TOPT) // Bit 3 - LONG
-                    {
-                        Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                        break;
-                    }
-                    if (BBS7, ZP.TOP3)
-                    {
-                        LDA ZP.TOP2
-                        CMP #0xFF
-                        if (NZ)
-                        {
-                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                            break;
-                        }
-                        LDA ZP.TOP3
-                        CMP #0xFF
-                        if (NZ)
-                        {
-                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        LDA ZP.TOP2
-                        ORA ZP.TOP3 // x2
-                        if (NZ)
-                        {
-                            Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                            break;
-                        }
                     }
                 }
                 default:
                 {
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    break;
+                    // Input:   LONG: TOP0-3, TOPT = LONG, desired type ACCT
+                    // Output:  C, or NC if out of range
+                    BASICTypes.Coerce();
+                    if (NC) { BIT ZP.EmulatorPCL break; }
                 }
             }
             

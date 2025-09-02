@@ -1,11 +1,20 @@
-
-! Compile time
 NEW
+
+CHAR board[9]
+
+FUNC CLEARBOARD()
+     FOR I = 0 TO 8
+         BOARD[I] = 0
+     NEXT I
+ENDFUNC
+
 BEGIN
-   PRINT "HELLO"
-   BLAH
+    CLEARBOARD()
 END
 RUN
+
+
+
 
 ! Run time
 NEW
@@ -16,13 +25,9 @@ BEGIN
 END
 RUN
 
-! Peephole
 NEW
-BEGIN
-    VAR A
-    FOR I = 1 TO 10000
-        A = A + 1
-    NEXT I
-END
-RUN
+VAR ROW = 0
+PRINT CHR(ASC('A') + ROW)
 
+
+! PRINT " "; CHR(ASC('A') + ROW); " "; 

@@ -1,243 +1,252 @@
 NEW
+CLS
+! Tic Tac Toe for Hopper BASIC (no INPUT)
+! Uses direct keyboard reading from serial buffer
 
-BYTE board[9]
-VAR turn
+CONST InWritePtr = 0x0A   ! Serial buffer write position
+CONST InReadPtr  = 0x0B   ! Serial buffer read position
+CONST InBuffer   = 0x0200 ! actual Serial input buffer
+
+! Board represented as CHAR array
+! 0=empty, 1=X, 2=O
+CHAR board[9]
+VAR gameOver
+VAR winner
 VAR moves
 
-FUNC Init()
-    VAR i
+! Check if key available
+FUNC KeyReady()
+    RETURN PEEK(InReadPtr) <> PEEK(InWritePtr)
+ENDFUNC
+
+! Get a key from buffer
+FUNC GetKey()
+    VAR iptr, key
+    WHILE NOT KeyReady()
+        DELAY(5)
+    WEND
+    iptr = PEEK(InReadPtr)
+    key = PEEK(InBuffer + iptr)
+    POKE(InReadPtr, (iptr + 1) & 0xFF)
+    RETURN key
+ENDFUNC
+
+! Clear the board
+FUNC ClearBoard()
     FOR i = 0 TO 8
-        board[i] = ASC(' ')
+        board[i] = CHR(0)
     NEXT i
-    turn = ASC('X')
-    moves = 0
 ENDFUNC
 
-FUNC Show()
+! Draw the board
+FUNC DrawBoard()
+    VAR ch
     PRINT
-    PRINT " "; CHR(board[0]); " | "; CHR(board[1]); " | "; CHR(board[2])
-    PRINT "-----------"
-    PRINT " "; CHR(board[3]); " | "; CHR(board[4]); " | "; CHR(board[5])
-    PRINT "-----------"
-    PRINT " "; CHR(board[6]); " | "; CHR(board[7]); " | "; CHR(board[8])
-    PRINT
-    PRINT "Use 1-9 to play:"
-    PRINT " 1 | 2 | 3"
-    PRINT " 4 | 5 | 6"
-    PRINT " 7 | 8 | 9"
+    PRINT "     1   2   3"
+    PRINT "   +---+---+---+"
+    
+    FOR row = 0 TO 2
+        PRINT " "; CHR(ASC('A') + row); " ";
+        FOR col = 0 TO 2
+            PRINT "|";
+            ch = board[row * 3 + col]
+            IF ch = 0 THEN
+                PRINT "   ";
+            ELSE
+                IF ch = 1 THEN
+                    PRINT " X ";
+                ELSE
+                    PRINT " O ";
+                ENDIF
+            ENDIF
+        NEXT col
+        PRINT "|"
+        PRINT "   +---+---+---+"
+    NEXT row
     PRINT
 ENDFUNC
 
-FUNC Win()
-    VAR b0 = board[0]
-    VAR b1 = board[1]
-    VAR b2 = board[2]
-    VAR b3 = board[3]
-    VAR b4 = board[4]
-    VAR b5 = board[5]
-    VAR b6 = board[6]
-    VAR b7 = board[7]
-    VAR b8 = board[8]
-    VAR s = ASC(' ')
+! Check for winner (returns 0=none, 1=X, 2=O)
+FUNC CheckWinner()
+    VAR p
     
-    ! Rows
-    IF b0 = b1 AND b1 = b2 AND b0 <> s THEN
-        RETURN b0
-    ENDIF
-    IF b3 = b4 AND b4 = b5 AND b3 <> s THEN
-        RETURN b3
-    ENDIF
-    IF b6 = b7 AND b7 = b8 AND b6 <> s THEN
-        RETURN b6
-    ENDIF
+    ! Check rows
+    FOR row = 0 TO 2
+        p = board[row * 3]
+        IF p <> 0 THEN
+            IF (board[row * 3 + 1] = p) AND (board[row * 3 + 2] = p) THEN
+                RETURN p
+            ENDIF
+        ENDIF
+    NEXT row
     
-    ! Cols
-    IF b0 = b3 AND b3 = b6 AND b0 <> s THEN
-        RETURN b0
-    ENDIF
-    IF b1 = b4 AND b4 = b7 AND b1 <> s THEN
-        RETURN b1
-    ENDIF
-    IF b2 = b5 AND b5 = b8 AND b2 <> s THEN
-        RETURN b2
-    ENDIF
+    ! Check columns
+    FOR col = 0 TO 2
+        p = board[col]
+        IF p <> 0 THEN
+            IF (board[3 + col] = p) AND (board[6 + col] = p) THEN
+                RETURN p
+            ENDIF
+        ENDIF
+    NEXT col
     
-    ! Diags
-    IF b0 = b4 AND b4 = b8 AND b0 <> s THEN
-        RETURN b0
-    ENDIF
-    IF b2 = b4 AND b4 = b6 AND b2 <> s THEN
-        RETURN b2
+    ! Check diagonals
+    p = board[4]
+    IF p <> 0 THEN
+        IF (board[0] = p) AND (board[8] = p) THEN
+            RETURN p
+        ENDIF
+        IF (board[2] = p) AND (board[6] = p) THEN
+            RETURN p
+        ENDIF
     ENDIF
     
     RETURN 0
 ENDFUNC
 
-FUNC Play()
-    VAR pos
-    VAR key
-    VAR w
+! Get player move
+FUNC GetPlayerMove()
+    VAR row, col, pos, key
+    VAR valid = FALSE
     
-    Init()
-    
-    WHILE moves < 9
-        Show()
-        PRINT "Player "; CHR(turn); " move: ";
-        key = INPUT()
+    WHILE NOT valid
+        PRINT "Enter move (A1-C3): ";
         
-        IF key >= 1 AND key <= 9 THEN
-            pos = key - 1
-            IF board[pos] = ASC(' ') THEN
-                board[pos] = turn
-                moves = moves + 1
-                
-                w = Win()
-                IF w <> 0 THEN
-                    Show()
-                    PRINT "Player "; CHR(w); " wins!"
-                    RETURN
-                ENDIF
-                
-                IF turn = ASC('X') THEN
-                    turn = ASC('O')
-                ELSE
-                    turn = ASC('X')
-                ENDIF
-            ELSE
-                PRINT "Position taken!"
-            ENDIF
-        ELSE
-            PRINT "Invalid move!"
+        ! Get row (A-C)
+        key = GetKey()
+        IF (key >= ASC('a')) AND (key <= ASC('c')) THEN
+            key = key - 32  ! Convert to uppercase
         ENDIF
-    WEND
-    
-    Show()
-    PRINT "It's a draw!"
-ENDFUNC
-
-FUNC Comp()
-    VAR i
-    VAR o = ASC('O')
-    VAR x = ASC('X')
-    VAR s = ASC(' ')
-    
-    ! Try to win
-    FOR i = 0 TO 8
-        IF board[i] = s THEN
-            board[i] = o
-            IF Win() = o THEN
-                RETURN
-            ENDIF
-            board[i] = s
-        ENDIF
-    NEXT i
-    
-    ! Block player
-    FOR i = 0 TO 8
-        IF board[i] = s THEN
-            board[i] = x
-            IF Win() = x THEN
-                board[i] = o
-                RETURN
-            ENDIF
-            board[i] = s
-        ENDIF
-    NEXT i
-    
-    ! Take center
-    IF board[4] = s THEN
-        board[4] = o
-        RETURN
-    ENDIF
-    
-    ! Take corner
-    IF board[0] = s THEN
-        board[0] = o
-        RETURN
-    ENDIF
-    IF board[2] = s THEN
-        board[2] = o
-        RETURN
-    ENDIF
-    IF board[6] = s THEN
-        board[6] = o
-        RETURN
-    ENDIF
-    IF board[8] = s THEN
-        board[8] = o
-        RETURN
-    ENDIF
-    
-    ! Take any
-    FOR i = 0 TO 8
-        IF board[i] = s THEN
-            board[i] = o
-            RETURN
-        ENDIF
-    NEXT i
-ENDFUNC
-
-FUNC Play2()
-    VAR pos
-    VAR key
-    VAR w
-    
-    Init()
-    turn = ASC('X')
-    
-    WHILE moves < 9
-        Show()
+        PRINT CHR(key);
         
-        IF turn = ASC('X') THEN
-            PRINT "Your move: ";
-            key = INPUT()
+        IF (key >= ASC('A')) AND (key <= ASC('C')) THEN
+            row = key - ASC('A')
             
-            IF key >= 1 AND key <= 9 THEN
-                pos = key - 1
-                IF board[pos] = ASC(' ') THEN
-                    board[pos] = turn
-                    moves = moves + 1
-                    turn = ASC('O')
+            ! Get column (1-3)
+            key = GetKey()
+            PRINT CHR(key)
+            
+            IF (key >= ASC('1')) AND (key <= ASC('3')) THEN
+                col = key - ASC('1')
+                pos = row * 3 + col
+                
+                IF board[pos] = 0 THEN
+                    valid = TRUE
                 ELSE
-                    PRINT "Position taken!"
+                    PRINT "That position is taken!"
                 ENDIF
             ELSE
-                PRINT "Invalid move!"
+                PRINT "Invalid column! Use 1-3"
             ENDIF
         ELSE
-            PRINT "Computer thinking..."
-            Comp()
-            moves = moves + 1
-            turn = ASC('X')
-        ENDIF
-        
-        w = Win()
-        IF w <> 0 THEN
-            Show()
-            IF w = ASC('X') THEN
-                PRINT "You win!"
-            ELSE
-                PRINT "Computer wins!"
-            ENDIF
-            RETURN
+            PRINT
+            PRINT "Invalid row! Use A-C"
         ENDIF
     WEND
     
-    Show()
-    PRINT "It's a draw!"
+    RETURN pos
 ENDFUNC
 
+! Simple computer move - just take first available
+FUNC GetComputerMove()
+    ! Try center first
+    IF board[4] = 0 THEN
+        RETURN 4
+    ENDIF
+    
+    ! Try corners
+    IF board[0] = 0 THEN RETURN 0 ENDIF
+    IF board[2] = 0 THEN RETURN 2 ENDIF
+    IF board[6] = 0 THEN RETURN 6 ENDIF
+    IF board[8] = 0 THEN RETURN 8 ENDIF
+    
+    ! Take any available
+    FOR i = 0 TO 8
+        IF board[i] = 0 THEN
+            RETURN i
+        ENDIF
+    NEXT i
+    
+    RETURN -1
+ENDFUNC
+
+! Main game
 BEGIN
+    VAR playAgain = TRUE
+    VAR key, pos
+    
     PRINT "TIC TAC TOE"
     PRINT "==========="
-    PRINT "1) Human vs Human"
-    PRINT "2) Human vs Computer"
-    PRINT "Choose: ";
-    VAR mode = INPUT()
+    PRINT
+    PRINT "You are X, Computer is O"
+    PRINT
     
-    IF mode = 1 THEN
-        Play()
-    ELSE
-        Play2()
-    ENDIF
+    WHILE playAgain
+        ClearBoard()
+        gameOver = FALSE
+        winner = 0
+        moves = 0
+        
+        DrawBoard()
+        
+        WHILE NOT gameOver
+            ! Player move
+            pos = GetPlayerMove()
+            board[pos] = 1  ! X
+            moves = moves + 1
+            DrawBoard()
+            
+            ! Check for win or draw
+            winner = CheckWinner()
+            IF winner <> 0 THEN
+                gameOver = TRUE
+            ELSE
+                IF moves = 9 THEN
+                    gameOver = TRUE
+                ELSE
+                    ! Computer move
+                    PRINT "Computer is thinking..."
+                    DELAY(500)
+                    pos = GetComputerMove()
+                    IF pos >= 0 THEN
+                        board[pos] = 2  ! O
+                        moves = moves + 1
+                        DrawBoard()
+                        
+                        winner = CheckWinner()
+                        IF winner <> 0 THEN
+                            gameOver = TRUE
+                        ELSE
+                            IF moves = 9 THEN
+                                gameOver = TRUE
+                            ENDIF
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDIF
+        WEND
+        
+        ! Game over
+        IF winner = 1 THEN
+            PRINT "You win!"
+        ELSE
+            IF winner = 2 THEN
+                PRINT "Computer wins!"
+            ELSE
+                PRINT "It's a draw!"
+            ENDIF
+        ENDIF
+        
+        PRINT
+        PRINT "Play again? (Y/N): ";
+        key = GetKey()
+        PRINT CHR(key)
+        
+        IF (key = ASC('n')) OR (key = ASC('N')) THEN
+            playAgain = FALSE
+        ENDIF
+        PRINT
+    WEND
+    
+    PRINT "Thanks for playing!"
 END

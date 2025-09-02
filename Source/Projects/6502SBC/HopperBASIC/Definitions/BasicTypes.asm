@@ -86,7 +86,7 @@ unit BASICTypes // BASICTypes.asm
         } // single exit
     }
     
-    // Input:   LONG: TOP0-3, TOPT, desired type ACCT
+    // Input:   LONG: TOP0-3, TOPT = LONG, desired type ACCT
     // Output:  C, or NC if out of range
     Coerce()
     {

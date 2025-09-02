@@ -312,9 +312,8 @@ unit ZP // ZeroPage.asm
     const byte EmulatorPCL          = 0x75;  // BIT this to capture PC
     const byte EmulatorPCH          = 0x76;  // Captured PC high byte
     
-    const byte I2CInWritePtr        = 0x75;  // I2C buffer write pointer
-    const byte I2CInReadPtr         = 0x76;  // I2C buffer read pointer
-
+    const byte I2CInWritePtr        = 0x77;  // I2C buffer write pointer
+    const byte I2CInReadPtr         = 0x78;  // I2C buffer read pointer
     
     const byte STR                  = 0x79;  // String pointer
     const byte STRL                 = 0x79;  // String low (alias)
