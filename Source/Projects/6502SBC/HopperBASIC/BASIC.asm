@@ -134,6 +134,11 @@ program HopperBASIC
         
         // Initialize BASIC-specific components
         Console.Initialize();  // This now initializes the tokenizer too
+        
+        LDA #(Address.TokenizerBuffer / 256)
+        STA ZP.TokenizerBuffer
+        LDA #(Limits.TokenizerBufferSize / 256)
+        STA ZP.TokenizerBufferSize
      
     }
     

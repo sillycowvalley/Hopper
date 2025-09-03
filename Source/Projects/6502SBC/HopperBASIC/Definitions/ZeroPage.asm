@@ -401,13 +401,16 @@ unit ZP // ZeroPage.asm
     
     const byte CompilerTemp         = 0xA9;  // Temporary workspace used by the Compiler
     
+    const byte TokenizerBuffer      = 0xAA;
+    const byte TokenizerBufferSize  = 0xAB;
+    
     
     
     // used only in Debug unit as STR2
 #ifdef DEBUG
-    const byte STR2                 = 0xAA;  // String pointer 2
-    const byte STR2L                = 0xAA;  // String 2 low (alias)
-    const byte STR2H                = 0xAB;  // String 2 high
+    const byte STR2                 = 0xAC;  // String pointer 2
+    const byte STR2L                = 0xAD;  // String 2 low (alias)
+    const byte STR2H                = 0xAE;  // String 2 high
 #endif
     
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord

@@ -1,5 +1,5 @@
 # WordStar-Style Text Editor for HopperBASIC
-## Architecture Specification v1.0
+## Architecture Specification v1.0 (Compact Function Names)
 
 ## Unified Storage Operations
 
@@ -10,12 +10,12 @@
 ! Free slots: FREE[0]=0, FREE[1]=1, FREE[2]=3, FREE[3]=4...
 
 ! Copy line 1 to clipboard:
-s=AL()              ! Get slot (returns 0, decrements NF)  
+s=aL()              ! Get slot (returns 0, decrements NF)  
 ! Copy text from LD[DOC[1]*LL] to LD[s*LL]
 CLIP[0]=s:NC=1      ! Clipboard now has 1 line
 
 ! Insert new line at position 1:
-s=AL()              ! Get slot (returns 1)
+s=aL()              ! Get slot (returns 1)
 FOR i=NL TO 1 STEP -1:DOC[i+1]=DOC[i]:NEXT i ! Shift refs
 DOC[1]=s:NL=NL+1    ! Insert new ref, increment count
 ```
@@ -23,16 +23,16 @@ DOC[1]=s:NL=NL+1    ! Insert new ref, increment count
 ### Undo Operation Example
 ```basic
 ! Before edit - save current line to undo:
-FUNC SaveUndo()
-  FOR i=0 TO NU-1:FL(UNDO[i]):NEXT i ! Free old undo
-  s=AL():UNDO[0]=s:NU=1:UL=L:UC=C    ! Save line ref & cursor
+FUNC sU()
+  FOR i=0 TO NU-1:fL(UNDO[i]):NEXT i ! Free old undo
+  s=aL():UNDO[0]=s:NU=1:UL=L:UC=C    ! Save line ref & cursor
   ! Copy current line text to undo slot
 ENDFUNC
 
 ! Restore undo:
-FUNC RestoreUndo()
+FUNC rU()
   IF NU>0 THEN ! Copy back, free current, restore cursor
-    s=DOC[UL]:DOC[UL]=UNDO[0]:FL(s):L=UL:C=UC:NU=0
+    s=DOC[UL]:DOC[UL]=UNDO[0]:fL(s):L=UL:C=UC:NU=0
   ENDIF
 ENDFUNC
 ```
@@ -69,50 +69,50 @@ CONST MAX_LINES = 100
 CONST LINE_LENGTH = 80
 
 ! Fixed-size line slots (8000 bytes total)
-CHAR lineData[MAX_LINES * LINE_LENGTH]
+CHAR LD[MAX_LINES * LINE_LENGTH]  ! lineData -> LD
 ```
 
 #### 2. Logical Document Order  
 ```basic
-! Document line order (references to lineData slots)
-WORD lineList[MAX_LINES]
-VAR numLines = 0
+! Document line order (references to LD slots)
+WORD DOC[MAX_LINES]  ! lineList -> DOC
+VAR NL = 0           ! numLines -> NL
 ```
 
 #### 3. Free Slot Management
 ```basic
 ! Available line slots for allocation
-WORD freeLines[MAX_LINES]  
-VAR numFree = MAX_LINES
+WORD FREE[MAX_LINES] ! freeLines -> FREE
+VAR NF = MAX_LINES   ! numFree -> NF
 ```
 
 ### Editor State Variables
 ```basic
 ! Cursor position
-VAR currentLine = 0      ! Document line (0-based)
-VAR currentCol = 0       ! Column within line (0-based)
+VAR L = 0            ! currentLine -> L
+VAR C = 0            ! currentCol -> C
 
 ! Display state  
-VAR topLine = 0          ! First visible line on screen
-VAR leftCol = 0          ! Horizontal scroll offset
+VAR TL = 0           ! topLine -> TL
+VAR LC = 0           ! leftCol -> LC
 
 ! Editor modes
-BIT insertMode = TRUE    ! Insert vs overwrite
-BIT fileModified = FALSE ! Unsaved changes flag
-BIT quitPending = FALSE  ! Exit requested
+BIT IM = TRUE        ! insertMode -> IM
+BIT MOD = FALSE      ! fileModified -> MOD
+BIT QP = FALSE       ! quitPending -> QP
 
 ! File management
-CHAR fileName[13]        ! Current file name
-VAR fileLength = 0       ! Total characters in file
+CHAR FN[13]          ! fileName -> FN
+VAR FL = 0           ! fileLength -> FL
 ```
 
 ### Screen Layout Constants
 ```basic
-CONST SCREEN_WIDTH = 80
-CONST SCREEN_HEIGHT = 24
-CONST TEXT_LINES = 22      ! Lines 1-22 for text
-CONST STATUS_LINE = 23     ! Line 23 for status
-CONST MESSAGE_LINE = 24    ! Line 24 for messages/commands
+CONST SW = 80        ! SCREEN_WIDTH
+CONST SH = 24        ! SCREEN_HEIGHT
+CONST TXT = 22       ! TEXT_LINES (lines 1-22 for text)
+CONST STAT = 23      ! STATUS_LINE (line 23)
+CONST MSG = 24       ! MESSAGE_LINE (line 24)
 ```
 
 ---
@@ -125,21 +125,21 @@ CONST MESSAGE_LINE = 24    ! Line 24 for messages/commands
 
 **Key Functions**:
 ```basic
-FUNC InitLineManager()           ! Initialize arrays and free list
-FUNC AllocateLine()             ! Get free slot, returns slot index
-FUNC FreeLine(slot)             ! Return slot to free list
-FUNC InsertTextLine(pos)        ! Insert new line at document position  
-FUNC DeleteTextLine(pos)        ! Remove line from document
-FUNC GetLineText(lineNum)       ! Get pointer to line text
-FUNC SetLineText(lineNum, text) ! Replace line content
-FUNC GetLineLength(lineNum)     ! Get line length (to null terminator)
+FUNC iLM()           ! InitLineManager - Initialize arrays and free list
+FUNC aL()            ! AllocateLine - Get free slot, returns slot index
+FUNC fL(slot)        ! FreeLine - Return slot to free list
+FUNC iTL(pos)        ! InsertTextLine - Insert new line at document position  
+FUNC dTL(pos)        ! DeleteTextLine - Remove line from document
+FUNC gLT(ln)         ! GetLineText - Get pointer to line text
+FUNC sLT(ln, txt)    ! SetLineText - Replace line content
+FUNC gLL(ln)         ! GetLineLength - Get line length (to null terminator)
 ```
 
 **Memory Layout**:
 ```
-lineData:   [Slot0: "Hello\0......."][Slot1: "World\0......."][Slot2: ...]
-lineList:   [0][1][2]...  ! Document uses slots 0,1,2 in order
-freeLines:  [3][4][5]...  ! Slots 3+ available for allocation
+LD:   [Slot0: "Hello\0......."][Slot1: "World\0......."][Slot2: ...]
+DOC:  [0][1][2]...  ! Document uses slots 0,1,2 in order
+FREE: [3][4][5]...  ! Slots 3+ available for allocation
 ```
 
 ### 2. Cursor Module
@@ -148,24 +148,24 @@ freeLines:  [3][4][5]...  ! Slots 3+ available for allocation
 
 **Key Functions**:
 ```basic
-FUNC MoveCursorUp()         ! ^E - Move up one line
-FUNC MoveCursorDown()       ! ^X - Move down one line  
-FUNC MoveCursorLeft()       ! ^S - Move left one character
-FUNC MoveCursorRight()      ! ^D - Move right one character
-FUNC MoveWordLeft()         ! ^A - Move left one word
-FUNC MoveWordRight()        ! ^F - Move right one word
-FUNC MoveStartOfLine()      ! ^QS - Move to line start
-FUNC MoveEndOfLine()        ! ^QD - Move to line end
-FUNC MoveTopOfFile()        ! ^QR - Move to first line
-FUNC MoveEndOfFile()        ! ^QC - Move to last line
-FUNC MovePage(direction)    ! ^R/^C - Page up/down
-FUNC EnsureCursorVisible()  ! Adjust topLine if needed
+FUNC mCU()           ! MoveCursorUp - ^E Move up one line
+FUNC mCD()           ! MoveCursorDown - ^X Move down one line  
+FUNC mCL()           ! MoveCursorLeft - ^S Move left one character
+FUNC mCR()           ! MoveCursorRight - ^D Move right one character
+FUNC mWL()           ! MoveWordLeft - ^A Move left one word
+FUNC mWR()           ! MoveWordRight - ^F Move right one word
+FUNC mSL()           ! MoveStartOfLine - ^QS Move to line start
+FUNC mEL()           ! MoveEndOfLine - ^QD Move to line end
+FUNC mTF()           ! MoveTopOfFile - ^QR Move to first line
+FUNC mEF()           ! MoveEndOfFile - ^QC Move to last line
+FUNC mPg(dir)        ! MovePage - ^R/^C Page up/down
+FUNC eCV()           ! EnsureCursorVisible - Adjust TL if needed
 ```
 
 **Coordinate Systems**:
-- **Document coordinates**: (currentLine, currentCol) in logical text
+- **Document coordinates**: (L, C) in logical text
 - **Screen coordinates**: (screenRow, screenCol) for display
-- **Buffer coordinates**: Absolute offset in lineData for direct access
+- **Buffer coordinates**: Absolute offset in LD for direct access
 
 ### 3. Display Module  
 
@@ -173,23 +173,23 @@ FUNC EnsureCursorVisible()  ! Adjust topLine if needed
 
 **Key Functions**:
 ```basic
-FUNC InitDisplay()          ! Clear screen, hide cursor
-FUNC RefreshScreen()        ! Full screen redraw
-FUNC RefreshTextArea()      ! Redraw lines 1-22 only
-FUNC UpdateStatusLine()     ! Show file, position, mode
-FUNC ShowMessage(msg)       ! Display message on line 24
-FUNC ClearMessage()         ! Clear message line
-FUNC PositionCursor()       ! Move cursor to current position
-FUNC ScrollUp()             ! Scroll display up one line
-FUNC ScrollDown()           ! Scroll display down one line
+FUNC iD()            ! InitDisplay - Clear screen, hide cursor
+FUNC rS()            ! RefreshScreen - Full screen redraw
+FUNC rTA()           ! RefreshTextArea - Redraw lines 1-22 only
+FUNC uSL()           ! UpdateStatusLine - Show file, position, mode
+FUNC sM(msg)         ! ShowMessage - Display message on line 24
+FUNC cM()            ! ClearMessage - Clear message line
+FUNC pC()            ! PositionCursor - Move cursor to current position
+FUNC sU()            ! ScrollUp - Scroll display up one line
+FUNC sD()            ! ScrollDown - Scroll display down one line
 ```
 
 **VT100 Helper Functions**:
 ```basic
-FUNC SendEsc()              ! Output ESC character
-FUNC GotoXY(x, y)          ! Position cursor  
-FUNC ClearScreen()          ! Clear entire screen
-FUNC ClearLine()           ! Clear current line
+FUNC sE()            ! SendEsc - Output ESC character
+FUNC gXY(x, y)       ! GotoXY - Position cursor  
+FUNC cS()            ! ClearScreen - Clear entire screen
+FUNC cL()            ! ClearLine - Clear current line
 ```
 
 ### 4. Input Module
@@ -198,17 +198,17 @@ FUNC ClearLine()           ! Clear current line
 
 **Key Functions**:
 ```basic
-FUNC GetKey()               ! Get single key (building on Keys.bas)
-FUNC IsControlKey(key)      ! Test if key < 32
-FUNC HandleControlKey(key)  ! Process WordStar commands
-FUNC HandlePrintableKey(key) ! Insert/overwrite character
-FUNC ProcessInput()         ! Main input processing loop
+FUNC gK()            ! GetKey - Get single key (building on Keys.bas)
+FUNC iCK(key)        ! IsControlKey - Test if key < 32
+FUNC hCK(key)        ! HandleControlKey - Process WordStar commands
+FUNC hPK(key)        ! HandlePrintableKey - Insert/overwrite character
+FUNC pI()            ! ProcessInput - Main input processing loop
 ```
 
 **Command State Machine**:
 ```basic
-VAR commandPrefix = 0       ! 0=none, 11=^K, 17=^Q
-VAR lastKey = 0            ! For multi-key sequences
+VAR CP = 0           ! commandPrefix -> CP (0=none, 11=^K, 17=^Q)
+VAR LK = 0           ! lastKey -> LK (for multi-key sequences)
 ```
 
 ### 5. EditOperations Module
@@ -217,13 +217,13 @@ VAR lastKey = 0            ! For multi-key sequences
 
 **Key Functions**:
 ```basic
-FUNC InsertChar(ch)         ! Insert character at cursor
-FUNC DeleteChar()           ! Delete character at cursor (DEL)
-FUNC Backspace()           ! Delete character before cursor
-FUNC InsertNewLine()        ! Break line at cursor
-FUNC JoinLines()           ! Join current line with next
-FUNC DeleteLine()          ! ^Y - Delete entire line
-FUNC OverwriteChar(ch)     ! Overwrite mode character placement
+FUNC iC(ch)          ! InsertChar - Insert character at cursor
+FUNC dC()            ! DeleteChar - Delete character at cursor (DEL)
+FUNC bS()            ! Backspace - Delete character before cursor
+FUNC iNL()           ! InsertNewLine - Break line at cursor
+FUNC jL()            ! JoinLines - Join current line with next
+FUNC dL()            ! DeleteLine - ^Y Delete entire line
+FUNC oC(ch)          ! OverwriteChar - Overwrite mode character placement
 ```
 
 ### 6. Storage Module
@@ -232,12 +232,12 @@ FUNC OverwriteChar(ch)     ! Overwrite mode character placement
 
 **Key Functions**:
 ```basic
-FUNC NewFile()             ! ^KN - Clear document
-FUNC SaveFile()            ! ^KS - Save current file  
-FUNC SaveAndExit()         ! ^KD - Save and quit
-FUNC QuitNoSave()          ! ^KQ - Quit without saving
-FUNC LoadFile(name)        ! ^KR - Read file
-FUNC PromptFileName()      ! Get file name from user
+FUNC nF()            ! NewFile - ^KN Clear document
+FUNC sF()            ! SaveFile - ^KS Save current file  
+FUNC sE()            ! SaveAndExit - ^KD Save and quit
+FUNC qNS()           ! QuitNoSave - ^KQ Quit without saving
+FUNC lF(name)        ! LoadFile - ^KR Read file
+FUNC pFN()           ! PromptFileName - Get file name from user
 ```
 
 **File Format**: Plain text with Unix line endings (\n)
@@ -400,146 +400,118 @@ Raw Key → Control Detection → Command Prefix → Command Execute → Screen 
 
 ---
 
-## Command Reference
-
-### Control Key Legend
-```
-^E = Ctrl+E (ASCII 5)     ^K = Ctrl+K (ASCII 11)
-^X = Ctrl+X (ASCII 24)    ^Q = Ctrl+Q (ASCII 17)
-^S = Ctrl+S (ASCII 19)    ^Y = Ctrl+Y (ASCII 25)
-^D = Ctrl+D (ASCII 4)     ^N = Ctrl+N (ASCII 14)
-```
-
-### Multi-Key Command Processing
-```
-^K followed by S = Save File
-^K followed by D = Save and Exit
-^Q followed by S = Start of Line
-^Q followed by R = Top of File
-```
-
-### Status Line Indicators
-```
-INS     - Insert mode active
-OVR     - Overwrite mode active  
-*       - File has unsaved changes
-MOD     - Alternative modified indicator
-```
-
----
-
 ## Function Interface Specifications
 
 ### LineManager Module
 ```basic
 ! Initialization
-FUNC InitLineManager()
-    ! Initialize freeLines with [0,1,2...99]
-    ! Set numLines = 0, numFree = MAX_LINES
-    ! Clear lineList
+FUNC iLM()           ! InitLineManager
+    ! Initialize FREE with [0,1,2...99]
+    ! Set NL = 0, NF = MAX_LINES
+    ! Clear DOC
 
 ! Line allocation
-FUNC AllocateLine() ! Returns WORD slot index or -1 if full
-FUNC FreeLine(slot) ! Add slot back to free list
+FUNC aL()            ! AllocateLine - Returns WORD slot index or -1 if full
+FUNC fL(slot)        ! FreeLine - Add slot back to free list
 
 ! Document operations  
-FUNC InsertTextLine(pos)     ! Insert new line at document line pos
-FUNC DeleteTextLine(pos)     ! Delete document line pos
-FUNC GetLineSlot(lineNum)    ! Get slot index for document line
-FUNC GetLineText(lineNum)    ! Get CHAR* to line text
-FUNC GetLineLength(lineNum)  ! Get line length
-FUNC SetLineText(lineNum, text) ! Replace line content
-FUNC GetDocumentLines()      ! Return numLines
+FUNC iTL(pos)        ! InsertTextLine - Insert new line at document line pos
+FUNC dTL(pos)        ! DeleteTextLine - Delete document line pos
+FUNC gLS(ln)         ! GetLineSlot - Get slot index for document line
+FUNC gLT(ln)         ! GetLineText - Get CHAR* to line text
+FUNC gLL(ln)         ! GetLineLength - Get line length
+FUNC sLT(ln, txt)    ! SetLineText - Replace line content
+FUNC gDL()           ! GetDocumentLines - Return NL
 ```
 
 ### Cursor Module
 ```basic
 ! Position management
-FUNC GetCursorLine()         ! Return currentLine  
-FUNC GetCursorCol()          ! Return currentCol
-FUNC SetCursorPos(line, col) ! Set cursor position with bounds check
-FUNC GetScreenRow()          ! Convert to screen coordinates
-FUNC GetScreenCol()          ! Convert to screen coordinates
+FUNC gCL()           ! GetCursorLine - Return L
+FUNC gCC()           ! GetCursorCol - Return C
+FUNC sCP(ln, cl)     ! SetCursorPos - Set cursor position with bounds check
+FUNC gSR()           ! GetScreenRow - Convert to screen coordinates
+FUNC gSC()           ! GetScreenCol - Convert to screen coordinates
 
 ! Movement operations
-FUNC MoveCursorUp()          ! Move up, handle scrolling
-FUNC MoveCursorDown()        ! Move down, handle scrolling  
-FUNC MoveCursorLeft()        ! Move left, handle line wrap
-FUNC MoveCursorRight()       ! Move right, handle line wrap
-FUNC MoveWordLeft()          ! Skip to previous word
-FUNC MoveWordRight()         ! Skip to next word
-FUNC EnsureVisible()         ! Adjust topLine if cursor off-screen
+FUNC mCU()           ! MoveCursorUp - Move up, handle scrolling
+FUNC mCD()           ! MoveCursorDown - Move down, handle scrolling  
+FUNC mCL()           ! MoveCursorLeft - Move left, handle line wrap
+FUNC mCR()           ! MoveCursorRight - Move right, handle line wrap
+FUNC mWL()           ! MoveWordLeft - Skip to previous word
+FUNC mWR()           ! MoveWordRight - Skip to next word
+FUNC eV()            ! EnsureVisible - Adjust TL if cursor off-screen
 ```
 
 ### Display Module
 ```basic
 ! Screen control
-FUNC InitDisplay()           ! Clear screen, set up display
-FUNC RefreshScreen()         ! Full screen redraw
-FUNC RefreshTextArea()       ! Redraw lines 1-22
-FUNC RefreshLine(lineNum)    ! Redraw single line
-FUNC UpdateStatusLine()      ! Update line 23 with file info
-FUNC ShowMessage(msg)        ! Display message on line 24
-FUNC ClearMessage()          ! Clear line 24
+FUNC iD()            ! InitDisplay - Clear screen, set up display
+FUNC rS()            ! RefreshScreen - Full screen redraw
+FUNC rTA()           ! RefreshTextArea - Redraw lines 1-22
+FUNC rL(ln)          ! RefreshLine - Redraw single line
+FUNC uSL()           ! UpdateStatusLine - Update line 23 with file info
+FUNC sM(msg)         ! ShowMessage - Display message on line 24
+FUNC cM()            ! ClearMessage - Clear line 24
 
 ! VT100 primitives  
-FUNC SendEsc()               ! Send ESC character
-FUNC GotoXY(x, y)           ! Position cursor
-FUNC ClearToEOL()           ! Clear from cursor to end of line
-FUNC ShowCursor()           ! Make cursor visible
-FUNC HideCursor()           ! Hide cursor
+FUNC sE()            ! SendEsc - Send ESC character
+FUNC gXY(x, y)       ! GotoXY - Position cursor
+FUNC cEL()           ! ClearToEOL - Clear from cursor to end of line
+FUNC sC()            ! ShowCursor - Make cursor visible
+FUNC hC()            ! HideCursor - Hide cursor
 ```
 
 ### Input Module  
 ```basic
 ! Key input (based on Keys.bas)
-FUNC KeyReady()             ! Check if key available
-FUNC GetRawKey()            ! Get key from serial buffer
-FUNC GetKey()               ! Get key with escape sequence processing
+FUNC kR()            ! KeyReady - Check if key available
+FUNC gRK()           ! GetRawKey - Get key from serial buffer
+FUNC gK()            ! GetKey - Get key with escape sequence processing
 
 ! Command processing
-FUNC ProcessInput()         ! Main input processing loop
-FUNC HandleControlKey(key)  ! Process control characters
-FUNC HandlePrefixCommand(prefix, key) ! Handle ^K, ^Q commands
-FUNC IsWordChar(ch)         ! Test if character is part of word
+FUNC pI()            ! ProcessInput - Main input processing loop
+FUNC hCK(key)        ! HandleControlKey - Process control characters
+FUNC hPC(pfx, key)   ! HandlePrefixCommand - Handle ^K, ^Q commands
+FUNC iWC(ch)         ! IsWordChar - Test if character is part of word
 ```
 
 ### EditOperations Module
 ```basic
 ! Character operations
-FUNC InsertChar(ch)         ! Insert character at cursor
-FUNC OverwriteChar(ch)      ! Overwrite character at cursor
-FUNC DeleteChar()           ! Delete character at cursor
-FUNC Backspace()            ! Delete character before cursor
+FUNC iC(ch)          ! InsertChar - Insert character at cursor
+FUNC oC(ch)          ! OverwriteChar - Overwrite character at cursor
+FUNC dC()            ! DeleteChar - Delete character at cursor
+FUNC bS()            ! Backspace - Delete character before cursor
 
 ! Line operations
-FUNC InsertNewLine()        ! Break line at cursor position
-FUNC JoinWithNextLine()     ! Join current line with next
-FUNC DeleteCurrentLine()    ! Delete entire current line
-FUNC InsertBlankLine()      ! Insert empty line at cursor
+FUNC iNL()           ! InsertNewLine - Break line at cursor position
+FUNC jNL()           ! JoinWithNextLine - Join current line with next
+FUNC dCL()           ! DeleteCurrentLine - Delete entire current line
+FUNC iBL()           ! InsertBlankLine - Insert empty line at cursor
 
 ! Utility operations
-FUNC GetCurrentChar()       ! Get character at cursor
-FUNC GetCurrentLineText()   ! Get text of current line
-FUNC SetCurrentLineText(text) ! Replace current line text
+FUNC gCC()           ! GetCurrentChar - Get character at cursor
+FUNC gCLT()          ! GetCurrentLineText - Get text of current line
+FUNC sCLT(txt)       ! SetCurrentLineText - Replace current line text
 ```
 
 ### Storage Module
 ```basic
 ! File operations
-FUNC NewFile()              ! Clear document, reset state
-FUNC SaveFile()             ! Save with current filename
-FUNC SaveAsFile(name)       ! Save with new filename
-FUNC LoadFile(name)         ! Load file into document
-FUNC FileExists(name)       ! Check if file exists
+FUNC nF()            ! NewFile - Clear document, reset state
+FUNC sF()            ! SaveFile - Save with current filename
+FUNC sAF(name)       ! SaveAsFile - Save with new filename
+FUNC lF(name)        ! LoadFile - Load file into document
+FUNC fE(name)        ! FileExists - Check if file exists
 
 ! File conversion
-FUNC DocumentToText(buffer) ! Convert lines to flat text
-FUNC TextToDocument(buffer) ! Parse text into lines
+FUNC dTT(buf)        ! DocumentToText - Convert lines to flat text
+FUNC tTD(buf)        ! TextToDocument - Parse text into lines
 
 ! User interaction
-FUNC PromptFileName()       ! Get filename from user
-FUNC ConfirmQuit()          ! Confirm quit without save
+FUNC pFN()           ! PromptFileName - Get filename from user
+FUNC cQ()            ! ConfirmQuit - Confirm quit without save
 ```
 
 ---
@@ -548,17 +520,17 @@ FUNC ConfirmQuit()          ! Confirm quit without save
 
 ### Command Prefix States
 ```
-STATE_NORMAL = 0        ! Normal editing mode
-STATE_K_PREFIX = 1      ! After ^K, waiting for file command  
-STATE_Q_PREFIX = 2      ! After ^Q, waiting for quick command
+ST_NORM = 0          ! STATE_NORMAL - Normal editing mode
+ST_K = 1             ! STATE_K_PREFIX - After ^K, waiting for file command  
+ST_Q = 2             ! STATE_Q_PREFIX - After ^Q, waiting for quick command
 ```
 
 ### Input Processing Flow
 ```
-1. GetKey() → Raw keystroke
-2. If control character → HandleControlKey()
-3. If prefix active → HandlePrefixCommand()  
-4. If printable → InsertChar() or OverwriteChar()
+1. gK() → Raw keystroke
+2. If control character → hCK()
+3. If prefix active → hPC()  
+4. If printable → iC() or oC()
 5. UpdateDisplay() → Refresh changed areas
 6. Return to step 1
 ```
@@ -578,17 +550,17 @@ STATE_Q_PREFIX = 2      ! After ^Q, waiting for quick command
 1. Read entire file as string
 2. Split on \n characters
 3. Allocate line slots for each line
-4. Copy line content to lineData slots
-5. Build lineList with allocated slots
+4. Copy line content to LD slots
+5. Build DOC with allocated slots
 6. Set cursor to start of file
 ```
 
 ### Save Process
 ```  
-1. Walk lineList in document order
+1. Walk DOC in document order
 2. Concatenate line content with \n separators
 3. Write flat text to EEPROM file
-4. Clear modified flag
+4. Clear MOD flag
 ```
 
 ---
@@ -643,11 +615,99 @@ STATE_Q_PREFIX = 2      ! After ^Q, waiting for quick command
 
 ---
 
+## Compact Function Reference
+
+### LineManager (LM)
+```basic
+iLM()        ! Init line manager
+aL()         ! Allocate line slot
+fL(s)        ! Free line slot  
+iTL(p)       ! Insert text line
+dTL(p)       ! Delete text line
+gLT(n)       ! Get line text pointer
+sLT(n,t)     ! Set line text
+gLL(n)       ! Get line length
+gLS(n)       ! Get line slot
+gDL()        ! Get document lines count
+```
+
+### Cursor (C)
+```basic
+mCU/mCD()    ! Move cursor up/down
+mCL/mCR()    ! Move cursor left/right  
+mWL/mWR()    ! Move word left/right
+mSL/mEL()    ! Move start/end line
+mTF/mEF()    ! Move top/end file
+mPg(d)       ! Move page up/down
+eV()         ! Ensure cursor visible
+gCL/gCC()    ! Get cursor line/col
+sCP(l,c)     ! Set cursor position
+gSR/gSC()    ! Get screen row/col
+```
+
+### Display (D)  
+```basic
+iD()         ! Init display
+rS/rTA()     ! Refresh screen/text area
+rL(n)        ! Refresh line
+uSL()        ! Update status line
+sM(m)/cM()   ! Show/clear message
+pC()         ! Position cursor
+sU/sD()      ! Scroll up/down
+sE()         ! Send escape
+gXY(x,y)     ! Goto XY
+cS/cL()      ! Clear screen/line
+sC/hC()      ! Show/hide cursor
+```
+
+### Input (I)
+```basic
+kR()         ! Key ready
+gRK/gK()     ! Get raw key/processed key
+pI()         ! Process input loop
+hCK(k)       ! Handle control key
+hPC(p,k)     ! Handle prefix command  
+iWC(c)       ! Is word character
+iCK(k)       ! Is control key
+hPK(k)       ! Handle printable key
+```
+
+### EditOperations (E)
+```basic
+iC(c)        ! Insert character
+oC(c)        ! Overwrite character
+dC()         ! Delete character
+bS()         ! Backspace
+iNL()        ! Insert new line
+jNL()        ! Join next line
+dCL()        ! Delete current line
+iBL()        ! Insert blank line
+gCC()        ! Get current character
+gCLT()       ! Get current line text
+sCLT(t)      ! Set current line text
+```
+
+### Storage (S)
+```basic
+nF()         ! New file
+sF()         ! Save file
+sAF(n)       ! Save as file
+lF(n)        ! Load file  
+fE(n)        ! File exists
+dTT(b)       ! Document to text
+tTD(b)       ! Text to document
+pFN()        ! Prompt filename
+cQ()         ! Confirm quit
+```
+
+---
+
 ## Notes and Considerations
 
 ### WordStar Authenticity vs. Simplification
 - **Keep**: Core navigation diamond, ^K file commands, ^Q quick commands
-- **Simplify**: Block operations deferred to v3, complex formatting removed
+- **Simplify**: Insert mode only (no overwrite toggle), no horizontal scroll
+- **Defer**: Block operations to v2, complex formatting removed
 - **Modernize**: Use standard file extensions, Unix line endings
 
 ### Memory Optimization Opportunities (Future)
@@ -662,5 +722,5 @@ STATE_Q_PREFIX = 2      ! After ^Q, waiting for quick command
 
 ---
 
-*WordStar-Style Editor for HopperBASIC v1.0 Architecture*  
+*WordStar-Style Editor for HopperBASIC v1.0 Architecture (Compact)*  
 *Target Implementation: 2025*
