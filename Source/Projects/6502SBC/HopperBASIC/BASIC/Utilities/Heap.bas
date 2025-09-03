@@ -10,9 +10,19 @@
 !   hpFree(ptr) - Free memory allocated by hpMalloc
 !   hpDump() - Debug: show heap layout
 
-CONST minSz = 6                 ! Minimum for free list participation
-CONST hpStart = 0xAA            ! MSB of pointer to token buffer
-CONST hpSize  = 0xAB            ! size of token buffer in 256 byte pages
+! Heap constants
+CONST hpcMinSz = 6              ! Minimum block size for free list participation  
+CONST hpcHdrSz = 2              ! Size of block header
+CONST hpcNextOfs = 2            ! Offset to next pointer in free block
+CONST hpcNextMsb = 3            ! Offset to next pointer MSB
+CONST hpcPrevOfs = 4            ! Offset to prev pointer in free block
+CONST hpcPrevMsb = 5            ! Offset to prev pointer MSB
+CONST hpcPageSz = 256           ! Memory page size
+CONST hpcLsbMask = 0xFF         ! Mask for LSB extraction
+CONST hpcMaxDump = 10           ! Maximum blocks to show in dump
+CONST hpcMinSplit = 6           ! Minimum remaining size to split block
+CONST hpStart = 0xAA            ! ZP address: MSB of token buffer pointer
+CONST hpSize = 0xAB             ! ZP address: token buffer size in pages
 
 ! Global heap state
 VAR hpBase    ! Heap start address
@@ -21,48 +31,48 @@ VAR hpHead    ! Free list head pointer
 
 ! Initialize heap - creates single free block covering entire buffer
 FUNC hpInit()
-    hpBase = PEEK(hpStart) * 256
-    hpSz = PEEK(hpSize) * 256
+    hpBase = PEEK(hpStart) * hpcPageSz
+    hpSz = PEEK(hpSize) * hpcPageSz
     hpHead = hpBase
-    POKE(hpBase, hpSz & 0xFF)        ! LSB first
-    POKE(hpBase + 1, hpSz / 256)     ! MSB second
-    POKE(hpBase + 2, 0)              ! Next LSB = 0000
-    POKE(hpBase + 3, 0)              ! Next MSB
-    POKE(hpBase + 4, 0)              ! Prev LSB = 0000
-    POKE(hpBase + 5, 0)              ! Prev MSB
+    POKE(hpBase, hpSz & hpcLsbMask)      ! Size LSB first
+    POKE(hpBase + 1, hpSz / hpcPageSz)   ! Size MSB second
+    POKE(hpBase + hpcNextOfs, 0)         ! Next LSB = 0000
+    POKE(hpBase + hpcNextMsb, 0)         ! Next MSB
+    POKE(hpBase + hpcPrevOfs, 0)         ! Prev LSB = 0000
+    POKE(hpBase + hpcPrevMsb, 0)         ! Prev MSB
 ENDFUNC
 
 ! Get block size from any block address
 FUNC hpGetSz(addr)
-    RETURN PEEK(addr) + PEEK(addr + 1) * 256  ! LSB + MSB*256
+    RETURN PEEK(addr) + PEEK(addr + 1) * hpcPageSz
 ENDFUNC
 
 ! Set block size at any block address
 FUNC hpSetSz(addr, sz)
-    POKE(addr, sz & 0xFF)            ! LSB first
-    POKE(addr + 1, sz / 256)         ! MSB second
+    POKE(addr, sz & hpcLsbMask)          ! LSB first
+    POKE(addr + 1, sz / hpcPageSz)       ! MSB second
 ENDFUNC
 
 ! Get next pointer from free block
 FUNC hpGetNext(addr)
-    RETURN PEEK(addr + 2) + PEEK(addr + 3) * 256  ! LSB + MSB*256
+    RETURN PEEK(addr + hpcNextOfs) + PEEK(addr + hpcNextMsb) * hpcPageSz
 ENDFUNC
 
 ! Set next pointer in free block
 FUNC hpSetNext(addr, nxt)
-    POKE(addr + 2, nxt & 0xFF)      ! LSB first
-    POKE(addr + 3, nxt / 256)       ! MSB second
+    POKE(addr + hpcNextOfs, nxt & hpcLsbMask)    ! LSB first
+    POKE(addr + hpcNextMsb, nxt / hpcPageSz)     ! MSB second
 ENDFUNC
 
 ! Get prev pointer from free block
 FUNC hpGetPrev(addr)
-    RETURN PEEK(addr + 4) + PEEK(addr + 5) * 256  ! LSB + MSB*256
+    RETURN PEEK(addr + hpcPrevOfs) + PEEK(addr + hpcPrevMsb) * hpcPageSz
 ENDFUNC
 
 ! Set prev pointer in free block  
 FUNC hpSetPrev(addr, prev)
-    POKE(addr + 4, prev & 0xFF)      ! LSB first
-    POKE(addr + 5, prev / 256)       ! MSB second
+    POKE(addr + hpcPrevOfs, prev & hpcLsbMask)   ! LSB first
+    POKE(addr + hpcPrevMsb, prev / hpcPageSz)    ! MSB second
 ENDFUNC
 
 ! Remove block from free list
@@ -113,12 +123,12 @@ FUNC hpFindPrev(target)
     RETURN 0
 ENDFUNC
 
-! Allocate memory block - returns user pointer (after 2-byte header)
+! Allocate memory block - returns user pointer (after header)
 FUNC hpMalloc(reqSz)
     VAR needSz, best, bestSz, cur, blkSz, newFree, remSz
-    needSz = reqSz + 2
-    IF needSz < minSz THEN
-        needSz = minSz
+    needSz = reqSz + hpcHdrSz
+    IF needSz < hpcMinSz THEN
+        needSz = hpcMinSz
     ENDIF
     best = 0
     bestSz = 0
@@ -139,7 +149,7 @@ FUNC hpMalloc(reqSz)
     
     hpUnlink(best)
     
-    IF bestSz >= needSz + 6 THEN
+    IF bestSz >= needSz + hpcMinSplit THEN
         newFree = best + needSz
         remSz = bestSz - needSz
         hpSetSz(newFree, remSz)
@@ -147,7 +157,7 @@ FUNC hpMalloc(reqSz)
         hpSetSz(best, needSz)
     ENDIF
     
-    RETURN best + 2
+    RETURN best + hpcHdrSz
 ENDFUNC
 
 ! Free memory block - merges with adjacent free blocks
@@ -157,7 +167,7 @@ FUNC hpFree(ptr)
         RETURN
     ENDIF
     
-    blk = ptr - 2
+    blk = ptr - hpcHdrSz
     sz = hpGetSz(blk)
     prev = hpFindPrev(blk)
     nxt = blk + sz
@@ -188,7 +198,7 @@ FUNC hpDump()
     PRINT "Base:", hpBase, "Size:", hpSz
     PRINT "Free list head:", hpHead
     PRINT
-    WHILE (cur < hpBase + hpSz) AND (count < 10)
+    WHILE (cur < hpBase + hpSz) AND (count < hpcMaxDump)
         sz = hpGetSz(cur)
         PRINT "Block at", cur, "size", sz;
         IF hpIsFree(cur) THEN
@@ -199,8 +209,8 @@ FUNC hpDump()
         cur = cur + sz
         count = count + 1
     WEND
-    IF count >= 10 THEN
-        PRINT "... (stopped after 10 blocks)"
+    IF count >= hpcMaxDump THEN
+        PRINT "... (stopped after", hpcMaxDump, "blocks)"
     ENDIF
 ENDFUNC
 
