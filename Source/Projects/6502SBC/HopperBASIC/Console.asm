@@ -1078,19 +1078,20 @@ unit Console // Console.asm
         PHA
         
         LDA ZP.CurrentToken
-        CMP #Token.EOL
-        if (Z) { SEC }  // Valid end
-        else
+        switch (A)
         {
-            CMP #Token.COLON
-            if (Z) { SEC }  // Valid end (more statements follow)
-            else
+            case Token.EOL:
+            case Token.COLON:
+            case Token.COMMENT:
+            {
+                SEC  // Valid end
+            }
+            default:
             {
                 Error.SyntaxError(); BIT ZP.EmulatorPCL
                 CLC
             }
         }
-        
         PLA
     }
     

@@ -2490,9 +2490,8 @@ unit Compiler // Compiler.asm
             if (NC) { break; }
             
             // Check for PRINT with no arguments (just newline)
-            LDA ZP.CurrentToken
-            CMP #Token.EOL
-            if (Z)
+            Tokens.IsEndOfPrintStatement();
+            if (C)
             {
                 // PRINT (newline only)
                 Emit.PrintNewLine();
