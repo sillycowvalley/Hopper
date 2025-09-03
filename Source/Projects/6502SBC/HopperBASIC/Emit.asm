@@ -119,21 +119,15 @@ unit Emit
                INC ZP.XPCH
            }
            
-#ifdef PEEPHOLE           
+#ifdef PEEPHOLE
+           Optimizer.Peep();
            LDA Compiler.compilerOpCode
            switch (A)
            {
-               //case OpCode.JUMPZB:
-               //case OpCode.JUMPB:
-               //case OpCode.JUMPNZB:
                case OpCode.RETURN:
                case OpCode.RETURNVAL:
                {
-                   Optimizer.ClearPeeps();
-               }
-               default:
-               {
-                   Optimizer.Peep(); // current opcode is in Compiler.compilerOpCode
+                   Optimizer.ClearPeeps(); // RETURN and RETURNVAL (after optimization)
                }
            }
 #endif
@@ -203,11 +197,8 @@ unit Emit
            {
                case OpCode.JUMPZW:
                case OpCode.JUMPW:
-               //case OpCode.JUMPNZW:
-               case OpCode.CALL:
-               case OpCode.CALLF: 
                {
-                   Optimizer.ClearPeeps();
+                   Optimizer.ClearPeeps(); // JUMPZW, JUMPW
                }
                default:
                {
@@ -297,7 +288,7 @@ unit Emit
                case OpCode.FORITF:
                case OpCode.FORCHK:
                {
-                   Optimizer.ClearPeeps();
+                   Optimizer.ClearPeeps(); // FORIT, FORITF, FORCHK
                }
                default:
                {

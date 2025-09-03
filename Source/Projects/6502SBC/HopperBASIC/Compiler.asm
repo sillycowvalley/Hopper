@@ -92,7 +92,7 @@ unit Compiler // Compiler.asm
 #ifdef PEEPHOLE
        LDA # OpCode.INVALID
        STA compilerLastOpCode
-       Optimizer.ClearPeeps();
+       Optimizer.ClearPeeps(); // Initialize
 #endif
 
        SEC // Success

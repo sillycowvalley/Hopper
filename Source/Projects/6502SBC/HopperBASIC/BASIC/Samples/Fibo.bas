@@ -30,5 +30,3 @@ ENDFUNC
 BEGIN
     Benchmark("Fibonacci", 24, 1)
 END
-
-Benchmark("Fibonacci", 20, 1)

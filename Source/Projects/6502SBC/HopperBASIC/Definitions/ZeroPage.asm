@@ -347,10 +347,14 @@ unit ZP // ZeroPage.asm
     const byte PEEPOP1              = M2;
     const byte PEEPOP2              = M3;
     const byte PEEPOP3              = M4;
-    const byte PEEPOPS              = M5;  // number of OpCodes in the current pattern
-    const byte PEEPCONSTRAINTS      = M6;   // constraint flags for the current pattern
-    const byte PEEPREPLACE          = M7;  // replacement OpCode for the current pattern
-    const byte PEEPOPERANDS         = M8;  // operands for replacement instruction for the current pattern
+    const byte PEEPOP0H             = M5;
+    const byte PEEPOP1H             = M6;
+    const byte PEEPOP2H             = M7;
+    const byte PEEPOP3H             = M8;
+    const byte PEEPOPS              = M9;  // number of OpCodes in the current pattern
+    const byte PEEPCONSTRAINTS      = M10;  // constraint flags for the current pattern
+    const byte PEEPREPLACE          = M11;  // replacement OpCode for the current pattern
+    const byte PEEPOPERANDS         = M12; // operands for replacement instruction for the current pattern
     
     
     // File System: I2C for EEPROM:

@@ -1,0 +1,790 @@
+FUNC FIBO(N)
+
+   [1B02][1B22]
+    1D92: 1A           ENTER
+    1D93: 43 FF        PUSHLOCAL    FF [BP-1]
+    1D95: 16           PUSH1
+    1D96: 11           LE
+    1D97: 88 04 00     JUMPZW       0004 (+4 -> 1D9E)
+    1D9A: 43 FF        PUSHLOCAL    FF [BP-1]
+    1D9C: 4A 01        RETURNVAL    01
+    1D9E: 17           PUSHVOID
+    1D9F: 43 FF        PUSHLOCAL    FF [BP-1]
+    1DA1: 16           PUSH1
+    1DA2: 02           SUB
+    1DA3: 84 02 1B     CALLF        1B02 (FIBO)
+    1DA6: 17           PUSHVOID
+    1DA7: 43 FF        PUSHLOCAL    FF [BP-1]
+    1DA9: 41 02        PUSHBYTE     02
+    1DAB: 02           SUB
+    1DAC: 84 02 1B     CALLF        1B02 (FIBO)
+    1DAF: 01           ADD
+    1DB0: 4A 01        RETURNVAL    01
+    1DB2: 19           HALT
+ENDFUNC
+
+FUNC BENCHMARK(NAME, ARG, LOOPS)
+
+   [1B5A][1BA2]
+    1D22: 1A           ENTER
+    1D23: 1B           PUSHEMPTYVAR
+    1D24: 1B           PUSHEMPTYVAR
+    1D25: 1B           PUSHEMPTYVAR
+    1D26: 1B           PUSHEMPTYVAR
+    1D27: 1B           PUSHEMPTYVAR
+    1D28: 48 34        SYSCALL      34 SECONDS() -> LONG
+    1D2A: 44 00        POPLOCAL     00 [BP+0]
+    1D2C: 81 00 00     PUSHWORD     0000 (0)
+    1D2F: 18           PUSHLONG0
+    1D30: 44 02        POPLOCAL     02 [BP+2]
+    1D32: 43 FF        PUSHLOCAL    FF [BP-1]
+    1D34: 16           PUSH1
+    1D35: 02           SUB
+    1D36: 16           PUSH1
+    1D37: C0 02 0C 00  FORCHK       02 000C ([+2]  -> 1D47)
+    1D3B: 17           PUSHVOID
+    1D3C: 43 FE        PUSHLOCAL    FE [BP-2]
+    1D3E: 84 02 1B     CALLF        1B02 (FIBO)
+    1D41: 44 01        POPLOCAL     01 [BP+1]
+    1D43: C1 02 F4 FF  FORIT        02 FFF4 ([+2]  -> 1D3B)
+    1D47: 4F 02        DECSP        02
+    1D49: 48 34        SYSCALL      34 SECONDS() -> LONG
+    1D4B: 43 00        PUSHLOCAL    00 [BP+0]
+    1D4D: 02           SUB
+    1D4E: 44 03        POPLOCAL     03 [BP+3]
+    1D50: 43 03        PUSHLOCAL    03 [BP+3]
+    1D52: 43 FF        PUSHLOCAL    FF [BP-1]
+    1D54: 04           DIV
+    1D55: 44 04        POPLOCAL     04 [BP+4]
+    1D57: 43 FD        PUSHLOCAL    FD [BP-3]
+    1D59: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D5B: 82 AC 00     PUSHCSTRING  00AC "("
+    1D5E: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D60: 42 20        PUSHCHAR     20 (' ')
+    1D62: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1D64: 43 FE        PUSHLOCAL    FE [BP-2]
+    1D66: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D68: 42 20        PUSHCHAR     20 (' ')
+    1D6A: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1D6C: 82 B6 00     PUSHCSTRING  00B6 ") = "
+    1D6F: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D71: 43 01        PUSHLOCAL    01 [BP+1]
+    1D73: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D75: 82 C6 00     PUSHCSTRING  00C6 " in "
+    1D78: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D7A: 43 04        PUSHLOCAL    04 [BP+4]
+    1D7C: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D7E: 82 D4 00     PUSHCSTRING  00D4 " seconds average"
+    1D81: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1D83: 42 0A        PUSHCHAR     0A ('\n')
+    1D85: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1D87: 49 03        RETURN       03
+    1D89: 19           HALT
+ENDFUNC
+
+BEGIN
+
+   [1C92][1CAA]
+END
+
+>dasm
+BEGIN
+
+   [1B02][1B1A]
+    1BC2: 1A           ENTER
+    1BC3: 1B           PUSHEMPTYVAR
+    1BC4: 48 2C        SYSCALL      2C MILLIS() -> LONG
+    1BC6: 44 00        POPLOCAL     00 [BP+0]
+    1BC8: 1B           PUSHEMPTYVAR
+    1BC9: 48 34        SYSCALL      34 SECONDS() -> LONG
+    1BCB: 44 01        POPLOCAL     01 [BP+1]
+    1BCD: 1B           PUSHEMPTYVAR
+    1BCE: 1B           PUSHEMPTYVAR
+    1BCF: 81 01 00     PUSHWORD     0001 (1)
+    1BD2: 18           PUSHLONG0
+    1BD3: 44 03        POPLOCAL     03 [BP+3]
+    1BD5: 81 0A 00     PUSHWORD     000A (10)
+    1BD8: 18           PUSHLONG0
+    1BD9: 16           PUSH1
+    1BDA: 81 00 00     PUSHWORD     0000 (0)
+    1BDD: 18           PUSHLONG0
+    1BDE: 44 02        POPLOCAL     02 [BP+2]
+    1BE0: 1B           PUSHEMPTYVAR
+    1BE1: 81 01 00     PUSHWORD     0001 (1)
+    1BE4: 18           PUSHLONG0
+    1BE5: 44 06        POPLOCAL     06 [BP+6]
+    1BE7: 81 E8 03     PUSHWORD     03E8 (1000)
+    1BEA: 18           PUSHLONG0
+    1BEB: 16           PUSH1
+    1BEC: 8A 02 06     ADDLOCALS    0602
+    1BEF: C2 06 F9 FF  FORITF       06 FFF9 ([+6]  -> 1BEC)
+    1BF3: 4F 02        DECSP        02
+    1BF5: 4F 01        DECSP        01
+    1BF7: 82 55 00     PUSHCSTRING  0055 "."
+    1BFA: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1BFC: C2 03 DA FF  FORITF       03 FFDA ([+3]  -> 1BDA)
+    1C00: 4F 02        DECSP        02
+    1C02: 4F 01        DECSP        01
+    1C04: 43 02        PUSHLOCAL    02 [BP+2]
+    1C06: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1C08: 42 0A        PUSHCHAR     0A ('\n')
+    1C0A: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1C0C: 48 2C        SYSCALL      2C MILLIS() -> LONG
+    1C0E: 43 00        PUSHLOCAL    00 [BP+0]
+    1C10: 02           SUB
+    1C11: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1C13: 82 71 00     PUSHCSTRING  0071 " ms"
+    1C16: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1C18: 42 0A        PUSHCHAR     0A ('\n')
+    1C1A: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1C1C: 48 34        SYSCALL      34 SECONDS() -> LONG
+    1C1E: 43 01        PUSHLOCAL    01 [BP+1]
+    1C20: 02           SUB
+    1C21: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1C23: 82 81 00     PUSHCSTRING  0081 " seconds"
+    1C26: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1C28: 42 0A        PUSHCHAR     0A ('\n')
+    1C2A: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1C2C: 49 00        RETURN       00
+    1C2E: 19           HALT
+END
+
+BEGIN
+
+   [1FF2][200A]
+    2192: 1A           ENTER
+    2193: 82 02 00     PUSHCSTRING  0002 "10 iterations"
+    2196: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2198: 42 0A        PUSHCHAR     0A ('\n')
+    219A: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    219C: 48 34        SYSCALL      34 SECONDS() -> LONG
+    219E: 4C 07        POPGLOBAL    07 ()
+    21A0: 1B           PUSHEMPTYVAR
+    21A1: 4B 06        PUSHGLOBAL   06 ()
+    21A3: 44 00        POPLOCAL     00 [BP+0]
+    21A5: 81 01 00     PUSHWORD     0001 (1)
+    21A8: 18           PUSHLONG0
+    21A9: 44 00        POPLOCAL     00 [BP+0]
+    21AB: 81 01 00     PUSHWORD     0001 (1)
+    21AE: 18           PUSHLONG0
+    21AF: 16           PUSH1
+    21B0: C0 00 75 00  FORCHK       00 0075 ([0]  -> 2229)
+    21B4: 81 00 00     PUSHWORD     0000 (0)
+    21B7: 18           PUSHLONG0
+    21B8: 4C 05        POPGLOBAL    05 ()
+    21BA: 1B           PUSHEMPTYVAR
+    21BB: 4B 02        PUSHGLOBAL   02 ()
+    21BD: 44 03        POPLOCAL     03 [BP+3]
+    21BF: 81 00 00     PUSHWORD     0000 (0)
+    21C2: 18           PUSHLONG0
+    21C3: 44 03        POPLOCAL     03 [BP+3]
+    21C5: 81 FE 1F     PUSHWORD     1FFE (8190)
+    21C8: 18           PUSHLONG0
+    21C9: 16           PUSH1
+    21CA: 40 01        PUSHBIT      01 (TRUE)
+    21CC: 91 01 03     SETITEMGL    0301  01 03
+    21CF: C2 03 F7 FF  FORITF       03 FFF7 ([+3]  -> 21CA)
+    21D3: 4F 02        DECSP        02
+    21D5: 4C 02        POPGLOBAL    02 ()
+    21D7: 1B           PUSHEMPTYVAR
+    21D8: 4B 02        PUSHGLOBAL   02 ()
+    21DA: 44 03        POPLOCAL     03 [BP+3]
+    21DC: 81 00 00     PUSHWORD     0000 (0)
+    21DF: 18           PUSHLONG0
+    21E0: 44 03        POPLOCAL     03 [BP+3]
+    21E2: 81 FE 1F     PUSHWORD     1FFE (8190)
+    21E5: 18           PUSHLONG0
+    21E6: 16           PUSH1
+        21E7: 8D 01 03     GETITEMGL    0301  01 03
+        21EA: 88 27 00     JUMPZW       0027 (+39 -> 2214)
+        21ED: 43 03        PUSHLOCAL    03 [BP+3]
+        21EF: 43 03        PUSHLOCAL    03 [BP+3]
+        21F1: 01           ADD
+        21F2: 41 03        PUSHBYTE     03
+        21F4: 01           ADD
+        21F5: 4C 03        POPGLOBAL    03 ()
+        21F7: 43 03        PUSHLOCAL    03 [BP+3]
+        21F9: 4B 03        PUSHGLOBAL   03 ()
+        21FB: 01           ADD
+        21FC: 4C 04        POPGLOBAL    04 ()
+            21FE: 4B 04        PUSHGLOBAL   04 ()
+            2200: 80 FF 1F     PUSHINT      1FFF (8191)
+            2203: 0F           LT
+            2204: 88 0B 00     JUMPZW       000B (+11 -> 2212)
+            2207: 40 00        PUSHBIT      00 (FALSE)
+            2209: 90 01 04     SETITEMGG    0401  01 04
+            220C: 8B 04 03     ADDGLOBALS   0304
+            220F: 87 EC FF     JUMPW        FFEC (-20 -> 21FE)
+        2212: 4D 05        INCGLOBAL    05
+        2214: C2 03 CF FF  FORITF       03 FFCF ([+3]  -> 21E7)
+    2218: 4F 02        DECSP        02
+    221A: 4C 02        POPGLOBAL    02 ()
+    221C: 82 2D 01     PUSHCSTRING  012D "."
+    221F: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2221: 42 20        PUSHCHAR     20 (' ')
+    2223: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    2225: C1 00 8B FF  FORIT        00 FF8B ([0]  -> 21B4)
+    2229: 4F 02        DECSP        02
+    222B: 4C 06        POPGLOBAL    06 ()
+    222D: 48 34        SYSCALL      34 SECONDS() -> LONG
+    222F: 4B 07        PUSHGLOBAL   07 ()
+    2231: 02           SUB
+    2232: 4C 08        POPGLOBAL    08 ()
+    2234: 82 51 01     PUSHCSTRING  0151 "Done."
+    2237: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2239: 42 0A        PUSHCHAR     0A ('\n')
+    223B: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    223D: 4B 05        PUSHGLOBAL   05 ()
+    223F: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2241: 42 20        PUSHCHAR     20 (' ')
+    2243: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    2245: 82 62 01     PUSHCSTRING  0162 " primes"
+    2248: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    224A: 42 20        PUSHCHAR     20 (' ')
+    224C: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    224E: 4B 08        PUSHGLOBAL   08 ()
+    2250: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2252: 42 20        PUSHCHAR     20 (' ')
+    2254: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    2256: 82 76 01     PUSHCSTRING  0176 " seconds"
+    2259: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    225B: 42 0A        PUSHCHAR     0A ('\n')
+    225D: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    225F: 49 00        RETURN       00
+    2261: 19           HALT
+END
+
+FUNC INTRO()
+
+   [1B02][1B1A]
+    1E2A: 1A           ENTER
+    1E2B: 42 0A        PUSHCHAR     0A ('\n')
+    1E2D: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E2F: 82 04 00     PUSHCSTRING  0004 "Mandelbrot - ported from Gordon's TinyBasic"
+    1E32: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1E34: 42 0A        PUSHCHAR     0A ('\n')
+    1E36: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E38: 82 33 00     PUSHCSTRING  0033 "                Updated for Hopper BASIC v3"
+    1E3B: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1E3D: 42 0A        PUSHCHAR     0A ('\n')
+    1E3F: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E41: 42 0A        PUSHCHAR     0A ('\n')
+    1E43: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E45: 42 0A        PUSHCHAR     0A ('\n')
+    1E47: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E49: 49 00        RETURN       00
+    1E4B: 19           HALT
+ENDFUNC
+
+FUNC DRAW()
+
+   [1B82][1B9A]
+    1EB2: 1A           ENTER
+    1EB3: 42 20        PUSHCHAR     20 (' ')
+    1EB5: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1EB7: 1B           PUSHEMPTYVAR
+    1EB8: 82 11 00     PUSHCSTRING  0011 ".,'~=+:;*%&$OXB#@ "
+    1EBB: 44 00        POPLOCAL     00 [BP+0]
+    1EBD: 1B           PUSHEMPTYVAR
+    1EBE: 1B           PUSHEMPTYVAR
+    1EBF: 1B           PUSHEMPTYVAR
+    1EC0: 1B           PUSHEMPTYVAR
+    1EC1: 1B           PUSHEMPTYVAR
+    1EC2: 1B           PUSHEMPTYVAR
+    1EC3: 1B           PUSHEMPTYVAR
+    1EC4: 1B           PUSHEMPTYVAR
+    1EC5: 1B           PUSHEMPTYVAR
+    1EC6: 1B           PUSHEMPTYVAR
+    1EC7: 81 32 00     PUSHWORD     0032 (50)
+    1ECA: 18           PUSHLONG0
+    1ECB: 44 0A        POPLOCAL     0A [BP+10]
+    1ECD: 1B           PUSHEMPTYVAR
+    1ECE: 1B           PUSHEMPTYVAR
+    1ECF: 41 0C        PUSHBYTE     0C
+    1ED1: 06           NEG
+    1ED2: 44 0C        POPLOCAL     0C [BP+12]
+    1ED4: 81 0C 00     PUSHWORD     000C (12)
+    1ED7: 18           PUSHLONG0
+    1ED8: 16           PUSH1
+    1ED9: C0 0C CA 00  FORCHK       0C 00CA ([+12]  -> 1FA7)
+    1EDD: 1B           PUSHEMPTYVAR
+    1EDE: 41 31        PUSHBYTE     31
+    1EE0: 06           NEG
+    1EE1: 44 0F        POPLOCAL     0F [BP+15]
+    1EE3: 81 1D 00     PUSHWORD     001D (29)
+    1EE6: 18           PUSHLONG0
+    1EE7: 16           PUSH1
+    1EE8: C0 0F AB 00  FORCHK       0F 00AB ([+15]  -> 1F97)
+    1EEC: 43 0F        PUSHLOCAL    0F [BP+15]
+    1EEE: 41 E5        PUSHBYTE     E5
+    1EF0: 03           MUL
+    1EF1: 41 64        PUSHBYTE     64
+    1EF3: 04           DIV
+    1EF4: 44 03        POPLOCAL     03 [BP+3]
+    1EF6: 43 0C        PUSHLOCAL    0C [BP+12]
+    1EF8: 80 A0 01     PUSHINT      01A0 (416)
+    1EFB: 03           MUL
+    1EFC: 41 64        PUSHBYTE     64
+    1EFE: 04           DIV
+    1EFF: 44 04        POPLOCAL     04 [BP+4]
+    1F01: 43 03        PUSHLOCAL    03 [BP+3]
+    1F03: 44 01        POPLOCAL     01 [BP+1]
+    1F05: 43 04        PUSHLOCAL    04 [BP+4]
+    1F07: 44 02        POPLOCAL     02 [BP+2]
+    1F09: 81 00 00     PUSHWORD     0000 (0)
+    1F0C: 18           PUSHLONG0
+    1F0D: 44 09        POPLOCAL     09 [BP+9]
+    1F0F: 40 00        PUSHBIT      00 (FALSE)
+    1F11: 44 0B        POPLOCAL     0B [BP+11]
+    1F13: 43 02        PUSHLOCAL    02 [BP+2]
+    1F15: 43 0A        PUSHLOCAL    0A [BP+10]
+    1F17: 04           DIV
+    1F18: 44 05        POPLOCAL     05 [BP+5]
+    1F1A: 43 02        PUSHLOCAL    02 [BP+2]
+    1F1C: 43 05        PUSHLOCAL    05 [BP+5]
+    1F1E: 43 0A        PUSHLOCAL    0A [BP+10]
+    1F20: 03           MUL
+    1F21: 02           SUB
+    1F22: 44 08        POPLOCAL     08 [BP+8]
+    1F24: 43 01        PUSHLOCAL    01 [BP+1]
+    1F26: 43 01        PUSHLOCAL    01 [BP+1]
+    1F28: 03           MUL
+    1F29: 43 02        PUSHLOCAL    02 [BP+2]
+    1F2B: 43 02        PUSHLOCAL    02 [BP+2]
+    1F2D: 03           MUL
+    1F2E: 02           SUB
+    1F2F: 43 0A        PUSHLOCAL    0A [BP+10]
+    1F31: 04           DIV
+    1F32: 43 03        PUSHLOCAL    03 [BP+3]
+    1F34: 01           ADD
+    1F35: 44 07        POPLOCAL     07 [BP+7]
+    1F37: 41 02        PUSHBYTE     02
+    1F39: 43 01        PUSHLOCAL    01 [BP+1]
+    1F3B: 43 05        PUSHLOCAL    05 [BP+5]
+    1F3D: 03           MUL
+    1F3E: 43 01        PUSHLOCAL    01 [BP+1]
+    1F40: 43 08        PUSHLOCAL    08 [BP+8]
+    1F42: 03           MUL
+    1F43: 43 0A        PUSHLOCAL    0A [BP+10]
+    1F45: 04           DIV
+    1F46: 01           ADD
+    1F47: 03           MUL
+    1F48: 43 04        PUSHLOCAL    04 [BP+4]
+    1F4A: 01           ADD
+    1F4B: 44 02        POPLOCAL     02 [BP+2]
+    1F4D: 43 07        PUSHLOCAL    07 [BP+7]
+    1F4F: 44 01        POPLOCAL     01 [BP+1]
+    1F51: 43 01        PUSHLOCAL    01 [BP+1]
+    1F53: 43 0A        PUSHLOCAL    0A [BP+10]
+    1F55: 04           DIV
+    1F56: 44 06        POPLOCAL     06 [BP+6]
+    1F58: 43 02        PUSHLOCAL    02 [BP+2]
+    1F5A: 43 0A        PUSHLOCAL    0A [BP+10]
+    1F5C: 04           DIV
+    1F5D: 44 05        POPLOCAL     05 [BP+5]
+    1F5F: 43 06        PUSHLOCAL    06 [BP+6]
+    1F61: 43 06        PUSHLOCAL    06 [BP+6]
+    1F63: 03           MUL
+    1F64: 43 05        PUSHLOCAL    05 [BP+5]
+    1F66: 43 05        PUSHLOCAL    05 [BP+5]
+    1F68: 03           MUL
+    1F69: 01           ADD
+    1F6A: 41 05        PUSHBYTE     05
+    1F6C: 12           GE
+    1F6D: 88 0C 00     JUMPZW       000C (+12 -> 1F7C)
+    1F70: 8F 00 09     GETITEMLL    0900  00 09
+    1F73: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1F75: 40 01        PUSHBIT      01 (TRUE)
+    1F77: 44 0B        POPLOCAL     0B [BP+11]
+    1F79: 87 12 00     JUMPW        0012 (+18 -> 1F8E)
+    1F7C: 4E 09        INCLOCAL     09
+    1F7E: 43 09        PUSHLOCAL    09 [BP+9]
+    1F80: 41 10        PUSHBYTE     10
+    1F82: 12           GE
+    1F83: 88 08 00     JUMPZW       0008 (+8 -> 1F8E)
+    1F86: 42 20        PUSHCHAR     20 (' ')
+    1F88: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1F8A: 40 01        PUSHBIT      01 (TRUE)
+    1F8C: 44 0B        POPLOCAL     0B [BP+11]
+    1F8E: 43 0B        PUSHLOCAL    0B [BP+11]
+    1F90: 88 80 FF     JUMPZW       FF80 (-128 -> 1F13)
+    1F93: C1 0F 55 FF  FORIT        0F FF55 ([+15]  -> 1EEC)
+    1F97: 4F 02        DECSP        02
+    1F99: 4F 01        DECSP        01
+    1F9B: 42 0A        PUSHCHAR     0A ('\n')
+    1F9D: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1F9F: 42 20        PUSHCHAR     20 (' ')
+    1FA1: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1FA3: C1 0C 36 FF  FORIT        0C FF36 ([+12]  -> 1EDD)
+    1FA7: 4F 02        DECSP        02
+    1FA9: 4F 01        DECSP        01
+    1FAB: 49 00        RETURN       00
+    1FAD: 19           HALT
+ENDFUNC
+
+BEGIN
+
+   [1D6A][1D82]
+    1DFA: 1A           ENTER
+    1DFB: 17           PUSHVOID
+    1DFC: 84 02 1B     CALLF        1B02 (INTRO)
+    1DFF: 4F 01        DECSP        01
+    1E01: 1B           PUSHEMPTYVAR
+    1E02: 48 34        SYSCALL      34 SECONDS() -> LONG
+    1E04: 44 00        POPLOCAL     00 [BP+0]
+    1E06: 17           PUSHVOID
+    1E07: 84 82 1B     CALLF        1B82 (DRAW)
+    1E0A: 4F 01        DECSP        01
+    1E0C: 1B           PUSHEMPTYVAR
+    1E0D: 48 34        SYSCALL      34 SECONDS() -> LONG
+    1E0F: 43 00        PUSHLOCAL    00 [BP+0]
+    1E11: 02           SUB
+    1E12: 44 01        POPLOCAL     01 [BP+1]
+    1E14: 42 0A        PUSHCHAR     0A ('\n')
+    1E16: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E18: 43 01        PUSHLOCAL    01 [BP+1]
+    1E1A: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1E1C: 82 45 00     PUSHCSTRING  0045 " seconds"
+    1E1F: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    1E21: 42 0A        PUSHCHAR     0A ('\n')
+    1E23: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    1E25: 49 00        RETURN       00
+    1E27: 19           HALT
+END
+
+FUNC KEYREADY()
+
+   [1D4A][1D62]
+    262A: 1A           ENTER
+    262B: 4B 01        PUSHGLOBAL   01 ()
+    262D: 48 45        SYSCALL      45 PEEK(LONG) -> LONG
+    262F: 4B 00        PUSHGLOBAL   00 ()
+    2631: 48 45        SYSCALL      45 PEEK(LONG) -> LONG
+    2633: 0E           NE
+    2634: 4A 00        RETURNVAL    00
+    2636: 19           HALT
+ENDFUNC
+
+FUNC GETRAWKEY()
+
+   [1D8A][1DA2]
+    25FA: 1A           ENTER
+    25FB: 1B           PUSHEMPTYVAR
+    25FC: 1B           PUSHEMPTYVAR
+    25FD: 17           PUSHVOID
+    25FE: 84 4A 1D     CALLF        1D4A (KEYREADY)
+    2601: 0C           LOGICAL_NOT
+    2602: 88 03 00     JUMPZW       0003 (+3 -> 2608)
+    2605: 87 F5 FF     JUMPW        FFF5 (-11 -> 25FD)
+    2608: 4B 01        PUSHGLOBAL   01 ()
+    260A: 48 45        SYSCALL      45 PEEK(LONG) -> LONG
+    260C: 44 00        POPLOCAL     00 [BP+0]
+    260E: 4B 02        PUSHGLOBAL   02 ()
+    2610: 43 00        PUSHLOCAL    00 [BP+0]
+    2612: 01           ADD
+    2613: 48 45        SYSCALL      45 PEEK(LONG) -> LONG
+    2615: 44 01        POPLOCAL     01 [BP+1]
+    2617: 4B 01        PUSHGLOBAL   01 ()
+    2619: 43 00        PUSHLOCAL    00 [BP+0]
+    261B: 16           PUSH1
+    261C: 01           ADD
+    261D: 41 FF        PUSHBYTE     FF
+    261F: 07           BITWISE_AND
+    2620: 48 4A        SYSCALL      4A POKE(LONG, LONG)
+    2622: 43 01        PUSHLOCAL    01 [BP+1]
+    2624: 4A 00        RETURNVAL    00
+    2626: 19           HALT
+ENDFUNC
+
+FUNC GETKEY()
+
+   [1E32][1E4A]
+    252A: 1A           ENTER
+    252B: 1B           PUSHEMPTYVAR
+    252C: 17           PUSHVOID
+    252D: 84 8A 1D     CALLF        1D8A (GETRAWKEY)
+    2530: 44 00        POPLOCAL     00 [BP+0]
+    2532: 4B 09        PUSHGLOBAL   09 ()
+    2534: 15           PUSH0
+    2535: 0D           EQ
+    2536: 88 1E 00     JUMPZW       001E (+30 -> 2557)
+    2539: 43 00        PUSHLOCAL    00 [BP+0]
+    253B: 41 1B        PUSHBYTE     1B
+    253D: 0D           EQ
+    253E: 88 0F 00     JUMPZW       000F (+15 -> 2550)
+    2541: 81 01 00     PUSHWORD     0001 (1)
+    2544: 18           PUSHLONG0
+    2545: 4C 09        POPGLOBAL    09 ()
+    2547: 17           PUSHVOID
+    2548: 84 32 1E     CALLF        1E32 (GETKEY)
+    254B: 4A 00        RETURNVAL    00
+    254D: 87 04 00     JUMPW        0004 (+4 -> 2554)
+    2550: 43 00        PUSHLOCAL    00 [BP+0]
+    2552: 4A 00        RETURNVAL    00
+    2554: 87 77 00     JUMPW        0077 (+119 -> 25CE)
+    2557: 4B 09        PUSHGLOBAL   09 ()
+    2559: 16           PUSH1
+    255A: 0D           EQ
+    255B: 88 26 00     JUMPZW       0026 (+38 -> 2584)
+    255E: 43 00        PUSHLOCAL    00 [BP+0]
+    2560: 41 5B        PUSHBYTE     5B
+    2562: 0D           EQ
+    2563: 88 0F 00     JUMPZW       000F (+15 -> 2575)
+    2566: 81 02 00     PUSHWORD     0002 (2)
+    2569: 18           PUSHLONG0
+    256A: 4C 09        POPGLOBAL    09 ()
+    256C: 17           PUSHVOID
+    256D: 84 32 1E     CALLF        1E32 (GETKEY)
+    2570: 4A 00        RETURNVAL    00
+    2572: 87 0C 00     JUMPW        000C (+12 -> 2581)
+    2575: 81 00 00     PUSHWORD     0000 (0)
+    2578: 18           PUSHLONG0
+    2579: 4C 09        POPGLOBAL    09 ()
+    257B: 81 1B 00     PUSHWORD     001B (27)
+    257E: 18           PUSHLONG0
+    257F: 4A 00        RETURNVAL    00
+    2581: 87 4A 00     JUMPW        004A (+74 -> 25CE)
+    2584: 4B 09        PUSHGLOBAL   09 ()
+    2586: 41 02        PUSHBYTE     02
+    2588: 0D           EQ
+    2589: 88 42 00     JUMPZW       0042 (+66 -> 25CE)
+    258C: 81 00 00     PUSHWORD     0000 (0)
+    258F: 18           PUSHLONG0
+    2590: 4C 09        POPGLOBAL    09 ()
+    2592: 43 00        PUSHLOCAL    00 [BP+0]
+    2594: 41 41        PUSHBYTE     41
+    2596: 0D           EQ
+    2597: 88 06 00     JUMPZW       0006 (+6 -> 25A0)
+    259A: 81 80 00     PUSHWORD     0080 (128)
+    259D: 18           PUSHLONG0
+    259E: 4A 00        RETURNVAL    00
+    25A0: 43 00        PUSHLOCAL    00 [BP+0]
+    25A2: 41 42        PUSHBYTE     42
+    25A4: 0D           EQ
+    25A5: 88 06 00     JUMPZW       0006 (+6 -> 25AE)
+    25A8: 81 81 00     PUSHWORD     0081 (129)
+    25AB: 18           PUSHLONG0
+    25AC: 4A 00        RETURNVAL    00
+    25AE: 43 00        PUSHLOCAL    00 [BP+0]
+    25B0: 41 43        PUSHBYTE     43
+    25B2: 0D           EQ
+    25B3: 88 06 00     JUMPZW       0006 (+6 -> 25BC)
+    25B6: 81 82 00     PUSHWORD     0082 (130)
+    25B9: 18           PUSHLONG0
+    25BA: 4A 00        RETURNVAL    00
+    25BC: 43 00        PUSHLOCAL    00 [BP+0]
+    25BE: 41 44        PUSHBYTE     44
+    25C0: 0D           EQ
+    25C1: 88 06 00     JUMPZW       0006 (+6 -> 25CA)
+    25C4: 81 83 00     PUSHWORD     0083 (131)
+    25C7: 18           PUSHLONG0
+    25C8: 4A 00        RETURNVAL    00
+    25CA: 43 00        PUSHLOCAL    00 [BP+0]
+    25CC: 4A 00        RETURNVAL    00
+    25CE: 43 00        PUSHLOCAL    00 [BP+0]
+    25D0: 4A 00        RETURNVAL    00
+    25D2: 19           HALT
+ENDFUNC
+
+FUNC SENDESC()
+
+   [1F92][1FAA]
+    24D2: 1A           ENTER
+    24D3: 42 1B        PUSHCHAR     1B ('\e')
+    24D5: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    24D7: 49 00        RETURN       00
+    24D9: 19           HALT
+ENDFUNC
+
+FUNC CLEARSCREEN()
+
+   [1FBA][1FDA]
+    24B2: 1A           ENTER
+    24B3: 17           PUSHVOID
+    24B4: 84 92 1F     CALLF        1F92 (SENDESC)
+    24B7: 4F 01        DECSP        01
+    24B9: 82 0E 00     PUSHCSTRING  000E "[2J"
+    24BC: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    24BE: 17           PUSHVOID
+    24BF: 84 92 1F     CALLF        1F92 (SENDESC)
+    24C2: 4F 01        DECSP        01
+    24C4: 82 22 00     PUSHCSTRING  0022 "[H"
+    24C7: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    24C9: 49 00        RETURN       00
+    24CB: 19           HALT
+ENDFUNC
+
+FUNC HIDECURSOR()
+
+   [201A][2032]
+    24E2: 1A           ENTER
+    24E3: 17           PUSHVOID
+    24E4: 84 92 1F     CALLF        1F92 (SENDESC)
+    24E7: 4F 01        DECSP        01
+    24E9: 82 0E 00     PUSHCSTRING  000E "[?25l"
+    24EC: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    24EE: 49 00        RETURN       00
+    24F0: 19           HALT
+ENDFUNC
+
+FUNC SHOWCURSOR()
+
+   [2052][206A]
+    266A: 1A           ENTER
+    266B: 17           PUSHVOID
+    266C: 84 92 1F     CALLF        1F92 (SENDESC)
+    266F: 4F 01        DECSP        01
+    2671: 82 0E 00     PUSHCSTRING  000E "[?25h"
+    2674: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2676: 49 00        RETURN       00
+    2678: 19           HALT
+ENDFUNC
+
+FUNC GOTOXY(X, Y)
+
+   [208A][20B2]
+    24FA: 1A           ENTER
+    24FB: 17           PUSHVOID
+    24FC: 84 92 1F     CALLF        1F92 (SENDESC)
+    24FF: 4F 01        DECSP        01
+    2501: 82 0E 00     PUSHCSTRING  000E "["
+    2504: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2506: 43 FF        PUSHLOCAL    FF [BP-1]
+    2508: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    250A: 82 16 00     PUSHCSTRING  0016 ";"
+    250D: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    250F: 43 FE        PUSHLOCAL    FE [BP-2]
+    2511: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2513: 82 1E 00     PUSHCSTRING  001E "H"
+    2516: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2518: 49 02        RETURN       02
+    251A: 19           HALT
+ENDFUNC
+
+FUNC MOVESTAR(NEWX, NEWY)
+
+   [20DA][2112]
+    263A: 1A           ENTER
+    263B: 17           PUSHVOID
+    263C: 4B 0A        PUSHGLOBAL   0A ()
+    263E: 4B 0B        PUSHGLOBAL   0B ()
+    2640: 84 8A 20     CALLF        208A (GOTOXY)
+    2643: 4F 01        DECSP        01
+    2645: 82 30 00     PUSHCSTRING  0030 " "
+    2648: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    264A: 43 FE        PUSHLOCAL    FE [BP-2]
+    264C: 4C 0A        POPGLOBAL    0A ()
+    264E: 43 FF        PUSHLOCAL    FF [BP-1]
+    2650: 4C 0B        POPGLOBAL    0B ()
+    2652: 17           PUSHVOID
+    2653: 4B 0A        PUSHGLOBAL   0A ()
+    2655: 4B 0B        PUSHGLOBAL   0B ()
+    2657: 84 8A 20     CALLF        208A (GOTOXY)
+    265A: 4F 01        DECSP        01
+    265C: 82 95 00     PUSHCSTRING  0095 "*"
+    265F: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    2661: 49 02        RETURN       02
+    2663: 19           HALT
+ENDFUNC
+
+BEGIN
+
+   [21B2][21CA]
+    23F2: 1A           ENTER
+    23F3: 1B           PUSHEMPTYVAR
+    23F4: 17           PUSHVOID
+    23F5: 84 BA 1F     CALLF        1FBA (CLEARSCREEN)
+    23F8: 4F 01        DECSP        01
+    23FA: 17           PUSHVOID
+    23FB: 84 1A 20     CALLF        201A (HIDECURSOR)
+    23FE: 4F 01        DECSP        01
+    2400: 17           PUSHVOID
+    2401: 4B 0A        PUSHGLOBAL   0A ()
+    2403: 4B 0B        PUSHGLOBAL   0B ()
+    2405: 84 8A 20     CALLF        208A (GOTOXY)
+    2408: 4F 01        DECSP        01
+    240A: 82 8E 00     PUSHCSTRING  008E "*"
+    240D: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    240F: 17           PUSHVOID
+    2410: 84 32 1E     CALLF        1E32 (GETKEY)
+    2413: 44 00        POPLOCAL     00 [BP+0]
+    2415: 43 00        PUSHLOCAL    00 [BP+0]
+    2417: 41 80        PUSHBYTE     80
+    2419: 0D           EQ
+    241A: 88 16 00     JUMPZW       0016 (+22 -> 2433)
+    241D: 4B 0B        PUSHGLOBAL   0B ()
+    241F: 16           PUSH1
+    2420: 10           GT
+    2421: 88 0C 00     JUMPZW       000C (+12 -> 2430)
+    2424: 17           PUSHVOID
+    2425: 4B 0A        PUSHGLOBAL   0A ()
+    2427: 4B 0B        PUSHGLOBAL   0B ()
+    2429: 16           PUSH1
+    242A: 02           SUB
+    242B: 84 DA 20     CALLF        20DA (MOVESTAR)
+    242E: 4F 01        DECSP        01
+    2430: 87 59 00     JUMPW        0059 (+89 -> 248C)
+    2433: 43 00        PUSHLOCAL    00 [BP+0]
+    2435: 41 81        PUSHBYTE     81
+    2437: 0D           EQ
+    2438: 88 17 00     JUMPZW       0017 (+23 -> 2452)
+    243B: 4B 0B        PUSHGLOBAL   0B ()
+    243D: 41 18        PUSHBYTE     18
+    243F: 0F           LT
+    2440: 88 0C 00     JUMPZW       000C (+12 -> 244F)
+    2443: 17           PUSHVOID
+    2444: 4B 0A        PUSHGLOBAL   0A ()
+    2446: 4B 0B        PUSHGLOBAL   0B ()
+    2448: 16           PUSH1
+    2449: 01           ADD
+    244A: 83 16 01     CALL         0116 (MOVESTAR)
+    244D: 4F 01        DECSP        01
+    244F: 87 3A 00     JUMPW        003A (+58 -> 248C)
+    2452: 43 00        PUSHLOCAL    00 [BP+0]
+    2454: 41 83        PUSHBYTE     83
+    2456: 0D           EQ
+    2457: 88 16 00     JUMPZW       0016 (+22 -> 2470)
+    245A: 4B 0A        PUSHGLOBAL   0A ()
+    245C: 16           PUSH1
+    245D: 10           GT
+    245E: 88 0C 00     JUMPZW       000C (+12 -> 246D)
+    2461: 17           PUSHVOID
+    2462: 4B 0A        PUSHGLOBAL   0A ()
+    2464: 16           PUSH1
+    2465: 02           SUB
+    2466: 4B 0B        PUSHGLOBAL   0B ()
+    2468: 84 DA 20     CALLF        20DA (MOVESTAR)
+    246B: 4F 01        DECSP        01
+    246D: 87 1C 00     JUMPW        001C (+28 -> 248C)
+    2470: 43 00        PUSHLOCAL    00 [BP+0]
+    2472: 41 82        PUSHBYTE     82
+    2474: 0D           EQ
+    2475: 88 14 00     JUMPZW       0014 (+20 -> 248C)
+    2478: 4B 0A        PUSHGLOBAL   0A ()
+    247A: 41 50        PUSHBYTE     50
+    247C: 0F           LT
+    247D: 88 0C 00     JUMPZW       000C (+12 -> 248C)
+    2480: 17           PUSHVOID
+    2481: 4B 0A        PUSHGLOBAL   0A ()
+    2483: 16           PUSH1
+    2484: 01           ADD
+    2485: 4B 0B        PUSHGLOBAL   0B ()
+    2487: 83 9F 01     CALL         019F (MOVESTAR)
+    248A: 4F 01        DECSP        01
+    248C: 43 00        PUSHLOCAL    00 [BP+0]
+    248E: 41 1B        PUSHBYTE     1B
+    2490: 0D           EQ
+    2491: 88 7B FF     JUMPZW       FF7B (-133 -> 240F)
+    2494: 17           PUSHVOID
+    2495: 84 52 20     CALLF        2052 (SHOWCURSOR)
+    2498: 4F 01        DECSP        01
+    249A: 17           PUSHVOID
+    249B: 84 BA 1F     CALLF        1FBA (CLEARSCREEN)
+    249E: 4F 01        DECSP        01
+    24A0: 82 0D 02     PUSHCSTRING  020D "Goodbye!"
+    24A3: 48 09        SYSCALL      09 PRINTVALUE(VAR)
+    24A5: 42 0A        PUSHCHAR     0A ('\n')
+    24A7: 48 11        SYSCALL      11 PRINTCHAR(CHAR)
+    24A9: 49 00        RETURN       00
+    24AB: 19           HALT
+END

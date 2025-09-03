@@ -15,6 +15,7 @@ unit Optimizer
     {
         None,
         Operand0,            // PEEPREPLACE PEEPOP0
+        Operand1W,           // PEEPREPLACE PEEPOP1 PEEPOP1H
         Operand0AndOperand2, // PEEPREPLACE PEEPOP0 PEEPOP2
         Operand0AndOperand3, // PEEPREPLACE PEEPOP0 PEEPOP3
         Operand2AndOperand1, // PEEPREPLACE PEEPOP2 PEEPOP1
@@ -50,6 +51,9 @@ unit Optimizer
     
     // PUSHLOCAL array, PUSHLOCAL index, GETITEM -> GETITEMLL array index
         OpCode.GETITEM,    OpCode.PUSHLOCAL,  OpCode.PUSHLOCAL,  OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand2AndOperand1, OpCode.GETITEMLL,
+        
+    // PUSHWORD <word>, PUSHLONG0 -> PUSHWORDLONG <word>
+        OpCode.PUSHLONG0,   OpCode.PUSHWORD,  OpCode.DONTCARE,   OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand1W,           OpCode.PUSHWORD,
             
         
         OpCode.INVALID  // End marker = 0
@@ -94,6 +98,14 @@ unit Optimizer
             {
                 Space(); LDA ZP.PEEPOP3 HOut();
             }
+            else
+            {
+                CMP #0x80
+                if (Z) // Two byte operand
+                {
+                    Space(); LDA ZP.PEEPOP3H HOut(); LDA ZP.PEEPOP3 HOut(); // MSB first
+                }
+            }
         }
         LDX ZP.PEEP2
         CPX # OpCode.INVALID
@@ -106,6 +118,14 @@ unit Optimizer
             if (Z)
             {
                 Space(); LDA ZP.PEEPOP2 HOut();
+            }
+            else
+            {
+                CMP #0x80
+                if (Z) // Two byte operand
+                {
+                    Space(); LDA ZP.PEEPOP2H HOut(); LDA ZP.PEEPOP2 HOut(); // MSB first
+                }
             }
         }
         LDX ZP.PEEP1
@@ -120,6 +140,14 @@ unit Optimizer
             {
                 Space(); LDA ZP.PEEPOP1 HOut();
             }
+            else
+            {
+                CMP #0x80
+                if (Z) // Two byte operand
+                {
+                    Space(); LDA ZP.PEEPOP1H HOut(); LDA ZP.PEEPOP1 HOut(); // MSB first
+                }
+            }
         }
         LDX ZP.PEEP0
         CPX # OpCode.INVALID
@@ -133,12 +161,13 @@ unit Optimizer
             {
                 Space(); LDA ZP.PEEPOP0 HOut();
             }
-            TXA
-            AND #0xC0
-            CMP #0x80
-            if (Z)
+            else
             {
-                Space(); LDA ZP.PEEPOP0 HOut(); Space(); LDA ZP.PEEPOP1 HOut(); // not correct
+                CMP #0x80
+                if (Z) // Two byte operand
+                {
+                    Space(); LDA ZP.PEEPOP0H HOut(); LDA ZP.PEEPOP0 HOut(); // MSB first
+                }
             }
         }
         Space();
@@ -253,6 +282,24 @@ unit Optimizer
         
         LDA Compiler.compilerOpCode
         STA ZP.PEEP0
+/*   
+LDA ZP.PEEP0
+CMP # OpCode.DECSP
+if (Z)
+{
+    LDA ZP.PEEP1
+    CMP # OpCode.CALL
+    if (Z)
+    {
+        LDA ZP.PEEP2
+        CMP # OpCode.PUSHVOID
+        if (Z)
+        {
+            Print.NewLine(); LDA #'$' Print.Char();
+        }
+    }
+}
+*/
     }
     
     // PEEP0 has been deleted so PEEP1 is the new PEEP0
@@ -370,6 +417,22 @@ unit Optimizer
                 LDA [ZP.IDY], Y
                 STA ZP.PEEPOP0
             }
+            else
+            {
+#ifdef DEBUGPEEPS            
+                // not used yet    
+                CMP #0x80
+                if (Z) // Two byte operand
+                {
+                    LDY #1
+                    LDA [ZP.IDY], Y
+                    STA ZP.PEEPOP0    // Word LSB
+                    LDY #2  
+                    LDA [ZP.IDY], Y
+                    STA ZP.PEEPOP0H   // Word MSB
+                }
+#endif
+            }
             
             // PEEP1 - step back 1 to opcode
             LDA ZP.PEEP1
@@ -381,6 +444,19 @@ unit Optimizer
                 LDY #1
                 LDA [ZP.IDY], Y
                 STA ZP.PEEPOP1
+            }
+            else
+            {
+                CMP #0x80
+                if (Z) // Two byte operand
+                {
+                    LDY #1
+                    LDA [ZP.IDY], Y
+                    STA ZP.PEEPOP1    // Word LSB
+                    LDY #2  
+                    LDA [ZP.IDY], Y
+                    STA ZP.PEEPOP1H   // Word MSB
+                }
             }
             
             LDA ZP.PEEPOPS
@@ -398,6 +474,22 @@ unit Optimizer
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP2
                 }
+                else
+                {
+#ifdef DEBUGPEEPS            
+                    // not used yet    
+                    CMP #0x80
+                    if (Z) // Two byte operand
+                    {
+                        LDY #1
+                        LDA [ZP.IDY], Y
+                        STA ZP.PEEPOP2    // Word LSB
+                        LDY #2  
+                        LDA [ZP.IDY], Y
+                        STA ZP.PEEPOP2H   // Word MSB
+                    }
+#endif
+                }
             }
             LDA ZP.PEEPOPS
             CMP #4
@@ -413,6 +505,22 @@ unit Optimizer
                     LDY #1
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP3
+                }
+                else
+                {
+#ifdef DEBUGPEEPS            
+                    // not used yet    
+                    CMP #0x80
+                    if (Z) // Two byte operand
+                    {
+                        LDY #1
+                        LDA [ZP.IDY], Y
+                        STA ZP.PEEPOP3    // Word LSB
+                        LDY #2  
+                        LDA [ZP.IDY], Y
+                        STA ZP.PEEPOP3H   // Word MSB
+                    }
+#endif
                 }
             }
             
@@ -481,6 +589,16 @@ unit Optimizer
                 case NewOperands.Operand0:
                 {
                     LDA ZP.PEEPOP0
+                    STA [ZP.XPC]
+                    incXPC();
+                }
+                case NewOperands.Operand1W:
+                {
+                    LDA ZP.PEEPOP1      // Word LSB
+                    STA [ZP.XPC]
+                    incXPC();
+                    
+                    LDA ZP.PEEPOP1H     // Word MSB  
                     STA [ZP.XPC]
                     incXPC();
                 }

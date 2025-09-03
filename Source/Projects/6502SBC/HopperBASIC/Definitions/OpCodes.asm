@@ -106,8 +106,8 @@ unit OpCodes
        // Bits 5-0: OpCode (0-63 available)
        
        // Literal pushes (16-bit values)
-       PUSHINT      = 0x80,  // Push INT immediate [lsb] [msb]
-       PUSHWORD     = 0x81,  // Push WORD immediate [lsb] [msb]
+       PUSHINT      = 0x80,  // Push INT immediate [lsb] [msb] [0xFF|0x00] [0xFF|0x00] 
+       PUSHWORD     = 0x81,  // Push WORD immediate [lsb] [msb] [0x00] [0x00]
        PUSHCSTRING  = 0x82,  // Push CONSTSTRING pointer [addr_lsb] [addr_msb]
        
        // Function calls (unresolved → resolved)
@@ -133,7 +133,7 @@ unit OpCodes
        SETITEMLL    = 0x93,  // pop from stack and SETITEM <array local offset>   <index local offset>
        
        PUSHLONG     = 0x94,  // pops word from stack, combines that with  WORD immediate [lsb] [msb] then pushes a LONG
-
+       
         // === THREE-OPERAND OPCODES (0xC0-0xFF) ===
         // Bits 7-6: 11 (three operand bytes)
         // All opcodes in this range have exactly 3 operand bytes

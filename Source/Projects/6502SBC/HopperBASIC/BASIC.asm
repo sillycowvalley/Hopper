@@ -5,8 +5,9 @@ program HopperBASIC
     #define HASEEPROM   // include EEPROM storage
     #define HASI2C      // include 6502SBC I2C support
     
-    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    //#define DEBUG
+    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    #define DEBUG
+    #define DEBUGPEEPS
     //#define MULDIVDEBUG
     //#define VERBOSEDEBUG // debug the keyword table limits
     //#define FILEDEBUG
@@ -229,6 +230,14 @@ program HopperBASIC
             Error.CheckError(); // but check for IsFailure or ZP.LastError ..
             if (NC)
             {
+#ifdef DEBUG
+                STZ ZP.STRL
+                STZ ZP.STRH
+                LDX #1 // DASM
+                Commands.CmdList();
+#endif                                    
+                
+                
                 // Runtime Error?  (IDCALL != 0, reset to zero in ExecuteOpCodes)
                 LDA ZP.IDCALLL
                 ORA ZP.IDCALLH
