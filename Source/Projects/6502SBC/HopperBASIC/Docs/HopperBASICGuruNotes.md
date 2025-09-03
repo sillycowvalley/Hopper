@@ -1,4 +1,4 @@
-# Hopper BASIC Programming GURU Guidelines and Common Pitfalls
+# HopperBASIC Programming Guidelines and Common Pitfalls
 
 ## Language Constraints and Rules
 
@@ -117,6 +117,41 @@ VAR if = TRUE           ! ILLEGAL - reserved word
 - **Functions can only return ONE value** - no multiple returns or tuples
 - **Workarounds:** Use global variables, modify passed arrays, or combine operations
 - **Example:** Can't have `GetOps()` return opc, op1, op2, op3 - must use different approach
+
+### Statement Organization Rules
+- **Avoid multistatement lines** - Keep each statement on its own line for clarity and debugging
+- **Don't use colons (:)** to combine statements - makes debugging difficult
+- **Avoid single-line IF statements** - Use multi-line form for better readability
+- **Correct pattern:**
+  ```basic
+  VAR x = 5
+  VAR y = 10
+  IF x > 0 THEN
+      PRINT x
+  ENDIF
+  ```
+- **Incorrect patterns:**
+  ```basic
+  VAR x = 5 : VAR y = 10 : PRINT x + y  ! Bad - multiple statements
+  IF x > 0 THEN PRINT x ENDIF           ! Bad - single line IF
+  ```
+
+#### Additional Statement Examples
+```basic
+! Good - clear, debuggable code
+VAR count = 0
+VAR total = 0
+FOR i = 1 TO 10
+    count = count + 1
+    total = total + i
+    IF total > 50 THEN
+        PRINT "Limit reached"
+    ENDIF
+NEXT i
+
+! Bad - compressed, hard to debug
+VAR count = 0 : VAR total = 0 : FOR i = 1 TO 10 : count = count + 1 : total = total + i : IF total > 50 THEN PRINT "Limit reached" ENDIF : NEXT i
+```
 
 ### Program Structure
 - **BEGIN...END defines main program** - replaces existing main when loaded

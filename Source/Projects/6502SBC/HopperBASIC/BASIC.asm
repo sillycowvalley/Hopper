@@ -62,7 +62,9 @@ program HopperBASIC
     uses "./Objects/Functions"
     uses "./Objects/Array"
     
-    
+#ifdef HASI2C    
+    uses "/Source/Runtime/6502/I2C"
+#endif
 #ifdef HASEEPROM
     uses "./Files/EEPROM"
     uses "./Files/File"

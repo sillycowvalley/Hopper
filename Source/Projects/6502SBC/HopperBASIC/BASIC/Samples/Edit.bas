@@ -1,333 +1,532 @@
 NEW
+CLS
 
-! Simple Text Editor for HopperBASIC
-! Uses VT100 codes for display, CHAR arrays for text storage
+! ============================================
+! Hopper BASIC Text Editor v1.0
+! Modular framework with VT100 terminal
+! ============================================
 
-CONST MAXLINES = 100      ! Maximum number of lines
-CONST MAXCOLS = 80        ! Maximum line length
-CONST SCREENHEIGHT = 24   ! Terminal height
-CONST STATUSLINE = 24     ! Status line at bottom
+! ============================================
+! GLOBAL CONSTANTS
+! ============================================
 
-! Key codes
-CONST KEYUP = 128
-CONST KEYDOWN = 129
-CONST KEYRIGHT = 130
-CONST KEYLEFT = 131
-CONST ESC = 27
-CONST ENTER = 13
-CONST BACKSPACE = 8
-CONST DELETE = 127
-CONST CTRLX = 24    ! Exit
-CONST CTRLS = 19    ! Save
-CONST CTRLL = 12    ! Load
+! Editor screen dimensions (internal coordinates)
+CONST edcW = 60
+CONST edcH = 22
+CONST edcTotalH = 24
 
-! Text buffer - simple array of characters with newlines
-CHAR TextBuffer[8000]  ! ~100 lines of 80 chars
-VAR BufferSize = 0
-VAR CursorX = 1
-VAR CursorY = 1
-VAR TopLine = 1      ! First visible line
-VAR Modified = FALSE
-VAR FileName[14]     ! Current filename
+! Terminal positioning (VT100 coordinates - 1-based)
+CONST tmcFrameX = 10
+CONST tmcFrameY = 10
+CONST tmcTextX = 11
+CONST tmcTextY = 11
 
-! VT100 Functions
-FUNC ClearScreen()
-    PRINT CHR(27); "[2J";
-    PRINT CHR(27); "[H";
-ENDFUNC
+! Line buffer configuration
+CONST bufcRecSz = 64
+CONST bufcMaxLines = 150
+CONST bufcContentMax = 60
+CONST bufcTotalSz = 9600
+CONST bufcTestLines = 50
 
-FUNC GotoXY(x, y)
-    PRINT CHR(27); "["; y; ";"; x; "H";
-ENDFUNC
+! Screen buffer configuration  
+CONST scrTotalSz = 1440
 
-FUNC ClearLine()
-    PRINT CHR(27); "[K";
-ENDFUNC
+! Key codes (avoid ASCII conflicts)
+CONST kbcUp = 128
+CONST kbcDown = 129
+CONST kbcLeft = 130
+CONST kbcRight = 131
+CONST kbcEnter = 13
+CONST kbcEsc = 27
 
-FUNC ShowCursor()
-    PRINT CHR(27); "[?25h";
-ENDFUNC
+! Terminal control
+CONST tmcEsc = 0x1B
 
-FUNC HideCursor()
-    PRINT CHR(27); "[?25l";
-ENDFUNC
+! Serial buffer constants
+CONST kbcWrPtr = 0x0A
+CONST kbcRdPtr = 0x0B  
+CONST kbcBuf = 0x0200
 
-! Find start of line N in buffer
-FUNC FindLine(n)
-    VAR pos = 0
-    VAR line = 1
-    
-    IF n = 1 THEN RETURN 0 ENDIF
-    
-    WHILE (pos < BufferSize) AND (line < n)
-        IF TextBuffer[pos] = CHR(10) THEN
-            line = line + 1
-        ENDIF
-        pos = pos + 1
-    WEND
-    
-    RETURN pos
-ENDFUNC
+! ============================================
+! GLOBAL STORAGE ARRAYS
+! ============================================
 
-! Count total lines
-FUNC CountLines()
-    VAR lines = 1
-    FOR i = 0 TO BufferSize - 1
-        IF TextBuffer[i] = CHR(10) THEN
-            lines = lines + 1
-        ENDIF
-    NEXT i
-    RETURN lines
-ENDFUNC
+BYTE lineBuf[bufcTotalSz]
+BYTE scrBuf[scrTotalSz]
 
-! Display text from TopLine
-FUNC Redraw()
-    VAR pos
-    VAR y = 1
-    VAR x = 1
-    
-    HideCursor()
-    GotoXY(1, 1)
-    
-    pos = FindLine(TopLine)
-    
-    WHILE (pos < BufferSize) AND (y < STATUSLINE)
-        IF TextBuffer[pos] = CHR(10) THEN
-            ClearLine()
-            y = y + 1
-            IF y < STATUSLINE THEN
-                GotoXY(1, y)
-            ENDIF
-            x = 1
-        ELSE
-            IF x <= MAXCOLS THEN
-                PRINT TextBuffer[pos];
-                x = x + 1
-            ENDIF
-        ENDIF
-        pos = pos + 1
-    WEND
-    
-    ! Clear remaining lines
-    WHILE y < STATUSLINE
-        GotoXY(1, y)
-        ClearLine()
-        y = y + 1
-    WEND
-    
-    ShowStatus()
-    GotoXY(CursorX, CursorY)
-    ShowCursor()
-ENDFUNC
+! ============================================
+! GLOBAL STATE VARIABLES  
+! ============================================
 
-FUNC ShowStatus()
-    GotoXY(1, STATUSLINE)
-    ClearLine()
-    ! Inverse video
-    PRINT CHR(27); "[7m";
-    
-    IF LEN(FileName) > 0 THEN
-        PRINT " "; FileName;
-    ELSE
-        PRINT " [No Name]";
-    ENDIF
-    
-    IF Modified THEN
-        PRINT " *";
-    ENDIF
-    
-    PRINT "  Line "; CursorY + TopLine - 1; "  Col "; CursorX;
-    PRINT "  ^X=Exit ^S=Save ^L=Load";
-    
-    ! Normal video
-    PRINT CHR(27); "[0m";
-ENDFUNC
+VAR bufFree = 0
+VAR bufFirst = 0
+VAR bufCnt = 0
+VAR viewPtr = 0
+VAR viewTop = 0
+VAR curLn = 0
+VAR curCol = 0
+VAR kbEsc = 0
+VAR scrDirty = 0
 
-! Insert character at current position
-FUNC InsertChar(c)
-    VAR pos = FindPosition()
-    
-    ! Shift everything right
-    IF BufferSize < LEN(TextBuffer) - 1 THEN
-        FOR i = BufferSize TO pos + 1 STEP -1
-            TextBuffer[i] = TextBuffer[i - 1]
-        NEXT i
-        
-        TextBuffer[pos] = c
-        BufferSize = BufferSize + 1
-        Modified = TRUE
-        
-        IF c = CHR(10) THEN
-            CursorY = CursorY + 1
-            CursorX = 1
-        ELSE
-            CursorX = CursorX + 1
-        ENDIF
-        
-        Redraw()
-    ENDIF
-ENDFUNC
+! ============================================
+! TERMINAL MODULE (tm)
+! ============================================
 
-! Calculate buffer position from cursor
-FUNC FindPosition()
-    VAR pos = FindLine(TopLine + CursorY - 1)
-    VAR col = 1
-    
-    WHILE (col < CursorX) AND (pos < BufferSize)
-        IF TextBuffer[pos] = CHR(10) THEN
-            RETURN pos
-        ENDIF
-        pos = pos + 1
-        col = col + 1
-    WEND
-    
-    RETURN pos
-ENDFUNC
-
-! Save file
-FUNC SaveFile()
-    IF LEN(FileName) = 0 THEN
-        GotoXY(1, STATUSLINE)
-        ClearLine()
-        PRINT "Filename: ";
-        ! Simple filename input (would need better implementation)
-        RETURN FALSE
-    ENDIF
-    
-    EXPORT(TextBuffer, FileName)
-    Modified = FALSE
+! Initialize terminal for editor use
+FUNC tmInit()
+    tmClr()
+    tmHide()
+    tmFrame()
     RETURN TRUE
 ENDFUNC
 
-! Load file
-FUNC LoadFile(name)
-    VAR count = IMPORT(TextBuffer, name)
-    IF count > 0 THEN
-        BufferSize = count
-        FOR i = 0 TO 13
-            IF i < LEN(name) THEN
-                FileName[i] = name[i]
+! Clear entire terminal screen
+FUNC tmClr()
+    PRINT CHR(tmcEsc); "[2J";
+    PRINT CHR(tmcEsc); "[H";
+ENDFUNC
+
+! Position cursor (1-based terminal coordinates)
+FUNC tmGoto(x, y)
+    PRINT CHR(tmcEsc); "["; y; ";"; x; "H";
+ENDFUNC
+
+! Hide cursor
+FUNC tmHide()
+    PRINT CHR(tmcEsc); "[?25l";
+ENDFUNC
+
+! Show cursor  
+FUNC tmShow()
+    PRINT CHR(tmcEsc); "[?25h";
+ENDFUNC
+
+! Draw frame around text area
+FUNC tmFrame()
+    VAR x, y
+    
+    tmGoto(tmcFrameX, tmcFrameY)
+    PRINT "+";
+    FOR x = 1 TO edcW
+        PRINT "-";
+    NEXT x
+    PRINT "+";
+    
+    FOR y = 1 TO edcTotalH
+        tmGoto(tmcFrameX, tmcFrameY + y)
+        PRINT "|";
+        tmGoto(tmcFrameX + edcW + 1, tmcFrameY + y)
+        PRINT "|";
+    NEXT y
+    
+    tmGoto(tmcFrameX, tmcFrameY + edcTotalH + 1)
+    PRINT "+";
+    FOR x = 1 TO edcW
+        PRINT "-";
+    NEXT x
+    PRINT "+";
+ENDFUNC
+
+! ============================================
+! KEYBOARD MODULE (kb)
+! ============================================
+
+! Initialize keyboard
+FUNC kbInit()
+    kbEsc = 0
+ENDFUNC
+
+! Check if key available
+FUNC kbRdy()
+    RETURN PEEK(kbcRdPtr) <> PEEK(kbcWrPtr)
+ENDFUNC
+
+! Get raw character from buffer
+FUNC kbRaw()
+    VAR ptr, key
+    WHILE NOT kbRdy()
+        DELAY(5)
+    WEND
+    ptr = PEEK(kbcRdPtr)
+    key = PEEK(kbcBuf + ptr)
+    POKE(kbcRdPtr, (ptr + 1) & 0xFF)
+    RETURN key
+ENDFUNC
+
+! Get processed key (handles VT100 escape sequences)
+FUNC kbGet()
+    VAR k
+    
+    k = kbRaw()
+    
+    IF kbEsc = 0 THEN
+        IF k = tmcEsc THEN
+            kbEsc = 1
+            RETURN kbGet()
+        ELSE
+            RETURN k
+        ENDIF
+    ELSE
+        IF kbEsc = 1 THEN
+            IF k = 0x5B THEN
+                kbEsc = 2
+                RETURN kbGet()
             ELSE
-                FileName[i] = CHR(0)
+                kbEsc = 0
+                RETURN tmcEsc
             ENDIF
-        NEXT i
-        Modified = FALSE
+        ELSE
+            IF kbEsc = 2 THEN
+                kbEsc = 0
+                IF k = 0x41 THEN RETURN kbcUp ENDIF
+                IF k = 0x42 THEN RETURN kbcDown ENDIF
+                IF k = 0x43 THEN RETURN kbcRight ENDIF
+                IF k = 0x44 THEN RETURN kbcLeft ENDIF
+                RETURN k
+            ENDIF
+        ENDIF
+    ENDIF
+    
+    RETURN k
+ENDFUNC
+
+! ============================================
+! BUFFER MODULE (buf)
+! ============================================
+
+! Initialize buffer system with test data
+FUNC bufInit()
+    VAR ptr
+    VAR nxt
+    
+    bufFree = 0
+    FOR i = 0 TO bufcMaxLines - 2
+        ptr = i * bufcRecSz
+        nxt = (i + 1) * bufcRecSz
+        POKE(ptr, nxt & 0xFF)
+        POKE(ptr + 1, nxt / 256)
+    NEXT i
+    
+    ptr = (bufcMaxLines - 1) * bufcRecSz
+    POKE(ptr, 0)
+    POKE(ptr + 1, 0)
+    
+    bufFirst = 0
+    bufCnt = 0
+    
+    bufTest()
+ENDFUNC
+
+! Allocate a line record from free list
+FUNC bufAlloc()
+    VAR ptr, nxt
+    
+    IF bufFree = 0 THEN
+        RETURN 0
+    ENDIF
+    
+    ptr = bufFree
+    nxt = PEEK(ptr) + PEEK(ptr + 1) * 256
+    bufFree = nxt
+    
+    POKE(ptr, 0)
+    POKE(ptr + 1, 0)
+    POKE(ptr + 2 + bufcContentMax, 0)
+    
+    RETURN ptr
+ENDFUNC
+
+! Get pointer to line record by line number
+FUNC bufGetPtr(ln)
+    VAR ptr, cnt
+    
+    ptr = bufFirst
+    cnt = 0
+    
+    WHILE ptr <> 0 AND cnt < ln
+        ptr = PEEK(ptr) + PEEK(ptr + 1) * 256
+        cnt = cnt + 1
+    WEND
+    
+    RETURN ptr
+ENDFUNC
+
+! Get pointer to following line record in chain
+FUNC bufNxt(ptr)
+    IF ptr = 0 THEN
+        RETURN 0
+    ENDIF
+    RETURN PEEK(ptr) + PEEK(ptr + 1) * 256
+ENDFUNC
+
+! Add line to end of document
+FUNC bufAdd(txt)
+    VAR n, ptr, last, i, sz
+    
+    n = bufAlloc()
+    IF n = 0 THEN
+        RETURN FALSE
+    ENDIF
+    
+    sz = LEN(txt)
+    IF sz > bufcContentMax THEN
+        sz = bufcContentMax
+    ENDIF
+    
+    FOR i = 0 TO sz - 1
+        POKE(n + 2 + i, ASC(txt[i]))
+    NEXT i
+    POKE(n + 2 + sz, 0)
+    
+    IF bufFirst = 0 THEN
+        bufFirst = n
+    ELSE
+        ptr = bufFirst
+        WHILE TRUE
+            last = PEEK(ptr) + PEEK(ptr + 1) * 256
+            IF last = 0 THEN
+                POKE(ptr, n & 0xFF)
+                POKE(ptr + 1, n / 256)
+                bufCnt = bufCnt + 1
+                RETURN TRUE
+            ENDIF
+            ptr = last
+        WEND
+    ENDIF
+    
+    bufCnt = bufCnt + 1
+    RETURN TRUE
+ENDFUNC
+
+! Create test data - only as many lines as will fit in buffer
+FUNC bufTest()
+    VAR i, maxTest
+    
+    maxTest = bufcTestLines
+    IF maxTest > bufcMaxLines THEN
+        maxTest = bufcMaxLines
+    ENDIF
+    
+    FOR i = 1 TO maxTest
+        IF i MOD 10 = 0 THEN
+            bufAdd("")
+        ELSE
+            bufAdd("Test line content goes here for testing purposes")
+        ENDIF
+    NEXT i
+    
+    viewPtr = bufFirst
+    viewTop = 0
+ENDFUNC
+
+! ============================================
+! CURSOR MODULE (cur)  
+! ============================================
+
+! Initialize cursor
+FUNC curInit()
+    curLn = 0
+    curCol = 0
+ENDFUNC
+
+! Move cursor up
+FUNC curUp()
+    IF curLn > 0 THEN
+        curLn = curLn - 1
         RETURN TRUE
     ENDIF
     RETURN FALSE
 ENDFUNC
 
-! Key handler functions
-FUNC HandleUp()
-    IF CursorY > 1 THEN
-        CursorY = CursorY - 1
-    ELSE
-        IF TopLine > 1 THEN
-            TopLine = TopLine - 1
-            Redraw()
-        ENDIF
+! Move cursor down  
+FUNC curDown()
+    IF curLn < bufCnt - 1 THEN
+        curLn = curLn + 1
+        RETURN TRUE
     ENDIF
-    GotoXY(CursorX, CursorY)
+    RETURN FALSE
 ENDFUNC
 
-FUNC HandleDown()
-    IF CursorY < STATUSLINE - 1 THEN
-        CursorY = CursorY + 1
-    ELSE
-        TopLine = TopLine + 1
-        Redraw()
-    ENDIF
-    GotoXY(CursorX, CursorY)
-ENDFUNC
+! ============================================
+! SCREEN MODULE (scr)
+! ============================================
 
-FUNC HandleLeft()
-    IF CursorX > 1 THEN
-        CursorX = CursorX - 1
-        GotoXY(CursorX, CursorY)
-    ENDIF
-ENDFUNC
-
-FUNC HandleRight()
-    IF CursorX < MAXCOLS THEN
-        CursorX = CursorX + 1
-        GotoXY(CursorX, CursorY)
-    ENDIF
-ENDFUNC
-
-FUNC HandleBackspace()
-    VAR pos
-    IF CursorX > 1 THEN
-        CursorX = CursorX - 1
-        pos = FindPosition()
-        ! Delete character at position
-        IF pos < BufferSize THEN
-            FOR i = pos TO BufferSize - 2
-                TextBuffer[i] = TextBuffer[i + 1]
-            NEXT i
-            BufferSize = BufferSize - 1
-            Modified = TRUE
-            Redraw()
-        ENDIF
-    ENDIF
-ENDFUNC
-
-FUNC HandlePrintable(key)
-    IF key >= 32 THEN
-        IF key < 127 THEN
-            InsertChar(CHR(key))
-        ENDIF
-    ENDIF
-ENDFUNC
-
-BEGIN
-    ClearScreen()
-    ShowStatus()
-    ShowCursor()
+! Initialize screen buffer
+FUNC scrInit()
+    VAR i
     
-    ! Main edit loop
-    VAR key
-    VAR done = FALSE
+    FOR i = 0 TO scrTotalSz - 1
+        scrBuf[i] = 32 | 0x80
+    NEXT i
     
-    WHILE NOT done
-        key = GetKey()
+    scrDirty = TRUE
+ENDFUNC
+
+! Force full redraw
+FUNC scrRedo()
+    VAR i
+    
+    FOR i = 0 TO scrTotalSz - 1
+        scrBuf[i] = scrBuf[i] | 0x80
+    NEXT i
+    
+    scrUpd()
+ENDFUNC
+
+! Update screen (render dirty characters only)
+FUNC scrUpd()
+    VAR row, col, pos, ptr, ln, ch, nw, old
+    
+    ptr = viewPtr
+    ln = 0
+    
+    WHILE ln < edcH AND ptr <> 0
+        FOR col = 0 TO edcW - 1
+            pos = ln * edcW + col
+            
+            IF col < bufcContentMax THEN
+                ch = PEEK(ptr + 2 + col)
+                IF ch = 0 THEN
+                    nw = 32
+                ELSE
+                    nw = ch
+                ENDIF
+            ELSE
+                nw = 32
+            ENDIF
+            
+            old = scrBuf[pos]
+            IF nw <> (old & 0x7F) THEN
+                scrBuf[pos] = nw | 0x80
+            ENDIF
+        NEXT col
         
-        ! Handle each key type separately
-        IF key = CTRLX THEN
-            done = TRUE
-        ENDIF
-        
-        IF key = CTRLS THEN
-            SaveFile()
-        ENDIF
-        
-        IF key = KEYUP THEN
-            HandleUp()
-        ENDIF
-        
-        IF key = KEYDOWN THEN
-            HandleDown()
-        ENDIF
-        
-        IF key = KEYLEFT THEN
-            HandleLeft()
-        ENDIF
-        
-        IF key = KEYRIGHT THEN
-            HandleRight()
-        ENDIF
-        
-        IF key = ENTER THEN
-            InsertChar(CHR(10))
-        ENDIF
-        
-        IF key = BACKSPACE THEN
-            HandleBackspace()
-        ENDIF
-        
-        ! Handle printable characters
-        HandlePrintable(key)
+        ptr = bufNxt(ptr)
+        ln = ln + 1
     WEND
     
-    ClearScreen()
-    PRINT "Editor exited"
+    WHILE ln < edcH
+        FOR col = 0 TO edcW - 1
+            pos = ln * edcW + col
+            old = scrBuf[pos]
+            IF 32 <> (old & 0x7F) THEN
+                scrBuf[pos] = 32 | 0x80
+            ENDIF
+        NEXT col
+        ln = ln + 1
+    WEND
+    
+    scrRender()
+ENDFUNC
+
+! Render only dirty screen positions
+FUNC scrRender()
+    VAR row, col, pos, ch, x, y
+    
+    FOR row = 0 TO edcH - 1
+        FOR col = 0 TO edcW - 1
+            pos = row * edcW + col
+            
+            IF (scrBuf[pos] & 0x80) <> 0 THEN
+                x = tmcTextX + col
+                y = tmcTextY + row
+                tmGoto(x, y)
+                
+                ch = scrBuf[pos] & 0x7F
+                PRINT CHR(ch);
+                
+                scrBuf[pos] = ch
+            ENDIF
+        NEXT col
+    NEXT row
+ENDFUNC
+
+! ============================================
+! EDITOR MODULE (ed)
+! ============================================
+
+! Initialize entire editor system
+FUNC edInit()
+    bufInit()
+    tmInit() 
+    kbInit()
+    curInit()
+    scrInit()
+    scrRedo()
+ENDFUNC
+
+! Main editor loop
+FUNC edRun()
+    VAR key, moved
+    
+    WHILE TRUE
+        key = kbGet()
+        
+        IF key = kbcEsc THEN
+            RETURN
+        ENDIF
+        
+        moved = FALSE
+        
+        IF key = kbcUp THEN
+            IF curUp() THEN
+                moved = TRUE
+            ENDIF
+        ELSE
+            IF key = kbcDown THEN
+                IF curDown() THEN
+                    moved = TRUE
+                ENDIF
+            ENDIF
+        ENDIF
+        
+        IF moved THEN
+            edView()
+            scrUpd()
+        ENDIF
+    WEND
+ENDFUNC
+
+! Adjust view to keep cursor visible
+FUNC edView()
+    VAR newTop
+    
+    IF curLn < viewTop THEN
+        viewTop = curLn
+        viewPtr = bufGetPtr(curLn)
+        RETURN
+    ENDIF
+    
+    IF curLn >= viewTop + edcH THEN
+        newTop = curLn - edcH + 1
+        IF newTop <> viewTop THEN
+            viewTop = newTop
+            viewPtr = bufGetPtr(newTop)
+        ENDIF
+    ENDIF
+ENDFUNC
+
+! Clean shutdown
+FUNC edShut()
+    tmShow()
+    tmClr()
+ENDFUNC
+
+! ============================================
+! MAIN PROGRAM
+! ============================================
+
+BEGIN
+    PRINT "Hopper BASIC Text Editor v1.0"
+    PRINT "Initializing..."
+    
+    edInit()
+    
+    tmGoto(tmcTextX, tmcTextY + edcH + 1)
+    PRINT "Use arrow keys to navigate. ESC to exit.";
+    
+    edRun()
+    edShut()
+    
+    PRINT "Editor terminated."
 END

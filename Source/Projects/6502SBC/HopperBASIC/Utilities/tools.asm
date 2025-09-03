@@ -228,4 +228,26 @@ unit Tools // Tools.asm
         PLA
         STA ZP.IDXL
     }
+    
+    // Convert string to uppercase in place (compact version)
+    // Input: ZP.STR = pointer to null-terminated string
+    // Output: String converted to uppercase
+    // Munts: A, Y
+    ToUpperSTR()
+    {
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            if (Z) { break; }  // Null terminator
+            Char.IsLower();    // preserves A
+            if (C)
+            {
+                AND #0xDF      // Convert to uppercase by stripping bit 5
+                STA [ZP.STR], Y
+            }
+            INY
+            if (Z) { break; }  // Prevent overflow
+        }
+    }
 }

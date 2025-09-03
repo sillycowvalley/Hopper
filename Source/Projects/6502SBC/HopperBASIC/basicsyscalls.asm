@@ -793,19 +793,27 @@ unit BASICSysCalls
                 
                 case SysCallType.Import:  // ID = 23
                 {
+#ifdef HASEEPROM
                     // IMPORT procedure - load data file into array
                     // Stack has [array][filename]
                     executeImport();
                     if (NC) { break; }
                     // Element count is in ZP.TOP, fall through to push
+#else
+                    Commands.NotAvailable();
+#endif
                 }
 
                 case SysCallType.Export:  // ID = 24  
                 {
+#ifdef HASEEPROM
                     // EXPORT procedure - save array to data file
                     // Stack has [array][filename]
                     executeExport();
                     if (NC) { break; }
+#else
+                    Commands.NotAvailable();
+#endif
                 }
                 
                 
@@ -869,7 +877,7 @@ unit BASICSysCalls
             }
             
             // convert STR to uppercase
-            File.ToUpperSTR();
+            Tools.ToUpperSTR();
 
             LDA # DirWalkAction.FindFile
             File.Exists(); // preserves ZP.STR
@@ -935,7 +943,7 @@ unit BASICSysCalls
             MoveTOPtoSTR();
 
             // convert STR to uppercase
-            File.ToUpperSTR();
+            Tools.ToUpperSTR();
 
             LDA # DirWalkAction.FindFile  // all files
             File.Exists(); // Input: ZP.STR, Output: C if exists
