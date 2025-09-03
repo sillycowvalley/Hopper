@@ -225,6 +225,7 @@ unit Error // ErrorID.asm
         ExpectedThen,
         ExpectedEndif,
         IllegalIdentifier,
+        IllegalType,
         IllegalAssignment,
         IllegalCharacter,
         InvalidOperator,
@@ -331,7 +332,7 @@ unit Error // ErrorID.asm
         2, ErrorID.FileExists,                 ErrorWord.FILE, ErrorWord.EXISTS,
         2, ErrorID.EEPROMError,                ErrorWord.EEPROM, ErrorWord.ERROR,
         
-        
+        2, ErrorID.IllegalType,                ErrorWord.ILLEGAL, ErrorWord.TYPE,
         
         
         
@@ -601,6 +602,14 @@ unit Error // ErrorID.asm
     { 
         LDA #ErrorID.UndefinedFunction
         commonErrorSTRtoERRSTR();
+    }
+    
+    IllegalType() // keyword is in ZP.CurrentToken
+    { 
+        LDA ZP.CurrentToken
+        STA ZP.ERRTOK
+        LDA #ErrorID.IllegalType
+        commonError();
     }
     
     NotInReleaseBuild() inline
@@ -931,6 +940,7 @@ unit Error // ErrorID.asm
         STZ ZP.LastError
         STZ ZP.ERRSTRL
         STZ ZP.ERRSTRH
+        STZ ZP.ERRTOK
         RMB0 ZP.SerialFlags    // Clear the BREAK flag
         States.SetSuccess();
     }
@@ -1060,9 +1070,22 @@ unit Error // ErrorID.asm
             }
             else
             {
-                LDA ZP.LastError
-                LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
-                Error.MessageNL();
+                LDA ZP.ERRTOK
+                if (NZ)
+                {
+                    LDA ZP.LastError
+                    LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest|MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
+                    Error.Message();
+                    LDA ZP.ERRTOK
+                    Tokens.PrintKeyword();
+                    Print.NewLine();
+                }
+                else
+                {
+                    LDA ZP.LastError
+                    LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest)
+                    Error.MessageNL();
+                }
             }
             
 #if !defined(RELEASE)

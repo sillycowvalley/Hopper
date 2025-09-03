@@ -413,7 +413,7 @@ unit Statement // Statement.asm
             case Token.STRING:
             case Token.LONG:
             {
-                Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                Error.IllegalType(); BIT ZP.EmulatorPCL  // ZP.CurrentToken
             }
             
             default:
@@ -548,7 +548,7 @@ unit Statement // Statement.asm
             STZ stmtType
             
             // Output: C set if token is a type keyword, NC if not a type keyword, A = BASICType
-            BASICTypes.FromToken();
+            BASICTypes.FromToken(); // X -> A
             if (C)
             {
                 CMP # BASICType.VAR
@@ -584,7 +584,7 @@ unit Statement // Statement.asm
                 Tokens.IsKeyword();
                 if (C)
                 {
-                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    Error.IllegalType(); BIT ZP.EmulatorPCL // ZP.CurrentToken
                 }
                 else
                 {
@@ -831,6 +831,7 @@ unit Statement // Statement.asm
                         INC declInitializer
                         SEC
                     }
+                    case Token.COMMENT:
                     case Token.EOL:
                     case Token.COLON:
                     case Token.COMMA:

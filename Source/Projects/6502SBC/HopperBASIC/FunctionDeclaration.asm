@@ -120,7 +120,7 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 Tokens.IsKeyword();
                 if (C)
                 {
-                    Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                    Error.IllegalType(); BIT ZP.EmulatorPCL  // ZP.CurrentToken
                 }
                 else
                 {

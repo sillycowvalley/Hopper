@@ -228,7 +228,9 @@ program HopperBASIC
                 if (NZ)
                 {
                     // runtime error inside compiled function
+#ifdef DEBUG                    
 Debug.NL(); LDA #'R' COut();                    
+#endif
                     Functions.CompileForError();
                 }
                 

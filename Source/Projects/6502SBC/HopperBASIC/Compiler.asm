@@ -2402,7 +2402,7 @@ unit Compiler // Compiler.asm
                case Token.STRING:
                case Token.LONG:
                {
-                   Error.IllegalIdentifier(); BIT ZP.EmulatorPCL
+                   Error.IllegalType(); BIT ZP.EmulatorPCL // ZP.CurrentToken
                    States.SetFailure();
                    break;   
                }

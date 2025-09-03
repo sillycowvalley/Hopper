@@ -322,14 +322,13 @@ unit ZP // ZeroPage.asm
     const byte ERRSTR               = 0x7B;  // Error String pointer
     const byte ERRSTRL              = 0x7B;  // Error String 2 low (alias)
     const byte ERRSTRH              = 0x7C;  // Error String 2 high
+    const byte ERRTOK               = 0x7D;  // to print tokens in error messages
 
 
     // TODO : move to Compiler section
-    const byte XPC                  = 0x7D;  // Compiler Program counter low
-    const byte XPCL                 = 0x7D;  // Compiler Program counter low (alias)
-    const byte XPCH                 = 0x7E;  // Compiler Program counter high
-    
-    const byte CompilerTemp         = 0x7F;  // Temporary workspace used by the Compiler
+    const byte XPC                  = 0x7E;  // Compiler Program counter low
+    const byte XPCL                 = 0x7E;  // Compiler Program counter low (alias)
+    const byte XPCH                 = 0x7F;  // Compiler Program counter high
     
     const byte XID                  = 0x80;  // Executor token buffer pointer Program counter low
     const byte XIDL                 = 0x80;
@@ -400,11 +399,15 @@ unit ZP // ZeroPage.asm
     
     const byte RuntimeError         = 0xA8;
     
+    const byte CompilerTemp         = 0xA9;  // Temporary workspace used by the Compiler
+    
+    
+    
     // used only in Debug unit as STR2
 #ifdef DEBUG
-    const byte STR2                 = 0xA9;  // String pointer 2
-    const byte STR2L                = 0xA9;  // String 2 low (alias)
-    const byte STR2H                = 0xAA;  // String 2 high
+    const byte STR2                 = 0xAA;  // String pointer 2
+    const byte STR2L                = 0xAA;  // String 2 low (alias)
+    const byte STR2H                = 0xAB;  // String 2 high
 #endif
     
     // Uses in Token.PrintKeywordFromTable, Token.PrintKeyword and Error.PrintWord
