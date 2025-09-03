@@ -286,6 +286,7 @@ FUNC TestFragmentation()
         IF ptrs[i] <> 0 THEN hpFree(ptrs[i]) ENDIF
     NEXT i
     IF smallPtr <> 0 THEN hpFree(smallPtr) ENDIF
+    IF bigPtr <> 0 THEN hpFree(bigPtr) ENDIF
     hpDump()
     PRINT
 ENDFUNC
@@ -333,7 +334,8 @@ FUNC TestOutOfMemory()
     PRINT "Result:", ptr2, "(should be 0)"
     
     PRINT "Freeing large block..."
-    hpFree(bigPtr)
+    IF bigPtr <> 0 THEN hpFree(bigPtr) ENDIF
+    IF ptr2 <> 0 THEN hpFree(ptr2) ENDIF
     hpDump()
     PRINT
 ENDFUNC
@@ -345,6 +347,7 @@ FUNC TestEdgeCases()
     PRINT "Allocating 0 bytes..."
     ptr1 = hpMalloc(0)
     PRINT "Result:", ptr1
+    IF ptr1 <> 0 THEN hpFree(ptr1) ENDIF
     
     PRINT "Freeing null pointer..."
     hpFree(0)
@@ -356,12 +359,12 @@ FUNC TestEdgeCases()
     hpDump()
     
     PRINT "Allocating maximum possible size..."
-    hpFree(ptr1)
+    IF ptr1 <> 0 THEN hpFree(ptr1) ENDIF
     ptr2 = hpMalloc(2046)
     PRINT "Result:", ptr2
     hpDump()
     
-    hpFree(ptr2)
+    IF ptr2 <> 0 THEN hpFree(ptr2) ENDIF
     PRINT
 ENDFUNC
 
