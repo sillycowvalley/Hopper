@@ -121,7 +121,7 @@ program HopperBASIC
         
         // Clear system flags and set basic state
         STZ ZP.FLAGS
-        SMB0 ZP.FLAGS  // Set "program loaded" flag for BASIC
+        
 #if defined(TRACE) || defined(TRACEEXE)
         RMB2 ZP.FLAGS  // TROFF by default
 #else

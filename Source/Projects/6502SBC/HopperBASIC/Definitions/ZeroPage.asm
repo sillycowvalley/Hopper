@@ -42,7 +42,7 @@ unit ZP // ZeroPage.asm
     // Bit 3 - REPL mode flag - set for REPL buffers, clear for BASIC buffers
     // Bit 2 - TRON | TROFF (trace on/off)
     // Bit 1 - Temporary exit flag for Console.processTokens() loop control
-    // Bit 0 - Program has been loaded
+    // Bit 0 - unused
     
     const byte SP                   = 0x03;  // Stack pointer
     const byte BP                   = 0x04;  // Base pointer

@@ -214,8 +214,225 @@ FUNC hpDump()
     ENDIF
 ENDFUNC
 
+! Heap Manager Test Suite
+! Tests allocation, freeing, fragmentation, and merging
+! Global array for fragmentation test
+INT ptrs[10]
+
+FUNC TestBasicAllocation()
+    VAR ptr1, ptr2, ptr3
+    PRINT "=== BASIC ALLOCATION TEST ==="
+    hpDump()
+    
+    PRINT "Allocating 100 bytes..."
+    ptr1 = hpMalloc(100)
+    PRINT "Got pointer:", ptr1
+    hpDump()
+    
+    PRINT "Allocating 200 bytes..."
+    ptr2 = hpMalloc(200)
+    PRINT "Got pointer:", ptr2
+    hpDump()
+    
+    PRINT "Allocating 50 bytes..."
+    ptr3 = hpMalloc(50)
+    PRINT "Got pointer:", ptr3
+    hpDump()
+    
+    PRINT "Freeing middle block (200 bytes)..."
+    hpFree(ptr2)
+    hpDump()
+    
+    PRINT "Freeing first block (100 bytes)..."
+    hpFree(ptr1)
+    hpDump()
+    
+    PRINT "Freeing last block (50 bytes)..."
+    hpFree(ptr3)
+    hpDump()
+    PRINT
+ENDFUNC
+
+FUNC TestFragmentation()
+    VAR i, bigPtr, smallPtr
+    PRINT "=== FRAGMENTATION TEST ==="
+    
+    PRINT "Allocating 10 blocks of 80 bytes each..."
+    FOR i = 0 TO 9
+        ptrs[i] = hpMalloc(80)
+        PRINT "Block", i, "at", ptrs[i]
+    NEXT i
+    hpDump()
+    
+    PRINT "Freeing every other block..."
+    FOR i = 1 TO 9 STEP 2
+        PRINT "Freeing block", i, "at", ptrs[i]
+        hpFree(ptrs[i])
+        ptrs[i] = 0
+    NEXT i
+    hpDump()
+    
+    PRINT "Trying to allocate 200 bytes (should fail - fragmented)..."
+    bigPtr = hpMalloc(200)
+    PRINT "Result:", bigPtr
+    
+    PRINT "Allocating 60 bytes (should fit in fragments)..."
+    smallPtr = hpMalloc(60)
+    PRINT "Got pointer:", smallPtr
+    hpDump()
+    
+    PRINT "Cleaning up remaining blocks..."
+    FOR i = 0 TO 9 STEP 2
+        IF ptrs[i] <> 0 THEN hpFree(ptrs[i]) ENDIF
+    NEXT i
+    IF smallPtr <> 0 THEN hpFree(smallPtr) ENDIF
+    IF bigPtr <> 0 THEN hpFree(bigPtr) ENDIF
+    hpDump()
+    PRINT
+ENDFUNC
+
+FUNC TestMerging()
+    VAR ptr1, ptr2, ptr3
+    PRINT "=== MERGING TEST ==="
+    
+    PRINT "Allocating three adjacent 300-byte blocks..."
+    ptr1 = hpMalloc(300)
+    ptr2 = hpMalloc(300)
+    ptr3 = hpMalloc(300)
+    PRINT "Block1:", ptr1, "Block2:", ptr2, "Block3:", ptr3
+    hpDump()
+    
+    PRINT "Freeing middle block..."
+    hpFree(ptr2)
+    hpDump()
+    
+    PRINT "Freeing first block (should merge with middle)..."
+    hpFree(ptr1)
+    hpDump()
+    
+    PRINT "Freeing last block (should merge all three)..."
+    hpFree(ptr3)
+    hpDump()
+    PRINT
+ENDFUNC
+
+FUNC TestOutOfMemory()
+    VAR bigPtr, ptr2
+    PRINT "=== OUT OF MEMORY TEST ==="
+    
+    PRINT "Trying to allocate 3000 bytes (more than heap)..."
+    bigPtr = hpMalloc(3000)
+    PRINT "Result:", bigPtr, "(should be 0)"
+    
+    PRINT "Allocating entire heap minus overhead..."
+    bigPtr = hpMalloc(2040)
+    PRINT "Result:", bigPtr
+    hpDump()
+    
+    PRINT "Trying another allocation (should fail)..."
+    ptr2 = hpMalloc(10)
+    PRINT "Result:", ptr2, "(should be 0)"
+    
+    PRINT "Freeing large block..."
+    IF bigPtr <> 0 THEN hpFree(bigPtr) ENDIF
+    IF ptr2 <> 0 THEN hpFree(ptr2) ENDIF
+    hpDump()
+    PRINT
+ENDFUNC
+
+FUNC TestEdgeCases()
+    VAR ptr1, ptr2
+    PRINT "=== EDGE CASES TEST ==="
+    
+    PRINT "Allocating 0 bytes..."
+    ptr1 = hpMalloc(0)
+    PRINT "Result:", ptr1
+    IF ptr1 <> 0 THEN hpFree(ptr1) ENDIF
+    
+    PRINT "Freeing null pointer..."
+    hpFree(0)
+    PRINT "Should not crash"
+    
+    PRINT "Allocating minimum size (1 byte)..."
+    ptr1 = hpMalloc(1)
+    PRINT "Result:", ptr1
+    hpDump()
+    
+    PRINT "Allocating maximum possible size..."
+    IF ptr1 <> 0 THEN hpFree(ptr1) ENDIF
+    ptr2 = hpMalloc(2046)
+    PRINT "Result:", ptr2
+    hpDump()
+    
+    IF ptr2 <> 0 THEN hpFree(ptr2) ENDIF
+    PRINT
+ENDFUNC
+
+FUNC WriteTestPattern(ptr, sz)
+    VAR i
+    PRINT "Writing test pattern to", ptr, "size", sz
+    FOR i = 0 TO sz - 1
+        POKE(ptr + i, (i + 1) & 0xFF)
+    NEXT i
+ENDFUNC
+
+FUNC CheckTestPattern(ptr, sz)
+    VAR i, expected, actual
+    FOR i = 0 TO sz - 1
+        expected = (i + 1) & 0xFF
+        actual = PEEK(ptr + i)
+        IF actual <> expected THEN
+            PRINT "ERROR at offset", i, "expected", expected, "got", actual
+            RETURN FALSE
+        ENDIF
+    NEXT i
+    PRINT "Pattern verified OK"
+    RETURN TRUE
+ENDFUNC
+
+FUNC TestDataIntegrity()
+    VAR ptr1, ptr2, ptr3
+    PRINT "=== DATA INTEGRITY TEST ==="
+    
+    ptr1 = hpMalloc(100)
+    ptr2 = hpMalloc(150)
+    ptr3 = hpMalloc(80)
+    
+    WriteTestPattern(ptr1, 100)
+    WriteTestPattern(ptr2, 150)
+    WriteTestPattern(ptr3, 80)
+    
+    PRINT "Checking patterns after allocation..."
+    CheckTestPattern(ptr1, 100)
+    CheckTestPattern(ptr2, 150)  
+    CheckTestPattern(ptr3, 80)
+    
+    PRINT "Freeing middle block and checking others..."
+    hpFree(ptr2)
+    CheckTestPattern(ptr1, 100)
+    CheckTestPattern(ptr3, 80)
+    
+    hpFree(ptr1)
+    hpFree(ptr3)
+    PRINT
+ENDFUNC
+
 BEGIN
+    PRINT "HEAP MANAGER TEST SUITE"
+    PRINT "======================="
+    PRINT
+    
     hpInit()
+    
+    TestBasicAllocation()
+    TestFragmentation() 
+    TestMerging()
+    TestOutOfMemory()
+    TestEdgeCases()
+    TestDataIntegrity()
+    
+    PRINT "=== ALL TESTS COMPLETE ==="
+    PRINT "Final heap state:"
     hpDump()
 END
 
