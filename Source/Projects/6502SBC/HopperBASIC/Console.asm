@@ -15,7 +15,6 @@ unit Console // Console.asm
     Initialize()
     {
         BufferManager.InitializeForTokenGeneration();
-        //BufferManager.ResetInputBuffer();
         
         // Initialize symbol tables
         Objects.Initialize();
