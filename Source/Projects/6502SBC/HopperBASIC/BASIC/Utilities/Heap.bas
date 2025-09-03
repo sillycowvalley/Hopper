@@ -10,6 +10,10 @@
 !   hpFree(ptr) - Free memory allocated by hpMalloc
 !   hpDump() - Debug: show heap layout
 
+CONST minSz = 6                 ! Minimum for free list participation
+CONST hpStart = 0xAA            ! MSB of pointer to token buffer
+CONST hpSize  = 0xAB            ! size of token buffer in 256 byte pages
+
 ! Global heap state
 VAR hpBase    ! Heap start address
 VAR hpSz      ! Heap total size  
@@ -17,8 +21,8 @@ VAR hpHead    ! Free list head pointer
 
 ! Initialize heap - creates single free block covering entire buffer
 FUNC hpInit()
-    hpBase = PEEK(0xAA) * 256
-    hpSz = PEEK(0xAB) * 256
+    hpBase = PEEK(hpStart) * 256
+    hpSz = PEEK(hpSize) * 256
     hpHead = hpBase
     POKE(hpBase, hpSz & 0xFF)        ! LSB first
     POKE(hpBase + 1, hpSz / 256)     ! MSB second
@@ -113,6 +117,9 @@ ENDFUNC
 FUNC hpMalloc(reqSz)
     VAR needSz, best, bestSz, cur, blkSz, newFree, remSz
     needSz = reqSz + 2
+    IF needSz < minSz THEN
+        needSz = minSz
+    ENDIF
     best = 0
     bestSz = 0
     cur = hpHead
