@@ -20,11 +20,24 @@ FUNCS ! comment
 DIR ! comment
 
 ! 1.2 System commands with identifiers (not quoted strings)
-VAR dummyFile = 0
+BEGIN
+END
 SAVE dummyFile ! comment
+NEW
 LOAD dummyFile ! comment  
 DEL dummyFile ! comment
-FORGET dummyFile ! comment
+NEW ! comment
+
+! 1.2.5 System commands with identifiers (not quoted strings)
+BYTE arr[10]
+EXPORT(arr, "dummyFile") ! comment
+NEW
+BYTE arr[0]
+IMPORT(arr, "dummyFile") ! comment
+VARS ! comment
+DEL dummyFile ! comment
+NEW ! comment
+
 
 ! 1.3 Variable declarations  
 VAR testVar1 ! comment
@@ -84,47 +97,67 @@ VAR temp = 50 : PRINT temp : temp = temp * 2 ! comment after mixed
 ! ===== SECTION 2: FUNCTION CONTEXT (Multiline Capture) =====
 ! Test comments in function definitions
 
-FUNC TestCommentsInFunc(param1, param2) ! comment on FUNC line
+FUNC TestBasic(param1, param2)
     VAR local1 = 100 ! comment on local declaration
     VAR local2 ! comment on uninitialized local
     local1 = param1 + param2 ! comment on assignment
     PRINT "In function: ", local1 ! comment on PRINT
-    
-    ! Test control flow with comments inside function
+    RETURN local1 ! comment on RETURN
+ENDFUNC
+
+FUNC TestIf()
+    VAR local1 = 100
     IF local1 > 50 THEN ! comment on IF line
         PRINT "Large value" ! comment in THEN block
     ELSE ! comment on ELSE line
         PRINT "Small value" ! comment in ELSE block
     ENDIF ! comment on ENDIF
-    
-    ! Test loops with comments inside function
+ENDFUNC
+
+FUNC TestFor()
     FOR i = 1 TO 3 ! comment on FOR line
         PRINT "Loop ", i ! comment in loop body
     NEXT i ! comment on NEXT
-    
+ENDFUNC
+
+FUNC TestWhile()
     VAR counter = 0 ! comment
     WHILE counter < 2 ! comment on WHILE line
         counter = counter + 1 ! comment in WHILE body
         PRINT "While ", counter ! comment
     WEND ! comment on WEND
-    
+ENDFUNC
+
+FUNC TestDo()
+    VAR counter = 2
     DO ! comment on DO line
         counter = counter - 1 ! comment in DO body
         PRINT "Do ", counter ! comment
     UNTIL counter = 0 ! comment on UNTIL line
-    
-    RETURN local1 ! comment on RETURN
-ENDFUNC ! comment on ENDFUNC
+ENDFUNC
+
+TestBasic(10, 20)
+TestIf()
+TestFor()
+TestWhile() 
+TestDo()
+
+FUNC TestAroundFunc(param1, param2) ! comment on FUNC line
+ENDFUNC
+
+FUNC TestAroundFunc(param1, param2)
+ENDFUNC  ! comment on ENDFUNC
+
 
 ! ===== SECTION 3: MAIN PROGRAM CONTEXT (Multiline Capture) =====
 ! Test comments in BEGIN/END blocks
 
-BEGIN ! comment on BEGIN line
+BEGIN
     VAR mainVar = 777 ! comment in main program
     PRINT "Main program running" ! comment in main
     
     ! Test function call with comment in main
-    VAR result = TestCommentsInFunc(10, 20) ! comment on function call
+    VAR result = TestBasic(10, 20) ! comment on function call
     PRINT "Function returned: ", result ! comment after call
     
     ! Test control flow in main program
@@ -136,6 +169,13 @@ BEGIN ! comment on BEGIN line
         PRINT "Main loop ", i ! comment in main loop
     NEXT i ! comment on NEXT in main
     
+END
+RUN
+
+BEGIN ! comment on BEGIN line
+END
+
+BEGIN
 END ! comment on END line
 
 ! ===== SUMMARY =====

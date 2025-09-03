@@ -85,33 +85,34 @@ TestFunc(10, 20)
 NoParams()
 PRINT
 
-! REPL Test 2: Bare identifiers
+! REPL Test 2: Bare identifiers  
 PRINT "REPL Test 2 - Bare identifiers:"
 PRINT "About to call TestFunc without ()..."
-TestFunc
-PRINT "TestFunc returned OK (REPL behavior)"
+TestFunc                                    ! Expected: SYNTAX ERROR
+PRINT "REPL continues after SYNTAX ERROR"  ! Expected: This prints normally
 PRINT
 
 ! REPL Test 3: Wrong argument counts
 PRINT "REPL Test 3 - Empty parentheses:"
-TestFunc()
-PRINT "If you see this, TestFunc() executed despite error"
+TestFunc()                                  ! Expected: SYNTAX ERROR  
+PRINT "REPL continues after SYNTAX ERROR"  ! Expected: This prints normally
 PRINT
 
 PRINT "REPL Test 4 - Too few arguments:"
-TestFunc(10)
-PRINT "If you see this, TestFunc(10) executed despite error"
+TestFunc(10)                                ! Expected: SYNTAX ERROR
+PRINT "REPL continues after SYNTAX ERROR"  ! Expected: This prints normally
 PRINT
 
 PRINT "REPL Test 5 - Too many arguments:"
-TestFunc(1, 2, 3, 4)
-PRINT "Extra arguments ignored"
+TestFunc(1, 2, 3, 4)                       ! Expected: SYNTAX ERROR
+PRINT "REPL error handling working correctly"
 PRINT
 
 PRINT "REPL Test 6 - Zero-param with args:"
-NoParams(99)
-PRINT "Extra argument ignored"
+NoParams(99)                                ! Expected: SYNTAX ERROR
+PRINT "All function call validation working as designed"
 PRINT
+
 
 ! Summary
 NEW

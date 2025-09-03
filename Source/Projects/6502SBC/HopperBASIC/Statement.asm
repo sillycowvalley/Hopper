@@ -27,6 +27,8 @@ unit Statement // Statement.asm
     const uint replFunctionPtr       = Address.BasicStatementWorkspace + 24; // 2 bytes
     
     const uint declInitializer       = Address.BasicStatementWorkspace + 26; // 1 bytes
+    const uint stmtTemp0             = Address.BasicStatementWorkspace + 27; // 1 bytes
+    const uint stmtTemp1             = Address.BasicStatementWorkspace + 28; // 1 bytes
     
     flags CaptureMode
     {

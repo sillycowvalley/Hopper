@@ -11,6 +11,19 @@ unit FunctionDeclaration // FunctionDeclaration.asm
         LDA (Statement.stmtObjectPtr + 1)
         STA ZP.IDXH
     }
+    
+    // token to check is in A
+    illegalCommentCheck()
+    {
+        CMP # Token.COMMENT
+        if (Z)
+        {
+            Error.IllegalComment(); // does CLC
+            return;
+        }
+        SEC
+    }
+    
     IDXtoStmtObjectPtr()
     {
         LDA ZP.IDXL
@@ -67,9 +80,12 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             // Get next token after BEGIN
             Tokenizer.NextTokenCheck();
             if (NC) { break; }
+
+            // A = ZP.CurrentToken
+            illegalCommentCheck(); if (NC) { BIT ZP.EmulatorPCL break; }
             
             // Check if this is an incomplete BEGIN block (ends with EOL)
-            LDA ZP.CurrentToken
+            // A = ZP.CurrentToken
             CMP #Token.EOL
             if (Z)
             {
@@ -231,8 +247,11 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             Tokenizer.NextTokenCheck();
             if (NC) { break; }
             
+            // A = ZP.CurrentToken
+            illegalCommentCheck(); if (NC) {  BIT ZP.EmulatorPCL break; }
+            
             // Check if this is an incomplete function (ends with EOL)
-            LDA ZP.CurrentToken
+            // A = ZP.CurrentToken
             CMP #Token.EOL
             if (Z)
             {
@@ -385,6 +404,10 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 if (Z)
                 {
                     // Found END - we're done
+                    
+                    Tokenizer.PeekToken(); // next token -> A
+                    illegalCommentCheck(); if (NC) { BIT ZP.EmulatorPCL break; }
+                    
                     SEC
                     break;
                 }
@@ -467,6 +490,10 @@ unit FunctionDeclaration // FunctionDeclaration.asm
                 if (Z)
                 {
                     // Found ENDFUNC - we're done
+                    
+                    Tokenizer.PeekToken(); // next token -> A
+                    illegalCommentCheck(); if (NC) { BIT ZP.EmulatorPCL break; }
+                    
                     SEC
                     break;
                 }
@@ -636,54 +663,46 @@ unit FunctionDeclaration // FunctionDeclaration.asm
             {
                 // Save position BEFORE getting next token
                 LDA ZP.TokenizerPosL
-                PHA
+                STA Statement.stmtTemp0
                 LDA ZP.TokenizerPosH
-                PHA
+                STA Statement.stmtTemp1
                 
                 Tokenizer.NextTokenCheck();
                 if (NC) 
                 { 
-                    PLA  // Clean up stack
-                    PLA
                     break; 
                 }
-                
-                LDA ZP.CurrentToken
-                CMP #Token.ENDFUNC
-                if (Z) 
-                { 
-                    // Found ENDFUNC - restore position to BEFORE it
-                    PLA
-                    STA ZP.TokenizerPosH
-                    PLA
-                    STA ZP.TokenizerPosL
-                    break; 
-                }
-                
-                CMP #Token.END
-                if (Z) 
-                { 
-                    // Found END - restore position to BEFORE it
-                    PLA
-                    STA ZP.TokenizerPosH
-                    PLA
-                    STA ZP.TokenizerPosL
-                    break; 
-                }
-                
                 CMP #Token.EOF
                 if (Z)
                 {
-                    PLA  // Clean up stack
-                    PLA
                     Error.SyntaxError(); BIT ZP.EmulatorPCL
                     break;
                 }
                 
-                // Not a terminator, discard saved position and continue
-                PLA
-                PLA
+                LDA ZP.CurrentToken
+                CMP #Token.ENDFUNC
+                if (NZ) 
+                {
+                    CMP #Token.END
+                    if (NZ) 
+                    { 
+                        // Not a terminator, discard saved position and continue
+                        continue;
+                    }
+                }
+                
+                // END or ENDFUNC:
+                Tokenizer.PeekToken(); // next token -> A
+                illegalCommentCheck(); if (NC) { BIT ZP.EmulatorPCL break; }
+                
+                // Found END | ENDFUNC - restore position to BEFORE it
+                LDA Statement.stmtTemp1
+                STA ZP.TokenizerPosH
+                LDA Statement.stmtTemp0
+                STA ZP.TokenizerPosL
+                break; 
             }
+            
             if (NC) { break; }
             
             // Calculate body length (position BEFORE terminator - start pos)

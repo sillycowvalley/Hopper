@@ -94,6 +94,7 @@ unit Error // ErrorID.asm
         YN         = 0x52,  // "(Y/N)"
         CONTINUE   = 0x53,  // "CONTINUE"
         BIG        = 0x54,  // "BIG"
+        COMMENT    = 0x55,  // "COMMENT"
         
         // Tables 2 & 3 available for future expansion (0x53-0x7F)
     }
@@ -193,6 +194,7 @@ unit Error // ErrorID.asm
         8,  ErrorWord.CONTINUE,   'C', 'O', 'N', 'T', 'I', 'N', 'U', 'E',
         3,  ErrorWord.YN,         'Y', '/', 'N',
         3,  ErrorWord.BIG,        'B', 'I', 'G',
+        7,  ErrorWord.COMMENT,    'C', 'O', 'M', 'M', 'E', 'N', 'T',
         0  // End marker
     };
     
@@ -202,6 +204,7 @@ unit Error // ErrorID.asm
         InternalError = 0x01, // start of errorMessages0
         SyntaxError,
         NotImplemented,
+        IllegalComment,
         //OnlyInDebug,
         //OnlyInTrace,
         TypeMismatch,
@@ -258,7 +261,7 @@ unit Error // ErrorID.asm
         
         NoProgram,
         
-        FormatWarning = 0x80, // start of errorMessages1
+        FormatWarning, // start of errorMessages1
         OverwriteWarning,
         ContinueWarning,
         YesNo,
@@ -276,7 +279,6 @@ unit Error // ErrorID.asm
     
     const byte[] errorMessages0 = {
         2, ErrorID.InternalError,              ErrorWord.INTERNAL, ErrorWord.ERROR,
-        2, ErrorID.SyntaxError,                ErrorWord.SYNTAX, ErrorWord.ERROR,
         2, ErrorID.NotImplemented,             ErrorWord.NOT, ErrorWord.IMPLEMENTED,
         //4, ErrorID.OnlyInDebug,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.DEBUG, ErrorWord.BUILD,
         //4, ErrorID.OnlyInTrace,                ErrorWord.ONLY, ErrorWord.IN, ErrorWord.TRACE, ErrorWord.BUILD,
@@ -363,6 +365,10 @@ unit Error // ErrorID.asm
         2, ErrorID.BytesMessage,               ErrorWord.BYTES, ErrorWord.AVAILABLE,
         1, ErrorID.EEPROMLabel,                ErrorWord.EEPROM, 
         
+        2, ErrorID.IllegalComment,             ErrorWord.ILLEGAL, ErrorWord.COMMENT,
+        2, ErrorID.SyntaxError,                ErrorWord.SYNTAX, ErrorWord.ERROR,
+        
+        
         0  // End marker
     };
     
@@ -435,6 +441,44 @@ unit Error // ErrorID.asm
         InParens     = 0b10000000  // Print message within '(' .. ')'
     }
     
+    // Inputs: ZP.IDY  = table
+    //         ZP.ACCL = Error.ID
+    // Output: C if found, NC if not
+    //         Y - location of first word ID
+    //         X - word count
+    // Munts X, Y, A
+    findMessage()
+    {
+        LDY #0  // Start at beginning of table
+        loop
+        {
+            LDA [ZP.IDY], Y    // Get word count for this message
+            if (Z) { CLC break; }  // End of table - not found
+            
+            TAX                // X = word count (keep it in X, don't store in ZP!)
+            INY
+            LDA [ZP.IDY], Y    // Get error ID
+            CMP ZP.ACCL        // Compare with target
+            if (Z)
+            {
+                // Found it! Print the words
+                INY  // Move to first word ID
+                SEC
+                break;  // Done printing
+            }
+            
+            // Skip to next message: advance Y by word count + 1 (for error ID)
+            INY  // Skip the error ID byte first
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                INY
+                DEX
+            }
+        } // single exit
+    }
+    
     // same as Message() but followed by '\n'
     // Munts: Y
     MessageNL()
@@ -462,64 +506,41 @@ unit Error // ErrorID.asm
             LDA #'(' Print.Char();
         }
         
-        // Set up pointer to errorMessagesN table
-        if (BBR7, ZP.ACCL)
+        LDA #(errorMessages0 % 256)
+        STA ZP.IDYL
+        LDA #(errorMessages0 / 256)
+        STA ZP.IDYH
+        findMessage();
+        if (NC)
         {
-            LDA #(errorMessages0 % 256)
-            STA ZP.IDYL
-            LDA #(errorMessages0 / 256)
-            STA ZP.IDYH
-        }
-        else
-        {
+            // not found
             LDA #(errorMessages1 % 256)
             STA ZP.IDYL
             LDA #(errorMessages1 / 256)
             STA ZP.IDYH
+            findMessage();
+            if (NC)
+            {
+                BRK // internal error - message not found
+            }
         }
-        
-        LDY #0  // Start at beginning of table
+        // Y - location of first word ID
+        // X - word count
         loop
         {
-            LDA [ZP.IDY], Y    // Get word count for this message
-            if (Z) { break; }  // End of table - not found
+            CPX #0
+            if (Z) { break; }
             
-            TAX                // X = word count (keep it in X, don't store in ZP!)
+            LDA [ZP.IDY], Y    // Get word ID
+            PrintWord(); // word in A
             INY
-            LDA [ZP.IDY], Y    // Get error ID
-            CMP ZP.ACCL        // Compare with target
-            if (Z)
-            {
-                // Found it! Print the words
-                INY  // Move to first word ID
-                loop
-                {
-                    CPX #0
-                    if (Z) { break; }
-                    
-                    LDA [ZP.IDY], Y    // Get word ID
-                    PrintWord(); // word in A
-                    INY
-                    DEX
-                    
-                    CPX #0
-                    if (Z) { break; }  // Don't add space after last word
-                    
-                    Print.Space();
-                }
-                break;  // Done printing
-            }
+            DEX
             
-            // Skip to next message: advance Y by word count + 1 (for error ID)
-            INY  // Skip the error ID byte first
-            loop
-            {
-                CPX #0
-                if (Z) { break; }
-                INY
-                DEX
-            }
-        } // single exit
+            CPX #0
+            if (Z) { break; }  // Don't add space after last word
+            
+            Print.Space();
+        }
         
         if (BBS7, ZP.ACCH) // InParens
         {
@@ -591,6 +612,11 @@ unit Error // ErrorID.asm
     { 
         LDA # ErrorID.IllegalInFunction
         commonError();        
+    }
+    IllegalComment()
+    { 
+        LDA #ErrorID.IllegalComment
+        commonError();
     }
     
     UndefinedIdentifierTOP() 
@@ -1057,7 +1083,7 @@ unit Error // ErrorID.asm
             // Print the error message
             validateERRSTR();
             if (C)
-            {
+            {        
                 LDA ZP.LastError
                 LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest|MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
                 Error.Message();
@@ -1073,7 +1099,7 @@ unit Error // ErrorID.asm
                 LDA ZP.ERRTOK
                 if (NZ)
                 {
-                    LDA ZP.LastError
+                    LDA ZP.LastError 
                     LDX # (MessageExtras.PrefixSpace|MessageExtras.PrefixQuest|MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
                     Error.Message();
                     LDA ZP.ERRTOK
@@ -1089,6 +1115,7 @@ unit Error // ErrorID.asm
             }
             
 #if !defined(RELEASE)
+
             // 6502 PC
             Serial.WriteChar();
             LDA #'('

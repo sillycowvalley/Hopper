@@ -614,6 +614,12 @@ unit Console // Console.asm
                                 SMB1 ZP.FLAGS  // Always exit after auto load/run
                             }
                         }
+                        else 
+                        {
+                            // it was not a file so clear any file related errors
+                            STZ ZP.LastError
+                            SEC
+                        }
                         
                         PLX
                     }
