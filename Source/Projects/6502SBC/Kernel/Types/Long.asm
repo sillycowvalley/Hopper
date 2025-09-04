@@ -182,11 +182,18 @@ unit Long
                 }
             }
         }
+        CPX #1
+        if (Z)
+        {
+            SEC
+        }
+        else
+        {
+            CLC
+        }
     }
     commonLT()
     {
-        LDX # 0
-        
         // NEXT = NEXT - TOP
         SEC
         LDA ZP.NEXT0
@@ -199,60 +206,55 @@ unit Long
         SBC ZP.TOP3
         if (MI)
         {
-            INX
+            SEC
+        }
+        else
+        {
+            CLC
         }
     }
     LT()
     {
         commonLT();
-        // result in X
     }
     GT()
     {
         Shared.SwapNextTop();
         commonLT();
-        // result in X
     }
     EQ()
     {  
         commonEQ();
-        // result in X
     }
     NE()
     {  
         commonEQ();
-        CPX # 0
-        if (Z)
+        if (C)
         {
-            LDX #1
+            CLC
         }
         else
         {
-            LDX #0
+            SEC
         }
-        // result in X
     }
     LE()
     {
         commonEQ();
-        CPX # 0
-        if (Z)
+        if (NC)
         {
             commonLT();           
         }
-        // result in X
     }
     
     GE()
     {
         commonEQ();
-        CPX # 0
-        if (Z)
+        if (NC)
         {
             Shared.SwapNextTop();
             commonLT();           
         }
-        // result in X
     }
     
         
