@@ -720,31 +720,12 @@ unit Long
         
         // Initialize remainder to 0
         zeroResult();
-        
-#ifdef MULDIVDEBUG
-Debug.NL(); NLOut();
-CPX #0
-if (Z)
-{
-    LDA #'/'
-}
-else
-{
-    LDA #'%'
-}
-COut(); 
-Space(); TLOut();
-#endif
-
         loop
         {
             // Check for division by zero
             Long.ZeroCheckTop();
             if (Z)  // Divisor is zero
             {
-#ifdef MULDIVDEBUG
-Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
-#endif
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 CheckError();
                 break;
@@ -766,9 +747,6 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                         CMP #1
                         if (Z)
                         {
-#ifdef MULDIVDEBUG
-    LDA #'a' COut();
-#endif
                             // / 1 -> NEXT is already the answer
                             break; // exit
                         }
@@ -795,9 +773,6 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                         {
                             shiftNEXTright(); // NEXT >> 1 (final shift)
                             // NEXT now has quotient, RESULT stays 0 for remainder
-#ifdef MULDIVDEBUG
-    LDA #'b' COut();
-#endif
                             break; // ÷2, ÷4, ÷8, ÷16 all exit here
                         }                  
                     }
@@ -819,9 +794,6 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                             if (Z)
                             {
                                 utility16BitDiv10(); //  / 10
-#ifdef MULDIVDEBUG
-    LDA #'c' COut();
-#endif
                                 break; // 16 bit exit
                             }
                             CMP # 50
@@ -831,9 +803,6 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                                 ASL ZP.NEXT0         //  * 2
                                 ROL ZP.NEXT1
                                 utility16BitDiv10(); //  / 10
-#ifdef MULDIVDEBUG
-    LDA #'d' COut();
-#endif
                                 break; // 16 bit exit
                             }
                             CMP # 100
@@ -841,10 +810,6 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                             {
                                 utility16BitDiv10(); //  / 10
                                 utility16BitDiv10(); //  / 10
-#ifdef MULDIVDEBUG
-    LDA #'e' COut();
-#endif
-
                                 break; // 16 bit exit
                             }
                         }
@@ -872,16 +837,11 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                             DEX
                             if (Z) { break; }
                         }
-#ifdef MULDIVDEBUG
-    LDA #'f' COut();
-#endif
                         break; // 16 bit exit
                     } // 16 bit numerator and denominator
                 } // 16 bit denominator
             } // optimizations (bypassed for Mod)
-#ifdef MULDIVDEBUG
-    LDA #'g' COut();
-#endif            
+            
             LDX #32       // there are 16 bits in N
             loop
             {
@@ -922,14 +882,8 @@ Space(); LDA #'/' COut(); LDA #'0' COut(); Space();
                 DEX
                 if (Z) { break; }
             } // loop
-#ifdef MULDIVDEBUG
-    LDA #'h' COut();
-#endif
             break; // 32 bit exit
         } // loop
-#ifdef MULDIVDEBUG
-PHP Debug.NL(); NLOut(); RLOut(); PLP
-#endif
     }
     NegateLongTOP()
     {
@@ -960,9 +914,6 @@ PHP Debug.NL(); NLOut(); RLOut(); PLP
         
         loop
         {
-#ifdef MULDIVDEBUG
-Debug.NL(); TLOut(); LDA #'x' COut(); Space(); NLOut();
-#endif
             // Check if NEXT has a special multiplier - swap if so
             LDA ZP.NEXT1
             ORA ZP.NEXT2
@@ -981,9 +932,6 @@ Debug.NL(); TLOut(); LDA #'x' COut(); Space(); NLOut();
                     case 16:
                     { 
                         commonSwapNEXTTOP(); 
-#ifdef MULDIVDEBUG
-PHA LDA #'(' COut(); LDA #'1' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space(); PLA
-#endif
                     }
                     case 10:
                     {
@@ -1006,25 +954,16 @@ PHA LDA #'(' COut(); LDA #'1' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')
                                 default:
                                 {
                                     commonSwapNEXTTOP();
-#ifdef MULDIVDEBUG 
-PHA LDA #'(' COut(); LDA #'2' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space(); PLA
-#endif
                                 }
                             }
                         }
                         else
                         {
                             commonSwapNEXTTOP(); 
-#ifdef MULDIVDEBUG
-PHA LDA #'(' COut(); LDA #'3' COut(); LDA #':' COut(); TLOut(); NLOut(); LDA #')' COut(); Space(); PLA
-#endif
                         }
                     }
                 }
             }
-#ifdef MULDIVDEBUG
-LDA #'-' COut(); LDA #'>' COut(); Space();
-#endif
 
             // TOP is now the number to compare to..
             LDA ZP.TOP2
@@ -1040,9 +979,6 @@ LDA #'-' COut(); LDA #'>' COut(); Space();
                     CMP #0
                     if (Z)
                     {
-#ifdef MULDIVDEBUG
-LDA #'a' COut();
-#endif
                         // x 0  (RESULT is already zero)
                         break; // exit
                     }
@@ -1050,9 +986,6 @@ LDA #'a' COut();
                     if (Z)
                     {
                         // x 1 -> NEXT -> RESULT
-#ifdef MULDIVDEBUG
-LDA #'b' COut();
-#endif
                         moveNextToResult();
                         break; // exit
                     }
@@ -1080,9 +1013,6 @@ LDA #'b' COut();
                         shiftNEXTleft(); // NEXT << 1, can set overflow error
                         CheckError();
                         moveNextToResult();
-#ifdef MULDIVDEBUG
-LDA #'c' COut();
-#endif
                         break; // x2, x4, x8, x16 exit 
                     }
                     CMP #10
@@ -1118,9 +1048,6 @@ LDA #'c' COut();
                             DEX                  // decrement bit count
                             if (Z) { break; }    // exit loop when 8 bits are done
                         }
-#ifdef MULDIVDEBUG
-LDA #'d' COut();
-#endif
                         break; // 8 bit exit
                     }
                     
@@ -1147,16 +1074,10 @@ LDA #'d' COut();
                         DEX                // decrement bit count and
                         if (Z) { break; }  // exit loop when 16 bits are done
                     }
-#ifdef MULDIVDEBUG
-LDA #'e' COut();
-#endif
                     break; // 16 bit exit
                 } // both 16 bit
                 
             } // TOP 16 bitLDA
-#ifdef MULDIVDEBUG
-LDA #'f' COut();            
-#endif
             LDA # 0
             LDX # 32
             loop
@@ -1194,9 +1115,6 @@ LDA #'f' COut();
             }
             break; // 32 bit exit
         }
-#ifdef MULDIVDEBUG        
-RLOut();        
-#endif
     }
     
     // Add single digit (0-9) to 32-bit value
@@ -1251,8 +1169,6 @@ RLOut();
         loop
         {
             LDA [ZP.STR], Y
-            
-//PHA TYA HOut(); LDA #'\'' COut(); PLA PHA COut(); LDA #'\'' COut(); LDA ZP.STRH HOut();LDA ZP.STRL HOut(); PLA
             
             if (Z) { break; }  // Null terminator
             

@@ -6,29 +6,26 @@ program BIOS
     #define DEBUG
     
     // Optional components
-    //#define HASLONG
     //#define HASFLOAT
     //#define HASEEPROM
-    //#define HASHEAP
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
     uses "Definitions/ZeroPage"
     
     uses "Debugging/Debug"
+    uses "Debugging/Error"
     
-#if defined(HASHEAP) 
     uses "Memory/Memory"
-#endif    
+
 #if defined(HASEEPROM) 
     uses "Devices/EEPROM"
     uses "Files/File"
 #endif        
     uses "Types/Char"
     uses "Types/String"
-#if defined(HASLONG) 
     uses "Types/Long"
-#endif
+    
 #if defined(HASFLOAT) 
     uses "Types/Float"
 #endif

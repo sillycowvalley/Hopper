@@ -59,8 +59,6 @@ unit Time // Time.asm
         STA ZP.TOP0
     }
 
-
-#if defined(HASLONG)
     Seconds() inline
     {
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
@@ -91,5 +89,4 @@ unit Time // Time.asm
         LDA NEXT3
         STA TOP3
     }
-#endif
 }
