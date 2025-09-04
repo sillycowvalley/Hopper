@@ -425,9 +425,9 @@ unit Instructions // Instructions.asm
             LDA ZP.NEXT2
             ORA ZP.TOP2
             STA ZP.NEXT2
-            LDA ZP.NEXT2
-            ORA ZP.TOP2
-            STA ZP.NEXT2
+            LDA ZP.NEXT3
+            ORA ZP.TOP3
+            STA ZP.NEXT3
 
             Long.PushNext();
             if (NC) { break; }
