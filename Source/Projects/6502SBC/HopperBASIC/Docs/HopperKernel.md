@@ -77,22 +77,6 @@
 | **Timer** | | | |
 | 0x22-0x25 | 4 | Timer | TICK0-3 counters |
 
-### Main RAM Allocation (0x0100+)
-
-| Address Range | Size | Module | Purpose |
-|---------------|-----:|--------|---------|
-| **System** | | | |
-| 0x0100-0x01FF | 256 | CPU | Hardware stack (JSR/RTS/interrupts) |
-| **I/O Buffers** | | | |
-| 0x0200-0x02FF | 256 | Serial | Serial input buffer |
-| 0x0A00-0x0AFF | 256 | I2C | I2C input buffer |
-| **File System Buffers** | | | |
-| 0x1800-0x18FF | 256 | File | FAT buffer |
-| 0x1900-0x19FF | 256 | File | Directory buffer |
-| 0x1A00-0x1AFF | 256 | File | File data buffer |
-| **Heap** | | | |
-| 0x1B00-0x7FFF | ~26K | Memory | Dynamic heap (32K RAM) |
-| 0x1B00-0xBFFF | ~42K | Memory | Dynamic heap (48K RAM) |
 
 ### Module RAM Requirements
 
@@ -113,14 +97,45 @@
 | EEPROM | 0 bytes | 0 | 0 | Uses I2C resources |
 | File system | 18 bytes | 768 | 786 | 3×256 byte buffers |
 
-### Memory Configuration Summary
+### Main RAM Allocation (0x0100+) - Contiguous Layout
 
-| Configuration | Zero Page Used | Main RAM Used | Heap Available |
-|---------------|---------------:|--------------:|---------------:|
-| **Full Kernel** | ~44 bytes | 1,536 bytes | ~30KB (32K RAM) |
-| **Integer Only** | ~44 bytes | 1,536 bytes | ~30KB (32K RAM) |
-| **No Filesystem** | ~26 bytes | 512 bytes | ~31KB (32K RAM) |
-| **Minimal** | ~23 bytes | 256 bytes | ~31.5KB (32K RAM) |
+| Address Range | Size | Module | Purpose |
+|---------------|-----:|--------|---------|
+| **System** | | | |
+| 0x0100-0x01FF | 256 | CPU | Hardware stack (JSR/RTS/interrupts) |
+| **I/O Buffers** | | | |
+| 0x0200-0x02FF | 256 | Serial | Serial input buffer |
+| 0x0300-0x03FF | 256 | I2C | I2C input buffer |
+| **File System Buffers** | | | |
+| 0x0400-0x04FF | 256 | File | FAT buffer |
+| 0x0500-0x05FF | 256 | File | Directory buffer |
+| 0x0600-0x06FF | 256 | File | File data buffer |
+| **Dynamic Heap** | | | |
+| 0x0700-0x7FFF | 30,976 | Memory | **30.25 KB** heap (32K RAM) |
+| 0x0700-0xBFFF | 47,360 | Memory | **46.25 KB** heap (48K RAM) |
+| 0x0700-0xDFFF | 55,552 | Memory | **54.25 KB** heap (56K RAM) |
+
+### Configuration-Specific Memory Maps
+
+| Configuration | Buffers End | Heap Start | 32K RAM Heap | 48K RAM Heap | 56K RAM Heap |
+|---------------|-------------|------------|-------------:|-------------:|-------------:|
+| **Full Kernel** | 0x06FF | 0x0700 | 30.25 KB | 46.25 KB | 54.25 KB |
+| **No Filesystem** | 0x03FF | 0x0400 | 31.00 KB | 47.00 KB | 55.00 KB |
+| **Minimal (Serial only)** | 0x02FF | 0x0300 | 31.25 KB | 47.25 KB | 55.25 KB |
+| **No I/O Buffers** | 0x01FF | 0x0200 | 31.50 KB | 47.50 KB | 55.50 KB |
+
+### Memory Overhead Summary
+
+| Component | Size | Cumulative Overhead |
+|-----------|-----:|--------------------:|
+| Hardware Stack | 256 bytes | 256 bytes |
+| + Serial Buffer | 256 bytes | 512 bytes |
+| + I2C Buffer | 256 bytes | 768 bytes |
+| + File System | 768 bytes | **1,536 bytes** |
+
+**Total kernel RAM overhead: 1.5 KB** (not including zero page)
+
+This leaves **95.3%** of a 32K system available as heap space for the full kernel configuration!
 
 ### Zero Page Optimization Techniques
 
