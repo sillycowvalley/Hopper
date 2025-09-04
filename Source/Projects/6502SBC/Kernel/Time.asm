@@ -1,598 +1,92 @@
-unit Tests
+unit Time // Time.asm
 {
-    uses "Time"
-    uses "Print"
-    uses "Long"
-    
-    // Test strings
-    const string testHeader = "\n=== TIME MODULE TESTS ===\n";
-    const string testFooter = "\n==============================\n\n";
-    const string passLabel = "[PASS] ";
-    const string failLabel = "[FAIL] ";
-    const string okLabel = "[OK]";
-    const string errorLabel = "[ERROR]";
-    
-    // Test names
-    const string millisTestName = "Millis() counter test: ";
-    const string delayTestName = "Delay() accuracy test ";
-    const string secondsTestName = "Seconds() conversion test: ";
-    
-    // Test results
-    const string counterIncrementing = "Counter incrementing";
-    const string counterNotIncrementing = "Counter NOT incrementing";
-    const string conversionCorrect = "Millis/1000 = Seconds";
-    const string conversionError = "Conversion error > 1000ms";
-    const string withinTolerance = "Within tolerance";
-    const string outsideTolerance = "Outside tolerance";
-    
-    // Labels
-    const string startLabel = "Start: ";
-    const string endLabel = "End: ";
-    const string deltaLabel = "Delta: ";
-    const string expectedLabel = "Expected: ";
-    const string actualLabel = "Actual: ";
-    const string toleranceLabel = "Tolerance: ";
-    const string msLabel = "ms";
-    const string percentLabel = "%";
-    const string spaceColon = ": ";
-    const string spaceDash = " - ";
-    
-    // Run all Time module tests
-    RunTests()
+    Delay()
     {
-        PrintHeader();
-        
-        TestMillisIncrement();
-        TestDelay1ms();
-        TestDelay10ms();
-        TestDelay100ms();
-        TestDelay1000ms();
-        TestSecondsConversion();
-        TestDelayAccuracy();
-        
-        PrintFooter();
-    }
-    
-    // Print test header
-    PrintHeader()
-    {
-        LDA #(testHeader % 256)
-        STA ZP.STRL
-        LDA #(testHeader / 256)
-        STA ZP.STRH
-        Print.String();
-    }
-    
-    // Print test footer
-    PrintFooter()
-    {
-        LDA #(testFooter % 256)
-        STA ZP.STRL
-        LDA #(testFooter / 256)
-        STA ZP.STRH
-        Print.String();
-    }
-    
-    // Test that Millis() counter is incrementing
-    TestMillisIncrement()
-    {
-        // Get first reading
-        Time.Millis();
-        
-        // Save first reading in NEXT registers
-        LDA ZP.TOP0
-        STA ZP.NEXT0
-        LDA ZP.TOP1
-        STA ZP.NEXT1
-        LDA ZP.TOP2
-        STA ZP.NEXT2
-        LDA ZP.TOP3
-        STA ZP.NEXT3
-        
-        // Small delay (about 5ms)
-        LDA #5
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        Time.Delay();
-        
-        // Get second reading
-        Time.Millis();
-        
-        // Compare with first reading (in NEXT)
-        LDA ZP.NEXT3
-        CMP ZP.TOP3
-        if (NZ) { PrintMillisPass(); return; }
-        LDA ZP.NEXT2
-        CMP ZP.TOP2
-        if (NZ) { PrintMillisPass(); return; }
-        LDA ZP.NEXT1
-        CMP ZP.TOP1
-        if (NZ) { PrintMillisPass(); return; }
-        LDA ZP.NEXT0
-        CMP ZP.TOP0
-        if (NZ) { PrintMillisPass(); return; }
-        
-        // Values are identical - fail
-        PrintMillisFail();
-    }
-    
-    PrintMillisPass()
-    {
-        PrintPassLabel();
-        
-        LDA #(millisTestName % 256)
-        STA ZP.STRL
-        LDA #(millisTestName / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(counterIncrementing % 256)
-        STA ZP.STRL
-        LDA #(counterIncrementing / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.NewLine();
-    }
-    
-    PrintMillisFail()
-    {
-        PrintFailLabel();
-        
-        LDA #(millisTestName % 256)
-        STA ZP.STRL
-        LDA #(millisTestName / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(counterNotIncrementing % 256)
-        STA ZP.STRL
-        LDA #(counterNotIncrementing / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.NewLine();
-    }
-    
-    // Test 1ms delay
-    TestDelay1ms()
-    {
-        TestDelayWithValue(1);
-    }
-    
-    // Test 10ms delay
-    TestDelay10ms()
-    {
-        TestDelayWithValue(10);
-    }
-    
-    // Test 100ms delay
-    TestDelay100ms()
-    {
-        TestDelayWithValue(100);
-    }
-    
-    // Test 1000ms delay with detailed timing
-    TestDelay1000ms()
-    {
-        // Get start time
-        Time.Millis();
-        
-        // Save start time in NEXT
-        LDA ZP.TOP0
-        STA ZP.NEXT0
-        LDA ZP.TOP1
-        STA ZP.NEXT1
-        LDA ZP.TOP2
-        STA ZP.NEXT2
-        LDA ZP.TOP3
-        STA ZP.NEXT3
-        
-        // Delay for 1000ms
-        LDA #(1000 % 256)
-        STA ZP.TOP0
-        LDA #(1000 / 256)
-        STA ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        Time.Delay();
-        
-        // Get end time
-        Time.Millis();
-        
-        // Calculate delta: TOP = TOP - NEXT (end - start)
-        Long.Sub();
-        Long.PopTop();
-        
-        // Print result header
-        LDA #(delayTestName % 256)
-        STA ZP.STRL
-        LDA #(delayTestName / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Print delay value
-        LDA #(1000 % 256)
-        STA ZP.TOP0
-        LDA #(1000 / 256)
-        STA ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        STZ ZP.TOPT
-        Long.Print();
-        
-        LDA #(msLabel % 256)
-        STA ZP.STRL
-        LDA #(msLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(spaceColon % 256)
-        STA ZP.STRL
-        LDA #(spaceColon / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Check if delta is between 995 and 1005 (0.5% tolerance)
-        // First check if >= 995
-        LDA ZP.TOP0
-        CMP #(995 % 256)
-        LDA ZP.TOP1
-        SBC #(995 / 256)
-        LDA ZP.TOP2
-        SBC #0
-        LDA ZP.TOP3
-        SBC #0
-        if (NC)  // >= 995
-        {
-            // Now check if <= 1005
-            LDA #(1005 % 256)
-            CMP ZP.TOP0
-            LDA #(1005 / 256)
-            SBC ZP.TOP1
-            LDA #0
-            SBC ZP.TOP2
-            LDA #0
-            SBC ZP.TOP3
-            if (NC)  // <= 1005
-            {
-                PrintOK();
-            }
-            else
-            {
-                PrintFailWithDelta();
-            }
-        }
-        else
-        {
-            PrintFailWithDelta();
-        }
-    }
-    
-    // Generic delay test with specified value (1-255ms)
-    TestDelayWithValue()
-    {
-        // A = delay value in ms (1-255)
-        PHA  // Save delay value for later
-        
-        // Set up delay
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        Time.Delay();
-        
-        // Get delay value back
-        PLA
-        
-        // Print test name
-        LDA #(delayTestName % 256)
-        STA ZP.STRL
-        LDA #(delayTestName / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Print delay value
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        STZ ZP.TOPT
-        Long.Print();
-        
-        LDA #(msLabel % 256)
-        STA ZP.STRL
-        LDA #(msLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(spaceColon % 256)
-        STA ZP.STRL
-        LDA #(spaceColon / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        PrintOK();
-    }
-    
-    // Test Seconds() conversion
-    TestSecondsConversion()
-    {
-        // Simple test: just verify Seconds() returns a non-zero value
-        // after some delay
-        
-        // Small delay to ensure we have some milliseconds
-        LDA #100
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        Time.Delay();
-        
-        // Get seconds
-        Time.Seconds();
-        
-        // Check if we got a value (should be non-zero after system has been running)
-        LDA ZP.TOP0
-        ORA ZP.TOP1
-        ORA ZP.TOP2
-        ORA ZP.TOP3
-        if (Z)  // All zeros - probably an error
-        {
-            // If zero, might be very early in boot - try again after delay
-            LDA #(1000 % 256)
-            STA ZP.TOP0
-            LDA #(1000 / 256)
-            STA ZP.TOP1
-            STZ ZP.TOP2
-            STZ ZP.TOP3
-            Time.Delay();
-            
-            Time.Seconds();
-            
-            LDA ZP.TOP0
-            ORA ZP.TOP1
-            ORA ZP.TOP2
-            ORA ZP.TOP3
-            if (Z)  // Still zero after 1 second - definite fail
-            {
-                PrintSecondsConversionFail();
-                return;
-            }
-        }
-        
-        PrintSecondsConversionPass();
-    }
-    
-    PrintSecondsConversionPass()
-    {
-        PrintPassLabel();
-        
-        LDA #(secondsTestName % 256)
-        STA ZP.STRL
-        LDA #(secondsTestName / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(conversionCorrect % 256)
-        STA ZP.STRL
-        LDA #(conversionCorrect / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.NewLine();
-    }
-    
-    PrintSecondsConversionFail()
-    {
-        PrintFailLabel();
-        
-        LDA #(secondsTestName % 256)
-        STA ZP.STRL
-        LDA #(secondsTestName / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(conversionError % 256)
-        STA ZP.STRL
-        LDA #(conversionError / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.NewLine();
-    }
-    
-    // Test delay accuracy with percentage calculation
-    TestDelayAccuracy()
-    {
-        // Test 250ms delay for reasonable accuracy measurement
-        Time.Millis();
-        
-        // Save start in NEXT (32-bit)
-        LDA ZP.TOP0
-        STA ZP.NEXT0
-        LDA ZP.TOP1
-        STA ZP.NEXT1
-        LDA ZP.TOP2
-        STA ZP.NEXT2
-        LDA ZP.TOP3
-        STA ZP.NEXT3
-        
-        // Delay 250ms
-        LDA #250
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        Time.Delay();
-        
-        // Get end time
-        Time.Millis();
-        
-        // Calculate actual delay: TOP = TOP - NEXT
-        Long.Sub();
-        Long.PopTop();
-        
-        // Save actual value for comparison later
-        LDA ZP.TOP0
         PHA
-        LDA ZP.TOP1
-        PHA
+        PHX
         
-        // Print header
-        LDA #(delayTestName % 256)
-        STA ZP.STRL
-        LDA #(delayTestName / 256)
-        STA ZP.STRH
-        Print.String();
+        // add ArgumentWord to Ticks0..3 and store in Target0..3
+        LDX ZP.TICK3     // reading TICK3 makes a snapshot of all 4 registers on the emulator      
         
-        // Print expected value
-        LDA #250
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        STZ ZP.TOPT
-        Long.Print();
-        
-        LDA #(msLabel % 256)
-        STA ZP.STRL
-        LDA #(msLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        LDA #(spaceColon % 256)
-        STA ZP.STRL
-        LDA #(spaceColon / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Print actual time
-        LDA #(actualLabel % 256)
-        STA ZP.STRL
-        LDA #(actualLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Restore actual value for printing
-        PLA
-        STA ZP.TOP1
-        PLA
-        STA ZP.TOP0
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        STZ ZP.TOPT
-        Long.Print();
-        
-        LDA #(msLabel % 256)
-        STA ZP.STRL
-        LDA #(msLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.Space();
-        
-        // Check tolerance (245-255ms = ±2%)
-        // Value is still in TOP from above
+        CLC
         LDA ZP.TOP0
-        CMP #245
+        ADC ZP.TICK0
+        STA ZP.TARGET0
         LDA ZP.TOP1
-        SBC #0
-        LDA ZP.TOP2
-        SBC #0
-        LDA ZP.TOP3
-        SBC #0
-        if (NC)  // >= 245
+        ADC ZP.TICK1
+        STA ZP.TARGET1
+        LDA ZP.TICK2
+        ADC ZP.TOP2
+        STA ZP.TARGET2
+        TXA // restore ZP.TICK3
+        ADC ZP.TOP3
+        STA ZP.TARGET3
+        
+        loop
         {
-            LDA #255
-            CMP ZP.TOP0
-            LDA #0
-            SBC ZP.TOP1
-            LDA #0
-            SBC ZP.TOP2
-            LDA #0
-            SBC ZP.TOP3
-            if (NC)  // <= 255
-            {
-                PrintOK();
-            }
-            else
-            {
-                PrintError();
-            }
+            // while Ticks0..3 < Target0..3, loop here
+            
+            LDA ZP.TICK3   // reading TICK3 makes a snapshot of all 4 registers on the emulator      
+            CMP ZP.TARGET3
+            if (NC) { continue; }
+            LDA ZP.TICK2
+            CMP ZP.TARGET2
+            if (NC) { continue; }
+            LDA ZP.TICK1
+            CMP ZP.TARGET1
+            if (NC) { continue; }
+            //LDA ZP.ACCL
+            LDA ZP.TICK0
+            CMP ZP.TARGET0
+            if (NC) { continue; }
+            
+            break; // Target >= Ticks : match ->
         }
-        else
-        {
-            PrintError();
-        }
+        
+        PLX
+        PLA
     }
     
-    // Helper functions
-    PrintPassLabel()
+    Millis()
     {
-        LDA #(passLabel % 256)
-        STA ZP.STRL
-        LDA #(passLabel / 256)
-        STA ZP.STRH
-        Print.String();
+        LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
+        STA ZP.TOP3
+        LDA ZP.TICK2
+        STA ZP.TOP2
+        LDA ZP.TICK1
+        STA ZP.TOP1
+        LDA ZP.TICK0 
+        STA ZP.TOP0
     }
-    
-    PrintFailLabel()
+
+    Seconds() inline
     {
-        LDA #(failLabel % 256)
-        STA ZP.STRL
-        LDA #(failLabel / 256)
-        STA ZP.STRH
-        Print.String();
-    }
-    
-    PrintOK()
-    {
-        LDA #(okLabel % 256)
-        STA ZP.STRL
-        LDA #(okLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        Print.NewLine();
-    }
-    
-    PrintError()
-    {
-        LDA #(errorLabel % 256)
-        STA ZP.STRL
-        LDA #(errorLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        Print.NewLine();
-    }
-    
-    PrintFailWithDelta()
-    {
-        LDA #(actualLabel % 256)
-        STA ZP.STRL
-        LDA #(actualLabel / 256)
-        STA ZP.STRH
-        Print.String();
+        LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
+        STA NEXT3
+        LDA ZP.TICK2
+        STA NEXT2
+        LDA ZP.TICK1
+        STA NEXT1
+        LDA ZP.TICK0 
+        STA NEXT0
         
-        STZ ZP.TOPT
-        Long.Print();
+        LDA # 0xE8 // 1000 = 0x03E8
+        STA TOP0
+        LDA # 0x03
+        STA TOP1
+        STZ TOP2
+        STZ TOP3
         
-        LDA #(msLabel % 256)
-        STA ZP.STRL
-        LDA #(msLabel / 256)
-        STA ZP.STRH
-        Print.String();
+        LDX #0 // Div
+        Long.DivMod(); // Seconds = Millis / 1000   
         
-        Print.Space();
-        
-        LDA #(errorLabel % 256)
-        STA ZP.STRL
-        LDA #(errorLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Print.NewLine();
+        LDA NEXT0
+        STA TOP0
+        LDA NEXT1
+        STA TOP1
+        LDA NEXT2
+        STA TOP2
+        LDA NEXT3
+        STA TOP3
     }
 }

@@ -1,6 +1,5 @@
 unit Tests
 {
-    
     // Test strings
     const string testHeader = "\n=== TIME MODULE TESTS ===\n";
     const string testFooter = "\n==============================\n\n";
@@ -76,7 +75,7 @@ unit Tests
         // Get first reading
         Time.Millis();
         
-        // Save first reading
+        // Save first reading using hardware stack
         LDA ZP.TOP0
         PHA
         LDA ZP.TOP1
@@ -88,26 +87,36 @@ unit Tests
         
         // Small delay (about 5ms)
         LDA #5
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
+        Shared.LoadTopByte(); // Sets TOP0 = A, zeros TOP1-3
         Time.Delay();
         
         // Get second reading
         Time.Millis();
         
-        // Compare with first reading
+        // Pull first reading from stack into NEXT for comparison
         PLA
+        STA ZP.NEXT3
+        PLA
+        STA ZP.NEXT2
+        PLA
+        STA ZP.NEXT1
+        PLA
+        STA ZP.NEXT0
+        
+        // Compare NEXT (first reading) with TOP (second reading)
+        LDA ZP.NEXT3
         CMP ZP.TOP3
         if (NZ) { PrintMillisPass(); return; }
-        PLA
+        
+        LDA ZP.NEXT2
         CMP ZP.TOP2
         if (NZ) { PrintMillisPass(); return; }
-        PLA
+        
+        LDA ZP.NEXT1
         CMP ZP.TOP1
         if (NZ) { PrintMillisPass(); return; }
-        PLA
+        
+        LDA ZP.NEXT0
         CMP ZP.TOP0
         if (NZ) { PrintMillisPass(); return; }
         
@@ -117,9 +126,6 @@ unit Tests
     
     PrintMillisPass()
     {
-        // Clean up stack if needed
-        PLA PLA PLA PLA
-        
         PrintPassLabel();
         
         LDA #(millisTestName % 256)
@@ -159,19 +165,22 @@ unit Tests
     // Test 1ms delay
     TestDelay1ms()
     {
-        TestDelayWithValue(1);
+        LDA #1
+        TestDelayWithValue();
     }
     
     // Test 10ms delay
     TestDelay10ms()
     {
-        TestDelayWithValue(10);
+        LDA #10
+        TestDelayWithValue();
     }
     
     // Test 100ms delay
     TestDelay100ms()
     {
-        TestDelayWithValue(100);
+        LDA #100
+        TestDelayWithValue();
     }
     
     // Test 1000ms delay with detailed timing
@@ -180,7 +189,30 @@ unit Tests
         // Get start time
         Time.Millis();
         
-        // Save start time
+        // Move start time to NEXT (for subtraction: NEXT = NEXT - TOP)
+        Shared.MoveTopToNext();
+        
+        // Delay for 1000ms
+        LDA #(1000 % 256)
+        STA ZP.TOP0
+        LDA #(1000 / 256)
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Time.Delay();
+        
+        // Get end time in TOP
+        Time.Millis();
+        
+        // Calculate delta: NEXT = end - start (since NEXT has start, TOP has end)
+        // We need end - start, so swap them first
+        Shared.SwapNextTop(); // Now NEXT=end, TOP=start
+        Long.Sub(); // NEXT = NEXT - TOP = end - start
+        
+        // Result is now in NEXT, move to TOP for printing
+        Shared.MoveNextToTop();
+        
+        // Save delta for later comparison
         LDA ZP.TOP0
         PHA
         LDA ZP.TOP1
@@ -189,32 +221,6 @@ unit Tests
         PHA
         LDA ZP.TOP3
         PHA
-        
-        // Delay for 1000ms
-        LDA #(1000 % 256)
-        STA ZP.TOPL
-        LDA #(1000 / 256)
-        STA ZP.TOPH
-        Time.Delay();
-        
-        // Get end time
-        Time.Millis();
-        
-        // Calculate delta: end - start
-        // Pop start time into NEXT
-        PLA
-        STA ZP.NEXT3
-        PLA
-        STA ZP.NEXT2
-        PLA
-        STA ZP.NEXT1
-        PLA
-        STA ZP.NEXT0
-        
-        // TOP already has end time
-        // Calculate TOP - NEXT
-        Long.Sub();
-        Long.PopTop();
         
         // Print result header
         LDA #(delayTestName % 256)
@@ -225,11 +231,12 @@ unit Tests
         
         // Print delay value
         LDA #(1000 % 256)
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA #(1000 / 256)
-        STA ZP.TOPH
-        STZ ZP.TOPT
-        Print.Decimal();
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Long.Print();
         
         LDA #(msLabel % 256)
         STA ZP.STRL
@@ -242,6 +249,16 @@ unit Tests
         LDA #(spaceColon / 256)
         STA ZP.STRH
         Print.String();
+        
+        // Restore delta from stack
+        PLA
+        STA ZP.TOP3
+        PLA
+        STA ZP.TOP2
+        PLA
+        STA ZP.TOP1
+        PLA
+        STA ZP.TOP0
         
         // Check if delta is between 995 and 1005 (0.5% tolerance)
         // First check if >= 995
@@ -283,7 +300,7 @@ unit Tests
     TestDelayWithValue()
     {
         // A = delay value in ms (1-255)
-        PHA  // Save delay value
+        PHA  // Save delay value on hardware stack
         
         // Get start time
         Time.Millis();
@@ -294,21 +311,18 @@ unit Tests
         LDA ZP.TOP1
         PHA
         
-        // Set up delay
+        // Set up delay - get delay value from stack
         PLA  // Get TOP1 back
-        PLA  // Get TOP0 back
+        PLA  // Get TOP0 back  
         PLA  // Get delay value
-        STA ZP.TOPL
-        STZ ZP.TOPH
+        Shared.LoadTopByte(); // Sets TOP0 = A, zeros TOP1-3
         
-        PHA  // Save delay value again
+        PHA  // Save delay value again for printing
         
         Time.Delay();
         
-        // Get end time
+        // Get end time (don't need to calculate delta for simple test)
         Time.Millis();
-        
-        PLA  // Get delay value
         
         // Print test name
         LDA #(delayTestName % 256)
@@ -318,10 +332,9 @@ unit Tests
         Print.String();
         
         // Print delay value
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
-        Print.Decimal();
+        PLA
+        Shared.LoadTopByte();
+        Long.Print();
         
         LDA #(msLabel % 256)
         STA ZP.STRL
@@ -344,53 +357,51 @@ unit Tests
         // Get current milliseconds
         Time.Millis();
         
-        // Save milliseconds
-        LDA ZP.TOP0
-        PHA
-        LDA ZP.TOP1
-        PHA
-        LDA ZP.TOP2
-        PHA
-        LDA ZP.TOP3
-        PHA
+        // Save milliseconds to NEXT
+        Shared.MoveTopToNext();
         
         // Get seconds
         Time.Seconds();
         
         // TOP now has seconds
         // Multiply by 1000 to convert back to milliseconds
+        // Swap so NEXT has 1000, TOP has seconds
+        Shared.SwapNextTop(); // Now NEXT=seconds, TOP=millis
+        
+        // Set TOP to 1000
         LDA #(1000 % 256)
-        STA ZP.NEXT0
+        STA ZP.TOP0
         LDA #(1000 / 256)
-        STA ZP.NEXT1
-        STZ ZP.NEXT2
-        STZ ZP.NEXT3
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
         
-        Long.Mul();
-        Long.PopTop();
         
-        // Pop original millis into NEXT
-        PLA
-        STA ZP.NEXT3
-        PLA
-        STA ZP.NEXT2
-        PLA
-        STA ZP.NEXT1
-        PLA
-        STA ZP.NEXT0
+        Long.Mul();  // NEXT = NEXT * TOP = seconds * 1000
         
-        // Calculate difference
-        Long.Sub();  // TOP = TOP - NEXT
-        Long.PopTop();
+        // Now NEXT has seconds*1000, need to compare with original millis
+        // Original millis was in TOP before swap, now need to restore it
+        // Actually, let's recalculate - get millis again
+        Time.Millis();
+        
+        // Calculate difference: NEXT has seconds*1000, TOP has current millis
+        Long.Sub(); // NEXT = NEXT - TOP
+        
+        // Get absolute value of difference
+        LDA ZP.NEXT3
+        if (MI)  // Negative?
+        {
+            Long.NegateNext();
+        }
         
         // Check if difference is less than 1000
-        LDA ZP.TOP2
-        ORA ZP.TOP3
+        LDA ZP.NEXT2
+        ORA ZP.NEXT3
         if (Z)  // High 16 bits are zero
         {
-            LDA ZP.TOP1
+            LDA ZP.NEXT1
             CMP #(1000 / 256)
-            if (C)  // >= 4 (1000 = 0x03E8)
+            if (NC)  // >= 4 (1000 = 0x03E8)
             {
                 PrintSecondsConversionFail();
                 return;
@@ -449,28 +460,29 @@ unit Tests
         // Test 250ms delay for reasonable accuracy measurement
         Time.Millis();
         
-        // Save start (32-bit)
-        LDA ZP.TOP0
-        STA ZP.NEXT0
-        LDA ZP.TOP1
-        STA ZP.NEXT1
-        LDA ZP.TOP2
-        STA ZP.NEXT2
-        LDA ZP.TOP3
-        STA ZP.NEXT3
+        // Save start to NEXT
+        Shared.MoveTopToNext();
         
         // Delay 250ms
         LDA #250
-        STA ZP.TOPL
-        STZ ZP.TOPH
+        Shared.LoadTopByte(); // Sets TOP0 = 250, zeros TOP1-3
         Time.Delay();
         
-        // Get end time
+        // Get end time in TOP
         Time.Millis();
         
-        // Calculate actual delay: TOP = TOP - NEXT
-        Long.Sub();
-        Long.PopTop();
+        // Calculate actual delay: NEXT = end - start
+        Shared.SwapNextTop(); // Swap so NEXT=end, TOP=start
+        Long.Sub(); // NEXT = NEXT - TOP = end - start
+        
+        // Move result to TOP for printing
+        Shared.MoveNextToTop();
+        
+        // Save actual delay on hardware stack
+        LDA ZP.TOP0
+        PHA
+        LDA ZP.TOP1
+        PHA
         
         // Print header
         LDA #(delayTestName % 256)
@@ -481,10 +493,8 @@ unit Tests
         
         // Print expected value
         LDA #250
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
-        Print.Decimal();
+        Shared.LoadTopByte();
+        Long.Print();
         
         LDA #(msLabel % 256)
         STA ZP.STRL
@@ -505,8 +515,15 @@ unit Tests
         STA ZP.STRH
         Print.String();
         
-        STZ ZP.TOPT
-        Print.Decimal();
+        // Restore actual delay from hardware stack
+        PLA
+        STA ZP.TOP1
+        PLA
+        STA ZP.TOP0
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        
+        Long.Print();
         
         LDA #(msLabel % 256)
         STA ZP.STRL
@@ -597,8 +614,7 @@ unit Tests
         STA ZP.STRH
         Print.String();
         
-        STZ ZP.TOPT
-        Print.Decimal();
+        Long.Print();
         
         LDA #(msLabel % 256)
         STA ZP.STRL

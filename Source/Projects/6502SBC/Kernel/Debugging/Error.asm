@@ -32,6 +32,7 @@ unit Error // ErrorID.asm
         DIVISION   = 0x57,  // "DIVISION"
         BY         = 0x58,  // "BY"  
         ZERO       = 0x59,  // "ZERO"
+        
     }
     
     // Table 0: Common error words (0x00-0x1F)

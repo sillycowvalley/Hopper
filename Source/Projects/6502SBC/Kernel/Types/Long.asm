@@ -1,142 +1,10 @@
 unit Long
 {
-    friend Time 
+    friend Time;
     
-    LoadTopByte()  // A = byte value
-    {
-        STA ZP.TOP0
-        Long.ZeroTop3();
-    }
-    ZeroTop()
-    {
-        STZ ZP.TOP0
-        ZeroTop3();
-    }
-    ZeroTop3()
-    {
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-    }
-    ZeroNext()
-    {
-        STZ ZP.NEXT0
-        ZeroNext3();
-    }
-    ZeroNext3()
-    {
-        STZ ZP.NEXT1
-        STZ ZP.NEXT2
-        STZ ZP.NEXT3
-    }
-    ZeroCheckTop()
-    {
-        LDA ZP.TOP0
-        ORA ZP.TOP1
-        ORA ZP.TOP2
-        ORA ZP.TOP3
-    }
-    ZeroCheckNext()
-    {
-        LDA ZP.NEXT0
-        ORA ZP.NEXT1
-        ORA ZP.NEXT2
-        ORA ZP.NEXT3
-    }
     
-    zeroResult()
-    {
-        STZ ZP.RESULT0
-        STZ ZP.RESULT1
-        STZ ZP.RESULT2
-        STZ ZP.RESULT3
-    }
-    zeroResult8()
-    {
-        zeroResult();
-        STZ ZP.RESULT4
-        STZ ZP.RESULT5
-        STZ ZP.RESULT6
-        STZ ZP.RESULT7
-    }    
     
-    moveNextToResult()
-    {
-        LDA ZP.NEXT0
-        STA ZP.RESULT0
-        LDA ZP.NEXT1
-        STA ZP.RESULT1
-        LDA ZP.NEXT2
-        STA ZP.RESULT2
-        LDA ZP.NEXT3
-        STA ZP.RESULT3
-    }
-    moveNextToTop()
-    {
-        LDA ZP.NEXT0
-        STA ZP.TOP0
-        LDA ZP.NEXT1
-        STA ZP.TOP1
-        LDA ZP.NEXT2
-        STA ZP.TOP2
-        LDA ZP.NEXT3
-        STA ZP.TOP3
-    }
-    moveTopToNext()
-    {
-        LDA ZP.TOP0
-        STA ZP.NEXT0
-        LDA ZP.TOP1
-        STA ZP.NEXT1
-        LDA ZP.TOP2
-        STA ZP.NEXT2
-        LDA ZP.TOP3
-        STA ZP.NEXT3
-    }
-    moveResultToTop()
-    {
-        LDA ZP.RESULT0
-        STA ZP.TOP0
-        LDA ZP.RESULT1
-        STA ZP.TOP1
-        LDA ZP.RESULT2
-        STA ZP.TOP2
-        LDA ZP.RESULT3
-        STA ZP.TOP3
-    }
-    moveResultToNext()
-    {
-        LDA ZP.RESULT0
-        STA ZP.NEXT0
-        LDA ZP.RESULT1
-        STA ZP.NEXT1
-        LDA ZP.RESULT2
-        STA ZP.NEXT2
-        LDA ZP.RESULT3
-        STA ZP.NEXT3
-    }
-    commonSwapNEXTTOP()
-    {
-        LDY ZP.TOP0
-        LDA ZP.NEXT0
-        STA ZP.TOP0
-        STY ZP.NEXT0
         
-        LDY ZP.TOP1
-        LDA ZP.NEXT1
-        STA ZP.TOP1
-        STY ZP.NEXT1
-        
-        LDY ZP.TOP2
-        LDA ZP.NEXT2
-        STA ZP.TOP2
-        STY ZP.NEXT2
-        
-        LDY ZP.TOP3
-        LDA ZP.NEXT3
-        STA ZP.TOP3
-        STY ZP.NEXT3
-    }
     
     shiftNEXTleft()
     {
@@ -177,7 +45,7 @@ unit Long
         PLA // take the sign from the divisor (NEXT)
         if (MI)
         {
-            negateLongNEXT(); // NEXT  = -NEXT 
+            NegateNext(); // NEXT  = -NEXT 
         }
         // result in NEXT
     }
@@ -186,13 +54,48 @@ unit Long
         utilityDoLongSigns();
         LDX #0 // Div
         DivMod(); // NEXT = NEXT / TOP
-        LDA ZP.FSIGN // load the sign count
+        LDA ZP.TEMP // load the sign count
         CMP # 1
         if (Z)
         {
-            negateLongNEXT(); // NEXT  = -NEXT 
+            NegateNext(); // NEXT  = -NEXT 
         }
         // result in NEXT
+    }
+    
+    Add()
+    {
+        // NEXT = NEXT + TOP
+        CLC
+        LDA ZP.NEXT0
+        ADC ZP.TOP0
+        STA ZP.NEXT0
+        LDA ZP.NEXT1
+        ADC ZP.TOP1
+        STA ZP.NEXT1
+        LDA ZP.NEXT2
+        ADC ZP.TOP2
+        STA ZP.NEXT2
+        LDA ZP.NEXT3
+        ADC ZP.TOP3
+        STA ZP.NEXT3
+    }
+    Sub()
+    {
+        // NEXT = NEXT - TOP
+        SEC
+        LDA ZP.NEXT0
+        SBC ZP.TOP0
+        STA ZP.NEXT0
+        LDA ZP.NEXT1
+        SBC ZP.TOP1
+        STA ZP.NEXT1
+        LDA ZP.NEXT2
+        SBC ZP.TOP2
+        STA ZP.NEXT2
+        LDA ZP.NEXT3
+        SBC ZP.TOP3
+        STA ZP.NEXT3
     }
     Mul()
     {
@@ -202,19 +105,19 @@ unit Long
         // http://www.6502.org/source/integers/32muldiv.htm
     
         utilityLongMUL();
-        moveResultToNext(); // RESULT0-3 -> NEXT0-3
+        Shared.MoveResultToNext(); // RESULT0-3 -> NEXT0-3
         
-        LDA ZP.FSIGN // load the sign count
+        LDA ZP.TEMP // load the sign count
         CMP # 1
         if (Z)
         {
-            negateLongNEXT(); // NEXT  = -NEXT 
+            NegateNext(); // NEXT  = -NEXT 
         }
         // result in NEXT
         
     }
     
-    negateLongNEXT()
+    NegateNext()
     {
         SEC
         LDA # 0
@@ -240,16 +143,16 @@ unit Long
         if (C)
         {
             INX // count the -ve
-            negateLongNEXT(); // NEXT = -NEXT
+            NegateNext(); // NEXT = -NEXT
         }
         LDA ZP.TOP3
         ASL // sign bit into carry
         if (C)
         {
             INX // count the -ve
-            NegateLongTOP(); // TOP = -TOP
+            NegateTop(); // TOP = -TOP
         }
-        STX ZP.FSIGN // store the sign count
+        STX ZP.TEMP // store the sign count
         
         PLX
     }
@@ -306,7 +209,7 @@ unit Long
     }
     GT()
     {
-        commonSwapNEXTTOP();
+        Shared.SwapNextTop();
         commonLT();
         // result in X
     }
@@ -346,7 +249,7 @@ unit Long
         CPX # 0
         if (Z)
         {
-            commonSwapNEXTTOP();
+            Shared.SwapNextTop();
             commonLT();           
         }
         // result in X
@@ -440,11 +343,11 @@ unit Long
         // http://www.6502.org/source/integers/32muldiv.htm
         
         // Initialize remainder to 0
-        zeroResult();
+        Shared.ZeroResult();
         loop
         {
             // Check for division by zero
-            Long.ZeroCheckTop();
+            Shared.ZeroCheckTop();
             if (Z)  // Divisor is zero
             {
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
@@ -606,7 +509,7 @@ unit Long
             break; // 32 bit exit
         } // loop
     }
-    NegateLongTOP()
+    NegateTop()
     {
         SEC
         LDA # 0
@@ -631,7 +534,7 @@ unit Long
         // https://llx.com/Neil/a2/mult.html
         // http://www.6502.org/source/integers/32muldiv.htm
         
-        zeroResult8();
+        Shared.ZeroResult8();
         
         loop
         {
@@ -652,7 +555,7 @@ unit Long
                     case 8:
                     case 16:
                     { 
-                        commonSwapNEXTTOP(); 
+                        Shared.SwapNextTop(); 
                     }
                     case 10:
                     {
@@ -674,13 +577,13 @@ unit Long
                                 { } // keep TOP
                                 default:
                                 {
-                                    commonSwapNEXTTOP();
+                                    Shared.SwapNextTop();
                                 }
                             }
                         }
                         else
                         {
-                            commonSwapNEXTTOP(); 
+                            Shared.SwapNextTop(); 
                         }
                     }
                 }
@@ -707,7 +610,7 @@ unit Long
                     if (Z)
                     {
                         // x 1 -> NEXT -> RESULT
-                        moveNextToResult();
+                        Shared.MoveNextToResult();
                         break; // exit
                     }
                     CMP #16 
@@ -733,7 +636,7 @@ unit Long
                     {
                         shiftNEXTleft(); // NEXT << 1, can set overflow error
                         CheckError();
-                        moveNextToResult();
+                        Shared.MoveNextToResult();
                         break; // x2, x4, x8, x16 exit 
                     }
                     CMP #10
@@ -1084,7 +987,6 @@ unit Long
     
     // Print 32-bit LONG decimal number
     // Input: ZP.TOP0-3 = 32-bit number to print
-    //        ZP.TOPT = LONG (only support LONG)
     // Output: Decimal number printed to serial
     // Munts: ZP.NEXT, ZP.RESULT, ZP.ACC, A
     Print()
@@ -1093,23 +995,16 @@ unit Long
         PHY
         loop
         {
-            if (BBR3, ZP.TOPT) // Bit 3 - LONG
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL // only allow LONG
-                CheckError();
-                break;
-            }
-            
-            moveTopToNext();
+            Shared.MoveTopToNext();
             if (BBS7, ZP.NEXT3)
             {
                 LDA #'-'
                 Serial.WriteChar();
-                negateLongNEXT();
+                NegateNext();
             }
             
             // Check for zero special case
-            Long.ZeroCheckNext();
+            Shared.ZeroCheckNext();
             if (Z)
             {
                 LDA #'0'
@@ -1153,7 +1048,7 @@ unit Long
                 INY             // Count digits
                 
                 // Check if quotient is zero
-                Long.ZeroCheckNext();
+                Shared.ZeroCheckNext();
                 if (Z) { break; }  // Done extracting digits
             }
             
