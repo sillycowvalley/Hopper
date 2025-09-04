@@ -85,5 +85,6 @@ program BIOS
         
         Tests.RunTests();
         
+        loop { }
     }
 }

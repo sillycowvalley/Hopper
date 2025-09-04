@@ -179,7 +179,7 @@ unit Shared
     }
     ZeroResult8()
     {
-        zeroResult();
+        ZeroResult();
         STZ ZP.RESULT4
         STZ ZP.RESULT5
         STZ ZP.RESULT6

@@ -262,28 +262,29 @@ unit Tests
         
         // Check if delta is between 995 and 1005 (0.5% tolerance)
         // First check if >= 995
-        LDA ZP.TOP0
-        CMP #(995 % 256)
-        LDA ZP.TOP1
-        SBC #(995 / 256)
-        LDA ZP.TOP2
-        SBC #0
-        LDA ZP.TOP3
-        SBC #0
-        if (NC)  // >= 995
+        
+        LDA #(995 % 256)
+        STA ZP.NEXT0
+        LDA #(995 / 256)
+        STA ZP.NEXT1
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
+
+        Long.LE(); // NEXT <= TOP?
+        if (C)  // >= 995
         {
             // Now check if <= 1005
             LDA #(1005 % 256)
-            CMP ZP.TOP0
+            STA ZP.NEXT0
             LDA #(1005 / 256)
-            SBC ZP.TOP1
-            LDA #0
-            SBC ZP.TOP2
-            LDA #0
-            SBC ZP.TOP3
-            if (NC)  // <= 1005
+            STA ZP.NEXT1
+            STZ ZP.NEXT2
+            STZ ZP.NEXT3
+            
+            Long.GE(); // NEXT >= TOP?
+            if (C)  // <= 1005
             {
-                PrintOK();
+                PrintOK();    
             }
             else
             {
@@ -354,35 +355,49 @@ unit Tests
     // Test Seconds() conversion
     TestSecondsConversion()
     {
-        // Get current milliseconds
+        
+        // Delay for 5000ms
+        LDA #(5000 % 256)
+        STA ZP.TOP0
+        LDA #(5000 / 256)
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Time.Delay();
+        
         Time.Millis();
+        LDA ZP.TOP0
+        PHA
+        LDA ZP.TOP1
+        PHA
+        LDA ZP.TOP2
+        PHA
+        LDA ZP.TOP3
+        PHA
         
-        // Save milliseconds to NEXT
-        Shared.MoveTopToNext();
-        
-        // Get seconds
         Time.Seconds();
         
         // TOP now has seconds
         // Multiply by 1000 to convert back to milliseconds
-        // Swap so NEXT has 1000, TOP has seconds
-        Shared.SwapNextTop(); // Now NEXT=seconds, TOP=millis
         
-        // Set TOP to 1000
+        // Set NEXT to 1000
         LDA #(1000 % 256)
-        STA ZP.TOP0
+        STA ZP.NEXT0
         LDA #(1000 / 256)
-        STA ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        
+        STA ZP.NEXT1
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
         
         Long.Mul();  // NEXT = NEXT * TOP = seconds * 1000
         
-        // Now NEXT has seconds*1000, need to compare with original millis
-        // Original millis was in TOP before swap, now need to restore it
-        // Actually, let's recalculate - get millis again
-        Time.Millis();
+        PLA
+        STA ZP.TOP3
+        PLA
+        STA ZP.TOP2
+        PLA
+        STA ZP.TOP1
+        PLA
+        STA ZP.TOP0
         
         // Calculate difference: NEXT has seconds*1000, TOP has current millis
         Long.Sub(); // NEXT = NEXT - TOP
@@ -395,24 +410,14 @@ unit Tests
         }
         
         // Check if difference is less than 1000
-        LDA ZP.NEXT2
+        LDA ZP.NEXT1
+        ORA ZP.NEXT2
         ORA ZP.NEXT3
-        if (Z)  // High 16 bits are zero
-        {
-            LDA ZP.NEXT1
-            CMP #(1000 / 256)
-            if (NC)  // >= 4 (1000 = 0x03E8)
-            {
-                PrintSecondsConversionFail();
-                return;
-            }
-        }
-        else
+        if (NZ)  // High 24 bits are zero
         {
             PrintSecondsConversionFail();
             return;
         }
-        
         PrintSecondsConversionPass();
     }
     
@@ -475,15 +480,6 @@ unit Tests
         Shared.SwapNextTop(); // Swap so NEXT=end, TOP=start
         Long.Sub(); // NEXT = NEXT - TOP = end - start
         
-        // Move result to TOP for printing
-        Shared.MoveNextToTop();
-        
-        // Save actual delay on hardware stack
-        LDA ZP.TOP0
-        PHA
-        LDA ZP.TOP1
-        PHA
-        
         // Print header
         LDA #(delayTestName % 256)
         STA ZP.STRL
@@ -515,14 +511,8 @@ unit Tests
         STA ZP.STRH
         Print.String();
         
-        // Restore actual delay from hardware stack
-        PLA
-        STA ZP.TOP1
-        PLA
-        STA ZP.TOP0
-        STZ ZP.TOP2
-        STZ ZP.TOP3
-        
+        // Move result to TOP for printing
+        Shared.MoveNextToTop();        
         Long.Print();
         
         LDA #(msLabel % 256)
@@ -534,25 +524,19 @@ unit Tests
         Print.Space();
         
         // Check tolerance (245-255ms = ±2%)
-        LDA ZP.TOP0
-        CMP #245
-        LDA ZP.TOP1
-        SBC #0
-        LDA ZP.TOP2
-        SBC #0
-        LDA ZP.TOP3
-        SBC #0
-        if (NC)  // >= 245
+        LDA #245
+        STA ZP.NEXT0
+        STZ ZP.NEXT1
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
+        
+        Long.LE(); // NEXT (245) <= TOP
+        if (C)  // 245 <= TOP
         {
             LDA #255
-            CMP ZP.TOP0
-            LDA #0
-            SBC ZP.TOP1
-            LDA #0
-            SBC ZP.TOP2
-            LDA #0
-            SBC ZP.TOP3
-            if (NC)  // <= 255
+            STA ZP.NEXT0
+            Long.GE(); // NEXT >= TOP
+            if (C)  // 255 >= TOP
             {
                 PrintOK();
             }

@@ -993,6 +993,16 @@ unit Long
     {
         PHX
         PHY
+        
+        LDA ZP.NEXT3
+        PHA
+        LDA ZP.NEXT2
+        PHA
+        LDA ZP.NEXT1
+        PHA
+        LDA ZP.NEXT0
+        PHA
+        
         loop
         {
             Shared.MoveTopToNext();
@@ -1063,6 +1073,16 @@ unit Long
             SEC
             break;
         } // single exit
+        
+        PLA
+        STA ZP.NEXT0
+        PLA
+        STA ZP.NEXT1
+        PLA
+        STA ZP.NEXT2
+        PLA
+        STA ZP.NEXT3
+        
         PLY
         PLX
     }

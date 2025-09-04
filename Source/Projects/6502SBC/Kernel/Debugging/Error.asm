@@ -21,6 +21,8 @@ unit Error // ErrorID.asm
         EXPECTED   = 0x21,  // "EXPECTED"
         HEAP       = 0x31,  // "HEAP"
         CORRUPT    = 0x32,  // "CORRUPT"
+        NUMERIC    = 0x33,  // "NUMERIC"
+        OVERFLOW   = 0x34,  // "OVERFLOW"
         
         // Table 2 (bits 6-5 = 10): Additional words (0x40-0x5F)
         FILENAME   = 0x41,  // "FILENAME"
@@ -32,7 +34,6 @@ unit Error // ErrorID.asm
         DIVISION   = 0x57,  // "DIVISION"
         BY         = 0x58,  // "BY"  
         ZERO       = 0x59,  // "ZERO"
-        
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -54,6 +55,8 @@ unit Error // ErrorID.asm
         8,  ErrorWord.EXPECTED,   'E', 'X', 'P', 'E', 'C', 'T', 'E', 'D',
         4,  ErrorWord.HEAP,       'H', 'E', 'A', 'P',
         7,  ErrorWord.CORRUPT,    'C', 'O', 'R', 'R', 'U', 'P', 'T',
+        7,  ErrorWord.NUMERIC,    'N', 'U', 'M', 'E', 'R', 'I', 'C',
+        8,  ErrorWord.OVERFLOW,   'O', 'V', 'E', 'R', 'F', 'L', 'O', 'W',
         0  // End marker
     };
     
@@ -87,6 +90,7 @@ unit Error // ErrorID.asm
         
         // Mathematical errors
         DivisionByZero      = 0x30,
+        NumericOverflow     = 0x31,
     }
     
     const byte[] errorMessages0 = {
@@ -100,6 +104,7 @@ unit Error // ErrorID.asm
         3, ErrorID.OutOfMemory,       ErrorWord.OUT, ErrorWord.OF, ErrorWord.MEMORY,
         2, ErrorID.HeapCorrupt,       ErrorWord.HEAP, ErrorWord.CORRUPT,
         3, ErrorID.DivisionByZero,    ErrorWord.DIVISION, ErrorWord.BY, ErrorWord.ZERO,
+        2, ErrorID.NumericOverflow,   ErrorWord.NUMERIC, ErrorWord.OVERFLOW,
         0  // End marker
     };
     
@@ -353,6 +358,12 @@ unit Error // ErrorID.asm
     DivisionByZero()
     {
         LDA #ErrorID.DivisionByZero
+        commonError();
+    }
+    
+    NumericOverflow()
+    {
+        LDA #ErrorID.NumericOverflow
         commonError();
     }
     

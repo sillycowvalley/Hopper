@@ -143,6 +143,23 @@ unit Debug // Debug.asm
     
     // === Private output methods (use DB slots, no preservation) ===
     
+    printString2()
+    {
+        PHY
+        LDY #0              // Initialize string index
+        
+        loop                // Print each character until null terminator
+        {
+            LDA [ZP.STR2], Y // Load character from string
+            if (Z) { break; } // Exit if null terminator found
+            
+            Serial.WriteChar(); // Print the character
+            INY             // Move to next character
+        }
+        
+        PLY
+    }
+    
     xOut()  // Output IDX register
     {
         LDA #(regIDX % 256)
@@ -227,9 +244,6 @@ unit Debug // Debug.asm
         LDA #(regTOP / 256)
         STA ZP.STR2H
         printString2();
-        LDA ZP.TOPT
-        BASICTypes.PrintType();
-        LDA #':'
         cOut();
         LDA ZP.TOPH
         hOut();
@@ -245,10 +259,6 @@ unit Debug // Debug.asm
         LDA #(regNXT / 256)
         STA ZP.STR2H
         printString2();
-        LDA ZP.NEXTT
-        BASICTypes.PrintType();
-        LDA #':'
-        cOut();
         LDA ZP.NEXT3
         hOut();
         LDA ZP.NEXT2
@@ -284,10 +294,6 @@ unit Debug // Debug.asm
         LDA #(regTOP / 256)
         STA ZP.STR2H
         printString2();
-        LDA ZP.TOPT
-        BASICTypes.PrintType();
-        LDA #':'
-        cOut();
         LDA ZP.TOP3
         hOut();
         LDA ZP.TOP2

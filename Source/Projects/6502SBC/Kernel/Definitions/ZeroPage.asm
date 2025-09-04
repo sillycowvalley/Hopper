@@ -56,6 +56,13 @@ unit ZP // ZeroPage.asm
     
     const byte LastError            = 0x28;
     
+#ifdef DEBUG
+    const byte STR2                 = 0x29;
+    const byte STR2L                = 0x29;
+    const byte STR2H                = 0x2A;
+    
+#endif    
+    
     
     
     // I2C
