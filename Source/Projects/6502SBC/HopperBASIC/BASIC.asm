@@ -5,9 +5,9 @@ program HopperBASIC
     #define HASEEPROM   // include EEPROM storage
     #define HASI2C      // include 6502SBC I2C support
     
-    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
-    #define DEBUG
-    #define DEBUGPEEPS
+    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
+    //#define DEBUG
+    //#define DEBUGPEEPS
     //#define MULDIVDEBUG
     //#define VERBOSEDEBUG // debug the keyword table limits
     //#define FILEDEBUG

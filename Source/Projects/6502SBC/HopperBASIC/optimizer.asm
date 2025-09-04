@@ -177,13 +177,6 @@ unit Optimizer
         Space();
     }        
     
-    /*
-    div64()
-    {
-        LSR A LSR A LSR A LSR A LSR A LSR A // divide by 64
-    }
-    */
-    
     // IDY - current instruction pointer
     // A = contains OpCode
     //
@@ -287,24 +280,6 @@ unit Optimizer
         
         LDA Compiler.compilerOpCode
         STA ZP.PEEP0
-/*   
-LDA ZP.PEEP0
-CMP # OpCode.DECSP
-if (Z)
-{
-    LDA ZP.PEEP1
-    CMP # OpCode.CALL
-    if (Z)
-    {
-        LDA ZP.PEEP2
-        CMP # OpCode.PUSHVOID
-        if (Z)
-        {
-            Print.NewLine(); LDA #'$' Print.Char();
-        }
-    }
-}
-*/
     }
     
     // PEEP0 has been deleted so PEEP1 is the new PEEP0
@@ -318,6 +293,47 @@ if (Z)
         STA ZP.PEEP2
         LDA # OpCode.INVALID
         STA ZP.PEEP3
+    }
+    
+    // Load operand for a specific PEEP slot
+    // Input: X = PEEP slot number (0-3)
+    // Output: Operand loaded into corresponding PEEPOP slot
+    // Modifies: A, Y, ZP.IDY
+    loadPeepOperand()
+    {
+        // Clear operand slots first (in case this opcode has no operands or is INVALID)
+        STZ ZP.PEEPOP0, X
+        STZ ZP.PEEPOP0H, X
+        
+        // Get opcode for this slot
+        LDA ZP.PEEP0, X  // Load PEEP[X] opcode
+        CMP #OpCode.INVALID
+        if (Z) { return; }  // Skip invalid opcodes
+        
+        // Step back to get instruction address
+        stepBack(); // munts Y, decrements IDY, preserves A
+        
+        // Check if it has operand
+        LDY #1
+        AND #0xC0
+        CMP #0x40
+        if (Z) // Single byte operand
+        {
+            LDA [ZP.IDY], Y
+            STA ZP.PEEPOP0, X
+        }
+        else
+        {
+            CMP #0x80
+            if (Z) // Two byte operand
+            {
+                LDA [ZP.IDY], Y
+                STA ZP.PEEPOP0, X    // Word LSB
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.PEEPOP0H, X   // Word MSB
+            }
+        }
     }
     
     // Try to match current PEEP sequence against optimization patterns
@@ -406,123 +422,29 @@ if (Z)
             LDA ZP.XPCH
             STA ZP.IDYH
             
-            STZ ZP.PEEPOP0
-            STZ ZP.PEEPOP1
-            STZ ZP.PEEPOP2
-            STZ ZP.PEEPOP3
-           
-            // PEEP0 - step back 1 to opcode
-            LDA ZP.PEEP0
-            stepBack(); // munts Y
-            LDY #1
-            AND #0xC0
-            CMP #0x40
-            if (Z) // Single byte operand
-            {
-                LDA [ZP.IDY], Y
-                STA ZP.PEEPOP0
-            }
-            else
-            {
-#ifdef DEBUGPEEPS            
-                // not used yet    
-                CMP #0x80
-                if (Z) // Two byte operand
-                {
-                    LDA [ZP.IDY], Y
-                    STA ZP.PEEPOP0    // Word LSB
-                    INY  
-                    LDA [ZP.IDY], Y
-                    STA ZP.PEEPOP0H   // Word MSB
-                }
-#endif
-            }
+            // PEEP0 - step back 1 to opcode and load operands
+            LDX #0
+            loadPeepOperand();
             
-            // PEEP1 - step back 1 to opcode
-            LDA ZP.PEEP1
-            stepBack(); // munts Y
-            LDY #1
-            AND #0xC0
-            CMP #0x40
-            if (Z) // Single byte operand
-            {
-                LDA [ZP.IDY], Y
-                STA ZP.PEEPOP1
-            }
-            else
-            {
-                CMP #0x80
-                if (Z) // Two byte operand
-                {
-                    LDA [ZP.IDY], Y
-                    STA ZP.PEEPOP1    // Word LSB
-                    INY
-                    LDA [ZP.IDY], Y
-                    STA ZP.PEEPOP1H   // Word MSB
-                }
-            }
-            
+            // PEEP1 - step back 1 to opcode and load operands
+            LDX #1
+            loadPeepOperand();
+                        
             LDA ZP.PEEPOPS
             CMP #2
             if (NZ) // must be 3 or 4
             {
                 // PEEP2 - step back 1 to opcode
-                LDA ZP.PEEP2
-                stepBack(); // munts Y
-                LDY #1
-                AND #0xC0
-                CMP #0x40
-                if (Z) // Single byte operand
-                {
-                    LDA [ZP.IDY], Y
-                    STA ZP.PEEPOP2
-                }
-                else
-                {
-#ifdef DEBUGPEEPS            
-                    // not used yet    
-                    CMP #0x80
-                    if (Z) // Two byte operand
-                    {
-                        LDA [ZP.IDY], Y
-                        STA ZP.PEEPOP2    // Word LSB
-                        INY 
-                        LDA [ZP.IDY], Y
-                        STA ZP.PEEPOP2H   // Word MSB
-                    }
-#endif
-                }
+                LDX #2
+                loadPeepOperand();
             }
             LDA ZP.PEEPOPS
             CMP #4
             if (Z)
             {
                 // PEEP3 - step back 1 to opcode
-                LDA ZP.PEEP3
-                stepBack(); // munts Y
-                LDY #1
-                AND #0xC0
-                CMP #0x40
-                if (Z) // Single byte operand
-                {
-                    LDA [ZP.IDY], Y
-                    STA ZP.PEEPOP3
-                }
-                else
-                {
-#ifdef DEBUGPEEPS            
-                    // not used yet    
-                    CMP #0x80
-                    if (Z) // Two byte operand
-                    {
-                        LDA [ZP.IDY], Y
-                        STA ZP.PEEPOP3    // Word LSB
-                        INY
-                        LDA [ZP.IDY], Y
-                        STA ZP.PEEPOP3H   // Word MSB
-                    }
-#endif
-                }
+                LDX #3
+                loadPeepOperand();
             }
             
             // Test constraints:
@@ -560,7 +482,6 @@ if (Z)
             
             // remove ZP.PEEPOPS x instructions
             LDX ZP.PEEPOPS
-Debug.NL(); TXA HOut();            
             loop
             {
                 LDA ZP.PEEP0
@@ -651,6 +572,39 @@ Debug.NL(); TXA HOut();
             }
            
 #ifdef DEBUGPEEPS
+
+            // Reload operands for debug output:
+            LDA ZP.XPCL
+            STA ZP.IDYL
+            LDA ZP.XPCH
+            STA ZP.IDYH
+            
+            // PEEP0 - step back 1 to opcode and load operands
+            LDX #0
+            loadPeepOperand();
+            
+            // PEEP1 - step back 1 to opcode and load operands
+            LDX #1
+            loadPeepOperand();
+                        
+            LDA ZP.PEEPOPS
+            CMP #2
+            if (NZ) // must be 3 or 4
+            {
+                // PEEP2 - step back 1 to opcode
+                LDX #2
+                loadPeepOperand();
+            }
+            LDA ZP.PEEPOPS
+            CMP #4
+            if (Z)
+            {
+                // PEEP3 - step back 1 to opcode
+                // PEEP2 - step back 1 to opcode
+                LDX #2
+                loadPeepOperand();
+            }
+
             LDA #1 DumpPeeps();
 #endif
             
@@ -667,17 +621,15 @@ Debug.NL(); TXA HOut();
         PHA
         LDA ZP.IDXH
         PHA
-        
+
+        pushPeepOp(); // Compiler.compilerOpCode is the new PEEP0
         loop
         {
-            pushPeepOp(); // Compiler.compilerOpCode is the new PEEP0
-            
             tryOptimize();
             if (C)
             {
                 continue; // try another pattern
             }
-            
             break;
         } // single exit
         

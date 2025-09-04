@@ -339,10 +339,10 @@ unit ZP // ZeroPage.asm
     const byte GVIH                 = 0x83;
     
     // Optimizer.asm aliases (never calls Memory functions)
-    const byte PEEP3                = 0x84;  // Peephole optimizer : previous instructions
-    const byte PEEP2                = 0x85;
-    const byte PEEP1                = 0x86;
-    const byte PEEP0                = 0x87;
+    const byte PEEP0                = 0x84;  // Peephole optimizer : previous instructions
+    const byte PEEP1                = 0x85;
+    const byte PEEP2                = 0x86;
+    const byte PEEP3                = 0x87;
     const byte PEEPOP0              = M1;  // Peephole optimizer : previous instructions operands
     const byte PEEPOP1              = M2;
     const byte PEEPOP2              = M3;
@@ -351,6 +351,7 @@ unit ZP // ZeroPage.asm
     const byte PEEPOP1H             = M6;
     const byte PEEPOP2H             = M7;
     const byte PEEPOP3H             = M8;
+    
     const byte PEEPOPS              = M9;  // number of OpCodes in the current pattern
     const byte PEEPCONSTRAINTS      = M10;  // constraint flags for the current pattern
     const byte PEEPREPLACE          = M11;  // replacement OpCode for the current pattern

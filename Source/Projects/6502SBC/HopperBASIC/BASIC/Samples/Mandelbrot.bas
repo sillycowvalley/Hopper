@@ -11,13 +11,14 @@ FUNC INTRO()
 ENDFUNC    
 
 FUNC DRAW()
-    PRINT ' ';
-    VAR palette = ".,'~=+:;*%&$OXB#@ "
     
     VAR a, b, c, d
     VAR q, p, t, s, i
-    VAR f = 50
     VAR done
+    VAR f = 50
+    VAR palette = ".,'~=+:;*%&$OXB#@ "
+    PRINT ' ';
+    
     FOR y = -12 TO 12
         FOR x = -49 TO 29
             c = x * 229 / 100
