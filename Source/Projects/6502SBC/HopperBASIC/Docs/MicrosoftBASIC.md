@@ -14,49 +14,31 @@
 
 | Feature | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
 |---------|----------|----------|----------------|---------------|
-| **Integer Types** | ❌ **None** - all numbers are floating point | ❌ **None** - all numbers are floating point | ✅ **`%` suffix**: 16-bit signed integer (-32768 to 32767) | ✅ **Same as Extended** + better performance |
-| **Single Precision Float** | ✅ **Default and only type** (32-bit, ~7 digits) | ✅ **Default and only type** (32-bit, ~7 digits) | ✅ **`!` suffix**: 32-bit float (default, rarely shown) | ✅ **Same as Extended** |
+| **Early Development** | ⚠️ **Original prototypes were integer-only** | ⚠️ **Based on 4K floating-point version** | ✅ **Built from 8K foundation** | ✅ **Advanced from Extended** |
+| **Released Version** | ✅ **32-bit floating point only** (Monte Davidoff's custom format) | ✅ **Same 32-bit floating point** as 4K + strings | ✅ **Three types**: `%` (16-bit int), `!` (32-bit single), `#` (64-bit double) | ✅ **Same as Extended** + optimizations |
+| **Integer Support** | ❌ **No integer type in released version** | ❌ **No integer type** | ✅ **`%` suffix**: 16-bit signed integer (-32768 to 32767) | ✅ **Same as Extended** + better performance |
+| **Single Precision Float** | ✅ **Only numeric type** (32-bit, ~6-7 digits, custom format) | ✅ **Same as 4K BASIC** (32-bit, ~6-7 digits) | ✅ **`!` suffix**: 32-bit float (default, rarely shown) | ✅ **Same as Extended** |
 | **Double Precision Float** | ❌ **Not available** | ❌ **Not available** | ✅ **`#` suffix**: 64-bit float (~16 digits precision) | ✅ **Same as Extended** + optimizations |
-| **Precision** | ~6-7 significant digits | ~6-7 significant digits | Up to 16 digits (double), 6 digits (intrinsic functions) | Enhanced precision handling |
+| **Development History** | Gates & Allen started integer-only → Monte Davidoff added floating point | Built on 4K floating-point foundation | Added integer and double types to floating-point base | Enhanced all existing types |
 
 ### String Data Types & Variable Names
 
 | Feature | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
 |---------|----------|----------|----------------|---------------|
-| **String Variables** | ❌ **No string support** | ✅ **`# Microsoft BASIC Version Comparison: 4K to 5.x Evolution
-
-## Overview
-
-| Feature | 4K BASIC (1975) | 8K BASIC (1976) | Extended BASIC (12K) | BASIC-80 5.x (1981) |
-|---------|----------------|------------------|---------------------|---------------------|
-| **Memory Size** | 4 KB | 8 KB | 12 KB | Variable (disk-based) |
-| **Release Year** | 1975 | 1976 | ~1977 | 1981 |
-| **Primary Use** | Altair 8800 | Home computers | Advanced systems | Business/CP/M systems |
-
- suffix required** (A$, NAME$) | ✅ **`# Microsoft BASIC Version Comparison: 4K to 5.x Evolution
-
-## Overview
-
-| Feature | 4K BASIC (1975) | 8K BASIC (1976) | Extended BASIC (12K) | BASIC-80 5.x (1981) |
-|---------|----------------|------------------|---------------------|---------------------|
-| **Memory Size** | 4 KB | 8 KB | 12 KB | Variable (disk-based) |
-| **Release Year** | 1975 | 1976 | ~1977 | 1981 |
-| **Primary Use** | Altair 8800 | Home computers | Advanced systems | Business/CP/M systems |
-
- suffix required** | ✅ **`# Microsoft BASIC Version Comparison: 4K to 5.x Evolution
-
-## Overview
-
-| Feature | 4K BASIC (1975) | 8K BASIC (1976) | Extended BASIC (12K) | BASIC-80 5.x (1981) |
-|---------|----------------|------------------|---------------------|---------------------|
-| **Memory Size** | 4 KB | 8 KB | 12 KB | Variable (disk-based) |
-| **Release Year** | 1975 | 1976 | ~1977 | 1981 |
-| **Primary Use** | Altair 8800 | Home computers | Advanced systems | Business/CP/M systems |
-
- suffix required** |
+| **String Variables** | ❌ **No string support** | ✅ **`$` suffix required** (A$, NAME$) | ✅ **`$` suffix required** | ✅ **`$` suffix required** |
 | **Variable Name Length** | **1-2 characters only** (A, A0, BC, X9) | **Same limitation** (A$, B1$) | **Same limitation** (A$, B1$) | ✅ **Up to 40 characters** (CUSTOMER_NAME$) |
 | **Total Variables** | **286 numeric maximum** (A-Z + A0-Z9) | **286 numeric + 286 string** | **286 of each type** | **Unlimited** (within memory) |
 | **String Storage** | ❌ N/A | ✅ **Fixed allocation** (must reserve space) | ✅ **Fixed allocation** (must reserve space) | ✅ **Dynamic allocation** (automatic) |
+
+### Historical Development Note
+
+The evolution of Microsoft BASIC's numeric types has an interesting history:
+
+**Early 1975 Development**: When fellow Harvard student Monte Davidoff stated he believed the system should use floating-point arithmetic instead of the integer arithmetic of the original versions, and claimed he could write such a system that could still fit within the memory limits, they hired Davidoff to write the package.
+
+**Released 4K BASIC (1975)**: The commercially released version was **floating-point only** using Monte Davidoff's custom 32-bit format, not integer-only as the early prototypes were.
+
+**Key Point**: While development versions were integer-only, all released versions of 4K and 8K BASIC were floating-point based. Integer support didn't return until Extended BASIC as the `%` type.
 
 ### String Functions & Operations
 
@@ -172,8 +154,8 @@ FULL_ADDRESS$ = FIRST$ + " " + LAST$ + ", " + CITY$ ' Dynamic concatenation
 
 ```
 1975: 4K BASIC (Altair)
-      ├─ Integer math only
-      ├─ No strings
+      ├─ Started integer-only (prototypes)
+      ├─ Released as floating-point only
       └─ 286 variable limit
 
 1976: 8K BASIC
@@ -182,7 +164,7 @@ FULL_ADDRESS$ = FIRST$ + " " + LAST$ + ", " + CITY$ ' Dynamic concatenation
       └─ Still limited variables
 
 ~1977: Extended BASIC (12K)
-       ├─ Three data types
+       ├─ Three data types (%, !, #)
        ├─ IF...THEN...ELSE
        ├─ User functions
        └─ Better error messages
@@ -199,18 +181,21 @@ FULL_ADDRESS$ = FIRST$ + " " + LAST$ + ", " + CITY$ ' Dynamic concatenation
 ### 4K BASIC Innovations
 - First commercially successful BASIC interpreter for microcomputers
 - Efficient tokenization system
+- **Monte Davidoff's floating-point breakthrough** - chose floating-point over integer
 - Established Microsoft's BASIC syntax standards
 
 ### 8K BASIC Innovations  
 - **String variables**: Revolutionary for home computing
 - **String concatenation**: Enabled text processing
 - **Expanded command set**: Made practical programming possible
+- Built on 4K's floating-point foundation
 
 ### Extended BASIC Innovations
 - **Multiple data types**: Professional programming capability  
 - **Structured conditionals**: `IF...THEN...ELSE` blocks
 - **User-defined functions**: Code reusability
 - **Descriptive errors**: Better debugging experience
+- **Returned integer support** with the `%` suffix
 
 ### BASIC-80 5.x Innovations
 - **Long variable names**: Modern programming practices
@@ -226,6 +211,17 @@ FULL_ADDRESS$ = FIRST$ + " " + LAST$ + ", " + CITY$ ' Dynamic concatenation
 | **8K BASIC** | Enabled home computer software industry | Standard features still used today |
 | **Extended BASIC** | Made serious programming accessible | Influenced structured programming adoption |
 | **BASIC-80 5.x** | Set standard for business computing | Bridge to 16-bit era features |
+
+## The Integer/Floating Point Evolution
+
+**The Paradox**: Microsoft BASIC actually went backwards before going forwards with numeric types:
+
+1. **Development (Early 1975)**: Integer-only prototypes
+2. **4K BASIC (Released 1975)**: Floating-point only (Monte Davidoff's innovation)
+3. **8K BASIC (1976)**: Still floating-point only
+4. **Extended BASIC (1977)**: Finally offered **both** integer (`%`) and floating-point (`!`, `#`)
+
+This explains why Extended BASIC was such a breakthrough - it was the first Microsoft BASIC to offer programmers a choice of numeric types since the original integer-only prototypes.
 
 ---
 *This evolution represents Microsoft's transformation from a small software company to the dominant force in microcomputer programming languages during the crucial 1975-1981 period.*
