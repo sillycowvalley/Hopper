@@ -9,7 +9,7 @@ unit Optimizer
         None               = 0b00000000, // no contraints
         EqualOperands0and3 = 0b00000001, // operands for instructions 0 and 3 must be equal
         EqualOperands0and2 = 0b00000010, // operands for instructions 0 and 2 must be equal
-        
+        EqualOperands0and1 = 0b00000100, // operands for instructions 0 and 1 must be equal
     }
     enum NewOperands
     {
@@ -59,8 +59,10 @@ unit Optimizer
     // PUSHEMPTYVAR, ENTERN -> ENTER(N+1)
        OpCode.PUSHEMPTYVAR, OpCode.ENTER,     OpCode.DONTCARE,   OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.IncrementOperand1,   OpCode.ENTER,        
             
+    // PUSHLOCAL <n>, PUSHLOCAL <n> -> PUSHLOCALDUP <n>
+       OpCode.PUSHLOCAL, OpCode.PUSHLOCAL,    OpCode.DONTCARE,  OpCode.DONTCARE, PeepConstraint.EqualOperands0and1, NewOperands.Operand0,            OpCode.PUSHLOCALDUP,
         
-        OpCode.INVALID  // End marker = 0
+       OpCode.INVALID  // End marker = 0
     };
 
     
@@ -471,6 +473,19 @@ unit Optimizer
                 {
                     // operand 0 != operand 2
                     CLC
+                    continue;
+                }
+            }
+            
+            LDA ZP.PEEPCONSTRAINTS
+            AND #PeepConstraint.EqualOperands0and1
+            if (NZ)
+            {
+                LDA ZP.PEEPOP0
+                CMP ZP.PEEPOP1
+                if (NZ)
+                {
+                    // operand 0 != operand 1
                     continue;
                 }
             }

@@ -686,6 +686,10 @@ unit Executor // Executor.asm
            {
                executePushLocal();
            }
+           case OpCode.PUSHLOCALDUP:
+           {
+               executePushLocalDup();
+           }
            case OpCode.POPGLOBAL:
            {
                executePopGlobal();
@@ -2055,6 +2059,68 @@ unit Executor // Executor.asm
         LDA #(executePushLocalTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
     #endif
     } 
+    
+    // Execute PUSHLOCALDUP opcode - push local variable or argument value, then DUP
+    // Input: PC points to operand byte (signed BP offset)
+    // Output: Local/argument value pushed to stack, PC advanced by 1
+    // Modifies: A, X, Y, ZP.PC, ZP.TOP, ZP.TOPT, stack
+    const string executePushLocalDupTrace = "PUSHLOCALDUP // Push local/arg by BP offset";
+    executePushLocalDup()
+    {
+    #ifdef TRACE
+        LDA #(executePushLocalDupTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalDupTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+    #endif
+        
+        // Fetch signed offset operand
+#ifdef TRACEEXE
+        FetchOperandByte();
+#else            
+        // Fetch operand
+        LDA [ZP.PC]
+       
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif
+        
+        // signed BP offset  in A
+        // Stacks.GetStackTopBP() -> Stacks.PushTop()
+        CLC
+        ADC ZP.BP
+        TAY
+        
+        LDX ZP.SP
+        
+        LDA Address.ValueStackB0, Y
+        STA Address.ValueStackB0, X
+        STA (Address.ValueStackB0+1), X
+        LDA Address.ValueStackB1, Y
+        STA Address.ValueStackB1, X
+        STA (Address.ValueStackB1+1), X
+        LDA Address.TypeStack, Y
+        AND # (BASICType.TYPEMASK | BASICType.ARRAY)  // Strip VAR bit but not ARRAY
+        STA Address.TypeStack, X
+        STA (Address.TypeStack+1), X
+        AND #BASICType.LONG
+        if (NZ)
+        {
+            LDA Address.ValueStackB2, Y
+            STA Address.ValueStackB2, X
+            STA (Address.ValueStackB2+1), X
+            LDA Address.ValueStackB3, Y
+            STA Address.ValueStackB3, X
+            STA (Address.ValueStackB3+1), X
+        }
+        INC ZP.SP
+        INC ZP.SP
+        
+    #ifdef TRACE
+        LDA #(executePushLocalDupTrace % 256) STA ZP.TraceMessageL LDA #(executePushLocalDupTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+    #endif
+    }
     
     // Execute FORCHK opcode - FOR loop initial check
     // Stack layout: Iterator at BP+offset, TO at BP+offset+1, STEP at BP+offset+2

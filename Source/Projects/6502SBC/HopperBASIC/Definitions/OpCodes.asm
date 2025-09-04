@@ -101,6 +101,8 @@ unit OpCodes
        // Function frame management
        ENTER        = 0x50,  // Enter function frame - push BP, SP->BP, create [value] local variables (value x PUSHEMPTYVAR)
        
+       PUSHLOCALDUP = 0x51,  // Push local variable [signed_offset], twice
+       
        
        // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
        // Bits 7-6: 10 (two byte operands)
@@ -186,7 +188,8 @@ unit OpCodes
    const string opcodePUSHBIT = "PUSHBIT";
    const string opcodePUSHBYTE = "PUSHBYTE";
    const string opcodePUSHCHAR = "PUSHCHAR";
-   const string opcodePUSHLOCAL = "PUSHLOCAL";
+   const string opcodePUSHLOCAL  = "PUSHLOCAL";
+   const string opcodePUSHLOCALDUP = "PUSHLOCALDUP";
    const string opcodePOPLOCAL = "POPLOCAL";
    const string opcodeJUMPB = "JUMPB";
    const string opcodeJUMPZB = "JUMPZB";
@@ -558,6 +561,13 @@ unit OpCodes
                 LDA #(opcodePUSHLOCAL % 256)
                 STA ZP.STRL
                 LDA #(opcodePUSHLOCAL / 256)
+                STA ZP.STRH
+            }
+            case OpCode.PUSHLOCALDUP:
+            {
+                LDA #(opcodePUSHLOCALDUP % 256)
+                STA ZP.STRL
+                LDA #(opcodePUSHLOCALDUP / 256)
                 STA ZP.STRH
             }
             case OpCode.POPLOCAL:
