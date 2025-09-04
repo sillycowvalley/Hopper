@@ -109,7 +109,7 @@ unit Stacks // Stacks.asm
         AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.TOPT
     }
-    
+    /*
     // Input: A = signed offset from BP
     // Output: ZP.NEXT = value at BP+offset, ZP.NEXTT = type
     // Modifies: A, Y
@@ -130,7 +130,7 @@ unit Stacks // Stacks.asm
         AND #BASICType.TYPEMASK  // Strip VAR bit 
         STA ZP.NEXTT
     }
-    
+    */
     // Input: A = signed offset from SP
     // Output: ZP.TOP = value at SP+offset, ZP.TOPT = type
     // Modifies: A, Y
@@ -191,7 +191,6 @@ unit Stacks // Stacks.asm
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
     }
-#endif
     
     PopTop()
     {

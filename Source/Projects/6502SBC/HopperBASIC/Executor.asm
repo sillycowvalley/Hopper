@@ -386,6 +386,7 @@ unit Executor // Executor.asm
    // Fetch word operand from buffer (little-endian)
    // Input: ZP.PC points to operand position
    // Output: executorOperandL/H contains word, ZP.PC advanced by 2, SystemState set
+   // Preserves: X, Y
    FetchOperandWord()
    {
        loop
@@ -531,7 +532,11 @@ unit Executor // Executor.asm
            }
            case OpCode.PUSHLONG0:
            {
+#ifdef PEEPHOLE
+               executeNotImplemented(); // Peephole optimizes 100% of these away
+#else               
                executePushLong0();
+#endif
            }
            case OpCode.GETITEM:
            {
@@ -1240,7 +1245,7 @@ unit Executor // Executor.asm
        loop
        {
            // Fetch string pointer (little-endian)
-           FetchOperandWord(); // Result in executorOperandL/H
+           FetchOperandWord(); // Result in executorOperandL/H, + XID -> TOP0..1 (could be ACC)
 
            // Store pointer in ZP.TOP as STRING value
            CLC
@@ -1279,15 +1284,15 @@ unit Executor // Executor.asm
        
        loop
        {
-           FetchOperandWord();
+           FetchOperandWord(); // + XID -> TOP0..1 (could be NEXT)
            
            CLC
            LDA executorOperandL
            ADC ZP.XIDL
-           STA ZP.TOPL
+           STA ZP.TOP0
            LDA executorOperandH
            ADC ZP.XIDH
-           STA ZP.TOPH
+           STA ZP.TOP1
 
            // 1. resolve Function <index> to function call <address>
            Functions.Find(); // Input: ZP.TOP = name
@@ -1388,7 +1393,7 @@ unit Executor // Executor.asm
 #endif
        
        // Fetch 16-bit operand
-       FetchOperandWord();
+       FetchOperandWord(); // -> TOP0..1 (could be NEXT)
        // Store in ZP.TOP as INT value
        LDA executorOperandL
        STA ZP.TOP0
@@ -1422,7 +1427,7 @@ unit Executor // Executor.asm
 #endif
        
        // Fetch 16-bit operand
-       FetchOperandWord();
+       FetchOperandWord(); // -> TOP0..1 (could be NEXT)
        
        // Store in ZP.TOP as WORD value
        LDA executorOperandL
@@ -1441,11 +1446,18 @@ unit Executor // Executor.asm
    
    // === HELPER METHODS FOR JUMP OPERATIONS ===
    
+   
+   
+   
+   
+   // === CONTROL FLOW HANDLERS (ONE BYTE OPERANDS) ===
+   
+/*
    // Sign extend byte offset to word offset
    // Input: A = signed byte offset (-128 to +127)
    // Output: ZP.NEXT = sign-extended word offset
    // Modifies: A, ZP.NEXTL, ZP.NEXTH
-   signExtendByteToWord()
+   signExtendByteToWord() // unused
    {
        STA ZP.NEXTL
        
@@ -1458,6 +1470,108 @@ unit Executor // Executor.asm
        
        STA ZP.NEXTH
    }
+   
+   const string executeJumpBTrace = "JUMPB // Unconditional jump with signed byte offset";
+   executeJumpB()  // unused
+   {
+#ifdef TRACE
+       LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       
+       // Fetch signed byte operand
+       FetchOperandByte();
+       // Sign extend byte to word
+       signExtendByteToWord(); // A -> NEXT
+       
+       // Apply offset to PC
+       applySignedOffsetToPC(); // PC + NEXT -> PC
+       
+#ifdef TRACE
+       LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
+   const string executeJumpZBTrace = "JUMPZB // Jump if zero with signed byte offset";
+   executeJumpZB() // unused
+   {
+#ifdef TRACE
+       LDA #(executeJumpZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       
+       loop
+       {
+           // Pop and validate BIT type from stack
+           popAndValidateBitType(); // ZP.TOPL -> A
+           if (NC) { break; }  // Type error already set
+           
+           // Check if value is zero (FALSE)
+           if (Z)  // Value is zero/FALSE - take the jump
+           {
+               // Fetch signed byte operand
+               FetchOperandByte();
+               
+               // Sign extend byte to word
+               signExtendByteToWord(); // A -> NEXT
+               
+               // Apply offset to PC
+               applySignedOffsetToPC(); // PC + NEXT -> PC
+           }
+           else  // Value is non-zero/TRUE - skip the jump
+           {
+               // Still need to fetch and skip the operand
+               FetchOperandByte();
+               // Don't apply offset - just continue
+           }
+           
+           break;
+       }
+       
+#ifdef TRACE
+       LDA #(executeJumpZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+   
+   const string executeJumpNZBTrace = "JUMPNZB // Jump if non-zero with signed byte offset";
+   executeJumpNZB()  // unused
+   {
+#ifdef TRACE
+       LDA #(executeJumpNZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
+#endif
+       
+       loop
+       {
+           // Pop and validate BIT type from stack
+           popAndValidateBitType(); // ZP.TOPL -> A
+           if (NC) { break; }  // Type error already set
+           
+           // Check if value is non-zero (TRUE)
+           if (NZ)  // Value is non-zero/TRUE - take the jump
+           {
+               // Fetch signed byte operand
+               FetchOperandByte();
+               
+               // Sign extend byte to word
+               signExtendByteToWord(); // A -> NEXT
+               
+               // Apply offset to PC
+               applySignedOffsetToPC(); // PC + NEXT -> PC
+           }
+           else  // Value is zero/FALSE - skip the jump
+           {
+               // Still need to fetch and skip the operand
+               FetchOperandByte();
+               // Don't apply offset - just continue to next instruction
+           }
+           
+           break;
+       }
+       
+#ifdef TRACE
+       LDA #(executeJumpNZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
+#endif
+   }
+*/
+   // === CONTROL FLOW HANDLERS (TWO BYTE OPERANDS) ===
    
    // Pop expression result and validate it's a BIT type
    // Input: Stack top must contain a BIT value
@@ -1497,110 +1611,6 @@ unit Executor // Executor.asm
        STA ZP.PCH
    }
    
-   // === CONTROL FLOW HANDLERS (ONE BYTE OPERANDS) ===
-   
-   const string executeJumpBTrace = "JUMPB // Unconditional jump with signed byte offset";
-   executeJumpB()
-   {
-#ifdef TRACE
-       LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       // Fetch signed byte operand
-       FetchOperandByte();
-       // Sign extend byte to word
-       signExtendByteToWord();
-       
-       // Apply offset to PC
-       applySignedOffsetToPC();
-       
-#ifdef TRACE
-       LDA #(executeJumpBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }
-   
-   const string executeJumpZBTrace = "JUMPZB // Jump if zero with signed byte offset";
-   executeJumpZB()
-   {
-#ifdef TRACE
-       LDA #(executeJumpZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop
-       {
-           // Pop and validate BIT type from stack
-           popAndValidateBitType(); // ZP.TOPL -> A
-           if (NC) { break; }  // Type error already set
-           
-           // Check if value is zero (FALSE)
-           if (Z)  // Value is zero/FALSE - take the jump
-           {
-               // Fetch signed byte operand
-               FetchOperandByte();
-               
-               // Sign extend byte to word
-               signExtendByteToWord();
-               
-               // Apply offset to PC
-               applySignedOffsetToPC();
-           }
-           else  // Value is non-zero/TRUE - skip the jump
-           {
-               // Still need to fetch and skip the operand
-               FetchOperandByte();
-               // Don't apply offset - just continue
-           }
-           
-           break;
-       }
-       
-#ifdef TRACE
-       LDA #(executeJumpZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpZBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }
-   
-   const string executeJumpNZBTrace = "JUMPNZB // Jump if non-zero with signed byte offset";
-   executeJumpNZB()
-   {
-#ifdef TRACE
-       LDA #(executeJumpNZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZBTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
-       
-       loop
-       {
-           // Pop and validate BIT type from stack
-           popAndValidateBitType(); // ZP.TOPL -> A
-           if (NC) { break; }  // Type error already set
-           
-           // Check if value is non-zero (TRUE)
-           if (NZ)  // Value is non-zero/TRUE - take the jump
-           {
-               // Fetch signed byte operand
-               FetchOperandByte();
-               
-               // Sign extend byte to word
-               signExtendByteToWord();
-               
-               // Apply offset to PC
-               applySignedOffsetToPC();
-           }
-           else  // Value is zero/FALSE - skip the jump
-           {
-               // Still need to fetch and skip the operand
-               FetchOperandByte();
-               // Don't apply offset - just continue to next instruction
-           }
-           
-           break;
-       }
-       
-#ifdef TRACE
-       LDA #(executeJumpNZBTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpNZBTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
-   }
-   
-   // === CONTROL FLOW HANDLERS (TWO BYTE OPERANDS) ===
-   
    const string executeJumpWTrace = "JUMPW // Unconditional jump with signed word offset";
    executeJumpW()
    {
@@ -1609,7 +1619,7 @@ unit Executor // Executor.asm
 #endif
        
        // Fetch 16-bit signed operand
-       FetchOperandWord();
+       FetchOperandWord(); // -> NEXT, , PC + NEXT -> PC (could be NEXT)
        // Operand is already in executorOperandL/H, move to ZP.NEXT
        LDA executorOperandL
        STA ZP.NEXTL
@@ -1617,7 +1627,7 @@ unit Executor // Executor.asm
        STA ZP.NEXTH
        
        // Apply offset to PC
-       applySignedOffsetToPC();
+       applySignedOffsetToPC(); // PC + NEXT -> PC
        
 #ifdef TRACE
        LDA #(executeJumpWTrace % 256) STA ZP.TraceMessageL LDA #(executeJumpWTrace / 256) STA ZP.TraceMessageH Trace.MethodExit();
@@ -1644,43 +1654,41 @@ unit Executor // Executor.asm
                 CLC  // Failure - not BIT type
                 break;    
             }
+            
+#ifdef TRACEEXE
+            FetchOperandWord(); // TRACEEXE: preserves X, -> NEXT, , PC + NEXT -> PC (could be NEXT)
+            LDA executorOperandL
+            STA ZP.NEXTL
+            LDA executorOperandH
+            STA ZP.NEXTH
+            // Apply offset to PC
+            applySignedOffsetToPC(); // PC + NEXT -> PC
+#else
+            LDA [ZP.PC]
+            STA ZP.NEXTL // Save operand
+            
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+               INC ZP.PCH
+            }
+            
+            LDA [ZP.PC]
+            STA ZP.NEXTH // Save operand
+            
+            // Advance PC
+            INC ZP.PCL
+            if (Z)
+            {
+               INC ZP.PCH
+            }
+#endif   
            
             // Check if value is zero (FALSE)     
             LDA Address.ValueStackLSB, X
-            LDA Address.ValueStackLSB, X
             if (Z)  // Value is zero/FALSE - take the jump
             {
-                // Fetch 16-bit signed operand
-#ifdef TRACEEXE
-                FetchOperandWord();
-                LDA executorOperandL
-                STA ZP.NEXTL
-                LDA executorOperandH
-                STA ZP.NEXTH
-
-                // Apply offset to PC
-                applySignedOffsetToPC();
-#else
-                LDA [ZP.PC]
-                STA ZP.NEXTL // Save operand
-                
-                // Advance PC
-                INC ZP.PCL
-                if (Z)
-                {
-                   INC ZP.PCH
-                }
-                
-                LDA [ZP.PC]
-                STA ZP.NEXTH // Save operand
-                
-                // Advance PC
-                INC ZP.PCL
-                if (Z)
-                {
-                   INC ZP.PCH
-                }
-                
                 // Two's complement addition works for both positive and negative offsets
                 CLC
                 LDA ZP.PCL
@@ -1689,27 +1697,6 @@ unit Executor // Executor.asm
                 LDA ZP.PCH
                 ADC ZP.NEXTH
                 STA ZP.PCH
-#endif                
-            }
-            else  // Value is non-zero/TRUE - skip the jump
-            {
-                // Still need to skip the operand
-#ifdef TRACEEXE
-                FetchOperandWord();
-#else
-                // PC += 2
-                INC ZP.PCL
-                if (Z)
-                {
-                   INC ZP.PCH
-                }
-                INC ZP.PCL
-                if (Z)
-                {
-                   INC ZP.PCH
-                }
-#endif                
-                // Don't apply offset - just continue to next instruction
             }
             SEC
             break;
@@ -1729,6 +1716,9 @@ unit Executor // Executor.asm
        
        loop
        {
+           // Fetch 16-bit signed operand
+           FetchOperandWord(); // -> NEXT, PC + NEXT -> PC (could be NEXT)
+               
            // Pop and validate BIT type from stack
            popAndValidateBitType(); // ZP.TOPL -> A
            if (NC) { break; }  // Type error already set
@@ -1736,9 +1726,6 @@ unit Executor // Executor.asm
            // Check if value is non-zero (TRUE)
            if (NZ)  // Value is non-zero/TRUE - take the jump
            {
-               // Fetch 16-bit signed operand
-               FetchOperandWord();
-               
                // Operand is already in executorOperandL/H, move to ZP.NEXT
                LDA executorOperandL
                STA ZP.NEXTL
@@ -1746,13 +1733,7 @@ unit Executor // Executor.asm
                STA ZP.NEXTH
                
                // Apply offset to PC
-               applySignedOffsetToPC();
-           }
-           else  // Value is zero/FALSE - skip the jump
-           {
-               // Still need to fetch and skip the operand
-               FetchOperandWord();
-               // Don't apply offset - just continue to next instruction
+               applySignedOffsetToPC(); // PC + NEXT -> PC
            }
            
            break;
@@ -2141,7 +2122,7 @@ unit Executor // Executor.asm
             STA Executor.executorOperandBP  // Save iterator offset
             
             // Fetch forward jump offset (16-bit)
-            FetchOperandWord(); // Result in executorOperandL/H
+            FetchOperandWord(); // Result in executorOperandL/H (could be ACC)
             
             // First, get STEP value to check sign
             LDA #0xFF
@@ -2149,7 +2130,7 @@ unit Executor // Executor.asm
             
             // Store direction in X based on STEP sign
             LDX #0  // Assume positive
-            LDA ZP.TOPH
+            LDA ZP.TOP1
             if (MI)
             {
                 LDX #1  // Negative STEP
@@ -2239,7 +2220,7 @@ unit Executor // Executor.asm
             STA Executor.executorOperandBP  // Save iterator offset
             
             // Fetch backward jump offset (16-bit)
-            FetchOperandWord(); // Result in executorOperandL/H
+            FetchOperandWord(); // Result in executorOperandL/H (could be ACC)
             
             // Get STEP value
             LDA #0xFF
@@ -2375,19 +2356,14 @@ unit Executor // Executor.asm
             
             // Fetch backward jump offset (16-bit)
             LDA [ZP.PC]
-            STA executorOperandL
+            STA ZP.NEXTL
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
             
             LDA [ZP.PC]
-            STA executorOperandH
+            STA ZP.NEXTH
             INC ZP.PCL
             if (Z) { INC ZP.PCH }
-            
-            
-            // Store back as WORD type : perhaps only if it was implicit or VAR? (consider a local or global INT -  we're changing its type)
-            //LDA #(BASICType.WORD | BASICType.VAR)
-            //STA Address.TypeStackLSB, Y
             
             // Get TO value from stack (safe)
             LDA #0xFE  // -2 from SP
@@ -2395,12 +2371,12 @@ unit Executor // Executor.asm
             ADC ZP.SP
             TAY
             LDA Address.ValueStackLSB, Y
-            STA ZP.NEXTL
+            STA ZP.ACCL
             LDA Address.ValueStackMSB, Y
-            STA ZP.NEXTH
+            STA ZP.ACCH
             
             // Fast path: Check if clearly continuing (TO high > iterator high)
-            LDA ZP.NEXTH  // TO high
+            LDA ZP.ACCH  // TO high
             CMP ZP.TOPH   // iterator high
             if (NC)       // TO high < iterator high - definitely exit
             {
@@ -2410,16 +2386,16 @@ unit Executor // Executor.asm
             {
                 CLC
                 LDA ZP.PCL
-                ADC Executor.executorOperandL
+                ADC ZP.NEXTL
                 STA ZP.PCL
                 LDA ZP.PCH  
-                ADC Executor.executorOperandH
+                ADC ZP.NEXTH
                 STA ZP.PCH
                 break;
             }
             
             // High bytes equal - check low bytes for final decision
-            LDA ZP.NEXTL          // TO low
+            LDA ZP.ACCL           // TO low
             CMP ZP.TOPL           // Compare with iterator low
             if (NC)               // TO low < iterator low - exit
             {
@@ -2428,10 +2404,10 @@ unit Executor // Executor.asm
             // TO >= iterator - continue loop
             CLC
             LDA ZP.PCL
-            ADC Executor.executorOperandL
+            ADC ZP.NEXTL
             STA ZP.PCL
             LDA ZP.PCH  
-            ADC Executor.executorOperandH
+            ADC ZP.NEXTH
             STA ZP.PCH
             break;
         } // Single exit block
@@ -3490,7 +3466,7 @@ unit Executor // Executor.asm
         Trace.MethodEntry();
     #endif
         
-        FetchOperandWord();
+        FetchOperandWord(); // TOP2..3 (could be ACC)
         LDA executorOperandL
         STA ZP.TOP2
         LDA executorOperandH

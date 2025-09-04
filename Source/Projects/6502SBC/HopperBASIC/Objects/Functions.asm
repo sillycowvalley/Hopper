@@ -516,7 +516,7 @@ unit Functions
     JumpToOpCodes()
     {
         // assume we are compiled and good
-        Executor.FetchOperandWord();
+        Executor.FetchOperandWord(); // -> IDCALL (could be ACC)
         LDA Executor.executorOperandL
         STA ZP.IDCALLL
         LDA Executor.executorOperandH
