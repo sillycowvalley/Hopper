@@ -1,24 +1,6 @@
-unit Time // Times.asm
+unit Time // Time.asm
 {
-    friend W65C22, PIA6821;
-    
-#if defined(W65C22_VIA) || defined(M6840_PTM)
-  #if !defined(HOPPER_BASIC)
-    uses "/Source/Runtime/6502/Long"
-    uses "/Source/Runtime/6502/Types"
-  #endif
-#endif    
-    
-    
-    // TimerDelay         : value in [top] in milliseconds, returns after delay
     Delay()
-    {
-#ifdef HOPPER_STACK
-        PopTop();
-#endif
-        DelayTOP();
-    }
-    DelayTOP()
     {
         PHA
         PHX
@@ -65,96 +47,49 @@ unit Time // Times.asm
         PLA
     }
     
-    SampleMicrosSet()
-    {
-        PopTop();
-#ifdef W65C22_VIA
-        W65C22.sharedSamplesMicroSet();
-#endif  
-#ifdef M6840_PTM
-       PIA6821.sharedSamplesMicroSet();
-#endif      
-    }
-    SampleMicrosGet()
-    {
-#ifdef W65C22_VIA
-        W65C22.sharedSamplesMicroGet();
-#endif
-#ifdef M6840_PTM
-       PIA6821.sharedSamplesMicroGet();
-#endif
-
-#if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
-        // /2
-        LSR ZP.TOPH
-        ROR ZP.TOPL        
-#endif  
-#if defined(CPU_4MHZ) || defined(CPU_8MHZ)
-        // /4
-        LSR ZP.TOPH
-        ROR ZP.TOPL             
-#endif          
-#if defined(CPU_8MHZ)
-        // /8
-        LSR ZP.TOPH
-        ROR ZP.TOPL     
-#endif       
-        LDA # Types.UInt
-        Stacks.PushTop();
-    }
-
-#ifdef LONGS
     Millis()
     {
-        // LNEXT = LNEXT / LTOP + LRESULT
-        
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
-        STA LNEXT3
+        STA ZP.TOP3
         LDA ZP.TICK2
-        STA LNEXT2
+        STA ZP.TOP2
         LDA ZP.TICK1
-        STA LNEXT1
+        STA ZP.TOP1
         LDA ZP.TICK0 
-        STA LNEXT0
-        
-        LDA # Types.Long
-        Long.pushNewFromL();
+        STA ZP.TOP0
     }
-#endif
 
 
-
-    Seconds()
+#if defined(HASLONG)
+    Seconds() inline
     {
-        // LNEXT = LNEXT / LTOP + LRESULT
-        
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
-        STA LNEXT3
+        STA NEXT3
         LDA ZP.TICK2
-        STA LNEXT2
+        STA NEXT2
         LDA ZP.TICK1
-        STA LNEXT1
+        STA NEXT1
         LDA ZP.TICK0 
-        STA LNEXT0
+        STA NEXT0
         
         LDA # 0xE8 // 1000 = 0x03E8
-        STA LTOP0
+        STA TOP0
         LDA # 0x03
-        STA LTOP1
-#ifdef CPU_65C02S
-        STZ LTOP2
-        STZ LTOP3
-#else        
-        LDA #0
-        STA LTOP2
-        STA LTOP3
-#endif
+        STA TOP1
+        STZ TOP2
+        STZ TOP3
         
-        Long.DivMod(); // Seconds = Millis / 1000
+        LDX #0 // Div
+        Long.DivMod(); // Seconds = Millis / 1000   
         
-        LDA LNEXT0
-        STA TOPL
-        LDA LNEXT1
-        STA TOPH
+        LDA NEXT0
+        STA TOP0
+        LDA NEXT1
+        STA TOP1
+        LDA NEXT2
+        STA TOP2
+        LDA NEXT3
+        STA TOP3
     }
+#endif
 }

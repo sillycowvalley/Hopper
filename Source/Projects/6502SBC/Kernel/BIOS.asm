@@ -3,7 +3,7 @@ program BIOS
     #define CPU_65C02S
     #define ROM_8K
     
-    //#define DEBUG
+    #define DEBUG
     
     // Optional components
     //#define HASLONG
@@ -17,14 +17,28 @@ program BIOS
     
     uses "Debugging/Debug"
     
+#if defined(HASHEAP) 
     uses "Memory/Memory"
-    
+#endif    
+#if defined(HASEEPROM) 
+    uses "Devices/EEPROM"
+    uses "Files/File"
+#endif        
     uses "Types/Char"
+    uses "Types/String"
+#if defined(HASLONG) 
+    uses "Types/Long"
+#endif
+#if defined(HASFLOAT) 
+    uses "Types/Float"
+#endif
     
     uses "Serial"
     uses "Parallel"
+    uses "Time"
     
     uses "Print"
+    uses "Shared"
     
     IRQ()
     {
@@ -59,7 +73,9 @@ program BIOS
         Serial.Initialize();
         Parallel.Initialize();
         
+#if defined(HASHEAP)
         Memory.Initialize();
+#endif
         
         CLI  // Re-enable interrupts
     }
