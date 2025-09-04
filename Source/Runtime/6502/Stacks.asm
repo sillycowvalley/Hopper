@@ -191,7 +191,8 @@ unit Stacks // Stacks.asm
         LDA ZP.TOPT
         STA Address.TypeStackLSB, Y
     }
-    
+#endif
+
     PopTop()
     {
         DEC ZP.SP

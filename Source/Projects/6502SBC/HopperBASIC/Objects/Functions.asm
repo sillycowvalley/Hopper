@@ -516,10 +516,10 @@ unit Functions
     JumpToOpCodes()
     {
         // assume we are compiled and good
-        Executor.FetchOperandWord(); // -> IDCALL (could be ACC)
-        LDA Executor.executorOperandL
+        Executor.FetchOperandWord();
+        LDA ZP.ACCL
         STA ZP.IDCALLL
-        LDA Executor.executorOperandH
+        LDA ZP.ACCH
         STA ZP.IDCALLH
         
         Stacks.PushPC(); // after FetchOperandWord
