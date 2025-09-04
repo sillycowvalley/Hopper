@@ -10,7 +10,7 @@ Nano OS is a sophisticated yet minimal operating system for the Hopper 6502 plat
 
 ### System Configurations
 
-| Configuration | ROM Size | RAM Required | User Space Available |
+| Configuration | ROM Size | Maximum RAM | User Space Available |
 |--------------|----------|--------------|---------------------|
 | Basic | 8KB (7.2KB kernel + 966B OS) | 56KB | 54.5KB free |
 | Bootstrap | 4KB | 56KB | ~46KB free (after loading core modules) |
@@ -56,13 +56,13 @@ $C000-$DFFF  Loaded kernel modules (8KB)
   $D400-$DFFF  DOS commands (3KB)
 ```
 
-Even after loading all kernel modules from EEPROM, you still have **46KB** free for user programs - more than most 8-bit computers ever offered!
+Even after loading all kernel modules from EEPROM, you still have **56KB** free for user programs - more than most 8-bit computers ever offered!
 
 ---
 
 ## Dynamic Nano OS (4KB ROM / 60KB RAM)
 
-### Why 60KB RAM?
+### Up to 58KB RAM?
 
 Dynamic loading needs extra RAM for:
 - Module allocation space (modules load dynamically)
