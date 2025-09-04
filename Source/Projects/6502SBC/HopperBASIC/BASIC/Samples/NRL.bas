@@ -5,9 +5,9 @@ MEM
 ! Noel's RetroLab Benchmark
 
 BEGIN
-    VAR START = MILLIS()
-    VAR ST = SECONDS()
     VAR S
+    VAR ST = SECONDS()
+    VAR START = MILLIS()
     FOR i=1 TO 10
         s=0
         FOR j=1 TO 1000
