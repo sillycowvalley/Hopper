@@ -10,12 +10,115 @@
 
 ## Data Types & Variables
 
+### Numeric Data Types
+
 | Feature | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
 |---------|----------|----------|----------------|---------------|
-| **Numeric Types** | Single precision only (32-bit) | Single precision only | **3 types**: `%` (16-bit int), `!` (32-bit single), `#` (64-bit double) | Same as Extended + enhancements |
-| **String Support** | ❌ **No strings** | ✅ Full string variables (`$` suffix) | ✅ Advanced string handling | ✅ **Dynamic allocation** |
-| **Variable Names** | **1-2 characters** (A-Z, A0-Z9) = 286 max | Same limitation | Same limitation | ✅ **Up to 40 characters** |
-| **String Operations** | ❌ None | ✅ `MID$`, concatenation | ✅ Full string functions | ✅ Enhanced string handling |
+| **Integer Types** | ❌ **None** - all numbers are floating point | ❌ **None** - all numbers are floating point | ✅ **`%` suffix**: 16-bit signed integer (-32768 to 32767) | ✅ **Same as Extended** + better performance |
+| **Single Precision Float** | ✅ **Default and only type** (32-bit, ~7 digits) | ✅ **Default and only type** (32-bit, ~7 digits) | ✅ **`!` suffix**: 32-bit float (default, rarely shown) | ✅ **Same as Extended** |
+| **Double Precision Float** | ❌ **Not available** | ❌ **Not available** | ✅ **`#` suffix**: 64-bit float (~16 digits precision) | ✅ **Same as Extended** + optimizations |
+| **Precision** | ~6-7 significant digits | ~6-7 significant digits | Up to 16 digits (double), 6 digits (intrinsic functions) | Enhanced precision handling |
+
+### String Data Types & Variable Names
+
+| Feature | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
+|---------|----------|----------|----------------|---------------|
+| **String Variables** | ❌ **No string support** | ✅ **`# Microsoft BASIC Version Comparison: 4K to 5.x Evolution
+
+## Overview
+
+| Feature | 4K BASIC (1975) | 8K BASIC (1976) | Extended BASIC (12K) | BASIC-80 5.x (1981) |
+|---------|----------------|------------------|---------------------|---------------------|
+| **Memory Size** | 4 KB | 8 KB | 12 KB | Variable (disk-based) |
+| **Release Year** | 1975 | 1976 | ~1977 | 1981 |
+| **Primary Use** | Altair 8800 | Home computers | Advanced systems | Business/CP/M systems |
+
+ suffix required** (A$, NAME$) | ✅ **`# Microsoft BASIC Version Comparison: 4K to 5.x Evolution
+
+## Overview
+
+| Feature | 4K BASIC (1975) | 8K BASIC (1976) | Extended BASIC (12K) | BASIC-80 5.x (1981) |
+|---------|----------------|------------------|---------------------|---------------------|
+| **Memory Size** | 4 KB | 8 KB | 12 KB | Variable (disk-based) |
+| **Release Year** | 1975 | 1976 | ~1977 | 1981 |
+| **Primary Use** | Altair 8800 | Home computers | Advanced systems | Business/CP/M systems |
+
+ suffix required** | ✅ **`# Microsoft BASIC Version Comparison: 4K to 5.x Evolution
+
+## Overview
+
+| Feature | 4K BASIC (1975) | 8K BASIC (1976) | Extended BASIC (12K) | BASIC-80 5.x (1981) |
+|---------|----------------|------------------|---------------------|---------------------|
+| **Memory Size** | 4 KB | 8 KB | 12 KB | Variable (disk-based) |
+| **Release Year** | 1975 | 1976 | ~1977 | 1981 |
+| **Primary Use** | Altair 8800 | Home computers | Advanced systems | Business/CP/M systems |
+
+ suffix required** |
+| **Variable Name Length** | **1-2 characters only** (A, A0, BC, X9) | **Same limitation** (A$, B1$) | **Same limitation** (A$, B1$) | ✅ **Up to 40 characters** (CUSTOMER_NAME$) |
+| **Total Variables** | **286 numeric maximum** (A-Z + A0-Z9) | **286 numeric + 286 string** | **286 of each type** | **Unlimited** (within memory) |
+| **String Storage** | ❌ N/A | ✅ **Fixed allocation** (must reserve space) | ✅ **Fixed allocation** (must reserve space) | ✅ **Dynamic allocation** (automatic) |
+
+### String Functions & Operations
+
+| Category | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
+|----------|----------|----------|----------------|---------------|
+| **Basic Operations** | ❌ None | ✅ **Concatenation** (`+` operator)<br>✅ **Assignment** (`A$ = "text"`) | ✅ **All 8K operations** | ✅ **All Extended operations** |
+| **Substring Functions** | ❌ None | ✅ **`MID$(string, start)`**<br>✅ **`MID$(string, start, length)`** | ✅ **`LEFT$(string, length)`**<br>✅ **`RIGHT$(string, length)`**<br>✅ **All MID$ variations** | ✅ **All Extended functions**<br>✅ **Enhanced performance** |
+| **String Analysis** | ❌ None | ✅ **`LEN(string)`** - returns length | ✅ **`LEN(string)`**<br>✅ **`ASC(character)`** - ASCII value<br>✅ **`INSTR(string, substring)`** - find position | ✅ **All Extended functions**<br>✅ **Faster searching** |
+| **Conversion Functions** | ❌ None | ✅ **`STR$(number)`** - number to string<br>✅ **`VAL(string)`** - string to number | ✅ **`STR$(number)`** - enhanced<br>✅ **`VAL(string)`** - enhanced<br>✅ **`CHR$(ascii)`** - ASCII to character | ✅ **All Extended functions**<br>✅ **Better error handling** |
+| **Formatting** | ❌ None | ❌ **Limited** | ✅ **`PRINT USING`** - formatted output<br>✅ **Format strings** (###.##, etc.) | ✅ **Enhanced PRINT USING**<br>✅ **More format options** |
+| **Advanced String Handling** | ❌ None | ❌ **Manual memory management** | ✅ **`LSET`** - left justify in field<br>✅ **`RSET`** - right justify in field<br>❌ **Must pre-allocate space** | ✅ **All Extended functions**<br>✅ **Automatic memory management**<br>✅ **No space pre-allocation needed** |
+
+### Variable Declaration Examples
+
+#### 4K BASIC
+```basic
+A = 5           ' Single precision float only
+B1 = 3.14159    ' All variables are float
+X = 1000        ' No integer type available
+' No string variables possible
+```
+
+#### 8K BASIC  
+```basic
+A = 5           ' Single precision float (default)
+B1 = 3.14159    ' Still only float type
+NAME$ = "JOHN"  ' String variable (must reserve space first)
+A$ = "HELLO"    ' Another string variable
+```
+
+#### Extended BASIC
+```basic
+COUNT% = 100         ' 16-bit integer (-32768 to 32767)
+PRICE! = 19.95       ' 32-bit single precision (default)
+BALANCE# = 1234567.89# ' 64-bit double precision
+NAME$ = "CUSTOMER"    ' String (must reserve space)
+```
+
+#### BASIC-80 5.x
+```basic
+CUSTOMER_COUNT% = 100           ' Long variable names
+ITEM_PRICE! = 19.95            ' Clear type designation  
+ACCOUNT_BALANCE# = 1234567.89# ' Double precision
+CUSTOMER_NAME$ = "JOHN SMITH"   ' Dynamic string allocation
+FULL_ADDRESS$ = FIRST$ + " " + LAST$ + ", " + CITY$ ' Dynamic concatenation
+```
+
+### Memory Management Evolution
+
+| Aspect | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
+|--------|----------|----------|----------------|---------------|
+| **String Space** | ❌ N/A | ⚠️ **Must use `CLEAR` command**<br>Example: `CLEAR 200` (reserves 200 bytes) | ⚠️ **Must reserve space**<br>Can specify: `CLEAR ,,,string_space` | ✅ **Automatic allocation**<br>No planning required |
+| **Variable Storage** | Minimal (numbers only) | Fixed arrays for names | Fixed arrays for names | **Dynamic symbol table** |
+| **Memory Efficiency** | Excellent | Good (if planned well) | Moderate (planning required) | **Excellent** (automatic optimization) |
+
+### Type Conversion & Coercion
+
+| Feature | 4K BASIC | 8K BASIC | Extended BASIC | BASIC-80 5.x |
+|---------|----------|----------|----------------|---------------|
+| **Automatic Conversion** | N/A (single type) | Limited | ⚠️ **Can lose precision**<br>`A% = 3.7` becomes `4` | ✅ **Better type checking**<br>More warnings |
+| **Explicit Conversion** | N/A | `VAL()`, `STR$()` | Enhanced conversion functions | **Robust conversion** with error handling |
+| **Mixed Expressions** | N/A | Float + String operations | **All three numeric types**<br>Automatic promotion | **Optimized mixed operations** |
 
 ## Language Constructs
 
