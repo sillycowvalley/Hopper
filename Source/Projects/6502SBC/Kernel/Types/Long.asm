@@ -1,39 +1,7 @@
 unit Long
 {
-    friend Time, IntMath;
+    friend Time 
     
-    // type in ZP.TOPT
-    PushTop()    // Push 4-byte value from TOP0-3 + BASICType.LONG
-    {
-        loop
-        {
-            LDY ZP.SP                    // Current stack pointer
-            LDA ZP.TOPT
-            
-            STA TypeStack, Y            // Store type
-            LDA ZP.TOP0
-            STA ValueStackB0,Y          // Store byte 0 (LSB)
-            LDA ZP.TOP1  
-            STA ValueStackB1,Y          // Store byte 1
-            
-            LDA ZP.TOP2
-            STA ValueStackB2,Y          // Store byte 2
-            LDA ZP.TOP3
-            STA ValueStackB3,Y          // Store byte 3 (MSB)
-            
-            INC ZP.SP                   // Advance stack pointer
-            
-            SEC
-            break;
-        }
-    }
-    
-    PushTopStrictLONG()
-    {
-        LDA # BASICType.LONG
-        STA ZP.TOPT
-        Long.PushTopStrict();
-    }
     LoadTopByte()  // A = byte value
     {
         STA ZP.TOP0
@@ -195,253 +163,6 @@ unit Long
         ROR ZP.NEXT0
     }
     
-        
-#ifndef #DEBUG
-    PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
-    {
-        PushTop();
-    }
-#else    
-    // type in ZP.TOPT
-    PushTopStrict()    // Push 4-byte value from TOP0-3 + BASICType.LONG
-    {
-        loop
-        {
-            LDY ZP.SP                    // Current stack pointer
-            LDA ZP.TOPT
-            
-            if (BBR3, ZP.TOPT)
-            {
-                BASICTypes.Promote();
-                if (NC)
-                {
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                    break;
-                }
-            }
-            
-            STA TypeStack, Y           // Store type
-            LDA ZP.TOP0
-            STA ValueStackB0,Y          // Store byte 0 (LSB)
-            LDA ZP.TOP1  
-            STA ValueStackB1,Y          // Store byte 1
-            
-            LDA ZP.TOP2
-            STA ValueStackB2,Y         // Store byte 2
-            LDA ZP.TOP3
-            STA ValueStackB3,Y         // Store byte 3 (MSB)
-            
-            INC ZP.SP                    // Advance stack pointer
-            
-            SEC
-            break;
-        }
-    }
-#endif    
-    // type in ZP.NEXTT
-    PushNext()    // Push 4-byte value from NEXT0-3 + BASICType.LONG
-    {
-        loop
-        {
-            LDY ZP.SP                    // Current stack pointer
-            LDA ZP.NEXTT
-            
-            if (BBR3, ZP.NEXTT)
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-        
-            STA TypeStack, Y           // Store type
-            LDA ZP.NEXT0
-            STA ValueStackB0,Y          // Store byte 0 (LSB)
-            LDA ZP.NEXT1
-            STA ValueStackB1,Y          // Store byte 1
-            LDA ZP.NEXT2
-            STA ValueStackB2,Y         // Store byte 2
-            LDA ZP.NEXT3
-            STA ValueStackB3,Y         // Store byte 3 (MSB)
-
-            INC ZP.SP                    // Advance stack pointer
-            
-            SEC
-            break;
-        }
-    }
-    
-#ifndef #DEBUG
-    PopTopNextStrict()
-    {
-        PopTopNext();
-    }
-#else    
-    PopTopNextStrict()
-    {
-        loop
-        {
-            DEC ZP.SP                    
-            LDY ZP.SP                    // Y point to TOP
-            DEC ZP.SP                    // X point to NEXT
-            LDX ZP.SP
-            
-            LDA TypeStack, Y
-            STA ZP.TOPT
-            
-            if (BBR3, ZP.TOPT)
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-            
-            LDA TypeStack, X
-            STA ZP.NEXTT
-            
-            if (BBR3, ZP.NEXTT)
-            {
-                Error.TypeMismatch(); BIT ZP.EmulatorPCL
-                break;
-            }
-            
-            LDA ValueStackB0,Y          // Load byte 0
-            STA ZP.TOP0
-            LDA ValueStackB1,Y          // Load byte 1
-            STA ZP.TOP1  
-            LDA ValueStackB2,Y          // Load byte 2
-            STA ZP.TOP2
-            LDA ValueStackB3,Y          // Load byte 3
-            STA ZP.TOP3
-            
-            LDA ValueStackB0,X          // Load byte 0
-            STA ZP.NEXT0
-            LDA ValueStackB1,X          // Load byte 1
-            STA ZP.NEXT1  
-            LDA ValueStackB2,X          // Load byte 2
-            STA ZP.NEXT2
-            LDA ValueStackB3,X          // Load byte 3
-            STA ZP.NEXT3
-            
-            SEC
-            break;
-        } // single exit
-    }
-#endif   
- 
-    PopTopNext()
-    {
-        loop
-        {
-            DEC ZP.SP                    
-            LDY ZP.SP                    // Y point to TOP
-            DEC ZP.SP                    // X point to NEXT
-            LDX ZP.SP
-            
-            LDA TypeStack, Y
-            STA ZP.TOPT
-            
-            LDA TypeStack, X
-            STA ZP.NEXTT
-            
-            LDA ValueStackB0,Y          // Load byte 0
-            STA ZP.TOP0
-            LDA ValueStackB1,Y          // Load byte 1
-            STA ZP.TOP1  
-            if (BBS3, ZP.TOPT)
-            {
-                if (BBR3, ZP.NEXTT)
-                {
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL // if one is LONG, both must be LONG
-                    break;
-                }
-                LDA ValueStackB2,Y          // Load byte 2
-                STA ZP.TOP2
-                LDA ValueStackB3,Y          // Load byte 3
-                STA ZP.TOP3
-            }
-            LDA ValueStackB0,X          // Load byte 0
-            STA ZP.NEXT0
-            LDA ValueStackB1,X          // Load byte 1
-            STA ZP.NEXT1  
-            if (BBS3, ZP.NEXTT)
-            {
-                if (BBR3, ZP.TOPT)
-                {
-                    Error.TypeMismatch(); BIT ZP.EmulatorPCL // if one is LONG, both must be LONG
-                    break;
-                }
-                LDA ValueStackB2,X          // Load byte 2
-                STA ZP.NEXT2
-                LDA ValueStackB3,X          // Load byte 3
-                STA ZP.NEXT3
-            }
-            SEC
-            break;
-        }
-    }
-    // Input: A = signed offset from SP
-    // Output: ZP.TOP = value at SP+offset, ZP.TOPT = type
-    // Modifies: A, Y
-    GetStackTopSP()
-    {
-        CLC
-        ADC ZP.SP
-        TAY
-        LDA Address.ValueStackB0, Y
-        STA ZP.TOP0
-        LDA Address.ValueStackB1, Y
-        STA ZP.TOP1
-        LDA Address.ValueStackB0, Y
-        STA ZP.TOP2
-        LDA Address.ValueStackB1, Y
-        STA ZP.TOP3
-        LDA Address.TypeStackLSB, Y
-        AND #BASICType.TYPEMASK  // Strip VAR bit 
-        STA ZP.TOPT
-    }
-    
-    // Adaptive PopTop: pops 16 bits if that is the type, LONG if LONG type
-    PopTop()
-    {
-        DEC ZP.SP                    
-        LDX ZP.SP                    // Y points to TOP
-        
-        LDA TypeStack, X
-        STA ZP.TOPT
-        
-        LDA ValueStackB0, X         // Load byte 0
-        STA ZP.TOP0
-        LDA ValueStackB1, X         // Load byte 1
-        STA ZP.TOP1  
-        if (BBS3, ZP.TOPT)
-        {
-            LDA ValueStackB2,X          // Load byte 2
-            STA ZP.TOP2
-            LDA ValueStackB3,X          // Load byte 3
-            STA ZP.TOP3
-        }
-    }
-    
-    // Adaptive PopNext: pops 16 bits if that is the type, LONG if LONG type
-    PopNext()
-    {
-        DEC ZP.SP                    
-        LDX ZP.SP                    // Y points to TOP
-        
-        LDA TypeStack, X
-        STA ZP.NEXTT
-        
-        LDA ValueStackB0, X         // Load byte 0
-        STA ZP.NEXT0
-        LDA ValueStackB1, X         // Load byte 1
-        STA ZP.NEXT1  
-        if (BBS3, ZP.TOPT)
-        {
-            LDA ValueStackB2,X          // Load byte 2
-            STA ZP.NEXT2
-            LDA ValueStackB3,X          // Load byte 3
-            STA ZP.NEXT3
-        }
-    }
-    
     Mod()
     {
         LDA ZP.NEXT3
@@ -458,7 +179,7 @@ unit Long
         {
             negateLongNEXT(); // NEXT  = -NEXT 
         }
-        Long.PushNext(); 
+        // result in NEXT
     }
     Div()
     {
@@ -471,7 +192,7 @@ unit Long
         {
             negateLongNEXT(); // NEXT  = -NEXT 
         }
-        Long.PushNext(); 
+        // result in NEXT
     }
     Mul()
     {
@@ -489,7 +210,7 @@ unit Long
         {
             negateLongNEXT(); // NEXT  = -NEXT 
         }
-        Long.PushNext();
+        // result in NEXT
         
     }
     
@@ -581,18 +302,18 @@ unit Long
     LT()
     {
         commonLT();
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     GT()
     {
         commonSwapNEXTTOP();
         commonLT();
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     EQ()
     {  
         commonEQ();
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     NE()
     {  
@@ -606,7 +327,7 @@ unit Long
         {
             LDX #0
         }
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     LE()
     {
@@ -616,7 +337,7 @@ unit Long
         {
             commonLT();           
         }
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     
     GE()
@@ -628,7 +349,7 @@ unit Long
             commonSwapNEXTTOP();
             commonLT();           
         }
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     
         

@@ -5,7 +5,6 @@ unit Print
     // Output: String printed to serial
     String()
     {
-        PHA
         PHY
         LDY #0              // Initialize string index
         
@@ -18,10 +17,7 @@ unit Print
             INY             // Move to next character
         }
         
-        SMB6 ZP.FLAGS // Bit 6 - output was produced
-        
         PLY
-        PLA
     }
     
     // Write single character to serial output
@@ -32,8 +28,6 @@ unit Print
     Char()
     {
         Serial.WriteChar();
-        
-        SMB6 ZP.FLAGS // Bit 6 - output was produced
     }
     
     // Print byte value as two hex characters
@@ -44,8 +38,6 @@ unit Print
     Hex()
     {
         Serial.HexOut();
-        
-        SMB6 ZP.FLAGS // Bit 6 - output was produced
     }
     
     // Print newline character
@@ -90,31 +82,5 @@ unit Print
             }
         }
         PLX
-    }
-    
-    // Print 16-bit decimal number with no leading zeros
-    // Input: ZP.TOPT for type (typically BASICType.WORD or BASICType.INT for signed), 0 = BASICType.WORD
-    //        ZP.TOP0-1  = 16-bit number to print (0-65535)
-    //        ZP.LTOP0-3 = 32 bit signed LONG (if ZP.TOPT == BASICType.LONG)
-    // Output: Decimal number printed to serial
-    // Preserves: X, Y, A
-    // Munts: Flags
-    Decimal()
-    {
-        // allowed types: zero, INT, LONG
-        PHA
-        LDA ZP.TOPT
-        PHA
-        
-        AND # BASICType.TYPEMASK
-        STA ZP.TOPT
-        BASICTypes.Promote(); // -> LONG
-        Long.Print();
-        
-        PLA
-        STA ZP.TOPT
-        PLA
-        
-        SMB6 ZP.FLAGS // Bit 6 - output was produced
     }
 }

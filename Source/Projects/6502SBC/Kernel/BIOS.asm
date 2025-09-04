@@ -37,6 +37,8 @@ program BIOS
     uses "Print"
     uses "Shared"
     
+    uses "TestSuite/TestTime"
+    
     IRQ()
     {
         Serial.ISR();
@@ -77,25 +79,11 @@ program BIOS
         CLI  // Re-enable interrupts
     }
     
-    const string Echo = "\nEcho:\n";
-    
     Hopper()
     {
         Initialize();
         
-        LDX # 0x00        // Initialise character offset pointer
-        loop
-        {
-            LDA Echo, X         // Get next character to send
-            if (Z) { break;    } // If it's the zero string terminator, we're done!
-            Serial.WriteChar();
-            INX                  // Increment character offset pointer
-                                 // Loop to process next character
-        }
-        loop
-        {
-            Serial.WaitForChar();
-            Serial.WriteChar();
-        }
+        Tests.RunTests();
+        
     }
 }
