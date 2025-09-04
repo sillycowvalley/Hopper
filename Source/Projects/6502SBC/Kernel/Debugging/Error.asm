@@ -28,6 +28,10 @@ unit Error // ErrorID.asm
         FULL       = 0x43,  // "FULL"
         EEPROM     = 0x44,  // "EEPROM"
         ILLEGAL    = 0x56,  // "ILLEGAL"
+        
+        DIVISION   = 0x57,  // "DIVISION"
+        BY         = 0x58,  // "BY"  
+        ZERO       = 0x59,  // "ZERO"
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -59,6 +63,9 @@ unit Error // ErrorID.asm
         4,  ErrorWord.FULL,       'F', 'U', 'L', 'L',
         6,  ErrorWord.EEPROM,     'E', 'E', 'P', 'R', 'O', 'M',
         7,  ErrorWord.ILLEGAL,    'I', 'L', 'L', 'E', 'G', 'A', 'L',
+        8,  ErrorWord.DIVISION,   'D', 'I', 'V', 'I', 'S', 'I', 'O', 'N',
+        2,  ErrorWord.BY,         'B', 'Y',
+        4,  ErrorWord.ZERO,       'Z', 'E', 'R', 'O',
         0  // End marker
     };
     
@@ -76,6 +83,9 @@ unit Error // ErrorID.asm
         // Memory errors
         OutOfMemory         = 0x20,
         HeapCorrupt         = 0x21,
+        
+        // Mathematical errors
+        DivisionByZero      = 0x30,
     }
     
     const byte[] errorMessages0 = {
@@ -88,6 +98,7 @@ unit Error // ErrorID.asm
         2, ErrorID.EEPROMError,       ErrorWord.EEPROM, ErrorWord.ERROR,
         3, ErrorID.OutOfMemory,       ErrorWord.OUT, ErrorWord.OF, ErrorWord.MEMORY,
         2, ErrorID.HeapCorrupt,       ErrorWord.HEAP, ErrorWord.CORRUPT,
+        3, ErrorID.DivisionByZero,    ErrorWord.DIVISION, ErrorWord.BY, ErrorWord.ZERO,
         0  // End marker
     };
     
@@ -333,6 +344,13 @@ unit Error // ErrorID.asm
     {
         STA ZP.LastError
         CLC
+    }
+    
+    // Mathematical errors
+    DivisionByZero()
+    {
+        LDA #ErrorID.DivisionByZero
+        commonError();
     }
     
     // File system errors
