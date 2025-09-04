@@ -103,35 +103,37 @@ unit Error // ErrorID.asm
     };
     
     // Helper method to search error word table and print word
-    // Input: ZP.TokenValue = target word ID, ZP.TableIndex = table address
+    // Input: X = target word ID, ZP.IDX = table address
     // Output: Word printed to serial if found, C if found, NC if not
     printKeywordFromTable()
     {
+        STZ ZP.TEMP
+        
         LDY #0  // Index into table
         loop
         {
-            LDA [ZP.TableIndex], Y     // Get length of this word
+            LDA [ZP.IDX], Y     // Get length of this word
             if (Z) 
             { 
                 CLC
                 break; 
             }   // End of table - not found
             
-            STA ZP.KeywordLength       // Save word length
+            PHA                    // Save length on stack
             INY
-            LDA [ZP.TableIndex], Y     // Get word ID 
-            CMP ZP.TokenValue          // Compare with target
+            LDA [ZP.IDX], Y        // Get word ID 
+            CMP ZP.TEMP            // Compare with target
             if (Z)
             {
                 // Found it! Print the word
                 INY  // Move to first character
-                LDX ZP.KeywordLength   // X = character count
+                PLX                // Pull length into X register
                 loop
                 {
                     CPX #0
                     if (Z) { break; }
                     
-                    LDA [ZP.TableIndex], Y  // Access character 
+                    LDA [ZP.IDX], Y  // Access character 
                     Serial.WriteChar();
                     INY
                     DEX
@@ -143,7 +145,8 @@ unit Error // ErrorID.asm
             
             // Skip to next word: advance Y by word length + 1 (for word ID byte)
             INY                   // Skip the word ID byte first
-            LDX ZP.KeywordLength  // Then skip the word characters
+            PLA                   // Get length back from stack
+            TAX                   // Transfer to X for counting
             loop
             {
                 CPX #0
@@ -151,7 +154,7 @@ unit Error // ErrorID.asm
                 INY
                 DEX
             }
-        }
+        }// single exit
     }
 
     // Print error word corresponding to word ID
@@ -169,19 +172,19 @@ unit Error // ErrorID.asm
             case 0x00:  // Table 0 (0x00-0x1F)
             {
                 LDA #(errorWordsTable0 % 256)
-                STA ZP.TableIndexL
+                STA ZP.IDXL
                 LDA #(errorWordsTable0 / 256)
             }
             case 0x20:  // Table 1 (0x20-0x3F)
             {
                 LDA #(errorWordsTable1 % 256)
-                STA ZP.TableIndexL
+                STA ZP.IDXL
                 LDA #(errorWordsTable1 / 256)
             }
             case 0x40:  // Table 2 (0x40-0x5F)
             {
                 LDA #(errorWordsTable2 % 256)
-                STA ZP.TableIndexL
+                STA ZP.IDXL
                 LDA #(errorWordsTable2 / 256)
             }
             default:
@@ -189,9 +192,8 @@ unit Error // ErrorID.asm
                 BRK // internal error - table not implemented
             }
         }   
-        STA ZP.TableIndexH
-        STX ZP.TokenValue
-        printKeywordFromTable(); // Input: ZP.TokenValue = target word ID, ZP.TableIndex = table address, munts X, Y
+        STA ZP.IDXH
+        printKeywordFromTable(); // Input: X = target word ID, ZP.IDX = table address, munts X, Y
         
         PLX
         PLY
@@ -283,7 +285,7 @@ unit Error // ErrorID.asm
         STA ZP.IDYL
         LDA #(errorMessages0 / 256)
         STA ZP.IDYH
-        findMessage();// munts A, X, Y
+        findMessage();// munts A, X, Y
         if (NC)
         {
             BRK // internal error - message not found

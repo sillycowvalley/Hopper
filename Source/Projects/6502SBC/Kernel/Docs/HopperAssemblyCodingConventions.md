@@ -122,6 +122,67 @@ LDA [ZP.IDX], Y  // Zero page indirect indexed
 LDA 0x01, S      // Stack-relative doesn't exist
 ```
 
+### 10. Register Preservation Policy (RULE #10)
+- **Accumulator (A) is NEVER preserved** - callers must save if needed
+- **Public methods preserve X and Y** - only if they modify them
+- **No blanket preservation** - save code space
+
+```hopper
+// Public method (uppercase first letter)
+PublicMethod()
+{
+    // Only preserve X and Y if we modify them
+    PHX          // Only if X is modified
+    PHY          // Only if Y is modified
+    
+    // A is freely modified without preservation
+    LDA #42
+    
+    // Restore only what was saved
+    PLY          // Only if Y was saved
+    PLX          // Only if X was saved
+    
+    SEC  // Set success
+}
+
+// Private method (lowercase first letter)
+privateHelper()
+{
+    // No register preservation requirements
+    // Caller is responsible for saving what they need
+    LDX #0
+    LDY #10
+    LDA #255
+}
+
+// Example: Public method that doesn't modify X or Y
+GetStatus()
+{
+    // No need to preserve X or Y since we don't touch them
+    LDA ZP.STATUS
+    SEC
+}
+
+// Example: Public method that only modifies Y
+ProcessByte()
+{
+    PHY              // Only preserve Y
+    
+    LDY #0
+    loop
+    {
+        // processing using Y...
+        INY
+        CPY #8
+        if (NZ) { continue; }
+        break;
+    }
+    
+    PLY              // Restore Y
+    SEC
+}
+```
+
 ## Hopper Assembly Syntax Rules
 
 ### Constant Expressions in Operands
@@ -172,17 +233,16 @@ MyFunction()
 // Public method (starts with uppercase)
 PublicMethod()
 {
-    // Save registers if modified
-    PHA
-    PHX
-    PHY
+    // Save X and Y only if modified
+    PHX     // Only include if X is modified
+    PHY     // Only include if Y is modified
     
     // Main logic here
+    // A can be freely modified
     
-    // Restore registers
-    PLY
-    PLX
-    PLA
+    // Restore only what was saved
+    PLY     // Only if Y was saved
+    PLX     // Only if X was saved
     
     // Set success/failure
     SEC  // or CLC for failure
@@ -191,6 +251,7 @@ PublicMethod()
 // Private method (starts with lowercase)
 privateHelper()
 {
+    // No register preservation requirements
     // Only accessible within this unit
 }
 ```
@@ -273,19 +334,42 @@ if (Z)  // Check for null (0x0000)
 // Input: ZP.FLENGTHL/H = file size in bytes (16-bit)
 // Output: A = sectors needed (8-bit)
 //         C set if successful, NC if overflow
-// Preserves: X, Y
-// Munts: ZP.TEMP0-1
+// Preserves: X, Y (per Rule #10)
+// Munts: A (always), ZP.TEMP0-1
 calculateSectors()
 {
     // implementation
+}
+
+// Document when X or Y are not preserved:
+// Process buffer data
+// Input: ZP.ADDRL/H = buffer address
+// Output: A = checksum
+//         C set if successful
+// Preserves: None (modifies X and Y internally)
+// Munts: A, X, Y, ZP.TEMP0
+processBuffer()
+{
+    PHX  // Preserve X (public method)
+    PHY  // Preserve Y (public method)
+    
+    // Use X and Y freely here
+    LDX #0
+    LDY #0
+    
+    PLY
+    PLX
+    SEC
 }
 ```
 
 ### Single Exit Pattern
 Use single exit pattern for complex methods:
 ```hopper
-complexMethod()
+ComplexMethod()
 {
+    PHX  // Only if X is modified
+    
     loop // Single exit for cleanup
     {
         // Do work...
@@ -307,6 +391,7 @@ complexMethod()
     } // Single exit
     
     // Cleanup always runs
+    PLX  // Only if X was saved
 }
 ```
 
@@ -319,6 +404,7 @@ unit Memory
     
     privateAllocate()  // Private method
     {
+        // No register preservation required
         // implementation
     }
 }
@@ -347,13 +433,14 @@ Current kernel zero page usage:
 ## Performance Considerations
 
 ### Stack vs Zero Page
-For short-term storage, prefer stack:
+For short-term storage, prefer stack but follow Rule #10:
 ```hopper
-PHA              // Save A temporarily
-PHX              // Save X temporarily
+// Good - save A only when needed by caller
+TXA      // Move X to A for processing
+PHA      // Caller saves A if needed
 // Do work...
-PLX              // Restore X
-PLA              // Restore A
+PLA      // Restore A only if saved
+TAX      // Restore X from A
 ```
 
 ### Avoid Excessive Stack Operations
@@ -369,6 +456,32 @@ STA tempStorage + 1
 PHA
 PHA
 PHA  // Many pushes make code hard to follow
+```
+
+### Register Preservation Optimization
+```hopper
+// Inefficient - preserving unnecessarily
+ProcessData()
+{
+    PHX    // Unnecessary if X not modified
+    PHY    // Unnecessary if Y not modified
+    
+    LDA #42
+    JSR doSomething  // Only uses A
+    
+    PLY
+    PLX
+    SEC
+}
+
+// Efficient - only preserve what's modified
+ProcessData()
+{
+    // No preservation needed if X and Y aren't touched
+    LDA #42
+    JSR doSomething
+    SEC
+}
 ```
 
 ## Module System Best Practices
@@ -410,5 +523,6 @@ These conventions promote:
 4. **Portability** - Platform-independent patterns
 5. **Debuggability** - Instrumentation-first debugging
 6. **Performance** - Efficient use of zero page and stack
+7. **Code Size** - Minimal register preservation overhead
 
-Following these conventions ensures professional, maintainable Hopper Assembly code for kernel and system-level development.
+Following these conventions ensures professional, maintainable Hopper Assembly code for kernel and system-level development. The register preservation policy (Rule #10) balances safety with code size efficiency.

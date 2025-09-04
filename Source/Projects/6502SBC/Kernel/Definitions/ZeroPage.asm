@@ -16,6 +16,8 @@ unit ZP // ZeroPage.asm
     const byte SerialInWritePointer = 0x0A;  // Serial buffer write position
     const byte SerialInReadPointer  = 0x0B;  // Serial buffer read position
     
+    const byte TEMP                 = 0x10;  // super volatile - almost never survives beyond current method (only leaf methods)
+    
     const byte TOP0                 = 0x11;  // 
     const byte TOP1                 = 0x12;
     const byte TOP2                 = 0x13;
