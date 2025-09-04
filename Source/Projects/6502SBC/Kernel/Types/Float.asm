@@ -7,53 +7,35 @@ unit Float
     
     friend Long;
     
+    const byte TOPEXP0   = M0;
+    const byte TOPEXP1   = M1;
+    const byte NEXTEXP0  = M2;
+    const byte NEXTEXP1  = M3;
+    const byte TOPSIGN   = M4;
+    const byte NEXTSIGN  = M5;
+    
     New()
     {
         // IEEE +0.0
-#ifdef CPU_65C02S        
-        STZ ZP.LNEXT0
-        STZ ZP.LNEXT1
-        STZ ZP.LNEXT2
-        STZ ZP.LNEXT3
-#else
-        LDA # 0
-        STA ZP.LNEXT0
-        STA ZP.LNEXT1
-        STA ZP.LNEXT2
-        STA ZP.LNEXT3
-#endif
-        LDA # Types.Float
-        Long.pushNewFromL();
-    }
-    
-    NewFromConstant()
-    {
-        LDA # Types.Float
-        Long.newFromConstant();
-    }
-    FromBytes()
-    {
-        LDA # Types.Float
-        Long.fromBytes();
-    }
-    GetByte()
-    {
-        Long.GetByte();
+        STZ ZP.NEXT0
+        STZ ZP.NEXT1
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
     }
     
     isZeroNEXT()
     {
         LDX #0
-        LDA ZP.LNEXT0
+        LDA ZP.NEXT0
         if (Z)
         {
-            LDA ZP.LNEXT1
+            LDA ZP.NEXT1
             if (Z)
             {
-                LDA ZP.LNEXT2
+                LDA ZP.NEXT2
                 if (Z)
                 {
-                    LDA ZP.LNEXT3
+                    LDA ZP.NEXT3
                     AND # 0x7F    // ignore the sign for -0
                     if (Z)
                     {
@@ -66,16 +48,16 @@ unit Float
     isZeroTOP()
     {
         LDX #0
-        LDA ZP.LTOP0
+        LDA ZP.TOP0
         if (Z)
         {
-            LDA ZP.LTOP1
+            LDA ZP.TOP1
             if (Z)
             {
-                LDA ZP.LTOP2
+                LDA ZP.TOP2
                 if (Z)
                 {
-                    LDA ZP.LTOP3
+                    LDA ZP.TOP3
                     AND # 0x7F    // ignore the sign for -0
                     if (Z)
                     {
@@ -88,75 +70,75 @@ unit Float
     
     getSignNEXT()
     {
-        STZ LSIGNNEXT
-        if (BBS7, LNEXT3)
+        STZ NEXTSIGN
+        if (BBS7, ZP.NEXT3)
         {
-            INC LSIGNNEXT
+            INC NEXTSIGN
         }
     }
     getSignTOP()
     {
-        STZ LSIGNTOP
-        if (BBS7, LTOP3)
+        STZ TOPSIGN
+        if (BBS7, ZP.TOP3)
         {
-            INC LSIGNTOP
+            INC TOPSIGN
         }
     }
     getExponentNEXT()
     {
-        LDA LNEXT3
+        LDA ZP.NEXT3
         ASL A
-        if (BBS7, LNEXT2)
+        if (BBS7, ZP.NEXT2)
         {
             ORA # 0b00000001
         }        
-        STA NEXTL
-        STZ NEXTH
+        STA NEXTEXP0
+        STZ NEXTEXP1
     }
     getExponentTOP()
     {
-        LDA LTOP3
+        LDA ZP.TOP3
         ASL A
-        if (BBS7, LTOP2)
+        if (BBS7, ZP.TOP2)
         {
             ORA # 0b00000001
         }        
-        STA TOPL
-        STZ TOPH
+        STA TOPEXP0
+        STZ TOPEXP1
     }
     getMantissaNEXT()
     {
-        LDA LNEXT2
+        LDA ZP.NEXT2
         AND # 0x7F
-        STA LNEXT2
-        STZ LNEXT3
+        STA ZP.NEXT2
+        STZ ZP.NEXT3
     }
     getMantissaTOP()
     {
-        LDA LTOP2
+        LDA ZP.TOP2
         AND # 0x7F
-        STA LTOP2
-        STZ LTOP3
+        STA ZP.TOP2
+        STZ ZP.TOP3
     }
     countLeadingZeros()
     {
         LDX #0
-        LDA ZP.LRESULT3
+        LDA LRESULT3
         if (Z)
         {
             LDX # 8
             
-            LDA ZP.LRESULT2
+            LDA LRESULT2
             if (Z)
             {
                 LDX # 16
                 
-                LDA ZP.LRESULT1
+                LDA LRESULT1
                 if (Z)
                 {
                     LDX # 24
                     
-                    LDA ZP.LRESULT0
+                    LDA LRESULT0
                     if (Z)
                     {
                         LDX # 32
@@ -178,21 +160,18 @@ countEntry:
     }
     Add()
     {
-        Long.commonLongNEXTTOP();
         commonAdd();
     }
     Sub()
     {
-        Long.commonLongNEXTTOP();
-        
         // Flip the sign of TOP
-        if (BBS7, LTOP3)
+        if (BBS7, ZP.TOP3)
         {
-            RMB7 LTOP3
+            RMB7 ZP.TOP3
         }
         else
         {
-            SMB7 LTOP3
+            SMB7 ZP.TOP3
         }
         commonAdd();
     }
@@ -200,12 +179,12 @@ countEntry:
     handleExponentOverflow()
     {
         // Handle exponent overflow/underflow
-        LDA NEXTH
+        LDA NEXTEXP1
         if (MI) 
         {
             // exponentA < 0
-            STZ NEXTH
-            STZ NEXTL
+            STZ NEXTEXP1
+            STZ NEXTEXP0
             STZ LRESULT0
             STZ LRESULT1
             STZ LRESULT2
@@ -214,12 +193,12 @@ countEntry:
         }
         if (Z)
         {
-            LDA NEXTL
+            LDA NEXTEXP0
             if (Z)
             {
                 // exponentA == 0
-                STZ NEXTH
-                STZ NEXTL
+                STZ NEXTEXP1
+                STZ NEXTEXP0
                 STZ LRESULT0
                 STZ LRESULT1
                 STZ LRESULT2
@@ -241,8 +220,8 @@ countEntry:
         {
             // exponentA > 255
             LDA # 0xFF
-            STA NEXTL
-            STZ NEXTH
+            STA NEXTEXP0
+            STZ NEXTEXP1
             STZ LRESULT0
             STZ LRESULT1
             STZ LRESULT2
@@ -276,12 +255,12 @@ countEntry:
             getMantissaTOP();
             
             // Add the implicit leading '1' bit
-            LDA LNEXT2
+            LDA ZP.NEXT2
             ORA # 0b10000000
-            STA LNEXT2
-            LDA LTOP2
+            STA ZP.NEXT2
+            LDA ZP.TOP2
             ORA # 0b10000000
-            STA LTOP2
+            STA ZP.TOP2
             
             // Align exponents
             Instruction.gtShared();
@@ -290,24 +269,24 @@ countEntry:
             {
                 // int shift = exponentA - exponentB;
                 SEC
-                LDA ZP.NEXTL
-                SBC ZP.TOPL
+                LDA NEXTEXP0
+                SBC TOPEXP0
                 TAX
                 
                 // mantissaB = Long.shiftRight(mantissaB, shift);
                 loop
                 {
-                    LSR LTOP3
-                    ROR LTOP2
-                    ROR LTOP1
-                    ROR LTOP0
+                    LSR ZP.TOP3
+                    ROR ZP.TOP2
+                    ROR ZP.TOP1
+                    ROR ZP.TOP0
                     DEX
                     if (Z) { break; }
                 }
                 
                 // exponentB = exponentA;
-                LDA ZP.NEXTL
-                STA ZP.TOPL
+                LDA NEXTEXP0
+                STA TOPEXP0
             }
             else
             {
@@ -317,42 +296,42 @@ countEntry:
                 {
                     // int shift = exponentB - exponentA;
                     SEC
-                    LDA ZP.TOPL
-                    SBC ZP.NEXTL
+                    LDA TOPEXP0
+                    SBC NEXTEXP0
                     TAX
                     
                     // mantissaA = Long.shiftRight(mantissaA, shift);
                     loop
                     {
-                        LSR LNEXT3
-                        ROR LNEXT2
-                        ROR LNEXT1
-                        ROR LNEXT0
+                        LSR ZP.NEXT3
+                        ROR ZP.NEXT2
+                        ROR ZP.NEXT1
+                        ROR ZP.NEXT0
                         DEX
                         if (Z) { break; }
                     }
                     // exponentA = exponentB;
-                    LDA ZP.TOPL
-                    STA ZP.NEXTL
+                    LDA TOPEXP0
+                    STA NEXTEXP0
                 }
             }
-            LDA LSIGNNEXT
-            CMP LSIGNTOP
+            LDA NEXTSIGN
+            CMP TOPSIGN
             if (Z)
             {
                 CLC
-                LDA ZP.LNEXT0
-                ADC ZP.LTOP0
-                STA ZP.LRESULT0
-                LDA ZP.LNEXT1
-                ADC ZP.LTOP1
-                STA ZP.LRESULT1
-                LDA ZP.LNEXT2
-                ADC ZP.LTOP2
-                STA ZP.LRESULT2
-                LDA ZP.LNEXT3
-                ADC ZP.LTOP3
-                STA ZP.LRESULT3
+                LDA ZP.NEXT0
+                ADC ZP.TOP0
+                STA LRESULT0
+                LDA ZP.NEXT1
+                ADC ZP.TOP1
+                STA LRESULT1
+                LDA ZP.NEXT2
+                ADC ZP.TOP2
+                STA LRESULT2
+                LDA ZP.NEXT3
+                ADC ZP.TOP3
+                STA LRESULT3
             }
             else
             {
@@ -362,40 +341,40 @@ countEntry:
                 {
                     // mantissaA >= mantissaB
                     SEC
-                    LDA ZP.LNEXT0
-                    SBC ZP.LTOP0
-                    STA ZP.LRESULT0
-                    LDA ZP.LNEXT1
-                    SBC ZP.LTOP1
-                    STA ZP.LRESULT1
-                    LDA ZP.LNEXT2
-                    SBC ZP.LTOP2
-                    STA ZP.LRESULT2
+                    LDA ZP.NEXT0
+                    SBC ZP.TOP0
+                    STA LRESULT0
+                    LDA ZP.NEXT1
+                    SBC ZP.TOP1
+                    STA LRESULT1
+                    LDA ZP.NEXT2
+                    SBC ZP.TOP2
+                    STA LRESULT2
                     // always zeroes?
-                    LDA ZP.LNEXT3
-                    SBC ZP.LTOP3
-                    STA ZP.LRESULT3
+                    LDA ZP.NEXT3
+                    SBC ZP.TOP3
+                    STA LRESULT3
                 }
                 else
                 {
                     // mantissaA < mantissaB
                     SEC
-                    LDA ZP.LTOP0
-                    SBC ZP.LNEXT0
-                    STA ZP.LRESULT0
-                    LDA ZP.LTOP1
-                    SBC ZP.LNEXT1
-                    STA ZP.LRESULT1
-                    LDA ZP.LTOP2
-                    SBC ZP.LNEXT2
-                    STA ZP.LRESULT2
+                    LDA ZP.TOP0
+                    SBC ZP.NEXT0
+                    STA LRESULT0
+                    LDA ZP.TOP1
+                    SBC ZP.NEXT1
+                    STA LRESULT1
+                    LDA ZP.TOP2
+                    SBC ZP.NEXT2
+                    STA LRESULT2
                     // always zeroes?
-                    LDA ZP.LTOP3
-                    SBC ZP.LNEXT3
-                    STA ZP.LRESULT3
+                    LDA ZP.TOP3
+                    SBC ZP.NEXT3
+                    STA LRESULT3
                     
-                    LDA LSIGNTOP
-                    STA LSIGNNEXT
+                    LDA TOPSIGN
+                    STA NEXTSIGN
                 }
                 // Check for zero mantissa (cancellation)
                 LDA LRESULT0
@@ -411,10 +390,10 @@ countEntry:
                             if (Z)
                             {
                                 // Return +0.0
-                                STZ LNEXT0
-                                STZ LNEXT1
-                                STZ LNEXT2
-                                STZ LNEXT3
+                                STZ ZP.NEXT0
+                                STZ ZP.NEXT1
+                                STZ ZP.NEXT2
+                                STZ ZP.NEXT3
                                 break;
                             }
                         }
@@ -422,15 +401,15 @@ countEntry:
                 }
             }
             countLeadingZeros();
-            STX ZP.ACCH
+            STX ACCH
             CPX # 8
             if (NC)
             {
                 // leadingZeros < 8
-                STX ZP.ACCL
+                STX ACCL
                 SEC
                 LDA # 8
-                SBC ZP.ACCL
+                SBC ACCL
                 TAX
                 loop
                 {
@@ -460,19 +439,19 @@ countEntry:
                 }
             }
             CLC
-            LDA NEXTL
+            LDA NEXTEXP0
             ADC # 8
-            STA NEXTL
+            STA NEXTEXP0
             LDA NEXTT
             ADC # 0
             STA NEXTT
             SEC
-            LDA NEXTL
-            SBC ZP.ACCH
-            STA NEXTL
-            LDA NEXTH
+            LDA NEXTEXP0
+            SBC ACCH
+            STA NEXTEXP0
+            LDA NEXTEXP1
             SBC # 0
-            STA NEXTH
+            STA NEXTEXP1
             handleExponentOverflow();
                        
             // Remove the implicit leading bit
@@ -482,7 +461,7 @@ countEntry:
             STZ LRESULT3
             
             // Set the least significant bit of the exponent
-            LDA NEXTL
+            LDA NEXTEXP0
             AND # 0b00000001
             if (NZ)
             {
@@ -492,12 +471,12 @@ countEntry:
             }
             
             // Take the next 7 bits of the exponent
-            LDA NEXTL
+            LDA NEXTEXP0
             LSR
             STA LRESULT3
             
             // Set the sign bit
-            LDA LSIGNNEXT
+            LDA NEXTSIGN
             if (NZ)
             {
                 LDA # 0b10000000
@@ -506,46 +485,45 @@ countEntry:
             }
             
             LDA LRESULT0
-            STA LNEXT0
+            STA ZP.NEXT0
             LDA LRESULT1
-            STA LNEXT1
+            STA ZP.NEXT1
             LDA LRESULT2
-            STA LNEXT2
+            STA ZP.NEXT2
             LDA LRESULT3
-            STA LNEXT3
+            STA ZP.NEXT3
             
             break;   
         }
-        LDA # Types.Float
-        Long.pushNewFromL(); 
+        // result in NEXT
     }
     countLeadingZeros48()
     {
         LDX #0
-        LDA ZP.LRESULT5
+        LDA LRESULT5
         if (Z)
         {
             LDX # 8
             
-            LDA ZP.LRESULT4
+            LDA LRESULT4
             if (Z)
             {
                 LDX # 16
                 
-                LDA ZP.LRESULT3
+                LDA LRESULT3
                 if (Z)
                 {
                     LDX # 24
                     
-                    LDA ZP.LRESULT2
+                    LDA LRESULT2
                     if (Z)
                     {
                         LDX # 32
-                        LDA ZP.LRESULT1
+                        LDA LRESULT1
                         if (Z)
                         {
                             LDX # 40
-                            LDA ZP.LRESULT0
+                            LDA LRESULT0
                             if (Z)
                             {
                                 LDX # 48
@@ -569,14 +547,13 @@ countEntry:
     }
     Mul()
     {
-        Long.commonLongNEXTTOP();
         loop
         {
             getSignNEXT();
             getSignTOP();  
-            LDA LSIGNNEXT
-            EOR LSIGNTOP
-            STA LSIGNNEXT
+            LDA NEXTSIGN
+            EOR TOPSIGN
+            STA NEXTSIGN
             
             Float.isZeroNEXT();
             CPX # 1
@@ -599,25 +576,25 @@ countEntry:
             getMantissaTOP();
             
             // Add the implicit leading '1' bit
-            LDA LNEXT2
+            LDA ZP.NEXT2
             ORA # 0b10000000
-            STA LNEXT2
-            LDA LTOP2
+            STA ZP.NEXT2
+            LDA ZP.TOP2
             ORA # 0b10000000
-            STA LTOP2
+            STA ZP.TOP2
             
             Long.utilityLongMUL();
                        
             countLeadingZeros48();
-            STX ZP.ACCH
+            STX ACCH
             CPX # 24
             if (NC)
             {
                 // leadingZeros < 24
-                STX ZP.ACCL
+                STX ACCL
                 SEC
                 LDA # 24
-                SBC ZP.ACCL
+                SBC ACCL
                 TAX
                 loop
                 {
@@ -651,28 +628,28 @@ countEntry:
             
             // exponent = exponentA + exponentB - 127
             CLC
-            LDA NEXTL
-            ADC TOPL
-            STA NEXTL
-            LDA NEXTH
-            ADC TOPH
-            STA NEXTH
+            LDA NEXTEXP0
+            ADC TOPEXP0
+            STA NEXTEXP0
+            LDA NEXTEXP1
+            ADC TOPEXP1
+            STA NEXTEXP1
             SEC
-            LDA NEXTL
+            LDA NEXTEXP0
             SBC # 127
-            STA NEXTL
-            LDA NEXTH
+            STA NEXTEXP0
+            LDA NEXTEXP1
             SBC # 0
-            STA NEXTH
+            STA NEXTEXP1
             
             // if leadingZeros == 0, exponent++
-            LDA ZP.ACCL
+            LDA ACCL
             if (Z)
             {
-                INC NEXTL
+                INC NEXTEXP0
                 if (Z)
                 {
-                    INC NEXTH
+                    INC NEXTEXP1
                 }
             }
             
@@ -681,40 +658,39 @@ countEntry:
             // Remove the implicit leading bit
             LDA LRESULT2
             AND # 0x7F
-            STA LNEXT2
+            STA ZP.NEXT2
             
             // Set the least significant bit of the exponent
-            LDA NEXTL
+            LDA NEXTEXP0
             AND # 0b00000001
             if (NZ)
             {
-                LDA LNEXT2
+                LDA ZP.NEXT2
                 ORA # 0b10000000
-                STA LNEXT2
+                STA ZP.NEXT2
             }
             
             // Take the next 7 bits of the exponent
-            LDA NEXTL
+            LDA NEXTEXP0
             LSR
-            STA LNEXT3
+            STA ZP.NEXT3
             
             LDA LRESULT0
-            STA LNEXT0
+            STA ZP.NEXT0
             LDA LRESULT1
-            STA LNEXT1
+            STA ZP.NEXT1
             break;
         }
         // apply the sign
-        LDA LSIGNNEXT
+        LDA NEXTSIGN
         if (NZ)
         {
-            LDA LNEXT3
+            LDA ZP.NEXT3
             ORA # 0b10000000
-            STA LNEXT3
+            STA ZP.NEXT3
         }
         
-        LDA # Types.Float
-        Long.pushNewFromL(); 
+        // result in NEXT
     }
     
     checkDividendBit()
@@ -732,7 +708,7 @@ countEntry:
         
         // load bit mask
         LDA Array.bitMasks, Y
-        AND LNEXT0, X
+        AND ZP.NEXT0, X
     }
     orQuotientBit()
     {
@@ -792,10 +768,10 @@ countEntry:
             else
             {
                 // X < 24
-                STX ZP.ACCL
+                STX ACCL
                 SEC
                 LDA # 24
-                SBC ZP.ACCL
+                SBC ACCL
             }
             
             PHX
@@ -815,28 +791,28 @@ countEntry:
             // remainder - divisor >= 0?
             SEC
             LDA LRESULT4
-            SBC LTOP0
+            SBC ZP.TOP0
             LDA LRESULT5
-            SBC LTOP1
+            SBC ZP.TOP1
             LDA LRESULT6
-            SBC LTOP2
+            SBC ZP.TOP2
             LDA LRESULT7
-            SBC LTOP3
+            SBC ZP.TOP3
             if (PL)
             {
                 // remainder = remainder - divisor;
                 SEC
                 LDA LRESULT4
-                SBC LTOP0
+                SBC ZP.TOP0
                 STA LRESULT4
                 LDA LRESULT5
-                SBC LTOP1
+                SBC ZP.TOP1
                 STA LRESULT5
                 LDA LRESULT6
-                SBC LTOP2
+                SBC ZP.TOP2
                 STA LRESULT6
                 LDA LRESULT7
-                SBC LTOP3
+                SBC ZP.TOP3
                 STA LRESULT7
                 PLX
                 PHX
@@ -850,14 +826,13 @@ countEntry:
     }
     Div()
     {
-        Long.commonLongNEXTTOP();
         loop
         {
             getSignNEXT();
             getSignTOP();  
-            LDA LSIGNNEXT
-            EOR LSIGNTOP
-            STA LSIGNNEXT
+            LDA NEXTSIGN
+            EOR TOPSIGN
+            STA NEXTSIGN
             
             Float.isZeroNEXT();
             CPX # 1
@@ -867,17 +842,17 @@ countEntry:
             }
                         
             // TOP == 1 or TOP == -1 ? (mantissa = 0, exponent = 127
-            LDA LTOP0
+            LDA ZP.TOP0
             if (Z)
             {
-                LDA LTOP1
+                LDA ZP.TOP1
                 if (Z)
                 {
-                    LDA LTOP2
+                    LDA ZP.TOP2
                     CMP # 0x80
                     if (Z)
                     {
-                        LDA LTOP3
+                        LDA ZP.TOP3
                         AND # 0x7F
                         CMP # 0x3F
                         if (Z)
@@ -896,24 +871,24 @@ countEntry:
             
             
             // Add the implicit leading '1' bit
-            LDA LNEXT2
+            LDA ZP.NEXT2
             ORA # 0b10000000
-            STA LNEXT2
-            LDA LTOP2
+            STA ZP.NEXT2
+            LDA ZP.TOP2
             ORA # 0b10000000
-            STA LTOP2
+            STA ZP.TOP2
             
             mantissaDivide();
             
             countLeadingZeros();
-            STX ZP.ACCL
+            STX ACCL
             CPX # 8
             if (NC)
             {
                 // leadingZeros < 8
                 SEC
                 LDA # 8
-                SBC ZP.ACCL
+                SBC ACCL
                 TAX
                 loop
                 {
@@ -945,31 +920,31 @@ countEntry:
             
             // exponent = exponentA - exponentB + 127
             CLC
-            LDA NEXTL
+            LDA NEXTEXP0
             ADC # 127
-            STA NEXTL
-            LDA NEXTH
+            STA NEXTEXP0
+            LDA NEXTEXP1
             ADC # 0
-            STA NEXTH
+            STA NEXTEXP1
             SEC
-            LDA NEXTL
-            SBC TOPL
-            STA NEXTL
-            LDA NEXTH
-            SBC TOPH
-            STA NEXTH
+            LDA NEXTEXP0
+            SBC TOPEXP0
+            STA NEXTEXP0
+            LDA NEXTEXP1
+            SBC TOPEXP1
+            STA NEXTEXP1
             
             // leadingZeros == 16?  exponent--
-            LDA ZP.ACCL
+            LDA ACCL
             CMP # 16
             if (Z)
             {
-                LDA NEXTL
+                LDA NEXTEXP0
                 if (Z)
                 {
-                    DEC NEXTH
+                    DEC NEXTEXP1
                 }
-                DEC NEXTL
+                DEC NEXTEXP0
             }
             
             handleExponentOverflow();
@@ -977,52 +952,51 @@ countEntry:
             // Remove the implicit leading bit
             LDA LRESULT2
             AND # 0x7F
-            STA LNEXT2
+            STA ZP.NEXT2
             
             // Set the least significant bit of the exponent
-            LDA NEXTL
+            LDA NEXTEXP0
             AND # 0b00000001
             if (NZ)
             {
-                LDA LNEXT2
+                LDA ZP.NEXT2
                 ORA # 0b10000000
-                STA LNEXT2
+                STA ZP.NEXT2
             }
             
             // Take the next 7 bits of the exponent
-            LDA NEXTL
+            LDA NEXTEXP0
             LSR
-            STA LNEXT3
+            STA ZP.NEXT3
             
             LDA LRESULT0
-            STA LNEXT0
+            STA ZP.NEXT0
             LDA LRESULT1
-            STA LNEXT1
+            STA ZP.NEXT1
             
             break;
         } // loop
         
         // apply the sign
-        LDA LSIGNNEXT
+        LDA NEXTSIGN
         if (NZ)
         {
-            LDA LNEXT3
+            LDA ZP.NEXT3
             ORA # 0b10000000
-            STA LNEXT3
+            STA ZP.NEXT3
         }
         else
         {
-            LDA LNEXT3
+            LDA ZP.NEXT3
             AND # 0b01111111
-            STA LNEXT3
+            STA ZP.NEXT3
         }
         
-        LDA # Types.Float
-        Long.pushNewFromL(); 
+        // result in NEXT
     }
     ToLong()
     {
-        Long.commonLongNEXT();
+        // source in NEXT
         
         getSignNEXT();  
         getExponentNEXT();
@@ -1030,30 +1004,30 @@ countEntry:
         
         // exponent = exponent - 127; // Bias adjustment
         SEC
-        LDA ZP.NEXTL
+        LDA NEXTEXP0
         SBC # 127
-        STA ZP.NEXTL
-        LDA ZP.NEXTH
+        STA NEXTEXP0
+        LDA NEXTEXP1
         SBC # 0
-        STA ZP.NEXTH
+        STA NEXTEXP1
         loop
         {
             if (NZ)
             {
                 // exponent is -ve so fraction only
-                STZ ZP.LNEXT0
-                STZ ZP.LNEXT1
-                STZ ZP.LNEXT2
-                STZ ZP.LNEXT3
+                STZ ZP.NEXT0
+                STZ ZP.NEXT1
+                STZ ZP.NEXT2
+                STZ ZP.NEXT3
                 break;
             }
         
             // Add the implicit leading '1' bit
-            LDA ZP.LNEXT2
+            LDA ZP.NEXT2
             ORA # 0b10000000
-            STA ZP.LNEXT2
+            STA ZP.NEXT2
             
-            LDA ZP.NEXTL
+            LDA NEXTEXP0
             CMP # 23
             if (Z)
             {
@@ -1070,10 +1044,10 @@ countEntry:
                     loop
                     {
                         if (Z) { break; }
-                        ASL LNEXT0
-                        ROL LNEXT1
-                        ROL LNEXT2
-                        ROL LNEXT3
+                        ASL ZP.NEXT0
+                        ROL ZP.NEXT1
+                        ROL ZP.NEXT2
+                        ROL ZP.NEXT3
                         DEX
                     }
                 }
@@ -1082,48 +1056,46 @@ countEntry:
                     // exponent < 23
                     SEC
                     LDA # 23
-                    SBC ZP.NEXTL
+                    SBC NEXTEXP0
                     TAX
                     loop
                     {
                         if (Z) { break; }
-                        LSR ZP.LNEXT3
-                        ROR ZP.LNEXT2
-                        ROR ZP.LNEXT1
-                        ROR ZP.LNEXT0
+                        LSR ZP.NEXT3
+                        ROR ZP.NEXT2
+                        ROR ZP.NEXT1
+                        ROR ZP.NEXT0
                         DEX
                     }
                 }
             }
         
             // apply the sign
-            LDA LSIGNNEXT
+            LDA NEXTSIGN
             if (NZ)
             {
                 // result = -result
                 SEC
                 LDA # 0
-                SBC LNEXT0
-                STA LNEXT0
+                SBC ZP.NEXT0
+                STA ZP.NEXT0
                 LDA # 0
-                SBC LNEXT1
-                STA LNEXT1
+                SBC ZP.NEXT1
+                STA ZP.NEXT1
                 LDA # 0
-                SBC LNEXT2
-                STA LNEXT2
+                SBC ZP.NEXT2
+                STA ZP.NEXT2
                 LDA # 0
-                SBC LNEXT3
-                STA LNEXT3
+                SBC ZP.NEXT3
+                STA ZP.NEXT3
             }
             break;
         }
         
-        LDA # Types.Long
-        Long.pushNewFromL(); 
+        // result in NEXT
     }
     EQ()
     {
-        Long.commonLongNEXTTOP();
         isZeroTOP();
         TXA
         if (NZ)
@@ -1139,20 +1111,20 @@ countEntry:
             }
         }
         // X is already 0
-        LDA LNEXT0
-        CMP LTOP0
+        LDA ZP.NEXT0
+        CMP ZP.TOP0
         if (Z)
         {
-            LDA LNEXT1
-            CMP LTOP1
+            LDA ZP.NEXT1
+            CMP ZP.TOP1
             if (Z)
             {
-                LDA LNEXT2
-                CMP LTOP2
+                LDA ZP.NEXT2
+                CMP ZP.TOP2
                 if (Z)
                 {
-                    LDA LNEXT3
-                    CMP LTOP3
+                    LDA ZP.NEXT3
+                    CMP ZP.TOP3
                     if (Z)
                     {
                         INX
@@ -1160,19 +1132,18 @@ countEntry:
                 }
             }
         }
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     
     LT()
     {
         loop
         {
-            Long.commonLongNEXTTOP();
             getSignNEXT();
             getSignTOP();  
             LDX # 0
-            LDA LSIGNNEXT
-            CMP LSIGNTOP
+            LDA NEXTSIGN
+            CMP TOPSIGN
             if (NZ)
             {    
                 // signA != signB
@@ -1185,18 +1156,18 @@ countEntry:
             }
             getExponentNEXT();
             getExponentTOP();
-            LDA NEXTL
-            CMP TOPL
+            LDA NEXTEXP0
+            CMP TOPEXP0
             if (NZ)
             {
                 // exponentA != exponentB
                 LDX # 0
-                LDA LSIGNNEXT
+                LDA NEXTSIGN
                 if (Z)
                 {
                     // signA == 0
-                    LDA NEXTL
-                    CMP TOPL
+                    LDA NEXTEXP0
+                    CMP TOPEXP0
                     if (NC)
                     {
                         // exponentA < exponentB
@@ -1205,8 +1176,8 @@ countEntry:
                 }
                 else
                 {
-                    LDA NEXTL
-                    CMP TOPL
+                    LDA NEXTEXP0
+                    CMP TOPEXP0
                     if (C)
                     {
                         // exponentA > exponentB
@@ -1218,7 +1189,7 @@ countEntry:
             getMantissaNEXT();
             getMantissaTOP();
             
-            LDA LSIGNNEXT
+            LDA NEXTSIGN
             if (Z)
             {
                 // signA == 0
@@ -1244,7 +1215,7 @@ countEntry:
             }
             break;
         }
-        Stacks.PushX(); // as Type.Bool
+        // result in X
     }
     
 }
