@@ -1,14 +1,9 @@
 unit Serial // Serial.asm
 {
-    // Zero Page locations used by Serial:
-    const byte InWritePointer        = ZP.SerialInWritePointer;
-    const byte InReadPointer         = ZP.SerialInReadPointer;
+    const byte CTRLC = 0x03; // <ctrL><C>
+    const byte XOFF  = 0x13; // <ctrl><S>
+    const byte XON   = 0x11; // <ctrl><Q>
     
-    const byte XOFF = 0x13;  // Ctrl-S
-    const byte XON  = 0x11;  // Ctrl-Q
-    
-    // Location of the Serial input buffer (256 bytes)
-    const uint InBuffer        = Address.SerialInBuffer;
 #if defined(ACIA_6850)
     uses "Devices/ACIA6850"
 #endif
@@ -18,9 +13,10 @@ unit Serial // Serial.asm
     {
         // reset buffer so at least start and end are the same
         SEI                    // disable interrupts
-        STZ Serial.InWritePointer
-        STZ Serial.InReadPointer
-        STZ ZP.SerialFlags
+        STZ ZP.SerialInWritePointer
+        STZ ZP.SerialInReadPointer
+        RMB1 ZP.FLAGS // XON / XOFF
+        RMB0 ZP.FLAGS // NMI break
         CLI                    // enable interrupts
         
         SerialDevice.initialize(); // device-specific initialization
@@ -36,8 +32,6 @@ unit Serial // Serial.asm
         }
     }
     
-        
-    
     ISR()
     {
         SerialDevice.isr();
@@ -45,20 +39,20 @@ unit Serial // Serial.asm
         {
             // Check if we need to send XOFF
             PHA
-            LDA InWritePointer
+            LDA ZP.SerialInWritePointer
             SEC
-            SBC InReadPointer
+            SBC ZP.SerialInReadPointer
             CMP #240              // Nearly full? (240/256 bytes used)
             if (C)                // Carry set if >= 240
             {
-                if (BBR1, SerialFlags)  // Bit 1 clear? (not stopped yet)
+                if (BBR1, ZP.FLAGS)  // Bit 1 clear? (not stopped yet)
                 {
                     PHX
-                    LDA #0x13     // XOFF
+                    LDA # XOFF
                     SerialDevice.writeChar();  // Send XOFF
                     PLX
                     
-                    SMB1 SerialFlags     // Set bit 1 (XOFF sent)
+                    SMB1 ZP.FLAGS     // Set bit 1 (XOFF sent)
                 }
             }
             PLA
@@ -69,14 +63,14 @@ unit Serial // Serial.asm
     IsAvailable()
     {
         SEI
-        if (BBS0, ZP.SerialFlags)   // Bit 0 set? (break detected)
+        if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
         {
             LDA #1 // <ctrl><C> is avaiable    
         }
         else
         {
-            LDA InReadPointer
-            CMP InWritePointer
+            LDA ZP.SerialInReadPointer
+            CMP ZP.SerialInWritePointer
             // NZ means characters available in buffer
         }
         CLI
@@ -91,33 +85,33 @@ unit Serial // Serial.asm
             IsAvailable();
             if (NZ) { break; }
         }
-        if (BBS0, ZP.SerialFlags) // break?
+        if (BBS0, ZP.FLAGS) // break?
         {
-            RMB0 ZP.SerialFlags
-            LDA #0x03 // <ctrl><C>
+            RMB0 ZP.FLAGS
+            LDA # CTRLC // <ctrl><C>
         }
         else
         {
             PHX
-            LDX Serial.InReadPointer
-            LDA Serial.InBuffer, X
-            INC Serial.InReadPointer
+            LDX ZP.SerialInReadPointer
+            LDA Address.SerialInBuffer, X
+            INC ZP.SerialInReadPointer
             PLX     
             
             // Check if we can send XON after consuming byte
-            if (BBS1, ZP.SerialFlags)      // Bit 1 set? (currently stopped)
+            if (BBS1, ZP.FLAGS)      // Bit 1 set? (currently stopped)
             {
                 PHA
-                LDA Serial.InWritePointer
+                LDA ZP.SerialInWritePointer
                 SEC
-                SBC Serial.InReadPointer
+                SBC ZP.SerialInReadPointer
                 CMP #16                  // Mostly empty? (only 16/256 bytes used)
                 if (NC)                  // Carry clear if < 16
                 {
                     LDA #XON
                     SerialDevice.writeChar();  // Send XON
                     
-                    RMB1 SerialFlags     // Clear bit 1 (resume flow)
+                    RMB1 ZP.FLAGS     // Clear bit 1 (resume flow)
                 }
                 PLA
             }
@@ -164,6 +158,7 @@ unit Serial // Serial.asm
     
     // loads two hex characters from Serial to byte in A
     //    uses ZP.U0
+    /*
     HexIn()
     {
         Serial.WaitForChar();
@@ -175,4 +170,5 @@ unit Serial // Serial.asm
         Utilities.MakeNibble();
         ORA WorkSpaceHexIn
     }
+    */
 }

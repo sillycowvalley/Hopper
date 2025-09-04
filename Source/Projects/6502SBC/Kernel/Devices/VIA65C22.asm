@@ -11,14 +11,9 @@ unit VIA65C22
         // VIA initialization assuming the RESB pulse was too short
         // "Reset clears all internal registers (except T1 and T2 counters and latches, and the SR"
 
-#ifdef CPU_65C02S       
         STZ ZP.DDRA // set all pins on port A to input (good default in case we don't use it)
         STZ ZP.DDRB // set all pins on port B to input (good default in case we don't use it) 
-#else        
-        LDA # 0b00000000
-        STA ZP.DDRA // set all pins on port A to input (good default in case we don't use it)
-        STA ZP.DDRB // set all pins on port B to input (good default in case we don't use it)
-#endif               
+        
         // start timer last since it generates interrupts
         // VIA interval timer to tick every 1ms or 1000 clock cycles
       
@@ -27,16 +22,16 @@ unit VIA65C22
         
         // 1000us per sample = 1ms units for Time.Delay(..)
         LDA # 0xE8
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA # 0x03
-        STA ZP.TOPH
+        STA ZP.TOP1
         
         sharedSamplesMicroSet();
     }
     
     isr()
     {
-#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+#if defined(ZEROPAGE_IO)
         if (BBS7, ZP.IFR) // IRQ by VIA
         {
             if (BBS6, ZP.IFR) // Timer 1 IRQ
@@ -91,45 +86,37 @@ unit VIA65C22
         // At a CPU clock of 1 mHz = 1000 cycles - 1 = 999 / 0x03E7 would give us a sample cycle of 1ms
 #if defined(CPU_2MHZ) || defined(CPU_4MHZ) || defined(CPU_8MHZ)
         // x2
-        ASL ZP.TOPL
-        ROL ZP.TOPH        
+        ASL ZP.TOP0
+        ROL ZP.TOP1        
 #endif  
 #if defined(CPU_4MHZ) || defined(CPU_8MHZ)
         // x4
-        ASL ZP.TOPL
-        ROL ZP.TOPH        
+        ASL ZP.TOP0
+        ROL ZP.TOP1        
 #endif          
 #if defined(CPU_8MHZ)
         // x8
-        ASL ZP.TOPL
-        ROL ZP.TOPH        
+        ASL ZP.TOP0
+        ROL ZP.TOP1        
 #endif       
         // The timer counts down from n-1 to 0, including the 0 as part of the count
         // -1
-        LDA ZP.TOPL
+        LDA ZP.TOP0
         if (Z)
         {
-            DEC ZP.TOPH
+            DEC ZP.TOP1
         }
-        DEC ZP.TOPL
+        DEC ZP.TOP0
         
-        LDA ZP.TOPL
+        LDA ZP.TOP0
         STA ZP.T1CL
-        LDA ZP.TOPH
+        LDA ZP.TOP1
         STA ZP.T1CH
         
-#ifdef CPU_65C02S
         STZ ZP.TICK0
         STZ ZP.TICK1
         STZ ZP.TICK2
         STZ ZP.TICK3
-#else
-        LDA #0
-        STA ZP.TICK0
-        STA ZP.TICK1
-        STA ZP.TICK2
-        STA ZP.TICK3
-#endif
         
         LDA # 0b11000000 // Set Timer1 bit in IER to put Timer1 into free run mode
         STA ZP.IER
@@ -137,15 +124,15 @@ unit VIA65C22
     sharedSamplesMicroGet()
     {
         LDA ZP.T1LL 
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA ZP.T1LH 
-        STA ZP.TOPH
+        STA ZP.TOP1
         // The timer counts down from n-1 to 0, including the 0 as part of the count
         // +1
-        INC ZP.TOPL
+        INC ZP.TOP0
         if (Z)
         {
-            INC ZP.TOPH
+            INC ZP.TOP1
         }
     }
 }
