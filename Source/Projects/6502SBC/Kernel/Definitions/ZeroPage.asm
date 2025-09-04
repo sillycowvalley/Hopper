@@ -26,6 +26,33 @@ unit ZP // ZeroPage.asm
     const byte NEXT2                = 0x18;
     const byte NEXT3                = 0x19;
     
+    const byte IDX                  = 0x1A;
+    const byte IDXL                 = 0x1A;
+    const byte IDXH                 = 0x1B;
+    
+    const byte IDY                  = 0x1C;
+    const byte IDYL                 = 0x1C;
+    const byte IDYH                 = 0x1D;
+    
+    const byte ACC                  = 0x1E;
+    const byte ACCL                 = 0x1E;
+    const byte ACCH                 = 0x1F;
+    
+    // Hopper Assembler jump table slots: always 0x20 and 0x21
+    const byte JumpTableLSB         = 0x20;  // Jump table LSB
+    const byte JumpTableMSB         = 0x21;  // Jump table MSB
+    
+    // Timer ticks (move here -> move in 6502 emulator)
+    const byte TICK0                = 0x22;  // Timer tick byte 0 (LSB)
+    const byte TICK1                = 0x23;  // Timer tick byte 1
+    const byte TICK2                = 0x24;  // Timer tick byte 2
+    const byte TICK3                = 0x25;  // Timer tick byte 3 (MSB)
+    
+    const byte STR                  = 0x26;
+    const byte STRL                 = 0x26;
+    const byte STRH                 = 0x27;
+    
+    
     
     // I2C
     const byte I2CInWritePtr        = 0x77;  // I2C buffer write pointer
@@ -38,16 +65,7 @@ unit ZP // ZeroPage.asm
     const byte PLUGNPLAY            = 0x8B;
     
 
-    // Hopper Assembler jump table slots: always 0x20 and 0x21
-    const byte JumpTableLSB         = 0x20;  // Jump table LSB
-    const byte JumpTableMSB         = 0x21;  // Jump table MSB
-    
-    // Timer ticks (move here -> move in 6502 emulator)
-    const byte TICK0                = 0x22;  // Timer tick byte 0 (LSB)
-    const byte TICK1                = 0x23;  // Timer tick byte 1
-    const byte TICK2                = 0x24;  // Timer tick byte 2
-    const byte TICK3                = 0x25;  // Timer tick byte 3 (MSB)
-    
+        
     // SHARED LEAF FUNCTION WORKSPACE
     // Complex leaf methods that never call each other can share this space:
     // - Memory.Allocate and Memory.Free
@@ -87,6 +105,25 @@ unit ZP // ZeroPage.asm
     const byte RESULT5              = M5;
     const byte RESULT6              = M6;
     const byte RESULT7              = M7;
+    
+    // Debug.asm aliases (never calls Memory functions)
+    const byte DB0                  = M0;
+    const byte DB1                  = M1;
+    const byte DB2                  = M2;
+    const byte DB3                  = M3;
+    const byte DB4                  = M4;
+    const byte DB5                  = M5;
+    const byte DB6                  = M6;
+    const byte DB7                  = M7;
+    const byte DB8                  = M8;
+    const byte DB9                  = M9;
+    const byte DB10                 = M10;
+    const byte DB11                 = M11;
+    const byte DB12                 = M12;
+    const byte DB13                 = M13;
+    const byte DB14                 = M14;
+    const byte DB15                 = M15;
+    
     
     // DON'T MOVE THESE WITHOUT UPDATING EMULATOR:
     const byte EmulatorPCL          = 0x75;  // BIT this to capture PC

@@ -1,10 +1,7 @@
 unit Allocate
 {
-#ifndef HOPPER_BASIC
-    uses "ZeroPage"
-    uses "Diagnostics"
-#endif
-    friend Memory, GC, List;
+
+    friend Memory;
     
 
     const byte maBEST  = M0;
@@ -68,7 +65,6 @@ unit Allocate
         STA ZP.ACCL    // Store the masked low byte back
 
 
-#ifdef CPU_65C02S
         STZ maBESTL
         STZ maBESTH
         STZ maBESTSIZEL
@@ -77,17 +73,7 @@ unit Allocate
         STZ maBESTNEXTH
         STZ maBESTPREVL
         STZ maBESTPREVH
-#else
-        LDA # 0
-        STA maBESTL
-        STA maBESTH
-        STA maBESTSIZEL
-        STA maBESTSIZEH
-        STA maBESTNEXTL
-        STA maBESTNEXTH
-        STA maBESTPREVL
-        STA maBESTPREVH
-#endif
+        
         LDA ACCH
         if (Z) // < 256
         {
@@ -157,16 +143,9 @@ unit Allocate
                 STA maBESTH
         
                 // bestSize = ReadWord(best);
-#ifdef CPU_65C02S
                 LDA [maBEST]
                 STA maBESTSIZEL
                 LDY # 1
-#else
-                LDY # 0
-                LDA [maBEST], Y
-                STA maBESTSIZEL
-                INY
-#endif
                 LDA [maBEST], Y
                 STA maBESTSIZEH
                 // bestNext = ReadWord(best + 2);
@@ -247,14 +226,8 @@ unit Allocate
                 // so we now how much to free later
                 // block size includes the size of the size field itself
                 LDA ZP.ACCL
-#ifdef CPU_65C02S
                 STA [maBEST]
                 LDY # 1
-#else
-                LDY # 0
-                STA [maBEST], Y
-                INY
-#endif
                 LDA ACCH
                 STA [maBEST], Y
         
@@ -276,14 +249,8 @@ unit Allocate
                 STA maNEWHOLESIZEH
      
                 LDA maNEWHOLESIZEL
-#ifdef CPU_65C02S
                 STA [maNEWHOLE]
                 LDY # 1
-#else
-                LDY # 0
-                STA [maNEWHOLE], Y
-                INY
-#endif
                 LDA maNEWHOLESIZEH
                 STA [maNEWHOLE], Y
     
@@ -372,18 +339,7 @@ unit Allocate
             if (NC)
             {
                 // maBESTSIZE < ACC
-#if defined(HOPPER_BASIC)
-#ifdef DEBUG
-                Print.NewLine(); LDA #'R' COut(); LDA #':' COut(); LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); 
-                Memory.AvailableACC();
-                Print.NewLine(); LDA #'A' COut(); LDA #':' COut(); LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); 
-                Memory.MaximumACC();
-                Print.NewLine(); LDA #'M' COut(); LDA #':' COut(); LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); 
-#endif
                 LDA #0x03 Debug.Crash(); // Memory allocation failure
-#else
-                LDA #0x0C Diagnostics.die(); // Memory allocation failure
-#endif
             }
     
             // (bestSize >= size)
@@ -396,14 +352,8 @@ unit Allocate
             // WriteWord(best, bestSize);
             
             LDA maBESTSIZEL
-#ifdef CPU_65C02S
             STA [maBEST]
             LDY # 1
-#else
-            LDY # 0
-            STA [maBEST], Y
-            INY
-#endif
             LDA maBESTSIZEH
             STA [maBEST], Y
     
@@ -501,12 +451,7 @@ unit Allocate
     
             // clear
             LDA # 0
-#ifdef CPU_65C02S
             STA [maSCRATCH]
-#else            
-            TAY // 0 -> Y
-            STA [maSCRATCH], Y
-#endif
         }
     }
 }

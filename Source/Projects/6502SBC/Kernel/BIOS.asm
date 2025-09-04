@@ -3,13 +3,29 @@ program BIOS
     #define CPU_65C02S
     #define ROM_8K
     
+    //#define DEBUG
+    
+    // Optional components
+    //#define HASLONG
+    //#define HASFLOAT
+    //#define HASEEPROM
+    //#define HASHEAP
+    
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
     uses "Definitions/ZeroPage"
+    
+    uses "Debugging/Debug"
+    
+    uses "Memory/Memory"
+    
+    uses "Types/Char"
+    
     uses "Serial"
     uses "Parallel"
     
-    // Interrupt handlers
+    uses "Print"
+    
     IRQ()
     {
         Serial.ISR();
@@ -43,6 +59,7 @@ program BIOS
         Serial.Initialize();
         Parallel.Initialize();
         
+        Memory.Initialize();
         
         CLI  // Re-enable interrupts
     }

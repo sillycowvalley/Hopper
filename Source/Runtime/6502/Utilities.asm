@@ -54,7 +54,6 @@ unit Utilities // Utilities.asm
             DEX
             if (Z) { break; }
         }
-            
     }
     IncIDX()
     {

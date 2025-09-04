@@ -1,9 +1,7 @@
 unit Free
 {
-#ifndef HOPPER_BASIC
-    uses "ZeroPage"
-#endif
-    friend Memory, GC, String, List;
+
+    friend Memory;
 
     const byte mfPREVIOUS  = M0;
     const byte mfPREVIOUSL = M0;
@@ -50,7 +48,6 @@ unit Free
 
     const byte mfOFFSET = M15; // used in releaseSP, no need to preserve
     
-#ifdef HOPPER_BASIC                
     const byte mfCURRENT = M16;
     const byte mfCURRENTL = M16;
     const byte mfCURRENTH = M17;
@@ -58,15 +55,6 @@ unit Free
     const byte mfNEXTNEXT = M16;
     const byte mfNEXTNEXTL = M16;
     const byte mfNEXTNEXTH = M17;
-#else
-    const byte mfCURRENT = IDYL;
-    const byte mfCURRENTL = IDYL;
-    const byte mfCURRENTH = IDYH;
-    // same as mfCURRENT which is not used again after mfNEXTNEXT is needed
-    const byte mfNEXTNEXT = IDYL;
-    const byte mfNEXTNEXTL = IDYL;
-    const byte mfNEXTNEXTH = IDYH;    
-#endif     
          
     // Input: ZP.IDX  
     // Munts: A, Y, ZP.IDX, ZP.IDY, ZP.FREELIST 
@@ -75,14 +63,6 @@ unit Free
         // address is in ZP.IDX
         // uses ZP.IDY
 
-#if defined(CHECKED)
-        LDA ZP.IDXL
-        ORA ZP.IDXH
-        if (Z)
-        {
-            LDA # 0x0B Diagnostics.die(); // this is a bug (to try to free nullptr)
-        }
-#endif
         loop
         {
             // mfSIZE  = ReadWord(ZP.IDX - 2)
@@ -95,14 +75,8 @@ unit Free
             LDA ZP.IDXH
             SBC # 0
             STA mfCURRENTH
-#ifdef CPU_65C02S
             LDA [mfCURRENT]
             LDY # 1
-#else
-            LDY # 0
-            LDA [mfCURRENT], Y
-            INY
-#endif
             STA mfSIZEL
             LDA [mfCURRENT], Y
             STA mfSIZEH
@@ -113,14 +87,8 @@ unit Free
             LDA FREELISTH
             STA mfCURRENTH
 
-#ifdef CPU_65C02S
             STZ mfPREVIOUSL  
             STZ mfPREVIOUSH
-#else
-            LDA # 0
-            STA mfPREVIOUSL  
-            STA mfPREVIOUSH
-#endif
 
             loop 
             {
@@ -174,18 +142,11 @@ unit Free
             STA mfCURRENTPREVL
             LDA mfPREVIOUSH
             STA mfCURRENTPREVH
-#ifdef CPU_65C02S
             STZ mfCURRENTSIZEL
             STZ mfCURRENTSIZEH
             STZ mfCURRENTNEXTL
             STZ mfCURRENTNEXTH
-#else            
-            LDA #0
-            STA mfCURRENTSIZEL
-            STA mfCURRENTSIZEH
-            STA mfCURRENTNEXTL
-            STA mfCURRENTNEXTH
-#endif
+            
             loop
             {
                 LDA mfCURRENTL
@@ -196,14 +157,8 @@ unit Free
                 }
                 // 0 != current
                 // currentSize = ReadWord[mfCURRENT]
-#ifdef CPU_65C02S
                 LDA [mfCURRENT]
                 LDY # 1
-#else
-                LDY # 0
-                LDA [mfCURRENT], Y
-                INY
-#endif
                 STA mfCURRENTSIZEL
                 
                 LDA [mfCURRENT], Y
@@ -284,14 +239,8 @@ unit Free
                     // GAPFRONT == 0
 
                     // nextSize = ReadWord(freeList)
-#ifdef CPU_65C02S
                     LDA [ZP.FREELIST]
                     LDY # 1
-#else
-                    LDY # 0
-                    LDA [ZP.FREELIST], Y
-                    INY
-#endif
                     STA mfNEXTSIZEL
                     
                     LDA [ZP.FREELIST], Y
@@ -315,14 +264,8 @@ unit Free
 
                     // WriteWord(freeSlot, size+nextSize);
                     LDA mfSIZEL
-#ifdef CPU_65C02S
                     STA [mfFREESLOT]
                     LDY # 1
-#else
-                    LDY # 0
-                    STA [mfFREESLOT], Y
-                    INY
-#endif
                     LDA mfSIZEH
                     STA [mfFREESLOT], Y
 
@@ -419,14 +362,8 @@ unit Free
                 STA mfSIZEH
                 
                 LDA mfSIZEL
-#ifdef CPU_65C02S
                 STA [mfCURRENTPREV]
                 LDY # 1
-#else
-                LDY # 0
-                STA [mfCURRENTPREV], Y
-                INY
-#endif
                 LDA mfSIZEH
                 STA [mfCURRENTPREV], Y
 
@@ -494,14 +431,8 @@ unit Free
                 STA mfSIZEH
 
                 LDA mfSIZEL
-#ifdef CPU_65C02S
                 STA [mfCURRENTPREV]
                 LDY # 1
-#else
-                LDY # 0
-                STA [mfCURRENTPREV], Y
-                INY
-#endif
                 LDA mfSIZEH
                 STA [mfCURRENTPREV], Y
 
@@ -559,14 +490,8 @@ unit Free
             STA mfSIZEH
      
             LDA mfSIZEL
-#ifdef CPU_65C02S
             STA [mfFREESLOT]
             LDY # 1
-#else
-            LDY # 0
-            STA [mfFREESLOT], Y
-            INY
-#endif
             LDA mfSIZEH
             STA [mfFREESLOT], Y
 
@@ -602,14 +527,8 @@ unit Free
     freeHelper1()
     {
         // prevSize = ReadWord(currentPrev);
-#ifdef CPU_65C02S
         LDA [mfCURRENTPREV]
         LDY # 1
-#else
-        LDY # 0
-        LDA [mfCURRENTPREV], Y
-        INY
-#endif
         STA mfPREVSIZEL
         LDA [mfCURRENTPREV], Y
         STA mfPREVSIZEH
@@ -630,6 +549,5 @@ unit Free
         STA mfGAPBACKH
         ORA mfGAPBACKL
     }
-    
 }
 

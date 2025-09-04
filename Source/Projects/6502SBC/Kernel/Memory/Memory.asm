@@ -9,25 +9,14 @@ unit Memory // Memory.asm
         loop
         {
             LDA #0xAA
-#ifdef CPU_65C02S
             STA [IDX]
             LDA [IDX]
-#else
-            LDY # 0
-            STA [IDX], Y
-            LDA [IDX], Y
-#endif
             CMP #0xAA
             if (Z)
             {
                 LDA #0x55
-#ifdef CPU_65C02S
                 STA [IDX]
                 LDA [IDX]
-#else
-                STA [IDX], Y
-                LDA [IDX], Y
-#endif
                 CMP #0x55
                 if (Z)
                 {
@@ -84,44 +73,28 @@ unit Memory // Memory.asm
                 break;
             }
             
-            
-#if defined(HOPPER_BASIC)
             LDA # 0x02 Debug.Crash(); // failed to find at least 16K of RAM
-#else
-            LDA # 0x0B Die(); // failed to find at least 16K of RAM
-#endif
             
             break;
         } // loop
     }        
     
-    InitializeHeapSize()
+    Initialize()
     {
         // Assumes that:
         // - entire program was loaded at HopperData (typically $0800)
         // - size in pages of loaded program is in PROGSIZE
 
-#ifdef HOPPER_BASIC
-        LDA # (Address.HopperData >> 8)
-#else
-        CLC
-        LDA # (Address.HopperData >> 8)
-        ADC ZP.PROGSIZE  // program size in pages (rounded up to the nearest page)
-#endif
+        LDA # (Address.HeapStart >> 8)
         STA ZP.HEAPSTART
         
-        // if RAM does not end at 0x80 (0x7FFF) then respect the value of RamSize (like 0x5000 for Ben Eater 6502)
-        LDA # (Address.RamSize >> 8)
-        CMP # 0x80 
-        if (Z)
-        {
-            // probe to discover RAM size:
-            // - A = 0x40 for 16K    
-            // - A = 0x80 for 32K    
-            // - A = 0xC0 for 48K
-            // - A = 0xE0 for 56K
-            probeRAM(); // munts Y, sets A
-        }
+        // probe to discover RAM size:
+        // - A = 0x40 for 16K    
+        // - A = 0x80 for 32K    
+        // - A = 0xC0 for 48K
+        // - A = 0xE0 for 56K
+        probeRAM(); // munts Y, sets A
+    
         SEC
         SBC ZP.HEAPSTART
         STA ZP.HEAPSIZE
@@ -133,7 +106,7 @@ unit Memory // Memory.asm
         LDA ZP.HEAPSTART
         STA IDXH
         LDX ZP.HEAPSIZE // number of 256 byte pages is same as MSB of size
-        Utilities.ClearPages(); // munts A, X, Y
+        ClearPages(); // munts A, X, Y
         
         // FreeList = Hopper heap start
         LDA ZP.HEAPSTART
@@ -162,13 +135,6 @@ unit Memory // Memory.asm
         STA [ZP.FREELIST], Y
     }
     
-#ifdef HOPPER_BASIC
-    // don't use the stack versions by mistake
-    
-    // API Status: Clean
-    // All public methods preserve caller state except for documented outputs
-    // Uses ZP.M* scratch space for memory management (internal operations only)
-
     // Allocate memory block
     // Input: ZP.ACC = requested size (16-bit) 
     // Output: ZP.IDX = allocated address (0x0000 if allocation failed)
@@ -178,10 +144,6 @@ unit Memory // Memory.asm
     {
         PHA
         PHY
-
-#ifdef TRACE
-        //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodEntry();
-#endif
 
         LDA ZP.ACCL
         PHA
@@ -203,9 +165,6 @@ unit Memory // Memory.asm
         PLA
         STA ZP.ACCL
         
-#ifdef TRACE
-        //LDA #(memoryAllocate % 256) STA ZP.TraceMessageL LDA #(memoryAllocate / 256) STA ZP.TraceMessageH Trace.MethodExit();
-#endif
         SEC
         PLY
         PLA
@@ -219,7 +178,7 @@ unit Memory // Memory.asm
     {   
         PHY
 
-#if defined(DEBUG) || defined(TRACE)
+#if defined(DEBUG)
         LDA IDXL
         ORA IDXH
         if (Z)
@@ -235,92 +194,13 @@ unit Memory // Memory.asm
         
         PLY
     }
-    FreeIDY()
-    {
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
-        LDA ZP.IDYL
-        STA ZP.IDXL
-        LDA ZP.IDYH
-        STA ZP.IDXH
-        Memory.Free();  // Input: ZP.IDX, Munts: ZP.IDX, ZP.M* -> C on success
-        
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-    }
     
-#else
-    Allocate()
+    Available()
     {
-        Stacks.PopACC();      // only care about ACCL and ACCH (not ACCT)
-        Allocate.Allocate();
-        
-        // Push IDX:
-        LDY ZP.SP
-        LDA ZP.IDXL
-        STA Address.ValueStackLSB, Y
-        LDA ZP.IDXH
-        STA Address.ValueStackMSB, Y
-        LDA # Types.UInt
-        STA Address.TypeStackLSB, Y
-        INC ZP.SP
-    }
-    Free()
-    {
-        Stacks.PopIDX();
-        Free.Free();
-    }
-
-    ReadByte()
-    {
-        Stacks.PopIDX();
-        
-#ifdef CPU_65C02S
-        STZ ZP.NEXTH
-        LDA [IDX]
-#else
-        LDY # 0
-        STY ZP.NEXTH
-        LDA [IDX], Y
-#endif
-        STA ZP.NEXTL
-        
-        LDA # Types.Byte
-        STA ZP.NEXTT
-        PushNext();
-    }
-    WriteByte()
-    {
-        Stacks.PopACC(); // only care about ACCL (not ACCT or ACCH)
-        Stacks.PopIDX();
-        
-        LDA ACCL
-#ifdef CPU_65C02S
-        STA [IDX]
-#else
-        LDY # 0
-        STA [IDX], Y
-#endif
-    }
-#endif // not HOPPER_BASIC
-
-    AvailableACC()
-    {
-        // uses IDXand ACC
+        // uses IDX and ACC
         // pushes result to [top]
-#ifdef CPU_65C02S
         STZ ZP.ACCL
         STZ ZP.ACCH
-#else
-        LDA # 0
-        STA ZP.ACCL
-        STA ZP.ACCH
-#endif
         LDA ZP.FREELISTL
         STA ZP.IDXL
         LDA ZP.FREELISTH
@@ -358,28 +238,15 @@ unit Memory // Memory.asm
             STA IDXL
         } // loop
     }
-    Available()
-    {
-        AvailableACC();
-        LDA # Types.UInt
-        STA ZP.ACCT
-        Stacks.PushACC();  // munts Y, A
-    }
     
-    MaximumACC()
+    Maximum()
     {
         // uses ACC, IDX and IDY
         // pushes result to [top]
                
         // available = 0
-#ifdef CPU_65C02S
         STZ ACCL
         STZ ACCH
-#else        
-        LDA #0
-        STA ACCL
-        STA ACCH
-#endif
         
         // current = FREELIST
         LDA FREELISTL
@@ -450,15 +317,7 @@ unit Memory // Memory.asm
             STA IDXL
         } // loop
     }
-    Maximum()
-    {
-        MaximumACC();
-        LDA #Types.UInt
-        STA ZP.ACCT
-        Stacks.PushACC();
-    }
     
-#ifdef HOPPER_BASIC
     // Copy bytes from source to destination
     // Input: ZP.FSOURCEADDRESS = source pointer
     //        ZP.FDESTINATIONADDRESS = destination pointer  
@@ -556,5 +415,25 @@ unit Memory // Memory.asm
         }
     }
     
-#endif
+    // IDX (memory location) and X (number of pages):
+    //    inspired by: https://forums.atariage.com/topic/186656-clearing-a-section-of-memory/
+    //    munts A, X, Y And IDXH but doesn't modify IDXL
+    ClearPages()
+    {
+        LDA #0
+        loop
+        {
+            TAY // 0 -> Y
+            loop
+            {
+                STA [IDX], Y
+                DEY
+                if (Z) { break; }
+            }
+            // next page ..
+            INC IDXH
+            DEX
+            if (Z) { break; }
+        }
+    }
 }
