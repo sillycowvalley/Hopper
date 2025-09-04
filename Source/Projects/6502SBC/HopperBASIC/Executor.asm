@@ -946,10 +946,33 @@ unit Executor // Executor.asm
 #ifdef TRACE
        LDA #(executeEnterTrace % 256) STA ZP.TraceMessageL LDA #(executeEnterTrace / 256) STA ZP.TraceMessageH Trace.MethodEntry();
 #endif
+
+    // Fetch operand (number of variable slots to create)
+#ifdef TRACEEXE
+        FetchOperandByte(); // -> A
+#else            
+        LDA [ZP.PC]
        
-       Stacks.PushBP();
+        // Advance PC
+        INC ZP.PCL
+        if (Z)
+        {
+            INC ZP.PCH
+        }
+#endif       
+       TAX
+              
+       Stacks.PushBP(); // munts Y
        LDA ZP.SP
        STA ZP.BP
+       
+       CPX #0
+       loop
+       {
+           if (Z) { break; }
+           executePushEmptyVar(); // munts Y
+           DEX
+       }
        
 //DumpStack();
        

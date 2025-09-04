@@ -39,7 +39,7 @@ unit Emit
    // Modifies: ZP.OpCodeBufferContentSizeL/H (incremented), ZP.XPC (incremented)
    OpCode()
    {
-       PHA
+       PHA // relied on: see compileMultiplicative()
        loop
        {
            STA Compiler.compilerOpCode

@@ -2175,7 +2175,8 @@ unit Compiler // Compiler.asm
            
 
            LDA #OpCode.ENTER
-           Emit.OpCode();
+           STZ Compiler.compilerOperand1 // default to ENTER 0x00
+           Emit.OpCodeWithByte();
            CheckErrorAndSetFailure();
            if (NC) { break; }
            

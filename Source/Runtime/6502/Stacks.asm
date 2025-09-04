@@ -38,10 +38,17 @@ unit Stacks // Stacks.asm
     }
     PushBP()
     {
+#ifdef HOPPER_BASIC
+        LDY ZP.CSP
+        LDA ZP.BP
+        STA Address.CallStackLSB, Y
+        INC ZP.CSP
+#else
         LDX ZP.CSP
         LDA ZP.BP
         STA Address.CallStackLSB, X
         INC ZP.CSP
+#endif        
     }
     PopPC()
     {

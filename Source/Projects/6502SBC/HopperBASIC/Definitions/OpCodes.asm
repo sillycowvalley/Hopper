@@ -59,9 +59,6 @@ unit OpCodes
        
        HALT         = 0x19,  // end of REPL opcode stream
        
-       // Function frame management
-       ENTER        = 0x1A,  // Enter function frame - push BP, SP->BP
-       
        PUSHEMPTYVAR = 0x1B,  // create a stack slot with 0 value and type VAR|INT
        
        GETITEM      = 0x1C,  // Generic indexing: container[index]
@@ -100,6 +97,10 @@ unit OpCodes
        INCLOCAL     = 0x4E,
 
        DECSP        = 0x4F,  // Decrement stack pointer by [value] (discard top value)
+       
+       // Function frame management
+       ENTER        = 0x50,  // Enter function frame - push BP, SP->BP, create [value] local variables (value x PUSHEMPTYVAR)
+       
        
        // === OPCODES WITH TWO BYTE OPERANDS (0x80-0xBF) ===
        // Bits 7-6: 10 (two byte operands)

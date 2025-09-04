@@ -19,6 +19,7 @@ unit Optimizer
         Operand0AndOperand2, // PEEPREPLACE PEEPOP0 PEEPOP2
         Operand0AndOperand3, // PEEPREPLACE PEEPOP0 PEEPOP3
         Operand2AndOperand1, // PEEPREPLACE PEEPOP2 PEEPOP1
+        IncrementOperand1,   // PEEPREPLACE (PEEPOP1+1)
     }
     
     const byte[] peepPatterns = {
@@ -54,6 +55,9 @@ unit Optimizer
         
     // PUSHWORD <word>, PUSHLONG0 -> PUSHWORDLONG <word>
         OpCode.PUSHLONG0,   OpCode.PUSHWORD,  OpCode.DONTCARE,   OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.Operand1W,           OpCode.PUSHWORD,
+        
+    // PUSHEMPTYVAR, ENTERN -> ENTER(N+1)
+       OpCode.PUSHEMPTYVAR, OpCode.ENTER,     OpCode.DONTCARE,   OpCode.DONTCARE,  PeepConstraint.None,             NewOperands.IncrementOperand1,   OpCode.ENTER,        
             
         
         OpCode.INVALID  // End marker = 0
@@ -173,6 +177,13 @@ unit Optimizer
         Space();
     }        
     
+    /*
+    div64()
+    {
+        LSR A LSR A LSR A LSR A LSR A LSR A // divide by 64
+    }
+    */
+    
     // IDY - current instruction pointer
     // A = contains OpCode
     //
@@ -184,7 +195,6 @@ unit Optimizer
     stepBack()
     {
         PHA // preserve the opcode
-        PHY
         LSR A LSR A LSR A LSR A LSR A LSR A // divide by 64
         INC
         TAY
@@ -194,13 +204,10 @@ unit Optimizer
             DEY
             if (Z) { break; }
         }
-        PLY
         PLA
     }
     stepBackXPC()
     {
-        PHA // preserve the opcode
-        PHY
         LSR A LSR A LSR A LSR A LSR A LSR A // divide by 64
         INC
         TAY
@@ -223,8 +230,6 @@ unit Optimizer
             DEY
             if (Z) { break; }
         }
-        PLY
-        PLA
     }
     incXPC()
     {
@@ -408,12 +413,12 @@ if (Z)
            
             // PEEP0 - step back 1 to opcode
             LDA ZP.PEEP0
-            stepBack();
+            stepBack(); // munts Y
+            LDY #1
             AND #0xC0
             CMP #0x40
             if (Z) // Single byte operand
             {
-                LDY #1
                 LDA [ZP.IDY], Y
                 STA ZP.PEEPOP0
             }
@@ -424,10 +429,9 @@ if (Z)
                 CMP #0x80
                 if (Z) // Two byte operand
                 {
-                    LDY #1
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP0    // Word LSB
-                    LDY #2  
+                    INY  
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP0H   // Word MSB
                 }
@@ -436,12 +440,12 @@ if (Z)
             
             // PEEP1 - step back 1 to opcode
             LDA ZP.PEEP1
-            stepBack();
+            stepBack(); // munts Y
+            LDY #1
             AND #0xC0
             CMP #0x40
             if (Z) // Single byte operand
             {
-                LDY #1
                 LDA [ZP.IDY], Y
                 STA ZP.PEEPOP1
             }
@@ -450,10 +454,9 @@ if (Z)
                 CMP #0x80
                 if (Z) // Two byte operand
                 {
-                    LDY #1
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP1    // Word LSB
-                    LDY #2  
+                    INY
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP1H   // Word MSB
                 }
@@ -465,12 +468,12 @@ if (Z)
             {
                 // PEEP2 - step back 1 to opcode
                 LDA ZP.PEEP2
-                stepBack();
+                stepBack(); // munts Y
+                LDY #1
                 AND #0xC0
                 CMP #0x40
                 if (Z) // Single byte operand
                 {
-                    LDY #1
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP2
                 }
@@ -481,10 +484,9 @@ if (Z)
                     CMP #0x80
                     if (Z) // Two byte operand
                     {
-                        LDY #1
                         LDA [ZP.IDY], Y
                         STA ZP.PEEPOP2    // Word LSB
-                        LDY #2  
+                        INY 
                         LDA [ZP.IDY], Y
                         STA ZP.PEEPOP2H   // Word MSB
                     }
@@ -497,12 +499,12 @@ if (Z)
             {
                 // PEEP3 - step back 1 to opcode
                 LDA ZP.PEEP3
-                stepBack();
+                stepBack(); // munts Y
+                LDY #1
                 AND #0xC0
                 CMP #0x40
                 if (Z) // Single byte operand
                 {
-                    LDY #1
                     LDA [ZP.IDY], Y
                     STA ZP.PEEPOP3
                 }
@@ -513,10 +515,9 @@ if (Z)
                     CMP #0x80
                     if (Z) // Two byte operand
                     {
-                        LDY #1
                         LDA [ZP.IDY], Y
                         STA ZP.PEEPOP3    // Word LSB
-                        LDY #2  
+                        INY
                         LDA [ZP.IDY], Y
                         STA ZP.PEEPOP3H   // Word MSB
                     }
@@ -559,10 +560,11 @@ if (Z)
             
             // remove ZP.PEEPOPS x instructions
             LDX ZP.PEEPOPS
+Debug.NL(); TXA HOut();            
             loop
             {
                 LDA ZP.PEEP0
-                stepBackXPC();
+                stepBackXPC(); // munts A, Y
                 popPeepOp();
                 DEX
                 if (Z) { break; }
@@ -589,6 +591,13 @@ if (Z)
                 case NewOperands.Operand0:
                 {
                     LDA ZP.PEEPOP0
+                    STA [ZP.XPC]
+                    incXPC();
+                }
+                case NewOperands.IncrementOperand1:
+                {
+                    LDA ZP.PEEPOP1
+                    INC
                     STA [ZP.XPC]
                     incXPC();
                 }
@@ -654,10 +663,6 @@ if (Z)
     // current opcode is in Compiler.compilerOpCode
     Peep()
     {
-        PHA
-        PHX
-        PHY
-        
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
@@ -680,10 +685,6 @@ if (Z)
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
-        
-        PLY
-        PLX
-        PLA
     }
 
 #endif
