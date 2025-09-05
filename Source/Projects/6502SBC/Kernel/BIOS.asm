@@ -2,7 +2,7 @@ program BIOS
 {
     #define HOPPER_BIOS
     
-    #define DEBUG
+    //#define DEBUG
     #define CPU_65C02S
     
 #ifdef DEBUG    
@@ -516,9 +516,9 @@ program BIOS
     Hopper()
     {
         Initialize();  
-        
+#ifdef DEBUG        
         Run(); // tests
-        
+#endif
         printWelcome();
         
         // Main command loop

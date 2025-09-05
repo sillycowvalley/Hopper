@@ -337,10 +337,6 @@ countEntry:
                     loop
                     {
                         Long.shiftNEXTright();
-                        //LSR ZP.NEXT3
-                        //ROR ZP.NEXT2
-                        //ROR ZP.NEXT1
-                        //ROR ZP.NEXT0
                         DEX
                         if (Z) { break; }
                     }
@@ -353,6 +349,7 @@ countEntry:
             CMP TOPSIGN
             if (Z)
             {
+                // NEXT + TOP --> RESULT
                 CLC
                 LDA ZP.NEXT0
                 ADC ZP.TOP0
@@ -373,6 +370,7 @@ countEntry:
                 if (NC) // not <, so >=
                 {         
                     // mantissaA >= mantissaB
+                    // NEXT - TOP --> RESULT
                     SEC
                     LDA ZP.NEXT0
                     SBC ZP.TOP0
@@ -391,6 +389,7 @@ countEntry:
                 else
                 {
                     // mantissaA < mantissaB
+                    // TOP - NEXT --> RESULT
                     SEC
                     LDA ZP.TOP0
                     SBC ZP.NEXT0
@@ -628,6 +627,7 @@ countEntry:
             }
             
             // exponent = exponentA + exponentB - 127
+            // NEXTEXP + TOPEXP -127 --> NEXTEXP
             CLC
             LDA NEXTEXP0
             ADC TOPEXP0
@@ -907,6 +907,7 @@ countEntry:
             }
             
             // exponent = exponentA - exponentB + 127
+            // NEXTEXP + 127 - TOPEXP --> NEXTEXP
             CLC
             LDA NEXTEXP0
             ADC # 127
@@ -1047,10 +1048,6 @@ countEntry:
                     {
                         if (Z) { break; }
                         Long.shiftNEXTright();
-                        //LSR ZP.NEXT3
-                        //ROR ZP.NEXT2
-                        //ROR ZP.NEXT1
-                        //ROR ZP.NEXT0
                         DEX
                     }
                 }
@@ -1061,19 +1058,7 @@ countEntry:
             if (NZ)
             {
                 // result = -result
-                SEC
-                LDA # 0
-                SBC ZP.NEXT0
-                STA ZP.NEXT0
-                LDA # 0
-                SBC ZP.NEXT1
-                STA ZP.NEXT1
-                LDA # 0
-                SBC ZP.NEXT2
-                STA ZP.NEXT2
-                LDA # 0
-                SBC ZP.NEXT3
-                STA ZP.NEXT3
+                Long.NegateNext();
             }
             break;
         }
