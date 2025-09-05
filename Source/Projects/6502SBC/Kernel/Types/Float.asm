@@ -91,11 +91,13 @@ unit Float
                     AND # 0x7F    // ignore the sign for -0
                     if (Z)
                     {
-                        INX
+                        SEC
+                        return;
                     }
                 }
             }
         }
+        CLC
     }
     IsZeroTop()
     {
@@ -113,11 +115,13 @@ unit Float
                     AND # 0x7F    // ignore the sign for -0
                     if (Z)
                     {
-                        INX
+                        SEC
+                        return;
                     }
                 }
             }
         }
+        CLC
     }
     
     getSignNEXT()
@@ -285,14 +289,12 @@ countEntry:
         loop
         {
             Float.IsZeroTop();
-            CPX # 1
-            if (Z)
+            if (C)
             {
                 break;
             }
             Float.IsZeroNext();
-            CPX # 1
-            if (Z)
+            if (C)
             {
                 Shared.SwapNextTop();
                 break;
@@ -608,14 +610,12 @@ countEntry:
             STA NEXTSIGN
             
             Float.IsZeroNext();
-            CPX # 1
-            if (Z)
+            if (C)
             {
                 break;
             }
             Float.IsZeroTop();
-            CPX # 1
-            if (Z)
+            if (C)
             {
                 Shared.SwapNextTop();
                 break;
@@ -1149,19 +1149,15 @@ countEntry:
     EQ()
     {
         IsZeroTop();
-        TXA
-        if (NZ)
+        if (C)
         {
             IsZeroNext();
-            TXA
-            if (NZ)
+            if (C)
             {
                 // TOP == 0 && NEXT == 0
-                // X is already 1
                 return;
             }
         }
-        // X is already 0
         LDA ZP.NEXT0
         CMP ZP.TOP0
         if (Z)
@@ -1178,12 +1174,13 @@ countEntry:
                     CMP ZP.TOP3
                     if (Z)
                     {
-                        INX
+                        SEC
+                        return;
                     }
                 }
             }
         }
-        // result in X
+        CLC
     }
     
     LT()
@@ -1201,7 +1198,6 @@ countEntry:
                 if (C)
                 {
                     // signA > signB
-                    INX
                 }
                 break;
             }
@@ -1222,7 +1218,11 @@ countEntry:
                     if (NC)
                     {
                         // exponentA < exponentB
-                        INX
+                        SEC
+                    }
+                    else
+                    {
+                        CLC
                     }
                 }
                 else
@@ -1232,7 +1232,6 @@ countEntry:
                     if (C)
                     {
                         // exponentA > exponentB
-                        INX
                     }
                 }
                 break;
@@ -1250,18 +1249,22 @@ countEntry:
             else
             {
                 Long.commonEQ();
-                CPX # 1
-                if (Z)
+                if (C)
                 {
-                    DEX
+                    CLC // mantissaA == mantissaB ? 
                 }
                 else
                 {
                     // mantissaA > mantissaB ?
                     Long.commonLT();
-                    TXA
-                    EOR # 0b00000001
-                    TAX
+                    if (C)
+                    {
+                        CLC
+                    }
+                    else
+                    {
+                        SEC
+                    }
                 }
             }
             break;

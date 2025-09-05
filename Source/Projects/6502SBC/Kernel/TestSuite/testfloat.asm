@@ -43,10 +43,7 @@ unit Tests
         CreateFloat2();  // NEXT = 2.0
         CreateFloat3();  // TOP = 3.0
         
-Debug.NL(); NFOut(); Space(); TFOut();        
         Float.LT();
-Space(); TXA HOut();        
-
         PrintBool();
         
         // Test EQ: 2.0 == 2.0 (should be true)
@@ -54,9 +51,7 @@ Space(); TXA HOut();
         Shared.MoveNextToTop();
         CreateFloat2();  // NEXT = 2.0
         
-Debug.NL(); NFOut(); Space(); TFOut();                
         Float.EQ();
-Space(); TXA HOut();        
         PrintBool();
         
         NewLine();
@@ -72,9 +67,7 @@ Space(); TXA HOut();
         // Test non-zero detection
         CreateFloat1();
         Float.IsZeroNext();
-        // Should return false (X=0), we want to show 'F'
-        CPX #0
-        if (Z)
+        if (C)
         {
             LDA #'F'  // Correctly detected non-zero
         }
@@ -151,11 +144,10 @@ Space(); TXA HOut();
         Serial.WriteChar();
     }
     
-    // Print T for true or F for false (X register holds result)
+    // Print T for true or F for false (C flag holds result)
     PrintBool()
     {
-        CPX #1
-        if (Z)
+        if (C)
         {
             LDA #'T'
         }
