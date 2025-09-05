@@ -8,6 +8,7 @@ unit Tests
     const string okLabel = "[OK]";
     const string errorLabel = "[ERROR]";
     const string skipLabel = "[SKIP] ";
+    const string overallSuiteLabel = "Overall test suite: ";
     
     // Test names
     const string basicAllocTestName = "Basic allocation test: ";
@@ -38,6 +39,7 @@ unit Tests
     const string someAllocationsFailed = "Some allocations failed";
     const string noCrashOnDoubleFree = "No crash on double free";
     const string noCrashOnInvalidFree = "No crash on invalid free";
+    const string memoryLeakDetected = "Memory leak detected";
     
     // Skip messages
     const string skipNoAllocatedMemory = "No allocated memory";
@@ -58,6 +60,8 @@ unit Tests
     const uint SuccessCount = Address.I2CInBuffer + 252;    // Temporary counter
     const uint TestCount = Address.I2CInBuffer + 253;       // Temporary counter
     const uint AllocCount = Address.I2CInBuffer + 251;      // For out of memory test
+    const uint InitialMemory = Address.I2CInBuffer + 249;   // Store initial available memory (2 bytes)
+    const uint FinalMemory = Address.I2CInBuffer + 247;     // Store final available memory (2 bytes)
     
     // Run all Heap module tests
     RunTests()
@@ -65,22 +69,68 @@ unit Tests
         PrintHeader();
         
         Memory.Available();
-Debug.NL(); AOut();
+        Debug.NL(); AOut();
+        
+        // Store initial memory state
+        Memory.Available();
+        LDA ZP.ACCL
+        STA InitialMemory
+        LDA ZP.ACCH
+        STA InitialMemory + 1
         
         // Initialize test storage
         STZ AllocatedCount
         
         TestBasicAllocation();
+        CleanupAllocatedMemory();
+        
         TestBasicFree();
+        CleanupAllocatedMemory();
+        
         TestMultipleAllocations();
+        CleanupAllocatedMemory();
+        
         TestMemoryReuse();
+        CleanupAllocatedMemory();
+        
         TestFragmentation();
+        CleanupAllocatedMemory();
+        
         //TestDoubleFree();
+        //CleanupAllocatedMemory();
+        
         //TestInvalidFree();
+        //CleanupAllocatedMemory();
+        
         //TestOutOfMemory();
+        //CleanupAllocatedMemory();
+        
+        // Check final memory state
+        Memory.Available();
+        LDA ZP.ACCL
+        STA FinalMemory
+        LDA ZP.ACCH
+        STA FinalMemory + 1
+        
+        // Compare with initial memory
+        LDA InitialMemory
+        CMP FinalMemory
+        if (NZ)
+        {
+            PrintOverallMemoryLeak();
+        }
+        else
+        {
+            LDA InitialMemory + 1
+            CMP FinalMemory + 1
+            if (NZ)
+            {
+                PrintOverallMemoryLeak();
+            }
+        }
         
         Memory.Available();
-Debug.NL(); AOut();        
+        Debug.NL(); AOut();        
         
         PrintFooter();
     }
@@ -111,6 +161,50 @@ Debug.NL(); AOut();
         Debug.DumpHeap();
     }
     
+    PrintOverallMemoryLeak()
+    {
+        PrintFailLabel();
+        LDA #(overallSuiteLabel % 256)
+        STA ZP.STRL
+        LDA #(overallSuiteLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        LDA #(memoryLeakDetected % 256)
+        STA ZP.STRL
+        LDA #(memoryLeakDetected / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        Print.NewLine();
+    }
+    
+    // Clean up all allocated memory
+    CleanupAllocatedMemory()
+    {
+        // Free all stored pointers
+        LDA AllocatedCount
+        loop
+        {
+            if (Z) { break; }
+            
+            DEC AllocatedCount
+            LDA AllocatedCount
+            ASL A  // Multiply by 2
+            TAY
+            
+            LDA AllocatedPointers, Y
+            STA ZP.IDXL
+            INY
+            LDA AllocatedPointers, Y
+            STA ZP.IDXH
+            
+            Memory.Free();
+            
+            LDA AllocatedCount
+        }
+    }
+    
     // Test basic allocation
     TestBasicAllocation()
     {
@@ -125,19 +219,15 @@ Debug.NL(); AOut();
         ORA ZP.IDXH
         if (NZ)
         {
-            // Store pointer for later use
-            LDA ZP.IDXL
-            STA AllocatedPointers
-            LDA ZP.IDXH
-            STA AllocatedPointers + 1
-            INC AllocatedCount
-            
+            // Store pointer for cleanup
+            StoreAllocatedPointer();
             PrintBasicAllocPass();
-            Debug.DumpHeap();
+            
         }
         else
         {
             PrintBasicAllocFail();
+            Debug.DumpHeap();
         }
     }
     
@@ -203,27 +293,25 @@ Debug.NL(); AOut();
     // Test basic free
     TestBasicFree()
     {
-        // Only run if we have an allocated pointer
-        LDA AllocatedCount
+        // Allocate a block first
+        LDA #80
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();
+        
+        LDA ZP.IDXL
+        ORA ZP.IDXH
         if (NZ)
         {
-            // Load first allocated pointer into ZP.IDX
-            LDA AllocatedPointers
-            STA ZP.IDXL
-            LDA AllocatedPointers + 1
-            STA ZP.IDXH
-            
-            // Free the memory
+            // Free the memory immediately
             Memory.Free();
-            
-            // Free always succeeds with proper pointers
-            DEC AllocatedCount
             PrintBasicFreePass();
-            Debug.DumpHeap();
+            
         }
         else
         {
             PrintBasicFreeSkip();
+            Debug.DumpHeap();
         }
     }
     
@@ -328,9 +416,10 @@ Debug.NL(); AOut();
         else
         {
             PrintMultiAllocPartial();
+            Debug.DumpHeap();
         }
         
-        Debug.DumpHeap();
+        
     }
     
     StoreAllocatedPointer()
@@ -430,6 +519,14 @@ Debug.NL(); AOut();
         {
             PrintMemoryReuseFail();
             PLA  // Clean stack
+            
+            // Store pointer for cleanup if allocation succeeded
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (NZ)
+            {
+                StoreAllocatedPointer();
+            }
             return;
         }
         
@@ -443,9 +540,11 @@ Debug.NL(); AOut();
         else
         {
             PrintMemoryReuseFail();
+            StoreAllocatedPointer();
+            Debug.DumpHeap();
         }
         
-        Debug.DumpHeap();
+        
     }
     
     PrintMemoryReusePass()
@@ -527,9 +626,10 @@ Debug.NL(); AOut();
         else
         {
             PrintFragmentationFail();
+            Debug.DumpHeap();
         }
         
-        Debug.DumpHeap();
+        
     }
     
     PrintFragmentationPass()
@@ -704,6 +804,9 @@ Debug.NL(); AOut();
                 break;
             }
             
+            // Store the pointer for cleanup
+            StoreAllocatedPointer();
+            
             INC AllocCount
             LDA AllocCount
             CMP #20  // Safety limit
@@ -763,7 +866,7 @@ Debug.NL(); AOut();
         Print.NewLine();
     }
     
-    // Helper functions (reusing from time tests pattern)
+    // Helper functions
     PrintPassLabel()
     {
         LDA #(passLabel % 256)
