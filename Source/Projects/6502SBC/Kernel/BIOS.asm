@@ -3,11 +3,11 @@ program BIOS
     #define CPU_65C02S
     #define ROM_8K
     
-    #define DEBUG
+    //#define DEBUG
     
     // Optional components
-    //#define HASFLOAT
-    //#define HASEEPROM
+    #define HASFLOAT
+    #define HASEEPROM
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
@@ -36,6 +36,8 @@ program BIOS
     
     uses "Print"
     uses "Shared"
+    
+    uses "SysCalls"
     
     
     //uses "TestSuite/TestTime"
@@ -93,13 +95,18 @@ program BIOS
 #ifdef HASEEPROM
         EEPROM.Initialize();
 #endif
-        
+        SysCalls.Initialize();
         CLI  // Re-enable interrupts
     }
     
     Hopper()
     {
-        Initialize();
+        Initialize();  
         
+        LDX #SysCall.MemAvailable
+        SystemCallDispatcher();
+        Shared.MoveAccToTop();
+        Long.Print();
+        loop { }
     }
 }

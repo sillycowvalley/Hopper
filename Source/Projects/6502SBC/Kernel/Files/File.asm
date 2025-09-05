@@ -1355,23 +1355,22 @@ unit File
     printFileSizeFromDirectory()
     {
         LDA DirectoryBuffer + 0, Y  // Length LSB
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA DirectoryBuffer + 1, Y  // Length MSB
         AND #0x7F                   // strip file type bit from size
-        STA ZP.TOPH
-        STZ ZP.TOPT
+        STA ZP.TOP1
         
         // right aligment of numbers in the 10..9999 range
         PHX
         LDX #0                       // assume 0 spaces of padding
-        LDA ZP.TOPH
+        LDA ZP.TOP1
         CMP #4                       // Check for 1024+
         if (NC)                      // < 1024, need more analysis
         {
             CMP #3                   // Check if TOPH = 3 (768-1023)
             if (Z)                   // TOPH = 3
             {
-                LDA ZP.TOPL
+                LDA ZP.TOP0
                 CMP #232             // 1000 = 3*256 + 232
                 if (NC)              // < 1000 (768-999 range)
                 {        INX }       //     3-digit numbers get 1 space
@@ -1384,7 +1383,7 @@ unit File
                 {        INX }       //     3-digit numbers get 1 space
                 else                 // TOPH = 0 (0-255)
                 {
-                    LDA ZP.TOPL
+                    LDA ZP.TOP0
                     CMP #100
                     if (NC)          // < 100 (10-99 range)
                     { LDX #2 }       //     2-digit numbers get 2 spaces
@@ -1397,7 +1396,9 @@ unit File
         Print.Spaces();              // print X spaces (zero is ok)
         PLX
         
-        Print.Decimal();
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Long.Print();
     }
     
     // Print directory summary: "3 files, 2373 bytes used"
@@ -1407,21 +1408,20 @@ unit File
     {
         // Print file count
         LDA TransferLengthL
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
-        Print.Decimal();
+        Shared.LoadTopByte();
+        Long.Print();
         
         // " FILES, "
         LDA # ErrorID.Files LDX # (MessageExtras.PrefixSpace|MessageExtras.SuffixComma|MessageExtras.SuffixSpace) Error.Message();
         
         // Print total bytes
         LDA BytesRemainingL
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA TransferLengthH
-        STA ZP.TOPH
-        STZ ZP.TOPT
-        Print.Decimal();
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Long.Print();
         
         // " BYTES USED"
         LDA # ErrorID.BytesUsedLabel LDX # MessageExtras.PrefixSpace Error.MessageNL();

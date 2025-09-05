@@ -907,41 +907,6 @@ unit Long
         SEC  // Success
     }
     
-    // Determine minimum type needed for value in TOP
-    // Input: ZP.TOP0-3 = 32-bit value
-    // Output: ZP.TOPT = BASICType (BYTE/INT/WORD/LONG)
-    // Munts: A
-    DetermineType()
-    {
-        LDA ZP.TOP3
-        ORA ZP.TOP2
-        if (NZ)
-        {
-            LDA #BASICType.LONG
-            STA ZP.TOPT
-            return;
-        }
-        
-        LDA ZP.TOP1
-        if (NZ)
-        {
-            BIT ZP.TOP1
-            if (MI)
-            {
-                LDA #BASICType.WORD  // 32768-65535
-            }
-            else
-            {
-                LDA #BASICType.INT   // 256-32767
-            }
-            STA ZP.TOPT
-            return;
-        }
-        
-        LDA #BASICType.BYTE  // 0-255
-        STA ZP.TOPT
-    }
-    
     // Fast 8-bit divide by 10 with remainder
     // Input:  ZP.NEXT0 = 8-bit value (0-255)
     // Output: ZP.NEXT0 = quotient (0-25)

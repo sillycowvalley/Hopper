@@ -82,6 +82,15 @@ unit Shared
         LDA ZP.NEXT3
         STA ZP.TOP3
     }
+    MoveAccToTop()
+    {
+        LDA ZP.ACCL
+        STA ZP.TOP0
+        LDA ZP.ACCH
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+    }
     MoveTopToNext()
     {
         LDA ZP.TOP0

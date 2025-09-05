@@ -16,6 +16,7 @@ unit Error // ErrorID.asm
         FOUND      = 0x1A,  // "FOUND"
         TOO        = 0x1D,  // "TOO"
         LONG       = 0x1E,  // "LONG"
+        FILES      = 0x1F,  // "FILES"
         
         // Table 1 (bits 6-5 = 01): Expression/parsing words (0x20-0x3F)
         EXPECTED   = 0x21,  // "EXPECTED"
@@ -34,6 +35,13 @@ unit Error // ErrorID.asm
         DIVISION   = 0x57,  // "DIVISION"
         BY         = 0x58,  // "BY"  
         ZERO       = 0x59,  // "ZERO"
+        
+        INVALID    = 0x5A,  // "INVALID"
+        SYSTEM     = 0x5B,  // "SYSTEM"  
+        CALL       = 0x5C,  // "CALL"
+        
+        BYTES      = 0x5D,  // "BYTES"
+        USED       = 0x5E,  // "USED"
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -44,6 +52,7 @@ unit Error // ErrorID.asm
         6,  ErrorWord.MEMORY,     'M', 'E', 'M', 'O', 'R', 'Y',
         3,  ErrorWord.NOT,        'N', 'O', 'T',
         4,  ErrorWord.FILE,       'F', 'I', 'L', 'E',
+        5,  ErrorWord.FILES,      'F', 'I', 'L', 'E', 'S',
         5,  ErrorWord.FOUND,      'F', 'O', 'U', 'N', 'D',
         3,  ErrorWord.TOO,        'T', 'O', 'O',
         4,  ErrorWord.LONG,       'L', 'O', 'N', 'G',
@@ -70,11 +79,16 @@ unit Error // ErrorID.asm
         8,  ErrorWord.DIVISION,   'D', 'I', 'V', 'I', 'S', 'I', 'O', 'N',
         2,  ErrorWord.BY,         'B', 'Y',
         4,  ErrorWord.ZERO,       'Z', 'E', 'R', 'O',
+        7,  ErrorWord.INVALID,    'I', 'N', 'V', 'A', 'L', 'I', 'D',
+        6,  ErrorWord.SYSTEM,     'S', 'Y', 'S', 'T', 'E', 'M',
+        4,  ErrorWord.CALL,       'C', 'A', 'L', 'L',
         0  // End marker
     };
     
     enum ErrorID
     {
+        InvalidSystemCall   = 0x01,
+        
         // File system errors
         FileNotFound        = 0x10,
         FilenameExpected    = 0x11,
@@ -91,6 +105,11 @@ unit Error // ErrorID.asm
         // Mathematical errors
         DivisionByZero      = 0x30,
         NumericOverflow     = 0x31,
+        
+        // Messages:
+        Files               = 0x32,
+        BytesUsedLabel      = 0x33,
+        BytesLabel          = 0x34,
     }
     
     const byte[] errorMessages0 = {
@@ -105,6 +124,11 @@ unit Error // ErrorID.asm
         2, ErrorID.HeapCorrupt,       ErrorWord.HEAP, ErrorWord.CORRUPT,
         3, ErrorID.DivisionByZero,    ErrorWord.DIVISION, ErrorWord.BY, ErrorWord.ZERO,
         2, ErrorID.NumericOverflow,   ErrorWord.NUMERIC, ErrorWord.OVERFLOW,
+        3, ErrorID.InvalidSystemCall, ErrorWord.INVALID, ErrorWord.SYSTEM, ErrorWord.CALL,
+        
+        3, ErrorID.Files,             ErrorWord.FILES,
+        2, ErrorID.BytesUsedLabel,    ErrorWord.BYTES, ErrorWord.USED,
+        1, ErrorID.BytesLabel,        ErrorWord.BYTES,
         0  // End marker
     };
     
@@ -352,6 +376,12 @@ unit Error // ErrorID.asm
     {
         STA ZP.LastError
         CLC
+    }
+    
+    InvalidSystemCall()
+    {
+        LDA #ErrorID.InvalidSystemCall
+        commonError();
     }
     
     // Mathematical errors

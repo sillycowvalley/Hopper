@@ -63,6 +63,21 @@ unit ZP // ZeroPage.asm
     
 #endif    
     
+    const byte DISPATCH             = 0x2B;
+    const byte DISPATCHL            = 0x2B;
+    const byte DISPATCHH            = 0x2C;
+    
+    const byte FSOURCEADDRESS       = 0x2D;  // Source address parameter
+    const byte FSOURCEADDRESSL      = 0x2D;  // Source low (alias)
+    const byte FSOURCEADDRESSH      = 0x2E;  // Source high
+    
+    const byte FDESTINATIONADDRESS  = 0x2F;  // Destination address parameter
+    const byte FDESTINATIONADDRESSL = 0x2F;  // Destination low (alias)
+    const byte FDESTINATIONADDRESSH = 0x30;  // Destination high
+
+    const byte FLENGTH              = 0x31;  // Length parameter
+    const byte FLENGTHL             = 0x31;  // Length low (alias)
+    const byte FLENGTHH             = 0x32;  // Length high
     
     
     // I2C

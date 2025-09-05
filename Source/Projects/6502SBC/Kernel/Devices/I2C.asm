@@ -127,10 +127,10 @@ unit I2C
 #if defined(ZEROPAGE_IO)
         STZ ZP.I2CInWritePtr
         STZ ZP.I2CInReadPtr
-        LDX ZP.TOPL
+        LDX ZP.TOP0
         if (NZ) // bytes to read != 0?
         {
-            STZ ZP.TOPL
+            STZ ZP.TOP0
             loop
             {
                 PHX
@@ -161,7 +161,7 @@ unit I2C
                 STA Address.I2CInBuffer, X
                 INC ZP.I2CInWritePtr
                 
-                INC ZP.TOPL // count bytes actually read
+                INC ZP.TOP0 // count bytes actually read
                 
                 PLX
                 DEX

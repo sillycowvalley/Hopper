@@ -47,7 +47,7 @@ unit EEPROM
         
         // read one page from EEPROM:
         LDA # serialPageSize
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA # I2C.SerialEEPROMAddress
         RequestFromTOPA(); // A has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
         // assume success
@@ -198,9 +198,13 @@ unit EEPROM
     WritePage()
     {
         PHA
-        LDA ZP.TOPL
+        LDA ZP.TOP0
         PHA
-        LDA ZP.TOPH
+        LDA ZP.TOP1
+        PHA
+        LDA ZP.TOP2
+        PHA
+        LDA ZP.TOP3
         PHA
         
         // LSB's always zero
@@ -219,15 +223,21 @@ unit EEPROM
         // Proper EEPROM write completion delay
         // EEPROM write operations need 5-10ms to complete
         LDA #10          // 10 milliseconds delay
-        STA ZP.TOPL
+        STA ZP.TOP0
         LDA #0
-        STA ZP.TOPH
-        Time.DelayTOP(); // Proper timer-based delay
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Time.Delay(); // Proper timer-based delay
         
         PLA
-        STA ZP.TOPH
+        STA ZP.TOP3
         PLA
-        STA ZP.TOPL
+        STA ZP.TOP2
+        PLA
+        STA ZP.TOP1
+        PLA
+        STA ZP.TOP0
         PLA
     }
     
