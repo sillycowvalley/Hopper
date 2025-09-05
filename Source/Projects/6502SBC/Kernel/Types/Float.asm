@@ -35,7 +35,7 @@ unit Float
 #endif    
     expGT()
     {
-        LDX #0 // NEXT <= TOP
+        // NEXT <= TOP
         LDA NEXTEXP1
         CMP TOPEXP1
         if (Z)
@@ -47,14 +47,16 @@ unit Float
         {
             if (C) // NEXT <  TOP (not >)?
             {
-                LDX #1   // NEXT > TOP
+                SEC   // NEXT > TOP
+                return;
             }
         }
+        CLC
     }
     
     expLT()
     {
-        LDX #1 // NEXT < TOP
+        // NEXT < TOP
         LDA NEXTEXP1
         CMP TOPEXP1
         if (Z)
@@ -64,9 +66,10 @@ unit Float
         }
         if (C) // NEXT < TOP?
         {
-            LDX #0 // NEXT >= TOP
+            CLC // NEXT >= TOP
+            return;
         }
-        
+        SEC
     }
     
     New()
@@ -321,8 +324,7 @@ countEntry:
             
             // Align exponents
             expGT();
-            CPX # 1
-            if (Z)
+            if (C)
             {
                 // int shift = exponentA - exponentB;
                 SEC
@@ -348,8 +350,7 @@ countEntry:
             else
             {
                 expLT();
-                CPX # 1
-                if (Z)
+                if (C)
                 {
                     // int shift = exponentB - exponentA;
                     SEC
