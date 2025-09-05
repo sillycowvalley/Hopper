@@ -705,10 +705,12 @@ unit Long
             LDX # 32
             loop
             {
-                LSR ZP.NEXT3   // shift multiplyer right
-                ROR ZP.NEXT2
-                ROR ZP.NEXT1
-                ROR ZP.NEXT0
+                // shift multiplyer right
+                shiftNEXTright();
+                //LSR ZP.NEXT3   
+                //ROR ZP.NEXT2
+                //ROR ZP.NEXT1
+                //ROR ZP.NEXT0
                 if (C) // Go rotate right if c = 0
                 {
                     LDA ZP.RESULT4   // get upper half of product and add multiplicand to it

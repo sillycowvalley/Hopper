@@ -42,8 +42,8 @@ program BIOS
     
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
-    //uses "TestSuite/TestLong"
-    uses "TestSuite/TestFloat"
+    uses "TestSuite/TestLong"
+    //uses "TestSuite/TestFloat"
     
     Run()
     {

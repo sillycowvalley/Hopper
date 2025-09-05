@@ -230,10 +230,7 @@ countEntry:
             // exponentA < 0
             STZ NEXTEXP1
             STZ NEXTEXP0
-            STZ ZP.RESULT0
-            STZ ZP.RESULT1
-            STZ ZP.RESULT2
-            STZ ZP.RESULT3
+            ZeroResult();
             return;
         }
         if (Z)
@@ -244,20 +241,14 @@ countEntry:
                 // exponentA == 0
                 STZ NEXTEXP1
                 STZ NEXTEXP0
-                STZ ZP.RESULT0
-                STZ ZP.RESULT1
-                STZ ZP.RESULT2
-                STZ ZP.RESULT3
+                ZeroResult();
                 return;
             }
             CMP # 0xFF
             if (Z)
             {
                 // exponentA == 255
-                STZ ZP.RESULT0
-                STZ ZP.RESULT1
-                STZ ZP.RESULT2
-                STZ ZP.RESULT3
+                ZeroResult();
                 return;
             }
         }
@@ -267,10 +258,7 @@ countEntry:
             LDA # 0xFF
             STA NEXTEXP0
             STZ NEXTEXP1
-            STZ ZP.RESULT0
-            STZ ZP.RESULT1
-            STZ ZP.RESULT2
-            STZ ZP.RESULT3
+            ZeroResult();
         }
     }
     commonAdd()
@@ -344,10 +332,11 @@ countEntry:
                     // mantissaA = Long.shiftRight(mantissaA, shift);
                     loop
                     {
-                        LSR ZP.NEXT3
-                        ROR ZP.NEXT2
-                        ROR ZP.NEXT1
-                        ROR ZP.NEXT0
+                        Long.shiftNEXTright();
+                        //LSR ZP.NEXT3
+                        //ROR ZP.NEXT2
+                        //ROR ZP.NEXT1
+                        //ROR ZP.NEXT0
                         DEX
                         if (Z) { break; }
                     }
@@ -418,26 +407,14 @@ countEntry:
                 }
                 // Check for zero mantissa (cancellation)
                 LDA ZP.RESULT0
+                ORA ZP.RESULT1
+                ORA ZP.RESULT2
+                ORA ZP.RESULT3
                 if (Z)
                 {
-                    LDA ZP.RESULT1
-                    if (Z)
-                    {
-                        LDA ZP.RESULT2
-                        if (Z)
-                        {
-                            LDA ZP.RESULT3
-                            if (Z)
-                            {
-                                // Return +0.0
-                                STZ ZP.NEXT0
-                                STZ ZP.NEXT1
-                                STZ ZP.NEXT2
-                                STZ ZP.NEXT3
-                                break;
-                            }
-                        }
-                    }
+                    // Return +0.0
+                    Shared.ZeroNext();
+                    break;
                 }
             }
             countLeadingZeros();
@@ -523,16 +500,7 @@ countEntry:
                 ORA ZP.RESULT3
                 STA ZP.RESULT3
             }
-            
-            LDA ZP.RESULT0
-            STA ZP.NEXT0
-            LDA ZP.RESULT1
-            STA ZP.NEXT1
-            LDA ZP.RESULT2
-            STA ZP.NEXT2
-            LDA ZP.RESULT3
-            STA ZP.NEXT3
-            
+            Shared.MoveResultToNext();
             break;   
         }
         // result in NEXT
@@ -544,17 +512,14 @@ countEntry:
         if (Z)
         {
             LDX # 8
-            
             LDA ZP.RESULT4
             if (Z)
             {
                 LDX # 16
-                
                 LDA ZP.RESULT3
                 if (Z)
                 {
                     LDX # 24
-                    
                     LDA ZP.RESULT2
                     if (Z)
                     {
@@ -772,17 +737,8 @@ countEntry:
         // NEXT is dividend
         // TOP  is divisor
         
-        // quotient
-        STZ ZP.RESULT0
-        STZ ZP.RESULT1
-        STZ ZP.RESULT2
-        STZ ZP.RESULT3
-        
-        // remainder:
-        STZ ZP.RESULT4
-        STZ ZP.RESULT5
-        STZ ZP.RESULT6
-        STZ ZP.RESULT7
+        // quotient & remainder
+        Shared.ZeroResult8();
         
         LDX # 47
         loop
@@ -1052,10 +1008,7 @@ countEntry:
             if (NZ)
             {
                 // exponent is -ve so fraction only
-                STZ ZP.NEXT0
-                STZ ZP.NEXT1
-                STZ ZP.NEXT2
-                STZ ZP.NEXT3
+                Shared.ZeroNext();
                 break;
             }
         
@@ -1098,10 +1051,11 @@ countEntry:
                     loop
                     {
                         if (Z) { break; }
-                        LSR ZP.NEXT3
-                        ROR ZP.NEXT2
-                        ROR ZP.NEXT1
-                        ROR ZP.NEXT0
+                        Long.shiftNEXTright();
+                        //LSR ZP.NEXT3
+                        //ROR ZP.NEXT2
+                        //ROR ZP.NEXT1
+                        //ROR ZP.NEXT0
                         DEX
                     }
                 }
