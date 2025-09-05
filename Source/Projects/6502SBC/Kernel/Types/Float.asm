@@ -75,56 +75,39 @@ unit Float
     New()
     {
         // IEEE +0.0
-        STZ ZP.NEXT0
-        STZ ZP.NEXT1
-        STZ ZP.NEXT2
-        STZ ZP.NEXT3
+        Shared.ZeroNext();
     }
     
     IsZeroNext()
     {
-        LDX #0
         LDA ZP.NEXT0
+        ORA ZP.NEXT1
+        ORA ZP.NEXT2
         if (Z)
         {
-            LDA ZP.NEXT1
+            LDA ZP.NEXT3
+            AND # 0x7F    // ignore the sign for -0
             if (Z)
             {
-                LDA ZP.NEXT2
-                if (Z)
-                {
-                    LDA ZP.NEXT3
-                    AND # 0x7F    // ignore the sign for -0
-                    if (Z)
-                    {
-                        SEC
-                        return;
-                    }
-                }
+                SEC
+                return;
             }
         }
         CLC
     }
     IsZeroTop()
     {
-        LDX #0
         LDA ZP.TOP0
+        ORA ZP.TOP1
+        ORA ZP.TOP2
         if (Z)
         {
-            LDA ZP.TOP1
+            LDA ZP.TOP3
+            AND # 0x7F    // ignore the sign for -0
             if (Z)
             {
-                LDA ZP.TOP2
-                if (Z)
-                {
-                    LDA ZP.TOP3
-                    AND # 0x7F    // ignore the sign for -0
-                    if (Z)
-                    {
-                        SEC
-                        return;
-                    }
-                }
+                SEC
+                return;
             }
         }
         CLC

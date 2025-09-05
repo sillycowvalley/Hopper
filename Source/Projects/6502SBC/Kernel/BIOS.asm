@@ -43,8 +43,8 @@ program BIOS
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
     //uses "TestSuite/TestLong"
-    //uses "TestSuite/TestFloat"
-    /*
+    uses "TestSuite/TestFloat"
+    
     Run()
     {
         Tests.RunTests();
@@ -56,7 +56,7 @@ program BIOS
         
         loop { }
     }
-    */
+    
     
     IRQ()
     {
@@ -102,6 +102,8 @@ program BIOS
     Hopper()
     {
         Initialize();  
+        
+        Run();
         
         LDX #SysCall.MemAvailable
         SystemCallDispatcher();
