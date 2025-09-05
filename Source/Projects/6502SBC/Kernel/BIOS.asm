@@ -6,8 +6,8 @@ program BIOS
     #define DEBUG
     
     // Optional components
-    //#define HASFLOAT
-    #define HASEEPROM
+    #define HASFLOAT
+    //#define HASEEPROM
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
@@ -39,7 +39,8 @@ program BIOS
     
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
-    uses "TestSuite/TestLong"
+    //uses "TestSuite/TestLong"
+    uses "TestSuite/TestFloat"
     
     IRQ()
     {

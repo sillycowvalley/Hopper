@@ -1,9 +1,6 @@
 unit Long
 {
-    friend Time;
-    
-    
-    
+    friend Time, Float;
         
     
     shiftNEXTleft()
