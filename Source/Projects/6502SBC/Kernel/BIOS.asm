@@ -38,7 +38,8 @@ program BIOS
     uses "Shared"
     
     //uses "TestSuite/TestTime"
-    uses "TestSuite/TestHeap"
+    //uses "TestSuite/TestHeap"
+    uses "TestSuite/TestLong"
     
     IRQ()
     {
@@ -86,6 +87,11 @@ program BIOS
         Initialize();
         
         Tests.RunTests();
+        
+        // End marker
+        LDA #'!'
+        Serial.WriteChar();
+        NewLine();
         
         loop { }
     }

@@ -40,7 +40,7 @@ unit Long
         LDX #1 // Mod
         DivMod(); // RESULT = NEXT % TOP
         // RESULT0-3 -> NEXT0-3
-        moveResultToNext();
+        Shared.MoveResultToNext();
         
         PLA // take the sign from the divisor (NEXT)
         if (MI)
