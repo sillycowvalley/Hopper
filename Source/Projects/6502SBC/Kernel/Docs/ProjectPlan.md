@@ -1,279 +1,162 @@
-# Hopper 6502 API Reference & Testing Project Plan
+# Hopper 6502 Command Console & System Project Plan
 
-## Module Public APIs
-
-### Time Module
-Provides timing and delay functionality using hardware timer interrupts.
-
-#### Public Methods
-- **Delay()** - Delays execution for the number of milliseconds specified in TOP (16-bit value)
-- **Millis()** - Returns current millisecond counter in TOP (32-bit value from TICK0-3)
-- **Seconds()** - Returns current time in seconds (Millis/1000) in TOP (32-bit value)
-
----
-
-### Heap/Memory Module  
-Dynamic memory management with best-fit allocation strategy.
-
-#### Public Methods
-- **Initialize()** - Initializes heap, probes RAM size, sets up free list
-  - Discovers RAM size: 16K/32K/48K/56K
-  - Sets HEAPSTART and HEAPSIZE in zero page
-  - Creates initial free list block
-  
-- **Allocate()** - Allocates memory block
-  - Input: ACC = requested size (16-bit)
-  - Output: IDX = allocated address (0x0000 if failed)
-  - Uses best-fit algorithm, 8-byte alignment
-  
-- **Free()** - Frees memory block
-  - Input: IDX = address to free
-  - Output: C set on success
-  - Coalesces adjacent free blocks
-  
-- **Available()** - Returns total free memory
-  - Output: ACC = total free bytes (16-bit)
-  - Walks free list summing all free blocks
-
----
-
-### Long Module
-32-bit signed integer arithmetic and comparisons.
-
-#### Arithmetic Operations
-- **Add()** - Adds TOP to NEXT, result in NEXT (32-bit)
-- **Sub()** - Subtracts TOP from NEXT, result in NEXT (32-bit)  
-- **Mul()** - Multiplies NEXT by TOP, result in NEXT (32-bit)
-- **Div()** - Divides NEXT by TOP, quotient in NEXT (32-bit)
-- **Mod()** - Divides NEXT by TOP, remainder in NEXT (32-bit)
-
-#### Comparison Operations
-- **LT()** - Tests if NEXT < TOP, pushes bool result
-- **GT()** - Tests if NEXT > TOP, pushes bool result
-- **EQ()** - Tests if NEXT == TOP, pushes bool result
-- **NE()** - Tests if NEXT != TOP, pushes bool result
-- **LE()** - Tests if NEXT <= TOP, pushes bool result
-- **GE()** - Tests if NEXT >= TOP, pushes bool result
-
-#### Stack Operations
-- **PushNext()** - Pushes NEXT onto value stack
-- **PopTop()** - Pops top of stack into TOP
-- **PopNext()** - Pops top of stack into NEXT
-
----
-
-### Float Module
-IEEE 754 single-precision floating-point arithmetic.
-
-#### Public Methods
-- **Add()** - Adds TOP to NEXT, result in NEXT (float)
-- **Sub()** - Subtracts TOP from NEXT, result in NEXT (float)
-- **Mul()** - Multiplies NEXT by TOP, result in NEXT (float)
-- **Div()** - Divides NEXT by TOP, result in NEXT (float)
-- **ToLong()** - Converts float in NEXT to 32-bit integer
-
-#### Internal Format
-- 32-bit IEEE 754 format
-- Sign bit, 8-bit exponent, 23-bit mantissa
-- Stored in NEXT3-0 or TOP3-0
-
----
-
-### File Module
+## File Module API Reference
 FAT-based filesystem for EEPROM storage with 256-byte sectors.
 
 #### File Operations
 - **Initialize()** - Formats filesystem, creates empty FAT and directory
-  - Clears FAT and directory sectors
-  - Marks system sectors as reserved
-  
-- **Exists()** - Checks if file exists
-  - Input: STR = filename pointer
-  - Output: C set if exists, NC if not found
-  
-- **Delete()** - Deletes file from filesystem
-  - Input: STR = filename pointer
-  - Frees all sectors in FAT chain
-  - Compacts directory entries
-  
+- **Exists()** - Checks if file exists (Input: STR = filename pointer, Output: C set if exists)
+- **Delete()** - Deletes file, frees sectors, compacts directory
 - **Dir()** - Lists all files in directory
-  - Prints file listing to serial
-  - Shows file count and total bytes
 
 #### Save Operations
-- **StartSave()** - Opens file for writing
-  - Input: STR = filename pointer
-  - Allocates first sector, initializes state
-  
-- **AppendStream()** - Writes data to open file
-  - Input: SectorSource = data pointer
-  - Input: TransferLength = byte count
-  - Allocates sectors as needed
-  
+- **StartSave()** - Opens file for writing (Input: STR = filename pointer)
+- **AppendStream()** - Writes data to open file (Input: SectorSource, TransferLength)
 - **EndSave()** - Closes file and updates metadata
-  - Updates directory with final file length
-  - Writes FAT and directory to EEPROM
 
 #### Load Operations  
-- **StartLoad()** - Opens file for reading
-  - Input: STR = filename pointer
-  - Initializes for NextStream() calls
-  
-- **NextStream()** - Reads next chunk from file
-  - Output: Data in FileDataBuffer
-  - Output: TransferLength = bytes read (max 256)
-  - Returns NC at end of file
+- **StartLoad()** - Opens file for reading (Input: STR = filename pointer)
+- **NextStream()** - Reads next chunk (Output: FileDataBuffer, TransferLength, NC at EOF)
 
-#### Simplified High-Level Operations
+#### Simplified Operations
 - **Save()** - Complete file save (combines Start/Append/End)
 - **Load()** - Complete file load (combines Start/Next operations)
 
 ---
 
-## Testing Project Plan
+## Implementation Plan
 
-### Phase 1: Component Unit Tests
+### Phase 1: Basic Console Commands
 
-#### 1.1 Time Module Tests
-**Goal:** Verify timer accuracy and delay functions
-- Test Millis() counter increment
-- Test Delay() with various durations (1ms, 10ms, 100ms, 1000ms)  
-- Test Seconds() conversion accuracy
-- Verify interrupt handling doesn't corrupt state
+#### MEM Command
+- Display heap statistics using Heap.Available()
+- Show total RAM, used, free memory
+- Format: `Total: 32K  Used: 1024  Free: 31744`
 
-#### 1.2 Heap Module Tests  
-**Goal:** Validate memory allocation and deallocation
-- Test Initialize() RAM size detection
-- Test Allocate() with various sizes
-- Test Free() and verify coalescing
-- Test Available() accuracy
-- Stress test with fragmentation patterns
-- Test edge cases (0 size, max size, out of memory)
+#### FORMAT Command
+- Prompt: `Format filesystem? (Y/N):`
+- If Y: Call File.Initialize() to create new filesystem
+- Display completion message with available space
 
-#### 1.3 Long Module Tests
-**Goal:** Verify 32-bit arithmetic correctness
-- Test Add/Sub with positive, negative, overflow cases
-- Test Mul with various operands including edge cases
-- Test Div/Mod including division by zero handling
-- Test all comparison operations (LT, GT, EQ, NE, LE, GE)
-- Test sign handling across all operations
+#### DIR Command
+- List all files using File.Dir()
+- **DEBUG mode**: Also dump FAT sectors, directory entries, file data
+- Show file count and total bytes used
+- Format: `filename.ext    1234 bytes`
 
-#### 1.4 Float Module Tests
-**Goal:** Validate IEEE 754 operations
-- Test Add/Sub with normalized and denormalized numbers
-- Test Mul/Div with overflow/underflow cases
-- Test ToLong() conversion with rounding
-- Test special values (zero, infinity, NaN)
-- Compare results with known IEEE 754 implementations
+#### HEX Command
+- `HEX <filename>` - Parse Intel HEX from serial input
+- Read lines until `:00000001FF` (end record)
+- Parse address, data, checksum
+- Use File.Save() to store binary data
+- Display progress and final byte count
 
-#### 1.5 File Module Tests
-**Goal:** Verify filesystem integrity
-- Test Initialize() creates valid FAT/directory
-- Test Save/Load round-trip for various file sizes
-- Test Delete and directory compaction
-- Test filesystem full conditions
-- Test filename validation (1-13 chars, alphanumeric)
-- Test multi-file operations
+#### DEL Command  
+- `DEL <filename>` - Delete specified file
+- Confirm deletion: `Delete filename.ext? (Y/N):`
+- Use File.Delete() and display result
 
 ---
 
-### Phase 2: System API Definition
+### Phase 2: System Call Dispatch
 
-#### 2.1 Core System Services
-Define standard interfaces for:
-- **Memory Management** - Allocate, Free, Query
-- **Process Control** - Load, Execute, Terminate
-- **I/O Services** - Console, Serial, Storage
-- **Timer Services** - Delays, Scheduling
-- **Error Handling** - Standard error codes
+#### Function Vector Table
+- Create jump table for system services
+- Standard calling convention using registers
+- Error codes in accumulator
 
-#### 2.2 API Documentation
-Create comprehensive documentation for:
-- Function signatures and parameters
-- Return values and error conditions
-- Zero page usage and register preservation
-- Example code snippets
+#### Core System Calls
+- **Memory Management** - Allocate, Free, Available
+- **File Operations** - Open, Read, Write, Close, Delete
+- **Timer Services** - Delay, Millis, Seconds
+- **Console I/O** - Print, Input, Character I/O
 
----
-
-### Phase 3: Command Console Implementation
-
-#### 3.1 Basic Console Features
-- **Command Parser** - Parse input, tokenize commands
-- **Built-in Commands**:
-  - `DIR` - List files
-  - `LOAD filename` - Load and execute program
-  - `DELETE filename` - Delete file
-  - `MEM` - Show memory statistics
-  - `TIME` - Show system uptime
-  - `HELP` - List available commands
-
-#### 3.2 Advanced Features
-- Command history (up/down arrows)
-- Tab completion for filenames
-- Batch file execution
-- Environment variables
-- Error messages and return codes
+#### API Documentation
+- Function numbers and parameters
+- Register usage and preservation rules
+- Error codes and handling
 
 ---
 
-## Testing Infrastructure
+### Phase 3: Program Execution
 
-### Test Framework Components
-1. **Test Runner** - Executes test suites, reports results
-2. **Assertion Library** - Compare expected vs actual values
-3. **Debug Output** - Hex dumps, register dumps, trace logs
-4. **Coverage Tracking** - Track which code paths tested
+#### Executable File Support
+- `<filename>` - Load and execute if marked executable
+- File header format with execution flag
+- Load program into available memory
+- Jump to entry point with clean state
 
-### Test Output Format
+#### Program Loading
+- Use File.Load() to read executable
+- Allocate memory using Heap.Allocate()
+- Validate file format and checksums
+- Set up execution environment
+
+#### Error Handling
+- File not found
+- Not executable
+- Insufficient memory
+- Invalid file format
+
+---
+
+## Command Parser Implementation
+
+### Input Processing
+- Read characters from serial until Enter
+- Handle backspace for editing
+- Echo characters to console
+- Maximum command line length
+
+### Command Parsing
+- Split input into command and parameters
+- Case-insensitive command matching
+- Parameter validation
+- Error messages for invalid syntax
+
+### Built-in Commands Table
 ```
-[PASS] Time.Delay: 100ms delay accurate within 1%
-[FAIL] Long.Div: Division by zero not handled
-       Expected: Error code 0x01
-       Actual: System hang
-[PASS] Heap.Allocate: 256 byte allocation successful
+Command    Parameters    Description
+-------    ----------    -----------
+MEM        none          Show memory statistics
+FORMAT     none          Format filesystem
+DIR        none          List files  
+HEX        filename      Save Intel HEX file
+DEL        filename      Delete file
 ```
 
 ---
 
-## Development Timeline
+## Testing Strategy
 
-### Week 1-2: Component Testing
-- Implement test framework
-- Write and run unit tests for all modules
-- Fix discovered bugs
+### Manual Testing via Console
+- File operations tested through DIR, HEX, DEL commands
+- Memory management verified with MEM command
+- Filesystem integrity checked with FORMAT/DIR cycle
+- Intel HEX parsing tested with real hex files
 
-### Week 3: System API
-- Define system call interface
-- Document API specifications  
-- Implement system call dispatcher
-
-### Week 4-5: Console Implementation
-- Build command parser
-- Implement basic commands
-- Add file operations
-
-### Week 6: Integration & Polish
-- System integration testing
-- Performance optimization
-- Documentation completion
+### Debug Features
+- DIR command shows internal filesystem state
+- Memory dumps for troubleshooting
+- Error messages with specific failure codes
+- Trace output for complex operations
 
 ---
 
 ## Success Criteria
 
-1. **All unit tests pass** - 100% of defined tests
-2. **Memory stability** - No leaks after 1000 allocate/free cycles
-3. **File integrity** - 100 save/load cycles without corruption
-4. **Console usability** - All commands work reliably
-5. **Documentation** - Complete API reference available
-6. **Performance** - Operations complete within defined time limits
+1. **Console responds** - All commands execute without hanging
+2. **File operations work** - Save, load, delete cycle successfully
+3. **HEX parsing accurate** - Binary files match original data
+4. **Memory stable** - No leaks after repeated operations
+5. **System calls functional** - Programs can use API services
+6. **Program execution** - Load and run executable files
 
 ---
 
-## Notes
+## Development Notes
 
-- All modules use Hopper Assembly language for 6502
-- Zero page usage is carefully managed to avoid conflicts
-- Register preservation rules must be strictly followed
-- Error handling uses consistent error codes across modules
+- Test File module through console commands rather than separate unit tests
+- DEBUG mode provides detailed internal state information
+- Intel HEX format provides real-world file I/O testing
+- System call interface enables future program development

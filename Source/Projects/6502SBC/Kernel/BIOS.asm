@@ -6,7 +6,7 @@ program BIOS
     #define DEBUG
     
     // Optional components
-    #define HASFLOAT
+    //#define HASFLOAT
     //#define HASEEPROM
     
     uses "Definitions/Limits"
@@ -37,10 +37,24 @@ program BIOS
     uses "Print"
     uses "Shared"
     
+    
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
     //uses "TestSuite/TestLong"
-    uses "TestSuite/TestFloat"
+    //uses "TestSuite/TestFloat"
+    /*
+    Run()
+    {
+        Tests.RunTests();
+        
+        // End marker
+        LDA #'!'
+        Serial.WriteChar();
+        NewLine();
+        
+        loop { }
+    }
+    */
     
     IRQ()
     {
@@ -87,13 +101,5 @@ program BIOS
     {
         Initialize();
         
-        Tests.RunTests();
-        
-        // End marker
-        LDA #'!'
-        Serial.WriteChar();
-        NewLine();
-        
-        loop { }
     }
 }
