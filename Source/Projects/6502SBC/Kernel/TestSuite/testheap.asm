@@ -40,6 +40,7 @@ unit Tests
     const string noCrashOnDoubleFree = "No crash on double free";
     const string noCrashOnInvalidFree = "No crash on invalid free";
     const string memoryLeakDetected = "Memory leak detected";
+    const string memoryLeakInTest = "MEMORY LEAK in test";
     
     // Skip messages
     const string skipNoAllocatedMemory = "No allocated memory";
@@ -62,6 +63,7 @@ unit Tests
     const uint AllocCount = Address.I2CInBuffer + 251;      // For out of memory test
     const uint InitialMemory = Address.I2CInBuffer + 249;   // Store initial available memory (2 bytes)
     const uint FinalMemory = Address.I2CInBuffer + 247;     // Store final available memory (2 bytes)
+    const uint PreTestMemory = Address.I2CInBuffer + 245;   // Memory before each test (2 bytes)
     
     // Run all Heap module tests
     RunTests()
@@ -82,28 +84,28 @@ unit Tests
         STZ AllocatedCount
         
         TestBasicAllocation();
-        CleanupAllocatedMemory();
+        CleanupAndCheckMemory();
         
         TestBasicFree();
-        CleanupAllocatedMemory();
+        CleanupAndCheckMemory();
         
         TestMultipleAllocations();
-        CleanupAllocatedMemory();
+        CleanupAndCheckMemory();
         
         TestMemoryReuse();
-        CleanupAllocatedMemory();
+        CleanupAndCheckMemory();
         
         TestFragmentation();
-        CleanupAllocatedMemory();
+        CleanupAndCheckMemory();
         
         //TestDoubleFree();
-        //CleanupAllocatedMemory();
+        //CleanupAndCheckMemory();
         
         //TestInvalidFree();
-        //CleanupAllocatedMemory();
+        //CleanupAndCheckMemory();
         
         //TestOutOfMemory();
-        //CleanupAllocatedMemory();
+        //CleanupAndCheckMemory();
         
         // Check final memory state
         Memory.Available();
@@ -133,6 +135,44 @@ unit Tests
         Debug.NL(); AOut();        
         
         PrintFooter();
+    }
+    
+    // Store memory state before test and clean up after
+    CleanupAndCheckMemory()
+    {
+        CleanupAllocatedMemory();
+        CheckForMemoryLeak();
+    }
+    
+    // Check for memory leaks after each test
+    CheckForMemoryLeak()
+    {
+        Memory.Available();
+        LDA ZP.ACCL
+        CMP PreTestMemory
+        if (NZ)
+        {
+            PrintTestMemoryLeak();
+        }
+        else
+        {
+            LDA ZP.ACCH
+            CMP PreTestMemory + 1
+            if (NZ)
+            {
+                PrintTestMemoryLeak();
+            }
+        }
+    }
+    
+    // Store memory state before test
+    StorePreTestMemory()
+    {
+        Memory.Available();
+        LDA ZP.ACCL
+        STA PreTestMemory
+        LDA ZP.ACCH
+        STA PreTestMemory + 1
     }
     
     // Print test header
@@ -179,6 +219,19 @@ unit Tests
         Print.NewLine();
     }
     
+    PrintTestMemoryLeak()
+    {
+        PrintFailLabel();
+        LDA #(memoryLeakInTest % 256)
+        STA ZP.STRL
+        LDA #(memoryLeakInTest / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        Print.NewLine();
+        Debug.DumpHeap();
+    }
+    
     // Clean up all allocated memory
     CleanupAllocatedMemory()
     {
@@ -208,6 +261,8 @@ unit Tests
     // Test basic allocation
     TestBasicAllocation()
     {
+        StorePreTestMemory();
+        
         // Allocate 100 bytes - put size in ZP.ACC
         LDA #100
         STA ZP.ACCL
@@ -293,6 +348,8 @@ unit Tests
     // Test basic free
     TestBasicFree()
     {
+        StorePreTestMemory();
+        
         // Allocate a block first
         LDA #80
         STA ZP.ACCL
@@ -303,7 +360,7 @@ unit Tests
         ORA ZP.IDXH
         if (NZ)
         {
-            // Free the memory immediately
+            // Free the memory immediately (don't store for cleanup since we free it here)
             Memory.Free();
             PrintBasicFreePass();
             
@@ -356,6 +413,8 @@ unit Tests
     // Test multiple allocations
     TestMultipleAllocations()
     {
+        StorePreTestMemory();
+        
         STZ SuccessCount
         STZ TestCount
         
@@ -427,8 +486,9 @@ unit Tests
         // Store pointer if we have room
         LDA AllocatedCount
         CMP #10  // Max 10 pointers
-        if (C)
+        if (NC)  // FIXED: Check for carry clear (AllocatedCount < 10)
         {
+            LDA AllocatedCount
             ASL A  // Multiply by 2 for word storage
             TAY
             
@@ -483,6 +543,8 @@ unit Tests
     // Test memory reuse after free
     TestMemoryReuse()
     {
+        StorePreTestMemory();
+        
         // Allocate 60 bytes
         LDA #60
         STA ZP.ACCL
@@ -535,11 +597,13 @@ unit Tests
         if (Z)
         {
             PrintMemoryReusePass();
+            // Store the final allocated pointer for cleanup
             StoreAllocatedPointer();
         }
         else
         {
             PrintMemoryReuseFail();
+            // Store the final allocated pointer for cleanup
             StoreAllocatedPointer();
             Debug.DumpHeap();
         }
@@ -607,6 +671,8 @@ unit Tests
     // Test fragmentation handling
     TestFragmentation()
     {
+        StorePreTestMemory();
+        
         // This test assumes previous allocations created some fragmentation
         // Try to allocate a large block that should fit in total free space
         // but may not fit in any single fragment
@@ -673,6 +739,8 @@ unit Tests
     // Test double free detection
     TestDoubleFree()
     {
+        StorePreTestMemory();
+        
         // Allocate a block
         LDA #30
         STA ZP.ACCL
@@ -751,6 +819,8 @@ unit Tests
     // Test invalid pointer free
     TestInvalidFree()
     {
+        StorePreTestMemory();
+        
         // Try to free an invalid pointer (stack address)
         LDA #(0x0100 % 256)  // Stack page
         STA ZP.IDXL
@@ -787,6 +857,8 @@ unit Tests
     // Test out of memory condition
     TestOutOfMemory()
     {
+        StorePreTestMemory();
+        
         STZ AllocCount
         
         // Try to allocate until we run out of memory
@@ -810,7 +882,7 @@ unit Tests
             INC AllocCount
             LDA AllocCount
             CMP #20  // Safety limit
-            if (C)
+            if (C)  // FIXED: Comparison should use carry correctly
             {
                 break;
             }
