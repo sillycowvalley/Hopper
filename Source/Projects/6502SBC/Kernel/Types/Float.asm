@@ -72,6 +72,14 @@ unit Float
         SEC
     }
     
+    shiftRESULTleft()
+    {
+        ASL ZP.RESULT0
+        ROL ZP.RESULT1
+        ROL ZP.RESULT2
+        ROL ZP.RESULT3
+    }
+    
     New()
     {
         // IEEE +0.0
@@ -448,10 +456,7 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    ASL ZP.RESULT0
-                    ROL ZP.RESULT1
-                    ROL ZP.RESULT2
-                    ROL ZP.RESULT3
+                    shiftRESULTleft();
                     DEX
                 }
             }
@@ -621,10 +626,7 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    ASL ZP.RESULT0
-                    ROL ZP.RESULT1
-                    ROL ZP.RESULT2
-                    ROL ZP.RESULT3
+                    shiftRESULTleft();
                     DEX
                 }
             }
@@ -903,10 +905,7 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    ASL ZP.RESULT0
-                    ROL ZP.RESULT1
-                    ROL ZP.RESULT2
-                    ROL ZP.RESULT3
+                    shiftRESULTleft();
                     DEX
                 }
             }

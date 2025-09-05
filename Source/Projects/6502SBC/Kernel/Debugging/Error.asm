@@ -11,7 +11,14 @@ unit Error // ErrorID.asm
         OUT        = 0x04,  // "OUT"
         OF         = 0x05,  // "OF"
         MEMORY     = 0x06,  // "MEMORY"
+        
+        
         NOT        = 0x10,  // "NOT"
+        
+        FORMAT     = 0x11,  // "FORMAT"
+        MEM        = 0x12,  // "MEM" 
+        DIR        = 0x13,  // "DIR"
+        
         FILE       = 0x19,  // "FILE"
         FOUND      = 0x1A,  // "FOUND"
         TOO        = 0x1D,  // "TOO"
@@ -56,6 +63,12 @@ unit Error // ErrorID.asm
         5,  ErrorWord.FOUND,      'F', 'O', 'U', 'N', 'D',
         3,  ErrorWord.TOO,        'T', 'O', 'O',
         4,  ErrorWord.LONG,       'L', 'O', 'N', 'G',
+        
+        // Command keywords
+        6,  ErrorWord.FORMAT,     'F', 'O', 'R', 'M', 'A', 'T',
+        3,  ErrorWord.MEM,        'M', 'E', 'M',
+        3,  ErrorWord.DIR,        'D', 'I', 'R',
+        
         0  // End marker
     };
     
@@ -131,6 +144,107 @@ unit Error // ErrorID.asm
         1, ErrorID.BytesLabel,        ErrorWord.BYTES,
         0  // End marker
     };
+    
+    
+    // Find keyword in errorWordsTable0
+    // Input: ZP.STR = pointer to start of word in line buffer
+    // Output: A = ErrorWord token if found, 0 if not found
+    // Preserves: X, Y
+    // Munts: A, ZP.IDX
+    FindKeyword()
+    {
+        PHX
+        PHY
+        
+        LDA #(errorWordsTable0 % 256)
+        STA ZP.IDXL
+        LDA #(errorWordsTable0 / 256)
+        STA ZP.IDXH
+        
+        LDY #0  // Table offset
+        loop
+        {
+            LDA [ZP.IDX], Y         // Get word length
+            if (Z) 
+            { 
+                LDA #0              // Not found
+                break; 
+            }
+            
+            TAX                     // X = word length
+            INY
+            LDA [ZP.IDX], Y         // Get token value
+            PHA                     // Save token on stack
+            INY
+            
+            // Compare X characters
+            PHY                     // Save table position
+            LDY #0                  // Buffer offset
+            loop
+            {
+                CPX #0
+                if (Z) 
+                { 
+                    // Matched all chars - check delimiter
+                    LDA [ZP.STR], Y
+                    if (Z) { break; }       // End of line = match
+                    CMP #' '
+                    if (Z) { break; }       // Space = match
+                    
+                    // No delimiter - not a match
+                    PLY                     // Restore table position
+                    PLA                     // Discard saved token
+                    break;                  // Try next word
+                }
+                
+                LDA [ZP.STR], Y         // Get buffer char
+                if (Z) 
+                { 
+                    // Hit end of line before matching all chars
+                    PLY
+                    PLA
+                    break;
+                }
+                
+                AND #0xDF               // Convert to uppercase
+                CMP [ZP.IDX], Y         // Compare with table char (assumes table is uppercase)
+                if (NZ) 
+                { 
+                    // Mismatch
+                    PLY
+                    PLA
+                    break;
+                }
+                
+                INY
+                DEX
+            }
+            
+            CPX #0
+            if (Z)
+            {
+                // Found complete match with valid delimiter
+                PLY                     // Clean up stack
+                PLA                     // Get token value
+                break;                  // Return with token in A
+            }
+            
+            // Skip to next table entry
+            PLY                         // Restore table position  
+            PLA                         // Discard token
+            DEX                         // Remaining chars to skip
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                INY
+                DEX
+            }
+        }
+        
+        PLY
+        PLX
+    }
     
     // Helper method to search error word table and print word
     // Input: X = target word ID, ZP.IDX = table address

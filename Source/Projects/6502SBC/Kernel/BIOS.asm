@@ -42,7 +42,7 @@ program BIOS
     
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
-    uses "TestSuite/TestLong"
+    //uses "TestSuite/TestLong"
     //uses "TestSuite/TestFloat"
     
     Run()
@@ -99,11 +99,105 @@ program BIOS
         CLI  // Re-enable interrupts
     }
     
+    cmdFormat()
+    {
+        // Confirm destructive action using Error system
+        LDA # ErrorID.FormatWarning 
+        LDX # MessageExtras.SuffixSpace
+        confirmYesNo();               // Simple Y/N reader
+        if (NC) { return; }           // User cancelled
+        
+        File.Initialize();            // This sets ZP.LastError on failure
+    }
+    
+    cmdMem()
+    {
+        Heap.Available();             // Returns available bytes in ZP.TOP
+        // Print result using existing Print routines or Error messages
+        LDA # ErrorID.MemoryAvailable 
+        LDX # MessageExtras.SuffixSpace
+        Error.Message();
+        Long.Print();              // Print ZP.TOP value
+        // TODO : " BYTES"
+        Print.NewLine();
+    }
+    
+    cmdDir()
+    {
+        File.Dir();                   // This sets ZP.LastError on failure
+    }
+    
+    confirmYesNo()
+    {
+        Error.Message();
+        LDX # (MessageExtras.InParens|MessageExtras.SuffixQuest|MessageExtras.SuffixSpace)
+        loop
+        {
+            LDA # ErrorID.YesNo 
+            Error.Message();
+              
+            Serial.WaitForChar();
+            AND #0xDF                 // Convert to uppercase
+            PHA
+            Serial.WriteChar();       // Echo
+            Print.NewLine();
+            PLA
+            // TODO : make uppercase
+            CMP #'Y'
+            if (Z) { SEC; return; }   // Yes
+            CMP #'N'  
+            if (Z) { CLC; return; }   // No
+            
+            // Invalid - try again
+            LDX # (MessageExtras.SuffixQuest|MessageExtras.SuffixSpace)
+        }
+    }
+    
+    parseAndExecute()
+    {
+        // Skip leading spaces
+        LDY #0
+        loop
+        {
+            LDA LineBuffer, Y
+            if (Z) { return; }          // Empty line
+            CMP #' '
+            if (NZ) { break; }          // Found non-space
+            INY
+        }
+        
+        // Point ZP.STR to command start
+        TYA
+        CLC
+        ADC #(LineBuffer % 256)
+        STA ZP.STRL
+        LDA #(LineBuffer / 256)
+        ADC #0
+        STA ZP.STRH
+        
+        FindKeyword();                  // Returns token in A
+        if (Z)
+        {
+            LDA #ErrorID.InvalidSystemCall  // Reuse existing error
+            LDX #MessageExtras.SuffixSpace
+            Error.Message();
+            return;
+        }
+        
+        // Execute command based on token
+        switch (A)
+        {
+            case ErrorWord.FORMAT: { cmdFormat(); }
+            case ErrorWord.MEM:    { cmdMem(); }
+            case ErrorWord.DIR:    { cmdDir(); }
+        }
+    }
+    
     Hopper()
     {
         Initialize();  
         
-        Run();
+        //Run();
         
         LDX #SysCall.MemAvailable
         SystemCallDispatcher();

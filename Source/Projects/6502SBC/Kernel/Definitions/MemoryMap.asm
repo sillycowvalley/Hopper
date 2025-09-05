@@ -6,8 +6,12 @@ unit Address // MemoryMap.asm
     
     const uint I2CInBuffer          = 0x0300;  // 256-byte buffer 0x0800-0x08FF for I2C.RequestFrom
     
+    const uint WorkSpace            = 0x0400;  // 256 byte general workspace
+    
+    const uint LineBuffer           = WorkSpace; // first 64 bytes (of the 256) for the command line parser
+    
 #ifdef HASEEPROM    
-    const uint FileSystemBuffers       = I2CInBuffer             + 256;                          // 768 bytes - file system buffers (may be shared or smaller in future)
+    const uint FileSystemBuffers       = WorkSpace               + 256;                          // 768 bytes - file system buffers (may be shared or smaller in future)
         
     const uint HeapStart               = FileSystemBuffers       + Limits.FileSystemBufferSize;  // start of user RAM (program, then heap)
 #else
