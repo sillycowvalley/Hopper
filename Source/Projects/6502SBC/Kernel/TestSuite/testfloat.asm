@@ -3,6 +3,11 @@ unit Tests
     
     RunTests()
     {
+        // Expected output:
+        // 3 3 0
+        // TT
+        // TF
+        //!
         TestBasics();
         TestComparisons();
         TestUtilities();
@@ -12,7 +17,6 @@ unit Tests
     {
         // Test basic operations with simple values
         // We'll manually create small IEEE 754 values
-        
         // Test Add: 2.0 + 1.0 = 3.0
         CreateFloat2();  // NEXT = 2.0
         CreateFloat1();  // TOP = 1.0  
@@ -20,8 +24,9 @@ unit Tests
         PrintFloatAsLong();
         
         // Test Sub: 5.0 - 2.0 = 3.0
+        CreateFloat2();  // NEXT = 2.0
+        Shared.MoveNextToTop();
         CreateFloat5();  // NEXT = 5.0
-        CreateFloat2();  // TOP = 2.0
         Float.Sub();
         PrintFloatAsLong();
         
@@ -37,13 +42,21 @@ unit Tests
         // Test LT: 2.0 < 3.0 (should be true)
         CreateFloat2();  // NEXT = 2.0
         CreateFloat3();  // TOP = 3.0
+        
+Debug.NL(); NFOut(); Space(); TFOut();        
         Float.LT();
+Space(); TXA HOut();        
+
         PrintBool();
         
         // Test EQ: 2.0 == 2.0 (should be true)
         CreateFloat2();  // NEXT = 2.0
-        CreateFloat2();  // TOP = 2.0
+        Shared.MoveNextToTop();
+        CreateFloat2();  // NEXT = 2.0
+        
+Debug.NL(); NFOut(); Space(); TFOut();                
         Float.EQ();
+Space(); TXA HOut();        
         PrintBool();
         
         NewLine();
@@ -127,18 +140,14 @@ unit Tests
     }
     
     // Print float value as integer (for simple verification)
+    // assumes float is in NEXT
     PrintFloatAsLong()
     {
+        Float.ToLong(); // NEXT -> NEXT
+        
         Shared.MoveNextToTop();
-        Float.ToLong();
         Long.Print();
         LDA #' '
-        Serial.WriteChar();
-    }
-    
-    NewLine()
-    {
-        LDA #'\n'
         Serial.WriteChar();
     }
     

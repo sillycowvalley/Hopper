@@ -191,7 +191,7 @@ unit Long
     }
     commonLT()
     {
-        // NEXT = NEXT - TOP
+        // <result> = NEXT - TOP
         SEC
         LDA ZP.NEXT0
         SBC ZP.TOP0

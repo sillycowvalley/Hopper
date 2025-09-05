@@ -3,13 +3,33 @@ unit Float
     
     friend Long;
     
-    const byte TOPEXP0   = M0;
-    const byte TOPEXP1   = M1;
-    const byte NEXTEXP0  = M2;
-    const byte NEXTEXP1  = M3;
-    const byte TOPSIGN   = M4;
-    const byte NEXTSIGN  = M5;
+    // RESULT0..7 uses M0..7
+    const byte TOPEXP0   = M8;
+    const byte TOPEXP1   = M9;
+    const byte NEXTEXP0  = M10;
+    const byte NEXTEXP1  = M11;
+    const byte TOPSIGN   = M12;
+    const byte NEXTSIGN  = M13;
     
+    
+#ifdef DEBUG
+    NFOut()
+    {
+        LDA NEXTSIGN HOut();
+        LDA #':' COut();
+        LDA NEXTEXP1 HOut();LDA NEXTEXP0 HOut();
+        LDA #':' COut();
+        LDA NEXT3 HOut();LDA NEXT2 HOut();LDA NEXT1 HOut();LDA NEXT0 HOut();
+    }
+    TFOut()
+    {
+        LDA TOPSIGN HOut();
+        LDA #':' COut();
+        LDA TOPEXP1 HOut();LDA TOPEXP0 HOut();
+        LDA #':' COut();
+        LDA TOP3 HOut();LDA TOP2 HOut();LDA TOP1 HOut();LDA TOP0 HOut();
+    }
+#endif    
     expGT()
     {
         LDX #0 // NEXT <= TOP
@@ -370,7 +390,7 @@ countEntry:
                 Long.commonLT();
                 CPX # 0 // not <, so >=
                 if (Z)
-                {
+                {         
                     // mantissaA >= mantissaB
                     SEC
                     LDA ZP.NEXT0
@@ -474,12 +494,12 @@ countEntry:
             LDA NEXTEXP0
             ADC # 8
             STA NEXTEXP0
-            LDA ZP.TEMP
+            LDA NEXTEXP1
             ADC # 0
-            STA ZP.TEMP
+            STA NEXTEXP1
             SEC
             LDA NEXTEXP0
-            SBC ACCH
+            SBC ZP.ACCH
             STA NEXTEXP0
             LDA NEXTEXP1
             SBC # 0

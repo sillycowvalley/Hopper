@@ -463,9 +463,9 @@ countEntry:
             LDA NEXTL
             ADC # 8
             STA NEXTL
-            LDA NEXTT
+            LDA NEXTH
             ADC # 0
-            STA NEXTT
+            STA NEXTH
             SEC
             LDA NEXTL
             SBC ZP.ACCH
