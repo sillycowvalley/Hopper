@@ -4,10 +4,14 @@ unit Tests
     RunTests()
     {
         // Expected output:
-        // 3 3 0
-        // TT
+        // 5 3 3 -5
+        // 3 5 -5 -3
+        // 6 -6 -6 6
+        // 3 -3 -3 3
+        // 
+        // TTTFTFFTF
         // TF
-        //!
+        // !
         TestBasics();
         TestComparisons();
         TestUtilities();
@@ -15,43 +19,167 @@ unit Tests
     
     TestBasics()
     {
-        // Test basic operations with simple values
-        // We'll manually create small IEEE 754 values
-        // Test Add: 2.0 + 1.0 = 3.0
-        CreateFloat2();  // NEXT = 2.0
-        CreateFloat1();  // TOP = 1.0  
-        Float.Add();
+        // Add tests: +ve+ve, +ve-ve, -ve+ve, -ve-ve
+        CreateFloat2();         // NEXT = 2.0
+        CreateFloat3();         // TOP = 3.0
+        Float.Add();           // 2.0 + 3.0 = 5.0
         PrintFloatAsLong();
         
-        // Test Sub: 5.0 - 2.0 = 3.0
-        CreateFloat2();  // NEXT = 2.0
-        Shared.MoveNextToTop();
-        CreateFloat5();  // NEXT = 5.0
-        Float.Sub();
+        CreateFloat5();         // NEXT = 5.0
+        CreateFloatNegTwoTop(); // TOP = -2.0
+        Float.Add();           // 5.0 + (-2.0) = 3.0
         PrintFloatAsLong();
         
-        // Test simple zero
-        Float.New();  // Creates 0.0 in NEXT
+        CreateFloatNegTwo();    // NEXT = -2.0
+        CreateFloatFiveTop();   // TOP = 5.0
+        Float.Add();           // (-2.0) + 5.0 = 3.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegTwo();    // NEXT = -2.0
+        CreateFloatNegThreeTop(); // TOP = -3.0
+        Float.Add();           // (-2.0) + (-3.0) = -5.0
+        PrintFloatAsLong();
+        
+        NewLine();
+        
+        // Sub tests: +ve+ve, +ve-ve, -ve+ve, -ve-ve
+        CreateFloat5();         // NEXT = 5.0
+        CreateFloatTwoTop();    // TOP = 2.0
+        Float.Sub();           // 5.0 - 2.0 = 3.0
+        PrintFloatAsLong();
+        
+        CreateFloatThreeNext(); // NEXT = 3.0
+        CreateFloatNegTwoTop(); // TOP = -2.0
+        Float.Sub();           // 3.0 - (-2.0) = 5.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegTwo();    // NEXT = -2.0
+        CreateFloat3();         // TOP = 3.0
+        Float.Sub();           // (-2.0) - 3.0 = -5.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegFive();   // NEXT = -5.0
+        CreateFloatNegTwoTop(); // TOP = -2.0
+        Float.Sub();           // (-5.0) - (-2.0) = -3.0
+        PrintFloatAsLong();
+        
+        NewLine();
+        
+        // Mul tests: +ve+ve, +ve-ve, -ve+ve, -ve-ve
+        CreateFloat2();         // NEXT = 2.0
+        CreateFloat3();         // TOP = 3.0
+        Float.Mul();           // 2.0 * 3.0 = 6.0
+        PrintFloatAsLong();
+        
+        CreateFloatThreeNext(); // NEXT = 3.0
+        CreateFloatNegTwoTop(); // TOP = -2.0
+        Float.Mul();           // 3.0 * (-2.0) = -6.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegTwo();    // NEXT = -2.0
+        CreateFloat3();         // TOP = 3.0
+        Float.Mul();           // (-2.0) * 3.0 = -6.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegTwo();    // NEXT = -2.0
+        CreateFloatNegThreeTop(); // TOP = -3.0
+        Float.Mul();           // (-2.0) * (-3.0) = 6.0
+        PrintFloatAsLong();
+        
+        NewLine();
+        
+        // Div tests: +ve+ve, +ve-ve, -ve+ve, -ve-ve
+        CreateFloatSix();       // NEXT = 6.0
+        CreateFloatTwoTop();    // TOP = 2.0
+        Float.Div();           // 6.0 / 2.0 = 3.0
+        PrintFloatAsLong();
+        
+        CreateFloatSix();       // NEXT = 6.0
+        CreateFloatNegTwoTop(); // TOP = -2.0
+        Float.Div();           // 6.0 / (-2.0) = -3.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegSixNext(); // NEXT = -6.0
+        CreateFloatTwoTop();    // TOP = 2.0
+        Float.Div();           // (-6.0) / 2.0 = -3.0
+        PrintFloatAsLong();
+        
+        CreateFloatNegSixNext(); // NEXT = -6.0
+        CreateFloatNegTwoTop(); // TOP = -2.0
+        Float.Div();           // (-6.0) / (-2.0) = 3.0
         PrintFloatAsLong();
         
         NewLine();
     }
     
+    
     TestComparisons()
     {
-        // Test LT: 2.0 < 3.0 (should be true)
-        CreateFloat2();  // NEXT = 2.0
-        CreateFloat3();  // TOP = 3.0
+        // EQ corner cases
         
-        Float.LT();
+        // Test 1: 0.0 == 0.0 (both zero)
+        CreateFloatZero();       // TOP = 0.0
+        Shared.MoveTopToNext();  // NEXT = 0.0
+        CreateFloatZero();       // TOP = 0.0
+        Float.EQ();              // 0.0 == 0.0 ? T
         PrintBool();
         
-        // Test EQ: 2.0 == 2.0 (should be true)
-        CreateFloat2();  // NEXT = 2.0
-        Shared.MoveNextToTop();
-        CreateFloat2();  // NEXT = 2.0
+        // Test 2: 0.0 == -0.0 (positive zero vs negative zero)
+        CreateFloatZero();       // TOP = 0.0
+        Shared.MoveTopToNext();  // NEXT = 0.0
+        CreateFloatNegZero();    // TOP = -0.0
+        Float.EQ();              // 0.0 == -0.0 ? T
+        PrintBool();
         
-        Float.EQ();
+        // LT corner cases
+        
+        // Test 3: -1.0 < 1.0 (signs differ: negative < positive)
+        CreateFloatNegOne();     // TOP = -1.0
+        Shared.MoveTopToNext();  // NEXT = -1.0
+        CreateFloat1();          // TOP = 1.0
+        Float.LT();              // -1.0 < 1.0 ? T
+        PrintBool();
+        
+        // Test 4: 1.0 < -1.0 (signs differ: positive < negative)
+        CreateFloat1();          // TOP = 1.0
+        Shared.MoveTopToNext();  // NEXT = 1.0
+        CreateFloatNegOne();     // TOP = -1.0
+        Float.LT();              // 1.0 < -1.0 ? F
+        PrintBool();
+        
+        // Test 5: 1.0 < 2.0 (same sign, different exponents)
+        CreateFloat1();          // TOP = 1.0
+        Shared.MoveTopToNext();  // NEXT = 1.0
+        CreateFloatTwo();        // TOP = 2.0
+        Float.LT();              // 1.0 < 2.0 ? T
+        PrintBool();
+        
+        // Test 6: 2.0 < 1.0 (same sign, different exponents, reverse)
+        CreateFloatTwo();        // TOP = 2.0
+        Shared.MoveTopToNext();  // NEXT = 2.0
+        CreateFloat1();          // TOP = 1.0
+        Float.LT();              // 2.0 < 1.0 ? F
+        PrintBool();
+        
+        // Test 7: 1.0 < 1.0 (same sign, same exponent, equal mantissas)
+        CreateFloat1();          // TOP = 1.0
+        Shared.MoveTopToNext();  // NEXT = 1.0
+        CreateFloat1();          // TOP = 1.0
+        Float.LT();              // 1.0 < 1.0 ? F
+        PrintBool();
+        
+        // Test 8: 1.0 < 1.5 (same sign, same exponent, different mantissas)
+        CreateFloat1();          // TOP = 1.0
+        Shared.MoveTopToNext();  // NEXT = 1.0
+        CreateFloatOnePointFive(); // TOP = 1.5
+        Float.LT();              // 1.0 < 1.5 ? T
+        PrintBool();
+        
+        // Test 9: 1.5 < 1.0 (same sign, same exponent, different mantissas, reverse)
+        CreateFloatOnePointFive(); // TOP = 1.5
+        Shared.MoveTopToNext();  // NEXT = 1.5
+        CreateFloat1();          // TOP = 1.0
+        Float.LT();              // 1.5 < 1.0 ? F
         PrintBool();
         
         NewLine();
@@ -131,6 +259,151 @@ unit Tests
         LDA #0x40 
         STA ZP.NEXT3    // Sign + exp high
     }
+    
+    CreateFloatZero()  // 0.0 = 0x00000000
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+    }
+    
+    CreateFloatNegZero()  // -0.0 = 0x80000000
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        LDA #0x80
+        STA ZP.TOP3
+    }
+    
+    CreateFloatNegOne()  // -1.0 = 0xBF800000
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        LDA #0x80
+        STA ZP.TOP2
+        LDA #0xBF
+        STA ZP.TOP3
+    }
+    
+    CreateFloatTwo()  // 2.0 = 0x40000000 (puts in TOP, unlike existing CreateFloat2)
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        LDA #0x40
+        STA ZP.TOP3
+    }
+    
+    CreateFloatOnePointFive()  // 1.5 = 0x3FC00000
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        LDA #0xC0
+        STA ZP.TOP2
+        LDA #0x3F
+        STA ZP.TOP3
+    }
+    
+    
+    CreateFloatSix()  // 6.0 = 0x40C00000 (puts in NEXT)
+    {
+        STZ ZP.NEXT0
+        STZ ZP.NEXT1
+        LDA #0xC0
+        STA ZP.NEXT2
+        LDA #0x40
+        STA ZP.NEXT3
+    }
+    
+    CreateFloatTwoTop()  // 2.0 = 0x40000000 (puts in TOP)
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        LDA #0x40
+        STA ZP.TOP3
+    }
+    
+    CreateFloatFiveTop()  // 5.0 = 0x40A00000 (puts in TOP)
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        LDA #0xA0
+        STA ZP.TOP2
+        LDA #0x40
+        STA ZP.TOP3
+    }
+    
+    CreateFloatNegTwo()  // -2.0 = 0xC0000000 (puts in NEXT)
+    {
+        STZ ZP.NEXT0
+        STZ ZP.NEXT1
+        STZ ZP.NEXT2
+        LDA #0xC0
+        STA ZP.NEXT3
+    }
+    
+    CreateFloatNegTwoTop()  // -2.0 = 0xC0000000 (puts in TOP)
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        LDA #0xC0
+        STA ZP.TOP3
+    }
+    
+    CreateFloatNegOneTop()  // -1.0 = 0xBF800000 (puts in TOP)
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        LDA #0x80
+        STA ZP.TOP2
+        LDA #0xBF
+        STA ZP.TOP3
+    }
+    
+    CreateFloatNegFive()  // -5.0 = 0xC0A00000 (puts in NEXT)
+    {
+        STZ ZP.NEXT0
+        STZ ZP.NEXT1
+        LDA #0xA0
+        STA ZP.NEXT2
+        LDA #0xC0
+        STA ZP.NEXT3
+    }
+    
+    CreateFloatThreeNext()  // 3.0 = 0x40400000 (puts in NEXT)
+    {
+        STZ ZP.NEXT0
+        STZ ZP.NEXT1
+        LDA #0x40
+        STA ZP.NEXT2
+        LDA #0x40
+        STA ZP.NEXT3
+    }
+    
+    CreateFloatNegThreeTop()  // -3.0 = 0xC0400000 (puts in TOP)
+    {
+        STZ ZP.TOP0
+        STZ ZP.TOP1
+        LDA #0x40
+        STA ZP.TOP2
+        LDA #0xC0
+        STA ZP.TOP3
+    }
+    
+    CreateFloatNegSixNext()  // -6.0 = 0xC0C00000 (puts in NEXT)
+    {
+        STZ ZP.NEXT0
+        STZ ZP.NEXT1
+        LDA #0xC0
+        STA ZP.NEXT2
+        LDA #0xC0
+        STA ZP.NEXT3
+    }
+    
     
     // Print float value as integer (for simple verification)
     // assumes float is in NEXT

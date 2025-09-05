@@ -11,6 +11,9 @@ unit Float
     const byte TOPSIGN   = M12;
     const byte NEXTSIGN  = M13;
     
+    const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
+                              0b00010000, 0b00100000, 0b01000000, 0b10000000 };
+    
     
 #ifdef DEBUG
     NFOut()
@@ -390,8 +393,7 @@ countEntry:
             else
             {
                 Long.commonLT();
-                CPX # 0 // not <, so >=
-                if (Z)
+                if (NC) // not <, so >=
                 {         
                     // mantissaA >= mantissaB
                     SEC
@@ -651,12 +653,12 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    LSR LRESULT5
-                    ROR LRESULT4
-                    ROR LRESULT3
-                    ROR LRESULT2
-                    ROR LRESULT1
-                    ROR LRESULT0
+                    LSR ZP.RESULT5
+                    ROR ZP.RESULT4
+                    ROR ZP.RESULT3
+                    ROR ZP.RESULT2
+                    ROR ZP.RESULT1
+                    ROR ZP.RESULT0
                     DEX
                 }
             }
@@ -670,10 +672,10 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    ASL LRESULT0
-                    ROL LRESULT1
-                    ROL LRESULT2
-                    ROL LRESULT3
+                    ASL ZP.RESULT0
+                    ROL ZP.RESULT1
+                    ROL ZP.RESULT2
+                    ROL ZP.RESULT3
                     DEX
                 }
             }
@@ -708,7 +710,7 @@ countEntry:
             handleExponentOverflow();
             
             // Remove the implicit leading bit
-            LDA LRESULT2
+            LDA ZP.RESULT2
             AND # 0x7F
             STA ZP.NEXT2
             
@@ -727,9 +729,9 @@ countEntry:
             LSR
             STA ZP.NEXT3
             
-            LDA LRESULT0
+            LDA ZP.RESULT0
             STA ZP.NEXT0
-            LDA LRESULT1
+            LDA ZP.RESULT1
             STA ZP.NEXT1
             break;
         }
@@ -759,7 +761,7 @@ countEntry:
         TAX   // byte index
         
         // load bit mask
-        LDA Array.bitMasks, Y
+        LDA bitMasks, Y
         AND ZP.NEXT0, X
     }
     orQuotientBit()
@@ -776,9 +778,9 @@ countEntry:
         TAX   // byte index
         
         // load bit mask
-        LDA Array.bitMasks, Y
-        ORA LRESULT0, X
-        STA LRESULT0, X
+        LDA bitMasks, Y
+        ORA ZP.RESULT0, X
+        STA ZP.RESULT0, X
     }
     
     mantissaDivide()
@@ -787,16 +789,16 @@ countEntry:
         // TOP  is divisor
         
         // quotient
-        STZ LRESULT0
-        STZ LRESULT1
-        STZ LRESULT2
-        STZ LRESULT3
+        STZ ZP.RESULT0
+        STZ ZP.RESULT1
+        STZ ZP.RESULT2
+        STZ ZP.RESULT3
         
         // remainder:
-        STZ LRESULT4
-        STZ LRESULT5
-        STZ LRESULT6
-        STZ LRESULT7
+        STZ ZP.RESULT4
+        STZ ZP.RESULT5
+        STZ ZP.RESULT6
+        STZ ZP.RESULT7
         
         LDX # 47
         loop
@@ -804,10 +806,10 @@ countEntry:
             // X : 47 .. 0
             
             // remainder = remainder << 1
-            ASL LRESULT4
-            ROL LRESULT5
-            ROL LRESULT6
-            ROL LRESULT7
+            ASL ZP.RESULT4
+            ROL ZP.RESULT5
+            ROL ZP.RESULT6
+            ROL ZP.RESULT7
 
             CPX # 24
             if (C)
@@ -833,39 +835,39 @@ countEntry:
             if (NZ)
             {
                 
-                LDA LRESULT4
+                LDA ZP.RESULT4
                 ORA # 1
-                STA LRESULT4
+                STA ZP.RESULT4
             }
             
             // If the remainder is greater than or equal to the divisor, subtract the divisor from the remainder
             
             // remainder - divisor >= 0?
             SEC
-            LDA LRESULT4
+            LDA ZP.RESULT4
             SBC ZP.TOP0
-            LDA LRESULT5
+            LDA ZP.RESULT5
             SBC ZP.TOP1
-            LDA LRESULT6
+            LDA ZP.RESULT6
             SBC ZP.TOP2
-            LDA LRESULT7
+            LDA ZP.RESULT7
             SBC ZP.TOP3
             if (PL)
             {
                 // remainder = remainder - divisor;
                 SEC
-                LDA LRESULT4
+                LDA ZP.RESULT4
                 SBC ZP.TOP0
-                STA LRESULT4
-                LDA LRESULT5
+                STA ZP.RESULT4
+                LDA ZP.RESULT5
                 SBC ZP.TOP1
-                STA LRESULT5
-                LDA LRESULT6
+                STA ZP.RESULT5
+                LDA ZP.RESULT6
                 SBC ZP.TOP2
-                STA LRESULT6
-                LDA LRESULT7
+                STA ZP.RESULT6
+                LDA ZP.RESULT7
                 SBC ZP.TOP3
-                STA LRESULT7
+                STA ZP.RESULT7
                 PLX
                 PHX
                 orQuotientBit();
@@ -886,9 +888,8 @@ countEntry:
             EOR TOPSIGN
             STA NEXTSIGN
             
-            Float.isZeroNEXT();
-            CPX # 1
-            if (Z)
+            Float.IsZeroNext();
+            if (C)
             {
                 break; // return NEXT
             }
@@ -945,10 +946,10 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    LSR LRESULT3
-                    ROR LRESULT2
-                    ROR LRESULT1
-                    ROR LRESULT0
+                    LSR ZP.RESULT3
+                    ROR ZP.RESULT2
+                    ROR ZP.RESULT1
+                    ROR ZP.RESULT0
                     DEX
                 }
             }
@@ -962,10 +963,10 @@ countEntry:
                 loop
                 {
                     if (Z) { break; }
-                    ASL LRESULT0
-                    ROL LRESULT1
-                    ROL LRESULT2
-                    ROL LRESULT3
+                    ASL ZP.RESULT0
+                    ROL ZP.RESULT1
+                    ROL ZP.RESULT2
+                    ROL ZP.RESULT3
                     DEX
                 }
             }
@@ -1002,7 +1003,7 @@ countEntry:
             handleExponentOverflow();
             
             // Remove the implicit leading bit
-            LDA LRESULT2
+            LDA ZP.RESULT2
             AND # 0x7F
             STA ZP.NEXT2
             
@@ -1021,9 +1022,9 @@ countEntry:
             LSR
             STA ZP.NEXT3
             
-            LDA LRESULT0
+            LDA ZP.RESULT0
             STA ZP.NEXT0
-            LDA LRESULT1
+            LDA ZP.RESULT1
             STA ZP.NEXT1
             
             break;
