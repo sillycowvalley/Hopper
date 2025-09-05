@@ -67,9 +67,10 @@ unit ZP // ZeroPage.asm
     
 #endif    
     
-    const byte DISPATCH             = 0x2B;
-    const byte DISPATCHL            = 0x2B;
-    const byte DISPATCHH            = 0x2C;
+    // 6502 toolchain creates code that writes to these slots if HOPPER_BIOS defined
+    const byte BIOSDISPATCH         = 0x2B; 
+    const byte BIOSDISPATCHL        = 0x2B;
+    const byte BIOSDISPATCHH        = 0x2C;
     
     const byte FSOURCEADDRESS       = 0x2D;  // Source address parameter
     const byte FSOURCEADDRESSL      = 0x2D;  // Source low (alias)

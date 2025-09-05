@@ -313,6 +313,7 @@ program DASM
                 Symbols.New();
                 string description;
                 uint romSize = 0x8000;
+                bool biosApplet = false;
                 if (Symbols.Import(jsonPath))
                 {
                     if (DefineExists("CPU_6502"))
@@ -358,6 +359,10 @@ program DASM
                         description += " (1K ROM)";
                         romSize = 0x0400;
                     }
+                    if (DefineExists("HOPPER_BIOS_APPLET"))
+                    {
+                        biosApplet = true;
+                    }
                 }
                 if (includeHits)
                 {
@@ -390,13 +395,24 @@ program DASM
                 file hexFile = File.Open(codePath);
                 <byte> code = readIHex(hexFile, ref org);
                 
-                uint resetVector = code[code.Count-4] + (code[code.Count-3] << 8);
+                uint resetVector;
+                uint constantSize;
+                if (!biosApplet)
+                {
+                    resetVector = code[code.Count-4] + (code[code.Count-3] << 8);
+                    address = resetVector;
+                    constantSize = resetVector - org;
+                }
+                else
+                {
+                    address = code[1] + code[2] << 8;
+                    constantSize = address - 0x800;
+                }
                 
-                address = resetVector;
-                uint constantSize = resetVector - org;
                 uint index = constantSize;
                 if (constantSize > 0)
                 {
+                    PrintLn(constantSize.ToString());
                     string ascii;
                     hasmFile.Append("// constant data" + Char.EOL);
                     uint i;
@@ -635,21 +651,24 @@ program DASM
                     address  += length;
                     codeSize += length;
                     
-                    if (instruction == OpCode.JMP_inn)
+                    if ((instruction == OpCode.JMP_inn) && (operand == 0x0020)) // ZP.JumpTable
                     {
                         RenderJumpTablePretty(hasmFile, code, ref index, ref address, ref codeSize, tableSizeInWords, methodAddresses, commentPrefix);
                         //RenderJumpTableRaw(hasmFile, code, ref index, ref address, ref codeSize, tableSizeInWords);
                     }
                 }
-                hasmFile.Append("" +  Char.EOL);
-                uint vector = code[index] + code[index+1] << 8;
-                hasmFile.Append("0xFFFA 0x" + vector.ToHexString(4) + " // NMI vector" + Char.EOL);
-                vector = code[index+2] + code[index+3] << 8;
-                hasmFile.Append("0xFFFC 0x" + vector.ToHexString(4) + " // Reset vector" + Char.EOL);
-                vector = code[index+4] + code[index+5] << 8;
-                hasmFile.Append("0xFFFE 0x" + vector.ToHexString(4) + " // IRQ vector" + Char.EOL);
-                
-                codeSize += 6;
+                if (!biosApplet)
+                {
+                    hasmFile.Append("" +  Char.EOL);
+                    uint vector = code[index] + code[index+1] << 8;
+                    hasmFile.Append("0xFFFA 0x" + vector.ToHexString(4) + " // NMI vector" + Char.EOL);
+                    vector = code[index+2] + code[index+3] << 8;
+                    hasmFile.Append("0xFFFC 0x" + vector.ToHexString(4) + " // Reset vector" + Char.EOL);
+                    vector = code[index+4] + code[index+5] << 8;
+                    hasmFile.Append("0xFFFE 0x" + vector.ToHexString(4) + " // IRQ vector" + Char.EOL);
+                    
+                    codeSize += 6;
+                }
                               
                 Parser.ProgressTick(".");
                 hasmFile.Flush();

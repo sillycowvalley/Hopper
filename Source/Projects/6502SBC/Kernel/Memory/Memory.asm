@@ -85,7 +85,7 @@ unit Memory // Memory.asm
         // - entire program was loaded at HopperData (typically $0800)
         // - size in pages of loaded program is in PROGSIZE
 
-        LDA # (Address.HeapStart >> 8)
+        LDA # (Address.UserMemory >> 8)
         STA ZP.HEAPSTART
         
         // probe to discover RAM size:

@@ -1670,8 +1670,12 @@ unit Asm6502
             {
                 return true;
             }
-            case OpCode.JMP_inn:  // JMP [nnnn]
-            case OpCode.JMP_innX: // JMP [nnnn, X]
+            // These should not be treated as jumps at all by the optimizer:
+            // - we can't walk their paths at compile
+            // - we should not adjust their operands
+            //case OpCode.JMP_inn:  // JMP [nnnn]
+            //case OpCode.JMP_innX: // JMP [nnnn, X]
+            
             case OpCode.BRA_e:
             {
                 return true;
@@ -1870,6 +1874,13 @@ unit Asm6502
             Asm6502.EmitInstruction("CLD");
             Asm6502.EmitInstruction("LDX", 0xFF);
             Asm6502.EmitInstruction("TXS");
+            if (Symbols.DefineExists("HOPPER_BIOS"))
+            {
+                Asm6502.EmitInstruction("LDA", 0x55);
+                Asm6502.EmitInstructionZeroPage("STA", 0x2B, AddressingModes.ZeroPage); // DISPATCHL
+                Asm6502.EmitInstruction("LDA", 0xAA);
+                Asm6502.EmitInstructionZeroPage("STA", 0x2C, AddressingModes.ZeroPage); // DISPATCHH
+            }
         }
     }
     AddInstructionENTER()

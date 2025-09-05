@@ -11,10 +11,6 @@ unit Float
     const byte TOPSIGN   = M12;
     const byte NEXTSIGN  = M13;
     
-    const byte[] bitMasks = { 0b00000001, 0b00000010, 0b00000100, 0b00001000,
-                              0b00010000, 0b00100000, 0b01000000, 0b10000000 };
-    
-    
 #ifdef DEBUG
     NFOut()
     {
@@ -712,7 +708,7 @@ countEntry:
         TAX   // byte index
         
         // load bit mask
-        LDA bitMasks, Y
+        LDA GPIO.BitMasks, Y
         AND ZP.NEXT0, X
     }
     orQuotientBit()
@@ -729,7 +725,7 @@ countEntry:
         TAX   // byte index
         
         // load bit mask
-        LDA bitMasks, Y
+        LDA GPIO.BitMasks, Y
         ORA ZP.RESULT0, X
         STA ZP.RESULT0, X
     }

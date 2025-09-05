@@ -1893,6 +1893,11 @@ program Assemble
                     Asm6502.SetOrg(0x8000); // assume 32K ROM
                 }
                 
+                if (Symbols.DefineExists("HOPPER_BIOS_APPLET"))
+                {
+                    Asm6502.SetOrg(0x0800);
+                }
+                
                 uint mIndex;
                 if (!Symbols.GetFunctionIndex("Hopper", ref mIndex))
                 {

@@ -1,5 +1,7 @@
 program BIOS
 {
+    #define HOPPER_BIOS
+    
     //#define DEBUG
     #define CPU_65C02S
     
@@ -39,10 +41,12 @@ program BIOS
     uses "Serial"
     uses "Parallel"
     uses "Time"
+    uses "GPIO"
     
     uses "Print"
     uses "Shared"
     
+    uses "Definitions/BIOSInterface"
     uses "SysCalls"
     
     
@@ -87,7 +91,15 @@ program BIOS
             CPX # ZP.ACIADATA // don't write to ACIA data register
             if (NZ) 
             {
-                STZ 0x00, X
+                CPX # ZP.BIOSDISPATCHL // don't overwrite the SysCall dispatch vector
+                if (NZ)
+                {
+                    CPX # ZP.BIOSDISPATCHH
+                    if (NZ)
+                    {
+                        STZ 0x00, X
+                    }
+                }
             }
             DEX
             if (Z) { break; }
@@ -105,7 +117,6 @@ program BIOS
 #if defined(HASEEPROM)
         EEPROM.Initialize();
 #endif
-        SysCalls.Initialize();
         CLI  // Re-enable interrupts
     }
     vt100Escape()
@@ -135,6 +146,11 @@ program BIOS
         File.Format();                // This sets ZP.LastError on failure
     }
     
+    dispatch()
+    {
+        JMP [ZP.BIOSDISPATCH]
+    }
+    
     cmdMem()
     {
         // Print result using existing Print routines or Error messages
@@ -142,7 +158,11 @@ program BIOS
         LDX # (MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
         Error.Message();
         
+        // testing dispatch
+        //LDX #SysCall.MemAvailable
+        //dispatch();
         Memory.Available();        // Returns available bytes in ZP.ACC
+        
         Shared.MoveAccToTop();
         Long.Print();              // Print ZP.TOP value
         
@@ -169,7 +189,6 @@ program BIOS
             LDA # ErrorID.BytesMessage LDX # MessageExtras.PrefixSpace Error.MessageNL();
         }
 #endif
-        
     }
     
     cmdDir()
@@ -215,7 +234,8 @@ program BIOS
                 case ErrorWord.DIR:    { cmdDir();    return; }
                 case ErrorWord.CLS:    { cmdCls();    return; }
                 
-                // keyword from wrong table to cause system calls to be included in the build
+                // Keyword from wrong table to cause system calls to be included in the build
+                // so that the optimizer doesn't remove it.
                 case ErrorWord.HEAP:   { SystemCallDispatcher(); return; } 
             }
         }

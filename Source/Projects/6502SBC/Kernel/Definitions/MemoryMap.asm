@@ -10,12 +10,7 @@ unit Address // MemoryMap.asm
     
     const uint LineBuffer           = WorkSpace; // first 64 bytes (of the 256) for the command line parser
     
-#ifdef HASEEPROM    
+    // always have File buffers (even if there is no EEPROM) simply to keep the base for user programs constant
     const uint FileSystemBuffers       = WorkSpace               + 256;                          // 768 bytes - file system buffers (may be shared or smaller in future)
-        
-    const uint HeapStart               = FileSystemBuffers       + Limits.FileSystemBufferSize;  // start of user RAM (program, then heap)
-#else
-    const uint HeapStart               = I2CInBuffer             + 256;                          // start of user RAM (program, then heap)
-#endif
-    
+    const uint UserMemory              = FileSystemBuffers       + Limits.FileSystemBufferSize;  // start of user RAM (program, then heap)
 }

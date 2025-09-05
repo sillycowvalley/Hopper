@@ -105,6 +105,7 @@ unit AsmPoints
                 case OpCode.RTS:
                 case OpCode.JSR_nn:
                 case OpCode.iJMP_nn:
+                case OpCode.JMP_inn:
                 {
                     walkStats |= WalkStats.CallRet;
                 }
@@ -1509,7 +1510,13 @@ unit AsmPoints
                                 }
                                 default:
                                 {    
-                                    PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + Asm6502.GetName(opCodes[0]));
+                                    if (opCodes[0] == OpCode.JMP_inn)
+                                    {
+                                    }
+                                    else
+                                    {
+                                        PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + Asm6502.GetName(opCodes[0]));
+                                    }
                                 }
                             }
                         }

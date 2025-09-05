@@ -1,71 +1,25 @@
 unit SysCalls
 {
-
-        // System Call IDs - shared enum for client compilation
-    enum SysCall
+    gpioPinMode()
     {
-        // Memory Management
-        MemAllocate,
-        MemFree, 
-        MemAvailable,
-        MemMaximum,
-        
-        // File Operations
-        FileExists,
-        FileDelete,
-        FileDir,
-        FileStartSave,
-        FileAppendStream,
-        FileEndSave,
-        FileStartLoad,
-        FileNextStream,
-        FileFormat,
-        
-        // Serial I/O
-        SerialWriteChar,
-        SerialWaitForChar,
-        SerialIsAvailable,
-        
-        // Print/Console
-        PrintString,
-        PrintChar,
-        PrintHex,
-        PrintNewLine,
-        PrintSpace,
-        PrintSpaces,
-        
-        // Timer Services
-        TimeDelay,
-        TimeMillis,
-        TimeSeconds,
-        
-        // Long Math
-        LongAdd,
-        LongSub,
-        LongMul,
-        LongDiv,
-        LongMod,
-        LongPrint,
-        LongLT,
-        LongGT,
-        LongEQ,
-        LongNE,
-        LongLE,
-        LongGE,
-        
-        // Float Math
-        FloatAdd,
-        FloatSub,
-        FloatMul,
-        FloatDiv,
-        FloatToLong,
-        FloatLT,
-        FloatEQ,
-        
-        
-        // TODO:
-        // - I2C
-        // - GPIO
+        LDA ZP.ACCL
+        LDX ZP.ACCH
+        // Input: A = pin number (0-15), X = mode (PinMode.INPUT or PinMode.OUTPUT)
+        GPIO.PinMode();
+    }
+    gpioRead()
+    {
+        LDA ZP.ACCL
+        // Input: A = pin number (0-15)
+        GPIO.PinRead();
+        STA ZP.ACCH
+    }
+    gpioWrite()
+    {
+        LDA ZP.ACCL
+        LDX ZP.ACCH
+        // Input: A = pin number (0-15), X = value (0 or 1)
+        GPIO.PinWrite();
     }
     
     // System Call Dispatcher
@@ -334,23 +288,22 @@ unit SysCalls
                 Error.InvalidSystemCall();
 #endif
             }
+            case SysCall.PinMode:
+            {
+                gpioPinMode();
+            }
+            case SysCall.PinRead:
+            {
+                gpioRead();
+            }
+            case SysCall.PinWrite:
+            {
+                gpioWrite();
+            }
             default:
             {
                 Error.InvalidSystemCall();
             }
         }
-    }
-    
-    // Initialize system call dispatcher
-    // Sets up the dispatch vector in zero page
-    // NOTE: Check your zero page definitions - both DISPATCHL and DISPATCHH are set to 0x2C
-    //       DISPATCHH should probably be 0x2D
-    Initialize()
-    {
-        // TODO
-        //LDA #(SystemCallDispatcher % 256)
-        //STA ZP.DISPATCHL
-        //LDA #(SystemCallDispatcher / 256)  
-        //STA ZP.DISPATCHH
     }
 }

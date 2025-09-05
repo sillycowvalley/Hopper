@@ -419,7 +419,6 @@ program Generate
                 }
                 
                 romSize = 0x8000;
-                
                 if (DefineExists("CPU_6502"))
                 {
                     Architecture = CPUArchitecture.M6502;
@@ -468,6 +467,10 @@ program Generate
                 
                 long startAddress = 0x10000 - romSize; 
                 uint romAddress = uint(startAddress);
+                if (DefineExists("HOPPER_BIOS_APPLET"))
+                {
+                    romAddress = 0x0800;
+                }
                 
                 file ihexFile = File.Create(ihexPath);
                 if (!ihexFile.IsValid())
@@ -484,6 +487,16 @@ program Generate
                 uint methodCount = Code.GetMethodCount();
                 
                 <byte> constantData = Code.GetConstantData();
+                
+                // Insert 3 placeholder bytes for JMP instruction if using custom load address
+                bool needsBIOSJump = DefineExists("HOPPER_BIOS_APPLET");
+                if (needsBIOSJump)
+                {
+                    output.Append(0x4C); // JMP absolute opcode
+                    output.Append(0x00); // placeholder for low byte
+                    output.Append(0x00); // placeholder for high byte
+                }
+                
                 foreach (var b in constantData)
                 {
                     output.Append(b);
@@ -502,6 +515,14 @@ program Generate
                 
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);
+                // Patch JMP instruction if needed
+                if (needsBIOSJump)
+                {
+                    uint jumpTarget = methods[entryIndex];
+                    output.SetItem(1, byte(jumpTarget & 0xFF));     // JMP low byte
+                    output.SetItem(2, byte(jumpTarget >> 8));       // JMP high byte
+                }
+                
                 Parser.ProgressTick(".");
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
@@ -540,16 +561,46 @@ program Generate
                     nIndex = mOverloads[0];
                     nmiVector = methods[nIndex];
                 }
+                if (Symbols.DefineExists("HOPPER_BIOS"))
+                {
+                    // Patch to put the address of the BIOS dispatcher in zero page
+                    // slots 0x2B and 0x2C (ZP.BIOSDISPATCHL & ZP.BIOSDISPATCHH)
+                    uint fIndex;
+                    if (GetFunctionIndex("SysCalls.SystemCallDispatcher", ref fIndex))
+                    {
+                        <uint> mOverloads = Symbols.GetFunctionOverloads(fIndex);
+                        fIndex = mOverloads[0];
+                        for (uint i = methods[entryIndex]; i < methods[entryIndex]+ 20; i++)
+                        {
+                            if (output[i-romAddress] == 0xA9)
+                            {
+                                if ((output[i-romAddress+1] == 0x55) && (output[i-romAddress+2] == 0x85) && (output[i-romAddress+3] == 0x2B))
+                                {
+                                   // LSB 
+                                   output[i-romAddress+1] = byte(methods[fIndex] & 0xFF);
+                                }  
+                                if ((output[i-romAddress+1] == 0xAA) && (output[i-romAddress+2] == 0x85) && (output[i-romAddress+3] == 0x2C))
+                                {
+                                    // MSB    
+                                    output[i-romAddress+1] = byte(methods[fIndex] >> 8);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                                 
                 // 6502 vectors
                 <byte>vectors;
-                vectors.Append(byte(nmiVector & 0xFF));
-                vectors.Append(byte(nmiVector >> 8));
-                vectors.Append(byte(methods[entryIndex] & 0xFF));
-                vectors.Append(byte(methods[entryIndex] >> 8));
-                vectors.Append(byte(irqVector & 0xFF));
-                vectors.Append(byte(irqVector >> 8));
-                
+                if (!needsBIOSJump)
+                {
+                    vectors.Append(byte(nmiVector & 0xFF));
+                    vectors.Append(byte(nmiVector >> 8));
+                    vectors.Append(byte(methods[entryIndex] & 0xFF));
+                    vectors.Append(byte(methods[entryIndex] >> 8));
+                    vectors.Append(byte(irqVector & 0xFF));
+                    vectors.Append(byte(irqVector >> 8));
+                }
                 writeIHex(ihexFile, romAddress, output, vectors);
                 
                 // Export for RetroShield:
