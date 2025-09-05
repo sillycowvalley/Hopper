@@ -153,17 +153,31 @@ unit Serial // Serial.asm
         PLA
     }
     
+    // Converts '0'..'9' or 'A'..'F' to 4-bit value
+    // only uses A
+    makeNibble()
+    {
+        // only touches A
+        CMP # ('9'+1)
+        if (C)
+        {
+            SBC # (7+1)
+        }
+        SBC     # ('0'-1)
+        AND     # 0x0F
+    }
+    
     // loads two hex characters from Serial to byte in A
     //    uses ZP.TEMP
     HexIn()
     {
         Serial.WaitForChar();
-        Utilities.MakeNibble();
+        makeNibble();
         ASL A ASL A ASL A ASL A
         AND #0xF0
         STA ZP.TEMP
         Serial.WaitForChar();
-        Utilities.MakeNibble();
+        makeNibble();
         ORA ZP.TEMP
     }
 }

@@ -510,10 +510,15 @@ program DASM
                     commentPrefix = "; ";
                     commentColumn = 36;
                 }
+                uint vectorsSize = 6;
+                if (biosApplet)
+                {
+                    vectorsSize = 0;
+                }
                 uint tableSizeInWords;
                 loop
                 {
-                    if (index == code.Count-6) { break; }
+                    if (index == code.Count-vectorsSize) { break; }
                     
                     OpCode instruction = OpCode(code[index]);
                     uint length      = Asm6502.GetInstructionLength(instruction);
@@ -559,9 +564,11 @@ program DASM
                     {
                         tableSizeInWords = operand + 1;
                     }
+
                     if (methodAddresses.Contains(address))
                     {
                         uint methodIndex = methodAddresses[address];
+                        
                         <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
                         if (methodSymbols.Count != 0)
                         {
@@ -586,7 +593,8 @@ program DASM
                             hasmFile.Append("" + Char.EOL); 
                             Parser.ProgressTick(".");
                         }
-                    }
+                    } // next method
+                    
                     uint delta = (address-doffset);
                     string debugAddress = delta.ToString();
                     if (labelInfo.Contains(debugAddress))

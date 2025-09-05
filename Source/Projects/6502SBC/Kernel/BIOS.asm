@@ -221,6 +221,138 @@ program BIOS
         }
     }
     
+    cmdHex()
+    {
+        parseFilename();
+        if (NC) 
+        {
+            return;
+        }
+        
+        // Check if file exists
+        LDA # DirWalkAction.FindFile
+        File.Exists();
+        if (C)
+        {
+            // file exits
+            LDA # ErrorID.OverwriteWarning
+            LDX # MessageExtras.SuffixSpace
+            confirmYesNo(); // preserves ZP.STR
+            if (C)
+            {
+                // confirmed
+                File.Delete(); // preserves ZP.STR
+            }
+            else
+            {
+                // cancelled
+                return;
+            }
+        }
+        
+        // Start file save
+        File.StartSave();
+        if (NC) 
+        {
+            return;
+        }
+        LDA # ErrorID.ReadyForHEX
+        LDX # MessageExtras.SuffixColon
+        Error.MessageNL();
+        
+        // Process Intel HEX lines
+        loop
+        {
+            processIHexLine();
+            if (NC) { break; }  // EOF record found
+        }
+        
+        // Close file
+        LDA # 0x80 // high bit for executable file
+        File.EndSave();
+    }
+    
+    processIHexLine()  // Returns C set to continue, NC for EOF
+    {
+        // Set up buffer pointer for File.AppendStream()
+        LDA # (Address.HexBuffer % 256)
+        STA SectorSourceL
+        LDA # (Address.HexBuffer / 256)
+        STA SectorSourceH
+        
+        // Wait for ':' start character
+        loop
+        {
+            Serial.WaitForChar();
+            CMP #':'
+            if (Z) { break; }
+        }
+        
+        // Get byte count
+        Serial.HexIn();
+        STA TransferLengthL
+        STZ TransferLengthH
+        
+        // Skip address (4 hex chars = 2 bytes)
+        Serial.HexIn();  // Address high (ignore)
+        Serial.HexIn();  // Address low (ignore)
+        
+        // Get record type
+        Serial.HexIn();
+        CMP #0x01        // EOF record?
+        if (Z)   
+        {
+            Serial.HexIn(); // chomp the FF
+            CLC             // Signal EOF
+            return;
+        }
+        CMP #0x00        // Data record?
+        if (NZ)          // Skip non-data records
+        {
+            // Skip data bytes and checksum for non-data records
+            LDX TransferLengthL
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                Serial.HexIn();
+                DEX
+            }
+            Serial.HexIn();  // Skip checksum
+            SEC              // Continue
+            return;
+        }
+        
+        // Read data bytes into FileDataBuffer
+        LDY #0
+        LDX TransferLengthL
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            Serial.HexIn();
+            STA Address.HexBuffer, Y
+            Print.Hex();
+            INY
+            DEX
+        }
+        
+        // Skip checksum
+        Serial.HexIn();
+        
+        // Write data to file if we have data
+        LDA TransferLengthL
+        if (NZ)
+        {
+            File.AppendStream();
+        }
+        Print.NewLine();
+        
+        SEC              // Continue processing
+    }
+    
+    
+    
     parseAndExecute()
     {
         Error.FindKeyword(); // X already points to command start
@@ -233,6 +365,7 @@ program BIOS
                 case ErrorWord.MEM:    { cmdMem();    return; }
                 case ErrorWord.DIR:    { cmdDir();    return; }
                 case ErrorWord.CLS:    { cmdCls();    return; }
+                case ErrorWord.HEX:    { cmdHex();    return; }
                 
                 // Keyword from wrong table to cause system calls to be included in the build
                 // so that the optimizer doesn't remove it.
@@ -242,6 +375,54 @@ program BIOS
         LDA # ErrorID.InvalidCommand
         LDX # MessageExtras.SuffixSpace
         Error.MessageNL();
+    }
+    
+    // Parse filename from command line after the command keyword
+    // Input: X = position in LineBuffer after command word  
+    // Output: C set if successful, NC if no filename found
+    //         ZP.STR points to filename in LineBuffer
+    parseFilename()
+    {
+        // Skip spaces after command
+        loop
+        {
+            LDA Address.LineBuffer, X
+            CMP #' '
+            if (NZ) { break; }
+            INX
+        }
+        
+        // Check if we have a filename
+        if (Z)
+        {
+            Error.FilenameExpected();
+              // No filename found
+            CLC return;
+        }
+        
+        // Point ZP.STR to filename start in LineBuffer
+        TXA
+        CLC
+        ADC # (Address.LineBuffer % 256)
+        STA ZP.STRL
+        LDA # (Address.LineBuffer/ 256)
+        ADC #0
+        STA ZP.STRH
+        
+        // Find end of filename and null-terminate
+        loop
+        {
+            LDA Address.LineBuffer, X
+            if (Z) { break; }    // Already null
+            CMP #' '
+            if (Z) 
+            { 
+                STZ Address.LineBuffer, X  // Null-terminate at space
+                break; 
+            }
+            INX
+        }
+        SEC  // Success
     }
     
     processCommandLine()

@@ -26,6 +26,7 @@ unit Error // ErrorID.asm
         MEM        = 0x12,
         DIR        = 0x13,
         CLS        = 0x14,
+        HEX        = 0x15,
         
         FILE       = 0x19,
         FOUND      = 0x1A,
@@ -39,6 +40,10 @@ unit Error // ErrorID.asm
         CORRUPT    = 0x32,
         NUMERIC    = 0x33,
         OVERFLOW   = 0x34,
+        
+        READY      = 0x35,
+        FOR        = 0x36,
+        
         
         // Table 2 (bits 6-5 = 10): Additional words (0x40-0x5F)
         FILENAME   = 0x41,
@@ -57,6 +62,7 @@ unit Error // ErrorID.asm
         
         BYTES      = 0x5D,
         USED       = 0x5E,
+        OVERWRITE  = 0x5F,
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -77,6 +83,7 @@ unit Error // ErrorID.asm
         3,  ErrorWord.MEM,        'M', 'E', 'M',
         3,  ErrorWord.DIR,        'D', 'I', 'R',
         3,  ErrorWord.CLS,        'C', 'L', 'S',
+        3,  ErrorWord.HEX,        'H', 'E', 'X',
         
         // Message keywords
         4,  ErrorWord.WILL,       'W', 'I', 'L', 'L',
@@ -98,6 +105,8 @@ unit Error // ErrorID.asm
         7,  ErrorWord.CORRUPT,    'C', 'O', 'R', 'R', 'U', 'P', 'T',
         7,  ErrorWord.NUMERIC,    'N', 'U', 'M', 'E', 'R', 'I', 'C',
         8,  ErrorWord.OVERFLOW,   'O', 'V', 'E', 'R', 'F', 'L', 'O', 'W',
+        5,  ErrorWord.READY,      'R', 'E', 'A', 'D', 'Y',
+        3,  ErrorWord.FOR,        'F', 'O', 'R',
         0  // End marker
     };
     
@@ -116,6 +125,7 @@ unit Error // ErrorID.asm
         4,  ErrorWord.CALL,       'C', 'A', 'L', 'L',
         5,  ErrorWord.BYTES,      'B', 'Y', 'T', 'E', 'S',
         4,  ErrorWord.BYTES,      'U', 'S', 'E', 'D',
+        9,  ErrorWord.OVERWRITE,  'O', 'V', 'E', 'R', 'W', 'R', 'I', 'T', 'E',
         0  // End marker
     };
     
@@ -151,6 +161,8 @@ unit Error // ErrorID.asm
         SystemReady         = 0x39,
         InvalidCommand      = 0x3A,
         EEPROMLabel         = 0x3B,
+        OverwriteWarning    = 0x3C,
+        ReadyForHEX         = 0x3D,
         
     }
     
@@ -179,6 +191,8 @@ unit Error // ErrorID.asm
         1, ErrorID.YesNo,             ErrorWord.YN,
         2, ErrorID.InvalidCommand,    ErrorWord.INVALID, ErrorWord.COMMAND,
         2, ErrorID.SystemReady,       ErrorWord.HOPPER, ErrorWord.BIOS,
+        1, ErrorID.OverwriteWarning,  ErrorWord.OVERWRITE,
+        3, ErrorID.ReadyForHEX,       ErrorWord.READY, ErrorWord.FOR, ErrorWord.HEX,
         
         0  // End marker
     };

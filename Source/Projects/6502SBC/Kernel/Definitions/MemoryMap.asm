@@ -9,6 +9,7 @@ unit Address // MemoryMap.asm
     const uint WorkSpace            = 0x0400;  // 256 byte general workspace
     
     const uint LineBuffer           = WorkSpace; // first 64 bytes (of the 256) for the command line parser
+    const uint HexBuffer            = WorkSpace + Limits.LineBufferSize;
     
     // always have File buffers (even if there is no EEPROM) simply to keep the base for user programs constant
     const uint FileSystemBuffers       = WorkSpace               + 256;                          // 768 bytes - file system buffers (may be shared or smaller in future)

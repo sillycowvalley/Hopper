@@ -515,7 +515,6 @@ program Generate
                 //output.Append(arch); // CPU
                 
                 reserveds = GetReservedDefines();
-                
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);
                 // Patch JMP instruction if needed
@@ -525,7 +524,6 @@ program Generate
                     output.SetItem(1, byte(jumpTarget & 0xFF));     // JMP low byte
                     output.SetItem(2, byte(jumpTarget >> 8));       // JMP high byte
                 }
-                
                 Parser.ProgressTick(".");
                 uint indexMax = 0;
                 foreach (var sz in methodSizes)
