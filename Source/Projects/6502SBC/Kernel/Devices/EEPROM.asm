@@ -42,9 +42,7 @@ unit EEPROM
         
         // delay 5ms after Stop() for EEPROM
         LDA # 5
-        STA ZP.TOP0
-        LDA # 0
-        STA ZP.TOP`
+        Shared.LoadTopByte();
         Time.Delay();
         
         // read one page from EEPROM:
@@ -84,10 +82,9 @@ unit EEPROM
         PHA
         PHX
         PHY
-        // initialize the delay in ms for Time.DelayTOP()
+        // initialize the delay in ms for Time.Delay()
         LDA # 5
-        STA ZP.TOP0
-        STZ ZP.TOP1
+        Shared.LoadTopByte();
         
         // BeginTx - Start I2C write transaction with EEPROM address and data
         LDA # (I2C.SerialEEPROMAddress << 1)

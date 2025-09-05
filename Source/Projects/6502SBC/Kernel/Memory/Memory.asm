@@ -198,7 +198,6 @@ unit Memory // Memory.asm
     Available()
     {
         // uses IDX and ACC
-        // pushes result to [top]
         STZ ZP.ACCL
         STZ ZP.ACCH
         LDA ZP.FREELISTL
@@ -242,7 +241,6 @@ unit Memory // Memory.asm
     Maximum()
     {
         // uses ACC, IDX and IDY
-        // pushes result to [top]
                
         // available = 0
         STZ ACCL

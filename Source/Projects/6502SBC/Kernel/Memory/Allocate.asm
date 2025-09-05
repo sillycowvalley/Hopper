@@ -47,8 +47,8 @@ unit Allocate
         STA maIndexH
 
         // size += 2 (space for 'size')
-        Utilities.IncACC();
-        Utilities.IncACC();
+        Shared.IncACC();
+        Shared.IncACC();
         
         // round size up to the next 8 byte boundary
         LDA ZP.ACCL    // Load the low byte

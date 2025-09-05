@@ -196,10 +196,6 @@ unit Debug // Debug.asm
         LDA #(regACC / 256)
         STA ZP.STR2H
         printString2();
-        LDA ZP.ACCT
-        BASICTypes.PrintType();
-        LDA #':'
-        cOut();
         LDA ZP.ACCH
         hOut();
         LDA ZP.ACCL
@@ -207,17 +203,6 @@ unit Debug // Debug.asm
         space();
     }
     
-    atOut()  // Output ACCT register
-    {
-        LDA #(regACCT % 256)
-        STA ZP.STR2
-        LDA #(regACCT / 256)
-        STA ZP.STR2H
-        printString2();
-        LDA ZP.ACCT
-        hOut();
-        space();
-    }
     
     nOut()  // Output NEXT register with type
     {
@@ -226,13 +211,9 @@ unit Debug // Debug.asm
         LDA #(regNXT / 256)
         STA ZP.STR2H
         printString2();
-        LDA ZP.NEXTT
-        BASICTypes.PrintType();
-        LDA #':'
-        cOut();
-        LDA ZP.NEXTH
+        LDA ZP.NEXT0
         hOut();
-        LDA ZP.NEXTL
+        LDA ZP.NEXT1
         hOut();
         space();
     }
@@ -245,9 +226,9 @@ unit Debug // Debug.asm
         STA ZP.STR2H
         printString2();
         cOut();
-        LDA ZP.TOPH
+        LDA ZP.TOP0
         hOut();
-        LDA ZP.TOPL
+        LDA ZP.TOP1
         hOut();
         space();
     }

@@ -7,7 +7,7 @@ program BIOS
     
     // Optional components
     //#define HASFLOAT
-    //#define HASEEPROM
+    #define HASEEPROM
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
@@ -37,7 +37,8 @@ program BIOS
     uses "Print"
     uses "Shared"
     
-    uses "TestSuite/TestTime"
+    //uses "TestSuite/TestTime"
+    uses "TestSuite/TestHeap"
     
     IRQ()
     {
@@ -71,9 +72,10 @@ program BIOS
         // Initialize communication first
         Serial.Initialize();
         Parallel.Initialize();
-        
-#if defined(HASHEAP)
         Memory.Initialize();
+
+#ifdef HASEEPROM
+        EEPROM.Initialize();
 #endif
         
         CLI  // Re-enable interrupts
