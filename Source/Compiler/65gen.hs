@@ -257,11 +257,14 @@ program Generate
         }
         
         // 6502 Vectors:
-        foreach (var vb in vectors)
+        if (vectors.Count != 0)
         {
-            buffer = buffer + vb.ToHexString(2);
+            foreach (var vb in vectors)
+            {
+                buffer = buffer + vb.ToHexString(2);
+            }
+            emitBuffer(ihexFile, 0xFFFA /*- romAddress*/, buffer);
         }
-        emitBuffer(ihexFile, 0xFFFA /*- romAddress*/, buffer);
         
         
         ihexFile.Append(":00000001FF" + Char.EOL); // eof
@@ -602,6 +605,7 @@ program Generate
                     vectors.Append(byte(irqVector >> 8));
                 }
                 writeIHex(ihexFile, romAddress, output, vectors);
+                
                 
                 // Export for RetroShield:
                 if (exportC)

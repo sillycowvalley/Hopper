@@ -154,18 +154,16 @@ unit Serial // Serial.asm
     }
     
     // loads two hex characters from Serial to byte in A
-    //    uses ZP.U0
-    /*
+    //    uses ZP.TEMP
     HexIn()
     {
         Serial.WaitForChar();
         Utilities.MakeNibble();
         ASL A ASL A ASL A ASL A
         AND #0xF0
-        STA WorkSpaceHexIn
+        STA ZP.TEMP
         Serial.WaitForChar();
         Utilities.MakeNibble();
-        ORA WorkSpaceHexIn
+        ORA ZP.TEMP
     }
-    */
 }

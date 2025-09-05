@@ -412,7 +412,6 @@ program DASM
                 uint index = constantSize;
                 if (constantSize > 0)
                 {
-                    PrintLn(constantSize.ToString());
                     string ascii;
                     hasmFile.Append("// constant data" + Char.EOL);
                     uint i;
