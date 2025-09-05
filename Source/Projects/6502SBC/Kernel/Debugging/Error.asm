@@ -27,6 +27,7 @@ unit Error // ErrorID.asm
         DIR        = 0x13,
         CLS        = 0x14,
         HEX        = 0x15,
+        DEL        = 0x16,
         
         FILE       = 0x19,
         FOUND      = 0x1A,
@@ -83,6 +84,7 @@ unit Error // ErrorID.asm
         3,  ErrorWord.MEM,        'M', 'E', 'M',
         3,  ErrorWord.DIR,        'D', 'I', 'R',
         3,  ErrorWord.CLS,        'C', 'L', 'S',
+        3,  ErrorWord.DEL,        'D', 'E', 'L',
         3,  ErrorWord.HEX,        'H', 'E', 'X',
         
         // Message keywords

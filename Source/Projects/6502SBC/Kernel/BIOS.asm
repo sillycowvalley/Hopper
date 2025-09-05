@@ -2,7 +2,7 @@ program BIOS
 {
     #define HOPPER_BIOS
     
-    //#define DEBUG
+    #define DEBUG
     #define CPU_65C02S
     
 #ifdef DEBUG    
@@ -53,7 +53,7 @@ program BIOS
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
     //uses "TestSuite/TestLong"
-    //uses "TestSuite/TestFloat"
+    uses "TestSuite/TestFloat"
     
     Run()
     {
@@ -221,6 +221,16 @@ program BIOS
         }
     }
     
+    cmdDel()
+    {
+        parseFilename();
+        if (NC) 
+        {
+            return;
+        }
+        File.Delete();
+    }
+    
     cmdHex()
     {
         parseFilename();
@@ -351,8 +361,6 @@ program BIOS
         SEC              // Continue processing
     }
     
-    
-    
     parseAndExecute()
     {
         Error.FindKeyword(); // X already points to command start
@@ -366,6 +374,7 @@ program BIOS
                 case ErrorWord.DIR:    { cmdDir();    return; }
                 case ErrorWord.CLS:    { cmdCls();    return; }
                 case ErrorWord.HEX:    { cmdHex();    return; }
+                case ErrorWord.DEL:    { cmdDel();    return; }
                 
                 // Keyword from wrong table to cause system calls to be included in the build
                 // so that the optimizer doesn't remove it.
@@ -492,20 +501,34 @@ program BIOS
         Print.Space();
     }
     
+    clearLineBuffer()
+    {
+        LDX # 63
+        loop
+        {
+            STZ Address.LineBuffer, X
+            DEX
+            if (MI) { break; }  
+            // Continue while X >= 0
+        }
+    }
+    
     Hopper()
     {
         Initialize();  
         
-        //Run(); // tests
+        Run(); // tests
         
         printWelcome();
         
         // Main command loop
         loop
         {
+            clearLineBuffer();
             printPrompt();
             processCommandLine();
             // Errors are handled by Error.CheckAndPrint() within ProcessCommandLine
         }
+        
     }
 }
