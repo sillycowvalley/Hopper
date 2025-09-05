@@ -12,6 +12,8 @@ unit GPIO
     // Output: None
     PinMode()
     {
+        PHX // save the value
+        LDX #0 // port A
         // Determine which port and create bit mask
         CMP #8
         if (C)
@@ -19,45 +21,26 @@ unit GPIO
             // Pin 8-15: Use DDRB
             SEC
             SBC #8                        // Convert to 0-7 range
-            TAY                           // Use as index
-            LDA BASICArray.BitMasks, Y   // Load mask directly from table
+            INX  // port B
+        }
+        TAY                          // Use as index
+        LDA BASICArray.BitMasks, Y   // Load mask directly from table
             
-            // Set or clear the DDR bit based on mode
-            CPX #PINMODE.INPUT
-            if (Z)
-            {
-                // INPUT mode: Clear bit in DDR
-                EOR #0xFF        // Invert mask
-                AND ZP.DDRB
-            }
-            else
-            {
-                // OUTPUT mode: Set bit in DDR
-                ORA ZP.DDRB
-            }
-            STA ZP.DDRB
+        PLY // restore value
+        // Set or clear the DDR bit based on mode
+        // CPY # PINMODE.INPUT = 0
+        if (Z)
+        {
+            // INPUT mode: Clear bit in DDR
+            EOR #0xFF        // Invert mask
+            AND ZP.DDRA, X
         }
         else
         {
-            // Pin 0-7: Use DDRA
-            TAY                           // Use as index
-            LDA BASICArray.BitMasks, Y   // Load mask directly from table
-            
-            // Set or clear the DDR bit based on mode
-            CPX #PINMODE.INPUT
-            if (Z)
-            {
-                // INPUT mode: Clear bit in DDR
-                EOR #0xFF        // Invert mask
-                AND ZP.DDRA
-            }
-            else
-            {
-                // OUTPUT mode: Set bit in DDR
-                ORA ZP.DDRA
-            }
-            STA ZP.DDRA
+            // OUTPUT mode: Set bit in DDR
+            ORA ZP.DDRA, X
         }
+        STA ZP.DDRA, X
     }
     
     // Write digital value to pin
