@@ -1,8 +1,5 @@
 unit Serial // Serial.asm
 {
-    const byte CTRLC = 0x03; // <ctrL><C>
-    const byte XOFF  = 0x13; // <ctrl><S>
-    const byte XON   = 0x11; // <ctrl><Q>
     
 #if defined(ACIA_6850)
     uses "Devices/ACIA6850"
@@ -48,7 +45,7 @@ unit Serial // Serial.asm
                 if (BBR1, ZP.FLAGS)  // Bit 1 clear? (not stopped yet)
                 {
                     PHX
-                    LDA # XOFF
+                    LDA # Char.XOFF
                     SerialDevice.writeChar();  // Send XOFF
                     PLX
                     
@@ -88,7 +85,7 @@ unit Serial // Serial.asm
         if (BBS0, ZP.FLAGS) // break?
         {
             RMB0 ZP.FLAGS
-            LDA # CTRLC // <ctrl><C>
+            LDA # Char.CtrlC // <ctrl><C>
         }
         else
         {
@@ -108,7 +105,7 @@ unit Serial // Serial.asm
                 CMP #16                  // Mostly empty? (only 16/256 bytes used)
                 if (NC)                  // Carry clear if < 16
                 {
-                    LDA #XON
+                    LDA # Char.XON
                     SerialDevice.writeChar();  // Send XON
                     
                     RMB1 ZP.FLAGS     // Clear bit 1 (resume flow)

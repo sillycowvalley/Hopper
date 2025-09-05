@@ -1,9 +1,15 @@
 program BIOS
 {
-    #define CPU_65C02S
-    #define ROM_8K
-    
     //#define DEBUG
+    #define CPU_65C02S
+    
+#ifdef DEBUG    
+    #define ROM_32K
+#else
+    //#define ROM_16K
+    #define ROM_8K
+#endif
+    
     
     // Optional components
     #define HASFLOAT
@@ -18,7 +24,7 @@ program BIOS
     
     uses "Memory/Memory"
 
-#if defined(HASEEPROM) 
+#if defined(HASEEPROM)
     uses "Devices/EEPROM"
     uses "Files/File"
 #endif        
@@ -87,18 +93,37 @@ program BIOS
             if (Z) { break; }
         } 
         
+        Error.ClearError();
+        
         // Initialize communication first
         Serial.Initialize();
         Parallel.Initialize();
         Memory.Initialize();
+        
+        STZ ZP.FLAGS
 
-#ifdef HASEEPROM
+#if defined(HASEEPROM)
         EEPROM.Initialize();
 #endif
         SysCalls.Initialize();
         CLI  // Re-enable interrupts
     }
-    
+    vt100Escape()
+    {
+        LDA # Char.Escape Print.Char();
+        LDA #'[' Print.Char();
+        TXA Print.Char();
+    }
+    cmdCls()
+    {
+        // "ESC[H" : move cursor to (1,1)
+        LDX # 'H'
+        vt100Escape();
+        
+        // "ESC[J" : clear from cursor to end of screen
+        LDX # 'J'
+        vt100Escape();
+    }
     cmdFormat()
     {
         // Confirm destructive action using Error system
@@ -107,19 +132,44 @@ program BIOS
         confirmYesNo();               // Simple Y/N reader
         if (NC) { return; }           // User cancelled
         
-        File.Initialize();            // This sets ZP.LastError on failure
+        File.Format();                // This sets ZP.LastError on failure
     }
     
     cmdMem()
     {
-        Heap.Available();             // Returns available bytes in ZP.TOP
         // Print result using existing Print routines or Error messages
-        LDA # ErrorID.MemoryAvailable 
-        LDX # MessageExtras.SuffixSpace
+        LDA # ErrorID.MemoryMessage 
+        LDX # (MessageExtras.SuffixSpace|MessageExtras.SuffixColon)
         Error.Message();
+        
+        Memory.Available();        // Returns available bytes in ZP.ACC
+        Shared.MoveAccToTop();
         Long.Print();              // Print ZP.TOP value
-        // TODO : " BYTES"
+        
+        LDA # ErrorID.BytesMessage 
+        LDX # MessageExtras.PrefixSpace
+        Error.Message();
         Print.NewLine();
+#ifdef HASEEPROM
+        EEPROM.Detect();
+        if (C)  // Set C (detected)
+        {
+            LDA # ErrorID.EEPROMLabel LDX # (MessageExtras.SuffixColon|MessageExtras.SuffixSpace) Error.Message();
+            
+            EEPROM.GetSize(); // A -> number of K
+            Shared.LoadTopByte() ;
+            Long.Print();
+            
+            LDA #'K' Print.Char();
+            LDA #',' Print.Char();
+            Print.Space();
+            File.GetAvailable(); // TOP -> number of B
+            
+            Long.Print();
+            LDA # ErrorID.BytesMessage LDX # MessageExtras.PrefixSpace Error.MessageNL();
+        }
+#endif
+        
     }
     
     cmdDir()
@@ -142,11 +192,10 @@ program BIOS
             Serial.WriteChar();       // Echo
             Print.NewLine();
             PLA
-            // TODO : make uppercase
             CMP #'Y'
-            if (Z) { SEC; return; }   // Yes
+            if (Z) { SEC return; }   // Yes
             CMP #'N'  
-            if (Z) { CLC; return; }   // No
+            if (Z) { CLC return; }   // No
             
             // Invalid - try again
             LDX # (MessageExtras.SuffixQuest|MessageExtras.SuffixSpace)
@@ -155,54 +204,107 @@ program BIOS
     
     parseAndExecute()
     {
-        // Skip leading spaces
+        Error.FindKeyword(); // X already points to command start
+        if (NZ)
+        {
+            // Execute command based on token
+            switch (A)
+            {
+                case ErrorWord.FORMAT: { cmdFormat(); return; }
+                case ErrorWord.MEM:    { cmdMem();    return; }
+                case ErrorWord.DIR:    { cmdDir();    return; }
+                case ErrorWord.CLS:    { cmdCls();    return; }
+                
+                // keyword from wrong table to cause system calls to be included in the build
+                case ErrorWord.HEAP:   { SystemCallDispatcher(); return; } 
+            }
+        }
+        LDA # ErrorID.InvalidCommand
+        LDX # MessageExtras.SuffixSpace
+        Error.MessageNL();
+    }
+    
+    processCommandLine()
+    {
+        readLine();                    // Fill LineBuffer
+        if (Z) { return; }             // Empty line
+        
+        parseAndExecute();             // Combined parse + execute
+        Error.CheckAndPrint();         // Handle any errors set by commands
+    }
+    
+    readLine()
+    {
         LDY #0
         loop
         {
-            LDA LineBuffer, Y
-            if (Z) { return; }          // Empty line
+            Serial.WaitForChar();         // Get character
+            CMP # Char.EOL                // Enter?
+            if (Z) 
+            { 
+                break;
+            }
+            CMP # Char.Backspace          // Backspace?
+            if (Z)
+            {
+                CPY #0
+                if (NZ) 
+                { 
+                    DEY                   Serial.WriteChar();  // Echo backspace
+                    LDA #' '              Serial.WriteChar();  // Space
+                    LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
+                }
+                continue;
+            }
+            // Skip leading spaces
             CMP #' '
-            if (NZ) { break; }          // Found non-space
+            if (Z)
+            {
+                CPY #0
+                if (Z) { continue; }    // Ignore space at start of line
+            }
+            
+            Serial.WriteChar();        // Echo character
+            STA LineBuffer, Y
             INY
-        }
-        
-        // Point ZP.STR to command start
-        TYA
-        CLC
-        ADC #(LineBuffer % 256)
-        STA ZP.STRL
-        LDA #(LineBuffer / 256)
-        ADC #0
-        STA ZP.STRH
-        
-        FindKeyword();                  // Returns token in A
-        if (Z)
-        {
-            LDA #ErrorID.InvalidSystemCall  // Reuse existing error
-            LDX #MessageExtras.SuffixSpace
-            Error.Message();
-            return;
-        }
-        
-        // Execute command based on token
-        switch (A)
-        {
-            case ErrorWord.FORMAT: { cmdFormat(); }
-            case ErrorWord.MEM:    { cmdMem(); }
-            case ErrorWord.DIR:    { cmdDir(); }
-        }
+            CPY #63                    // Prevent overflow
+            if (Z) { break; }
+        } // loop
+        Print.NewLine();
+        LDA #' '
+        STA Address.LineBuffer, Y      // Space terminate
+        TYA                            // Return length
+    }
+    
+    printWelcome()
+    {
+        cmdCls();
+        LDA # ErrorID.SystemReady LDX # MessageExtras.None 
+        Error.MessageNL();
+        cmdMem();    
+    }
+    
+    printPrompt()
+    {
+        LDA #'>'
+        Print.Char();
+        Print.Space();
     }
     
     Hopper()
     {
         Initialize();  
         
-        //Run();
+        //Run(); // tests
         
-        LDX #SysCall.MemAvailable
-        SystemCallDispatcher();
-        Shared.MoveAccToTop();
-        Long.Print();
-        loop { }
+        printWelcome();
+        
+        // Main command loop
+        loop
+        {
+            printPrompt();
+            processCommandLine();
+            // Errors are handled by Error.CheckAndPrint() within ProcessCommandLine
+        }
     }
 }

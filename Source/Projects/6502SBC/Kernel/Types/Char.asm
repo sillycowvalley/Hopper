@@ -1,5 +1,16 @@
 unit Char
 {
+    const byte CtrlC      = 0x03; // <ctrL><C>
+    const byte XOFF       = 0x13; // <ctrl><S>
+    const byte XON        = 0x11; // <ctrl><Q>
+    
+    const byte EOL        = 0x0A;
+    const byte Escape     = 0x1B;
+    const byte Slash      = 0x5C;
+    const byte Formfeed   = 0x0C;
+    const byte Backspace  = 0x08;
+    const byte Tab        = 0x09;
+    
     flags CharClass
     {
         Other = 0b00000000,

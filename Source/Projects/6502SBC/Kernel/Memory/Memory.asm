@@ -204,7 +204,7 @@ unit Memory // Memory.asm
         STA ZP.IDXL
         LDA ZP.FREELISTH
         STA ZP.IDXH
-            
+        
         loop
         {
             LDA ZP.IDXL

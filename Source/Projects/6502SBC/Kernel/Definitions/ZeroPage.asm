@@ -16,29 +16,33 @@ unit ZP // ZeroPage.asm
     const byte SerialInWritePointer = 0x0A;  // Serial buffer write position
     const byte SerialInReadPointer  = 0x0B;  // Serial buffer read position
     
-    const byte TEMP                 = 0x10;  // super volatile - almost never survives beyond current method (only leaf methods)
+    const byte ACC                  = 0x0C;
+    const byte ACCL                 = 0x0C;
+    const byte ACCH                 = 0x0D;
     
-    const byte TOP0                 = 0x11;  // 
-    const byte TOP1                 = 0x12;
-    const byte TOP2                 = 0x13;
-    const byte TOP3                 = 0x14;
+    
+    const byte TEMP                 = 0x10;  // super volatile - almost never survives beyond current method (only leaf methods)
+    const byte LastError            = 0x11;
+    
+    const byte TOP0                 = 0x12;
+    const byte TOP1                 = 0x13;
+    const byte TOP2                 = 0x14;
+    const byte TOP3                 = 0x15;
     
     const byte NEXT0                = 0x16;
     const byte NEXT1                = 0x17;
     const byte NEXT2                = 0x18;
     const byte NEXT3                = 0x19;
     
-    const byte IDX                  = 0x1A;
-    const byte IDXL                 = 0x1A;
-    const byte IDXH                 = 0x1B;
     
-    const byte IDY                  = 0x1C;
-    const byte IDYL                 = 0x1C;
-    const byte IDYH                 = 0x1D;
+    const byte IDX                  = 0x1B; // EMULATOR
+    const byte IDXL                 = 0x1B; // EMULATOR
+    const byte IDXH                 = 0x1C; // EMULATOR
     
-    const byte ACC                  = 0x1E;
-    const byte ACCL                 = 0x1E;
-    const byte ACCH                 = 0x1F;
+    const byte IDY                  = 0x1D; // EMULATOR
+    const byte IDYL                 = 0x1D; // EMULATOR
+    const byte IDYH                 = 0x1E; // EMULATOR
+    
     
     // Hopper Assembler jump table slots: always 0x20 and 0x21
     const byte JumpTableLSB         = 0x20;  // Jump table LSB
@@ -54,7 +58,7 @@ unit ZP // ZeroPage.asm
     const byte STRL                 = 0x26;
     const byte STRH                 = 0x27;
     
-    const byte LastError            = 0x28;
+    
     
 #ifdef DEBUG
     const byte STR2                 = 0x29;
@@ -88,7 +92,7 @@ unit ZP // ZeroPage.asm
     const byte OutB                 = 0x88;
     const byte InB                  = 0x89;
     const byte LastAck              = 0x8A;
-    const byte PLUGNPLAY            = 0x8B;
+    const byte PLUGNPLAY            = 0x8B; // EMULATOR
     
 
         

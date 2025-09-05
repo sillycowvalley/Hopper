@@ -273,7 +273,7 @@ unit File
     }
     
     // Get available free space in bytes
-    // Output: TOPH:TOPL = free bytes (16-bit)
+    // Output: TOP1:TOP0 = free bytes (16-bit)
     //         C set if successful, NC if error accessing FAT
     // Preserves: X, Y  
     // Munts: A
@@ -285,33 +285,29 @@ unit File
         loop // Single exit for cleanup
         {
             initializeFATandDirectory();
-            
+            Shared.ZeroTop();
+
             // Count free sectors
             LDY #2                   // Start from sector 2 (skip FAT and directory)
-            STZ ZP.TOPH      // Free sector count
+            STZ ZP.TOP1      // Free sector count
             
             loop
             {
                 LDA FATBuffer, Y
                 if (Z)
                 {
-                    INC ZP.TOPH  // Count free sectors
+                    INC ZP.TOP1  // Count free sectors
                 }
-                
                 INY
                 if (Z) { break; }    // Y wrapped to 0 - all sectors checked
             }
-            
+
             // Convert sectors to bytes: free_sectors * 256
             // Since each sector is 256 bytes, free_sectors becomes the high byte
-            STZ ZP.TOPL
-            STZ ZP.TOPT
-            // Ready for Print.Decimal() ..
-            
             SEC                      // Success
             break;
         }
-        
+
         PLY
         PLX
     }
@@ -1699,9 +1695,8 @@ unit File
         
         LDA #(FATBuffer / 256)   // RAM address MSB = FATBuffer (must be page aligned)
         STA ZP.IDXH
-        
         EEPROM.ReadPage();
-        
+      
         //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     

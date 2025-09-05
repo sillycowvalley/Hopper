@@ -1,2 +1,2 @@
-cd /source/projects/6502sbc/hopperbasic
-edit basic
+cd /source/projects/6502sbc/kernel
+edit bios

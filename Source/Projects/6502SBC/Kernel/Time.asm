@@ -59,7 +59,7 @@ unit Time // Time.asm
         STA ZP.TOP0
     }
 
-    Seconds() inline
+    Seconds()
     {
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
         STA NEXT3

@@ -7,48 +7,56 @@ unit Error // ErrorID.asm
     enum ErrorWord
     {
         // Table 0 (bits 6-5 = 00): Common error words (0x00-0x1F)
-        ERROR      = 0x00,  // "ERROR"
-        OUT        = 0x04,  // "OUT"
-        OF         = 0x05,  // "OF"
-        MEMORY     = 0x06,  // "MEMORY"
+        ERROR      = 0x00,
+        OUT        = 0x04,
+        OF         = 0x05,
+        MEMORY     = 0x06,
+        WILL       = 0x07,
+        ERASE      = 0x08,
+        ALL        = 0x09,
+        AVAILABLE  = 0x0A,
+        YN         = 0x0B, // "Y/N"
+        COMMAND    = 0x0C,
+        HOPPER     = 0x0D,
+        BIOS       = 0x0E,
         
+        NOT        = 0x10,
         
-        NOT        = 0x10,  // "NOT"
+        FORMAT     = 0x11,
+        MEM        = 0x12,
+        DIR        = 0x13,
+        CLS        = 0x14,
         
-        FORMAT     = 0x11,  // "FORMAT"
-        MEM        = 0x12,  // "MEM" 
-        DIR        = 0x13,  // "DIR"
-        
-        FILE       = 0x19,  // "FILE"
-        FOUND      = 0x1A,  // "FOUND"
-        TOO        = 0x1D,  // "TOO"
-        LONG       = 0x1E,  // "LONG"
-        FILES      = 0x1F,  // "FILES"
+        FILE       = 0x19,
+        FOUND      = 0x1A,
+        TOO        = 0x1D,
+        LONG       = 0x1E,
+        FILES      = 0x1F,
         
         // Table 1 (bits 6-5 = 01): Expression/parsing words (0x20-0x3F)
-        EXPECTED   = 0x21,  // "EXPECTED"
-        HEAP       = 0x31,  // "HEAP"
-        CORRUPT    = 0x32,  // "CORRUPT"
-        NUMERIC    = 0x33,  // "NUMERIC"
-        OVERFLOW   = 0x34,  // "OVERFLOW"
+        EXPECTED   = 0x21,
+        HEAP       = 0x31,
+        CORRUPT    = 0x32,
+        NUMERIC    = 0x33,
+        OVERFLOW   = 0x34,
         
         // Table 2 (bits 6-5 = 10): Additional words (0x40-0x5F)
-        FILENAME   = 0x41,  // "FILENAME"
-        DIRECTORY  = 0x42,  // "DIRECTORY"
-        FULL       = 0x43,  // "FULL"
-        EEPROM     = 0x44,  // "EEPROM"
-        ILLEGAL    = 0x56,  // "ILLEGAL"
+        FILENAME   = 0x41,
+        DIRECTORY  = 0x42,
+        FULL       = 0x43,
+        EEPROM     = 0x44,
+        ILLEGAL    = 0x56,
         
-        DIVISION   = 0x57,  // "DIVISION"
-        BY         = 0x58,  // "BY"  
-        ZERO       = 0x59,  // "ZERO"
+        DIVISION   = 0x57,
+        BY         = 0x58,
+        ZERO       = 0x59,
         
-        INVALID    = 0x5A,  // "INVALID"
-        SYSTEM     = 0x5B,  // "SYSTEM"  
-        CALL       = 0x5C,  // "CALL"
+        INVALID    = 0x5A,
+        SYSTEM     = 0x5B,
+        CALL       = 0x5C,
         
-        BYTES      = 0x5D,  // "BYTES"
-        USED       = 0x5E,  // "USED"
+        BYTES      = 0x5D,
+        USED       = 0x5E,
     }
     
     // Table 0: Common error words (0x00-0x1F)
@@ -64,10 +72,21 @@ unit Error // ErrorID.asm
         3,  ErrorWord.TOO,        'T', 'O', 'O',
         4,  ErrorWord.LONG,       'L', 'O', 'N', 'G',
         
-        // Command keywords
+        // Command keywords (must be in table 0)
         6,  ErrorWord.FORMAT,     'F', 'O', 'R', 'M', 'A', 'T',
         3,  ErrorWord.MEM,        'M', 'E', 'M',
         3,  ErrorWord.DIR,        'D', 'I', 'R',
+        3,  ErrorWord.CLS,        'C', 'L', 'S',
+        
+        // Message keywords
+        4,  ErrorWord.WILL,       'W', 'I', 'L', 'L',
+        5,  ErrorWord.ERASE,      'E', 'R', 'A', 'S', 'E',
+        3,  ErrorWord.ALL,        'A', 'L', 'L',
+        9,  ErrorWord.AVAILABLE,  'A', 'V', 'A', 'I', 'L', 'A', 'B', 'L', 'E',
+        3,  ErrorWord.YN,         'Y', '/', 'N',
+        7,  ErrorWord.COMMAND,    'C', 'O', 'M', 'M', 'A', 'N', 'D',
+        6,  ErrorWord.HOPPER,     'H', 'O', 'P', 'P', 'E', 'R',
+        4,  ErrorWord.BIOS,       'B', 'I', 'O', 'S',
         
         0  // End marker
     };
@@ -95,6 +114,8 @@ unit Error // ErrorID.asm
         7,  ErrorWord.INVALID,    'I', 'N', 'V', 'A', 'L', 'I', 'D',
         6,  ErrorWord.SYSTEM,     'S', 'Y', 'S', 'T', 'E', 'M',
         4,  ErrorWord.CALL,       'C', 'A', 'L', 'L',
+        5,  ErrorWord.BYTES,      'B', 'Y', 'T', 'E', 'S',
+        4,  ErrorWord.BYTES,      'U', 'S', 'E', 'D',
         0  // End marker
     };
     
@@ -123,6 +144,14 @@ unit Error // ErrorID.asm
         Files               = 0x32,
         BytesUsedLabel      = 0x33,
         BytesLabel          = 0x34,
+        FormatWarning       = 0x35,
+        MemoryMessage       = 0x36,
+        BytesMessage        = 0x37,
+        YesNo               = 0x38,
+        SystemReady         = 0x39,
+        InvalidCommand      = 0x3A,
+        EEPROMLabel         = 0x3B,
+        
     }
     
     const byte[] errorMessages0 = {
@@ -139,119 +168,93 @@ unit Error // ErrorID.asm
         2, ErrorID.NumericOverflow,   ErrorWord.NUMERIC, ErrorWord.OVERFLOW,
         3, ErrorID.InvalidSystemCall, ErrorWord.INVALID, ErrorWord.SYSTEM, ErrorWord.CALL,
         
-        3, ErrorID.Files,             ErrorWord.FILES,
+        1, ErrorID.Files,             ErrorWord.FILES,
         2, ErrorID.BytesUsedLabel,    ErrorWord.BYTES, ErrorWord.USED,
         1, ErrorID.BytesLabel,        ErrorWord.BYTES,
+        1, ErrorID.EEPROMLabel,       ErrorWord.EEPROM, 
+        
+        5, ErrorID.FormatWarning,     ErrorWord.FORMAT, ErrorWord.WILL, ErrorWord.ERASE, ErrorWord.ALL, ErrorWord.FILES,
+        1, ErrorID.MemoryMessage,     ErrorWord.MEMORY,
+        2, ErrorID.BytesMessage,      ErrorWord.BYTES, ErrorWord.AVAILABLE,
+        1, ErrorID.YesNo,             ErrorWord.YN,
+        2, ErrorID.InvalidCommand,    ErrorWord.INVALID, ErrorWord.COMMAND,
+        2, ErrorID.SystemReady,       ErrorWord.HOPPER, ErrorWord.BIOS,
+        
         0  // End marker
     };
     
-    
     // Find keyword in errorWordsTable0
-    // Input: ZP.STR = pointer to start of word in line buffer
+    // Input: None (assumes command starts at LineBuffer[0])
     // Output: A = ErrorWord token if found, 0 if not found
-    // Preserves: X, Y
-    // Munts: A, ZP.IDX
+    // Munts: X, Y, ZP.ACC
     FindKeyword()
     {
-        PHX
-        PHY
-        
         LDA #(errorWordsTable0 % 256)
         STA ZP.IDXL
         LDA #(errorWordsTable0 / 256)
         STA ZP.IDXH
         
-        LDY #0  // Table offset
+        LDY #0  // Start at beginning of keyword table
         loop
         {
-            LDA [ZP.IDX], Y         // Get word length
-            if (Z) 
-            { 
-                LDA #0              // Not found
-                break; 
-            }
+            LDA [ZP.IDX], Y     // Get length of this keyword
+            if (Z) { break; }   // End of table - not found
             
-            TAX                     // X = word length
+            STA ZP.ACCL         // Save keyword length
             INY
-            LDA [ZP.IDX], Y         // Get token value
-            PHA                     // Save token on stack
+            LDA [ZP.IDX], Y     // Get token value
+            STA ZP.ACCH         // Save token value
             INY
             
-            // Compare X characters
-            PHY                     // Save table position
-            LDY #0                  // Buffer offset
+            // Compare characters
+            LDX #0  // Character index in our identifier
             loop
             {
-                CPX #0
-                if (Z) 
-                { 
-                    // Matched all chars - check delimiter
-                    LDA [ZP.STR], Y
-                    if (Z) { break; }       // End of line = match
-                    CMP #' '
-                    if (Z) { break; }       // Space = match
-                    
-                    // No delimiter - not a match
-                    PLY                     // Restore table position
-                    PLA                     // Discard saved token
-                    break;                  // Try next word
+                LDA Address.LineBuffer, X   // Get char from our identifier
+                CMP #' '                    // Hit space delimiter?
+                if (Z)
+                {
+                    // Check if we've matched the full keyword length
+                    CPX ZP.ACCL
+                    if (Z)
+                    {
+                        LDA ZP.ACCH  // Return token value - exact match!
+                        return;
+                    }
+                    break; // Length mismatch
                 }
                 
-                LDA [ZP.STR], Y         // Get buffer char
-                if (Z) 
-                { 
-                    // Hit end of line before matching all chars
-                    PLY
-                    PLA
-                    break;
-                }
+                // Check if we've exceeded keyword length
+                CPX ZP.ACCL
+                if (Z) { break; }       // Our identifier is longer than keyword
                 
                 AND #0xDF               // Convert to uppercase
-                CMP [ZP.IDX], Y         // Compare with table char (assumes table is uppercase)
-                if (NZ) 
-                { 
-                    // Mismatch
-                    PLY
-                    PLA
-                    break;
-                }
+                CMP [ZP.IDX], Y         // Compare with expected character
+                if (NZ) { break; }      // Mismatch
                 
+                INX
                 INY
-                DEX
-            }
+            } // loop
             
-            CPX #0
-            if (Z)
-            {
-                // Found complete match with valid delimiter
-                PLY                     // Clean up stack
-                PLA                     // Get token value
-                break;                  // Return with token in A
-            }
-            
-            // Skip to next table entry
-            PLY                         // Restore table position  
-            PLA                         // Discard token
-            DEX                         // Remaining chars to skip
+            // Mismatch - skip to next keyword
             loop
             {
-                CPX #0
-                if (Z) { break; }
-                INY
-                DEX
+                CPX ZP.ACCL         // Have we reached the end of keyword?
+                if (Z) { break; }   // Yes, Y now points to start of next keyword
+                INX                 // Move to next character position  
+                INY                 // Advance Y to next character
             }
-        }
-        
-        PLY
-        PLX
+        } // loop
+        LDA #0  // Not found
     }
+    
     
     // Helper method to search error word table and print word
     // Input: X = target word ID, ZP.IDX = table address
     // Output: Word printed to serial if found, C if found, NC if not
     printKeywordFromTable()
     {
-        STZ ZP.TEMP
+        STX ZP.TEMP
         
         LDY #0  // Index into table
         loop

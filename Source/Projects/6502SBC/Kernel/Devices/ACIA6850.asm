@@ -61,7 +61,7 @@ unit SerialDevice
     isr()
     {
 #if !defined(ZEROPAGE_IO)
-        TODO
+        BRK
 #endif
         loop
         {
@@ -71,7 +71,7 @@ unit SerialDevice
                 {
                     PHA
                     LDA DataRegister        // read serial byte
-                    CMP #0x03               // is it break? (<ctrl><C>)
+                    CMP # Char.CtrlC        // is it break? (<ctrl><C>)
                     if (Z)
                     {
                         SMB0 ZP.FLAGS

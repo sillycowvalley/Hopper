@@ -340,11 +340,12 @@ unit SysCalls
                 Error.InvalidSystemCall();
 #endif
             }
-            
+            /*
             default:
             {
                 Error.InvalidSystemCall();
             }
+            */
         }
     }
     
