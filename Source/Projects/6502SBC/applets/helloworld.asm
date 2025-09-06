@@ -1,18 +1,11 @@
 program HelloWorld
 {
-    #define HOPPER_BIOS_APPLET
     #define CPU_65C02S
     
-    uses "../Kernel/Definitions/BIOSInterface"
-    uses "../Kernel/Definitions/ZeroPage"
+    uses "System/Definitions"
+    uses "System/Print"
     
-    const string helloWord = "Hello World!\n";
-    
-    printString()
-    {
-        LDX # SysCall.PrintString
-        JMP [ZP.BIOSDISPATCH]
-    }
+    const string helloWord = "Hello World!";
     
     Hopper()
     {
@@ -20,7 +13,7 @@ program HelloWorld
         STA ZP.STRL
         LDA #(helloWord / 256)
         STA ZP.STRH
-        printString();
+        Print.String();
     }
     
 }
