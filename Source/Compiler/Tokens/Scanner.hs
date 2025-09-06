@@ -390,6 +390,38 @@ unit Scanner
                         _ = advance();
                         c = char(0x0D);
                     }
+                    case 'x':
+                    {
+                        _ = advance(); // consume the 'x'
+    
+                        // Read two hex digits
+                        char h1 = sourceGetFromPos(currentPos, true);
+                        if (!h1.IsHexDigit())
+                        {
+                            return errorToken("invalid hex escape sequence - expecting hex digit");
+                        }
+                        _ = advance();
+                        
+                        char h2 = sourceGetFromPos(currentPos, true);
+                        if (!h2.IsHexDigit())
+                        {
+                            return errorToken("invalid hex escape sequence - expecting second hex digit");
+                        }
+                        _ = advance();
+                        
+                        // Parse as hex number
+                        string hexStr = "0x";
+                        String.Build(ref hexStr, h1);
+                        String.Build(ref hexStr, h2);
+                        
+                        uint hv;
+                        if (!UInt.TryParse(hexStr, ref hv))
+                        {
+                            return errorToken("invalid hex escape sequence");
+                        }
+                        
+                        c = char(hv);
+                    }
                 }
             }
             String.Build(ref value, c);
@@ -451,6 +483,39 @@ unit Scanner
                 {
                     _ = advance();
                     c = char(0x0D);
+                }
+                
+                case 'x':
+                {
+                    _ = advance(); // consume the 'x'
+
+                    // Read two hex digits
+                    char h1 = sourceGetFromPos(currentPos, true);
+                    if (!h1.IsHexDigit())
+                    {
+                        return errorToken("invalid hex escape sequence - expecting hex digit");
+                    }
+                    _ = advance();
+                    
+                    char h2 = sourceGetFromPos(currentPos, true);
+                    if (!h2.IsHexDigit())
+                    {
+                        return errorToken("invalid hex escape sequence - expecting second hex digit");
+                    }
+                    _ = advance();
+                    
+                    // Parse as hex number
+                    string hexStr = "0x";
+                    String.Build(ref hexStr, h1);
+                    String.Build(ref hexStr, h2);
+                    
+                    uint hv;
+                    if (!UInt.TryParse(hexStr, ref hv))
+                    {
+                        return errorToken("invalid hex escape sequence");
+                    }
+                    
+                    c = char(hv);
                 }
             }
             
