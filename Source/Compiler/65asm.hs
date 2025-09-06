@@ -449,6 +449,8 @@ program Assemble
                 
                 EmitInstructionAbsolute("iJMP", defaultIndex, AddressingModes.Absolute);
                 
+                EmitInstruction("PHA");
+                
                 uint loadLSBTableAddress = Asm6502.NextAddress;
                 EmitInstructionAbsolute("LDA", 0, (registerName == 'X') ? AddressingModes.AbsoluteX : AddressingModes.AbsoluteY);
                 EmitInstructionZeroPage("STA", byte(SwitchJumpAddress+0), AddressingModes.ZeroPage);
@@ -456,6 +458,8 @@ program Assemble
                 uint loadMSBTableAddress = Asm6502.NextAddress;
                 EmitInstructionAbsolute("LDA", 0, (registerName == 'X') ? AddressingModes.AbsoluteX : AddressingModes.AbsoluteY);
                 EmitInstructionZeroPage("STA", byte(SwitchJumpAddress+1), AddressingModes.ZeroPage);
+                
+                EmitInstruction("PLA");
                 
                 Asm6502.AppendCode(GetJMPIndexInstruction());
                 Asm6502.AppendCode(byte(SwitchJumpAddress & 0xFF));
