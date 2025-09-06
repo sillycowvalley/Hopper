@@ -70,4 +70,146 @@ Good point about not doubling up. Here's the updated table with suggestions:
 5. **Preserve**: Y register (caller can rely on it)
 6. **May modify**: A, X, flags, ZP.LastError, BIOS working areas
 
-This makes the API more predictable and consistent while maintaining the existing ZP slot structure.
+
+
+## Missing Methods Analysis
+
+| Module | Missing Method | **Should be SysCall?** | Reasoning |
+|--------|---------------|------------------------|-----------|
+| **Memory** |
+| | `Copy()` | ✅ **Yes** | User programs need to copy memory blocks |
+| | `Clear()` / `ClearPage()` | ✅ **Yes** | User programs need to clear memory |
+| | `ClearPages()` | ❌ No | Can be done with loop of ClearPage |
+| **String** |
+| | `Length()` | ✅ **Yes** | Essential string operation |
+| | `Compare()` | ✅ **Yes** | Essential string operation |
+| | `ToUpperSTR()` | ⚠️ Maybe | Could be useful, but users can loop with Char.ToUpper |
+| **Char** |
+| | `IsDigit()` | ✅ **Yes** | Essential for parsing |
+| | `IsAlpha()` | ✅ **Yes** | Essential for parsing |
+| | `IsAlphaNumeric()` | ✅ **Yes** | Essential for parsing |
+| | `IsHex()` | ✅ **Yes** | Essential for hex parsing |
+| | `IsLower()` | ⚠️ Maybe | Less critical |
+| | `IsPrintable()` | ✅ **Yes** | Useful for display routines |
+| | `ToUpper()` | ✅ **Yes** | Essential for case-insensitive operations |
+| | `ToLower()` | ⚠️ Maybe | Less common than ToUpper |
+| **Serial** |
+| | `EmptyTheBuffer()` | ✅ **Yes** | Important for clearing input buffer |
+| | `HexOut()` | ❌ No | Already have PrintHex |
+| | `HexIn()` | ✅ **Yes** | Useful for reading hex input |
+| **I2C** |
+| | `Scan()` | ✅ **Yes** | Hardware discovery |
+| | `BeginTx()` | ✅ **Yes** | I2C communication |
+| | `Write()` | ✅ **Yes** | I2C communication |
+| | `EndTx()` | ✅ **Yes** | I2C communication |
+| | `RequestFrom()` | ✅ **Yes** | I2C communication |
+| | `Read()` | ✅ **Yes** | I2C communication |
+| **EEPROM** |
+| | `Detect()` | ✅ **Yes** | Check if EEPROM present |
+| | `GetSize()` | ✅ **Yes** | Determine storage capacity |
+| **File** |
+| | `GetFileLength()` | ✅ **Yes** | Useful for file operations |
+| | `GetAvailable()` | ✅ **Yes** | Check free space |
+| | `ValidateFilename()` | ❌ No | Can be done in user code |
+| **Long** |
+| | `FromDecimal()` | ✅ **Yes** | Parse decimal strings |
+| | `FromHex()` | ✅ **Yes** | Parse hex strings |
+| | `NegateNext()` | ⚠️ Maybe | Can be done with 0 - value |
+| **Float** |
+| | `IsZeroNext()` | ⚠️ Maybe | Can use EQ with 0.0 |
+| | `New()` | ❌ No | Just zeroing memory |
+| **Print** |
+| | `Decimal()` | ❌ No | Already have LongPrint |
+
+
+
+
+
+
+## BIOS Zero Page Map
+
+| Address | Name | Description | Category |
+|---------|------|-------------|----------|
+| **0x00** | FLAGS | System flags (bit 0: NMI break, bit 1: XON/XOFF) | System |
+| **0x01-0x05** | *unused* | | |
+| **0x06-0x07** | FREELIST | Heap free list pointer | Heap |
+| **0x08** | HEAPSTART | Heap start page | Heap |
+| **0x09** | HEAPSIZE | Heap size in pages | Heap |
+| **0x0A** | SerialInWritePointer | Serial buffer write position | Serial |
+| **0x0B** | SerialInReadPointer | Serial buffer read position | Serial |
+| **0x0C-0x0D** | ACC | Accumulator for parameters/results | Parameters |
+| **0x0E-0x0F** | *unused* | | |
+| **0x10** | TEMP | Super volatile temporary | Scratch |
+| **0x11** | LastError | Last error code | System |
+| **0x12-0x15** | TOP0-3 | 32-bit operand/result | Math/Parameters |
+| **0x16-0x19** | NEXT0-3 | 32-bit operand/result | Math/Parameters |
+| **0x1A** | *unused* | | |
+| **0x1B-0x1C** | IDX | General pointer | Pointers |
+| **0x1D-0x1E** | IDY | General pointer | Pointers |
+| **0x1F** | *unused* | | |
+| **0x20-0x21** | JumpTable | Jump table for Hopper Assembler | System |
+| **0x22-0x25** | TICK0-3 | 32-bit timer tick counter | Timer |
+| **0x26-0x27** | STR | String pointer | Parameters |
+| **0x28** | *unused* | | |
+| **0x29-0x2A** | STR2 | Second string pointer (DEBUG only) | Debug |
+| **0x2B-0x2C** | BIOSDISPATCH | BIOS syscall dispatch vector | System |
+| **0x2D-0x2E** | FSOURCEADDRESS | Source address for memory ops | Parameters |
+| **0x2F-0x30** | FDESTINATIONADDRESS | Destination for memory ops | Parameters |
+| **0x31-0x32** | FLENGTH | Length for memory ops | Parameters |
+| **0x33-0x4E** | *unused* | | |
+| **0x4F-0x60** | M0-M17 | Multi-use workspace (18 bytes) | Workspace |
+| | TARGET0-3 | Time.Delay() workspace (aliases M0-M3) | |
+| | RESULT0-7 | Long/Float math results (aliases M0-M7) | |
+| | DB0-DB15 | Debug workspace (aliases M0-M15) | |
+| **0x61-0x74** | *unused* | | |
+| **0x75-0x76** | EmulatorPC | Emulator PC capture | Emulator |
+| **0x77** | I2CInWritePtr | I2C buffer write pointer | I2C |
+| **0x78** | I2CInReadPtr | I2C buffer read pointer | I2C |
+| **0x79-0x87** | *unused* | | |
+| **0x88** | OutB | I2C output byte | I2C |
+| **0x89** | InB | I2C input byte | I2C |
+| **0x8A** | LastAck | I2C last ACK status | I2C |
+| **0x8B** | PLUGNPLAY | Hardware detection flags | System |
+| **0x8C-0x9B** | FS0-FS15 | File system workspace (16 bytes) | File System |
+| | SectorSource | File ops source (aliases FS0-FS1) | |
+| | TransferLength | File transfer size (aliases FS2-FS3) | |
+| | CurrentFileSector | Current sector (alias FS4) | |
+| | FileStartSector | First sector (alias FS5) | |
+| | CurrentFileEntry | Directory entry (alias FS6) | |
+| | FilePosition | File position (aliases FS7-FS8) | |
+| | NextFileSector | Next sector (alias FS9) | |
+| | BytesRemaining | Bytes left (aliases FS10-FS11) | |
+| | SectorPosition | Position in sector (aliases FS12-FS13) | |
+| | CurrentDirectorySector | Directory sector (alias FS14) | |
+| **0x9C-0xEB** | *unused* | | |
+
+### Hardware I/O (Platform-specific, when ZEROPAGE_IO defined):
+| Address | Name | Description |
+|---------|------|-------------|
+| **0xEC** | ACIACONTROL/STATUS | 6850 ACIA control/status |
+| **0xED** | ACIADATA | 6850 ACIA data |
+| **0xEE-0xEF** | *reserved* | Hardware expansion |
+| **0xF0-0xFF** | VIA registers | 65C22 VIA I/O |
+
+## Summary of Usage:
+
+### Protected BIOS Areas (preserved across syscalls):
+- **0x00-0x0D**: System state and heap management
+- **0x20-0x21**: Jump table (Hopper Assembler requirement)
+- **0x22-0x25**: Timer ticks
+- **0x2B-0x2C**: BIOS dispatch vector
+- **0x75-0x76**: Emulator hooks
+
+### Parameter Passing Areas (used for syscalls):
+- **0x0C-0x0D**: ACC (general parameters)
+- **0x12-0x19**: TOP/NEXT (math operands)
+- **0x26-0x27**: STR (string pointer)
+- **0x1B-0x1E**: IDX/IDY (pointers)
+- **0x2D-0x32**: Memory operation parameters
+
+### Working Areas (may be modified by syscalls):
+- **0x10**: TEMP (super volatile)
+- **0x4F-0x60**: M0-M17 (shared workspace)
+- **0x77-0x8B**: I2C working area
+- **0x8C-0x9B**: File system workspace
+
