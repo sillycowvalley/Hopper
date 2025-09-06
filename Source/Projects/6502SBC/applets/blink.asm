@@ -11,18 +11,15 @@ program Blink
     pinMode()
     {
         LDA #0 // 0 - builtin LED
-        STA ZP.ACCL    
-        LDA #1 // 1 = Output
-        STA ZP.ACCH
+        LDY #1 // 1 = Output
         LDX # SysCall.PinMode
         JMP [ZP.BIOSDISPATCH]
     }
     
+    // Y = 0 or 1
     pinWrite()
     {
-        STA ZP.ACCH
         LDA #0 // 0 - builtin LED
-        STA ZP.ACCL
         LDX # SysCall.PinWrite
         JMP [ZP.BIOSDISPATCH]
     }
@@ -72,10 +69,10 @@ program Blink
         pinMode();
         loop
         {
-            LDA #1
+            LDY #1
             pinWrite();
             delay();
-            LDA #0
+            LDY #0
             pinWrite();
             delay();
             

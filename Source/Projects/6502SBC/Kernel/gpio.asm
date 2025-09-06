@@ -11,11 +11,10 @@ unit GPIO
     }
     
     // Configure pin mode (INPUT or OUTPUT)
-    // Input: A = pin number (0-15), X = mode (PinMode.INPUT or PinMode.OUTPUT)
+    // Input: A = pin number (0-15), Y = mode (PinMode.INPUT or PinMode.OUTPUT)
     // Output: None
     PinMode()
     {
-        PHX // save the value
         LDX #0 // port A
         // Determine which port and create bit mask
         CMP #8
@@ -26,6 +25,7 @@ unit GPIO
             SBC #8                        // Convert to 0-7 range
             INX  // port B
         }
+        PHY
         TAY                          // Use as index
         LDA BitMasks, Y   // Load mask directly from table
             
@@ -47,12 +47,11 @@ unit GPIO
     }
     
     // Write digital value to pin
-    // Input: A = pin number (0-15), X = value (0 or 1)
+    // Input: A = pin number (0-15), Y = value (0 or 1)
     // Output: None
     // Modifies: A, X, Y
     PinWrite()
     {
-        PHX // save the value
         LDX #0 // port A
         // Determine which port and create bit mask
         CMP #8
@@ -63,7 +62,7 @@ unit GPIO
             SBC #8                        // Convert to 0-7 range
             INX // port B
         }
-        
+        PHY
         TAY                          // Use as index
         LDA BitMasks, Y   // Load mask directly from table
         

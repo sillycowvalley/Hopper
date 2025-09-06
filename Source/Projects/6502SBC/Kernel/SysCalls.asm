@@ -1,26 +1,5 @@
 unit SysCalls
 {
-    gpioPinMode()
-    {
-        LDA ZP.ACCL
-        LDX ZP.ACCH
-        // Input: A = pin number (0-15), X = mode (PinMode.INPUT or PinMode.OUTPUT)
-        GPIO.PinMode();
-    }
-    gpioRead()
-    {
-        LDA ZP.ACCL
-        // Input: A = pin number (0-15)
-        GPIO.PinRead();
-        STA ZP.ACCH
-    }
-    gpioWrite()
-    {
-        LDA ZP.ACCL
-        LDX ZP.ACCH
-        // Input: A = pin number (0-15), X = value (0 or 1)
-        GPIO.PinWrite();
-    }
      
     isBreak()
     {
@@ -303,15 +282,15 @@ unit SysCalls
             }
             case SysCall.PinMode:
             {
-                gpioPinMode();
+                GPIO.PinMode();
             }
             case SysCall.PinRead:
             {
-                gpioRead();
+                GPIO.PinRead();
             }
             case SysCall.PinWrite:
             {
-                gpioWrite();
+                GPIO.PinWrite();
             }
             default:
             {

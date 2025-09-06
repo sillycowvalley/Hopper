@@ -36,6 +36,7 @@ unit Long
         utilityDoLongSigns();
         LDX #1 // Mod
         DivMod(); // RESULT = NEXT % TOP
+        if (NC) { PLA return; }
         // RESULT0-3 -> NEXT0-3
         Shared.MoveResultToNext();
         
@@ -44,6 +45,7 @@ unit Long
         {
             NegateNext(); // NEXT  = -NEXT 
         }
+        SEC
         // result in NEXT
     }
     Div()
@@ -51,12 +53,14 @@ unit Long
         utilityDoLongSigns();
         LDX #0 // Div
         DivMod(); // NEXT = NEXT / TOP
+        if (NC) { return; }
         LDA ZP.TEMP // load the sign count
         CMP # 1
         if (Z)
         {
             NegateNext(); // NEXT  = -NEXT 
         }
+        SEC
         // result in NEXT
     }
     
