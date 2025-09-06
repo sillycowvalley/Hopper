@@ -27,6 +27,16 @@ unit SysCalls
         Print.Char();
     }
     
+    isBreak()
+    {
+        CLC
+        if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
+        {
+            RMB0 ZP.FLAGS // clear it so we don't get a duplicate <Ctrl><C>
+            SEC
+        }
+    }
+    
     // System Call Dispatcher
     // Input: X = system call ID
     //        A, Y = parameters (call-specific)
@@ -145,7 +155,10 @@ unit SysCalls
             {
                 Serial.IsAvailable();
             }
-            
+            case SysCall.IsBreak:
+            {
+                isBreak();
+            }
             // Print/Console
             case SysCall.PrintString:
             {

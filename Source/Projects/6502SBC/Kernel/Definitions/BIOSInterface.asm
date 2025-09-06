@@ -25,6 +25,8 @@ unit BIOSInterface
         SerialWaitForChar,
         SerialIsAvailable,
         
+        IsBreak, // NMI
+        
         // Print/Console
         PrintString,
         PrintChar,

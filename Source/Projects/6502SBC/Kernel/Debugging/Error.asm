@@ -516,13 +516,13 @@ unit Error // ErrorID.asm
     }
     
     // Mathematical errors
-    DivisionByZero()
+    DivisionByZero() inline
     {
         LDA #ErrorID.DivisionByZero
         commonError();
     }
     
-    NumericOverflow()
+    NumericOverflow() inline
     {
         LDA #ErrorID.NumericOverflow
         commonError();
@@ -541,19 +541,19 @@ unit Error // ErrorID.asm
         commonError();
     }
     
-    FilenameTooLong()
+    FilenameTooLong() inline
     {
         LDA #ErrorID.FilenameTooLong
         commonError();
     }
     
-    IllegalFilename()
+    IllegalFilename() inline
     {
         LDA #ErrorID.IllegalFilename
         commonError();
     }
     
-    DirectoryFull()
+    DirectoryFull() inline
     {
         LDA #ErrorID.DirectoryFull
         commonError();
@@ -565,14 +565,14 @@ unit Error // ErrorID.asm
         commonError();
     }
     
-    EEPROMError()
+    EEPROMError() inline
     {
         LDA #ErrorID.EEPROMError
         commonError();
     }
     
     // Memory errors
-    OutOfMemory() 
+    OutOfMemory() inline
     { 
         LDA #ErrorID.OutOfMemory
         commonError();

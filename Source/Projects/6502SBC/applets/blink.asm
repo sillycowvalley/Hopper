@@ -54,6 +54,13 @@ program Blink
         LDX # SysCall.SerialIsAvailable
         JMP [ZP.BIOSDISPATCH]
     }
+    
+    isBreak()
+    {
+        LDX # SysCall.IsBreak
+        JMP [ZP.BIOSDISPATCH]
+    }
+    
     Hopper()
     {
         LDA #(blinkString % 256)
@@ -76,7 +83,7 @@ program Blink
             STA ZP.ACCL
             printChar();
             
-            serialIsAvailable();
+            isBreak();
             if (C) { break; }
         }
     }

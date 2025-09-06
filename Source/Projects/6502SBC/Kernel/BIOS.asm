@@ -2,8 +2,10 @@ program BIOS
 {
     #define HOPPER_BIOS
     
-    //#define DEBUG
+    //#define DEBUG     // mimimum of 874 bytes
     #define CPU_65C02S
+    
+    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
     
 #ifdef DEBUG    
     #define ROM_32K
@@ -14,7 +16,7 @@ program BIOS
     
     
     // Optional components
-    #define HASFLOAT
+    #define HASFLOAT  // currently ~1250 bytes
     #define HASEEPROM
     
     uses "Definitions/Limits"
