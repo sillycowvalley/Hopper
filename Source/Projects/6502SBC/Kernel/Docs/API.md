@@ -149,25 +149,97 @@
 ## Proposed New SysCalls
 
 ### High Priority Additions
-| SysCall | Inputs | Outputs | Rationale |
-|---------|--------|---------|-----------|
-| **MemCopy** | FSOURCE, FDEST<br>FLENGTH | - | Essential operation |
-| **MemClear** | ZP.IDX = address<br>ZP.ACC = count | - | Essential operation |
+
+#### Memory Operations
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **MemCopy** | FSOURCE = source<br>FDEST = dest<br>FLENGTH = count | - | Essential operation |
+| **MemClear** | ZP.IDX = address<br>ZP.ACC = count | - | Clear memory range |
+| **MemClearPage** | A = page number | - | Clear 256-byte page |
+| **MemClearPages** | A = page number<br>X = page count | - | Clear multiple pages |
+
+#### String Operations
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
 | **StringLength** | ZP.STR = string | A = length (0-255) | Essential for strings |
-| **StringCompare** | ZP.STR, ZP.IDX | C = equal | Essential for strings |
+| **StringCompare** | ZP.STR = string1<br>ZP.IDX = string2 | C = equal | Essential for strings |
+
+#### Character Tests (Currently Missing)
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
 | **CharIsDigit** | A = character | C = is digit | Essential for parsing |
 | **CharIsAlpha** | A = character | C = is alpha | Essential for parsing |
-| **CharToUpper** | A = character | A = uppercase | Common operation |
-| **SerialFlush** | - | - | Clear input buffer |
-| **EEPROMDetect** | - | C = present | Hardware detection |
-
-### Medium Priority
-| SysCall | Inputs | Outputs | Rationale |
-|---------|--------|---------|-----------|
-| **CharIsHex** | A = character | C = is hex | Hex parsing |
+| **CharIsUpper** | A = character | C = is uppercase | Text processing |
+| **CharIsLower** | A = character | C = is lowercase | Text processing |
+| **CharIsHex** | A = character | C = is hex | Essential for hex parsing |
+| **CharIsAlphaNumeric** | A = character | C = is alphanumeric | Parsing support |
 | **CharIsPrintable** | A = character | C = printable | Display routines |
-| **LongFromDecimal** | ZP.STR = string | ZP.TOP = value<br>C = success | String conversion |
+
+#### Character Conversions
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **CharToUpper** | A = character | A = uppercase | Common operation |
+| **CharToLower** | A = character | A = lowercase | Text processing |
+
+#### I2C Operations (Complete Suite)
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **I2CScan** | A = address (7-bit) | C = device found | Hardware discovery |
+| **I2CBeginTx** | A = address (7-bit) | - | Start transmission |
+| **I2CEndTx** | - | C = success (ACK) | Complete transmission |
+| **I2CWrite** | A = byte to send | - | Send data byte |
+| **I2CBeginRx** | A = address (7-bit) | - | Start reception |
+| **I2CRead** | - | A = byte read | Read data byte |
+| **I2CRequestFrom** | A = address<br>Y = byte count | A = bytes read | Read multiple bytes |
+| **I2CAvailable** | - | C = data available | Check buffer status |
+
+#### Serial Operations
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **SerialHexIn** | - | A = hex byte | Read hex input |
+
+
+### Medium Priority Additions
+
+#### Long Math Conversions
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **LongFromDecimal** | ZP.STR = string | ZP.TOP = value<br>C = success | String to number |
+| **LongFromHex** | ZP.STR = string | ZP.TOP = value<br>C = success | Hex string to number |
+
+#### File Operations
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
 | **FileGetAvailable** | - | ZP.TOP = free bytes | Storage management |
+| **FileGetLength** | - | ZP.ACC = file size | File information |
+
+
+### Low Priority Additions
+
+#### String Operations
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **StringToUpper** | ZP.STR = string | - | Can loop with CharToUpper |
+
+#### Long Math
+| SysCall | Proposed Inputs | Proposed Outputs | Rationale |
+|---------|-----------------|------------------|-----------|
+| **LongNegate** | ZP.NEXT = value | ZP.NEXT = -value | Can use 0 - value |
+
+
+---
+
+## Summary of New SysCalls by Category
+
+### Essential Missing Functionality (25 syscalls)
+- **Memory**: 4 (Copy, Clear, ClearPage, ClearPages)
+- **Strings**: 2 (Length, Compare)
+- **Characters**: 9 (IsDigit, IsAlpha, IsUpper, IsLower, IsHex, IsAlphaNumeric, IsPrintable, ToUpper, ToLower)
+- **I2C**: 8 (complete I2C interface)
+- **Serial**: 2 (HexIn)
+
+
+
 
 ---
 
