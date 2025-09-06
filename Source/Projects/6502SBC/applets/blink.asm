@@ -80,7 +80,6 @@ program Blink
             delay();
             
             LDA #'.'
-            STA ZP.ACCL
             printChar();
             
             isBreak();

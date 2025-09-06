@@ -21,12 +21,7 @@ unit SysCalls
         // Input: A = pin number (0-15), X = value (0 or 1)
         GPIO.PinWrite();
     }
-    printChar()
-    {
-        LDA ZP.ACCL
-        Print.Char();
-    }
-    
+     
     isBreak()
     {
         CLC
@@ -166,7 +161,7 @@ unit SysCalls
             }
             case SysCall.PrintChar:
             {
-                printChar();
+                Print.Char();
             }
             case SysCall.PrintHex:
             {

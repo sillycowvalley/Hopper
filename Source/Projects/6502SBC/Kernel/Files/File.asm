@@ -1240,14 +1240,15 @@ unit File
         SEC  // Continue scanning
     }
     
-    processPrintEntry()  // Y = slot, X = offset
+    processPrintEntry()  // X = offset
     {
         // Print entry at DirectoryBuffer + X
+        
+        LDY #4
+        Print.Spaces();
+        
         TXA // X = directory entry byte offset
         TAY
-        
-        LDX #4
-        Print.Spaces();
         
         printFilenameFromDirectory(); // Uses Y = filename start offset, preserves X, Y
         
@@ -1357,8 +1358,8 @@ unit File
         STA ZP.TOP1
         
         // right aligment of numbers in the 10..9999 range
-        PHX
-        LDX #0                       // assume 0 spaces of padding
+        PHY
+        LDY #0                       // assume 0 spaces of padding
         LDA ZP.TOP1
         CMP #4                       // Check for 1024+
         if (NC)                      // < 1024, need more analysis
@@ -1369,28 +1370,28 @@ unit File
                 LDA ZP.TOP0
                 CMP #232             // 1000 = 3*256 + 232
                 if (NC)              // < 1000 (768-999 range)
-                {        INX }       //     3-digit numbers get 1 space
+                {        INY }       //     3-digit numbers get 1 space
                 // else >= 1000 (1000-1023), keep X=0 for 4-digit alignment
             }
             else                     // TOPH = 0, 1, or 2
             {
                 CMP #0
                 if (NZ)              // TOPH = 1 or 2 (256-767)
-                {        INX }       //     3-digit numbers get 1 space
+                {        INY }       //     3-digit numbers get 1 space
                 else                 // TOPH = 0 (0-255)
                 {
                     LDA ZP.TOP0
                     CMP #100
                     if (NC)          // < 100 (10-99 range)
-                    { LDX #2 }       //     2-digit numbers get 2 spaces
+                    { LDY #2 }       //     2-digit numbers get 2 spaces
                     else             // >= 100 (100-255 range)
-                    {    INX }       //     3-digit numbers get 1 space
+                    {    INY }       //     3-digit numbers get 1 space
                 }
             }
         }
-        // else >= 1024, keep X=0 (no padding for 4+ digits)
+        // else >= 1024, keep Y=0 (no padding for 4+ digits)
         Print.Spaces();              // print X spaces (zero is ok)
-        PLX
+        PLY
         
         STZ ZP.TOP2
         STZ ZP.TOP3
@@ -2470,7 +2471,7 @@ unit File
     printHexDumpLine()
     {
         // Print 4-space indentation
-        LDX #8
+        LDY #8
         Print.Spaces();
         
         // Print address (00: or 10:)
@@ -2497,7 +2498,7 @@ unit File
         }
         
         // Double space before ASCII
-        LDX #2 Print.Spaces();
+        LDY #2 Print.Spaces();
         
         // Print ASCII representation
         LDX SectorPositionL      // Starting offset

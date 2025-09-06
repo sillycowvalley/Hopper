@@ -61,26 +61,26 @@ unit Print
     }
     
     // Print specified number of space characters
-    // Input: X = number of spaces to print
-    // Output: X space characters printed to serial
-    // Munts: A
+    // Input: Y = number of spaces to print
+    // Output: Y space characters printed to serial
+    // Munts: Y
     Spaces()
     {
-        PHX
-        CPX #0
+        PHY
+        CPY #0
         if (NZ)
         {
             loop
             {
                 LDA #' '
                 Serial.WriteChar();
-                DEX
+                DEY
                 if (Z) // Set Z - counter reached 0
                 { 
                     break; 
                 }
             }
         }
-        PLX
+        PLY
     }
 }
