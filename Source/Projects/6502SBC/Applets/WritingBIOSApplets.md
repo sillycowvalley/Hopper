@@ -1,5 +1,16 @@
 # Hopper BIOS Applet Quick Reference
 
+## 🚨 CRITICAL: Always Define CPU for Programs
+```hopper
+program MyApplet
+{
+    #define CPU_65C02S    // ALWAYS REQUIRED FOR PROGRAMS!
+    
+    uses "System/Definitions"
+    // ... rest of program
+}
+```
+
 ## Environment: Always 65C02S
 No conditional compilation needed for CPU features - we always have the enhanced instruction set.
 
@@ -20,6 +31,136 @@ No conditional compilation needed for CPU features - we always have the enhanced
 
 // HARDWARE I/O (immovable):
 0xEC-0xFF   ACIA, VIA ports
+```
+
+## 🚨 CRITICAL: 16-bit Zero Page Naming Convention
+**ALWAYS define both the uint AND the L/H bytes separately:**
+```hopper
+// CORRECT way to define 16-bit zero page locations:
+const uint myPointer = 0x5A;   // For [myPointer] syntax
+const byte myPointerL = 0x5A;  // For LDA myPointerL
+const byte myPointerH = 0x5B;  // For LDA myPointerH
+
+// This prevents dyslexic errors and allows both usage patterns:
+LDA [myPointer], Y    // Indirect addressing
+LDA myPointerL        // Direct low byte access
+STA myPointerH        // Direct high byte access
+```
+
+## 🚨 CRITICAL: Loop Construct Rules
+**Hopper Assembly has STRUCTURED loops with NO LABELS!**
+
+### ❌ WRONG - This is NOT Hopper Assembly:
+```hopper
+rowLoop:        // NO! No labeled loops!
+{
+    // ...
+    if (condition) { continue rowLoop; }  // WRONG!
+}
+```
+
+### ✅ CORRECT - Hopper Assembly loops:
+```hopper
+loop
+{
+    // Loop body
+    if (done) { break; }      // Exits current loop
+    if (skip) { continue; }    // Goes to top of current loop
+}
+```
+
+### Nested Loops - CORRECT Pattern:
+```hopper
+LDX #0  // Row counter
+loop    // Outer loop
+{
+    PHX
+    LDY #0  // Column counter
+    loop    // Inner loop
+    {
+        // Do work with Y
+        INY
+        CPY width
+        if (Z) { break; }  // Exits INNER loop only
+    }
+    PLX
+    INX
+    CPX height
+    if (Z) { break; }  // Exits OUTER loop
+}
+```
+
+### Common Loop Patterns:
+```hopper
+// Count up:
+LDX #0
+loop
+{
+    // work
+    INX
+    CPX limit
+    if (Z) { break; }
+}
+
+// Count down:
+LDX count
+loop
+{
+    // work
+    DEX
+    if (Z) { break; }
+}
+
+// While-style:
+loop
+{
+    // check condition
+    if (done) { break; }
+    // work
+}
+```
+
+## 🚨 Register Preservation Rules - SIMPLIFIED
+**CALLEE preserves what it modifies (except A):**
+
+```hopper
+PublicMethod()  // Uppercase = public
+{
+    // Only preserve registers THIS METHOD modifies:
+    PHX         // ONLY if this method changes X
+    PHY         // ONLY if this method changes Y
+    // NEVER preserve A - caller's responsibility
+    
+    // Do work...
+    
+    PLY         // Only if we pushed Y
+    PLX         // Only if we pushed X
+    // Return with meaningful flag (usually C for success/failure)
+}
+
+privateHelper() // Lowercase = private  
+{
+    // Private methods called only internally
+    // Check if caller already preserved - avoid double-preservation!
+    // If caller saved X/Y, don't save again
+}
+```
+
+### Stack Management Anti-Pattern to AVOID:
+```hopper
+// BAD - Double preservation:
+Caller()
+{
+    PHY         // Caller saves Y
+    callee();   // Callee ALSO saves Y - wasteful!
+    PLY
+}
+
+// GOOD - Single preservation:
+Caller()
+{
+    callee();   // Callee preserves Y if it modifies it
+}
 ```
 
 ## 65C02S Enhanced Instructions Always Available
@@ -64,28 +205,6 @@ Print.String();
 // NEVER spell out strings character by character!
 ```
 
-## Register Preservation Rules
-```hopper
-PublicMethod()  // Uppercase = public
-{
-    PHX         // ONLY if you modify X
-    PHY         // ONLY if you modify Y
-    // A is NEVER preserved - caller saves
-    
-    // Do work...
-    
-    PLY         // Only if saved
-    PLX         // Only if saved
-    SEC         // C set = success
-}
-
-privateHelper() // Lowercase = private  
-{
-    // NO preservation requirements
-    // Trash any registers freely
-}
-```
-
 ## Control Flow (Structured, Not Labels)
 ```hopper
 // Flag tests:
@@ -100,21 +219,16 @@ if (PL) { /* plus/positive */ }
 if (BBS0, ZP.FLAGS) { /* bit 0 set */ }
 if (BBR7, ZP.STATUS) { /* bit 7 clear */ }
 
-loop
-{
-    // work
-    if (done) { break; }
-    if (skip) { continue; }
-}
-
-// NO labels/jumps except within a single method
+// Remember: NO labeled loops, NO goto!
 ```
 
 ## Program Template
 ```hopper
 program MyApplet
 {
-    uses "System/Definitions"  // Gets ZP, BIOS interface
+    #define CPU_65C02S              // ALWAYS REQUIRED!
+    
+    uses "System/Definitions"       // Gets ZP, BIOS interface
     uses "System/Print"
     uses "System/Serial"
     uses "System/Memory"
@@ -122,7 +236,11 @@ program MyApplet
     // Your zero page allocations (USE FREE ZONE!):
     const byte myCounter = 0x58;
     const byte myFlags = 0x59;
-    const uint myPointer = 0x5A;  // 0x5A-0x5B for 16-bit
+    
+    // 16-bit values need both definitions:
+    const uint myPointer = 0x5A;
+    const byte myPointerL = 0x5A;
+    const byte myPointerH = 0x5B;
     
     const string title = "My Applet v1.0\n";
     const string error = "Error occurred!\n";
@@ -130,8 +248,10 @@ program MyApplet
     Hopper()  // Entry point
     {
         // Initialize
-        STZ myCounter       // 65C02S zero instruction
+        STZ myCounter
         STZ myFlags
+        STZ myPointerL
+        STZ myPointerH
         
         // Print title
         LDA #(title % 256)
@@ -155,22 +275,22 @@ program MyApplet
 
 ## Common Operations
 ```hopper
-// 16-bit value loading:
+// 16-bit value loading (using proper naming):
 LDA #(value % 256)
-STA ZP.ADDRL
+STA myPointerL      // Use the L suffix
 LDA #(value / 256)
-STA ZP.ADDRH
+STA myPointerH      // Use the H suffix
 
 // 16-bit increment:
-INC ZP.ADDRL
+INC myPointerL
 if (Z)
 {
-    INC ZP.ADDRH
+    INC myPointerH
 }
 
 // Clear 16-bit value (65C02S):
-STZ ZP.ADDRL
-STZ ZP.ADDRH
+STZ myPointerL
+STZ myPointerH
 
 // Check allocation success:
 Memory.Allocate();
@@ -214,10 +334,13 @@ if (NC)      // No carry = failed
 1. **Using BIOS zero page** - M0-M17 are BIOS workspace!
 2. **Raw addresses** - Use `ZP.NAME` not `$xx` or `0xXX`
 3. **Character-by-character strings** - Use string constants
-4. **Preserving A** - Accumulator is never preserved
-5. **Blanket register saves** - Only save X/Y if you modify them
-6. **Missing parentheses** - `LDA (value + 1)` not `LDA value + 1`
+4. **Preserving A** - Accumulator is never preserved by callee
+5. **Double register saves** - Don't preserve in both caller and callee
+6. **Missing parentheses** - `LDA #(value + 1)` not `LDA #value + 1`
 7. **Using old 6502 patterns** - We have STZ, PHX/PLX, etc!
+8. **Labeled loops** - Hopper uses structured `loop`, not labels!
+9. **Missing L/H definitions** - Always define both uint and L/H bytes
+10. **Missing CPU define** - Programs must have `#define CPU_65C02S`
 
 ## Debug Pattern
 ```hopper
@@ -234,57 +357,57 @@ LDA #'.'
 Print.Char();
 ```
 
-## Working Example - Counter Display
+## Working Example - Nested Loop Pattern
 ```hopper
-program Counter
+program NestedLoopDemo
 {
+    #define CPU_65C02S    // REQUIRED!
+    
     uses "System/Definitions"
     uses "System/Print"
-    uses "System/Time"
-    uses "System/Serial"
     
-    const byte counter = 0x58;  // Our free ZP
-    const string title = "Counter Demo\n";
+    const byte rows = 0x58;
+    const byte cols = 0x59;
+    const byte currentRow = 0x5A;
+    const byte currentCol = 0x5B;
     
     Hopper()
     {
-        // Print title
-        LDA #(title % 256)
-        STA ZP.STRL
-        LDA #(title / 256)
-        STA ZP.STRH
-        Print.String();
+        LDA #5
+        STA rows
+        LDA #10
+        STA cols
         
-        STZ counter  // 65C02S clear
-        
-        loop
+        STZ currentRow
+        loop  // Outer loop - rows
         {
-            // Display counter
-            LDA counter
-            Print.Hex();
-            Print.Space();
+            STZ currentCol
+            loop  // Inner loop - columns
+            {
+                // Do work at [currentRow, currentCol]
+                LDA #'*'
+                Print.Char();
+                
+                INC currentCol
+                LDA currentCol
+                CMP cols
+                if (Z) { break; }  // Exit inner loop
+            }
             
-            // 100ms delay
-            LDA #100
-            STA ZP.TOP0
-            STZ ZP.TOP1  // 65C02S
-            STZ ZP.TOP2
-            STZ ZP.TOP3
-            Time.Delay();
+            Print.NewLine();
             
-            // Increment and check
-            INC counter
-            CMP #20
-            if (Z) { break; }
-            
-            // Check for break
-            Serial.IsBreak();
-            if (C) { break; }
+            INC currentRow
+            LDA currentRow
+            CMP rows
+            if (Z) { break; }  // Exit outer loop
         }
-        
-        Print.NewLine();
     }
 }
 ```
 
-Remember: We're on 65C02S hardware. Use those enhanced instructions! Respect the BIOS zero page. Use structured flow. String constants always.
+Remember: 
+- **NO labeled loops** - use structured `loop { }`
+- **Define CPU** - `#define CPU_65C02S` in every program
+- **L/H suffixes** - Define both uint and byte versions
+- **Single preservation** - Callee saves what it modifies (except A)
+- **Use enhanced 65C02S** - STZ, PHX/PLX, etc.
