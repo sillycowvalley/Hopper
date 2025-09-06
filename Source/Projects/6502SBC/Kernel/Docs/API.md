@@ -1,47 +1,45 @@
-Good point about not doubling up. Here's the updated table with suggestions:
-
 ## SysCall API with Suggestions
 
-| SysCall | Current Inputs | Current Outputs | **Suggestions** |
-|---------|---------------|-----------------|-----------------|
+| SysCall | **Current Inputs** | **Current Outputs** | **Suggestions** |
+|---------|-------------------|---------------------|-----------------|
 | **Memory Management** |
-| MemAllocate | ZP.ACC = size | ZP.IDX = address<br>C = success | ✓ Good as is |
+| MemAllocate | ZP.ACC = size (16-bit) | ZP.IDX = address<br>C = success | ✓ Good as is |
 | MemFree | ZP.IDX = address | C = success | ✓ Good as is |
 | MemAvailable | - | ZP.ACC = free bytes | ✓ Good as is |
 | MemMaximum | - | ZP.ACC = largest block | ✓ Good as is |
 | **File Operations** |
-| FileExists | ZP.STR = filename<br>A = DirWalkAction | C = exists | ⚠️ Move A param to ZP.ACCL for consistency |
+| FileExists | ZP.STR = filename<br>ZP.ACCL = DirWalkAction | C = exists | ⚠️ Use A for DirWalkAction |
 | FileDelete | ZP.STR = filename | C = success | ✓ Good as is |
 | FileDir | - | C = success | ✓ Good as is |
 | FileStartSave | ZP.STR = filename | C = success | ✓ Good as is |
 | FileAppendStream | SectorSource = ptr<br>TransferLength = count | C = success | ✓ Good as is |
-| FileEndSave | A = file type | C = success | ⚠️ Move A param to ZP.ACCL |
-| FileStartLoad | ZP.STR = filename<br>A = DirWalkAction | C = success | ⚠️ Move A param to ZP.ACCL |
+| FileEndSave | ZP.ACCL = file type | C = success | ⚠️ Use A for file type |
+| FileStartLoad | ZP.STR = filename<br>ZP.ACCL = DirWalkAction | C = success | ⚠️ Use A for DirWalkAction |
 | FileNextStream | - | C = data available<br>TransferLength = count | ✓ Good as is |
 | FileFormat | - | C = success | ✓ Good as is |
 | **Serial I/O** |
-| SerialWriteChar | A = character | - | ⚠️ Move A param to ZP.ACCL |
-| SerialWaitForChar | - | A = character | ✓ Good - return in A |
+| SerialWriteChar | ZP.ACCL = character | - | ⚠️ Use A for character |
+| SerialWaitForChar | - | A = character | ✓ Good as is |
 | SerialIsAvailable | - | C = available | ✓ Good as is |
 | IsBreak | - | C = break detected | ✓ Good as is |
 | **Print/Console** |
-| PrintString | ZP.STR = string | - | ⚠️ Add C = success |
-| PrintChar | ZP.ACCL = character | - | ✓ Good as is |
-| PrintHex | A = byte | - | ⚠️ Move A param to ZP.ACCL |
+| PrintString | ZP.STR = string | - | ✓ Good as is |
+| PrintChar | ZP.ACCL = character | - | ⚠️ Use A for character |
+| PrintHex | ZP.ACCL = byte | - | ⚠️ Use A for byte |
 | PrintNewLine | - | - | ✓ Good as is |
 | PrintSpace | - | - | ✓ Good as is |
-| PrintSpaces | X = count | - | ⚠️ Move X param to ZP.ACCL |
+| PrintSpaces | ZP.ACCL = count | - | ⚠️ Use A for count |
 | **Timer Services** |
-| TimeDelay | ZP.TOP = ms | - | ⚠️ Add C = success |
+| TimeDelay | ZP.TOP = ms (16-bit) | - | ✓ Good as is |
 | TimeMillis | - | ZP.TOP = ms (32-bit) | ✓ Good as is |
-| TimeSeconds | - | ZP.TOP = seconds | ✓ Good as is |
+| TimeSeconds | - | ZP.TOP = seconds (32-bit) | ✓ Good as is |
 | **Long Math** |
-| LongAdd | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ⚠️ Add C = success (NC on overflow) |
-| LongSub | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ⚠️ Add C = success (NC on overflow) |
-| LongMul | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ⚠️ Add C = success (NC on overflow) |
-| LongDiv | ZP.NEXT, ZP.TOP | ZP.NEXT = quotient | ⚠️ Add C = success (NC on div by 0) |
-| LongMod | ZP.NEXT, ZP.TOP | ZP.NEXT = remainder | ⚠️ Add C = success (NC on div by 0) |
-| LongPrint | ZP.TOP = value | - | ⚠️ Add C = success |
+| LongAdd | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ✓ Good as is |
+| LongSub | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ✓ Good as is |
+| LongMul | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ✓ Good as is |
+| LongDiv | ZP.NEXT, ZP.TOP | ZP.NEXT = quotient | ⚠️ Add C = success (div by 0) |
+| LongMod | ZP.NEXT, ZP.TOP | ZP.NEXT = remainder | ⚠️ Add C = success (div by 0) |
+| LongPrint | ZP.TOP = value | - | ✓ Good as is |
 | LongLT | ZP.NEXT, ZP.TOP | C = (NEXT < TOP) | ✓ Good as is |
 | LongGT | ZP.NEXT, ZP.TOP | C = (NEXT > TOP) | ✓ Good as is |
 | LongEQ | ZP.NEXT, ZP.TOP | C = (NEXT == TOP) | ✓ Good as is |
@@ -49,26 +47,46 @@ Good point about not doubling up. Here's the updated table with suggestions:
 | LongLE | ZP.NEXT, ZP.TOP | C = (NEXT <= TOP) | ✓ Good as is |
 | LongGE | ZP.NEXT, ZP.TOP | C = (NEXT >= TOP) | ✓ Good as is |
 | **Float Math** |
-| FloatAdd | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ⚠️ Add C = success (NC on overflow) |
-| FloatSub | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ⚠️ Add C = success (NC on overflow) |
-| FloatMul | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ⚠️ Add C = success (NC on overflow) |
-| FloatDiv | ZP.NEXT, ZP.TOP | ZP.NEXT = quotient | ⚠️ Add C = success (NC on div by 0) |
-| FloatToLong | ZP.NEXT = float | ZP.NEXT = long | ⚠️ Add C = success (NC on overflow) |
+| FloatAdd | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ✓ Good as is |
+| FloatSub | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ✓ Good as is |
+| FloatMul | ZP.NEXT, ZP.TOP | ZP.NEXT = result | ✓ Good as is |
+| FloatDiv | ZP.NEXT, ZP.TOP | ZP.NEXT = quotient | ✓ Good as is (IEEE ±Inf) |
+| FloatToLong | ZP.NEXT = float | ZP.NEXT = long | ⚠️ Add C = success (overflow) |
 | FloatLT | ZP.NEXT, ZP.TOP | C = (NEXT < TOP) | ✓ Good as is |
 | FloatEQ | ZP.NEXT, ZP.TOP | C = (NEXT == TOP) | ✓ Good as is |
 | **GPIO** |
-| PinMode | ZP.ACCL = pin<br>ZP.ACCH = mode | - | ⚠️ Add C = success |
-| PinRead | ZP.ACCL = pin | ZP.ACCH = value | ⚠️ Return value in A instead |
-| PinWrite | ZP.ACCL = pin<br>ZP.ACCH = value | - | ⚠️ Add C = success |
+| PinMode | ZP.ACCL = pin<br>ZP.ACCH = mode | - | ⚠️ Use A = pin, Y = mode |
+| PinRead | ZP.ACCL = pin | ZP.ACCH = value | ⚠️ Use A in, A out |
+| PinWrite | ZP.ACCL = pin<br>ZP.ACCH = value | - | ⚠️ Use A = pin, Y = value |
 
-## Summary of Proposed Conventions:
+## Proposed New SysCalls (High Priority)
 
-1. **Inputs**: Always via ZP slots (never A or X registers)
-2. **8-bit returns**: Use A register when appropriate
-3. **16/32-bit returns**: Keep in ZP slots
-4. **Success/failure**: Always use C flag (set = success)
-5. **Preserve**: Y register (caller can rely on it)
-6. **May modify**: A, X, flags, ZP.LastError, BIOS working areas
+| SysCall | Proposed Inputs | Proposed Outputs | Notes |
+|---------|----------------|------------------|-------|
+| **Memory** |
+| MemCopy | FSOURCE = source<br>FDEST = dest<br>FLENGTH = count | - | Essential |
+| MemClear | ZP.IDX = address<br>ZP.ACC = count | - | Essential |
+| **String** |
+| StringLength | ZP.STR = string | A = length (0-255) | Essential |
+| StringCompare | ZP.STR = string1<br>ZP.IDX = string2 | C = equal | Essential |
+| **Character** |
+| CharIsDigit | A = character | C = is digit | Natural with A |
+| CharIsAlpha | A = character | C = is alpha | Natural with A |
+| CharIsHex | A = character | C = is hex | Natural with A |
+| CharToUpper | A = character | A = uppercase | Perfect with A |
+| **Serial** |
+| SerialFlush | - | - | Clear input buffer |
+| **EEPROM** |
+| EEPROMDetect | - | C = present | Hardware check |
+| EEPROMGetSize | - | A = size in KB | Simple return |
+
+## Summary of Changes Needed:
+1. **Optimize byte parameters**: Change 7 syscalls from ZP.ACCL to A register input
+2. **Add error flags only where needed**: LongDiv, LongMod, FloatToLong  
+3. **Keep everything else**: Most of the API is already well-designed
+
+
+
 
 
 
