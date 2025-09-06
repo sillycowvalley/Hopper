@@ -355,7 +355,7 @@ unit Long
             {
                 Error.DivisionByZero(); BIT ZP.EmulatorPCL
                 CheckError();
-                break;
+                return;
             }
             
             // only do optimizations in Div (X = 0) mode, not Mod (X = 1) mode since we don't calculate remainder
@@ -511,6 +511,7 @@ unit Long
             } // loop
             break; // 32 bit exit
         } // loop
+        SEC
     }
     NegateTop()
     {

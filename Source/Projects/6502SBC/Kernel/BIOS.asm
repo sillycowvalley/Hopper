@@ -5,7 +5,7 @@ program BIOS
     //#define DEBUG     // mimimum of 874 bytes
     #define CPU_65C02S
     
-    //#define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
+    #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
     
 #ifdef DEBUG    
     #define ROM_32K
@@ -382,12 +382,13 @@ program BIOS
             // Execute command based on token
             switch (A)
             {
-                case ErrorWord.FORMAT: { cmdFormat(); return; }
-                case ErrorWord.MEM:    { cmdMem();    return; }
-                case ErrorWord.DIR:    { cmdDir();    return; }
-                case ErrorWord.CLS:    { cmdCls();    return; }
-                case ErrorWord.HEX:    { cmdHex();    return; }
-                case ErrorWord.DEL:    { cmdDel();    return; }
+                case ErrorWord.FORMAT: { cmdFormat();  return; }
+                case ErrorWord.MEM:    { cmdMem();     return; }
+                case ErrorWord.DIR:    { cmdDir();     return; }
+                case ErrorWord.CLS:    { cmdCls();     return; }
+                case ErrorWord.HEX:    { cmdHex();     return; }
+                case ErrorWord.DEL:    { cmdDel();     return; }
+                case ErrorWord.EXIT:   { SMB7 ZP.FLAGS return; }
                 
                 // Keyword from wrong table to cause system calls to be included in the build
                 // so that the optimizer doesn't remove it.
@@ -610,6 +611,7 @@ program BIOS
             printPrompt();
             processCommandLine();
             // Errors are handled by Error.CheckAndPrint() within ProcessCommandLine
+            if (BBS7, ZP.FLAGS) { break; }
         }
         
     }

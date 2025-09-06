@@ -2,6 +2,7 @@ unit ZP // ZeroPage.asm
 {
     const byte FLAGS                = 0x00;  // System flags register
     // FLAGS bits:
+    // Bit 7 - exiting ..
     // Bit 2 - serial XON / XOFF : set if stopped
     // Bit 1 - EEPROM exists
     // Bit 0 - NMI break flag    : break detected
@@ -42,11 +43,13 @@ unit ZP // ZeroPage.asm
     const byte ACCL                 = 0x10;
     const byte ACCH                 = 0x11;
     
+    const byte TOP                  = 0x12;
     const byte TOP0                 = 0x12;
     const byte TOP1                 = 0x13;
     const byte TOP2                 = 0x14;
     const byte TOP3                 = 0x15;
     
+    const byte NEXT                 = 0x16;
     const byte NEXT0                = 0x16;
     const byte NEXT1                = 0x17;
     const byte NEXT2                = 0x18;
@@ -117,6 +120,7 @@ unit ZP // ZeroPage.asm
     const byte TARGET3              = M3;
     
     // Time.Seconds(), Long workspace (uses M0-M7)
+    const byte RESULT               = M0;
     const byte RESULT0              = M0;
     const byte RESULT1              = M1;
     const byte RESULT2              = M2;

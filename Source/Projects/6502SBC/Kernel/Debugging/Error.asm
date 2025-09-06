@@ -28,6 +28,7 @@ unit Error // ErrorID.asm
         CLS        = 0x14,
         HEX        = 0x15,
         DEL        = 0x16,
+        EXIT       = 0x17,
         
         FILE       = 0x19,
         FOUND      = 0x1A,
@@ -86,6 +87,7 @@ unit Error // ErrorID.asm
         3,  ErrorWord.CLS,        'C', 'L', 'S',
         3,  ErrorWord.DEL,        'D', 'E', 'L',
         3,  ErrorWord.HEX,        'H', 'E', 'X',
+        4,  ErrorWord.EXIT,       'E', 'X', 'I', 'T',
         
         // Message keywords
         4,  ErrorWord.WILL,       'W', 'I', 'L', 'L',
