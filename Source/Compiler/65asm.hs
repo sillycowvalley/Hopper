@@ -37,6 +37,9 @@ program Assemble
     bool isOptSize;
     bool IsOptSize { get { return isOptSize; } }
     
+    bool isHopperBIOSApplet;
+    bool IsHopperBIOSApplet { get { return isHopperBIOSApplet; } }
+    
     
     uint iCurrentOverload;
     uint iHopper;
@@ -1896,6 +1899,7 @@ program Assemble
                 if (Symbols.DefineExists("HOPPER_BIOS_APPLET"))
                 {
                     Asm6502.SetOrg(0x0800);
+                    isHopperBIOSApplet = true;
                 }
                 
                 uint mIndex;

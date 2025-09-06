@@ -79,13 +79,13 @@ unit Memory // Memory.asm
         } // loop
     }        
     
+    // Input: A = HEAPSTART page
     Initialize()
     {
         // Assumes that:
         // - entire program was loaded at HopperData (typically $0800)
         // - size in pages of loaded program is in PROGSIZE
 
-        LDA # (Address.UserMemory >> 8)
         STA ZP.HEAPSTART
         
         // probe to discover RAM size:

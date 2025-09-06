@@ -16,7 +16,7 @@ unit Error // ErrorID.asm
         ALL        = 0x09,
         AVAILABLE  = 0x0A,
         YN         = 0x0B, // "Y/N"
-        COMMAND    = 0x0C,
+        //COMMAND    = 0x0C,
         HOPPER     = 0x0D,
         BIOS       = 0x0E,
         
@@ -93,7 +93,7 @@ unit Error // ErrorID.asm
         3,  ErrorWord.ALL,        'A', 'L', 'L',
         9,  ErrorWord.AVAILABLE,  'A', 'V', 'A', 'I', 'L', 'A', 'B', 'L', 'E',
         3,  ErrorWord.YN,         'Y', '/', 'N',
-        7,  ErrorWord.COMMAND,    'C', 'O', 'M', 'M', 'A', 'N', 'D',
+        //7,  ErrorWord.COMMAND,    'C', 'O', 'M', 'M', 'A', 'N', 'D',
         6,  ErrorWord.HOPPER,     'H', 'O', 'P', 'P', 'E', 'R',
         4,  ErrorWord.BIOS,       'B', 'I', 'O', 'S',
         
@@ -161,7 +161,7 @@ unit Error // ErrorID.asm
         BytesMessage        = 0x37,
         YesNo               = 0x38,
         SystemReady         = 0x39,
-        InvalidCommand      = 0x3A,
+        //InvalidCommand      = 0x3A,
         EEPROMLabel         = 0x3B,
         OverwriteWarning    = 0x3C,
         ReadyForHEX         = 0x3D,
@@ -191,7 +191,7 @@ unit Error // ErrorID.asm
         1, ErrorID.MemoryMessage,     ErrorWord.MEMORY,
         2, ErrorID.BytesMessage,      ErrorWord.BYTES, ErrorWord.AVAILABLE,
         1, ErrorID.YesNo,             ErrorWord.YN,
-        2, ErrorID.InvalidCommand,    ErrorWord.INVALID, ErrorWord.COMMAND,
+        //2, ErrorID.InvalidCommand,    ErrorWord.INVALID, ErrorWord.COMMAND,
         2, ErrorID.SystemReady,       ErrorWord.HOPPER, ErrorWord.BIOS,
         1, ErrorID.OverwriteWarning,  ErrorWord.OVERWRITE,
         3, ErrorID.ReadyForHEX,       ErrorWord.READY, ErrorWord.FOR, ErrorWord.HEX,
@@ -227,8 +227,7 @@ unit Error // ErrorID.asm
             loop
             {
                 LDA Address.LineBuffer, X   // Get char from our identifier
-                CMP #' '                    // Hit space delimiter?
-                if (Z)
+                if (Z) // Hit null delimiter?
                 {
                     // Check if we've matched the full keyword length
                     CPX ZP.ACCL
@@ -244,7 +243,6 @@ unit Error // ErrorID.asm
                 CPX ZP.ACCL
                 if (Z) { break; }       // Our identifier is longer than keyword
                 
-                AND #0xDF               // Convert to uppercase
                 CMP [ZP.IDX], Y         // Compare with expected character
                 if (NZ) { break; }      // Mismatch
                 

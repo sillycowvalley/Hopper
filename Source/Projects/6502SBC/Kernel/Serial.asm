@@ -24,7 +24,7 @@ unit Serial // Serial.asm
         loop
         {
             IsAvailable();
-            if (Z) { break; }
+            if (NC) { break; } // no more
             WaitForChar();
         }
     }
@@ -56,20 +56,27 @@ unit Serial // Serial.asm
         }
     }
 
-    // returns Z flag clear if there is a character available in the buffer, Z set if not (disables and enables interrupts)
+    // returns C flag set if there is a character available in the buffer, NC if not (disables and enables interrupts)
     IsAvailable()
     {
         SEI
         if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
         {
-            LDA #1 // <ctrl><C> is avaiable    
+            // <ctrl><C> is avaiable    
         }
         else
         {
             LDA ZP.SerialInReadPointer
             CMP ZP.SerialInWritePointer
-            // NZ means characters available in buffer
+            // Z means no characters available in buffer
+            if (Z)
+            {
+                CLC
+                CLI
+                return;
+            }
         }
+        SEC
         CLI
     }
     
@@ -80,7 +87,7 @@ unit Serial // Serial.asm
         loop
         {
             IsAvailable();
-            if (NZ) { break; }
+            if (C) { break; }
         }
         if (BBS0, ZP.FLAGS) // break?
         {

@@ -1869,6 +1869,10 @@ unit Asm6502
             Asm6502.EmitInstruction("DEX");
             Asm6502.EmitInstruction("BNE", int(-5));
         }
+        else if (IsHopperBIOSApplet)
+        {
+            // no-preamble (don't mess with the call stack)
+        }
         else
         {
             Asm6502.EmitInstruction("CLD");
@@ -1894,7 +1898,7 @@ unit Asm6502
         
         OpCode retw = Asm6502.GetRETInstruction();
         bool addNOP;
-        if (name.EndsWith(".Hopper")) // TODO : only allow in 'program'
+        if (name.EndsWith(".Hopper") && !IsHopperBIOSApplet) // TODO : only allow in 'program'
         {
             // this means we are exiting Hopper()
             retw = Asm6502.GetHALTInstruction();

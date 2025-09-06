@@ -43,6 +43,17 @@ program Blink
         LDX # SysCall.PrintString
         JMP [ZP.BIOSDISPATCH]
     }
+    printChar()
+    {
+        LDX # SysCall.PrintChar
+        JMP [ZP.BIOSDISPATCH]
+    }
+    
+    serialIsAvailable()
+    {
+        LDX # SysCall.SerialIsAvailable
+        JMP [ZP.BIOSDISPATCH]
+    }
     Hopper()
     {
         LDA #(blinkString % 256)
@@ -60,6 +71,13 @@ program Blink
             LDA #0
             pinWrite();
             delay();
+            
+            LDA #'.'
+            STA ZP.ACCL
+            printChar();
+            
+            serialIsAvailable();
+            if (C) { break; }
         }
     }
 }

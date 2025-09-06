@@ -100,6 +100,25 @@ unit Char
         PLA
     }
     
+    // Input:  A = character
+    // Output: A = character (converted to uppercase if it was 'a'..'z')
+    ToUpper()
+    {
+        PHA
+        getCharClass();
+        AND # CharClass.Lower
+        if (NZ)
+        {
+            // 'a'..'z'
+            PLA
+            AND #0xDF          // Convert to uppercase
+        }
+        else
+        {
+            PLA
+        }
+    }
+    
     // Input: A = character
     // Output: C = alphanumeric, NC = not alphanumeric
     IsAlphaNumeric()

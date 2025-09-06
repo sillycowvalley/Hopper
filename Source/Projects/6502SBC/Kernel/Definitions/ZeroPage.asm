@@ -45,6 +45,7 @@ unit ZP // ZeroPage.asm
     
     
     // Hopper Assembler jump table slots: always 0x20 and 0x21
+    const byte JumpTable            = 0x20;
     const byte JumpTableLSB         = 0x20;  // Jump table LSB
     const byte JumpTableMSB         = 0x21;  // Jump table MSB
     

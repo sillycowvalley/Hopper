@@ -21,6 +21,11 @@ unit SysCalls
         // Input: A = pin number (0-15), X = value (0 or 1)
         GPIO.PinWrite();
     }
+    printChar()
+    {
+        LDA ZP.ACCL
+        Print.Char();
+    }
     
     // System Call Dispatcher
     // Input: X = system call ID
@@ -148,7 +153,7 @@ unit SysCalls
             }
             case SysCall.PrintChar:
             {
-                Print.Char();
+                printChar();
             }
             case SysCall.PrintHex:
             {

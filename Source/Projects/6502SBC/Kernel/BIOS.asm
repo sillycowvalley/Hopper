@@ -110,6 +110,8 @@ program BIOS
         // Initialize communication first
         Serial.Initialize();
         Parallel.Initialize();
+        
+        LDA # (Address.UserMemory >> 8)
         Memory.Initialize();
         
         STZ ZP.FLAGS
@@ -149,6 +151,15 @@ program BIOS
     dispatch()
     {
         JMP [ZP.BIOSDISPATCH]
+    }
+    
+    callApplet()
+    {
+        LDA # (Address.UserMemory % 256)
+        STA ZP.JumpTableLSB
+        LDA # (Address.UserMemory / 256)
+        STA ZP.JumpTableMSB
+        JMP [ZP.JumpTable]
     }
     
     cmdMem()
@@ -363,7 +374,7 @@ program BIOS
     
     parseAndExecute()
     {
-        Error.FindKeyword(); // X already points to command start
+        Error.FindKeyword(); // -> token in A
         if (NZ)
         {
             // Execute command based on token
@@ -381,56 +392,114 @@ program BIOS
                 case ErrorWord.HEAP:   { SystemCallDispatcher(); return; } 
             }
         }
-        LDA # ErrorID.InvalidCommand
-        LDX # MessageExtras.SuffixSpace
-        Error.MessageNL();
+        
+        
+        // ZP.STR already points to LineBuffer from parseFilename logic
+        LDA # ( Address.LineBuffer % 256)
+        STA ZP.STRL
+        LDA # ( Address.LineBuffer / 256)
+        STA ZP.STRH
+        
+        // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
+        //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile
+        // Output: C set if successful, NC if error (file not found)
+        //         File ready for reading via NextStream()
+        LDA # DirWalkAction.FindExecutable
+        File.StartLoad();
+        if (C) 
+        {
+            // load and execute
+            LDA # (Address.UserMemory / 256)
+            STA ZP.IDXH
+            
+            
+            // Read next chunk of data from current load file
+            // Prerequisites: StartLoad() must be called first to initialize file state
+            //                Caller must consume all returned data before calling again
+            // Output: C set if data available, NC if end of file or error
+            //         Data is always in FileDataBuffer starting at offset 0
+            //         TransferLength = number of valid bytes in FileDataBuffer (if C set)
+            //         TransferLengthL/H = 16-bit byte count (max 256 per call)
+            //         States.Success flag set appropriately
+            // Preserves: X, Y
+            // Munts: A, BytesRemaining, CurrentFileSector, NextFileSector
+            // Note: - Returns up to 256 bytes (one sector) per call
+            //       - Pre-reads next sector after returning data (if more exists)
+            //       - FileDataBuffer will be overwritten on next call
+            //       - No partial read support - caller must consume entire TransferLength
+            loop
+            {
+                LDA ZP.IDXH PHA
+                
+                File.NextStream(); // munts IDX and IDY
+                
+                PLA STA ZP.IDXH
+                
+                if (NC) { break; } // done
+                
+                // just transfer the whole sector, even if it was partial
+                LDX #0
+                STZ ZP.IDXL
+                loop
+                {
+                    LDA File.FileDataBuffer, X
+                    STA [ZP.IDX]
+                    IncIDX();
+                    INX
+                    if (Z) { break; }
+                }
+            }
+            LDA ZP.LastError
+            if (Z)
+            {
+                // re-initialize heap
+                LDA ZP.IDXH
+                Memory.Initialize();
+        
+                // execute
+                callApplet(); // must be followed by any instruction to defeat tailcall optimization (JSR RTS -> JMP)
+        
+                // free the program space and re-initialize the heap        
+                LDA # (Address.UserMemory >> 8)
+                Memory.Initialize();
+                
+                Print.NewLine(); 
+                return;           
+            }
+        }
+        // "FILE NOT FOUND"
     }
     
     // Parse filename from command line after the command keyword
-    // Input: X = position in LineBuffer after command word  
+    // Input:  X = position in LineBuffer after command word  
     // Output: C set if successful, NC if no filename found
     //         ZP.STR points to filename in LineBuffer
     parseFilename()
     {
-        // Skip spaces after command
+        // Skip any more 'spaces' before the filename
         loop
         {
             LDA Address.LineBuffer, X
-            CMP #' '
-            if (NZ) { break; }
+            if (NZ) { break; } // not null
+            
+            CPX #63
+            if (Z)  
+            {
+                // end of line, no filename found
+                Error.FilenameExpected();
+                CLC return;
+            }
             INX
-        }
-        
-        // Check if we have a filename
-        if (Z)
-        {
-            Error.FilenameExpected();
-              // No filename found
-            CLC return;
         }
         
         // Point ZP.STR to filename start in LineBuffer
         TXA
         CLC
         ADC # (Address.LineBuffer % 256)
-        STA ZP.STRL
+        STA ZP.STRL  
         LDA # (Address.LineBuffer/ 256)
         ADC #0
         STA ZP.STRH
-        
-        // Find end of filename and null-terminate
-        loop
-        {
-            LDA Address.LineBuffer, X
-            if (Z) { break; }    // Already null
-            CMP #' '
-            if (Z) 
-            { 
-                STZ Address.LineBuffer, X  // Null-terminate at space
-                break; 
-            }
-            INX
-        }
         SEC  // Success
     }
     
@@ -445,11 +514,16 @@ program BIOS
     
     readLine()
     {
-        LDY #0
+        LDX #0
         loop
         {
-            Serial.WaitForChar();         // Get character
-            CMP # Char.EOL                // Enter?
+            Serial.WaitForChar();   // Get character
+            CMP # Char.EOL          // CR?
+            if (Z) 
+            { 
+                break;
+            }
+            CMP # 0x0D              // LF?
             if (Z) 
             { 
                 break;
@@ -457,10 +531,10 @@ program BIOS
             CMP # Char.Backspace          // Backspace?
             if (Z)
             {
-                CPY #0
+                CPX #0
                 if (NZ) 
                 { 
-                    DEY                   Serial.WriteChar();  // Echo backspace
+                    DEX                   Serial.WriteChar();  // Echo backspace
                     LDA #' '              Serial.WriteChar();  // Space
                     LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
                 }
@@ -470,20 +544,26 @@ program BIOS
             CMP #' '
             if (Z)
             {
-                CPY #0
+                CPX #0
                 if (Z) { continue; }    // Ignore space at start of line
+                STZ LineBuffer, X       // store null in buffer (as 'space')
             }
-            
+            else
+            {
+                Char.ToUpper();        // A -> uppercase A
+                STA LineBuffer, X      // store character in buffer
+            }
             Serial.WriteChar();        // Echo character
-            STA LineBuffer, Y
-            INY
-            CPY #63                    // Prevent overflow
+            
+            INX
+            CPX #63                    // Prevent overflow
             if (Z) { break; }
         } // loop
+        
         Print.NewLine();
-        LDA #' '
-        STA Address.LineBuffer, Y      // Space terminate
-        TYA                            // Return length
+        STZ Address.LineBuffer, X      // null terminate
+        
+        TXA                            // Return length
     }
     
     printWelcome()
@@ -517,7 +597,7 @@ program BIOS
     {
         Initialize();  
 #ifdef DEBUG        
-        Run(); // tests
+        //Run(); // tests
 #endif
         printWelcome();
         
