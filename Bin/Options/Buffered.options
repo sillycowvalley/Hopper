@@ -3,7 +3,7 @@
   {
       "checkedBuild": "false"
     , "runOptimizer": "true"
-    , "runDisassembler": "true"
+    , "runDisassembler": "false"
     , "autoSaveOnBuild": "true"
   }
 }
