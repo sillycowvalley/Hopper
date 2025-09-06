@@ -493,13 +493,6 @@ program Generate
                 
                 // Insert 3 placeholder bytes for JMP instruction if using custom load address
                 bool needsBIOSJump = DefineExists("HOPPER_BIOS_APPLET");
-                if (needsBIOSJump)
-                {
-                    output.Append(0x4C); // JMP absolute opcode
-                    output.Append(0x00); // placeholder for low byte
-                    output.Append(0x00); // placeholder for high byte
-                }
-                
                 foreach (var b in constantData)
                 {
                     output.Append(b);
@@ -521,6 +514,7 @@ program Generate
                 if (needsBIOSJump)
                 {
                     uint jumpTarget = methods[entryIndex];
+                    output.SetItem(0, byte(OpCode.JMP_nn));
                     output.SetItem(1, byte(jumpTarget & 0xFF));     // JMP low byte
                     output.SetItem(2, byte(jumpTarget >> 8));       // JMP high byte
                 }

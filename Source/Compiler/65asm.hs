@@ -74,7 +74,6 @@ program Assemble
         //   <uint, string> gSourcePath;
         
         Asm6502.New();
-        
         uint gCount = Symbols.GetGlobalCount();
         for (uint gIndex = 0; gIndex < gCount; gIndex++)
         {
@@ -1646,7 +1645,10 @@ program Assemble
     {
         <byte> globalCode = initializeGlobals();
         
-        
+        if (IsHopperBIOSApplet)
+        {
+            _ = Asm6502.GetConstantAddress("_STARTVECTOR_", "XXX");
+        }
         
         
         bool success = false;

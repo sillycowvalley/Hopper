@@ -246,7 +246,7 @@ program Dot
                 {
                     LDA curY
                     CMP #2  // Minimum Y is 1, but check against 2 for decrement
-                    if (NC)
+                    if (C)
                     {
                         DEC curY
                     }
@@ -264,7 +264,7 @@ program Dot
                 {
                     LDA curX
                     CMP #2  // Minimum X is 1, but check against 2 for decrement
-                    if (NC)
+                    if (C)
                     {
                         DEC curX
                     }

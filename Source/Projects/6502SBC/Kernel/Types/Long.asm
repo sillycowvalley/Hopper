@@ -100,7 +100,7 @@ unit Long
     }
     Mul()
     {
-        // (IDY) = (NEXT) * (TOP)
+        // (NEXT) = (NEXT) * (TOP)
         utilityDoLongSigns();
         // #### https://llx.com/Neil/a2/mult.html ####
         // http://www.6502.org/source/integers/32muldiv.htm
