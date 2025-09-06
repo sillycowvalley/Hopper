@@ -120,21 +120,20 @@ unit EEPROM
     
     
     // I2C and EEPROM initialization for Hopper BASIC
-    // Returns: ZP.PLUGNPLAY with device status bits set, C for success, NC for failure to find EEPROM
+    // Returns: ZP.FLAGS with device status bits set, C for success, NC for failure to find EEPROM
     Initialize()
     {
-        STZ ZP.PLUGNPLAY
+        RMB1 ZP.FLAGS // no EEPROM
         
         // Clear I2C buffer
         LDA # (I2CInBuffer >> 8)
         Memory.ClearPage();
         
-        STZ ZP.PLUGNPLAY
         LDA # I2C.SerialEEPROMAddress
         I2C.Scan();
         if (Z)
         {
-            SMB1 ZP.PLUGNPLAY
+            SMB1 ZP.FLAGS // EEPROM exists
             SEC
         }     
         else
@@ -149,7 +148,7 @@ unit EEPROM
     // Munts: None (internally saves/restores)
     Detect()
     {
-        if (BBS1, ZP.PLUGNPLAY) // Test bit 1
+        if (BBS1, ZP.FLAGS) // EEPROM exists
         {
             SEC  // Set C flag (C = EEPROM present)
             return;
@@ -161,7 +160,7 @@ unit EEPROM
     // Returns: A register contains size in K (32, 64, or 128) and C, or 0 and NC if no EEPROM
     GetSize()
     {
-        if (BBR1, ZP.PLUGNPLAY) // Test bit 1 - if clear, no EEPROM
+        if (BBR1, ZP.FLAGS) // EEPROM exists?
         {
             LDA #0  
             CLC // No EEPROM detected

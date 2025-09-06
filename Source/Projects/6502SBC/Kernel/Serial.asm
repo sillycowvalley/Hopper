@@ -12,7 +12,7 @@ unit Serial // Serial.asm
         SEI                    // disable interrupts
         STZ ZP.SerialInWritePointer
         STZ ZP.SerialInReadPointer
-        RMB1 ZP.FLAGS // XON / XOFF
+        RMB2 ZP.FLAGS // XON / XOFF
         RMB0 ZP.FLAGS // NMI break
         CLI                    // enable interrupts
         
@@ -42,14 +42,14 @@ unit Serial // Serial.asm
             CMP #240              // Nearly full? (240/256 bytes used)
             if (C)                // Carry set if >= 240
             {
-                if (BBR1, ZP.FLAGS)  // Bit 1 clear? (not stopped yet)
+                if (BBR2, ZP.FLAGS)  // Bit 2 clear? (not stopped yet)
                 {
                     PHX
                     LDA # Char.XOFF
                     SerialDevice.writeChar();  // Send XOFF
                     PLX
                     
-                    SMB1 ZP.FLAGS     // Set bit 1 (XOFF sent)
+                    SMB2 ZP.FLAGS     // Set bit 2 (XOFF sent)
                 }
             }
             PLA
@@ -103,7 +103,7 @@ unit Serial // Serial.asm
             PLX     
             
             // Check if we can send XON after consuming byte
-            if (BBS1, ZP.FLAGS)      // Bit 1 set? (currently stopped)
+            if (BBS2, ZP.FLAGS)      // Bit 2 set? (currently stopped)
             {
                 PHA
                 LDA ZP.SerialInWritePointer
@@ -115,7 +115,7 @@ unit Serial // Serial.asm
                     LDA # Char.XON
                     SerialDevice.writeChar();  // Send XON
                     
-                    RMB1 ZP.FLAGS     // Clear bit 1 (resume flow)
+                    RMB2 ZP.FLAGS     // Clear bit 2 (resume flow)
                 }
                 PLA
             }

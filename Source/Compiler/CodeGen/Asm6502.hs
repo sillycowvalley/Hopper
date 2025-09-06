@@ -5,6 +5,9 @@ unit Asm6502
     
     #define UNDOCLAUDEFIX
     
+    uint SwitchJumpAddress   { get { return 0x0020; } } // on Zero page used by switch statements
+    uint DispatchJumpAddress { get { return 0x0022; } } // on Zero page used by BIOS dispatch
+    
     <string,string> debugInfo;
     <string,string> labelInfo;
     <string,bool> debugInfoLineUsed;
@@ -19,7 +22,7 @@ unit Asm6502
     
     uint InvalidAddress { get { return 0xFFFF; } }
     
-    uint SwitchJumpAddress { get { return 0x0020; } } // W0 and W1 on Zero page used by switch statements
+    
     
     flags AddressingModes
     {
@@ -1881,9 +1884,9 @@ unit Asm6502
             if (Symbols.DefineExists("HOPPER_BIOS"))
             {
                 Asm6502.EmitInstruction("LDA", 0x55);
-                Asm6502.EmitInstructionZeroPage("STA", 0x2B, AddressingModes.ZeroPage); // DISPATCHL
+                Asm6502.EmitInstructionZeroPage("STA", byte(DispatchJumpAddress), AddressingModes.ZeroPage); // DISPATCHL
                 Asm6502.EmitInstruction("LDA", 0xAA);
-                Asm6502.EmitInstructionZeroPage("STA", 0x2C, AddressingModes.ZeroPage); // DISPATCHH
+                Asm6502.EmitInstructionZeroPage("STA", byte(DispatchJumpAddress+1), AddressingModes.ZeroPage); // DISPATCHH
             }
         }
     }

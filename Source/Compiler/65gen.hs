@@ -565,7 +565,7 @@ program Generate
                 if (Symbols.DefineExists("HOPPER_BIOS"))
                 {
                     // Patch to put the address of the BIOS dispatcher in zero page
-                    // slots 0x2B and 0x2C (ZP.BIOSDISPATCHL & ZP.BIOSDISPATCHH)
+                    // slots ZP.BIOSDISPATCHL & ZP.BIOSDISPATCHH
                     uint fIndex;
                     if (GetFunctionIndex("SysCalls.SystemCallDispatcher", ref fIndex))
                     {
@@ -575,12 +575,12 @@ program Generate
                         {
                             if (output[i-romAddress] == 0xA9)
                             {
-                                if ((output[i-romAddress+1] == 0x55) && (output[i-romAddress+2] == 0x85) && (output[i-romAddress+3] == 0x2B))
+                                if ((output[i-romAddress+1] == 0x55) && (output[i-romAddress+2] == 0x85) && (output[i-romAddress+3] == byte(DispatchJumpAddress)))
                                 {
                                    // LSB 
                                    output[i-romAddress+1] = byte(methods[fIndex] & 0xFF);
                                 }  
-                                if ((output[i-romAddress+1] == 0xAA) && (output[i-romAddress+2] == 0x85) && (output[i-romAddress+3] == 0x2C))
+                                if ((output[i-romAddress+1] == 0xAA) && (output[i-romAddress+2] == 0x85) && (output[i-romAddress+3] == byte(DispatchJumpAddress+1)))
                                 {
                                     // MSB    
                                     output[i-romAddress+1] = byte(methods[fIndex] >> 8);

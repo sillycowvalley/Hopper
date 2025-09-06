@@ -158,10 +158,10 @@ program BIOS
     callApplet()
     {
         LDA # (Address.UserMemory % 256)
-        STA ZP.JumpTableLSB
+        STA ZP.ACCL
         LDA # (Address.UserMemory / 256)
-        STA ZP.JumpTableMSB
-        JMP [ZP.JumpTable]
+        STA ZP.ACCH
+        JMP [ZP.ACC]
     }
     
     cmdMem()
