@@ -68,9 +68,7 @@ unit BIOSInterface
         PinRead,
         PinWrite,
         
-        
         // TODO:
         // - I2C
-        // - GPIO
     }
 }
