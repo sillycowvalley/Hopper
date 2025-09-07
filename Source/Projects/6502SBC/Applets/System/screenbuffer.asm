@@ -327,6 +327,7 @@ unit ScreenBuffer
     // Write character at cursor position
     Char() // Input: A = character
     {
+        PHY
         Suspend();
         
         STA ZP.TEMP
@@ -362,7 +363,28 @@ unit ScreenBuffer
         {
             STZ CursorCol
             INC CursorRow
+            CMP sbHeight
+            if (Z)
+            {
+                // wrap to 0,0
+                STZ CursorRow    
+            }
         }
+        Resume();
+        PLY
+    }
+    // Write string at cursor position
+    String() // Input : STR = string
+    {
+        Suspend();
+        LDY #0
+        loop
+        {
+            LDA [STR], Y
+            if (Z) { break; }
+            Char();
+            INY
+        }   
         Resume();
     }
     
@@ -441,14 +463,11 @@ unit ScreenBuffer
         ROR ZP.IDYL
 
         // set attributes to normal
-        Screen.Reset();
+        Screen.Reset(); 
         
-        LDA # Screen.Color.White
-        STA Foreground
-        LDA # Screen.Color.Black
-        STA Background
-        STZ Attributes
-        packAttributes();
+        LDA # Screen.Color.Black // Bits 3-5
+        ASL A ASL A ASL A
+        ORA # Screen.Color.White // Bits 0-2
         STA sbAttribute
                         
         STZ sbRow

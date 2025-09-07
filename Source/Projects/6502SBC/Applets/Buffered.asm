@@ -10,11 +10,112 @@ program BlueFill
     
     const string starting = "Initializing 40x30 buffer...\n";
     const string failed = "FAIL - Could not allocate memory\n";
-    const string done = "Blue fill complete. Press any key.\n";
     const string ok = "OK\n";
+    const string hello = "Hello Buffer";
+    const string blank = "            ";
+    
+    const byte colPos   = 0x80;
+    const byte rowPos   = 0x81;
+    const byte escState = 0x82;  // 0=normal, 1=got ESC, 2=got ESC[
+    
+    // Special key codes  
+    const byte keyUp = 128;
+    const byte keyDown = 129;
+    const byte keyRight = 130;
+    const byte keyLeft = 131;
+    const byte keyEsc = 0x1B;
+    
+    
+    // Get key with VT100 escape sequence interpretation
+    getKey()  // Returns key in A
+    {
+        loop
+        {
+            // Check if we're in an escape sequence
+            LDA escState
+            if (NZ)
+            {
+                // We're processing an escape sequence
+                CMP #1
+                if (Z)
+                {
+                    // Got ESC, waiting for [
+                    Serial.WaitForChar();
+                    CMP #'['
+                    if (Z)
+                    {
+                        LDA #2
+                        STA escState
+                        continue;  // Get next char
+                    }
+                    else
+                    {
+                        // Not a bracket, reset and return ESC
+                        STZ escState
+                        LDA #keyEsc
+                        return;
+                    }
+                }
+                
+                // escState = 2, got ESC[, waiting for direction
+                Serial.WaitForChar();
+                PHA  // Save the character
+                
+                // Reset state
+                STZ escState
+                
+                // Check arrow key codes using switch
+                PLA
+                switch (A)
+                {
+                    case 'A':
+                    {
+                        LDA #keyUp
+                        return;
+                    }
+                    case 'B':
+                    {
+                        LDA #keyDown
+                        return;
+                    }
+                    case 'C':
+                    {
+                        LDA #keyRight
+                        return;
+                    }
+                    case 'D':
+                    {
+                        LDA #keyLeft
+                        return;
+                    }
+                    default:
+                    {
+                        // Unknown sequence, return the char
+                        return;
+                    }
+                }
+            }
+            
+            // Normal character processing
+            Serial.WaitForChar();
+            CMP #keyEsc
+            if (Z)
+            {
+                // Start of escape sequence
+                LDA #1
+                STA escState
+                continue;  // Process next char
+            }
+            
+            // Regular character
+            return;
+        }
+    }
     
     Hopper()
     {
+        STZ escState
+        
         // Clear screen from upload junk
         Screen.Clear();
     
@@ -40,6 +141,8 @@ program BlueFill
             return;
         }
         
+        ScreenBuffer.HideCursor();
+        
         // Set blue background
         LDA # Screen.Color.Blue
         ScreenBuffer.SetBackground();
@@ -47,15 +150,86 @@ program BlueFill
         // Clear fills entire buffer with spaces using current background
         ScreenBuffer.Clear();
         
-        // Show completion message
-        LDA #(done % 256)
-        STA ZP.STRL
-        LDA #(done / 256)
-        STA ZP.STRH
-        Print.String();
+        LDA # Screen.Color.Yellow
+        ScreenBuffer.SetForeground();
+            
+        LDA #5
+        STA rowPos
+        LDA #10
+        STA colPos
         
-        // Wait for keypress
-        Serial.WaitForChar();
+        LDA colPos
+        LDY rowPos
+        ScreenBuffer.GotoXY();
+        
+        LDA # Screen.Color.Red
+        ScreenBuffer.SetBackground();
+        
+        LDA #(hello % 256)
+        STA ZP.STRL
+        LDA #(hello / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
+        
+        loop
+        {
+            // Wait for <esc>
+            getKey();
+            PHA
+            
+            LDA colPos
+            LDY rowPos
+            ScreenBuffer.GotoXY();
+            
+            LDA # Screen.Color.Blue
+            ScreenBuffer.SetBackground();
+            
+            LDA #(blank % 256)
+            STA ZP.STRL
+            LDA #(blank / 256)
+            STA ZP.STRH
+            ScreenBuffer.String();
+            
+            PLA     
+            switch (A)
+            {
+                case BlueFill.keyEsc:
+                {
+                    break;
+                }
+                case BlueFill.keyUp:
+                {
+                    DEC rowPos
+                }
+                case BlueFill.keyDown:
+                {
+                    INC rowPos
+                }
+                case BlueFill.keyLeft:
+                {
+                    DEC colPos
+                }
+                case BlueFill.keyRight:
+                {
+                    INC colPos
+                }
+            }
+            
+            LDA colPos
+            LDY rowPos
+            ScreenBuffer.GotoXY();
+            
+            LDA # Screen.Color.Red
+            ScreenBuffer.SetBackground();
+            
+            LDA #(hello % 256)
+            STA ZP.STRL
+            LDA #(hello / 256)
+            STA ZP.STRH
+            ScreenBuffer.String();
+        }
+        
+        ScreenBuffer.ShowCursor();
         
         // Clean up
         ScreenBuffer.Dispose();
