@@ -12,7 +12,7 @@ program BlueFill
     const string failed = "FAIL - Could not allocate memory\n";
     const string ok = "OK\n";
     const string hello = "Hello";
-    const string blank = "            ";
+    const string blank = "     ";
     
     const byte colPos   = 0x80;
     const byte rowPos   = 0x81;
@@ -111,7 +111,36 @@ program BlueFill
             return;
         }
     }
-    
+    unDraw()
+    {
+        LDA colPos
+        LDY rowPos
+        ScreenBuffer.GotoXY();
+        
+        LDA # Screen.Color.Blue
+        ScreenBuffer.SetBackground();
+        
+        LDA #(blank % 256)
+        STA ZP.STRL
+        LDA #(blank / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
+    }
+    reDraw()
+    {
+        LDA colPos
+        LDY rowPos
+        ScreenBuffer.GotoXY();
+        
+        LDA # Screen.Color.Red
+        ScreenBuffer.SetBackground();
+        
+        LDA #(hello % 256)
+        STA ZP.STRL
+        LDA #(hello / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
+    }
     Hopper()
     {
         STZ escState
@@ -126,9 +155,9 @@ program BlueFill
         STA ZP.STRH
         Print.String();
         
-        // Initialize a 40x30 buffer (2400 bytes per buffer)
-        LDA #10
-        LDY #7
+        // Initialize a 40x20 buffer (1600 bytes per buffer)
+        LDA #80
+        LDY #30
         ScreenBuffer.Initialize();
         if (NC)
         {
@@ -153,23 +182,33 @@ program BlueFill
         LDA # Screen.Color.Yellow
         ScreenBuffer.SetForeground();
             
-        LDA #4
+        ScreenBuffer.Suspend();
+        
+        LDA #0
         STA rowPos
-        LDA #3
+        loop
+        {
+            LDA #0
+            LDY rowPos
+            ScreenBuffer.GotoXY();
+            CLC
+            LDA rowPos
+            ADC #'A'
+            ScreenBuffer.Char();
+            
+            INC rowPos
+            CMP #30
+            if (Z) { break; }
+        }
+        
+        ScreenBuffer.Resume();    
+            
+        LDA #8
+        STA rowPos
+        LDA #8
         STA colPos
         
-        LDA colPos
-        LDY rowPos
-        ScreenBuffer.GotoXY();
-        
-        LDA # Screen.Color.Red
-        ScreenBuffer.SetBackground();
-        
-        LDA #(hello % 256)
-        STA ZP.STRL
-        LDA #(hello / 256)
-        STA ZP.STRH
-        ScreenBuffer.String();
+        reDraw();
         
         loop
         {
@@ -178,20 +217,7 @@ program BlueFill
             PHA
             
             ScreenBuffer.Suspend();
-            
-            LDA colPos
-            LDY rowPos
-            ScreenBuffer.GotoXY();
-            
-            LDA # Screen.Color.Blue
-            ScreenBuffer.SetBackground();
-            
-            LDA #(blank % 256)
-            STA ZP.STRL
-            LDA #(blank / 256)
-            STA ZP.STRH
-            ScreenBuffer.String();
-            
+                        
             PLA     
             switch (A)
             {
@@ -200,45 +226,31 @@ program BlueFill
                     ScreenBuffer.Resume();
                     break;
                 }
-                /*
                 case BlueFill.keyUp:
                 {
-                    //DEC rowPos
+                    LDA # Screen.Color.Blue
                     ScreenBuffer.ScrollDown();
-                    ScreenBuffer.Resume();
-                    continue;
                 }
-                */
                 case BlueFill.keyDown:
                 {
-                    //INC rowPos
+                    LDA # Screen.Color.Blue
                     ScreenBuffer.ScrollUp();
-                    ScreenBuffer.Resume();
-                    continue;
                 }
                 case BlueFill.keyLeft:
                 {
+                    unDraw();
                     DEC colPos
+                    reDraw();
                 }
                 case BlueFill.keyRight:
                 {
+                    unDraw();
                     INC colPos
+                    reDraw();
                 }
             }
             
-            LDA colPos
-            LDY rowPos
-            ScreenBuffer.GotoXY();
-            
-            LDA # Screen.Color.Red
-            ScreenBuffer.SetBackground();
-            
-            LDA #(hello % 256)
-            STA ZP.STRL
-            LDA #(hello / 256)
-            STA ZP.STRH
-            ScreenBuffer.String();
-            
+                       
             ScreenBuffer.Resume();
         }
         

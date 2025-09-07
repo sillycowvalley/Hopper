@@ -105,6 +105,13 @@ unit ScreenBuffer
         ROL sbOffsetH
     }
     
+    calculateBufferSize()
+    {
+        LDA #0
+        LDY sbHeight
+        calculateOffset();
+    }
+    
     
     // Helper: pack current attributes into byte
     packAttributes() // Returns packed byte in A
@@ -127,7 +134,7 @@ unit ScreenBuffer
         STY sbHeight
         
         // Calculate total size = width (A) * height (Y) * 2
-        calculateOffset();
+        calculateBufferSize();
         LDA sbOffsetL
         STA ZP.ACCL
         LDA sbOffsetH
@@ -283,9 +290,7 @@ unit ScreenBuffer
         STA ZP.IDXH
         
         // Calculate total cells = width * height into IDY
-        LDA sbWidth
-        LDY sbHeight
-        calculateOffset();
+        calculateBufferSize();
         LDA sbOffsetL
         STA ZP.IDYL
         LDA sbOffsetH
@@ -395,9 +400,7 @@ unit ScreenBuffer
         STA ZP.IDXH
         
         // Calculate total cells = width * height into IDY
-        LDA sbWidth
-        LDY sbHeight
-        calculateOffset();
+        calculateBufferSize();
         LDA sbOffsetL
         STA ZP.IDYL
         LDA sbOffsetH
@@ -452,9 +455,7 @@ unit ScreenBuffer
         STA ZP.IDXH
         
         // Calculate total cells = width * height into IDY
-        LDA sbWidth
-        LDY sbHeight
-        calculateOffset();
+        calculateBufferSize();
         LDA sbOffsetL
         STA ZP.IDYL
         LDA sbOffsetH
@@ -609,13 +610,15 @@ unit ScreenBuffer
             Screen.GotoXY();
             Screen.ShowCursor();
         }
-        
-        DumpBuffer();
     }
     
     // ScrollUp should only be called if there are no dirty bits in the buffer!
+    // A = background colour for last row
     ScrollUp()
     {
+        ASL A ASL A ASL A
+        STA ZP.TEMP
+        
         Suspend();
         
         // Start at beginning of buffer
@@ -625,9 +628,7 @@ unit ScreenBuffer
         STA ZP.IDXH
         
         // Calculate total cells = width * height into IDY
-        LDA #0
-        LDY sbHeight
-        calculateOffset();
+        calculateBufferSize();
         LDA sbOffsetL
         STA ZP.IDYL
         LDA sbOffsetH
@@ -635,6 +636,15 @@ unit ScreenBuffer
         // byte size / 2 -> cell size 
         LSR ZP.IDYH
         ROR ZP.IDYL
+        
+        // Substract last row
+        SEC
+        LDA ZP.IDYL
+        SBC sbWidth
+        STA ZP.IDYL
+        LDA ZP.IDYH
+        SBC #0
+        STA ZP.IDYH
         
         loop
         {
@@ -683,7 +693,136 @@ unit ScreenBuffer
             LDA ZP.IDYH
             ORA ZP.IDYL
             if (Z) { break; }
+        } // loop
+        
+        // last row
+        LDX sbWidth
+        loop
+        {
+            LDA #' '
+            ORA # dirtyBit
+            STA [ZP.IDX]
+            
+            LDY #1
+            LDA ZP.TEMP
+            STA [ZP.IDX], Y
+        
+            
+            IncIDX();
+            IncIDX();
+            DEX
+            if (Z) { break; }
         }
+        
+        Resume();
+    }
+    
+    // ScrollDown should only be called if there are no dirty bits in the buffer!
+    // A = background colour for first row
+    ScrollDown()
+    {
+        ASL A ASL A ASL A
+        STA ZP.TEMP
+        
+        Suspend();
+        
+        LDA #0
+        LDY sbHeight
+        DEY
+        calculateOffset();
+        LDA sbOffsetL
+        STA ZP.IDYL
+        LDA sbOffsetH
+        STA ZP.IDYH
+        CLC
+        LDA sbBufferL
+        ADC sbOffsetL
+        STA ZP.IDXL
+        LDA sbBufferH
+        ADC sbOffsetH
+        STA ZP.IDXH
+        
+        // Back up by 2 bytes to point to last cell(on the 2nd last row)
+        DecIDX();
+        DecIDX();
+        
+        // Calculate cells to process = (height-1) * width
+        // byte size / 2 -> cell size 
+        LSR ZP.IDYH
+        ROR ZP.IDYL
+        
+        loop
+        {
+            // source cell
+            LDA [ZP.IDX]
+            AND # charMask
+            STA sbCharacter
+            LDY #1 
+            LDA [ZP.IDX], Y
+            STA sbAttribute
+            
+            // destination cell (next row down)
+            LDA sbWidth
+            ASL // sbWidth x2
+            TAY
+            
+            LDX #1
+            LDA [ZP.IDX], Y
+            AND # charMask
+            CMP sbCharacter
+            if (Z)
+            {
+                INY
+                LDA [ZP.IDX], Y
+                CMP sbAttribute
+                if (Z)
+                {
+                    // no change
+                    LDX #0
+                }
+            }
+            CPX #0
+            if (NZ)
+            {
+                LDA sbWidth
+                ASL // sbWidth x2
+                TAY
+                LDA sbCharacter
+                ORA # dirtyBit
+                STA [ZP.IDX], Y
+                LDA sbAttribute
+                INY
+                STA [ZP.IDX], Y
+            }
+            
+            // Move backwards by one cell
+            DecIDX();
+            DecIDX();
+            
+            DecIDY();
+            LDA ZP.IDYH
+            ORA ZP.IDYL
+            if (Z) { break; }
+        } // loop
+        
+        // Clear first row
+        LDX sbWidth
+        LDY #0
+        loop
+        {
+            LDA #' '
+            ORA # dirtyBit
+            STA [sbBuffer], Y
+            
+            INY
+            LDA ZP.TEMP
+            STA [sbBuffer], Y
+            INY
+            
+            DEX
+            if (Z) { break; }
+        }
+        
         Resume();
     }
     
@@ -695,6 +834,7 @@ unit ScreenBuffer
         LDA CursorRow
         PHA
         
+        Screen.Reset();
         // Start at screen position 0,15
         LDA #0
         LDY #15
@@ -716,6 +856,10 @@ unit ScreenBuffer
             Print.Hex();
             LDA #':'
             Print.Char();
+            LDA ZP.IDXH
+            Print.Hex();
+            LDA ZP.IDXL
+            Print.Hex();
             Print.Space();
             
             // Column counter
@@ -726,12 +870,31 @@ unit ScreenBuffer
                 // Read and print character byte (with dirty bit)
                 LDA [ZP.IDX]
                 Print.Hex();
+                Print.Space();
                 
                 // Read and print attribute byte
                 LDY #1
                 LDA [ZP.IDX], Y
-                Print.Hex();
+                STA ZP.TEMP
+                AND #0b11000000
+                LSR A LSR A LSR A LSR A LSR A LSR A 
+                ADC #'0'
+                Print.Char();                
                 Print.Space();
+                
+                LDA ZP.TEMP
+                AND #0b00111000
+                LSR A LSR A LSR A
+                ADC #'0'
+                Print.Char();                
+                Print.Space();
+                
+                LDA ZP.TEMP
+                AND #0b00000111
+                ADC #'0'
+                Print.Char();
+                Print.Space();                
+                
                 
                 // Move to next cell
                 Shared.IncIDX();
@@ -755,8 +918,7 @@ unit ScreenBuffer
         }
         
         // Restore cursor
-        PLA
-        TAY
+        PLY
         PLA
         Screen.GotoXY();
     }
