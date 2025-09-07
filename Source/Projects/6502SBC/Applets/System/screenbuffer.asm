@@ -150,7 +150,7 @@ unit ScreenBuffer
         STA sbBufferH
         
         // Set defaults
-        Reset();
+        ScreenBuffer.Reset();
         STZ sbSuspendCount
         
         // Clear screen
@@ -189,8 +189,7 @@ unit ScreenBuffer
         STZ Attributes
         STZ CursorCol
         STZ CursorRow
-        STZ sbCursorVisible
-        INC sbCursorVisible // visible
+        ScreenBuffer.ShowCursor();
     }
     
        
@@ -249,15 +248,17 @@ unit ScreenBuffer
     }
     
     // Show cursor after updates
-    ShowCursor() inline
+    ShowCursor()
     {
         SMB0 sbCursorVisible
+        Screen.ShowCursor();
     }
     
     // Hide cursor after updates
     HideCursor() inline
     {
         STZ sbCursorVisible
+        Screen.HideCursor();
     }
     
     // Position cursor
@@ -332,44 +333,40 @@ unit ScreenBuffer
         
         STA ZP.TEMP
         
-        LDA CursorCol
-        LDY CursorRow
-        calculateOffset();
-        
-        // Add base address to offset
-        CLC
-        LDA sbOffsetL
-        ADC sbBufferL
-        STA ZP.IDXL
-        LDA sbOffsetH
-        ADC sbBufferH
-        STA ZP.IDXH
-        
-        // Store character with dirty bit
-        LDA ZP.TEMP
-        ORA #dirtyBit
-        STA [ZP.IDX]
-        
-        // Store packed attributes
-        packAttributes();
-        LDY #1
-        STA [ZP.IDX], Y
+        LDA CursorRow
+        CMP sbHeight
+        if (NC) // CursorRow < sbHeight
+        {
+            LDA CursorCol
+            CMP sbWidth
+            if (NC) // CursorCol < sbWidth
+            {
+                LDY CursorRow
+                calculateOffset();
+                
+                // Add base address to offset
+                CLC
+                LDA sbOffsetL
+                ADC sbBufferL
+                STA ZP.IDXL
+                LDA sbOffsetH
+                ADC sbBufferH
+                STA ZP.IDXH
+                
+                // Store character with dirty bit
+                LDA ZP.TEMP
+                ORA #dirtyBit
+                STA [ZP.IDX]
+                
+                // Store packed attributes
+                packAttributes();
+                LDY #1
+                STA [ZP.IDX], Y
+            }
+        }
         
         // Advance cursor
         INC CursorCol
-        LDA CursorCol
-        CMP sbWidth
-        if (Z)
-        {
-            STZ CursorCol
-            INC CursorRow
-            CMP sbHeight
-            if (Z)
-            {
-                // wrap to 0,0
-                STZ CursorRow    
-            }
-        }
         Resume();
         PLY
     }
