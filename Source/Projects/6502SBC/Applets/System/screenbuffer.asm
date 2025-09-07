@@ -440,8 +440,12 @@ unit ScreenBuffer
         LDA sbSuspendCount
         if (NZ) { return; }
         
-        // Hide cursor during update
-        Screen.HideCursor();
+        LDA sbCursorVisible
+        if (NZ)
+        {
+            // Hide cursor during update
+            Screen.HideCursor();
+        }
         
         
         // Start at beginning of buffer
@@ -484,43 +488,77 @@ unit ScreenBuffer
             {
                 AND # charMask
                 STA sbCharacter // current character
+                STA [ZP.IDX] // clear dirty
+                
+                LDA sbAttribute
+                STA ZP.TEMP // old attribute
+                    
                 LDY #1
                 LDA [ZP.IDX], Y  
                 CMP sbAttribute
                 if (NZ)
                 {
                     STA sbAttribute // new current attribute
-                    // Extract and set foreground color
-                    LDA sbAttribute
-                    AND #0x07
-                    Screen.Foreground(); // SysCalls : munt A, X
-                    
-                    // Extract and set background color
-                    LDA sbAttribute
-                    LSR A LSR A LSR A
-                    AND #0x07
-                    Screen.Background(); // SysCalls : munt A, X
                     
                     // Apply bold if needed
                     if (BBS6, sbAttribute)
                     {
-                        Screen.Bold(); // SysCalls : munt A, X
+                        if (BBR6, ZP.TEMP) // was not bold
+                        {
+                            Screen.Bold(); // SysCalls : munt A, X
+                        }
                     }
                     else
                     {
-                        Screen.BoldOff(); // SysCalls : munt A, X
+                        if (BBS6, ZP.TEMP) // was bold
+                        {
+                            Screen.BoldOff(); // SysCalls : munt A, X
+                        }
                     }
                     
                     // Apply inverse if needed
                     if (BBS7, sbAttribute)
                     {
-                        Screen.Inverse(); // SysCalls : munt A, X
+                        if (BBR7, ZP.TEMP) // was not inverse
+                        {
+                            Screen.Inverse(); // SysCalls : munt A, X
+                        }
                     }
                     else
                     {
-                        Screen.InverseOff(); // SysCalls : munt A, X
+                        if (BBS7, ZP.TEMP) // was inverse
+                        {
+                            Screen.InverseOff(); // SysCalls : munt A, X
+                        }
                     }
-                    
+                    LDA ZP.TEMP
+                    PHA
+                    AND #0b00000111
+                    STA ZP.TEMP
+                    LDA sbAttribute
+                    AND #0b00000111
+                    CMP ZP.TEMP
+                    if (NZ)
+                    {
+                        // Extract and set foreground color
+                        LDA sbAttribute
+                        AND #0b00000111
+                        Screen.Foreground(); // SysCalls : munt A, X
+                    }
+                    PLA
+                    AND #0b00111000
+                    STA ZP.TEMP
+                    LDA sbAttribute
+                    AND #0b00111000
+                    CMP ZP.TEMP
+                    if (NZ)
+                    {
+                        // Extract and set background color
+                        LDA sbAttribute
+                        LSR A LSR A LSR A
+                        AND #0b00000111
+                        Screen.Background(); // SysCalls : munt A, X
+                    }
                 }
                 LDA sbLastCol
                 CMP sbCol

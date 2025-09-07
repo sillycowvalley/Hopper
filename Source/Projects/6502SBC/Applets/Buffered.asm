@@ -177,6 +177,8 @@ program BlueFill
             getKey();
             PHA
             
+            ScreenBuffer.Suspend();
+            
             LDA colPos
             LDY rowPos
             ScreenBuffer.GotoXY();
@@ -195,6 +197,7 @@ program BlueFill
             {
                 case BlueFill.keyEsc:
                 {
+                    ScreenBuffer.Resume();
                     break;
                 }
                 case BlueFill.keyUp:
@@ -227,6 +230,8 @@ program BlueFill
             LDA #(hello / 256)
             STA ZP.STRH
             ScreenBuffer.String();
+            
+            ScreenBuffer.Resume();
         }
         
         ScreenBuffer.ShowCursor();
