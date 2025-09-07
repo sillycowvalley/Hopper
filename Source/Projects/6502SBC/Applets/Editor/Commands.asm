@@ -6,9 +6,9 @@ unit Commands
     uses "System/Serial"
     uses "System/Time"
     uses "System/Screen"
-    uses "Keyboard"
-    uses "GapBuffer"
-    uses "View"
+    uses "Editor/Keyboard"
+    uses "Editor/GapBuffer"
+    uses "Editor/View"
     
     // Zero page allocation
     const byte cmdSlots = 0x70;  // After Keyboard
@@ -50,39 +50,39 @@ unit Commands
             // Extended key codes (128+)
             switch (A)
             {
-                case Keyboard.Key.Up:
+                case Key.Up:
                 {
                     View.CursorUp();
                 }
-                case Keyboard.Key.Down:
+                case Key.Down:
                 {
                     View.CursorDown();
                 }
-                case Keyboard.Key.Left:
+                case Key.Left:
                 {
                     View.CursorLeft();
                 }
-                case Keyboard.Key.Right:
+                case Key.Right:
                 {
                     View.CursorRight();
                 }
-                case Keyboard.Key.Home:
+                case Key.Home:
                 {
                     View.CursorHome();
                 }
-                case Keyboard.Key.End:
+                case Key.End:
                 {
                     View.CursorEnd();
                 }
-                case Keyboard.Key.PageUp:
+                case Key.PageUp:
                 {
                     View.CursorPageUp();
                 }
-                case Keyboard.Key.PageDown:
+                case Key.PageDown:
                 {
                     View.CursorPageDown();
                 }
-                case Keyboard.Key.Delete:
+                case Key.Delete:
                 {
                     deleteForward();
                 }
@@ -97,23 +97,23 @@ unit Commands
             // ASCII range
             switch (A)
             {
-                case Keyboard.Key.Backspace:
+                case Key.Backspace:
                 {
                     deleteBackward();
                 }
-                case Keyboard.Key.Enter:
+                case Key.Enter:
                 {
                     insertNewline();
                 }
-                case Keyboard.Key.Tab:
+                case Key.Tab:
                 {
                     insertTab();
                 }
-                case Keyboard.Key.CtrlS:
+                case Key.CtrlS:
                 {
                     SaveFile();
                 }
-                case Keyboard.Key.CtrlQ:
+                case Key.CtrlQ:
                 {
                     // Quit - check if save needed
                     View.IsModified();
@@ -123,12 +123,12 @@ unit Commands
                         SaveFile();
                     }
                     LDA #1
-                    STA cmdExitFlag;
+                    STA cmdExitFlag
                 }
-                case Keyboard.Key.Escape:
+                case Key.Escape:
                 {
                     LDA #1
-                    STA cmdExitFlag;
+                    STA cmdExitFlag
                 }
                 default:
                 {
@@ -297,7 +297,6 @@ unit Commands
             File.NextStream();
             if (NC) { break; }  // End of file
             
-            // TransferLength is in ZP.FS2/FS3
             // Data is in FileDataBuffer at 0x0600
             
             // Insert each byte into gap buffer
@@ -305,11 +304,11 @@ unit Commands
             loop
             {
                 // Check if done with this chunk
-                CPY ZP.FS2
+                CPY File.TransferLengthL
                 if (NC)
                 {
                     // Check high byte
-                    LDA ZP.FS3
+                    LDA File.TransferLengthH
                     if (Z) { break; }
                 }
                 
@@ -423,7 +422,7 @@ unit Commands
                 
                 // Next position
                 INC cmdReadPosL
-                if (Z) { INC cmdReadPosH; }
+                if (Z) { INC cmdReadPosH }
                 INY
                 if (Z) { break; }  // 256 bytes
             }

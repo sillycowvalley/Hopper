@@ -1,5 +1,16 @@
 unit File
 {
+    
+        
+    // File System Zero Page Variables (aliases to existing slots)
+    const byte SectorSource         = ZP.FS0;                  // for use with LDX [SectorSource], Y for example
+    const byte SectorSourceL        = ZP.FS0;                  // Source address for sector ops
+    const byte SectorSourceH        = ZP.FS1;     
+    
+    const byte TransferLength       = ZP.FS2;                  // for use with LDX [TransferLength], Y for example
+    const byte TransferLengthL      = ZP.FS2;                  // Bytes to transfer (LSB)
+    const byte TransferLengthH      = ZP.FS3;                  // Bytes to transfer (MSB)
+    
     // File type constants for Exists() and StartLoad()
     enum FileType
     {

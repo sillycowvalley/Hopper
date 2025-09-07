@@ -454,24 +454,24 @@ canDelete:
         GetTextLength();
         LDA ZP.ACCH
         CMP gbTempH
-        if (C) { BRA outOfBounds; }
+        if (C) { BRA outOfBounds }
         if (Z)
         {
             LDA ZP.ACCL
             CMP gbTempL
-            if (C) { BRA outOfBounds; }
-            if (Z) { BRA outOfBounds; }
+            if (C) { BRA outOfBounds }
+            if (Z) { BRA outOfBounds }
         }
         
         // Convert logical to physical position
         LDA gbTempH
         CMP gbGapStartH
-        if (C) { BRA beforeGap; }
+        if (C) { BRA beforeGap }
         if (Z)
         {
             LDA gbTempL
             CMP gbGapStartL
-            if (C) { BRA beforeGap; }
+            if (C) { BRA beforeGap }
         }
         
         // Position is after gap - add gap size

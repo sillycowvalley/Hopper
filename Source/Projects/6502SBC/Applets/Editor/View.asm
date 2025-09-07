@@ -5,7 +5,9 @@ unit View
     uses "System/Screen"
     uses "System/ScreenBuffer"
     uses "System/Print"
-    uses "GapBuffer"
+    uses "Editor/GapBuffer"
+    
+    friend Commands;
     
     // Zero page allocation
     const byte viewSlots = 0x60;  // After GapBuffer's 8 bytes
@@ -111,9 +113,10 @@ unit View
         LDA vwLineStartsH
         STA ZP.IDXH
         LDY #0
-        STZ [ZP.IDX], Y
+        LDA #0
+        STA [ZP.IDX], Y
         INY
-        STZ [ZP.IDX], Y
+        STA [ZP.IDX], Y
         
         SEC
     }
@@ -200,9 +203,10 @@ unit View
         
         // First line always starts at 0
         LDY #0
-        STZ [ZP.IDX], Y
+        LDA #0
+        STA [ZP.IDX], Y
         INY
-        STZ [ZP.IDX], Y
+        STA [ZP.IDX], Y
         INC vwLineCountL
         
         // Scan for newlines
@@ -236,10 +240,8 @@ unit View
             if (Z)
             {
                 // Found newline - record next line start
-                INC ZP.IDXL
-                if (Z) { INC ZP.IDXH; }
-                INC ZP.IDXL
-                if (Z) { INC ZP.IDXH; }
+                Shared.IncIDX();
+                Shared.IncIDX();
                 
                 // Store position after newline
                 LDY #0
@@ -253,12 +255,12 @@ unit View
                 STA [ZP.IDX], Y
                 
                 INC vwLineCountL
-                if (Z) { INC vwLineCountH; }
+                if (Z) { INC vwLineCountH }
             }
             
             // Next character
             INC vwCharPosL
-            if (Z) { INC vwCharPosH; }
+            if (Z) { INC vwCharPosH }
         }
     }
     
@@ -352,12 +354,12 @@ unit View
             // Check if past end of document
             LDA ZP.ACCH
             CMP vwLineCountH
-            if (C) { BRA clearRest; }
+            if (C) { BRA clearRest }
             if (Z)
             {
                 LDA ZP.ACCL
                 CMP vwLineCountL
-                if (NC) { BRA clearRest; }
+                if (NC) { BRA clearRest }
             }
             
             // Render this line
@@ -428,9 +430,9 @@ clearRest:
             GapBuffer.GetCharAt();
             
             // Check for end of line or document
-            if (Z) { BRA padLine; }
+            if (Z) { BRA padLine }
             CMP #'\n'
-            if (Z) { BRA padLine; }
+            if (Z) { BRA padLine }
             
             // Check if at right edge
             LDX vwCol
@@ -455,7 +457,7 @@ clearRest:
             
             // Next character
             INC vwCharPosL
-            if (Z) { INC vwCharPosH; }
+            if (Z) { INC vwCharPosH }
         }
         
         return;

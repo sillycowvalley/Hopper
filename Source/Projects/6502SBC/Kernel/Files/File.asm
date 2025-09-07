@@ -136,15 +136,6 @@ unit File
     // ==============================================================================
     
     
-    
-    
-    // Buffer allocation (3 x 256 bytes)
-    const uint FATBuffer            = Address.FileSystemBuffers;        // [0-255]
-    const uint DirectoryBuffer      = Address.FileSystemBuffers + 256;  // [256-511]  
-    const uint FileDataBuffer       = Address.FileSystemBuffers + 512;  // [512-767]
-    
-    
-    
     // File System Zero Page Variables (aliases to existing slots)
     const byte SectorSource         = ZP.FS0;                  // for use with LDX [SectorSource], Y for example
     const byte SectorSourceL        = ZP.FS0;                  // Source address for sector ops
@@ -153,6 +144,12 @@ unit File
     const byte TransferLength       = ZP.FS2;                  // for use with LDX [TransferLength], Y for example
     const byte TransferLengthL      = ZP.FS2;                  // Bytes to transfer (LSB)
     const byte TransferLengthH      = ZP.FS3;                  // Bytes to transfer (MSB)
+    
+    
+    // Buffer allocation (3 x 256 bytes)
+    const uint FATBuffer            = Address.FileSystemBuffers;        // [0-255]
+    const uint DirectoryBuffer      = Address.FileSystemBuffers + 256;  // [256-511]  
+    const uint FileDataBuffer       = Address.FileSystemBuffers + 512;  // [512-767]
     
     const byte CurrentFileSector    = ZP.FS4;                  // Current sector number in file
     const byte FileStartSector      = ZP.FS5;                  // First sector of current file
