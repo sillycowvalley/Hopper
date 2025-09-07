@@ -229,8 +229,30 @@ unit Screen
     // Helper: send decimal number
     sendDecimal() // Input: A = value (0-99)
     {
-        Shared.LoadTopByte(); // A -> TOP
-        Long.Print();
+        PHX
+        PHY
+        
+        LDX #'0'            // X will count tens in ASCII
+        loop
+        {
+            CMP #10
+            if (NC) { break; }  // if < 10, done
+            SBC #10             // Subtract 10 (carry already set from CMP)
+            INX                 // Increment tens counter
+        }
+        CPX #'0'               // Check if tens is zero
+        if (NZ)                // Only print tens if non-zero
+        {
+            PHA
+            TXA
+            Serial.WriteChar();
+            PLA
+        }
+        ORA #'0'
+        Serial.WriteChar();
+        
+        PLY
+        PLX
     }
     
     // Position cursor at col, row (0-based input, converts to 1-based for VT100)

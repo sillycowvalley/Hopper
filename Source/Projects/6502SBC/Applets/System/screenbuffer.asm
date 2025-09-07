@@ -6,15 +6,6 @@ unit ScreenBuffer
     uses "Screen"
     uses "Shared"
     
-    // Public zero page properties
-    const byte zeroPageSlots = 0x58;
-    
-    const byte CursorCol  = zeroPageSlots+0;
-    const byte CursorRow  = zeroPageSlots+1;
-    const byte Foreground = zeroPageSlots+2;      // Current foreground color (0-7)
-    const byte Background = zeroPageSlots+3;      // Current background color (0-7)
-    const byte Attributes = zeroPageSlots+4;      // Current attributes (bit 0 = bold, bit 1 = inverse)
-    
     // Attribute bit flags
     enum Attribute
     {
@@ -31,6 +22,16 @@ unit ScreenBuffer
     // Internal Constants:
     const byte dirtyBit = 0b10000000;
     const byte charMask = 0b01111111;
+    
+    // Public zero page properties
+    const byte zeroPageSlots = 0x58;
+    
+    const byte CursorCol  = zeroPageSlots+0;
+    const byte CursorRow  = zeroPageSlots+1;
+    const byte Foreground = zeroPageSlots+2;      // Current foreground color (0-7)
+    const byte Background = zeroPageSlots+3;      // Current background color (0-7)
+    const byte Attributes = zeroPageSlots+4;      // Current attributes (bit 0 = bold, bit 1 = inverse)
+    
     
     // Private Workspace
     const byte sbWidth  = zeroPageSlots+5;
