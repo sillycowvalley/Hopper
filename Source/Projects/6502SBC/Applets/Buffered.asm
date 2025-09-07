@@ -11,7 +11,7 @@ program BlueFill
     const string starting = "Initializing 40x30 buffer...\n";
     const string failed = "FAIL - Could not allocate memory\n";
     const string ok = "OK\n";
-    const string hello = "Hello Buffer";
+    const string hello = "Hello";
     const string blank = "            ";
     
     const byte colPos   = 0x80;
@@ -127,8 +127,8 @@ program BlueFill
         Print.String();
         
         // Initialize a 40x30 buffer (2400 bytes per buffer)
-        LDA #40
-        LDY #30
+        LDA #10
+        LDY #7
         ScreenBuffer.Initialize();
         if (NC)
         {
@@ -153,9 +153,9 @@ program BlueFill
         LDA # Screen.Color.Yellow
         ScreenBuffer.SetForeground();
             
-        LDA #5
+        LDA #4
         STA rowPos
-        LDA #10
+        LDA #3
         STA colPos
         
         LDA colPos
@@ -200,13 +200,21 @@ program BlueFill
                     ScreenBuffer.Resume();
                     break;
                 }
+                /*
                 case BlueFill.keyUp:
                 {
-                    DEC rowPos
+                    //DEC rowPos
+                    ScreenBuffer.ScrollDown();
+                    ScreenBuffer.Resume();
+                    continue;
                 }
+                */
                 case BlueFill.keyDown:
                 {
-                    INC rowPos
+                    //INC rowPos
+                    ScreenBuffer.ScrollUp();
+                    ScreenBuffer.Resume();
+                    continue;
                 }
                 case BlueFill.keyLeft:
                 {

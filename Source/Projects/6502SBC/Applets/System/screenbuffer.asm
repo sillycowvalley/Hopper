@@ -598,9 +598,6 @@ unit ScreenBuffer
                 STZ sbCol
                 INC sbRow
             }
-
-            
-            
         }
         
         // Position hardware cursor if visible
@@ -612,6 +609,156 @@ unit ScreenBuffer
             Screen.GotoXY();
             Screen.ShowCursor();
         }
+        
+        DumpBuffer();
+    }
+    
+    // ScrollUp should only be called if there are no dirty bits in the buffer!
+    ScrollUp()
+    {
+        Suspend();
+        
+        // Start at beginning of buffer
+        LDA sbBufferL
+        STA ZP.IDXL
+        LDA sbBufferH
+        STA ZP.IDXH
+        
+        // Calculate total cells = width * height into IDY
+        LDA #0
+        LDY sbHeight
+        calculateOffset();
+        LDA sbOffsetL
+        STA ZP.IDYL
+        LDA sbOffsetH
+        STA ZP.IDYH
+        // byte size / 2 -> cell size 
+        LSR ZP.IDYH
+        ROR ZP.IDYL
+        
+        loop
+        {
+            LDA sbWidth
+            ASL // sbWidth x2
+            TAY
+            
+            // source cell
+            LDA [ZP.IDX], Y
+            AND # charMask
+            STA sbCharacter
+            INY 
+            LDA [ZP.IDX], Y
+            STA sbAttribute
+            
+            // destination cell
+            LDX #1
+            LDA [ZP.IDX]
+            AND # charMask
+            CMP sbCharacter
+            if (Z)
+            {
+                LDY #1
+                LDA [IDX], Y
+                CMP sbAttribute
+                if (Z)
+                {
+                    // no change
+                    LDX #0
+                }
+            }
+            CPX #0
+            if (NZ)
+            {
+                LDA sbCharacter
+                ORA # dirtyBit
+                STA [ZP.IDX]
+                LDA sbAttribute
+                LDY #1
+                STA [ZP.IDX], Y
+            }
+            
+            IncIDX();
+            IncIDX();
+            DecIDY();
+            LDA ZP.IDYH
+            ORA ZP.IDYL
+            if (Z) { break; }
+        }
+        Resume();
+    }
+    
+    DumpBuffer()  // Debug routine - hex dump of buffer
+    {
+        // Save cursor position
+        LDA CursorCol
+        PHA
+        LDA CursorRow
+        PHA
+        
+        // Start at screen position 0,15
+        LDA #0
+        LDY #15
+        Screen.GotoXY();
+        
+        // Start at beginning of buffer
+        LDA sbBufferL
+        STA ZP.IDXL
+        LDA sbBufferH
+        STA ZP.IDXH
+        
+        // Row counter
+        STZ sbRow
+        
+        loop
+        {
+            // Print row number
+            LDA sbRow
+            Print.Hex();
+            LDA #':'
+            Print.Char();
+            Print.Space();
+            
+            // Column counter
+            STZ sbCol
+            
+            loop
+            {
+                // Read and print character byte (with dirty bit)
+                LDA [ZP.IDX]
+                Print.Hex();
+                
+                // Read and print attribute byte
+                LDY #1
+                LDA [ZP.IDX], Y
+                Print.Hex();
+                Print.Space();
+                
+                // Move to next cell
+                Shared.IncIDX();
+                Shared.IncIDX();
+                
+                // Next column
+                INC sbCol
+                LDA sbCol
+                CMP sbWidth
+                if (Z) { break; }
+            }
+            
+            // New line
+            Print.NewLine();
+            
+            // Next row
+            INC sbRow
+            LDA sbRow
+            CMP sbHeight
+            if (Z) { break; }
+        }
+        
+        // Restore cursor
+        PLA
+        TAY
+        PLA
+        Screen.GotoXY();
     }
 }
 

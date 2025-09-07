@@ -21,12 +21,21 @@ unit Shared
     }
     DecIDY()
     {
-        LDA IDYL
+        LDA ZP.IDYL
         if (Z)
         {
-            DEC IDYH
+            DEC ZP.IDYH
         }
-        DEC IDYL
+        DEC ZP.IDYL
+    }
+    DecIDX()
+    {
+        LDA ZP.IDXL
+        if (Z)
+        {
+            DEC ZP.IDXH
+        }
+        DEC ZP.IDXL
     }
     
     IncACC()
