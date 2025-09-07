@@ -1,4 +1,4 @@
-# Hopper BIOS Applet Quick Reference
+# Hopper BIOS Applet Complete Guidelines
 
 ## 🚨 CRITICAL: Always Define CPU for Programs
 ```hopper
@@ -47,19 +47,25 @@ LDA myPointerL        // Direct low byte access
 STA myPointerH        // Direct high byte access
 ```
 
-## 🚨 CRITICAL: Loop Construct Rules
-**Hopper Assembly has STRUCTURED loops with NO LABELS!**
+---
 
-### ❌ WRONG - This is NOT Hopper Assembly:
+# 📚 CONTROL FLOW IN HOPPER ASSEMBLY
+
+## 🔄 LOOPS - Structured, Not Labels!
+
+### ❌ FORBIDDEN - Traditional Assembly Style
 ```hopper
-rowLoop:        // NO! No labeled loops!
-{
+// NEVER DO THIS IN HOPPER:
+loop_start:         // NO! No labels!
+    DEX
+    BNE loop_start  // NO! No branch instructions!
+    
+rowLoop:            // NO! Named loops don't exist!
     // ...
-    if (condition) { continue rowLoop; }  // WRONG!
-}
+    JMP rowLoop     // NO! No JMP for loops!
 ```
 
-### ✅ CORRECT - Hopper Assembly loops:
+### ✅ CORRECT - Hopper Structured Loops
 ```hopper
 loop
 {
@@ -69,345 +75,459 @@ loop
 }
 ```
 
-### Nested Loops - CORRECT Pattern:
+### Loop Control Instructions
+- **`break`** - Exits the current loop immediately
+- **`continue`** - Jumps to the top of the current loop
+- **NO `goto`** - Doesn't exist in Hopper
+- **NO labels** - Loops are anonymous blocks
+
+### Nested Loops - The Right Way
 ```hopper
-LDX #0  // Row counter
-loop    // Outer loop
+// CORRECT nested loop pattern:
+STZ rowIndex
+loop    // Outer loop (anonymous!)
 {
-    PHX
-    LDY #0  // Column counter
-    loop    // Inner loop
+    STZ colIndex
+    loop    // Inner loop (also anonymous!)
     {
-        // Do work with Y
-        INY
-        CPY width
+        // Work with current position
+        processCell();
+        
+        INC colIndex
+        LDA colIndex
+        CMP width
         if (Z) { break; }  // Exits INNER loop only
     }
-    PLX
-    INX
-    CPX height
-    if (Z) { break; }  // Exits OUTER loop
+    
+    INC rowIndex
+    LDA rowIndex
+    CMP height
+    if (Z) { break; }  // Exits OUTER loop only
 }
 ```
 
-### Common Loop Patterns:
+### Common Loop Patterns
+
+#### Count from 0 to N-1:
 ```hopper
-// Count up:
 LDX #0
 loop
 {
-    // work
+    // Process element X
     INX
-    CPX limit
+    CPX count
     if (Z) { break; }
 }
+```
 
-// Count down:
+#### Count down from N to 1:
+```hopper
 LDX count
 loop
 {
-    // work
+    // Process element X
     DEX
     if (Z) { break; }
 }
+```
 
-// While-style:
+#### Infinite loop with conditional exit:
+```hopper
 loop
 {
-    // check condition
+    getInput();
     if (done) { break; }
-    // work
+    processInput();
 }
 ```
 
-## 🚨 Register Preservation Rules - SIMPLIFIED
-**CALLEE preserves what it modifies (except A):**
-
+#### Process null-terminated string:
 ```hopper
-PublicMethod()  // Uppercase = public
+LDY #0
+loop
 {
-    // Only preserve registers THIS METHOD modifies:
-    PHX         // ONLY if this method changes X
-    PHY         // ONLY if this method changes Y
-    // NEVER preserve A - caller's responsibility
+    LDA [STR], Y
+    if (Z) { break; }  // Null terminator
     
-    // Do work...
-    
-    PLY         // Only if we pushed Y
-    PLX         // Only if we pushed X
-    // Return with meaningful flag (usually C for success/failure)
-}
-
-privateHelper() // Lowercase = private  
-{
-    // Private methods called only internally
-    // Check if caller already preserved - avoid double-preservation!
-    // If caller saved X/Y, don't save again
+    processChar();
+    INY
 }
 ```
 
-### Stack Management Anti-Pattern to AVOID:
-```hopper
-// BAD - Double preservation:
-Caller()
-{
-    PHY         // Caller saves Y
-    callee();   // Callee ALSO saves Y - wasteful!
-    PLY
+---
+
+## 🔀 SWITCHES - No Fall-Through!
+
+### Critical Difference from C
+**Hopper switches NEVER fall through!** Each case is isolated.
+
+### ❌ WRONG - C-Style Thinking
+```c
+// This is C, NOT Hopper:
+switch(x) {
+    case 1:
+        doA();
+        break;  // In C, break exits the switch
+    case 2:
+        doB();
+        // Falls through to case 3 in C
+    case 3:
+        doC();
+        break;
 }
+```
 
-// GOOD - Single preservation:
-Caller()
+### ✅ CORRECT - Hopper Switch
+```hopper
+switch (A)
 {
-    callee();   // Callee preserves Y if it modifies it
-}
-```
-
-## 65C02S Enhanced Instructions Always Available
-```hopper
-STZ address          // Store zero directly
-PHX/PLX, PHY/PLY    // Direct stack ops for X,Y
-BRA target          // Branch always
-TSB/TRB             // Test and set/reset bits
-SMB0-7/RMB0-7       // Set/reset memory bits directly
-BBS0-7/BBR0-7       // Branch on bit set/reset
-INC A/DEC A         // Modify accumulator directly
-[ZP.PTR]            // Zero page indirect (cleaner than (ZP),Y)
-```
-
-## BIOS Call Pattern
-```hopper
-// All BIOS calls:
-LDX #SysCall.FunctionName
-JMP [ZP.BIOSDISPATCH]
-
-// Common patterns:
-Print.String():       ZP.STR = string pointer
-Memory.Allocate():    ZP.ACC = size → returns ZP.IDX
-Time.Delay():         ZP.TOP = milliseconds (32-bit)
-GPIO.PinMode():       A = pin, Y = mode
-Serial.WriteChar():   A = character
-Long.Add():          ZP.NEXT + ZP.TOP → ZP.NEXT
-```
-
-## String Handling - Do It Right
-```hopper
-// ALWAYS use string constants:
-const string message = "Hello World!\n";
-
-// Print it properly:
-LDA #(message % 256)
-STA ZP.STRL
-LDA #(message / 256)  
-STA ZP.STRH
-Print.String();
-
-// NEVER spell out strings character by character!
-```
-
-## Control Flow (Structured, Not Labels)
-```hopper
-// Flag tests:
-if (Z)  { /* zero flag set */ }
-if (NZ) { /* zero flag clear */ }
-if (C)  { /* carry set (usually success) */ }
-if (NC) { /* carry clear (usually failure) */ }
-if (MI) { /* minus/negative */ }
-if (PL) { /* plus/positive */ }
-
-// 65C02S bit tests:
-if (BBS0, ZP.FLAGS) { /* bit 0 set */ }
-if (BBR7, ZP.STATUS) { /* bit 7 clear */ }
-
-// Remember: NO labeled loops, NO goto!
-```
-
-## Program Template
-```hopper
-program MyApplet
-{
-    #define CPU_65C02S              // ALWAYS REQUIRED!
-    
-    uses "System/Definitions"       // Gets ZP, BIOS interface
-    uses "System/Print"
-    uses "System/Serial"
-    uses "System/Memory"
-    
-    // Your zero page allocations (USE FREE ZONE!):
-    const byte myCounter = 0x58;
-    const byte myFlags = 0x59;
-    
-    // 16-bit values need both definitions:
-    const uint myPointer = 0x5A;
-    const byte myPointerL = 0x5A;
-    const byte myPointerH = 0x5B;
-    
-    const string title = "My Applet v1.0\n";
-    const string error = "Error occurred!\n";
-    
-    Hopper()  // Entry point
+    case 1:
     {
-        // Initialize
-        STZ myCounter
-        STZ myFlags
-        STZ myPointerL
-        STZ myPointerH
-        
-        // Print title
-        LDA #(title % 256)
-        STA ZP.STRL
-        LDA #(title / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Main work...
-        
-        // Check for user break:
-        Serial.IsBreak();
-        if (C) 
-        { 
-            // Cleanup and exit
-            return;
+        doA();
+        // No break needed - cases don't fall through
+    }
+    case 2:
+    {
+        doB();
+        // Isolated from other cases
+    }
+    case 3:
+    {
+        doC();
+    }
+    default:
+    {
+        handleUnknown();
+    }
+}
+```
+
+### 🚨 CRITICAL: Break in Switch Cases
+**`break` inside a switch case exits the ENCLOSING LOOP, not the switch!**
+
+```hopper
+loop
+{
+    switch (A)
+    {
+        case 1:
+        {
+            if (error) 
+            { 
+                break;  // Exits the LOOP, not the switch!
+            }
+            processOne();
+        }
+        case 2:
+        {
+            processTwo();
+            break;      // Exits the LOOP, not the switch!
+        }
+        default:
+        {
+            // Unknown
         }
     }
+    // Only reached if no break was executed
+    continueProcessing();
 }
 ```
 
-## Common Operations
+### Switch Optimization Rules
+Switches can be optimized into jump tables when:
+- Switch operates on **X or Y register** (not A)
+- Each case contains **exactly one subroutine call**
+- **Default case is present**
+- **More than 8 cases** total
+- Switch is followed immediately by **return** or end of method
+
 ```hopper
-// 16-bit value loading (using proper naming):
-LDA #(value % 256)
-STA myPointerL      // Use the L suffix
-LDA #(value / 256)
-STA myPointerH      // Use the H suffix
-
-// 16-bit increment:
-INC myPointerL
-if (Z)
+// Optimizable switch:
+switch (X)
 {
-    INC myPointerH
+    case 0: { Routine0(); }
+    case 1: { Routine1(); }
+    case 2: { Routine2(); }
+    // ... more cases ...
+    case 9: { Routine9(); }
+    default: { DefaultRoutine(); }
 }
-
-// Clear 16-bit value (65C02S):
-STZ myPointerL
-STZ myPointerH
-
-// Check allocation success:
-Memory.Allocate();
-LDA ZP.IDXL
-ORA ZP.IDXH
-if (Z)  // 0x0000 = failed
-{
-    CLC  // Failure
-    return;
-}
-
-// Set/clear bits (65C02S):
-SMB7 ZP.FLAGS      // Set bit 7
-RMB0 ZP.FLAGS      // Clear bit 0
+return;  // Required for optimization
 ```
 
-## Success/Failure Convention
+---
+
+## 🎯 SINGLE EXIT PATTERN
+
+### Purpose
+Single exit makes code more maintainable and predictable. All paths converge to one point where cleanup can occur.
+
+### ❌ WRONG - Multiple Returns
 ```hopper
-// ALWAYS use carry flag:
-DoSomething()
+badMethod()
 {
-    // Try operation...
-    if (failed)
+    if (error1)
     {
-        CLC  // Clear carry = failure
-        return;
+        return;  // Early exit
     }
     
-    SEC      // Set carry = success
-}
-
-// Caller checks:
-DoSomething();
-if (NC)      // No carry = failed
-{
-    // Handle error
-}
-```
-
-## Mistakes to Avoid
-1. **Using BIOS zero page** - M0-M17 are BIOS workspace!
-2. **Raw addresses** - Use `ZP.NAME` not `$xx` or `0xXX`
-3. **Character-by-character strings** - Use string constants
-4. **Preserving A** - Accumulator is never preserved by callee
-5. **Double register saves** - Don't preserve in both caller and callee
-6. **Missing parentheses** - `LDA #(value + 1)` not `LDA #value + 1`
-7. **Using old 6502 patterns** - We have STZ, PHX/PLX, etc!
-8. **Labeled loops** - Hopper uses structured `loop`, not labels!
-9. **Missing L/H definitions** - Always define both uint and L/H bytes
-10. **Missing CPU define** - Programs must have `#define CPU_65C02S`
-
-## Debug Pattern
-```hopper
-// Instrument first, speculate later:
-LDA suspect_value
-Print.Hex();
-Print.Space();
-LDA suspect_value + 1
-Print.Hex();
-Print.NewLine();
-
-// Show progress:
-LDA #'.'
-Print.Char();
-```
-
-## Working Example - Nested Loop Pattern
-```hopper
-program NestedLoopDemo
-{
-    #define CPU_65C02S    // REQUIRED!
-    
-    uses "System/Definitions"
-    uses "System/Print"
-    
-    const byte rows = 0x58;
-    const byte cols = 0x59;
-    const byte currentRow = 0x5A;
-    const byte currentCol = 0x5B;
-    
-    Hopper()
+    if (error2)
     {
-        LDA #5
-        STA rows
-        LDA #10
-        STA cols
-        
-        STZ currentRow
-        loop  // Outer loop - rows
+        return;  // Another exit
+    }
+    
+    doWork();
+    return;      // Yet another exit
+}
+```
+
+### ✅ CORRECT - Single Exit
+```hopper
+goodMethod()
+{
+    loop
+    {
+        if (error1)
         {
-            STZ currentCol
-            loop  // Inner loop - columns
+            CLC  // Set failure flag
+            break;
+        }
+        
+        if (error2)
+        {
+            CLC  // Set failure flag
+            break;
+        }
+        
+        doWork();
+        SEC  // Set success flag
+        break;
+    }
+    // Single exit point - cleanup here if needed
+}
+```
+
+### Single Exit with Result Processing
+```hopper
+processData()
+{
+    loop
+    {
+        openFile();
+        if (NC)  // Failed
+        {
+            LDA #Error.FileNotFound
+            break;
+        }
+        
+        readData();
+        if (NC)  // Failed
+        {
+            LDA #Error.ReadError
+            break;
+        }
+        
+        processBuffer();
+        LDA #Success
+        break;
+    }
+    // Single exit - A contains result code
+    // Any cleanup code goes here
+}
+```
+
+---
+
+## 🚫 NO BRANCH INSTRUCTIONS OR LABELS
+
+### The Hopper Philosophy
+Hopper Assembly uses **structured control flow** exclusively. Direct branches and labels are forbidden in normal code.
+
+### ❌ FORBIDDEN Instructions
+```hopper
+// NEVER use these in regular Hopper code:
+BEQ label    // NO! Use if (Z) { }
+BNE label    // NO! Use if (NZ) { }
+BCS label    // NO! Use if (C) { }
+BCC label    // NO! Use if (NC) { }
+BMI label    // NO! Use if (MI) { }
+BPL label    // NO! Use if (PL) { }
+JMP label    // NO! Use loop/break/continue
+BRA label    // NO! Use structured flow
+```
+
+### ✅ CORRECT - Structured Equivalents
+```hopper
+// Instead of: BEQ skip_code
+if (NZ)
+{
+    // Code to execute if not zero
+}
+
+// Instead of: BCS error_handler
+if (NC)
+{
+    // Success path
+}
+else
+{
+    // Error path
+}
+
+// Instead of: JMP loop_start
+loop
+{
+    // Loop body
+    if (done) { break; }
+}
+```
+
+### The ONLY Exception
+Labels and JMP are allowed **ONLY** within a single method for optimization, and should be rare:
+
+```hopper
+optimizedMethod()
+{
+    // RARE EXCEPTION - optimization within single method
+    LDX #8
+    JMP entry  // Skip first iteration setup
+    loop
+    {
+        INC counter
+entry:
+        ASL data
+        DEX
+        if (Z) { break; }
+    }
+}
+```
+
+---
+
+## 🎨 COMPLETE PATTERN EXAMPLES
+
+### State Machine with Single Exit
+```hopper
+processEscapeSequence()
+{
+    loop
+    {
+        LDA escState
+        switch (A)
+        {
+            case 0:  // Normal state
             {
-                // Do work at [currentRow, currentCol]
-                LDA #'*'
-                Print.Char();
-                
-                INC currentCol
-                LDA currentCol
-                CMP cols
-                if (Z) { break; }  // Exit inner loop
+                readChar();
+                if (isEscape)
+                {
+                    LDA #1
+                    STA escState
+                    continue;  // Loop again
+                }
+                // Have regular char
+                SEC
+                break;  // Exit loop
+            }
+            case 1:  // Got ESC
+            {
+                readChar();
+                if (isBracket)
+                {
+                    LDA #2
+                    STA escState
+                    continue;  // Loop again
+                }
+                // Invalid sequence
+                CLC
+                break;  // Exit loop
+            }
+            default:
+            {
+                // Reset on error
+                STZ escState
+                CLC
+                break;  // Exit loop
+            }
+        }
+        // If no break executed, loop continues
+    }
+    // Single exit point
+}
+```
+
+### Nested Processing with Error Handling
+```hopper
+processMatrix()
+{
+    STZ error
+    STZ row
+    loop  // Process rows
+    {
+        STZ col
+        loop  // Process columns
+        {
+            processElement();
+            if (NC)  // Error occurred
+            {
+                INC error
+                break;  // Exit column loop
             }
             
-            Print.NewLine();
-            
-            INC currentRow
-            LDA currentRow
-            CMP rows
-            if (Z) { break; }  // Exit outer loop
+            INC col
+            LDA col
+            CMP width
+            if (Z) { break; }  // Done with columns
         }
+        
+        // Check if column loop had error
+        LDA error
+        if (NZ) { break; }  // Exit row loop on error
+        
+        INC row
+        LDA row
+        CMP height
+        if (Z) { break; }  // Done with rows
+    }
+    
+    // Single exit - check final status
+    LDA error
+    if (Z)
+    {
+        SEC  // Success
+    }
+    else
+    {
+        CLC  // Failure
     }
 }
 ```
 
-Remember: 
-- **NO labeled loops** - use structured `loop { }`
-- **Define CPU** - `#define CPU_65C02S` in every program
-- **L/H suffixes** - Define both uint and byte versions
-- **Single preservation** - Callee saves what it modifies (except A)
-- **Use enhanced 65C02S** - STZ, PHX/PLX, etc.
+---
+
+## 📋 Quick Reference Card
+
+### Control Flow Rules
+1. **NO labels** (except rare optimization within single method)
+2. **NO branch instructions** (BEQ, BNE, JMP, etc.)
+3. **Use `loop { }`** for all loops
+4. **Use `if (condition) { }`** for all conditionals
+5. **Switch cases don't fall through**
+6. **`break` in switch exits the enclosing loop**
+7. **Single exit pattern** for maintainability
+
+### Flag Conditions
+- `if (Z)` - Zero flag set
+- `if (NZ)` - Zero flag clear
+- `if (C)` - Carry set (usually success)
+- `if (NC)` - Carry clear (usually failure)
+- `if (MI)` - Negative flag set
+- `if (PL)` - Positive flag clear
+- `if (V)` - Overflow set
+- `if (NV)` - Overflow clear
+
+### 65C02S Bit Tests
+- `if (BBS0, address)` - Branch if bit 0 set
+- `if (BBR7, address)` - Branch if bit 7 reset
+
+### Remember
+**Hopper Assembly is STRUCTURED ASSEMBLY** - it combines the power of assembly with the clarity of structured programming. Embrace the structure!

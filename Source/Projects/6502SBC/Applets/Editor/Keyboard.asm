@@ -7,7 +7,7 @@ unit Keyboard
     const byte kbSlots = 0x6F;  // After View's bytes
     
     // Escape sequence state machine
-    const byte kbEscState = kbSlots+0;  // 0=normal, 1=got ESC, 2=got ESC[
+    const byte kbEscState = kbSlots+0;  // 0=normal, 1=got ESC, 2=got ESC[, 3=got ESC O
     
     // Key codes for special keys
     enum Key
@@ -52,50 +52,91 @@ unit Keyboard
         {
             // Check current state
             LDA kbEscState
-            if (NZ)
-            {
-                CMP #1
-                if (Z) { BRA gotEsc; }
-                CMP #2
-                if (Z) { BRA gotEscBracket; }
-                CMP #3
-                if (Z) { BRA gotEscO; }
-            }
-            
-            // Normal state - get character
-            Serial.WaitForChar();
-            
-            // Check for escape
-            CMP #Key.Escape
             if (Z)
             {
-                // Start escape sequence
-                LDA #1
-                STA kbEscState
-                continue;
+                // State 0: Normal - get character
+                Serial.WaitForChar();
+                
+                // Check for escape
+                CMP #Key.Escape
+                if (Z)
+                {
+                    // Start escape sequence
+                    LDA #1
+                    STA kbEscState
+                    continue;
+                }
+                
+                // Check for delete (often sent as 0x7F)
+                CMP #0x7F
+                if (Z)
+                {
+                    LDA #Key.Delete
+                }
+                
+                // Regular character - exit with it in A
+                break;
             }
             
-            // Check for delete (often sent as 0x7F)
-            CMP #0x7F
-            if (Z)
+            // We're in an escape sequence
+            switch (A)
             {
-                LDA #Key.Delete
-            }
-            
-            // Regular character
-            return;
-            
-gotEsc:
-            // Got ESC, waiting for next char
-            Serial.WaitForChar();
-            
+                case 1:
+                {
+                    // State 1: Got ESC, waiting for next char
+                    processEscState();
+                    if (NC)  // Carry clear means continue processing
+                    {
+                        continue;
+                    }
+                }
+                case 2:
+                {
+                    // State 2: Got ESC[, parse VT100 sequence
+                    processEscBracketState();
+                    if (NC)  // Carry clear means continue processing
+                    {
+                        continue;
+                    }
+                }
+                case 3:
+                {
+                    // State 3: Got ESC O, check for function keys
+                    processEscOState();
+                    if (NC)  // Carry clear means continue processing
+                    {
+                        continue;
+                    }
+                }
+                default:
+                {
+                    // Invalid state, reset
+                    STZ kbEscState
+                    continue;
+                }
+            } // switch
+            break;
+        } // single exit
+        
+        // A contains the key code
+    }
+
+    // Process ESC state
+    // Output: C set if result ready in A, clear to continue
+    processEscState()
+    {
+        Serial.WaitForChar();
+        
+        loop
+        {
             // Check for [
             CMP #'['
             if (Z)
             {
                 LDA #2
                 STA kbEscState
-                continue;
+                CLC  // Continue processing
+                break;
             }
             
             // Check for O (function keys)
@@ -104,158 +145,169 @@ gotEsc:
             {
                 LDA #3
                 STA kbEscState
-                continue;
+                CLC  // Continue processing
+                break;
             }
             
             // Not a recognized sequence, return ESC
             STZ kbEscState
             LDA #Key.Escape
-            return;
-            
-gotEscBracket:
-            // Got ESC[, parse VT100 sequence
-            Serial.WaitForChar();
-            PHA
-            
-            // Reset state
-            STZ kbEscState
-            
-            PLA
+            SEC  // Result ready
+            break;
+        } // single exit
+    }
+
+    // Process ESC[ state
+    // Output: C set if result ready in A, clear to continue
+    processEscBracketState()
+    {
+        Serial.WaitForChar();
+        
+        // Reset state
+        STZ kbEscState
+        
+        loop
+        {
             // Check for arrow keys and special keys
             switch (A)
             {
                 case 'A':  // Up arrow
                 {
                     LDA #Key.Up
-                    return;
                 }
                 case 'B':  // Down arrow
                 {
                     LDA #Key.Down
-                    return;
                 }
                 case 'C':  // Right arrow
                 {
                     LDA #Key.Right
-                    return;
                 }
                 case 'D':  // Left arrow
                 {
                     LDA #Key.Left
-                    return;
                 }
                 case 'H':  // Home
                 {
                     LDA #Key.Home
-                    return;
                 }
                 case 'F':  // End
                 {
                     LDA #Key.End
-                    return;
                 }
                 case '1':  // Could be Home or function key
                 {
-                    Serial.WaitForChar();
-                    CMP #'~'
-                    if (Z)
+                    processNumericEscape();
+                    if (NC)
                     {
-                        LDA #Key.Home
-                        return;
+                        break;
                     }
-                    // Ignore other sequences
-                    continue;
+                    LDA #Key.Home
                 }
                 case '2':  // Insert
                 {
-                    Serial.WaitForChar();
-                    CMP #'~'
-                    if (Z)
+                    processNumericEscape();
+                    if (NC)
                     {
-                        LDA #Key.Insert
-                        return;
+                        break;
                     }
-                    continue;
+                    LDA #Key.Insert
                 }
                 case '3':  // Delete
                 {
-                    Serial.WaitForChar();
-                    CMP #'~'
-                    if (Z)
+                    processNumericEscape();
+                    if (NC)
                     {
-                        LDA #Key.Delete
-                        return;
+                        break;
                     }
-                    continue;
+                    LDA #Key.Delete
                 }
                 case '4':  // End
                 {
-                    Serial.WaitForChar();
-                    CMP #'~'
-                    if (Z)
+                    processNumericEscape();
+                    if (NC)
                     {
-                        LDA #Key.End
-                        return;
+                        break;
                     }
-                    continue;
+                    LDA #Key.End
                 }
                 case '5':  // Page Up
                 {
-                    Serial.WaitForChar();
-                    CMP #'~'
-                    if (Z)
+                    processNumericEscape();
+                    if (NC)
                     {
-                        LDA #Key.PageUp
-                        return;
+                        break;
                     }
-                    continue;
+                    LDA #Key.PageUp
                 }
                 case '6':  // Page Down
                 {
-                    Serial.WaitForChar();
-                    CMP #'~'
-                    if (Z)
+                    processNumericEscape();
+                    if (NC)
                     {
-                        LDA #Key.PageDown
-                        return;
+                        break;
                     }
-                    continue;
+                    LDA #Key.PageDown
                 }
                 default:
                 {
-                    // Unknown sequence, ignore
-                    continue;
+                    // Unknown sequence, continue
+                    CLC  // Continue processing
+                    break;
                 }
             }
-            
-gotEscO:
-            // Got ESC O, check for function keys
-            Serial.WaitForChar();
-            PHA
-            
-            // Reset state
-            STZ kbEscState
-            
-            PLA
+            SEC
+            break;
+        } // single exit
+    }
+
+    // Process numeric escape sequences (ESC[n~)
+    // Output: C set if ~ found, clear otherwise
+    processNumericEscape()
+    {
+        Serial.WaitForChar();
+        CMP #'~'
+        if (NZ)
+        {
+            CLC  // Invalid sequence
+        }
+        else
+        {
+            SEC  // Valid sequence
+        }
+    }
+
+    // Process ESC O state
+    // Output: C set if result ready in A, clear to continue
+    processEscOState()
+    {
+        Serial.WaitForChar();
+        
+        // Reset state
+        STZ kbEscState
+        
+        loop
+        {
             switch (A)
             {
                 case 'H':  // Home (alternate)
                 {
                     LDA #Key.Home
-                    return;
                 }
                 case 'F':  // End (alternate)
                 {
                     LDA #Key.End
-                    return;
                 }
                 default:
                 {
-                    // Unknown, ignore
-                    continue;
+                    // Unknown, continue
+                    CLC  // Continue processing
+                    break;
                 }
             }
-        }
+            SEC
+            break;
+        } // single exit
     }
     
     // Check if a key is printable
@@ -264,13 +316,15 @@ gotEscO:
     IsPrintable()
     {
         CMP #32
-        if (C) { return; }  // < 32 is control
-        CMP #127
-        if (NC)  // >= 127 is special or delete
+        if (NC)  // >= 32
         {
-            CLC
-            return;
+            CMP #127
+            if (C)  // < 127
+            {
+                SEC  // Printable
+                return;
+            }
         }
-        SEC
+        CLC  // Not printable
     }
 }
