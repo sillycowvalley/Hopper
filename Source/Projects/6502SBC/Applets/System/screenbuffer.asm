@@ -58,6 +58,10 @@ unit ScreenBuffer
     const byte sbCharacter = ZP.M6;
     const byte sbAttribute = ZP.M7;
     
+    const byte sbLastRow   = ZP.M8;
+    const byte sbLastCol   = ZP.M9;
+    
+    
     // Helper: calculate buffer offset for A = col, Y = row
     calculateOffset() // Returns offset in sbOffset
     {
@@ -435,11 +439,25 @@ unit ScreenBuffer
         // byte size / 2 -> cell size 
         LSR ZP.IDYH
         ROR ZP.IDYL
+
+        // set attributes to normal
+        Screen.Reset();
         
+        LDA # Screen.Color.White
+        STA Foreground
+        LDA # Screen.Color.Black
+        STA Background
+        STZ Attributes
+        packAttributes();
+        STA sbAttribute
+                        
         STZ sbRow
-        STZ sbCol       
-        // Loop through all cells
+        STZ sbCol     
+        LDA #0xFF
+        STA sbLastCol
+        STA sbLastRow
         
+        // Loop through all cells
         loop
         {
             LDA [ZP.IDX]
@@ -449,40 +467,61 @@ unit ScreenBuffer
                 STA sbCharacter // current character
                 LDY #1
                 LDA [ZP.IDX], Y  
-                STA sbAttribute // current attribute
-                
-                LDA sbCol
-                LDY sbRow
-                Screen.GotoXY();
-                
-                // set attributes to normal
-                Screen.Reset();
-                
-                // Extract and set foreground color
-                LDA sbAttribute
-                AND #0x07
-                Screen.Foreground(); // SysCalls : munt A, X
-                
-                // Extract and set background color
-                LDA sbAttribute
-                LSR A LSR A LSR A
-                AND #0x07
-                Screen.Background(); // SysCalls : munt A, X
-                
-                // Apply bold if needed
-                if (BBS6, sbAttribute)
+                CMP sbAttribute
+                if (NZ)
                 {
-                    Screen.Bold(); // SysCalls : munt A, X
+                    STA sbAttribute // new current attribute
+                    // Extract and set foreground color
+                    LDA sbAttribute
+                    AND #0x07
+                    Screen.Foreground(); // SysCalls : munt A, X
+                    
+                    // Extract and set background color
+                    LDA sbAttribute
+                    LSR A LSR A LSR A
+                    AND #0x07
+                    Screen.Background(); // SysCalls : munt A, X
+                    
+                    // Apply bold if needed
+                    if (BBS6, sbAttribute)
+                    {
+                        Screen.Bold(); // SysCalls : munt A, X
+                    }
+                    else
+                    {
+                        Screen.BoldOff(); // SysCalls : munt A, X
+                    }
+                    
+                    // Apply inverse if needed
+                    if (BBS7, sbAttribute)
+                    {
+                        Screen.Inverse(); // SysCalls : munt A, X
+                    }
+                    else
+                    {
+                        Screen.InverseOff(); // SysCalls : munt A, X
+                    }
+                    
                 }
-                
-                // Apply inverse if needed
-                if (BBS7, sbAttribute)
+                LDA sbLastCol
+                CMP sbCol
+                if (Z)
                 {
-                    Screen.Inverse(); // SysCalls : munt A, X
+                    LDA sbLastRow
+                    CMP sbRow
                 }
-                
+                if (NZ)
+                {
+                    LDA sbCol
+                    STA sbLastCol
+                    LDY sbRow
+                    STY sbLastRow
+                    Screen.GotoXY();
+                }
                 LDA sbCharacter
                 Screen.Char(); // SysCalls : munt A, X
+                
+                INC sbLastCol // drawing Char advanced column
             }
             // Move to next cell (2 bytes forward)
             Shared.IncIDX();

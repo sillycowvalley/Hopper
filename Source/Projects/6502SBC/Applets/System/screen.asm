@@ -29,11 +29,13 @@ unit Screen
     const string saveCursor = "\x1B[s";
     const string restoreCursor = "\x1B[u";
     const string reset = "\x1B[0m";
-    const string bold = "\x1B[1m";
+    const string boldOn  = "\x1B[1m";
+    const string boldOff = "\x1B[22m";
     const string dim = "\x1B[2m";
     const string underline = "\x1B[4m";
     const string blink = "\x1B[5m";
-    const string inverse = "\x1B[7m";
+    const string inverseOn = "\x1B[7m";
+    const string inverseOff = "\x1B[27m";
     const string normal = "\x1B[0m";
     
     // Clear screen and home cursor
@@ -140,9 +142,17 @@ unit Screen
     // Enable bold/bright text
     Bold()
     {
-        LDA #(bold % 256)
+        LDA #(boldOn % 256)
         STA ZP.STRL
-        LDA #(bold / 256)
+        LDA #(boldOn / 256)
+        STA ZP.STRH
+        Print.String();
+    }
+    BoldOff()
+    {
+        LDA #(boldOff % 256)
+        STA ZP.STRL
+        LDA #(boldOff / 256)
         STA ZP.STRH
         Print.String();
     }
@@ -180,9 +190,17 @@ unit Screen
     // Enable inverse video
     Inverse()
     {
-        LDA #(inverse % 256)
+        LDA #(inverseOn % 256)
         STA ZP.STRL
-        LDA #(inverse / 256)
+        LDA #(inverseOn / 256)
+        STA ZP.STRH
+        Print.String();
+    }
+    InverseOff()
+    {
+        LDA #(inverseOff % 256)
+        STA ZP.STRL
+        LDA #(inverseOff / 256)
         STA ZP.STRH
         Print.String();
     }
