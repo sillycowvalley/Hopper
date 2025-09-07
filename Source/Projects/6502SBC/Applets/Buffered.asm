@@ -41,14 +41,11 @@ program BlueFill
         }
         
         // Set blue background
-        LDA #Screen.Color.Blue
+        LDA # Screen.Color.Blue
         ScreenBuffer.SetBackground();
         
         // Clear fills entire buffer with spaces using current background
         ScreenBuffer.Clear();
-        
-        // Display it (no suspend/resume needed for single operation)
-        ScreenBuffer.Update();
         
         // Show completion message
         LDA #(done % 256)
@@ -63,9 +60,9 @@ program BlueFill
         // Clean up
         ScreenBuffer.Dispose();
         
-        // Clear screen and reset
-        Screen.Clear();
+        // Reset and Clear screen
         Screen.Reset();
+        Screen.Clear();
         
         LDA #(ok % 256)
         STA ZP.STRL

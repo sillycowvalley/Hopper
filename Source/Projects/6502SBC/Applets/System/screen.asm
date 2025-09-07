@@ -3,6 +3,7 @@ unit Screen
     uses "System/Definitions"
     uses "System/Print"
     uses "System/Serial"
+    uses "System/Long"
     
     // ANSI/VT100 color codes
     enum Color
@@ -210,37 +211,13 @@ unit Screen
     // Helper: send decimal number
     sendDecimal() // Input: A = value (0-99)
     {
-        CMP #10
-        if (C)
-        {
-            // Two digit number
-            // Count tens digit
-            LDX #'0'
-            loop
-            {
-                CMP #10
-                if (NC) { break; }
-                SEC
-                SBC #10
-                INX
-                continue;
-            }
-            // A now has remainder, X has tens digit
-            PHA         // Save remainder
-            TXA
-            Serial.WriteChar();
-            PLA         // Restore remainder
-        }
-        // Output units digit
-        CLC
-        ADC #'0'
-        Serial.WriteChar();
+        Shared.LoadTopByte(); // A -> TOP
+        Long.Print();
     }
     
-    // Position cursor at X,Y (0-based input, converts to 1-based for VT100)
-    GotoXY() // Input: A = X (column 0-79), Y = Y (row 0-23)
+    // Position cursor at col, row (0-based input, converts to 1-based for VT100)
+    GotoXY() // Input: A = col (0-79), Y = row (0-23)
     {
-        PHY
         PHA
         
         sendEscape();
@@ -260,8 +237,12 @@ unit Screen
         
         LDA #'H'
         Serial.WriteChar();
-        
-        PLY
+    }
+    
+    // Input: char in A
+    Char()
+    {
+        Serial.WriteChar();
     }
     
     // Set foreground color

@@ -74,6 +74,42 @@ unit Shared
         STY ZP.NEXT3
     }
     
+    LoadByte()  // A = byte value, X = slot
+    {
+        STA 0x00, X
+        Zero3();
+    }
+    Zero3() // X = slot
+    {
+        STZ 0x01, X
+        STZ 0x02, X
+        STZ 0x03, X
+    }
+    
+    MoveNextTo() // X = slot
+    {
+        LDA ZP.NEXT0
+        STA 0x00, X
+        LDA ZP.NEXT1
+        STA 0x01, X
+        LDA ZP.NEXT2
+        STA 0x02, X
+        LDA ZP.NEXT3
+        STA 0x03, X
+    }
+    
+    MoveToNext() // X = slot
+    {
+        LDA 0x00, X
+        STA ZP.NEXT0
+        LDA 0x01, X
+        STA ZP.NEXT1
+        LDA 0x02, X
+        STA ZP.NEXT2
+        LDA 0x03, X
+        STA ZP.NEXT3
+    }
+    
     MoveNextToTop()
     {
         LDA ZP.NEXT0
@@ -145,6 +181,9 @@ unit Shared
         STA ZP.TOP0
         ZeroTop3();
     }
+    
+    
+    
     ZeroTop()
     {
         STZ ZP.TOP0
