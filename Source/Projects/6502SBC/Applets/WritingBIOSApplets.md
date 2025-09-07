@@ -14,6 +14,10 @@ program MyApplet
 ## Environment: Always 65C02S
 No conditional compilation needed for CPU features - we always have the enhanced instruction set.
 
+---
+
+# 📍 ZERO PAGE MANAGEMENT
+
 ## Critical Zero Page Map
 ```hopper
 // BIOS RESERVED - NEVER TOUCH:
@@ -23,7 +27,7 @@ No conditional compilation needed for CPU features - we always have the enhanced
 0x10-0x1F   Core registers (ACC, TOP, NEXT, IDX, IDY, STR)
 0x20-0x29   System slots (jump table, BIOS dispatch, emulator)
 0x24-0x27   Timer ticks
-0x30-0x41   M0-M17 workspace (BIOS functions use these!)
+0x30-0x41   M0-M17 workspace (SPECIAL - see below!)
 0x42-0x57   File system workspace
 
 // FREE FOR APPLETS:
@@ -33,19 +37,156 @@ No conditional compilation needed for CPU features - we always have the enhanced
 0xEC-0xFF   ACIA, VIA ports
 ```
 
-## 🚨 CRITICAL: 16-bit Zero Page Naming Convention
-**ALWAYS define both the uint AND the L/H bytes separately:**
+## 🎯 Zero Page Best Practices
+
+### 1. Use Single Base + Offsets Pattern
+**Make your code relocatable by using a single const and offsets:**
+
 ```hopper
-// CORRECT way to define 16-bit zero page locations:
+unit MyUnit
+{
+    // ALL zero page definitions at TOP of unit!
+    
+    // Single base constant - easy to relocate
+    const byte mySlots = 0x58;
+    
+    // Public properties using offsets
+    const byte Property1 = mySlots+0;
+    const byte Property2 = mySlots+1;
+    const byte Property3 = mySlots+2;
+    
+    // 16-bit values need all three definitions
+    const uint Pointer   = mySlots+3;
+    const byte PointerL  = mySlots+3;
+    const byte PointerH  = mySlots+4;
+    
+    // Private workspace continues with offsets
+    const byte workspace1 = mySlots+5;
+    const byte workspace2 = mySlots+6;
+    
+    // Methods follow...
+}
+```
+
+### 2. ALL Zero Page Definitions at Top
+**No scattered definitions! All ZP allocations must be at the top of the unit for clarity:**
+
+```hopper
+unit BadExample
+{
+    const byte var1 = 0x58;
+    
+    SomeMethod()
+    {
+        const byte var2 = 0x59;  // NO! Don't hide ZP definitions in methods
+    }
+}
+
+unit GoodExample  
+{
+    // ALL zero page definitions here
+    const byte var1 = 0x58;
+    const byte var2 = 0x59;
+    
+    SomeMethod()
+    {
+        // Use them, don't define them here
+    }
+}
+```
+
+### 3. 16-bit Zero Page Naming Convention
+**ALWAYS define uint AND L/H bytes separately to prevent errors:**
+
+```hopper
+// CORRECT - Define all three:
 const uint myPointer = 0x5A;   // For [myPointer] syntax
 const byte myPointerL = 0x5A;  // For LDA myPointerL
 const byte myPointerH = 0x5B;  // For LDA myPointerH
 
-// This prevents dyslexic errors and allows both usage patterns:
+// Usage patterns:
 LDA [myPointer], Y    // Indirect addressing
 LDA myPointerL        // Direct low byte access
 STA myPointerH        // Direct high byte access
 ```
+
+## 🔧 M0-M17 Workspace - The Tricky Part
+
+### What Are M0-M17?
+These are **shared leaf function workspace** locations (0x30-0x41) that can be reused by different functions under strict conditions.
+
+### Rules for Using M0-M17:
+
+1. **Leaf Functions Only** - Can only be used by functions that don't call other API methods
+2. **No Survival Expected** - Values don't survive beyond the current function
+3. **Check Conflicts** - Never use if calling functions that also use them
+4. **Document Usage** - Update ZeroPage.asm documentation when adding new uses
+5. **Prefer for Temporary Heavy Use** - Ideal for functions needing many temporary variables
+
+### Who Currently Uses M0-M17?
+From ZeroPage.asm documentation:
+- **Memory.Allocate()** and **Memory.Free()** - Never call these if using M0-M17!
+- **Time.Delay()** - Uses M0-M3 as TARGET0-3
+- **Time.Seconds()** - Uses M0-M7 as RESULT0-7
+- **Long math operations** - Use M0-M7 for RESULT
+- **Debug functions** - Use M0-M15 as DB0-DB15
+- **ScreenBuffer.Update()** - Major leaf API using M0-M9
+
+### Example: ScreenBuffer Using M0-M17
+```hopper
+unit ScreenBuffer
+{
+    // Regular allocations
+    const byte zeroPageSlots = 0x58;
+    
+    const byte CursorCol  = zeroPageSlots+0;
+    const byte CursorRow  = zeroPageSlots+1;
+    const byte Foreground = zeroPageSlots+2;
+    const byte Background = zeroPageSlots+3;
+    const byte Attributes = zeroPageSlots+4;
+    
+    // ... more regular slots ...
+    
+    // LEAF FUNCTION workspace using M0-M17
+    // Update() is a leaf - doesn't call Memory.Allocate or other APIs
+    const byte sbSize    = ZP.M0;   // Temporary use in Update()
+    const byte sbSizeL   = ZP.M0;
+    const byte sbSizeH   = ZP.M1;
+    
+    const byte sbRow     = ZP.M2;   // Only during Update()
+    const byte sbCol     = ZP.M3;
+    
+    const byte sbOffset  = ZP.M4;
+    const byte sbOffsetL = ZP.M4;
+    const byte sbOffsetH = ZP.M5;
+    
+    Update()  // LEAF function - safe to use M0-M17
+    {
+        // Can freely use M0-M9 here
+        // But CANNOT call Memory.Allocate() or Memory.Free()!
+    }
+    
+    Initialize()  // NOT a leaf - calls Memory.Allocate
+    {
+        // CANNOT use M0-M17 here!
+        Memory.Allocate();  // This uses M0-M17
+    }
+}
+```
+
+### When to Use M0-M17 vs New Slots?
+
+**USE M0-M17 when:**
+- Function is a true leaf (no API calls)
+- Need many temporary variables
+- Function is performance-critical
+- Variables are purely temporary
+
+**ALLOCATE NEW SLOTS when:**
+- Function calls other APIs
+- Values must survive function calls
+- Not sure about conflicts
+- Need permanent storage
 
 ---
 
@@ -233,6 +374,37 @@ loop
 }
 ```
 
+### Advanced Pattern: Switch with Dual Exit Paths
+```hopper
+// Elegant pattern using break semantics
+processState()
+{
+    loop
+    {
+        switch (state)
+        {
+            case STATE_A:
+            {
+                handleA();
+                SEC  // Success path
+            }
+            case STATE_B:
+            {
+                handleB();
+                SEC  // Success path
+            }
+            default:
+            {
+                CLC  // Error path
+                break;  // Exit loop with error
+            }
+        }
+        // Success cases reach here
+        break;  // Exit loop with success
+    }
+}
+```
+
 ### Switch Optimization Rules
 Switches can be optimized into jump tables when:
 - Switch operates on **X or Y register** (not A)
@@ -404,6 +576,96 @@ entry:
 
 ---
 
+## 65C02S Enhanced Instructions Always Available
+```hopper
+STZ address          // Store zero directly
+PHX/PLX, PHY/PLY    // Direct stack ops for X,Y
+BRA target          // Branch always (but don't use!)
+TSB/TRB             // Test and set/reset bits
+SMB0-7/RMB0-7       // Set/reset memory bits directly
+BBS0-7/BBR0-7       // Branch on bit set/reset
+INC A/DEC A         // Modify accumulator directly
+[ZP.PTR]            // Zero page indirect (cleaner than (ZP),Y)
+```
+
+## BIOS Call Pattern
+```hopper
+// All BIOS calls:
+LDX #SysCall.FunctionName
+JMP [ZP.BIOSDISPATCH]
+
+// Common patterns:
+Print.String():       ZP.STR = string pointer
+Memory.Allocate():    ZP.ACC = size → returns ZP.IDX
+Time.Delay():         ZP.TOP = milliseconds (32-bit)
+GPIO.PinMode():       A = pin, Y = mode
+Serial.WriteChar():   A = character
+Long.Add():          ZP.NEXT + ZP.TOP → ZP.NEXT
+```
+
+## String Handling - Do It Right
+```hopper
+// ALWAYS use string constants:
+const string message = "Hello World!\n";
+
+// Print it properly:
+LDA #(message % 256)
+STA ZP.STRL
+LDA #(message / 256)  
+STA ZP.STRH
+Print.String();
+
+// NEVER spell out strings character by character!
+```
+
+## Success/Failure Convention
+```hopper
+// ALWAYS use carry flag:
+DoSomething()
+{
+    // Try operation...
+    if (failed)
+    {
+        CLC  // Clear carry = failure
+        return;
+    }
+    
+    SEC      // Set carry = success
+}
+
+// Caller checks:
+DoSomething();
+if (NC)      // No carry = failed
+{
+    // Handle error
+}
+```
+
+## Register Preservation Rules
+```hopper
+PublicMethod()  // Uppercase = public
+{
+    // Only preserve registers THIS METHOD modifies:
+    PHX         // ONLY if this method changes X
+    PHY         // ONLY if this method changes Y
+    // NEVER preserve A - caller's responsibility
+    
+    // Do work...
+    
+    PLY         // Only if we pushed Y
+    PLX         // Only if we pushed X
+    // Return with meaningful flag (usually C for success/failure)
+}
+
+privateHelper() // Lowercase = private  
+{
+    // Private methods called only internally
+    // Check if caller already preserved - avoid double-preservation!
+}
+```
+
+---
+
 ## 🎨 COMPLETE PATTERN EXAMPLES
 
 ### State Machine with Single Exit
@@ -426,7 +688,6 @@ processEscapeSequence()
                 }
                 // Have regular char
                 SEC
-                break;  // Exit loop
             }
             case 1:  // Got ESC
             {
@@ -439,17 +700,17 @@ processEscapeSequence()
                 }
                 // Invalid sequence
                 CLC
-                break;  // Exit loop
+                break;  // Exit loop with error
             }
             default:
             {
                 // Reset on error
                 STZ escState
                 CLC
-                break;  // Exit loop
+                break;  // Exit loop with error
             }
         }
-        // If no break executed, loop continues
+        break;  // Exit loop (success path reaches here)
     }
     // Single exit point
 }
@@ -515,6 +776,13 @@ processMatrix()
 6. **`break` in switch exits the enclosing loop**
 7. **Single exit pattern** for maintainability
 
+### Zero Page Rules
+1. **Single base + offsets** for easy relocation
+2. **ALL definitions at top** of unit
+3. **Define uint AND L/H bytes** for 16-bit values
+4. **M0-M17 for leaf functions only**
+5. **Document M0-M17 usage** in ZeroPage.asm
+
 ### Flag Conditions
 - `if (Z)` - Zero flag set
 - `if (NZ)` - Zero flag clear
@@ -522,12 +790,6 @@ processMatrix()
 - `if (NC)` - Carry clear (usually failure)
 - `if (MI)` - Negative flag set
 - `if (PL)` - Positive flag clear
-- `if (V)` - Overflow set
-- `if (NV)` - Overflow clear
-
-### 65C02S Bit Tests
-- `if (BBS0, address)` - Branch if bit 0 set
-- `if (BBR7, address)` - Branch if bit 7 reset
 
 ### Remember
 **Hopper Assembly is STRUCTURED ASSEMBLY** - it combines the power of assembly with the clarity of structured programming. Embrace the structure!
