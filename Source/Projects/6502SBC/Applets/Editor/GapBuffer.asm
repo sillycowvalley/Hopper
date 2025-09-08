@@ -6,7 +6,7 @@ unit GapBuffer
     uses "System/Memory"
     
     // Zero page allocation
-    const byte gbSlots = 0xB0;
+    const byte gbSlots = 0x80;
     
     // Private zero page state
     const uint gbBuffer = gbSlots+0;    // Start of allocated buffer
@@ -36,18 +36,18 @@ unit GapBuffer
     const uint gbTempSizeH = gbSlots+11;
     
     // Leaf workspace for calculations (don't survive function calls)
-    const uint mgbTemp = gbSlots+12;     // Temporary 16-bit value
-    const uint mgbTempL = gbSlots+12;
-    const uint mgbTempH = gbSlots+13;
-    const uint mgbCount = gbSlots+14;    // Copy count
-    const uint mgbCountL = gbSlots+14;
-    const uint mgbCountH = gbSlots+15;
-    const uint mgbSrc = gbSlots+16;      // Source pointer
-    const uint mgbSrcL = gbSlots+16;
-    const uint mgbSrcH = gbSlots+17;
-    const uint mgbDst = gbSlots+18;      // Destination pointer
-    const uint mgbDstL = gbSlots+18;
-    const uint mgbDstH = gbSlots+19;
+    const uint mgbTemp   = ZP.M0;     // Temporary 16-bit value
+    const uint mgbTempL  = ZP.M0;
+    const uint mgbTempH  = ZP.M1;
+    const uint mgbCount  = ZP.M2;    // Copy count
+    const uint mgbCountL = ZP.M2;
+    const uint mgbCountH = ZP.M3;
+    const uint mgbSrc    = ZP.M4;      // Source pointer
+    const uint mgbSrcL   = ZP.M4;
+    const uint mgbSrcH   = ZP.M5;
+    const uint mgbDst    = ZP.M6;      // Destination pointer
+    const uint mgbDstL   = ZP.M6;
+    const uint mgbDstH   = ZP.M7;
     
     // Initialize gap buffer
     // Input: A,Y = size to allocate

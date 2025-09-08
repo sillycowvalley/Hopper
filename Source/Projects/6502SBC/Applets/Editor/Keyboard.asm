@@ -4,7 +4,7 @@ unit Keyboard
     uses "System/Serial"
     
     // Zero page allocation
-    const byte kbSlots = 0x8F;
+    const byte kbSlots = 0x7F;
     
     // Escape sequence state machine
     const byte kbEscState = kbSlots+0;  // 0=normal, 1=got ESC, 2=got ESC[, 3=got ESC O

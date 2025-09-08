@@ -45,22 +45,22 @@ unit ScreenBuffer
     const byte sbCursorVisible = zeroPageSlots+10;
     
     // Leaf node workspace slots
-    const uint msbSize    = zeroPageSlots+11;        // Total buffer size (2 bytes)
-    const uint msbSizeL   = zeroPageSlots+11;
-    const uint msbSizeH   = zeroPageSlots+12;
+    const uint msbSize    = ZP.M0;        // Total buffer size (2 bytes)
+    const uint msbSizeL   = ZP.M0;
+    const uint msbSizeH   = ZP.M1;
     
-    const byte msbRow     = zeroPageSlots+13;
-    const byte msbCol     = zeroPageSlots+14;
+    const byte msbRow     = ZP.M2;
+    const byte msbCol     = ZP.M3;
     
-    const byte msbOffset  = zeroPageSlots+15;
-    const byte msbOffsetL = zeroPageSlots+15;
-    const byte msbOffsetH = zeroPageSlots+16;
+    const byte msbOffset  = ZP.M4;
+    const byte msbOffsetL = ZP.M4;
+    const byte msbOffsetH = ZP.M5;
     
-    const byte msbCharacter = zeroPageSlots+17;
-    const byte msbAttribute = zeroPageSlots+18;
+    const byte msbCharacter = ZP.M6;
+    const byte msbAttribute = ZP.M7;
     
-    const byte msbLastRow   = zeroPageSlots+19;
-    const byte msbLastCol   = zeroPageSlots+20;
+    const byte msbLastRow   = ZP.M8;
+    const byte msbLastCol   = ZP.M9;
     
     
     // Helper: calculate buffer offset for A = col, Y = row
