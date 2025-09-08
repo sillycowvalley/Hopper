@@ -97,29 +97,18 @@ program TestGapBuffer
         PLX
     }
     
-    Hopper()
+   Hopper()
 {
     Screen.Clear();
     
-    Print.NewLine();
-    LDA #'='
-    Print.Char();
-    Print.Space();
-    
-    // Initialize with small buffer
-    LDA #16
-    LDY #0
+    // Initialize 512-byte buffer (2 pages)
+    LDA #0
+    LDY #2
     GapBuffer.Initialize();
-    if (NC)
-    {
-        LDA #'F'
-        Print.Char();
-        return;
-    }
     
-    // Insert "ABCDEF" (6 chars)
-    LDX #6
-    LDA #'A'
+    // Insert just 10 characters
+    LDX #10
+    LDA #'0'
     loop
     {
         PHX
@@ -132,41 +121,32 @@ program TestGapBuffer
         if (Z) { break; }
     }
     
-    // Gap is now at position 6
-    displayText();  // Should show "ABCDEF"
-    Print.NewLine();
+    // Gap is at position 10, extends to 512
+    // Buffer spans 2 pages
     
-    // Test 1: Move gap to same position (6)
+    Print.NewLine();
     LDA #'1'
     Print.Char();
     Print.Space();
-    
-    LDA #6
-    STA GapBuffer.GapValueL
-    STZ GapBuffer.GapValueH
-    GapBuffer.MoveGapTo();
-    
-    displayText();  // Should still show "ABCDEF"
+    displayText();  // Should show "0123456789"
     Print.NewLine();
     
-    // Test 2: Move gap left (to position 2)
+    // Move gap to position 0
+    // This should copy 10 bytes from near start to near end of 512-byte buffer
+    // If buffer starts at 0x131A, copying from 0x131A to ~0x1516 (different pages!)
     LDA #'2'
     Print.Char();
     Print.Space();
     
-    LDA #2
-    STA GapBuffer.GapValueL
+    STZ GapBuffer.GapValueL
     STZ GapBuffer.GapValueH
     GapBuffer.MoveGapTo();
     
-    LDA #'X'
-    GapBuffer.InsertChar();
-    
-    displayText();  // Should show "ABXCDEF"
+    displayText();  // Should still show "0123456789"
     Print.NewLine();
     
-    // Test 3: Move gap right (to position 5)
-    // Gap is at position 3 after inserting X
+    // Move gap to position 5
+    // Should copy from high address back to low address (different pages)
     LDA #'3'
     Print.Char();
     Print.Space();
@@ -176,47 +156,17 @@ program TestGapBuffer
     STZ GapBuffer.GapValueH
     GapBuffer.MoveGapTo();
     
-    LDA #'Y'
+    LDA #'X'
     GapBuffer.InsertChar();
     
-    displayText();  // Should show "ABXCDYEF"
+    displayText();  // Should show "01234X56789"
     Print.NewLine();
     
-    // Test 4: Move gap to beginning (position 0)
-    LDA #'4'
-    Print.Char();
-    Print.Space();
-    
-    STZ GapBuffer.GapValueL
-    STZ GapBuffer.GapValueH
-    GapBuffer.MoveGapTo();
-    
-    LDA #'['
-    GapBuffer.InsertChar();
-    
-    displayText();  // Should show "[ABXCDYEF"
-    Print.NewLine();
-    
-    // Test 5: Move gap to end
-    LDA #'5'
-    Print.Char();
-    Print.Space();
-    
-    GapBuffer.GetTextLength();
-    GapBuffer.MoveGapTo();
-    
-    LDA #']'
-    GapBuffer.InsertChar();
-    
-    displayText();  // Should show "[ABXCDYEF]"
-    Print.NewLine();
-    
-    // Cleanup
     GapBuffer.Dispose();
     
+    Print.NewLine();
     LDA #'D'
     Print.Char();
-    Print.NewLine();
-}
+}    
        
 }

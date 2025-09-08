@@ -382,7 +382,6 @@ unit GapBuffer
         ORA mgbCountH
         if (Z)
         {
-Print.NewLine(); LDA #'a' Print.Char();
             return;  // Nothing to copy
         }
         
@@ -395,7 +394,6 @@ Print.NewLine(); LDA #'a' Print.Char();
             CMP mgbDstH
             if (Z)
             {
-Print.NewLine(); LDA #'b' Print.Char();
                 return;  // Same address, nothing to do
             }
         }
@@ -424,18 +422,15 @@ Print.NewLine(); LDA #'b' Print.Char();
             {
                 if (NZ)  // Not equal, so dst.L > src.L
                 {
-Print.NewLine(); LDA #'c' Print.Char();
                     copyBackward();
                 }
                 else
                 {
-Print.NewLine(); LDA #'d' Print.Char();
                     copyForward();  // Equal (but we already handled this case earlier)
                 }
             }
             else  // dst.L < src.L
             {
-Print.NewLine(); LDA #'e' Print.Char();
                 copyForward();
             }
         }
@@ -443,12 +438,10 @@ Print.NewLine(); LDA #'e' Print.Char();
         {
             if (C)  // dst.H > src.H (truly greater since not equal)
             {
-Print.NewLine(); LDA #'f' Print.Char();
                 copyBackward();
             }
             else  // dst.H < src.H
             {
-Print.NewLine(); LDA #'g' Print.Char();
                 copyForward();
             }
         }
