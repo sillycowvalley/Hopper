@@ -215,7 +215,7 @@ unit GapBuffer
                 LDA gbTempL
                 CMP gbGapStartL
             }
-            if (C)  // target < gap start (move gap left)
+            if (NC)  // target < gap start (move gap left)
             {
                 // Calculate bytes to move: gbGapStart - target
                 SEC
@@ -474,70 +474,80 @@ unit GapBuffer
         
         loop  // Single iteration for structure
         {
-            // Check bounds
-            GetTextLength();
+            // Get text length for bounds check
+            GetTextLength();  // Returns in ZP.ACC
             
-            // Compare position against text length
-            LDA ZP.ACCH
-            CMP gbTempH
-            if (C)
+            // Check if position >= text length (out of bounds)
+            LDA gbTempH
+            CMP ZP.ACCH
+            if (C)  // position.H >= length.H
             {
-                // text length > position, valid
-            }
-            else
-            {
-                if (Z)
+                if (Z)  // position.H == length.H
                 {
-                    LDA ZP.ACCL
-                    CMP gbTempL
-                    if (NC)
+                    LDA gbTempL
+                    CMP ZP.ACCL
+                    if (NC)  // position.L < length.L, so valid
                     {
-                        // Out of bounds (position >= length)
+                        // Continue to conversion
+                    }
+                    else
+                    {
+                        // position.L >= length.L, out of bounds
                         LDA #0
                         break;
                     }
                 }
                 else
                 {
-                    // Out of bounds (position > length)
+                    // position.H > length.H, out of bounds
                     LDA #0
                     break;
                 }
             }
+            // else position.H < length.H, so position < length (valid)
             
             // Convert logical to physical position
-            // Check if position is before or after gap
+            // Check if position >= gap start
             LDA gbTempH
             CMP gbGapStartH
-            if (Z)
+            if (C)  // position.H >= gap_start.H
             {
-                // High bytes equal, check low bytes
-                LDA gbTempL
-                CMP gbGapStartL
+                if (Z)  // position.H == gap_start.H
+                {
+                    LDA gbTempL
+                    CMP gbGapStartL
+                    if (C)  // position.L >= gap_start.L
+                    {
+                        // Position >= gap start, add gap size
+                        SEC
+                        LDA gbGapEndL
+                        SBC gbGapStartL
+                        CLC
+                        ADC gbTempL
+                        STA gbTempL
+                        LDA gbGapEndH
+                        SBC gbGapStartH
+                        ADC gbTempH
+                        STA gbTempH
+                    }
+                    // else position < gap start, no adjustment
+                }
+                else
+                {
+                    // position.H > gap_start.H, add gap size
+                    SEC
+                    LDA gbGapEndL
+                    SBC gbGapStartL
+                    CLC
+                    ADC gbTempL
+                    STA gbTempL
+                    LDA gbGapEndH
+                    SBC gbGapStartH
+                    ADC gbTempH
+                    STA gbTempH
+                }
             }
-            // Now carry flag tells us: C set = position >= gap start
-            
-            if (NC)  // Position < gap start (before gap)
-            {
-                // Position is before gap, use as-is
-                // Physical = Logical (no adjustment needed)
-                // gbTemp already contains the position, no change needed
-            }
-            else     // Position >= gap start (at or after gap)
-            {
-                // Position is at or after gap, adjust
-                // Physical = Logical + (GapEnd - GapStart)
-                SEC
-                LDA gbGapEndL
-                SBC gbGapStartL
-                CLC
-                ADC gbTempL
-                STA gbTempL
-                LDA gbGapEndH
-                SBC gbGapStartH
-                ADC gbTempH
-                STA gbTempH
-            }
+            // else position.H < gap_start.H, no adjustment needed
             
             // Read from physical position
             CLC
