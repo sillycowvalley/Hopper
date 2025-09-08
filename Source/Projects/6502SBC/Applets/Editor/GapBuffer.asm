@@ -30,6 +30,11 @@ unit GapBuffer
     const uint GapValueL = gbSlots+8;
     const uint GapValueH = gbSlots+9;
     
+    // Private temporary workspace (doesn't need to survive between method calls)
+    const uint gbTempSize = gbSlots+10;   // Temp storage for growBuffer
+    const uint gbTempSizeL = gbSlots+10;
+    const uint gbTempSizeH = gbSlots+11;
+    
     // Leaf workspace for calculations (don't survive function calls)
     const uint mgbTemp = ZP.M0;     // Temporary 16-bit value
     const uint mgbTempL = ZP.M0;
@@ -200,6 +205,7 @@ unit GapBuffer
     
     // Move gap to specified position
     // Input: GapValue = target position
+    //        Modifies IDX and IDY (via copyBytes)
     MoveGapTo()
     {
         // Save target position
@@ -376,6 +382,8 @@ unit GapBuffer
     // Insert character at gap position
     // Input: A = character to insert
     // Note: Assumes gap is at correct position
+    //       May call Memory.Allocate and Memory.Free (via growBuffer if gap is full)
+    //       Modifies IDX directly, and if buffer grows: IDX and IDY (via growBuffer?copyBytes)
     InsertChar()
     {
         PHA  // Save character
@@ -412,8 +420,7 @@ unit GapBuffer
             STA ZP.IDXH
             
             PLA  // Restore character
-            LDY #0
-            STA [ZP.IDX], Y
+            STA [ZP.IDX]
             
             // Advance gap start
             INC gbGapStartL
@@ -581,17 +588,17 @@ unit GapBuffer
     {
         // Calculate new size (double current size)
         LDA gbBufferSizeL
-        STA mgbTempL
+        STA gbTempSizeL
         LDA gbBufferSizeH
-        STA mgbTempH
+        STA gbTempSizeH
         
-        ASL mgbTempL
-        ROL mgbTempH
+        ASL gbTempSizeL
+        ROL gbTempSizeH
         
         // Allocate new buffer (uses ZP.ACC for BIOS call)
-        LDA mgbTempL
+        LDA gbTempSizeL
         STA ZP.ACCL
-        LDA mgbTempH
+        LDA gbTempSizeH
         STA ZP.ACCH
         Memory.Allocate();
         
@@ -604,20 +611,33 @@ unit GapBuffer
             return;
         }
         
-        // Save new buffer pointer in M8/M9 temporarily
+        // Swap old and new buffer pointers
+        // Old buffer goes to IDX (for Memory.Free later)
+        // New buffer goes to gbBuffer
         LDA ZP.IDXL
-        STA ZP.M8
+        PHA
+        LDA gbBufferL
+        STA ZP.IDXL
+        PLA
+        STA gbBufferL
+        
         LDA ZP.IDXH
-        STA ZP.M9
+        PHA
+        LDA gbBufferH
+        STA ZP.IDXH
+        PLA
+        STA gbBufferH
         
         // Copy text before gap
-        LDA gbBufferL
+        // Source: old buffer (now in IDX)
+        LDA ZP.IDXL
         STA mgbSrcL
-        LDA gbBufferH
+        LDA ZP.IDXH
         STA mgbSrcH
-        LDA ZP.M8
+        // Destination: new buffer (now in gbBuffer)
+        LDA gbBufferL
         STA mgbDstL
-        LDA ZP.M9
+        LDA gbBufferH
         STA mgbDstH
         LDA gbGapStartL
         STA mgbCountL
@@ -641,28 +661,28 @@ unit GapBuffer
         {
             // Source: old buffer + old gap end
             CLC
-            LDA gbBufferL
+            LDA ZP.IDXL
             ADC gbGapEndL
             STA mgbSrcL
-            LDA gbBufferH
+            LDA ZP.IDXH
             ADC gbGapEndH
             STA mgbSrcH
             
             // Calculate new gap end
             SEC
-            LDA mgbTempL
+            LDA gbTempSizeL
             SBC mgbCountL
             STA gbGapEndL
-            LDA mgbTempH
+            LDA gbTempSizeH
             SBC mgbCountH
             STA gbGapEndH
             
             // Destination: new buffer + new gap end
             CLC
-            LDA ZP.M8
+            LDA gbBufferL
             ADC gbGapEndL
             STA mgbDstL
-            LDA ZP.M9
+            LDA gbBufferH
             ADC gbGapEndH
             STA mgbDstH
             
@@ -671,27 +691,19 @@ unit GapBuffer
         else
         {
             // No text after gap, gap extends to end
-            LDA mgbTempL
+            LDA gbTempSizeL
             STA gbGapEndL
-            LDA mgbTempH
+            LDA gbTempSizeH
             STA gbGapEndH
         }
         
-        // Free old buffer
-        LDA gbBufferL
-        STA ZP.IDXL
-        LDA gbBufferH
-        STA ZP.IDXH
+        // Free old buffer (already in IDX)
         Memory.Free();
         
-        // Update buffer pointer and size
-        LDA ZP.M8
-        STA gbBufferL
-        LDA ZP.M9
-        STA gbBufferH
-        LDA mgbTempL
+        // Update buffer size (gbBuffer already has new buffer pointer)
+        LDA gbTempSizeL
         STA gbBufferSizeL
-        LDA mgbTempH
+        LDA gbTempSizeH
         STA gbBufferSizeH
         
         SEC  // Success
