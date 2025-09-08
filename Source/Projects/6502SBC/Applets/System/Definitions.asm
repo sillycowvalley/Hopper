@@ -62,11 +62,11 @@ unit Definitions
     //   - Available for small system extensions
     //
     // 0x60-0x6F: Debug & Screen (shared 16-byte block)
-    //   0x60-0x62: Debug (3 bytes)
+    //   0x60-0x64: Debug (5 bytes)
     //     - debugRow, debugEnabled, debugEntries
-    //   0x63-0x64: Screen (2 bytes)
+    //   0x65-0x66: Screen (2 bytes)
     //     - screenStrL, screenStrH (temporary string pointer)
-    //   [0x65-0x6F available for Debug/Screen expansion]
+    //   [0x67-0x6F available for Debug/Screen expansion]
     //
     // 0x70-0x7A: ScreenBuffer (11 bytes)
     //   - CursorCol, CursorRow, Foreground, Background

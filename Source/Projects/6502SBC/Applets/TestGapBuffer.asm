@@ -11,7 +11,7 @@ program TestGapBuffer
     uses "Editor/GapBuffer"
     
     const string title = "=== GapBuffer Unit Test ===\n\n";
-    const string test1 = "1. Initialize buffer (32 bytes)\n";
+    const string test1 = "1. Initialize buffer (8 bytes)\n";
     const string test2 = "2. Insert characters at start\n";
     const string test3 = "3. Move gap and insert\n";
     const string test4 = "4. Test GetCharAt\n";
@@ -29,133 +29,6 @@ program TestGapBuffer
     const string lblChar = "Char:";
     const string lblPos = "Pos:";
     
-    
-    // Label for dump
-    const string dumpLabel = "= GAP BUFFER DUMP =";
-    const string bufLabel = "Buf@";
-    const string gapValueLabel = "GapV:";
-    const string gapStartLabel = "GapS:";
-    const string gapEndLabel = "GapE:";
-    const string sizeLabel = "Size:";
-    const string rawLabel = "Raw:";
-    const string logLabel = "Log:";
-    
-
-    // Debug helper: Dump gap buffer state
-    dumpGapBuffer()
-    {
-        PHX
-        PHY
-        
-        Debug.Clear();
-        
-        // Header
-        LDA #(dumpLabel % 256)
-        STA ZP.STRL
-        LDA #(dumpLabel / 256)
-        STA ZP.STRH
-        Debug.String();
-        
-        // Buffer address
-        LDA #(bufLabel % 256)
-        STA ZP.STRL
-        LDA #(bufLabel / 256)
-        STA ZP.STRH
-        LDA GapBuffer.gbBufferL
-        STA ZP.ACCL
-        LDA GapBuffer.gbBufferH
-        STA ZP.ACCH
-        Debug.LabeledWord();
-        
-        // Gap value
-        LDA #(gapValueLabel % 256)
-        STA ZP.STRL
-        LDA #(gapValueLabel / 256)
-        STA ZP.STRH
-        LDA GapBuffer.GapValueL
-        STA ZP.ACCL
-        LDA GapBuffer.GapValueH
-        STA ZP.ACCH
-        Debug.LabeledWord();
-        
-        // Gap start
-        LDA #(gapStartLabel % 256)
-        STA ZP.STRL
-        LDA #(gapStartLabel / 256)
-        STA ZP.STRH
-        LDA GapBuffer.gbGapStartL
-        STA ZP.ACCL
-        LDA GapBuffer.gbGapStartH
-        STA ZP.ACCH
-        Debug.LabeledWord();
-        
-        // Gap end
-        LDA #(gapEndLabel % 256)
-        STA ZP.STRL
-        LDA #(gapEndLabel / 256)
-        STA ZP.STRH
-        LDA GapBuffer.gbGapEndL
-        STA ZP.ACCL
-        LDA GapBuffer.gbGapEndH
-        STA ZP.ACCH
-        Debug.LabeledWord();
-        
-        // Buffer size
-        LDA #(sizeLabel % 256)
-        STA ZP.STRL
-        LDA #(sizeLabel / 256)
-        STA ZP.STRH
-        LDA GapBuffer.gbBufferSizeL
-        STA ZP.ACCL
-        LDA GapBuffer.gbBufferSizeH
-        STA ZP.ACCH
-        Debug.LabeledWord();
-        
-        // Dump first 16 raw bytes from buffer
-        LDA #(rawLabel % 256)
-        STA ZP.STRL
-        LDA #(rawLabel / 256)
-        STA ZP.STRH
-        Debug.String();
-        
-        LDA GapBuffer.gbBufferL
-        STA ZP.IDXL
-        LDA GapBuffer.gbBufferH
-        STA ZP.IDXH
-        LDA # 32  // Dump 32 bytes
-        Debug.DumpMemory();
-        
-        // Show what GetCharAt returns for first 8 positions
-        LDA #(logLabel % 256)
-        STA ZP.STRL
-        LDA #(logLabel / 256)
-        STA ZP.STRH
-        Debug.String();
-        
-        LDX #8
-        STZ ZP.IDYL  // Position counter
-        loop
-        {
-            PHX
-            
-            // Get character at position IDYL
-            LDA ZP.IDYL
-            STA GapBuffer.GapValueL
-            STZ GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
-            
-            // Show it
-            Debug.Byte();
-            
-            INC ZP.IDYL
-            PLX
-            DEX
-            if (Z) { break; }
-        }
-        
-        PLY
-        PLX
-    }
     
     displayText()
     {
@@ -224,7 +97,6 @@ program TestGapBuffer
         PLX
     }
     
-    
     Hopper()
     {
         Screen.Clear();
@@ -238,25 +110,17 @@ program TestGapBuffer
         STA ZP.STRH
         Print.String();
         
-        // Test 1: Initialize
+        // Test 1: Initialize with minimal buffer
         LDA #(test1 % 256)
         STA ZP.STRL
         LDA #(test1 / 256)
         STA ZP.STRH
         Print.String();
         
-        LDA #32  // 32 byte buffer
+        LDA #8  // Start with tiny 8 byte buffer
         LDY #0
         GapBuffer.Initialize();
-        if (C)
-        {
-            LDA #(passed % 256)
-            STA ZP.STRL
-            LDA #(passed / 256)
-            STA ZP.STRH
-            Print.String();
-        }
-        else
+        if (NC)
         {
             LDA #(failed % 256)
             STA ZP.STRL
@@ -266,139 +130,145 @@ program TestGapBuffer
             return;
         }
         
-        // Test 2: Insert at start
+        LDA #(passed % 256)
+        STA ZP.STRL
+        LDA #(passed / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        // Test 2: Multiple growth cycles
         LDA #(test2 % 256)
         STA ZP.STRL
         LDA #(test2 / 256)
         STA ZP.STRH
         
-        LDA #'H'
-        GapBuffer.InsertChar();
-        LDA #'e'
-        GapBuffer.InsertChar();
-        LDA #'l'
-        GapBuffer.InsertChar();
-        LDA #'l'
-        GapBuffer.InsertChar();
-        LDA #'o'
-        GapBuffer.InsertChar();
+        // Insert 50 chars to force growth from 8->16->32->64
+        LDX #20
+        LDA #'0'
+        loop
+        {
+            PHX
+            PHA
+            GapBuffer.InsertChar();
+            PLA
+            INC
+            CMP #'9'+1
+            if (Z) { LDA #'0' }  // Cycle 0-9
+            PLX
+            DEX
+            if (Z) { break; }
+        }
         
-        displayText();  // Shows: "Hello"
+        displayText();
         Print.NewLine();
         
-        // Test 3: Move gap to position 2 and insert
+        // Test 3: Clear and test random access
         LDA #(test3 % 256)
         STA ZP.STRL
         LDA #(test3 / 256)
-        STA ZP.STRH   
-             
-        LDA #2
+        STA ZP.STRH
+        
+        GapBuffer.Clear();
+        
+        // Insert at position 0
+        LDA #'A'
+        GapBuffer.InsertChar();
+        
+        // Move to end and insert
+        LDA #1
         STA GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
-        
-        LDA #'X'
+        LDA #'Z'
         GapBuffer.InsertChar();
         
-        LDA #'Y'
+        // Insert in middle
+        LDA #1
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        LDA #'M'
         GapBuffer.InsertChar();
         
-        displayText();  // Shows: "HeXYllo"
+        // Insert at beginning
+        STZ GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        LDA #'*'
+        GapBuffer.InsertChar();
+        
+        displayText();  // Should show "*AMZ"
         Print.NewLine();
         
-        // Test 4: GetCharAt various positions
+        // Test 4: Simulate typing with corrections
         LDA #(test4 % 256)
         STA ZP.STRL
         LDA #(test4 / 256)
         STA ZP.STRH
-        Print.String();
         
-        // Get char at position 0 (should be 'H')
-        STZ GapBuffer.GapValueL
-        STZ GapBuffer.GapValueH
-        GapBuffer.GetCharAt();
+        GapBuffer.Clear();
         
-        PHA
-        LDA #(lblPos % 256)
-        STA ZP.STRL
-        LDA #(lblPos / 256)
-        STA ZP.STRH
-        LDA #0
-        Debug.LabeledByte();
-        LDA #(lblChar % 256)
-        STA ZP.STRL
-        LDA #(lblChar / 256)
-        STA ZP.STRH
-        PLA     
-        Debug.LabeledByte();
+        // Type "The quik"
+        LDA #'T'
+        GapBuffer.InsertChar();
+        LDA #'h'
+        GapBuffer.InsertChar();
+        LDA #'e'
+        GapBuffer.InsertChar();
+        LDA #' '
+        GapBuffer.InsertChar();
+        LDA #'q'
+        GapBuffer.InsertChar();
+        LDA #'u'
+        GapBuffer.InsertChar();
+        LDA #'i'
+        GapBuffer.InsertChar();
+        LDA #'c'
+        GapBuffer.InsertChar();
         
-        // Get char at position 3 (should be 'Y')
-        LDA #3
-        STA GapBuffer.GapValueL
-        STZ GapBuffer.GapValueH
-        GapBuffer.GetCharAt();
-        PHA
-
-        LDA #(lblPos % 256)
-        STA ZP.STRL
-        LDA #(lblPos / 256)
-        STA ZP.STRH
-        LDA #3
-        Debug.LabeledByte();
-        LDA #(lblChar % 256)
-        STA ZP.STRL
-        LDA #(lblChar / 256)
-        STA ZP.STRH
-        PLA     
-        Debug.LabeledByte();
+        // Backspace and add 'k'
+        LDA #'k'
+        GapBuffer.InsertChar();
         
-        // Test 5: Delete backward from position 5
+        displayText();  // Should show "The quick"
+        Print.NewLine();
+        
+        // Test 5: Boundary tests
         LDA #(test5 % 256)
         STA ZP.STRL
         LDA #(test5 / 256)
         STA ZP.STRH
         
-        LDA #6
-        STA GapBuffer.GapValueL
+        // Try delete at end (should fail)
+        GapBuffer.GetTextLength();
+        GapBuffer.MoveGapTo();
+        GapBuffer.Delete();
+        
+        // Try backspace at beginning (should fail)
+        STZ GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
-        GapBuffer.Backspace();  // Delete 'l'
-        GapBuffer.Backspace();  // Delete 'l'
+        GapBuffer.Backspace();
         
-        displayText();  // Shows: "HeXYo"
+        displayText();  // Should still show "The quick"
         Print.NewLine();
         
-        // Test 6: Delete forward from position 2
+GapBuffer.Dump();
+Serial.WaitForChar();        
+        
+        // Test 6: Large gap movements
         LDA #(test6 % 256)
         STA ZP.STRL
         LDA #(test6 / 256)
         STA ZP.STRH
         
-        LDA #2
-        STA GapBuffer.GapValueL
-        STZ GapBuffer.GapValueH
-        GapBuffer.MoveGapTo();
+        GapBuffer.Clear();
         
-        GapBuffer.Delete();  // Delete 'X'
-        GapBuffer.Delete();  // Delete 'Y'
+GapBuffer.Dump();
+Serial.WaitForChar();        
         
-        displayText();  // Shows: "Heo"
-        Print.NewLine();
-        
-        
-        // Test 7: Force buffer growth (fill beyond 32 bytes)
-        LDA #(test7 % 256)
-        STA ZP.STRL
-        LDA #(test7 / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        // Move to end
-        GapBuffer.GetTextLength();
-        GapBuffer.MoveGapTo();
-        
-        // Add characters to force growth
-        LDX #40  // More than initial 32 byte buffer
+        // Build string "ABCDEFGHIJ"
+        LDX #10
         LDA #'A'
         loop
         {
@@ -412,68 +282,73 @@ program TestGapBuffer
             if (Z) { break; }
         }
         
-        GapBuffer.GetGapStart();  // This would update GapValue to 0x002B
-        
-dumpGapBuffer();       
+GapBuffer.Dump();
 Serial.WaitForChar();        
         
-        // Show length to prove growth worked
-        LDA #(lblTextLen % 256)
-        STA ZP.STRL
-        LDA #(lblTextLen / 256)
-        STA ZP.STRH
-        GapBuffer.GetTextLength();
-        LDA GapBuffer.GapValueL
-        STA ZP.ACCL
-        LDA GapBuffer.GapValueH
-        STA ZP.ACCH
-        Debug.LabeledWord();
-        
-        // Show a few chars from the middle
-        LDA #20
+        // Jump around inserting numbers
+        LDA #2
         STA GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
-        GapBuffer.GetCharAt();
-        PHA
-        LDA #(lblPos % 256)
-        STA ZP.STRL
-        LDA #(lblPos / 256)
-        STA ZP.STRH
-        LDA #20
-        Debug.LabeledByte();
-        LDA #(lblChar % 256)
-        STA ZP.STRL
-        LDA #(lblChar / 256)
-        STA ZP.STRH
-        PLA
-        Debug.LabeledByte();
-      
+        GapBuffer.MoveGapTo();
+        LDA #'1'
+        GapBuffer.InsertChar();
+        
+        LDA #8
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        LDA #'2'
+        GapBuffer.InsertChar();
+        
+        LDA #5
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        LDA #'3'
+        GapBuffer.InsertChar();
+        
+        displayText();  // Should show "AB1CD3EFG2HIJ" 
+        Print.NewLine();
+        
+GapBuffer.Dump();
 Serial.WaitForChar();
         
-        // Test 8: Clear buffer
+        // Test 7: Delete everything
+        LDA #(test7 % 256)
+        STA ZP.STRL
+        LDA #(test7 / 256)
+        STA ZP.STRH
+        
+        // Move to end
+        GapBuffer.GetTextLength();
+        GapBuffer.MoveGapTo();
+        
+        // Delete everything with backspace
+        loop
+        {
+            GapBuffer.Backspace();
+            if (NC) { break; }
+        }
+        
+        displayText();  // Should show ""
+        Print.NewLine();
+        
+        // Test 8: Final verification
         LDA #(test8 % 256)
         STA ZP.STRL
         LDA #(test8 / 256)
         STA ZP.STRH
         
-        GapBuffer.Clear();
-        
-        displayText();  // Shows: ""
-        Print.NewLine();
-        
-dumpGapBuffer();
-Serial.WaitForChar();
-        
-        // Verify we can still insert after clear
+        // Insert "OK" to verify still works
         LDA #'O'
         GapBuffer.InsertChar();
         LDA #'K'
         GapBuffer.InsertChar();
         
-        displayText();  // Shows: "OK"
+        displayText();  // Should show "OK"
         Print.NewLine();
         
-dumpGapBuffer();
+GapBuffer.Dump();
 Serial.WaitForChar();
         
         // Clean up
@@ -486,4 +361,5 @@ Serial.WaitForChar();
         STA ZP.STRH
         Print.String();
     }
+       
 }

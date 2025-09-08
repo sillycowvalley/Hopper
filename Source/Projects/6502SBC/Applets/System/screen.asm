@@ -4,7 +4,7 @@ unit Screen
     uses "System/Serial"
     
     // Zero page allocation - shares block with Debug
-    const byte screenSlots = 0x63;
+    const byte screenSlots = 0x65;
     const byte screenStrL = screenSlots+0;  // Temporary string pointer low
     const byte screenStrH = screenSlots+1;  // Temporary string pointer high
     
@@ -55,7 +55,7 @@ unit Screen
         {
             LDA [screenStrL], Y
             if (Z) { break; }  // Null terminator
-            Serial.WriteChar();// munts X
+            Serial.WriteChar();// munts X
             INY
         }
         
@@ -246,9 +246,9 @@ unit Screen
     {
         PHA
         LDA #0x1B
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
         LDA #'['
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
         PLA
     }
     
@@ -271,11 +271,11 @@ unit Screen
         {
             PHA
             TXA
-            Serial.WriteChar();// munts X
+            Serial.WriteChar();// munts X
             PLA
         }
         ORA #'0'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
         
         PLY
         PLX
@@ -286,51 +286,51 @@ unit Screen
     {
         PHA
         
-        sendEscape();// munts X
+        sendEscape();// munts X
         
         // Send row+1 (VT100 is 1-based)
         INY
         TYA
-        sendDecimal();// munts X
+        sendDecimal();// munts X
         
         LDA #';'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
         
         // Send column+1
         PLA
         INC A
-        sendDecimal();// munts X
+        sendDecimal();// munts X
         
         LDA #'H'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Input: char in A
     Char()
     {
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Set foreground color
     Foreground() // Input: A = color (Color enum value 0-7)
     {
-        sendEscape();// munts X
+        sendEscape();// munts X
         CLC
         ADC #30  // Foreground colors are 30-37
-        sendDecimal();// munts X
+        sendDecimal();// munts X
         LDA #'m'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Set background color
     Background() // Input: A = color (Color enum value 0-7)
     {
-        sendEscape();// munts X
+        sendEscape();// munts X
         CLC
         ADC #40  // Background colors are 40-47
-        sendDecimal();// munts X
+        sendDecimal();// munts X
         LDA #'m'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor up
@@ -340,10 +340,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();// munts X
-        sendDecimal();// munts X
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'A'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor down
@@ -353,10 +353,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();// munts X
-        sendDecimal();// munts X
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'B'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor right
@@ -366,10 +366,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();// munts X
-        sendDecimal();// munts X
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'C'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor left
@@ -379,10 +379,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();// munts X
-        sendDecimal();// munts X
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'D'
-        Serial.WriteChar();// munts X
+        Serial.WriteChar();// munts X
     }
     
     // Set both foreground and background colors
@@ -394,13 +394,13 @@ unit Screen
         // Set foreground
         PLA
         PHA
-        Foreground();// munts X
+        Foreground();// munts X
         
         // Set background
         PLY
         PHY
         TYA
-        Background();// munts X
+        Background();// munts X
         
         PLY
         PLA
@@ -415,7 +415,7 @@ unit Screen
         {
             PHX
             LDA #'-'
-            Serial.WriteChar();// munts X
+            Serial.WriteChar();// munts X
             PLX
             DEX
             if (Z) { break; }
@@ -431,7 +431,7 @@ unit Screen
         {
             PHX
             LDA #'|'
-            Serial.WriteChar();// munts X
+            Serial.WriteChar();// munts X
             LDA #1
             Left(); // munts X
             LDA #1

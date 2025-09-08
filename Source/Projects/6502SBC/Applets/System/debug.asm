@@ -10,10 +10,11 @@ unit Debug
     
     // Persistent state
     const byte debugRow     = debugSlots+0; // Current debug output row
-    const byte debugEnabled = debugSlots+1; // Debug output enabled flag
-    const byte debugEntries = debugSlots+2; // Nested calls to store and restore
+    const byte debugCol     = debugSlots+1; // Current debug output row
+    const byte debugEnabled = debugSlots+2; // Debug output enabled flag
+    const byte debugEntries = debugSlots+3; // Nested calls to store and restore
     
-    const uint dumpCount = ZP.M0;
+    const uint dumpCount    = debugSlots+4;
     
     
     // Constants - use camelCase, not ALL_CAPS
@@ -49,6 +50,7 @@ unit Debug
     Initialize()
     {
         STZ debugRow
+        STZ debugCol
         LDA #1
         STA debugEnabled
         STZ debugEntries
@@ -79,6 +81,7 @@ unit Debug
         storeState();
         
         STZ debugRow
+        STZ debugCol
         loop
         {
             LDA # cDebugColumn
@@ -214,6 +217,63 @@ unit Debug
             Print.Hex();
             
             nextRow();
+            
+            restoreState();
+            
+            break;
+        } // single exit
+        
+        PLA
+        PLY
+        PLX
+        PLP
+    }
+    
+    // Output byte in hex with space, continuing from last position
+    // Input: A = byte value
+    ByteSpace()
+    {
+        PHP
+        PHX
+        PHY
+        
+        PHA
+        loop
+        {
+            LDA debugEnabled
+            if (Z) 
+            { 
+                break; 
+            }
+            
+            storeState();
+            
+            // Position at current location
+            CLC
+            LDA # cDebugColumn
+            ADC debugCol
+            LDY debugRow
+            Screen.GotoXY();
+            
+            // Print hex and space
+            PLA
+            PHA
+            Print.Hex();
+            Print.Space();
+            
+            // Update position
+            CLC
+            LDA debugCol
+            ADC #3  // 2 hex + 1 space
+            STA debugCol
+            
+            // Wrap if needed
+            CMP # cMaxWidth  // >= 18?
+            if (C)
+            {
+                STZ debugCol
+                nextRow();
+            }
             
             restoreState();
             

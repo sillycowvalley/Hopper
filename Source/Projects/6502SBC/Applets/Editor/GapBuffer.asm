@@ -406,10 +406,17 @@ unit GapBuffer
         ORA mgbCountH
         if (Z) { return; }  // Nothing to copy
         
-        // Save count on stack
         LDA mgbCountL
         PHA
         LDA mgbCountH
+        PHA
+        LDA mgbSrcL
+        PHA
+        LDA mgbSrcH
+        PHA
+        LDA mgbDstL
+        PHA
+        LDA mgbDstH
         PHA
         
         // Set up pointers
@@ -423,17 +430,16 @@ unit GapBuffer
         LDA mgbDstH
         STA ZP.IDYH
         
-        LDY #0
         loop
         {
-            LDA [ZP.IDX], Y
-            STA [ZP.IDY], Y
+            LDA [mgbSrc]
+            STA [mgbDst]
             
             // Increment pointers
-            INC ZP.IDXL
-            if (Z) { INC ZP.IDXH }
-            INC ZP.IDYL
-            if (Z) { INC ZP.IDYH }
+            INC mgbSrcL
+            if (Z) { INC mgbSrcH }
+            INC mgbDstL
+            if (Z) { INC mgbDstH }
             
             // Decrement count
             SEC
@@ -449,7 +455,14 @@ unit GapBuffer
             if (Z) { break; }
         }
         
-        // Restore count from stack
+        PLA
+        STA mgbDstH
+        PLA
+        STA mgbDstL
+        PLA
+        STA mgbSrcH
+        PLA
+        STA mgbSrcL
         PLA
         STA mgbCountH
         PLA
@@ -817,4 +830,144 @@ unit GapBuffer
         
         SEC  // Success
     }
+    
+#ifdef DEBUG
+    // Debug helper: Dump gap buffer state
+    const string dumpLabel = "= GAP BUFFER DUMP =";
+    const string bufLabel = "Buf@";
+    const string gapValueLabel = "GapV:";
+    const string gapStartLabel = "GapS:";
+    const string gapEndLabel = "GapE:";
+    const string sizeLabel = "Size:";
+    const string rawLabel = "Raw:";
+    const string logLabel = "Log:";
+    
+    
+    Dump()
+    {
+        PHX
+        PHY
+        
+         // Save ZP.IDX
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        Debug.Clear();
+        
+        // Header
+        LDA #(dumpLabel % 256)
+        STA ZP.STRL
+        LDA #(dumpLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Buffer address
+        LDA #(bufLabel % 256)
+        STA ZP.STRL
+        LDA #(bufLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.gbBufferL
+        STA ZP.ACCL
+        LDA GapBuffer.gbBufferH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Gap value
+        LDA #(gapValueLabel % 256)
+        STA ZP.STRL
+        LDA #(gapValueLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Gap start
+        LDA #(gapStartLabel % 256)
+        STA ZP.STRL
+        LDA #(gapStartLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.gbGapStartL
+        STA ZP.ACCL
+        LDA GapBuffer.gbGapStartH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Gap end
+        LDA #(gapEndLabel % 256)
+        STA ZP.STRL
+        LDA #(gapEndLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.gbGapEndL
+        STA ZP.ACCL
+        LDA GapBuffer.gbGapEndH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Buffer size
+        LDA #(sizeLabel % 256)
+        STA ZP.STRL
+        LDA #(sizeLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.gbBufferSizeL
+        STA ZP.ACCL
+        LDA GapBuffer.gbBufferSizeH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Dump first 16 raw bytes from buffer
+        LDA #(rawLabel % 256)
+        STA ZP.STRL
+        LDA #(rawLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        LDA GapBuffer.gbBufferL
+        STA ZP.IDXL
+        LDA GapBuffer.gbBufferH
+        STA ZP.IDXH
+        LDA # 64
+        Debug.DumpMemory();
+        
+        // Show what GetCharAt returns for first 8 positions
+        LDA #(logLabel % 256)
+        STA ZP.STRL
+        LDA #(logLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        LDX #48
+        STZ ZP.IDYL  // Position counter
+        loop
+        {
+            PHX
+            
+            // Get character at position IDYL
+            LDA ZP.IDYL
+            STA GapBuffer.GapValueL
+            STZ GapBuffer.GapValueH
+            GapBuffer.GetCharAt();
+            
+            // Show it
+            Debug.ByteSpace();
+            
+            INC ZP.IDYL
+            PLX
+            DEX
+            if (Z) { break; }
+        }
+        
+        // Restore ZP.IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+    }
+#endif    
 }
