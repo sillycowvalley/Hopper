@@ -137,6 +137,46 @@ unit GapBuffer
         STA gbGapEndL
         LDA gbBufferSizeH
         STA gbGapEndH
+        
+#ifdef DEBUG        
+        // Zero the entire buffer for debugging
+        LDA gbBufferL
+        STA ZP.IDXL
+        LDA gbBufferH
+        STA ZP.IDXH
+        
+        // Use IDYL as counter for buffer size
+        LDA gbBufferSizeL
+        STA ZP.IDYL
+        LDA gbBufferSizeH
+        STA ZP.IDYH
+        
+        LDA #0
+        loop
+        {
+            STA [ZP.IDX]
+            
+            // Increment pointer
+            INC ZP.IDXL
+            if (Z) { INC ZP.IDXH }
+            
+            // Decrement counter
+            SEC
+            LDA ZP.IDYL
+            SBC #1
+            STA ZP.IDYL
+            LDA ZP.IDYH
+            SBC #0
+            STA ZP.IDYH
+            
+            // Check if done
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z) { break; }
+            
+            LDA #0  // Reload zero for next iteration
+        }
+#endif        
     }
     
     // Get gap start position
@@ -273,7 +313,7 @@ unit GapBuffer
                 // Copy bytes
                 copyBytes();
                 
-                // TODO : REMOVE
+#ifdef DEBUG
                 // Clear the source area (now part of gap) for debugging
                 LDY #0
                 LDA #0x00
@@ -284,7 +324,7 @@ unit GapBuffer
                     CPY mgbCountL
                     if (Z) { break; }  // Assumes count < 256
                 }
-                
+#endif    
                 
                 // Update gap position
                 SEC
@@ -327,7 +367,7 @@ unit GapBuffer
                 // Copy bytes
                 copyBytes();
                 
-                // TODO : REMOVE
+#ifdef DEBUG
                 // Clear the source area (now part of gap) for debugging
                 LDY #0
                 LDA #0x00
@@ -338,7 +378,7 @@ unit GapBuffer
                     CPY mgbCountL
                     if (Z) { break; }  // Assumes count < 256
                 }
-                
+#endif    
                 // Update gap position
                 CLC
                 LDA gbGapEndL
@@ -485,7 +525,7 @@ unit GapBuffer
         if (Z) { DEC gbGapStartH }
         DEC gbGapStartL
         
-        // TODO : REMOVE
+#ifdef DEBUG
         // Zero the deleted position for debugging
         CLC
         LDA gbBufferL
@@ -495,8 +535,8 @@ unit GapBuffer
         ADC gbGapStartH
         STA ZP.IDXH
         LDA #0
-        LDY #0
-        STA [ZP.IDX], Y
+        STA [ZP.IDX]
+#endif
         
         SEC  // Success
     }

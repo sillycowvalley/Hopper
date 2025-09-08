@@ -1,6 +1,7 @@
 program TestGapBuffer
 {
     #define CPU_65C02S
+    #define DEBUG
     
     uses "System/Definitions"
     uses "System/Print"
@@ -385,9 +386,6 @@ program TestGapBuffer
         Print.NewLine();
         
         
-dumpGapBuffer();
-Serial.WaitForChar();        
-        
         // Test 7: Force buffer growth (fill beyond 32 bytes)
         LDA #(test7 % 256)
         STA ZP.STRL
@@ -413,6 +411,11 @@ Serial.WaitForChar();
             DEX
             if (Z) { break; }
         }
+        
+        GapBuffer.GetGapStart();  // This would update GapValue to 0x002B
+        
+dumpGapBuffer();       
+Serial.WaitForChar();        
         
         // Show length to prove growth worked
         LDA #(lblTextLen % 256)
@@ -444,7 +447,7 @@ Serial.WaitForChar();
         STA ZP.STRH
         PLA
         Debug.LabeledByte();
-        
+      
 Serial.WaitForChar();
         
         // Test 8: Clear buffer
@@ -458,8 +461,8 @@ Serial.WaitForChar();
         displayText();  // Shows: ""
         Print.NewLine();
         
-        dumpGapBuffer();
-        
+dumpGapBuffer();
+Serial.WaitForChar();
         
         // Verify we can still insert after clear
         LDA #'O'
@@ -469,6 +472,9 @@ Serial.WaitForChar();
         
         displayText();  // Shows: "OK"
         Print.NewLine();
+        
+dumpGapBuffer();
+Serial.WaitForChar();
         
         // Clean up
         GapBuffer.Dispose();
