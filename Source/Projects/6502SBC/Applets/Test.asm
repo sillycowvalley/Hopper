@@ -290,8 +290,8 @@ Serial.WaitForChar();
         STA ZP.STRH
         
         LDA #2
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
         
         LDA #'X'
@@ -316,8 +316,8 @@ Serial.WaitForChar();
 
         
         // Get char at position 0 (should be 'H')
-        STZ ZP.ACCL
-        STZ ZP.ACCH
+        STZ GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
         GapBuffer.GetCharAt();
         PHA
         LDA #(lblPos % 256)
@@ -335,8 +335,8 @@ Serial.WaitForChar();
         
         // Get char at position 3 (should be 'Y')
         LDA #3
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
         GapBuffer.GetCharAt();
         PHA
         LDA #(lblPos % 256)
@@ -361,8 +361,8 @@ Serial.WaitForChar();
         STA ZP.STRH
         
         LDA #5
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
         
         GapBuffer.DeleteChar();  // Delete 'l'
@@ -384,8 +384,8 @@ Serial.WaitForChar();
         STA ZP.STRH
         
         LDA #2
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
         
         GapBuffer.DeleteForward();  // Delete 'X'
@@ -432,12 +432,16 @@ Serial.WaitForChar();
         LDA #(lblTextLen / 256)
         STA ZP.STRH
         GapBuffer.GetTextLength();
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
         Debug.LabeledWord();
         
         // Show a few chars from the middle
         LDA #20
-        STA ZP.ACCL
-        STZ ZP.ACCH
+        STA GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
         GapBuffer.GetCharAt();
         PHA
         LDA #(lblPos % 256)
@@ -453,7 +457,7 @@ Serial.WaitForChar();
         PLA
         Debug.LabeledByte();
         
-Serial.WaitForChar();                
+Serial.WaitForChar();
         
         // Test 8: Clear buffer
         LDA #(test8 % 256)
