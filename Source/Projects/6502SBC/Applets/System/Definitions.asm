@@ -68,35 +68,32 @@ unit Definitions
     //     - screenStrL, screenStrH (temporary string pointer)
     //   [0x67-0x6F available for Debug/Screen expansion]
     //
-    // 0x70-0x7A: ScreenBuffer (11 bytes)
+    // 0x70-0x8E: ScreenBuffer (31 bytes)
     //   - CursorCol, CursorRow, Foreground, Background
     //   - Attributes, sbWidth, sbHeight
     //   - sbBuffer (2 bytes), sbSuspendCount, sbCursorVisible
-    //   - [0x7B-0x7F available for ScreenBuffer expansion]
     //
-    // 0x80: Keyboard (1 byte)
+    // 0x8F: Keyboard (1 byte)
     //   - kbEscState
-    //   - [0x81-0x8F available for Keyboard expansion]
     //
-    // 0x90-0x9E: View (15 bytes)
+    // 0x90-0xAF: View (32 bytes)
     //   - vwLogicalCursor (2 bytes), vwTopLine (2 bytes)
     //   - vwCurrentLine (2 bytes), vwCurrentCol
     //   - vwScreenRows, vwScreenCols, vwModified, vwDirty
     //   - vwLineStarts (2 bytes), vwLineCount (2 bytes)
-    //   - [0x9F available for View expansion]
     //
-    // 0xA0-0xA7: GapBuffer (8 bytes)
+    // 0xB0-0xCF: GapBuffer (32 bytes)
     //   - gbBuffer (2 bytes), gbGapStart (2 bytes)
     //   - gbGapEnd (2 bytes), gbBufferSize (2 bytes)
     //   - [0xA8-0xAF available for GapBuffer expansion]
     //
-    // 0xB0-0xB6: Commands (7 bytes)
+    // 0xD0-0xD6: Commands (7 bytes)
     //   - cmdExitFlag, cmdSaveNeeded
     //   - cmdFileSize (2 bytes), cmdReadPos (2 bytes)
     //   - cmdChar
-    //   - [0xB7-0xBF available for Commands expansion]
+    //   - [0xD7-0xDF available for Commands expansion]
     //
-    // 0xC0-0xEB: Available (44 bytes)
+    // 0xE0-0xEB: Available (44 bytes)
     //   - Free for additional application modules
     //
     // =====================================================

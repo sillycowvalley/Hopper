@@ -63,12 +63,14 @@ program TextEditor
             Print.String();
             return;
         }
-        
+
         // Initialize command processor
         Commands.Initialize();
-        
+
         // Try to load TEST file
         Commands.LoadFile();
+        
+GapBuffer.Dump();
         
         // Main editor loop
         loop
@@ -95,7 +97,7 @@ program TextEditor
         
         // Reset screen and show goodbye
         Screen.Reset();
-        Screen.Clear();
+        //Screen.Clear();
         LDA #(byeMsg % 256)
         STA ZP.STRL
         LDA #(byeMsg / 256)

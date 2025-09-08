@@ -46,16 +46,16 @@ unit View
     
     // Leaf workspace (M8-M15 to avoid conflict with GapBuffer)
     // Safe to use: renderViewport/renderLine don't call Memory or Time functions
-    const uint vwLinePos = ZP.M8;    // Temp line position
-    const uint vwLinePosL = ZP.M8;
-    const uint vwLinePosH = ZP.M9;
-    const byte vwRow = ZP.M10;       // Current render row
-    const byte vwCol = ZP.M11;       // Current render column
-    const uint vwCharPos = ZP.M12;   // Character position
-    const uint vwCharPosL = ZP.M12;
-    const uint vwCharPosH = ZP.M13;
-    const byte vwChar = ZP.M14;      // Current character
-    const byte vwTemp = ZP.M15;      // Temporary
+    const uint vwLinePos = viewSlots+15;    // Temp line position
+    const uint vwLinePosL = viewSlots+15;
+    const uint vwLinePosH = viewSlots+16;
+    const byte vwRow = viewSlots+17;       // Current render row
+    const byte vwCol = viewSlots+18;       // Current render column
+    const uint vwCharPos = viewSlots+19;   // Character position
+    const uint vwCharPosL = viewSlots+19;
+    const uint vwCharPosH = viewSlots+20;
+    const byte vwChar = viewSlots+21;      // Current character
+    const byte vwTemp = viewSlots+22;      // Temporary
     
     // Initialize view system
     // Input: A = width, Y = height
@@ -346,7 +346,7 @@ unit View
         STZ vwDirty
         
         ScreenBuffer.Suspend();
-        
+
         // Rebuild line index if needed
         RebuildLineIndex();
         

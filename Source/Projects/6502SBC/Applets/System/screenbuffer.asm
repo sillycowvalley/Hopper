@@ -45,48 +45,50 @@ unit ScreenBuffer
     const byte sbCursorVisible = zeroPageSlots+10;
     
     // Leaf node workspace slots
-    const uint sbSize    = ZP.M0;        // Total buffer size (2 bytes)
-    const uint sbSizeL   = ZP.M0;
-    const uint sbSizeH   = ZP.M1;
+    const uint msbSize    = zeroPageSlots+11;        // Total buffer size (2 bytes)
+    const uint msbSizeL   = zeroPageSlots+11;
+    const uint msbSizeH   = zeroPageSlots+12;
     
-    const byte sbRow     = ZP.M2;
-    const byte sbCol     = ZP.M3;
+    const byte msbRow     = zeroPageSlots+13;
+    const byte msbCol     = zeroPageSlots+14;
     
-    const byte sbOffset  = ZP.M4;
-    const byte sbOffsetL = ZP.M4;
-    const byte sbOffsetH = ZP.M5;
+    const byte msbOffset  = zeroPageSlots+15;
+    const byte msbOffsetL = zeroPageSlots+15;
+    const byte msbOffsetH = zeroPageSlots+16;
     
-    const byte sbCharacter = ZP.M6;
-    const byte sbAttribute = ZP.M7;
+    const byte msbCharacter = zeroPageSlots+17;
+    const byte msbAttribute = zeroPageSlots+18;
     
-    const byte sbLastRow   = ZP.M8;
-    const byte sbLastCol   = ZP.M9;
+    const byte msbLastRow   = zeroPageSlots+19;
+    const byte msbLastCol   = zeroPageSlots+20;
     
     
     // Helper: calculate buffer offset for A = col, Y = row
-    calculateOffset() // Returns offset in sbOffset
+    calculateOffset() // Returns offset in sbOffset, munts X
     {
+        PHX
+        
         // save arguments
-        STA sbCol
-        STY sbRow
+        STA msbCol
+        STY msbRow
         
         // offset = (sbRow * sbWidth + sbCol) * 2
-        STZ sbOffsetL
-        STZ sbOffsetH
+        STZ msbOffsetL
+        STZ msbOffsetH
         
         // Add sbWidth to offset sbRow times
-        LDX sbRow
+        LDX msbRow
         if (NZ)
         {
             loop
             {
                 CLC
-                LDA sbOffsetL
+                LDA msbOffsetL
                 ADC sbWidth
-                STA sbOffsetL
-                LDA sbOffsetH
+                STA msbOffsetL
+                LDA msbOffsetH
                 ADC #0
-                STA sbOffsetH
+                STA msbOffsetH
                 DEX
                 if (Z) { break; }
             }
@@ -94,16 +96,18 @@ unit ScreenBuffer
         
         // Add sbCol
         CLC
-        LDA sbOffsetL
-        ADC sbCol
-        STA sbOffsetL
-        LDA sbOffsetH
+        LDA msbOffsetL
+        ADC msbCol
+        STA msbOffsetL
+        LDA msbOffsetH
         ADC #0
-        STA sbOffsetH
+        STA msbOffsetH
         
         // Double for 2 bytes per cell
-        ASL sbOffsetL
-        ROL sbOffsetH
+        ASL msbOffsetL
+        ROL msbOffsetH
+        
+        PLX
     }
     
     calculateBufferSize()
@@ -136,9 +140,9 @@ unit ScreenBuffer
         
         // Calculate total size = width (A) * height (Y) * 2
         calculateBufferSize();
-        LDA sbOffsetL
+        LDA msbOffsetL
         STA ZP.ACCL
-        LDA sbOffsetH
+        LDA msbOffsetH
         STA ZP.ACCH
         
         // Allocate current buffer
@@ -292,9 +296,9 @@ unit ScreenBuffer
         
         // Calculate total cells = width * height into IDY
         calculateBufferSize();
-        LDA sbOffsetL
+        LDA msbOffsetL
         STA ZP.IDYL
-        LDA sbOffsetH
+        LDA msbOffsetH
         STA ZP.IDYH
         // byte size / 2 -> cell size 
         LSR ZP.IDYH
@@ -352,10 +356,10 @@ unit ScreenBuffer
                 
                 // Add base address to offset
                 CLC
-                LDA sbOffsetL
+                LDA msbOffsetL
                 ADC sbBufferL
                 STA ZP.IDXL
-                LDA sbOffsetH
+                LDA msbOffsetH
                 ADC sbBufferH
                 STA ZP.IDXH
                 
@@ -457,9 +461,9 @@ unit ScreenBuffer
         
         // Calculate total cells = width * height into IDY
         calculateBufferSize();
-        LDA sbOffsetL
+        LDA msbOffsetL
         STA ZP.IDYL
-        LDA sbOffsetH
+        LDA msbOffsetH
         STA ZP.IDYH
         // byte size / 2 -> cell size 
         LSR ZP.IDYH
@@ -471,13 +475,13 @@ unit ScreenBuffer
         LDA # Screen.Color.Black // Bits 3-5
         ASL A ASL A ASL A
         ORA # Screen.Color.White // Bits 0-2
-        STA sbAttribute
+        STA msbAttribute
                         
-        STZ sbRow
-        STZ sbCol     
+        STZ msbRow
+        STZ msbCol     
         LDA #0xFF
-        STA sbLastCol
-        STA sbLastRow
+        STA msbLastCol
+        STA msbLastRow
         
         // Loop through all cells
         loop
@@ -486,21 +490,21 @@ unit ScreenBuffer
             if (MI) // dirty?
             {
                 AND # charMask
-                STA sbCharacter // current character
+                STA msbCharacter // current character
                 STA [ZP.IDX] // clear dirty
                 
-                LDA sbAttribute
+                LDA msbAttribute
                 STA ZP.TEMP // old attribute
                     
                 LDY #1
                 LDA [ZP.IDX], Y  
-                CMP sbAttribute
+                CMP msbAttribute
                 if (NZ)
                 {
-                    STA sbAttribute // new current attribute
+                    STA msbAttribute // new current attribute
                     
                     // Apply bold if needed
-                    if (BBS6, sbAttribute)
+                    if (BBS6, msbAttribute)
                     {
                         if (BBR6, ZP.TEMP) // was not bold
                         {
@@ -516,7 +520,7 @@ unit ScreenBuffer
                     }
                     
                     // Apply inverse if needed
-                    if (BBS7, sbAttribute)
+                    if (BBS7, msbAttribute)
                     {
                         if (BBR7, ZP.TEMP) // was not inverse
                         {
@@ -534,50 +538,50 @@ unit ScreenBuffer
                     PHA
                     AND #0b00000111
                     STA ZP.TEMP
-                    LDA sbAttribute
+                    LDA msbAttribute
                     AND #0b00000111
                     CMP ZP.TEMP
                     if (NZ)
                     {
                         // Extract and set foreground color
-                        LDA sbAttribute
+                        LDA msbAttribute
                         AND #0b00000111
                         Screen.Foreground(); // SysCalls : munt A, X
                     }
                     PLA
                     AND #0b00111000
                     STA ZP.TEMP
-                    LDA sbAttribute
+                    LDA msbAttribute
                     AND #0b00111000
                     CMP ZP.TEMP
                     if (NZ)
                     {
                         // Extract and set background color
-                        LDA sbAttribute
+                        LDA msbAttribute
                         LSR A LSR A LSR A
                         AND #0b00000111
                         Screen.Background(); // SysCalls : munt A, X
                     }
                 }
-                LDA sbLastCol
-                CMP sbCol
+                LDA msbLastCol
+                CMP msbCol
                 if (Z)
                 {
-                    LDA sbLastRow
-                    CMP sbRow
+                    LDA msbLastRow
+                    CMP msbRow
                 }
                 if (NZ)
                 {
-                    LDA sbCol
-                    STA sbLastCol
-                    LDY sbRow
-                    STY sbLastRow
+                    LDA msbCol
+                    STA msbLastCol
+                    LDY msbRow
+                    STY msbLastRow
                     Screen.GotoXY();
                 }
-                LDA sbCharacter
+                LDA msbCharacter
                 Screen.Char(); // SysCalls : munt A, X
                 
-                INC sbLastCol // drawing Char advanced column
+                INC msbLastCol // drawing Char advanced column
             }
             // Move to next cell (2 bytes forward)
             Shared.IncIDX();
@@ -592,13 +596,13 @@ unit ScreenBuffer
             if (Z) { break; }
             
             // Advance current position
-            INC sbCol
-            LDA sbCol
+            INC msbCol
+            LDA msbCol
             CMP sbWidth
             if (Z)
             {
-                STZ sbCol
-                INC sbRow
+                STZ msbCol
+                INC msbRow
             }
         }
         

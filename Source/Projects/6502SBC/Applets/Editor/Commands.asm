@@ -123,11 +123,16 @@ Debug.Byte();
                         // TODO: Ask to save
                         SaveFile();
                     }
+
+LDA #'q' Debug.Byte();
+                    
                     LDA #1
                     STA cmdExitFlag
                 }
                 case Key.Escape:
                 {
+LDA #'e' Debug.Byte();
+
                     LDA #1
                     STA cmdExitFlag
                 }
@@ -159,7 +164,7 @@ Debug.Word();
         PLA
         GapBuffer.InsertChar();
         
-GapBuffer.Dump();        
+//GapBuffer.Dump();        
         
         // Move cursor right
         View.CursorRight();
@@ -493,7 +498,11 @@ GapBuffer.Dump();
     ShouldExit()
     {
         LDA cmdExitFlag
-        if (NZ) { SEC return; }
+        if (NZ) 
+        {
+LDA #'x' Debug.Byte();            
+            SEC return; 
+        }
         CLC
     }
 }
