@@ -273,6 +273,19 @@ unit GapBuffer
                 // Copy bytes
                 copyBytes();
                 
+                // TODO : REMOVE
+                // Clear the source area (now part of gap) for debugging
+                LDY #0
+                LDA #0x00
+                loop
+                {
+                    STA [mgbSrc], Y
+                    INY
+                    CPY mgbCountL
+                    if (Z) { break; }  // Assumes count < 256
+                }
+                
+                
                 // Update gap position
                 SEC
                 LDA gbGapEndL
@@ -314,6 +327,18 @@ unit GapBuffer
                 // Copy bytes
                 copyBytes();
                 
+                // TODO : REMOVE
+                // Clear the source area (now part of gap) for debugging
+                LDY #0
+                LDA #0x00
+                loop
+                {
+                    STA [mgbSrc], Y
+                    INY
+                    CPY mgbCountL
+                    if (Z) { break; }  // Assumes count < 256
+                }
+                
                 // Update gap position
                 CLC
                 LDA gbGapEndL
@@ -336,10 +361,16 @@ unit GapBuffer
     // Helper: Copy bytes from src to dst
     copyBytes()
     {
-        // Uses mgbSrc, mgbDst, mgbCount
+        // Uses mgbSrc, mgbDst, mgbCount (preserves mgbCount)
         LDA mgbCountL
         ORA mgbCountH
         if (Z) { return; }  // Nothing to copy
+        
+        // Save count on stack
+        LDA mgbCountL
+        PHA
+        LDA mgbCountH
+        PHA
         
         // Set up pointers
         LDA mgbSrcL
@@ -377,8 +408,13 @@ unit GapBuffer
             ORA mgbCountL
             if (Z) { break; }
         }
-    }
-    
+        
+        // Restore count from stack
+        PLA
+        STA mgbCountH
+        PLA
+        STA mgbCountL
+    }    
     // Insert character at gap position
     // Input: A = character to insert
     // Note: Assumes gap is at correct position
@@ -433,7 +469,7 @@ unit GapBuffer
     
     // Delete character before gap (backspace)
     // Note: Assumes gap is at correct position
-    DeleteChar()
+    Backspace()
     {
         // Check if at beginning
         LDA gbGapStartL
@@ -449,36 +485,68 @@ unit GapBuffer
         if (Z) { DEC gbGapStartH }
         DEC gbGapStartL
         
+        // TODO : REMOVE
+        // Zero the deleted position for debugging
+        CLC
+        LDA gbBufferL
+        ADC gbGapStartL
+        STA ZP.IDXL
+        LDA gbBufferH
+        ADC gbGapStartH
+        STA ZP.IDXH
+        LDA #0
+        LDY #0
+        STA [ZP.IDX], Y
+        
         SEC  // Success
     }
     
-    // Delete character after gap (delete key)
-    // Note: Assumes gap is at correct position
-    DeleteForward()
+    Delete()
     {
-        loop  // Single iteration for structure
+        // Check if at end
+        LDA gbGapEndL
+        CMP gbBufferSizeL
+        if (Z)
         {
-            // Check if at end
-            LDA gbGapEndL
-            CMP gbBufferSizeL
+            LDA gbGapEndH
+            CMP gbBufferSizeH
             if (Z)
             {
-                LDA gbGapEndH
-                CMP gbBufferSizeH
-                if (Z)
-                {
-                    CLC  // At end of buffer
-                    break;
-                }
+                CLC  // At end of buffer
+                return;
             }
-            
-            // Move gap end forward
-            INC gbGapEndL
-            if (Z) { INC gbGapEndH }
-            
-            SEC  // Success
-            break;
         }
+        
+        // Zero the position about to be deleted (current gap end)
+        CLC
+        LDA gbBufferL
+        ADC gbGapEndL
+        STA ZP.IDXL
+        LDA gbBufferH
+        ADC gbGapEndH
+        STA ZP.IDXH
+        LDA #0
+        LDY #0
+        STA [ZP.IDX], Y
+        
+        // Move gap end forward
+        INC gbGapEndL
+        if (Z) { INC gbGapEndH }
+        
+        SEC  // Success
+    }    
+    
+    // Helper: Calculate gap size
+    // Output: mgbCount = gap size (gbGapEnd - gbGapStart)
+    getGapSize()
+    {
+        SEC
+        LDA gbGapEndL
+        SBC gbGapStartL
+        STA mgbCountL
+        LDA gbGapEndH
+        SBC gbGapStartH
+        STA mgbCountH
     }
     
     // Get character at logical position
@@ -527,16 +595,16 @@ unit GapBuffer
             {
                 if (NZ)  // position.H > gap_start.H, definitely after gap
                 {
-                    // Add gap size to skip over gap
-                    SEC
-                    LDA gbGapEndL
-                    SBC gbGapStartL
+                    // Calculate gap size
+                    getGapSize();
+                    
+                    // Add gap size to position
                     CLC
-                    ADC mgbTempL
+                    LDA mgbTempL
+                    ADC mgbCountL
                     STA mgbTempL
-                    LDA gbGapEndH
-                    SBC gbGapStartH
-                    ADC mgbTempH
+                    LDA mgbTempH
+                    ADC mgbCountH
                     STA mgbTempH
                 }
                 else
@@ -546,16 +614,16 @@ unit GapBuffer
                     CMP gbGapStartL
                     if (C)  // position.L >= gap_start.L, at or after gap
                     {
-                        // Add gap size to skip over gap
-                        SEC
-                        LDA gbGapEndL
-                        SBC gbGapStartL
+                        // Calculate gap size
+                        getGapSize();
+                        
+                        // Add gap size to position
                         CLC
-                        ADC mgbTempL
+                        LDA mgbTempL
+                        ADC mgbCountL
                         STA mgbTempL
-                        LDA gbGapEndH
-                        SBC gbGapStartH
-                        ADC mgbTempH
+                        LDA mgbTempH
+                        ADC mgbCountH
                         STA mgbTempH
                     }
                     // else position < gap start, no adjustment
@@ -571,6 +639,7 @@ unit GapBuffer
             LDA gbBufferH
             ADC mgbTempH
             STA mgbTempH
+            
             
             LDA [mgbTemp]
             

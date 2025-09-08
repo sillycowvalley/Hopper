@@ -32,6 +32,7 @@ program TestGapBuffer
     // Label for dump
     const string dumpLabel = "= GAP BUFFER DUMP =";
     const string bufLabel = "Buf@";
+    const string gapValueLabel = "GapV:";
     const string gapStartLabel = "GapS:";
     const string gapEndLabel = "GapE:";
     const string sizeLabel = "Size:";
@@ -62,6 +63,17 @@ program TestGapBuffer
         LDA GapBuffer.gbBufferL
         STA ZP.ACCL
         LDA GapBuffer.gbBufferH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Gap value
+        LDA #(gapValueLabel % 256)
+        STA ZP.STRL
+        LDA #(gapValueLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
         STA ZP.ACCH
         Debug.LabeledWord();
         
@@ -242,7 +254,6 @@ program TestGapBuffer
             LDA #(passed / 256)
             STA ZP.STRH
             Print.String();
-            dumpGapBuffer();
         }
         else
         {
@@ -253,10 +264,6 @@ program TestGapBuffer
             Print.String();
             return;
         }
-        
-        dumpGapBuffer();
-        
-Serial.WaitForChar();
         
         // Test 2: Insert at start
         LDA #(test2 % 256)
@@ -278,17 +285,12 @@ Serial.WaitForChar();
         displayText();  // Shows: "Hello"
         Print.NewLine();
         
-        
-        dumpGapBuffer();
-        
-Serial.WaitForChar();        
-        
         // Test 3: Move gap to position 2 and insert
         LDA #(test3 % 256)
         STA ZP.STRL
         LDA #(test3 / 256)
-        STA ZP.STRH
-        
+        STA ZP.STRH   
+             
         LDA #2
         STA GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
@@ -296,16 +298,13 @@ Serial.WaitForChar();
         
         LDA #'X'
         GapBuffer.InsertChar();
+        
         LDA #'Y'
         GapBuffer.InsertChar();
         
         displayText();  // Shows: "HeXYllo"
         Print.NewLine();
         
-        dumpGapBuffer();
-
-Serial.WaitForChar();                
-                        
         // Test 4: GetCharAt various positions
         LDA #(test4 % 256)
         STA ZP.STRL
@@ -313,12 +312,11 @@ Serial.WaitForChar();
         STA ZP.STRH
         Print.String();
         
-
-        
         // Get char at position 0 (should be 'H')
         STZ GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
         GapBuffer.GetCharAt();
+        
         PHA
         LDA #(lblPos % 256)
         STA ZP.STRL
@@ -330,7 +328,7 @@ Serial.WaitForChar();
         STA ZP.STRL
         LDA #(lblChar / 256)
         STA ZP.STRH
-        PLA
+        PLA     
         Debug.LabeledByte();
         
         // Get char at position 3 (should be 'Y')
@@ -339,6 +337,7 @@ Serial.WaitForChar();
         STZ GapBuffer.GapValueH
         GapBuffer.GetCharAt();
         PHA
+
         LDA #(lblPos % 256)
         STA ZP.STRL
         LDA #(lblPos / 256)
@@ -349,10 +348,8 @@ Serial.WaitForChar();
         STA ZP.STRL
         LDA #(lblChar / 256)
         STA ZP.STRH
-        PLA
+        PLA     
         Debug.LabeledByte();
-        
-Serial.WaitForChar();         
         
         // Test 5: Delete backward from position 5
         LDA #(test5 % 256)
@@ -360,22 +357,15 @@ Serial.WaitForChar();
         LDA #(test5 / 256)
         STA ZP.STRH
         
-        LDA #5
+        LDA #6
         STA GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
-        
-        GapBuffer.DeleteChar();  // Delete 'l'
-        GapBuffer.DeleteChar();  // Delete 'l'
+        GapBuffer.Backspace();  // Delete 'l'
+        GapBuffer.Backspace();  // Delete 'l'
         
         displayText();  // Shows: "HeXYo"
         Print.NewLine();
-        
-        
-        dumpGapBuffer();
-        
-        
-Serial.WaitForChar();        
         
         // Test 6: Delete forward from position 2
         LDA #(test6 % 256)
@@ -388,16 +378,14 @@ Serial.WaitForChar();
         STZ GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
         
-        GapBuffer.DeleteForward();  // Delete 'X'
-        GapBuffer.DeleteForward();  // Delete 'Y'
+        GapBuffer.Delete();  // Delete 'X'
+        GapBuffer.Delete();  // Delete 'Y'
         
         displayText();  // Shows: "Heo"
         Print.NewLine();
         
         
-        dumpGapBuffer();
-        
-        
+dumpGapBuffer();
 Serial.WaitForChar();        
         
         // Test 7: Force buffer growth (fill beyond 32 bytes)

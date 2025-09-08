@@ -262,6 +262,8 @@ unit Debug
     LabeledByte()
     {
         PHP
+        PHX
+        PHY
         PHA
         loop
         {
@@ -271,8 +273,6 @@ unit Debug
                 break; 
             }
             
-            PHX
-            PHY
             
             storeState();
             
@@ -292,11 +292,11 @@ unit Debug
             
             restoreState();
             
-            PLY
-            PLX
             break;
         } // single exit
         PLA
+        PLY
+        PLX
         PLP
     }
     
