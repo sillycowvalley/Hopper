@@ -313,19 +313,6 @@ unit GapBuffer
                 // Copy bytes
                 copyBytes();
                 
-#ifdef DEBUG
-                // Clear the source area (now part of gap) for debugging
-                LDY #0
-                LDA #0x00
-                loop
-                {
-                    STA [mgbSrc], Y
-                    INY
-                    CPY mgbCountL
-                    if (Z) { break; }  // Assumes count < 256
-                }
-#endif    
-                
                 // Update gap position
                 SEC
                 LDA gbGapEndL
@@ -366,19 +353,7 @@ unit GapBuffer
                 
                 // Copy bytes
                 copyBytes();
-                
-#ifdef DEBUG
-                // Clear the source area (now part of gap) for debugging
-                LDY #0
-                LDA #0x00
-                loop
-                {
-                    STA [mgbSrc], Y
-                    INY
-                    CPY mgbCountL
-                    if (Z) { break; }  // Assumes count < 256
-                }
-#endif    
+    
                 // Update gap position
                 CLC
                 LDA gbGapEndL
@@ -399,12 +374,31 @@ unit GapBuffer
     }
     
     // Helper: Copy bytes from src to dst
+    // Helper: Copy bytes from src to dst
     copyBytes()
     {
         // Uses mgbSrc, mgbDst, mgbCount (preserves mgbCount)
         LDA mgbCountL
         ORA mgbCountH
-        if (Z) { return; }  // Nothing to copy
+        if (Z)
+        {
+Print.NewLine(); LDA #'a' Print.Char();
+            return;  // Nothing to copy
+        }
+        
+        // Check if src == dst
+        LDA mgbSrcL
+        CMP mgbDstL
+        if (Z)
+        {
+            LDA mgbSrcH
+            CMP mgbDstH
+            if (Z)
+            {
+Print.NewLine(); LDA #'b' Print.Char();
+                return;  // Same address, nothing to do
+            }
+        }
         
         LDA mgbCountL
         PHA
@@ -419,40 +413,44 @@ unit GapBuffer
         LDA mgbDstH
         PHA
         
-        // Set up pointers
-        LDA mgbSrcL
-        STA ZP.IDXL
-        LDA mgbSrcH
-        STA ZP.IDXH
-        
-        LDA mgbDstL
-        STA ZP.IDYL
+        // Simple rule: if dst > src, copy backward
         LDA mgbDstH
-        STA ZP.IDYH
-        
-        loop
+        CMP mgbSrcH
+        if (Z)  // High bytes equal, check low
         {
-            LDA [mgbSrc]
-            STA [mgbDst]
-            
-            // Increment pointers
-            INC mgbSrcL
-            if (Z) { INC mgbSrcH }
-            INC mgbDstL
-            if (Z) { INC mgbDstH }
-            
-            // Decrement count
-            SEC
-            LDA mgbCountL
-            SBC #1
-            STA mgbCountL
-            LDA mgbCountH
-            SBC #0
-            STA mgbCountH
-            
-            // Check if done
-            ORA mgbCountL
-            if (Z) { break; }
+            LDA mgbDstL
+            CMP mgbSrcL
+            if (C)  // dst.L >= src.L
+            {
+                if (NZ)  // Not equal, so dst.L > src.L
+                {
+Print.NewLine(); LDA #'c' Print.Char();
+                    copyBackward();
+                }
+                else
+                {
+Print.NewLine(); LDA #'d' Print.Char();
+                    copyForward();  // Equal (but we already handled this case earlier)
+                }
+            }
+            else  // dst.L < src.L
+            {
+Print.NewLine(); LDA #'e' Print.Char();
+                copyForward();
+            }
+        }
+        else  // High bytes not equal
+        {
+            if (C)  // dst.H > src.H (truly greater since not equal)
+            {
+Print.NewLine(); LDA #'f' Print.Char();
+                copyBackward();
+            }
+            else  // dst.H < src.H
+            {
+Print.NewLine(); LDA #'g' Print.Char();
+                copyForward();
+            }
         }
         
         PLA
@@ -467,7 +465,89 @@ unit GapBuffer
         STA mgbCountH
         PLA
         STA mgbCountL
-    }    
+    }
+    
+    
+    copyForward()
+    {
+        loop
+        {
+            LDA [mgbSrc]
+            STA [mgbDst]
+            
+            // Increment pointers
+            INC mgbSrcL
+            if (Z) { INC mgbSrcH }
+            INC mgbDstL
+            if (Z) { INC mgbDstH }
+            
+            // Decrement count
+            LDA mgbCountL
+            if (Z)
+            {
+                DEC mgbCountH
+            }
+            DEC mgbCountL
+            
+            LDA mgbCountH
+            ORA mgbCountL
+            if (Z) { break; }
+        }
+    }
+    
+    copyBackward()
+    {
+        // Point to last byte (src + count - 1)
+        CLC
+        LDA mgbSrcL
+        ADC mgbCountL
+        STA mgbSrcL
+        LDA mgbSrcH
+        ADC mgbCountH
+        STA mgbSrcH
+        
+        LDA mgbSrcL
+        if (Z) { DEC mgbSrcH }
+        DEC mgbSrcL
+        
+        // Same for dst
+        CLC
+        LDA mgbDstL
+        ADC mgbCountL
+        STA mgbDstL
+        LDA mgbDstH
+        ADC mgbCountH
+        STA mgbDstH
+        
+        LDA mgbDstL
+        if (Z) { DEC mgbDstH }
+        DEC mgbDstL
+        
+        loop
+        {
+            LDA [mgbSrc]
+            STA [mgbDst]
+            
+            // Decrement pointers
+            LDA mgbSrcL
+            if (Z) { DEC mgbSrcH }
+            DEC mgbSrcL
+            
+            LDA mgbDstL
+            if (Z) { DEC mgbDstH }
+            DEC mgbDstL
+            
+            LDA mgbCountL
+            if (Z) { DEC mgbCountH }
+            DEC mgbCountL
+            
+            LDA mgbCountH
+            ORA mgbCountL
+            if (Z) { break; }
+        }
+    }
+    
+     
     // Insert character at gap position
     // Input: A = character to insert
     // Note: Assumes gap is at correct position
