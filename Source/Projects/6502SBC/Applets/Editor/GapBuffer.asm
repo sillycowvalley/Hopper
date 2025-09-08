@@ -31,18 +31,18 @@ unit GapBuffer
     const uint GapValueH = gbSlots+9;
     
     // Leaf workspace for calculations (don't survive function calls)
-    const uint gbTemp = ZP.M0;     // Temporary 16-bit value
-    const uint gbTempL = ZP.M0;
-    const uint gbTempH = ZP.M1;
-    const uint gbCount = ZP.M2;    // Copy count
-    const uint gbCountL = ZP.M2;
-    const uint gbCountH = ZP.M3;
-    const uint gbSrc = ZP.M4;      // Source pointer
-    const uint gbSrcL = ZP.M4;
-    const uint gbSrcH = ZP.M5;
-    const uint gbDst = ZP.M6;      // Destination pointer
-    const uint gbDstL = ZP.M6;
-    const uint gbDstH = ZP.M7;
+    const uint mgbTemp = ZP.M0;     // Temporary 16-bit value
+    const uint mgbTempL = ZP.M0;
+    const uint mgbTempH = ZP.M1;
+    const uint mgbCount = ZP.M2;    // Copy count
+    const uint mgbCountL = ZP.M2;
+    const uint mgbCountH = ZP.M3;
+    const uint mgbSrc = ZP.M4;      // Source pointer
+    const uint mgbSrcL = ZP.M4;
+    const uint mgbSrcH = ZP.M5;
+    const uint mgbDst = ZP.M6;      // Destination pointer
+    const uint mgbDstL = ZP.M6;
+    const uint mgbDstH = ZP.M7;
     
     // Initialize gap buffer
     // Input: A,Y = size to allocate
@@ -204,16 +204,16 @@ unit GapBuffer
     {
         // Save target position
         LDA GapValueL
-        STA gbTempL
+        STA mgbTempL
         LDA GapValueH
-        STA gbTempH
+        STA mgbTempH
         
         // Check if already at position
-        LDA gbTempL
+        LDA mgbTempL
         CMP gbGapStartL
         if (Z)
         {
-            LDA gbTempH
+            LDA mgbTempH
             CMP gbGapStartH
             if (Z) { return; }  // Already there
         }
@@ -221,11 +221,11 @@ unit GapBuffer
         // Determine direction and move gap
         loop  // Single iteration for structure
         {
-            LDA gbTempH
+            LDA mgbTempH
             CMP gbGapStartH
             if (Z)
             {
-                LDA gbTempL
+                LDA mgbTempL
                 CMP gbGapStartL
             }
             if (NC)  // target < gap start (move gap left)
@@ -233,36 +233,36 @@ unit GapBuffer
                 // Calculate bytes to move: gbGapStart - target
                 SEC
                 LDA gbGapStartL
-                SBC gbTempL
-                STA gbCountL
+                SBC mgbTempL
+                STA mgbCountL
                 LDA gbGapStartH
-                SBC gbTempH
-                STA gbCountH
+                SBC mgbTempH
+                STA mgbCountH
                 
                 // Source: buffer + target
                 CLC
                 LDA gbBufferL
-                ADC gbTempL
-                STA gbSrcL
+                ADC mgbTempL
+                STA mgbSrcL
                 LDA gbBufferH
-                ADC gbTempH
-                STA gbSrcH
+                ADC mgbTempH
+                STA mgbSrcH
                 
                 // Destination: buffer + gbGapEnd - count
                 SEC
                 LDA gbGapEndL
-                SBC gbCountL
-                STA gbDstL
+                SBC mgbCountL
+                STA mgbDstL
                 LDA gbGapEndH
-                SBC gbCountH
-                STA gbDstH
+                SBC mgbCountH
+                STA mgbDstH
                 CLC
-                LDA gbDstL
+                LDA mgbDstL
                 ADC gbBufferL
-                STA gbDstL
-                LDA gbDstH
+                STA mgbDstL
+                LDA mgbDstH
                 ADC gbBufferH
-                STA gbDstH
+                STA mgbDstH
                 
                 // Copy bytes
                 copyBytes();
@@ -270,40 +270,40 @@ unit GapBuffer
                 // Update gap position
                 SEC
                 LDA gbGapEndL
-                SBC gbCountL
+                SBC mgbCountL
                 STA gbGapEndL
                 LDA gbGapEndH
-                SBC gbCountH
+                SBC mgbCountH
                 STA gbGapEndH
             }
             else  // target > gap start (move gap right)
             {
                 // Calculate bytes to move: target - gbGapStart
                 SEC
-                LDA gbTempL
+                LDA mgbTempL
                 SBC gbGapStartL
-                STA gbCountL
-                LDA gbTempH
+                STA mgbCountL
+                LDA mgbTempH
                 SBC gbGapStartH
-                STA gbCountH
+                STA mgbCountH
                 
                 // Source: buffer + gbGapEnd
                 CLC
                 LDA gbBufferL
                 ADC gbGapEndL
-                STA gbSrcL
+                STA mgbSrcL
                 LDA gbBufferH
                 ADC gbGapEndH
-                STA gbSrcH
+                STA mgbSrcH
                 
                 // Destination: buffer + gbGapStart
                 CLC
                 LDA gbBufferL
                 ADC gbGapStartL
-                STA gbDstL
+                STA mgbDstL
                 LDA gbBufferH
                 ADC gbGapStartH
-                STA gbDstH
+                STA mgbDstH
                 
                 // Copy bytes
                 copyBytes();
@@ -311,39 +311,39 @@ unit GapBuffer
                 // Update gap position
                 CLC
                 LDA gbGapEndL
-                ADC gbCountL
+                ADC mgbCountL
                 STA gbGapEndL
                 LDA gbGapEndH
-                ADC gbCountH
+                ADC mgbCountH
                 STA gbGapEndH
             }
             break;
         }
         
         // Set new gap start
-        LDA gbTempL
+        LDA mgbTempL
         STA gbGapStartL
-        LDA gbTempH
+        LDA mgbTempH
         STA gbGapStartH
     }
     
     // Helper: Copy bytes from src to dst
     copyBytes()
     {
-        // Uses gbSrc, gbDst, gbCount
-        LDA gbCountL
-        ORA gbCountH
+        // Uses mgbSrc, mgbDst, mgbCount
+        LDA mgbCountL
+        ORA mgbCountH
         if (Z) { return; }  // Nothing to copy
         
         // Set up pointers
-        LDA gbSrcL
+        LDA mgbSrcL
         STA ZP.IDXL
-        LDA gbSrcH
+        LDA mgbSrcH
         STA ZP.IDXH
         
-        LDA gbDstL
+        LDA mgbDstL
         STA ZP.IDYL
-        LDA gbDstH
+        LDA mgbDstH
         STA ZP.IDYH
         
         LDY #0
@@ -360,15 +360,15 @@ unit GapBuffer
             
             // Decrement count
             SEC
-            LDA gbCountL
+            LDA mgbCountL
             SBC #1
-            STA gbCountL
-            LDA gbCountH
+            STA mgbCountL
+            LDA mgbCountH
             SBC #0
-            STA gbCountH
+            STA mgbCountH
             
             // Check if done
-            ORA gbCountL
+            ORA mgbCountL
             if (Z) { break; }
         }
     }
@@ -481,9 +481,9 @@ unit GapBuffer
     {
         // Save position
         LDA GapValueL
-        STA gbTempL
+        STA mgbTempL
         LDA GapValueH
-        STA gbTempH
+        STA mgbTempH
         
         loop  // Single iteration for structure
         {
@@ -491,7 +491,7 @@ unit GapBuffer
             GetTextLength();  // Returns in GapValue
             
             // Check if position >= text length (out of bounds)
-            LDA gbTempH
+            LDA mgbTempH
             CMP GapValueH
             if (C)  // position.H >= length.H
             {
@@ -501,7 +501,7 @@ unit GapBuffer
                     break;
                 }
                 // High bytes equal, check low bytes
-                LDA gbTempL
+                LDA mgbTempL
                 CMP GapValueL
                 if (C)  // position.L >= length.L, out of bounds
                 {
@@ -514,7 +514,7 @@ unit GapBuffer
             
             // Convert logical to physical position
             // Check if position >= gap start
-            LDA gbTempH
+            LDA mgbTempH
             CMP gbGapStartH
             if (C)  // position.H >= gap_start.H
             {
@@ -525,17 +525,17 @@ unit GapBuffer
                     LDA gbGapEndL
                     SBC gbGapStartL
                     CLC
-                    ADC gbTempL
-                    STA gbTempL
+                    ADC mgbTempL
+                    STA mgbTempL
                     LDA gbGapEndH
                     SBC gbGapStartH
-                    ADC gbTempH
-                    STA gbTempH
+                    ADC mgbTempH
+                    STA mgbTempH
                 }
                 else
                 {
                     // High bytes equal, check low bytes
-                    LDA gbTempL
+                    LDA mgbTempL
                     CMP gbGapStartL
                     if (C)  // position.L >= gap_start.L, at or after gap
                     {
@@ -544,12 +544,12 @@ unit GapBuffer
                         LDA gbGapEndL
                         SBC gbGapStartL
                         CLC
-                        ADC gbTempL
-                        STA gbTempL
+                        ADC mgbTempL
+                        STA mgbTempL
                         LDA gbGapEndH
                         SBC gbGapStartH
-                        ADC gbTempH
-                        STA gbTempH
+                        ADC mgbTempH
+                        STA mgbTempH
                     }
                     // else position < gap start, no adjustment
                 }
@@ -559,13 +559,13 @@ unit GapBuffer
             // Read from physical position
             CLC
             LDA gbBufferL
-            ADC gbTempL
-            STA gbTempL
+            ADC mgbTempL
+            STA mgbTempL
             LDA gbBufferH
-            ADC gbTempH
-            STA gbTempH
+            ADC mgbTempH
+            STA mgbTempH
             
-            LDA [gbTemp]
+            LDA [mgbTemp]
             
             // If we got 0, return 0xFD to distinguish from actual 0
             if (Z)
@@ -581,17 +581,17 @@ unit GapBuffer
     {
         // Calculate new size (double current size)
         LDA gbBufferSizeL
-        STA gbTempL
+        STA mgbTempL
         LDA gbBufferSizeH
-        STA gbTempH
+        STA mgbTempH
         
-        ASL gbTempL
-        ROL gbTempH
+        ASL mgbTempL
+        ROL mgbTempH
         
         // Allocate new buffer (uses ZP.ACC for BIOS call)
-        LDA gbTempL
+        LDA mgbTempL
         STA ZP.ACCL
-        LDA gbTempH
+        LDA mgbTempH
         STA ZP.ACCH
         Memory.Allocate();
         
@@ -612,68 +612,68 @@ unit GapBuffer
         
         // Copy text before gap
         LDA gbBufferL
-        STA gbSrcL
+        STA mgbSrcL
         LDA gbBufferH
-        STA gbSrcH
+        STA mgbSrcH
         LDA ZP.M8
-        STA gbDstL
+        STA mgbDstL
         LDA ZP.M9
-        STA gbDstH
+        STA mgbDstH
         LDA gbGapStartL
-        STA gbCountL
+        STA mgbCountL
         LDA gbGapStartH
-        STA gbCountH
+        STA mgbCountH
         copyBytes();
         
         // Calculate text after gap size
         SEC
         LDA gbBufferSizeL
         SBC gbGapEndL
-        STA gbCountL
+        STA mgbCountL
         LDA gbBufferSizeH
         SBC gbGapEndH
-        STA gbCountH
+        STA mgbCountH
         
         // Copy text after gap (if any)
-        LDA gbCountL
-        ORA gbCountH
+        LDA mgbCountL
+        ORA mgbCountH
         if (NZ)
         {
             // Source: old buffer + old gap end
             CLC
             LDA gbBufferL
             ADC gbGapEndL
-            STA gbSrcL
+            STA mgbSrcL
             LDA gbBufferH
             ADC gbGapEndH
-            STA gbSrcH
+            STA mgbSrcH
             
             // Calculate new gap end
             SEC
-            LDA gbTempL
-            SBC gbCountL
+            LDA mgbTempL
+            SBC mgbCountL
             STA gbGapEndL
-            LDA gbTempH
-            SBC gbCountH
+            LDA mgbTempH
+            SBC mgbCountH
             STA gbGapEndH
             
             // Destination: new buffer + new gap end
             CLC
             LDA ZP.M8
             ADC gbGapEndL
-            STA gbDstL
+            STA mgbDstL
             LDA ZP.M9
             ADC gbGapEndH
-            STA gbDstH
+            STA mgbDstH
             
             copyBytes();
         }
         else
         {
             // No text after gap, gap extends to end
-            LDA gbTempL
+            LDA mgbTempL
             STA gbGapEndL
-            LDA gbTempH
+            LDA mgbTempH
             STA gbGapEndH
         }
         
@@ -689,9 +689,9 @@ unit GapBuffer
         STA gbBufferL
         LDA ZP.M9
         STA gbBufferH
-        LDA gbTempL
+        LDA mgbTempL
         STA gbBufferSizeL
-        LDA gbTempH
+        LDA mgbTempH
         STA gbBufferSizeH
         
         SEC  // Success
