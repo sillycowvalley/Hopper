@@ -14,13 +14,8 @@ unit View
     const string statusColLabel = " C:";
     const string statusPadding = "                                        ";
     
-    // View Zero Page Map:
-    // 0x58-0x5F: GapBuffer (8 bytes)
-    // 0x60-0x6D: View persistent state (14 bytes)
-    // M8-M15: View leaf workspace (safe - no Memory/Time calls)
-    
     // Zero page allocation
-    const byte viewSlots = 0x60;  // After GapBuffer's 8 bytes
+    const byte viewSlots = 0x90;
     
     // Persistent state
     const uint vwLogicalCursor = viewSlots+0;   // Position in document

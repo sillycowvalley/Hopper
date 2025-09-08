@@ -24,7 +24,7 @@ unit ScreenBuffer
     const byte charMask = 0b01111111;
     
     // Public zero page properties
-    const byte zeroPageSlots = 0x58;
+    const byte zeroPageSlots = 0x70;
     
     const byte CursorCol  = zeroPageSlots+0;
     const byte CursorRow  = zeroPageSlots+1;

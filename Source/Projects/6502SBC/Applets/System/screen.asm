@@ -1,9 +1,12 @@
 unit Screen
 {
     uses "System/Definitions"
-    uses "System/Print"
     uses "System/Serial"
-    uses "System/Long"
+    
+    // Zero page allocation - shares block with Debug
+    const byte screenSlots = 0x63;
+    const byte screenStrL = screenSlots+0;  // Temporary string pointer low
+    const byte screenStrH = screenSlots+1;  // Temporary string pointer high
     
     // ANSI/VT100 color codes
     enum Color
@@ -38,181 +41,204 @@ unit Screen
     const string inverseOff = "\x1B[27m";
     const string normal = "\x1B[0m";
     
+    // Private helper to output a string without using ZP.STR
+    printString()  // Input: A = low byte, Y = high byte of string address
+    {
+        PHY
+        
+        // Store string pointer in our zero page slots
+        STA screenStrL
+        STY screenStrH
+        
+        LDY #0
+        loop
+        {
+            LDA [screenStrL], Y
+            if (Z) { break; }  // Null terminator
+            Serial.WriteChar();// munts X
+            INY
+        }
+        
+        PLY
+    }
+    
     // Clear screen and home cursor
     Clear()
     {
+        PHY
         LDA #(clearScreen % 256)
-        STA ZP.STRL
-        LDA #(clearScreen / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(clearScreen / 256)
+        printString();
+        PLY
         Home();
     }
     
     // Move cursor to home position (0,0)
     Home()
     {
+        PHY
         LDA #(home % 256)
-        STA ZP.STRL
-        LDA #(home / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(home / 256)
+        printString();
+        PLY
     }
     
     // Clear from cursor to end of line
     ClearToEOL()
     {
+        PHY
         LDA #(clearEOL % 256)
-        STA ZP.STRL
-        LDA #(clearEOL / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(clearEOL / 256)
+        printString();
+        PLY
     }
     
     // Clear entire current line
     ClearLine()
     {
+        PHY
         LDA #(clearLine % 256)
-        STA ZP.STRL
-        LDA #(clearLine / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(clearLine / 256)
+        printString();
+        PLY
     }
     
     // Clear from cursor to end of screen
     ClearToEOS()
     {
+        PHY
         LDA #(clearToEOS % 256)
-        STA ZP.STRL
-        LDA #(clearToEOS / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(clearToEOS / 256)
+        printString();
+        PLY
     }
     
     // Hide cursor
     HideCursor()
     {
+        PHY
         LDA #(hideCursor % 256)
-        STA ZP.STRL
-        LDA #(hideCursor / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(hideCursor / 256)
+        printString();
+        PLY
     }
     
     // Show cursor
     ShowCursor()
     {
+        PHY
         LDA #(showCursor % 256)
-        STA ZP.STRL
-        LDA #(showCursor / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(showCursor / 256)
+        printString();
+        PLY
     }
     
     // Save cursor position
     SaveCursor()
     {
+        PHY
         LDA #(saveCursor % 256)
-        STA ZP.STRL
-        LDA #(saveCursor / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(saveCursor / 256)
+        printString();
+        PLY
     }
     
     // Restore saved cursor position
     RestoreCursor()
     {
+        PHY
         LDA #(restoreCursor % 256)
-        STA ZP.STRL
-        LDA #(restoreCursor / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(restoreCursor / 256)
+        printString();
+        PLY
     }
     
     // Reset all attributes to normal
     Reset()
     {
+        PHY
         LDA #(reset % 256)
-        STA ZP.STRL
-        LDA #(reset / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(reset / 256)
+        printString();
+        PLY
     }
     
     // Enable bold/bright text
     Bold()
     {
+        PHY
         LDA #(boldOn % 256)
-        STA ZP.STRL
-        LDA #(boldOn / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(boldOn / 256)
+        printString();
+        PLY
     }
+    
     BoldOff()
     {
+        PHY
         LDA #(boldOff % 256)
-        STA ZP.STRL
-        LDA #(boldOff / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(boldOff / 256)
+        printString();
+        PLY
     }
     
     // Enable dim text
     Dim()
     {
+        PHY
         LDA #(dim % 256)
-        STA ZP.STRL
-        LDA #(dim / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(dim / 256)
+        printString();
+        PLY
     }
     
     // Enable underline
     Underline()
     {
+        PHY
         LDA #(underline % 256)
-        STA ZP.STRL
-        LDA #(underline / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(underline / 256)
+        printString();
+        PLY
     }
     
     // Enable blink
     Blink()
     {
+        PHY
         LDA #(blink % 256)
-        STA ZP.STRL
-        LDA #(blink / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(blink / 256)
+        printString();
+        PLY
     }
     
     // Enable inverse video
     Inverse()
     {
+        PHY
         LDA #(inverseOn % 256)
-        STA ZP.STRL
-        LDA #(inverseOn / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(inverseOn / 256)
+        printString();
+        PLY
     }
+    
     InverseOff()
     {
+        PHY
         LDA #(inverseOff % 256)
-        STA ZP.STRL
-        LDA #(inverseOff / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(inverseOff / 256)
+        printString();
+        PLY
     }
     
     // Return to normal text
     Normal()
     {
+        PHY
         LDA #(normal % 256)
-        STA ZP.STRL
-        LDA #(normal / 256)
-        STA ZP.STRH
-        Print.String();
+        LDY #(normal / 256)
+        printString();
+        PLY
     }
     
     // Helper: send ESC[ sequence (preserves A internally)
@@ -220,9 +246,9 @@ unit Screen
     {
         PHA
         LDA #0x1B
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
         LDA #'['
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
         PLA
     }
     
@@ -245,66 +271,66 @@ unit Screen
         {
             PHA
             TXA
-            Serial.WriteChar();
+            Serial.WriteChar();// munts X
             PLA
         }
         ORA #'0'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
         
         PLY
         PLX
     }
     
     // Position cursor at col, row (0-based input, converts to 1-based for VT100)
-    GotoXY() // Input: A = col (0-79), Y = row (0-23)
+    GotoXY() // Input: A = col (0-99), Y = row (0-23)
     {
         PHA
         
-        sendEscape();
+        sendEscape();// munts X
         
         // Send row+1 (VT100 is 1-based)
         INY
         TYA
-        sendDecimal();
+        sendDecimal();// munts X
         
         LDA #';'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
         
         // Send column+1
         PLA
         INC A
-        sendDecimal();
+        sendDecimal();// munts X
         
         LDA #'H'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Input: char in A
     Char()
     {
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Set foreground color
     Foreground() // Input: A = color (Color enum value 0-7)
     {
-        sendEscape();
+        sendEscape();// munts X
         CLC
         ADC #30  // Foreground colors are 30-37
-        sendDecimal();
+        sendDecimal();// munts X
         LDA #'m'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Set background color
     Background() // Input: A = color (Color enum value 0-7)
     {
-        sendEscape();
+        sendEscape();// munts X
         CLC
         ADC #40  // Background colors are 40-47
-        sendDecimal();
+        sendDecimal();// munts X
         LDA #'m'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor up
@@ -314,10 +340,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();
-        sendDecimal();
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'A'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor down
@@ -327,10 +353,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();
-        sendDecimal();
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'B'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor right
@@ -340,10 +366,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();
-        sendDecimal();
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'C'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Move cursor left
@@ -353,10 +379,10 @@ unit Screen
         {
             INC A
         }
-        sendEscape();
-        sendDecimal();
+        sendEscape();// munts X
+        sendDecimal();// munts X
         LDA #'D'
-        Serial.WriteChar();
+        Serial.WriteChar();// munts X
     }
     
     // Set both foreground and background colors
@@ -368,13 +394,13 @@ unit Screen
         // Set foreground
         PLA
         PHA
-        Foreground();
+        Foreground();// munts X
         
         // Set background
         PLY
         PHY
         TYA
-        Background();
+        Background();// munts X
         
         PLY
         PLA
@@ -387,8 +413,10 @@ unit Screen
         if (Z) { return; }
         loop
         {
+            PHX
             LDA #'-'
-            Serial.WriteChar();
+            Serial.WriteChar();// munts X
+            PLX
             DEX
             if (Z) { break; }
         }
@@ -401,12 +429,14 @@ unit Screen
         if (Z) { return; }
         loop
         {
+            PHX
             LDA #'|'
-            Serial.WriteChar();
+            Serial.WriteChar();// munts X
             LDA #1
-            Left();
+            Left(); // munts X
             LDA #1
-            Down();
+            Down(); // munts X
+            PLX
             DEX
             if (Z) { break; }
         }

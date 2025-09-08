@@ -11,7 +11,7 @@ unit Commands
     uses "Editor/View"
     
     // Zero page allocation
-    const byte cmdSlots = 0x70;  // After Keyboard
+    const byte cmdSlots = 0xB0;  // After Keyboard
     
     const byte cmdExitFlag = cmdSlots+0;
     const byte cmdSaveNeeded = cmdSlots+1;

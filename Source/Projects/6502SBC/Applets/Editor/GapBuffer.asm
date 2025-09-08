@@ -4,7 +4,7 @@ unit GapBuffer
     uses "System/Memory"
     
     // Zero page allocation
-    const byte gbSlots = 0x58;  // Base address - easy to relocate
+    const byte gbSlots = 0xA0;
     
     // Private zero page state
     const uint gbBuffer = gbSlots+0;    // Start of allocated buffer
@@ -509,49 +509,34 @@ unit GapBuffer
             // Check if position is before or after gap
             LDA gbTempH
             CMP gbGapStartH
-            if (C)
+            if (Z)
+            {
+                // High bytes equal, check low bytes
+                LDA gbTempL
+                CMP gbGapStartL
+            }
+            // Now carry flag tells us: C set = position >= gap start
+            
+            if (NC)  // Position < gap start (before gap)
             {
                 // Position is before gap, use as-is
+                // Physical = Logical (no adjustment needed)
+                // gbTemp already contains the position, no change needed
             }
-            else
+            else     // Position >= gap start (at or after gap)
             {
-                if (Z)
-                {
-                    LDA gbTempL
-                    CMP gbGapStartL
-                    if (C)
-                    {
-                        // Position is before gap, use as-is
-                    }
-                    else
-                    {
-                        // Position is at or after gap, adjust
-                        SEC
-                        LDA gbGapEndL
-                        SBC gbGapStartL
-                        CLC
-                        ADC gbTempL
-                        STA gbTempL
-                        LDA gbGapEndH
-                        SBC gbGapStartH
-                        ADC gbTempH
-                        STA gbTempH
-                    }
-                }
-                else
-                {
-                    // Position is after gap, adjust
-                    SEC
-                    LDA gbGapEndL
-                    SBC gbGapStartL
-                    CLC
-                    ADC gbTempL
-                    STA gbTempL
-                    LDA gbGapEndH
-                    SBC gbGapStartH
-                    ADC gbTempH
-                    STA gbTempH
-                }
+                // Position is at or after gap, adjust
+                // Physical = Logical + (GapEnd - GapStart)
+                SEC
+                LDA gbGapEndL
+                SBC gbGapStartL
+                CLC
+                ADC gbTempL
+                STA gbTempL
+                LDA gbGapEndH
+                SBC gbGapStartH
+                ADC gbTempH
+                STA gbTempH
             }
             
             // Read from physical position
