@@ -16,14 +16,14 @@ unit Commands
     const byte cmdExitFlag = cmdSlots+0;
     const byte cmdSaveNeeded = cmdSlots+1;
     
-    // File operations use M0-M7 workspace (not concurrent with GapBuffer)
-    const uint cmdFileSize = ZP.M0;
-    const uint cmdFileSizeL = ZP.M0;
-    const uint cmdFileSizeH = ZP.M1;
-    const uint cmdReadPos = ZP.M2;
-    const uint cmdReadPosL = ZP.M2;
-    const uint cmdReadPosH = ZP.M3;
-    const byte cmdChar = ZP.M4;
+    // File operation workspace - dedicated slots, NOT M0-M7!
+    const uint cmdFileSize = cmdSlots+2;
+    const uint cmdFileSizeL = cmdSlots+2;
+    const uint cmdFileSizeH = cmdSlots+3;
+    const uint cmdReadPos = cmdSlots+4;
+    const uint cmdReadPosL = cmdSlots+4;
+    const uint cmdReadPosH = cmdSlots+5;
+    const byte cmdChar = cmdSlots+6;
     
     const string testFileName = "TEST";
     const string loadingMsg = "Loading TEST...\n";
@@ -297,7 +297,7 @@ unit Commands
             File.NextStream();
             if (NC) { break; }  // End of file
             
-            // Data is in FileDataBuffer at 0x0600
+            // Data is in FileDataBuffer
             
             // Insert each byte into gap buffer
             LDY #0
@@ -313,7 +313,7 @@ unit Commands
                 }
                 
                 // Read byte from buffer
-                LDA 0x0600, Y
+                LDA File.FileDataBuffer, Y
                 PHY
                 
                 // Insert into gap buffer
@@ -418,7 +418,7 @@ unit Commands
                 PLY
                 
                 // Store in file buffer
-                STA 0x0600, Y
+                STA File.FileDataBuffer, Y
                 
                 // Next position
                 INC cmdReadPosL
@@ -440,9 +440,9 @@ unit Commands
             }
             
             // Set source pointer
-            LDA #0x00
+            LDA #(File.FileDataBuffer % 256)
             STA File.SectorSourceL
-            LDA #0x06
+            LDA #(File.FileDataBuffer / 256)
             STA File.SectorSourceH
             
             File.AppendStream();

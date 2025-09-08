@@ -2,12 +2,22 @@ unit View
 {
     uses "System/Definitions"
     uses "System/Memory"
-    uses "System/Screen"
     uses "System/ScreenBuffer"
     uses "System/Print"
     uses "Editor/GapBuffer"
     
     friend Commands;
+    
+    // String constants for status line
+    const string statusFilename = "TEST";
+    const string statusLineLabel = " L:";
+    const string statusColLabel = " C:";
+    const string statusPadding = "                                        ";
+    
+    // View Zero Page Map:
+    // 0x58-0x5F: GapBuffer (8 bytes)
+    // 0x60-0x6D: View persistent state (14 bytes)
+    // M8-M15: View leaf workspace (safe - no Memory/Time calls)
     
     // Zero page allocation
     const byte viewSlots = 0x60;  // After GapBuffer's 8 bytes
@@ -40,6 +50,7 @@ unit View
     const uint vwLineCountH = viewSlots+14;
     
     // Leaf workspace (M8-M15 to avoid conflict with GapBuffer)
+    // Safe to use: renderViewport/renderLine don't call Memory or Time functions
     const uint vwLinePos = ZP.M8;    // Temp line position
     const uint vwLinePosL = ZP.M8;
     const uint vwLinePosH = ZP.M9;
@@ -56,6 +67,9 @@ unit View
     // Output: C set on success
     Initialize()
     {
+        PHX
+        PHY
+        
         // Save dimensions
         STA vwScreenCols
         STY vwScreenRows
@@ -65,6 +79,8 @@ unit View
         ScreenBuffer.Initialize();
         if (NC)
         {
+            PLY
+            PLX
             CLC
             return;
         }
@@ -81,6 +97,8 @@ unit View
         if (Z)
         {
             ScreenBuffer.Dispose();
+            PLY
+            PLX
             CLC
             return;
         }
@@ -118,12 +136,17 @@ unit View
         INY
         STA [ZP.IDX], Y
         
+        PLY
+        PLX
         SEC
     }
     
     // Dispose of allocated resources
     Dispose()
     {
+        PHX
+        PHY
+        
         // Free line index
         LDA vwLineStartsL
         ORA vwLineStartsH
@@ -141,6 +164,9 @@ unit View
         
         // Dispose screen buffer
         ScreenBuffer.Dispose();
+        
+        PLY
+        PLX
     }
     
     // Public getters
@@ -163,7 +189,11 @@ unit View
     IsModified()
     {
         LDA vwModified
-        if (NZ) { SEC return; }
+        if (NZ) 
+        { 
+            SEC 
+            return;
+        }
         CLC
     }
     
@@ -190,6 +220,9 @@ unit View
     // Rebuild line index after text changes
     RebuildLineIndex()
     {
+        PHX
+        PHY
+        
         // Start at beginning
         STZ vwCharPosL
         STZ vwCharPosH
@@ -262,6 +295,9 @@ unit View
             INC vwCharPosL
             if (Z) { INC vwCharPosH }
         }
+        
+        PLY
+        PLX
     }
     
     // Get start position of line
@@ -272,12 +308,20 @@ unit View
         // Check bounds
         LDA ZP.ACCH
         CMP vwLineCountH
-        if (C) { CLC return; }
+        if (C) 
+        { 
+            CLC 
+            return;
+        }
         if (Z)
         {
             LDA ZP.ACCL
             CMP vwLineCountL
-            if (NC) { CLC return; }
+            if (NC) 
+            { 
+                CLC 
+                return;
+            }
         }
         
         // Calculate offset in line index
@@ -333,9 +377,9 @@ unit View
     renderViewport()
     {
         // Set colors for text area
-        LDA #Screen.Color.White
+        LDA #Color.White
         ScreenBuffer.SetForeground();
-        LDA #Screen.Color.Black
+        LDA #Color.Black
         ScreenBuffer.SetBackground();
         
         STZ vwRow
@@ -354,12 +398,20 @@ unit View
             // Check if past end of document
             LDA ZP.ACCH
             CMP vwLineCountH
-            if (C) { BRA clearRest }
+            if (C) 
+            { 
+                clearRestOfViewport();
+                break;
+            }
             if (Z)
             {
                 LDA ZP.ACCL
                 CMP vwLineCountL
-                if (NC) { BRA clearRest }
+                if (NC) 
+                { 
+                    clearRestOfViewport();
+                    break;
+                }
             }
             
             // Render this line
@@ -371,13 +423,18 @@ unit View
             if (NC) { break; }
             if (Z) { break; }
         }
-        
-        return;
-        
-clearRest:
-        // Clear remaining rows
+    }
+    
+    // Clear remaining rows in viewport
+    clearRestOfViewport()
+    {
         loop
         {
+            LDA vwRow
+            CMP vwScreenRows
+            if (NC) { break; }
+            if (Z) { break; }
+            
             LDA #0
             LDY vwRow
             ScreenBuffer.GotoXY();
@@ -393,10 +450,6 @@ clearRest:
             }
             
             INC vwRow
-            LDA vwRow
-            CMP vwScreenRows
-            if (NC) { break; }
-            if (Z) { break; }
         }
     }
     
@@ -430,9 +483,17 @@ clearRest:
             GapBuffer.GetCharAt();
             
             // Check for end of line or document
-            if (Z) { BRA padLine }
+            if (Z) 
+            { 
+                padRestOfLine();
+                break;
+            }
             CMP #'\n'
-            if (Z) { BRA padLine }
+            if (Z) 
+            { 
+                padRestOfLine();
+                break;
+            }
             
             // Check if at right edge
             LDX vwCol
@@ -459,11 +520,11 @@ clearRest:
             INC vwCharPosL
             if (Z) { INC vwCharPosH }
         }
-        
-        return;
-        
-padLine:
-        // Pad rest of line with spaces
+    }
+    
+    // Pad rest of line with spaces
+    padRestOfLine()
+    {
         loop
         {
             LDA vwCol
@@ -483,10 +544,10 @@ padLine:
         LDA #0
         LDY vwScreenRows
         DEY  // Status line is last row
-        Screen.GotoXY();
+        ScreenBuffer.GotoXY();
         
         // Inverse video for status line
-        Screen.Inverse();
+        ScreenBuffer.SetInverse();
         
         // Show modified flag
         LDA vwModified
@@ -498,28 +559,23 @@ padLine:
         {
             LDA #' '
         }
-        Screen.Char();
+        ScreenBuffer.Char();
+        LDA #' '
+        ScreenBuffer.Char();
         
         // Show filename
-        LDA #' '
-        Screen.Char();
-        LDA #'T'
-        Screen.Char();
-        LDA #'E'
-        Screen.Char();
-        LDA #'S'
-        Screen.Char();
-        LDA #'T'
-        Screen.Char();
-        LDA #' '
-        Screen.Char();
-        Screen.Char();
+        LDA #(statusFilename % 256)
+        STA ZP.STRL
+        LDA #(statusFilename / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
         
-        // Show line and column
-        LDA #'L'
-        Screen.Char();
-        LDA #':'
-        Screen.Char();
+        // Show line label
+        LDA #(statusLineLabel % 256)
+        STA ZP.STRL
+        LDA #(statusLineLabel / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
         
         // Convert line number to decimal (simple version for < 100)
         LDA vwCurrentLineL
@@ -528,24 +584,24 @@ padLine:
         loop
         {
             CMP #10
-            if (C) { break; }
+            if (NC) { break; }
             SEC
             SBC #10
             INX
         }
         PHA
         TXA
-        Screen.Char();
+        ScreenBuffer.Char();
         PLA
         ORA #'0'
-        Screen.Char();
+        ScreenBuffer.Char();
         
-        LDA #' '
-        Screen.Char();
-        LDA #'C'
-        Screen.Char();
-        LDA #':'
-        Screen.Char();
+        // Show column label
+        LDA #(statusColLabel % 256)
+        STA ZP.STRL
+        LDA #(statusColLabel / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
         
         // Column number
         LDA vwCurrentCol
@@ -554,30 +610,27 @@ padLine:
         loop
         {
             CMP #10
-            if (C) { break; }
+            if (NC) { break; }
             SEC
             SBC #10
             INX
         }
         PHA
         TXA
-        Screen.Char();
+        ScreenBuffer.Char();
         PLA
         ORA #'0'
-        Screen.Char();
+        ScreenBuffer.Char();
         
         // Pad rest of status line
-        LDA #' '
-        LDX #20  // Rough padding
-        loop
-        {
-            Screen.Char();
-            DEX
-            if (Z) { break; }
-        }
+        LDA #(statusPadding % 256)
+        STA ZP.STRL
+        LDA #(statusPadding / 256)
+        STA ZP.STRH
+        ScreenBuffer.String();
         
         // Return to normal video
-        Screen.InverseOff();
+        ScreenBuffer.SetNotInverse();
     }
     
     // Update cursor display position
@@ -598,9 +651,15 @@ padLine:
     // Cursor movement functions
     CursorUp()
     {
+        PHY
+        
         LDA vwCurrentLineL
         ORA vwCurrentLineH
-        if (Z) { return; }  // Already at top
+        if (Z) 
+        { 
+            PLY
+            return;  // Already at top
+        }
         
         // Move to previous line
         LDA vwCurrentLineL
@@ -613,12 +672,20 @@ padLine:
         // Check if need to scroll
         LDA vwCurrentLineH
         CMP vwTopLineH
-        if (C) { return; }
+        if (C) 
+        { 
+            PLY
+            return;
+        }
         if (Z)
         {
             LDA vwCurrentLineL
             CMP vwTopLineL
-            if (NC) { return; }
+            if (NC) 
+            { 
+                PLY
+                return;
+            }
         }
         
         // Scroll up
@@ -626,21 +693,33 @@ padLine:
         if (Z) { DEC vwTopLineH }
         DEC vwTopLineL
         SetDirty();
+        
+        PLY
     }
     
     CursorDown()
     {
+        PHY
+        
         // Check if at last line
         LDA vwCurrentLineH
         CMP vwLineCountH
-        if (C) { return; }
+        if (C) 
+        { 
+            PLY
+            return;
+        }
         if (Z)
         {
             LDA vwCurrentLineL
             CLC
             ADC #1
             CMP vwLineCountL
-            if (NC) { return; }
+            if (NC) 
+            { 
+                PLY
+                return;
+            }
         }
         
         // Move to next line
@@ -662,6 +741,8 @@ padLine:
             if (Z) { INC vwTopLineH }
             SetDirty();
         }
+        
+        PLY
     }
     
     CursorLeft()
@@ -716,6 +797,8 @@ padLine:
     
     CursorEnd()
     {
+        PHX
+        
         // Find end of current line
         LDA vwCurrentLineL
         STA ZP.ACCL
@@ -748,10 +831,14 @@ padLine:
         }
         
         updateLogicalCursor();
+        
+        PLX
     }
     
     CursorPageUp()
     {
+        PHX
+        
         // Move up by screen height
         LDX vwScreenRows
         loop
@@ -763,10 +850,14 @@ padLine:
             DEX
             if (Z) { break; }
         }
+        
+        PLX
     }
     
     CursorPageDown()
     {
+        PHX
+        
         // Move down by screen height
         LDX vwScreenRows
         loop
@@ -775,6 +866,8 @@ padLine:
             DEX
             if (Z) { break; }
         }
+        
+        PLX
     }
     
     // Update logical cursor based on current line and column
@@ -786,6 +879,7 @@ padLine:
         LDA vwCurrentLineH
         STA ZP.ACCH
         getLineStart();
+        if (NC) { return; }  // Line doesn't exist
         
         // Add column offset
         CLC
