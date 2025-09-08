@@ -316,10 +316,10 @@ unit Keyboard
     IsPrintable()
     {
         CMP #32
-        if (NC)  // >= 32
+        if (C)  // >= 32
         {
             CMP #127
-            if (C)  // < 127
+            if (NC)  // < 127
             {
                 SEC  // Printable
                 return;

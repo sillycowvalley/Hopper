@@ -304,7 +304,7 @@ unit ScreenBuffer
         loop
         {
             // Store space with dirty bit
-            LDA #(' ' | dirtyBit)
+            LDA #('_' | dirtyBit)
             STA [ZP.IDX]
             
             // Store attributes

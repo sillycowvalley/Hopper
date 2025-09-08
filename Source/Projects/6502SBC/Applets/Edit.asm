@@ -1,12 +1,14 @@
 program TextEditor
 {
     #define CPU_65C02S
+    #define DEBUG
     
     uses "System/Definitions"
     uses "System/Print"
     uses "System/Serial"
     uses "System/Screen"
     uses "System/Time"
+    uses "System/Debug"
     
     uses "Editor/Keyboard"
     uses "Editor/GapBuffer"
@@ -19,6 +21,8 @@ program TextEditor
     
     Hopper()
     {
+        Debug.Initialize();
+        
         // Clear screen and show initialization message
         Screen.Clear();
         LDA #(initMsg % 256)
@@ -66,23 +70,20 @@ program TextEditor
         // Try to load TEST file
         Commands.LoadFile();
         
-        // Clear screen for editor
-        Screen.Clear();
-        
         // Main editor loop
         loop
         {
             // Render screen if needed
             View.Render();
-            
+      
             // Check for break key
             Serial.IsBreak();
             if (C) { break; }
-            
+      
             // Get and process key
             Keyboard.GetKey();
             Commands.ProcessKey();
-            
+
             // Check if should exit
             Commands.ShouldExit();
             if (C) { break; }

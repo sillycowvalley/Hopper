@@ -249,14 +249,13 @@ unit View
             // Check if at end
             LDA vwCharPosH
             CMP vwLinePosH
-            if (C) { break; }
             if (Z)
             {
                 LDA vwCharPosL
                 CMP vwLinePosL
-                if (NC) { break; }
             }
-            
+            if (C) { break; }  // vwCharPos >= vwLinePos
+                
             // Get character
             LDA vwCharPosL
             STA ZP.ACCL
@@ -303,20 +302,15 @@ unit View
         // Check bounds
         LDA ZP.ACCH
         CMP vwLineCountH
-        if (C) 
-        { 
-            CLC 
-            return;
-        }
         if (Z)
         {
             LDA ZP.ACCL
             CMP vwLineCountL
-            if (NC) 
-            { 
-                CLC 
-                return;
-            }
+        }
+        if (C)  // line_number >= line_count (out of bounds)
+        {
+            CLC
+            return;
         }
         
         // Calculate offset in line index
@@ -393,20 +387,15 @@ unit View
             // Check if past end of document
             LDA ZP.ACCH
             CMP vwLineCountH
-            if (C) 
-            { 
-                clearRestOfViewport();
-                break;
-            }
             if (Z)
             {
                 LDA ZP.ACCL
                 CMP vwLineCountL
-                if (NC) 
-                { 
-                    clearRestOfViewport();
-                    break;
-                }
+            }
+            if (C)  // line_to_display >= line_count (past end)
+            {
+                clearRestOfViewport();
+                break;
             }
             
             // Render this line
@@ -415,9 +404,8 @@ unit View
             INC vwRow
             LDA vwRow
             CMP vwScreenRows
-            if (NC) { break; }
-            if (Z) { break; }
-        }
+            if (C) { break; }
+        } // loop
     }
     
     // Clear remaining rows in viewport
@@ -427,8 +415,7 @@ unit View
         {
             LDA vwRow
             CMP vwScreenRows
-            if (NC) { break; }
-            if (Z) { break; }
+            if (C) { break; }
             
             LDA #0
             LDY vwRow
@@ -524,7 +511,7 @@ unit View
         {
             LDA vwCol
             CMP vwScreenCols
-            if (NC) { break; }
+            if (C) { break; }
             
             LDA #' '
             ScreenBuffer.Char();
@@ -579,8 +566,8 @@ unit View
         loop
         {
             CMP #10
-            if (NC) { break; }
-            SEC
+            if (NC) { break; } // Break when A < 10
+            SEC // Redundant but clear
             SBC #10
             INX
         }
@@ -605,8 +592,8 @@ unit View
         loop
         {
             CMP #10
-            if (NC) { break; }
-            SEC
+            if (NC) { break; } // Break when A < 10
+            SEC // Redundant but clear
             SBC #10
             INX
         }
@@ -667,20 +654,15 @@ unit View
         // Check if need to scroll
         LDA vwCurrentLineH
         CMP vwTopLineH
-        if (C) 
-        { 
-            PLY
-            return;
-        }
         if (Z)
         {
             LDA vwCurrentLineL
             CMP vwTopLineL
-            if (NC) 
-            { 
-                PLY
-                return;
-            }
+        }
+        if (C)  // vwCurrentLine >= vwTopLine (visible, no scroll needed)
+        {
+            PLY
+            return;
         }
         
         // Scroll up
@@ -696,40 +678,44 @@ unit View
     {
         PHY
         
-        // Check if at last line
+        // Check if at last line (current_line >= line_count - 1)
+        INC vwCurrentLineL
+        if (Z) { INC vwCurrentLineH }
+        
         LDA vwCurrentLineH
         CMP vwLineCountH
-        if (C) 
-        { 
-            PLY
-            return;
-        }
         if (Z)
         {
             LDA vwCurrentLineL
-            CLC
-            ADC #1
             CMP vwLineCountL
-            if (NC) 
-            { 
-                PLY
-                return;
-            }
         }
-        
-        // Move to next line
-        INC vwCurrentLineL
-        if (Z) { INC vwCurrentLineH }
+        if (C)  // (current_line + 1) >= line_count
+        {
+            // Restore original value and return
+            LDA vwCurrentLineL
+            if (Z) { DEC vwCurrentLineH }
+            DEC vwCurrentLineL
+            PLY
+            return;
+        }
         
         // Update logical cursor position
         updateLogicalCursor();
         
         // Check if need to scroll
+        // Calculate row position on screen: current_line - top_line
         SEC
         LDA vwCurrentLineL
         SBC vwTopLineL
+        STA ZP.ACCL
+        LDA vwCurrentLineH
+        SBC vwTopLineH
+        STA ZP.ACCH
+        
+        // Check if row >= screen height (beyond bottom)
+        LDA ZP.ACCL
         CMP vwScreenRows
-        if (NC)
+        if (C)  // Row >= vwScreenRows (need to scroll)
         {
             // Scroll down
             INC vwTopLineL
@@ -746,10 +732,12 @@ unit View
         if (NZ)
         {
             DEC vwCurrentCol
-            DEC vwLogicalCursorL
             LDA vwLogicalCursorL
-            CMP #0xFF
-            if (Z) { DEC vwLogicalCursorH }
+            if (Z)
+            {
+                DEC vwLogicalCursorH
+            }
+            DEC vwLogicalCursorL
         }
         else
         {

@@ -43,9 +43,10 @@ unit Commands
     // Input: A = key from Keyboard.GetKey()
     ProcessKey()
     {
+Debug.Byte();
         // Check for special keys first
         CMP #128
-        if (NC)
+        if (C)
         {
             // Extended key codes (128+)
             switch (A)
@@ -84,7 +85,7 @@ unit Commands
                 }
                 case Key.Delete:
                 {
-                    deleteForward();
+                    delete();
                 }
                 default:
                 {
@@ -99,7 +100,7 @@ unit Commands
             {
                 case Key.Backspace:
                 {
-                    deleteBackward();
+                    backspace();
                 }
                 case Key.Enter:
                 {
@@ -151,11 +152,14 @@ unit Commands
         
         // Get cursor position and move gap there
         View.GetLogicalCursor();
+Debug.Word();        
         GapBuffer.MoveGapTo();
         
         // Insert the character
         PLA
         GapBuffer.InsertChar();
+        
+GapBuffer.Dump();        
         
         // Move cursor right
         View.CursorRight();
@@ -182,7 +186,7 @@ unit Commands
     }
     
     // Delete character before cursor (backspace)
-    deleteBackward()
+    backspace()
     {
         // Check if at beginning
         View.GetLogicalCursor();
@@ -198,14 +202,14 @@ unit Commands
         GapBuffer.MoveGapTo();
         
         // Delete the character
-        GapBuffer.DeleteChar();
+        GapBuffer.Backspace();
         
         // Mark as modified
         View.SetModified();
     }
     
     // Delete character at cursor (delete key)
-    deleteForward()
+    delete()
     {
         // Check if at end
         GapBuffer.GetTextLength();
@@ -215,21 +219,24 @@ unit Commands
         STA cmdFileSizeH
         
         View.GetLogicalCursor();
+        
         LDA ZP.ACCH
         CMP cmdFileSizeH
-        if (C) { return; }
         if (Z)
         {
             LDA ZP.ACCL
             CMP cmdFileSizeL
-            if (NC) { return; }  // At or past end
+        }
+        if (C) // Set C if position >= end (out of bounds)
+        {
+            return;
         }
         
         // Move gap to cursor
         GapBuffer.MoveGapTo();
         
         // Delete forward
-        GapBuffer.DeleteForward();
+        GapBuffer.Delete();
         
         // Mark as modified
         View.SetModified();
@@ -385,13 +392,12 @@ unit Commands
             // Check if done
             LDA cmdReadPosH
             CMP cmdFileSizeH
-            if (C) { break; }
             if (Z)
             {
                 LDA cmdReadPosL
                 CMP cmdFileSizeL
-                if (NC) { break; }
             }
+            if (C) { break; }  // cmdReadPos >= cmdFileSize
             
             // Fill FileDataBuffer with up to 256 bytes
             LDY #0
@@ -400,14 +406,13 @@ unit Commands
                 // Check if at end of text
                 LDA cmdReadPosH
                 CMP cmdFileSizeH
-                if (C) { break; }
                 if (Z)
                 {
                     LDA cmdReadPosL
                     CMP cmdFileSizeL
-                    if (NC) { break; }
                 }
-                
+                if (C) { break; }  // cmdReadPos >= cmdFileSize     
+                           
                 // Get character from gap buffer
                 PHY
                 LDA cmdReadPosL
