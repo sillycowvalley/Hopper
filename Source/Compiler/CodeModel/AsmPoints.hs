@@ -2278,7 +2278,7 @@ unit AsmPoints
                             }
                             default:
                             {    
-                                Print(" Optimize?" + name);
+                                Print(" Optimize?" + name + ":" + (iOperands[iIndex-2]).ToHexString(2) + "," + (iOperands[iIndex-0]).ToHexString(2));
                             }
                         }
                     }

@@ -137,46 +137,6 @@ unit GapBuffer
         STA gbGapEndL
         LDA gbBufferSizeH
         STA gbGapEndH
-        
-#ifdef DEBUG        
-        // Zero the entire buffer for debugging
-        LDA gbBufferL
-        STA ZP.IDXL
-        LDA gbBufferH
-        STA ZP.IDXH
-        
-        // Use IDYL as counter for buffer size
-        LDA gbBufferSizeL
-        STA ZP.IDYL
-        LDA gbBufferSizeH
-        STA ZP.IDYH
-        
-        LDA #0
-        loop
-        {
-            STA [ZP.IDX]
-            
-            // Increment pointer
-            INC ZP.IDXL
-            if (Z) { INC ZP.IDXH }
-            
-            // Decrement counter
-            SEC
-            LDA ZP.IDYL
-            SBC #1
-            STA ZP.IDYL
-            LDA ZP.IDYH
-            SBC #0
-            STA ZP.IDYH
-            
-            // Check if done
-            LDA ZP.IDYL
-            ORA ZP.IDYH
-            if (Z) { break; }
-            
-            LDA #0  // Reload zero for next iteration
-        }
-#endif        
     }
     
     // Get gap start position
@@ -402,13 +362,13 @@ unit GapBuffer
         PHA
         LDA mgbCountH
         PHA
-        LDA mgbSrcL
-        PHA
-        LDA mgbSrcH
-        PHA
         LDA mgbDstL
         PHA
         LDA mgbDstH
+        PHA
+        LDA mgbSrcL
+        PHA
+        LDA mgbSrcH
         PHA
         
         // Simple rule: if dst > src, copy backward
@@ -447,13 +407,13 @@ unit GapBuffer
         }
         
         PLA
-        STA mgbDstH
-        PLA
-        STA mgbDstL
-        PLA
         STA mgbSrcH
         PLA
         STA mgbSrcL
+        PLA
+        STA mgbDstH
+        PLA
+        STA mgbDstL
         PLA
         STA mgbCountH
         PLA
@@ -611,19 +571,6 @@ unit GapBuffer
         if (Z) { DEC gbGapStartH }
         DEC gbGapStartL
         
-#ifdef DEBUG
-        // Zero the deleted position for debugging
-        CLC
-        LDA gbBufferL
-        ADC gbGapStartL
-        STA ZP.IDXL
-        LDA gbBufferH
-        ADC gbGapStartH
-        STA ZP.IDXH
-        LDA #0
-        STA [ZP.IDX]
-#endif
-        
         SEC  // Success
     }
     
@@ -698,7 +645,7 @@ unit GapBuffer
             {
                 if (NZ)  // position.H > length.H, definitely out of bounds
                 {
-                    LDA #0xFF  // Return 0xFF to indicate OOB path 1
+                    LDA #0
                     break;
                 }
                 // High bytes equal, check low bytes
@@ -706,7 +653,7 @@ unit GapBuffer
                 CMP GapValueL
                 if (C)  // position.L >= length.L, out of bounds
                 {
-                    LDA #0xFE  // Return 0xFE to indicate OOB path 2
+                    LDA #0
                     break;
                 }
                 // position.L < length.L, so position < length (valid)
@@ -772,7 +719,7 @@ unit GapBuffer
             // If we got 0, return 0xFD to distinguish from actual 0
             if (Z)
             {
-                LDA #0xFD
+                LDA #0
             }
             break;
         }
