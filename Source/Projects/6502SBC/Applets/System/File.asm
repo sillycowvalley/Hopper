@@ -11,6 +11,8 @@ unit File
     const byte TransferLengthL      = ZP.FS2;                  // Bytes to transfer (LSB)
     const byte TransferLengthH      = ZP.FS3;                  // Bytes to transfer (MSB)
     
+    const uint FileDataBuffer       = Address.FileSystemBuffers + 512;  // [512-767]
+    
     // File type constants for Exists() and StartLoad()
     enum FileType
     {
@@ -61,8 +63,8 @@ unit File
     }
     
     // Write data chunk to open file
-    // Input:  ZP.FS0/FS1 (SectorSource) = pointer to data
-    //         ZP.FS2/FS3 (TransferLength) = number of bytes (16-bit)
+    // Input:  File.SectorSourceL/H = pointer to data
+    //         File.TransferLengthL/H = number of bytes (16-bit)
     // Output: C set on success, clear if disk full
     // Note:   Call repeatedly to write large files
     //         Maximum 65535 bytes per file
@@ -97,7 +99,7 @@ unit File
     // Read next chunk from open file
     // Input:  None (file must be open via StartLoad())
     // Output: C set if data available, clear if EOF
-    //         ZP.FS2/FS3 (TransferLength) = bytes read (max 256)
+    //         File.TransferLengthL/H = bytes read (max 256)
     //         Data in FileDataBuffer (0x0600-0x06FF)
     // Note:   Call repeatedly until C clear (EOF)
     NextStream()

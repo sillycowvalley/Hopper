@@ -428,22 +428,22 @@ unit Commands
             }
             
             // Write chunk - Y has byte count (0 means 256)
-            STY ZP.FS2  // Transfer length low
-            STZ ZP.FS3  // Transfer length high
+            STY File.TransferLengthL  // Transfer length low
+            STZ File.TransferLengthH  // Transfer length high
             CPY #0
             if (Z)
             {
                 // Full 256 bytes
-                STZ ZP.FS2
+                STZ File.TransferLengthL
                 LDA #1
-                STA ZP.FS3
+                STA File.TransferLengthH
             }
             
             // Set source pointer
             LDA #0x00
-            STA ZP.FS0
+            STA File.SectorSourceL
             LDA #0x06
-            STA ZP.FS1
+            STA File.SectorSourceH
             
             File.AppendStream();
             if (NC)

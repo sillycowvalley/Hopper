@@ -604,7 +604,7 @@ padLine:
         
         // Move to previous line
         LDA vwCurrentLineL
-        if (Z) { DEC vwCurrentLineH; }
+        if (Z) { DEC vwCurrentLineH }
         DEC vwCurrentLineL
         
         // Update logical cursor position
@@ -623,7 +623,7 @@ padLine:
         
         // Scroll up
         LDA vwTopLineL
-        if (Z) { DEC vwTopLineH; }
+        if (Z) { DEC vwTopLineH }
         DEC vwTopLineL
         SetDirty();
     }
@@ -645,7 +645,7 @@ padLine:
         
         // Move to next line
         INC vwCurrentLineL
-        if (Z) { INC vwCurrentLineH; }
+        if (Z) { INC vwCurrentLineH }
         
         // Update logical cursor position
         updateLogicalCursor();
@@ -659,7 +659,7 @@ padLine:
         {
             // Scroll down
             INC vwTopLineL
-            if (Z) { INC vwTopLineH; }
+            if (Z) { INC vwTopLineH }
             SetDirty();
         }
     }
@@ -673,7 +673,7 @@ padLine:
             DEC vwLogicalCursorL
             LDA vwLogicalCursorL
             CMP #0xFF
-            if (Z) { DEC vwLogicalCursorH; }
+            if (Z) { DEC vwLogicalCursorH }
         }
         else
         {
@@ -704,7 +704,7 @@ padLine:
         {
             INC vwCurrentCol
             INC vwLogicalCursorL
-            if (Z) { INC vwLogicalCursorH; }
+            if (Z) { INC vwLogicalCursorH }
         }
     }
     
@@ -744,7 +744,7 @@ padLine:
             
             INC vwCurrentCol
             INC vwCharPosL
-            if (Z) { INC vwCharPosH; }
+            if (Z) { INC vwCharPosH }
         }
         
         updateLogicalCursor();

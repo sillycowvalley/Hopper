@@ -147,38 +147,38 @@ unit File
     
     
     // Buffer allocation (3 x 256 bytes)
-    const uint FATBuffer            = Address.FileSystemBuffers;        // [0-255]
-    const uint DirectoryBuffer      = Address.FileSystemBuffers + 256;  // [256-511]  
+    const uint fatBuffer            = Address.FileSystemBuffers;        // [0-255]
+    const uint directoryBuffer      = Address.FileSystemBuffers + 256;  // [256-511]  
     const uint FileDataBuffer       = Address.FileSystemBuffers + 512;  // [512-767]
     
-    const byte CurrentFileSector    = ZP.FS4;                  // Current sector number in file
-    const byte FileStartSector      = ZP.FS5;                  // First sector of current file
-    const byte CurrentFileEntry     = ZP.FS6;                  // Directory entry index (0-15)
+    const byte currentFileSector    = ZP.FS4;                  // Current sector number in file
+    const byte fileStartSector      = ZP.FS5;                  // First sector of current file
+    const byte currentFileEntry     = ZP.FS6;                  // Directory entry index (0-15)
     
-    // FilePosition is used in: StartSave(initializeSaveState), AppendStream, EndSave, DumpFileState
-    const byte FilePosition         = ZP.FS7;                  // Current byte position in file (16-bit), for use with LDA [FilePosition]
-    const byte FilePositionL        = ZP.FS7;                  //    "
-    const byte FilePositionH        = ZP.FS8;                  //    "
+    // filePosition is used in: StartSave(initializeSaveState), AppendStream, EndSave, DumpFileState
+    const byte filePosition         = ZP.FS7;                  // Current byte position in file (16-bit), for use with LDA [filePosition]
+    const byte filePositionL        = ZP.FS7;                  //    "
+    const byte filePositionH        = ZP.FS8;                  //    "
     
     
-    const byte NextFileSector       = ZP.FS9;                  // Next sector in chain (from FAT)
+    const byte nextFileSector       = ZP.FS9;                  // Next sector in chain (from FAT)
     
     // Additional ZP aliases needed for AppendStream
     // WARNINGL ZP.M0 - ZP.M3 are used by Time.Delay() (TARGET0-3)
-    const byte BytesRemaining       = ZP.FS10;                // for use with LDA [BytesRemaining]
-    const byte BytesRemainingL      = ZP.FS10;                // 16-bit: bytes left to copy
-    const byte BytesRemainingH      = ZP.FS11;
+    const byte bytesRemaining       = ZP.FS10;                // for use with LDA [bytesRemaining]
+    const byte bytesRemainingL      = ZP.FS10;                // 16-bit: bytes left to copy
+    const byte bytesRemainingH      = ZP.FS11;
     
-    const byte SectorPosition       = ZP.FS12;                // for use with LDA [SectorPosition]
-    const byte SectorPositionL      = ZP.FS12;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
-    const byte SectorPositionH      = ZP.FS13;
+    const byte sectorPosition       = ZP.FS12;                // for use with LDA [sectorPosition]
+    const byte sectorPositionL      = ZP.FS12;                // Byte position within current sector (0-255) .. with possible overflow to 256 (NO, IT IS NOT THE SAME AS ZERO IF YOU ARE IDIOTS LIKE US)
+    const byte sectorPositionH      = ZP.FS13;
      
-    const byte CurrentDirectorySector = ZP.FS14;              // Current directory sector being accessed
+    const byte currentDirectorySector = ZP.FS14;              // Current directory sector being accessed
     
     // used by Delete (compaction)
-    const byte LastOccupiedEntry      = ZP.FS15;              
-    const byte LastOccupiedSector     = ZP.FS7;               // alias of FilePositionL (see above)
-    const byte PreviousSector         = ZP.FS8;               // alias of FilePositionH (see above)
+    const byte lastOccupiedEntry      = ZP.FS15;              
+    const byte lastOccupiedSector     = ZP.FS7;               // alias of filePositionL (see above)
+    const byte previousSector         = ZP.FS8;               // alias of filePositionH (see above)
 
     
     // Validate filename format (alphanumeric + period, 1-13 chars)
@@ -246,13 +246,13 @@ unit File
         loadDirectorySector();
     }
     
-    // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
-    // Input:  CurrentFileEntry
+    // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
+    // Input:  currentFileEntry
     // Output: Y = offset in current sector
     fileEntryToDirectoryEntry()
     {
         PHA
-        LDA CurrentFileEntry
+        LDA currentFileEntry
         AND #0x0F                    // Convert global to local (0-15)
         ASL A ASL A ASL A ASL A      // * 16
         TAY                          // Y = directory entry offset
@@ -266,7 +266,7 @@ unit File
     {
         TYA
         ASL A ASL A ASL A ASL A // Y * 16
-        TAX                     // X = byte offset in DirectoryBuffer
+        TAX                     // X = byte offset in directoryBuffer
     }
     
     // Get available free space in bytes
@@ -290,7 +290,7 @@ unit File
             
             loop
             {
-                LDA FATBuffer, Y
+                LDA fatBuffer, Y
                 if (Z)
                 {
                     INC ZP.TOP1  // Count free sectors
@@ -323,8 +323,8 @@ unit File
             
             // Set FAT system sectors as reserved
             LDA #1  // Reserved marker
-            STA FATBuffer + 0   // Sector 0 (FAT)
-            STA FATBuffer + 1   // Sector 1 (Directory)
+            STA fatBuffer + 0   // Sector 0 (FAT)
+            STA fatBuffer + 1   // Sector 1 (Directory)
             
             // Write FAT to EEPROM
             writeFAT();
@@ -362,7 +362,7 @@ unit File
                 Error.DirectoryFull(); BIT ZP.EmulatorPCL
                 break;
             }
-            // CurrentFileEntry now contains entry index (0-15)
+            // currentFileEntry now contains entry index (0-15)
             
             // Write filename to directory entry
             writeFilenameToDirectory();
@@ -374,8 +374,8 @@ unit File
                 Error.EEPROMFull(); BIT ZP.EmulatorPCL
                 break;
             }
-            STY FileStartSector
-            STY CurrentFileSector
+            STY fileStartSector
+            STY currentFileSector
             
             // Update directory entry with start sector
             updateDirectoryStartSector();
@@ -407,15 +407,15 @@ unit File
         {
             // Copy input parameters to working variables
             LDA TransferLengthL
-            STA BytesRemainingL
+            STA bytesRemainingL
             LDA TransferLengthH  
-            STA BytesRemainingH
+            STA bytesRemainingH
             
             loop // Single exit for byte copy
             {
                 // Check if done
-                LDA BytesRemainingL
-                ORA BytesRemainingH
+                LDA bytesRemainingL
+                ORA bytesRemainingH
                 if (Z)
                 { 
                     SEC break; // Set C - success
@@ -424,7 +424,7 @@ unit File
                 // Copy one byte from source to file data buffer
                 LDY #0
                 LDA [SectorSource], Y
-                LDY SectorPositionL
+                LDY sectorPositionL
                 STA FileDataBuffer, Y
                 
                 // Update source pointer
@@ -432,11 +432,11 @@ unit File
                 if (Z) { INC SectorSourceH }
                 
                 // Update sector position (16-bit increment)
-                INC SectorPositionL
-                if (Z) { INC SectorPositionH }
+                INC sectorPositionL
+                if (Z) { INC sectorPositionH }
                 
                 // Check if sector full (256 bytes = 0x0100)
-                LDA SectorPositionH
+                LDA sectorPositionH
                 if (NZ) // High byte non-zero means >= 256
                 {
                     flushAndAllocateNext();
@@ -444,16 +444,16 @@ unit File
                 }
                 
                 // Decrement 16-bit remaining count  
-                LDA BytesRemainingL
+                LDA bytesRemainingL
                 if (Z)
                 {
-                    DEC BytesRemainingH
+                    DEC bytesRemainingH
                 }
-                DEC BytesRemainingL
+                DEC bytesRemainingL
                 
-                // Update FilePosition (16-bit)
-                INC FilePositionL
-                if (Z) { INC FilePositionH }
+                // Update filePosition (16-bit)
+                INC filePositionL
+                if (Z) { INC filePositionH }
             }
             
             break;
@@ -477,29 +477,29 @@ unit File
         loop // Single exit
         {
             // Write final sector if it has data
-            LDA SectorPositionL
-            ORA SectorPositionH
+            LDA sectorPositionL
+            ORA sectorPositionH
             if (NZ)
             {
-                LDA CurrentFileSector
+                LDA currentFileSector
                 writeSector();
             }
             
             // Update directory entry with final file length
-            // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+            // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
             fileEntryToDirectoryEntry(); // -> Y
             
-            // Set file length (FilePosition)
-            LDA FilePositionL
-            STA DirectoryBuffer + 0, Y
-            LDA FilePositionH  
+            // Set file length (filePosition)
+            LDA filePositionL
+            STA directoryBuffer + 0, Y
+            LDA filePositionH  
             ORA ZP.ACCH                    // or 0x80 if executable type
-            STA DirectoryBuffer + 1, Y
+            STA directoryBuffer + 1, Y
             
             // Flush metadata to EEPROM
             writeFAT();
             
-            LDA CurrentDirectorySector
+            LDA currentDirectorySector
             writeDirectorySector();
             
             SEC // Success
@@ -524,7 +524,7 @@ unit File
             initializeFATandDirectory();
             
             // Count files and calculate total bytes
-            countFilesAndBytes(); // -> TransferLengthL = file count, TransferLengthH/BytesRemainingL = total bytes
+            countFilesAndBytes(); // -> TransferLengthL = file count, TransferLengthH/bytesRemainingL = total bytes
             
             LDA TransferLengthL
             if (NZ)
@@ -556,39 +556,39 @@ unit File
     
     findLastOccupiedEntry()
     {
-        STZ LastOccupiedEntry
-        STZ LastOccupiedSector
-        STZ PreviousSector       // Still needed for unlinking
+        STZ lastOccupiedEntry
+        STZ lastOccupiedSector
+        STZ previousSector       // Still needed for unlinking
         
         LDA #DirWalkAction.FindLast
         STA ZP.ACCH
         walkDirectoryChain();    // Walker handles ACCL increment
         
         // Set C if we found an entry to move
-        LDA LastOccupiedSector
+        LDA lastOccupiedSector
         if (NZ) { SEC } else { CLC }
     }
     
     // Move directory entry from last occupied to deleted slot
-    // Input: LastOccupiedEntry/Sector = source, CurrentFileEntry/CurrentDirectorySector = dest
-    // Uses: FileDataBuffer for source read, DirectoryBuffer for dest write
+    // Input: LastOccupiedEntry/Sector = source, currentFileEntry/currentDirectorySector = dest
+    // Uses: FileDataBuffer for source read, directoryBuffer for dest write
     // Munts: A, X, Y
     moveDirectoryEntry()
     {
-        // Load destination sector into DirectoryBuffer
-        LDA CurrentDirectorySector
+        // Load destination sector into directoryBuffer
+        LDA currentDirectorySector
         loadDirectorySector();
-        LDA #(DirectoryBuffer % 256)
+        LDA #(directoryBuffer % 256)
         STA ZP.FDESTINATIONADDRESSL
-        LDA #(DirectoryBuffer / 256)
+        LDA #(directoryBuffer / 256)
         STA ZP.FDESTINATIONADDRESSH
         
         // Check if same sector
-        LDA CurrentDirectorySector
-        CMP LastOccupiedSector
+        LDA currentDirectorySector
+        CMP lastOccupiedSector
         if (Z)
         {
-            // Same sector - both in DirectoryBuffer
+            // Same sector - both in directoryBuffer
             LDA ZP.FDESTINATIONADDRESSL
             STA ZP.FSOURCEADDRESSL
             LDA ZP.FDESTINATIONADDRESSH
@@ -597,7 +597,7 @@ unit File
         else
         {    
             // Load source sector into FileDataBuffer
-            LDA LastOccupiedSector
+            LDA lastOccupiedSector
             readSector();
             
             // #FileDataBuffer --> FSOURCEADDRESSL
@@ -608,7 +608,7 @@ unit File
         }
         
         // Get source offset
-        LDA LastOccupiedEntry
+        LDA lastOccupiedEntry
         AND #0x0F
         TAY
         entryToOffset();             // Y * 16 -> X
@@ -622,7 +622,7 @@ unit File
         STA ZP.FSOURCEADDRESSH
         
         // Get dest offset
-        fileEntryToDirectoryEntry(); // (CurrentFileEntry & 0x0F) * 16 -> Y
+        fileEntryToDirectoryEntry(); // (currentFileEntry & 0x0F) * 16 -> Y
         
         CLC
         TYA
@@ -645,8 +645,8 @@ unit File
         } // loop
         
         // Write both sectors back
-        LDA CurrentDirectorySector
-        CMP LastOccupiedSector
+        LDA currentDirectorySector
+        CMP lastOccupiedSector
         if (Z)
         {
             // Same sector - only write the one we modified
@@ -657,7 +657,7 @@ unit File
             // Different sectors - write both
             writeDirectorySector();
             
-            LDA LastOccupiedSector
+            LDA lastOccupiedSector
             writeSector();
         }
     }
@@ -695,10 +695,10 @@ unit File
                 Error.FileNotFound(); BIT ZP.EmulatorPCL
                 break;
             }
-            // CurrentFileEntry now contains the directory entry index
+            // currentFileEntry now contains the directory entry index
             
             // Get start sector from directory entry
-            getFileStartSector(); // -> FileStartSector
+            getFileStartSector(); // -> fileStartSector
             
             // Free all sectors used by the file
             freeFileSectorChain();
@@ -707,54 +707,54 @@ unit File
             clearDirectoryEntry();
             
             // Write updated directory and FAT back to EEPROM
-            LDA CurrentDirectorySector 
+            LDA currentDirectorySector 
             writeDirectorySector();
             writeFAT();
             
             // Save deleted entry location for compaction
-            LDA CurrentFileEntry
+            LDA currentFileEntry
             PHA
-            LDA CurrentDirectorySector  
+            LDA currentDirectorySector  
             PHA
             
             findLastOccupiedEntry();
             
             // Restore deleted entry location
             PLA
-            STA CurrentDirectorySector
+            STA currentDirectorySector
             PLA
-            STA CurrentFileEntry
+            STA currentFileEntry
             
             if (C)
             {
                 // Only move if the last entry is AFTER the deleted entry
-                LDA LastOccupiedEntry
-                CMP CurrentFileEntry
-                if (NC) { break; }  // LastOccupiedEntry <= CurrentFileEntry, no move
-                if (Z)  { break; }  // LastOccupiedEntry == CurrentFileEntry, no move
+                LDA lastOccupiedEntry
+                CMP currentFileEntry
+                if (NC) { break; }  // LastOccupiedEntry <= currentFileEntry, no move
+                if (Z)  { break; }  // LastOccupiedEntry == currentFileEntry, no move
                 
-                // LastOccupiedEntry > CurrentFileEntry
+                // LastOccupiedEntry > currentFileEntry
                 // Move last entry to fill the deleted slot
                 moveDirectoryEntry();
                 
                 // Check if last sector is now empty
-                LDA LastOccupiedSector
+                LDA lastOccupiedSector
                 CMP #1                   // Never unlink sector 1
                 if (NZ)
                 {
-                    LDA LastOccupiedEntry
+                    LDA lastOccupiedEntry
                     AND #0x0F            // Was it slot 0?
                     if (Z)               // Yes - sector is now empty
                     {
                         // Unlink the empty sector
-                        LDY PreviousSector
+                        LDY previousSector
                         LDA #1               // End-of-chain marker
-                        STA FATBuffer, Y
+                        STA fatBuffer, Y
                         
                         // Free the empty sector
-                        LDY LastOccupiedSector
+                        LDY lastOccupiedSector
                         LDA #0
-                        STA FATBuffer, Y
+                        STA fatBuffer, Y
                         
                         writeFAT();
                     }
@@ -781,7 +781,7 @@ unit File
     // Input: ZP.STR = pointer to filename (uppercase, null-terminated), 
     //             A =  DirWalkAction.FindFile (all files) or DirWalkAction.FindExecutable (executables only)
     // Output: C set if file exists, NC if file not found
-    //         CurrentFileEntry = directory entry index if found
+    //         currentFileEntry = directory entry index if found
     // Preserves: X, Y
     // Munts: A, file system buffers  
     // Note: Throws error if filename format is invalid
@@ -808,7 +808,7 @@ unit File
             
             // Find the file in directory
             findFileInDirectory();
-            // Returns C if found (with CurrentFileEntry set), NC if not found
+            // Returns C if found (with currentFileEntry set), NC if not found
             break;
         }
         
@@ -850,17 +850,17 @@ unit File
                 Error.FileNotFound(); BIT ZP.EmulatorPCL
                 break;
             }
-            // CurrentFileEntry now contains the directory entry index
+            // currentFileEntry now contains the directory entry index
             
             // Get start sector from directory entry
-            getFileStartSector(); // -> FileStartSector
+            getFileStartSector(); // -> fileStartSector
             
             // Get file length from directory entry
-            GetFileLength(); // -> BytesRemainingL/H
+            GetFileLength(); // -> bytesRemainingL/H
             
             // Initialize for first NextStream() call
-            LDA FileStartSector
-            STA CurrentFileSector
+            LDA fileStartSector
+            STA currentFileSector
             
             // Success - file ready for NextStream() calls
             SEC
@@ -886,7 +886,7 @@ unit File
     //         TransferLengthL/H = 16-bit byte count (max 256 per call)
     //         States.Success flag set appropriately
     // Preserves: X, Y
-    // Munts: A, BytesRemaining, CurrentFileSector, NextFileSector
+    // Munts: A, bytesRemaining, currentFileSector, nextFileSector
     // Note: - Returns up to 256 bytes (one sector) per call
     //       - Pre-reads next sector after returning data (if more exists)
     //       - FileDataBuffer will be overwritten on next call
@@ -899,8 +899,8 @@ unit File
         loop // Single exit
         {
             // Check if any bytes remaining
-            LDA BytesRemainingL
-            ORA BytesRemainingH
+            LDA bytesRemainingL
+            ORA bytesRemainingH
             if (Z)
             {
                 CLC  // End of file
@@ -908,45 +908,45 @@ unit File
             }
             
             // Load current sector
-            LDA CurrentFileSector
+            LDA currentFileSector
             readSector();  // Load into FileDataBuffer
             
-            // Calculate transfer: min(256, BytesRemaining)
-            LDA BytesRemainingH
-            if (Z)  // BytesRemaining < 256
+            // Calculate transfer: min(256, bytesRemaining)
+            LDA bytesRemainingH
+            if (Z)  // bytesRemaining < 256
             {
-                LDA BytesRemainingL
+                LDA bytesRemainingL
                 STA TransferLengthL
                 STZ TransferLengthH
                 // Don't invalidate buffer - partial read
             }
-            else  // BytesRemaining >= 256
+            else  // bytesRemaining >= 256
             {
                 STZ TransferLengthL
                 LDA #1
                 STA TransferLengthH
                 
                 // Get next sector from FAT for next call
-                LDY CurrentFileSector
-                LDA FATBuffer, Y
+                LDY currentFileSector
+                LDA fatBuffer, Y
                 CMP #1                      // End-of-chain marker?
                 if (Z)
                 {
-                    // Shouldn't happen if BytesRemaining is correct
+                    // Shouldn't happen if bytesRemaining is correct
                     Error.EEPROMError();
                     break;
                 }
-                STA CurrentFileSector       // Ready for next call
+                STA currentFileSector       // Ready for next call
             }
             
-            // Update BytesRemaining
+            // Update bytesRemaining
             SEC
-            LDA BytesRemainingL
+            LDA bytesRemainingL
             SBC TransferLengthL
-            STA BytesRemainingL
-            LDA BytesRemainingH
+            STA bytesRemainingL
+            LDA bytesRemainingH
             SBC TransferLengthH
-            STA BytesRemainingH
+            STA bytesRemainingH
             
             SEC  // Success
             break;
@@ -959,31 +959,31 @@ unit File
 
     
     // Get file length from current directory entry
-    // Input: CurrentFileEntry = directory entry index
-    // Output: BytesRemainingL/H = file length (16-bit)
+    // Input: currentFileEntry = directory entry index
+    // Output: bytesRemainingL/H = file length (16-bit)
     // Munts: A, Y
     GetFileLength()
     {
-        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
         fileEntryToDirectoryEntry(); // -> Y
         
         // Read file length from directory entry (bytes 0-1)
-        LDA DirectoryBuffer + 0, Y              // Length LSB
-        STA BytesRemainingL
-        LDA DirectoryBuffer + 1, Y              // Length MSB
+        LDA directoryBuffer + 0, Y              // Length LSB
+        STA bytesRemainingL
+        LDA directoryBuffer + 1, Y              // Length MSB
         AND # 0x7F // strip bit 15 - file type
-        STA BytesRemainingH
+        STA bytesRemainingH
     }
         
     
     // Find file in directory by filename
     // Input: ZP.STR = filename to find
     // Output: C set if found, NC if not found
-    //         CurrentFileEntry = directory entry index if found
+    //         currentFileEntry = directory entry index if found
     findFileInDirectory()
     {
         walkDirectoryChain();
-        // NC if early exit (found), CurrentFileEntry already set by callback
+        // NC if early exit (found), currentFileEntry already set by callback
         if (C) 
         { 
             CLC  // Not found
@@ -996,62 +996,62 @@ unit File
     
     
     // Get start sector from current directory entry
-    // Input: CurrentFileEntry = directory entry index
-    // Output: FileStartSector = start sector number
+    // Input: currentFileEntry = directory entry index
+    // Output: fileStartSector = start sector number
     // Munts: A, Y
     getFileStartSector()
     {
-        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
         fileEntryToDirectoryEntry(); // -> Y
         INY INY                      // + 2 (start sector field)
         
         // Read start sector from directory entry
-        LDA DirectoryBuffer, Y
-        STA FileStartSector
+        LDA directoryBuffer, Y
+        STA fileStartSector
     }
     
     // Free all sectors in file's FAT chain
-    // Input: FileStartSector = first sector to free
+    // Input: fileStartSector = first sector to free
     // Output: All sectors in chain marked as free (0) in FAT
-    // Munts: A, CurrentFileSector, NextFileSector
+    // Munts: A, currentFileSector, nextFileSector
     freeFileSectorChain()
     {
-        LDA FileStartSector
-        STA CurrentFileSector
+        LDA fileStartSector
+        STA currentFileSector
         
         loop
         {
             // Check if we've reached end of chain
-            LDA CurrentFileSector
+            LDA currentFileSector
             if (Z) { break; }        // Sanity check - should not happen
             
             // Get next sector in chain from FAT
-            LDY CurrentFileSector
-            LDA FATBuffer, Y
-            STA NextFileSector
+            LDY currentFileSector
+            LDA fatBuffer, Y
+            STA nextFileSector
             
             // Mark current sector as free
             LDA #0
-            STA FATBuffer, Y
+            STA fatBuffer, Y
             
             // Check if this was end of chain
-            LDA NextFileSector
+            LDA nextFileSector
             CMP #1                   // 1 = end-of-chain marker
             if (Z) { break; }        // End of chain reached
             
             // Move to next sector
-            LDA NextFileSector
-            STA CurrentFileSector
+            LDA nextFileSector
+            STA currentFileSector
         }
     }
     
     // Clear directory entry for deleted file
-    // Input: CurrentFileEntry = directory entry index
+    // Input: currentFileEntry = directory entry index
     // Output: Directory entry cleared (all zeros)
     // Munts: A, X, Y
     clearDirectoryEntry()
     {
-        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
         fileEntryToDirectoryEntry(); // -> Y
         
         // Clear 16 bytes of directory entry
@@ -1059,7 +1059,7 @@ unit File
         LDX #16
         loop
         {
-            STA DirectoryBuffer, Y
+            STA directoryBuffer, Y
             INY
             DEX
             if (Z) { break; }
@@ -1084,22 +1084,22 @@ unit File
     // Output: C = completed full iteration (not found/done)
     //         NC = early exit (found target)
     //         Action-specific side effects via callbacks:
-    //           Count: TransferLengthL = file count, TransferLengthH:BytesRemainingL = total bytes
+    //           Count: TransferLengthL = file count, TransferLengthH:bytesRemainingL = total bytes
     //           Print: Entries printed to console
-    //           FindFile: CurrentFileEntry = global entry index if found
-    //           FindLast: LastOccupiedEntry/Sector = last occupied position, PreviousSector set
-    // Uses:   CurrentDirectorySector, DirectoryBuffer, ZP.ACCL (sector position counter)
-    // Munts:  A, X, Y, CurrentDirectorySector, PreviousSector, ZP.ACCL
+    //           FindFile: currentFileEntry = global entry index if found
+    //           FindLast: LastOccupiedEntry/Sector = last occupied position, previousSector set
+    // Uses:   currentDirectorySector, directoryBuffer, ZP.ACCL (sector position counter)
+    // Munts:  A, X, Y, currentDirectorySector, previousSector, ZP.ACCL
     walkDirectoryChain()
     {
         LDA #1
-        STA CurrentDirectorySector
+        STA currentDirectorySector
         STZ ZP.ACCL              // Tracks position in chain (0x00, 0x10, 0x20...)
-        STZ PreviousSector       // Tracks previous sector for unlinking
+        STZ previousSector       // Tracks previous sector for unlinking
         
         loop 
         {
-            LDA CurrentDirectorySector
+            LDA currentDirectorySector
             loadDirectorySector();
             
             // Process all 16 entries in current sector
@@ -1109,8 +1109,8 @@ unit File
                 entryToOffset();         // Y * 16 -> X (byte offset)
                 
                 // Check if entry occupied (length != 0)
-                LDA DirectoryBuffer + 0, X
-                ORA DirectoryBuffer + 1, X
+                LDA directoryBuffer + 0, X
+                ORA directoryBuffer + 1, X
                 if (NZ)
                 {
                     // Entry occupied - dispatch to action handler
@@ -1154,7 +1154,7 @@ unit File
             if (NC) { break; }  // Propagate early exit from callback
             
             // Move to next directory sector in chain
-            LDA CurrentDirectorySector
+            LDA currentDirectorySector
             getNextDirectorySector();    // Returns next sector in A (1 = end-of-chain)
             CMP #1
             if (Z) 
@@ -1164,9 +1164,9 @@ unit File
             }
             
             // Continue to next sector
-            LDX CurrentDirectorySector
-            STX PreviousSector           // Save for potential unlinking
-            STA CurrentDirectorySector   // A still has next sector
+            LDX currentDirectorySector
+            STX previousSector           // Save for potential unlinking
+            STA currentDirectorySector   // A still has next sector
             
             // Increment sector position counter (used by FindLast to calculate global indices)
             CLC
@@ -1182,10 +1182,10 @@ unit File
         // Update tracking for last occupied entry
         TYA
         ORA ZP.ACCL          // Combine with sector position
-        STA LastOccupiedEntry
+        STA lastOccupiedEntry
         
-        LDA CurrentDirectorySector
-        STA LastOccupiedSector
+        LDA currentDirectorySector
+        STA lastOccupiedSector
         
         SEC                  // Always continue scanning
     }
@@ -1196,7 +1196,7 @@ unit File
         
         // if ZP.ACCL == DirWalkAction.FindExecutable, only find executable files
         
-        checkFilenameAndTypeMatch();  // Compare ZP.STR with DirectoryBuffer, X
+        checkFilenameAndTypeMatch();  // Compare ZP.STR with directoryBuffer, X
         
         PLA                 // Get slot back in A
         
@@ -1204,14 +1204,14 @@ unit File
         {
             // Calculate global entry index
             PHA                      // Save slot again
-            LDA CurrentDirectorySector
+            LDA currentDirectorySector
             DEC
             ASL A ASL A ASL A ASL A
-            STA CurrentFileEntry
+            STA currentFileEntry
             PLA                      // Get slot
             CLC
-            ADC CurrentFileEntry
-            STA CurrentFileEntry
+            ADC currentFileEntry
+            STA currentFileEntry
             
             CLC                 // Signal stop scanning
             return;
@@ -1226,10 +1226,10 @@ unit File
         
         // Add file size to total
         CLC
-        LDA DirectoryBuffer + 0, X
-        ADC BytesRemainingL
-        STA BytesRemainingL
-        LDA DirectoryBuffer + 1, X
+        LDA directoryBuffer + 0, X
+        ADC bytesRemainingL
+        STA bytesRemainingL
+        LDA directoryBuffer + 1, X
         AND # 0x7F // strip bit 15 - file type (AND does not affect C flag)
         ADC TransferLengthH
         STA TransferLengthH
@@ -1239,7 +1239,7 @@ unit File
     
     processPrintEntry()  // X = offset
     {
-        // Print entry at DirectoryBuffer + X
+        // Print entry at directoryBuffer + X
         
         LDY #4
         Print.Spaces();
@@ -1262,12 +1262,12 @@ unit File
     
     // Count files and calculate total bytes used
     // Output: TransferLengthL = file count
-    //         TransferLengthH/BytesRemainingL = total bytes (16-bit)
+    //         TransferLengthH/bytesRemainingL = total bytes (16-bit)
     countFilesAndBytes()
     {
         STZ TransferLengthL      // Initialize file count
         STZ TransferLengthH      // Initialize byte count MSB
-        STZ BytesRemainingL      // Initialize byte count LSB
+        STZ bytesRemainingL      // Initialize byte count LSB
         
         LDA #DirWalkAction.Count
         STA ZP.ACCH
@@ -1306,7 +1306,7 @@ unit File
         LDX #(13 + 2 + 1) // filename + optional " *" + at least one space
         loop
         {
-            LDA DirectoryBuffer, Y
+            LDA directoryBuffer, Y
             
             PHA                      // Save character
             AND #0x7F                // Clear high bit
@@ -1322,7 +1322,7 @@ unit File
         PLY // restore name position
         
         // Check if executable and print appropriate suffix
-        LDA (DirectoryBuffer - 2), Y  // Size high byte
+        LDA (directoryBuffer - 2), Y  // Size high byte
         if (MI)  // Bit 7 set = executable
         {
             Space();
@@ -1348,9 +1348,9 @@ unit File
     // Munts: A, ZP.TOPL, ZP.TOPH, ZP.TOPT
     printFileSizeFromDirectory()
     {
-        LDA DirectoryBuffer + 0, Y  // Length LSB
+        LDA directoryBuffer + 0, Y  // Length LSB
         STA ZP.TOP0
-        LDA DirectoryBuffer + 1, Y  // Length MSB
+        LDA directoryBuffer + 1, Y  // Length MSB
         AND #0x7F                   // strip file type bit from size
         STA ZP.TOP1
         
@@ -1396,7 +1396,7 @@ unit File
     }
     
     // Print directory summary: "3 files, 2373 bytes used"
-    // Input: TransferLengthL = file count, TransferLengthH/BytesRemainingL = total bytes
+    // Input: TransferLengthL = file count, TransferLengthH/bytesRemainingL = total bytes
     // Munts: A
     printDirectorySummary()
     {
@@ -1409,7 +1409,7 @@ unit File
         LDA # ErrorID.Files LDX # (MessageExtras.PrefixSpace|MessageExtras.SuffixComma|MessageExtras.SuffixSpace) Error.Message();
         
         // Print total bytes
-        LDA BytesRemainingL
+        LDA bytesRemainingL
         STA ZP.TOP0
         LDA TransferLengthH
         STA ZP.TOP1
@@ -1422,18 +1422,18 @@ unit File
     }
     
     // Write filename to directory entry
-    // Input: CurrentFileEntry = directory entry index, ZP.STR = filename
+    // Input: currentFileEntry = directory entry index, ZP.STR = filename
     // Munts: A, X, Y
     writeFilenameToDirectory()
     {
         PHY
         
-        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
         fileEntryToDirectoryEntry(); // -> Y
         TYA TAX
         INX INX INX // + 3 (filename field)
         
-        // Copy filename from ZP.STR to DirectoryBuffer
+        // Copy filename from ZP.STR to directoryBuffer
         LDY #0
         loop
         {
@@ -1442,13 +1442,13 @@ unit File
             { 
                 // End of filename - set high bit on last character
                 DEX
-                LDA DirectoryBuffer, X
+                LDA directoryBuffer, X
                 ORA #0x80           // Set high bit
-                STA DirectoryBuffer, X
+                STA directoryBuffer, X
                 break; 
             }
             
-            STA DirectoryBuffer, X
+            STA directoryBuffer, X
             INX
             INY
             CPY #13                 // Max filename length
@@ -1456,9 +1456,9 @@ unit File
             { 
                 // Max length reached - set high bit on last character
                 DEX
-                LDA DirectoryBuffer, X
+                LDA directoryBuffer, X
                 ORA #0x80           // Set high bit
-                STA DirectoryBuffer, X
+                STA directoryBuffer, X
                 break; 
             }
         }
@@ -1467,17 +1467,17 @@ unit File
     }
     
     // Update directory entry with start sector
-    // Input: CurrentFileEntry = directory entry index, FileStartSector = sector number
+    // Input: currentFileEntry = directory entry index, fileStartSector = sector number
     // Munts: A, Y
     updateDirectoryStartSector()
     {
-        // Calculate directory entry offset: (CurrentFileEntry & 0x0F) * 16
+        // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
         fileEntryToDirectoryEntry(); // -> Y
         INY INY                      // + 2 for start sector field offset
         
         // Write start sector to directory entry
-        LDA FileStartSector
-        STA DirectoryBuffer, Y
+        LDA fileStartSector
+        STA directoryBuffer, Y
     }
     
     
@@ -1492,8 +1492,8 @@ unit File
         
         loop // Single exit
         {
-            // Write current FileDataBuffer to CurrentFileSector using existing writeSector()
-            LDA CurrentFileSector
+            // Write current FileDataBuffer to currentFileSector using existing writeSector()
+            LDA currentFileSector
             writeSector();
             
             // Allocate next sector
@@ -1504,18 +1504,18 @@ unit File
                 Error.EEPROMFull(); BIT ZP.EmulatorPCL
                 break; 
             }
-            STY NextFileSector
+            STY nextFileSector
             
-            // Link in FAT chain: FATBuffer[CurrentFileSector] = NextFileSector
-            LDY CurrentFileSector
-            LDA NextFileSector
-            STA FATBuffer, Y
+            // Link in FAT chain: fatBuffer[currentFileSector] = nextFileSector
+            LDY currentFileSector
+            LDA nextFileSector
+            STA fatBuffer, Y
             
             // Move to new sector
-            LDA NextFileSector
-            STA CurrentFileSector
-            STZ SectorPositionL       // Reset to start of new sector
-            STZ SectorPositionH
+            LDA nextFileSector
+            STA currentFileSector
+            STZ sectorPositionL       // Reset to start of new sector
+            STZ sectorPositionH
             
             // Clear new file data buffer using existing function
             clearFileDataBuffer();
@@ -1537,12 +1537,12 @@ unit File
         LDY #2                   // Start from sector 2 (skip FAT and directory)
         loop
         {
-            LDA FATBuffer, Y
+            LDA fatBuffer, Y
             if (Z)                // Free sector found
             {
                 // Mark sector as end-of-chain (initial single sector file)
                 LDA #1
-                STA FATBuffer, Y
+                STA fatBuffer, Y
                 SEC
                 break;
             }
@@ -1569,7 +1569,7 @@ unit File
             if (Z)  // Looking for executable files only
             {
                 // Check if this file is executable (bit 7 of size high byte)
-                LDA (DirectoryBuffer + 1), X  // Size high byte at offset 1
+                LDA (directoryBuffer + 1), X  // Size high byte at offset 1
                 if (PL)  // Bit 7 not set (not executable)
                 {
                     CLC  // Not a match - wrong file type
@@ -1581,7 +1581,7 @@ unit File
             TXA
             CLC
             ADC #3
-            TAX                      // X = filename start in DirectoryBuffer
+            TAX                      // X = filename start in directoryBuffer
     
             LDY #0                   // Index into ZP.STR filename
             loop
@@ -1591,7 +1591,7 @@ unit File
                 if (Z)               // End of input filename?
                 {
                     // Input ended - check if PREVIOUS directory character was the last
-                    LDA (DirectoryBuffer-1), X
+                    LDA (directoryBuffer-1), X
                     if (MI)          // High bit set = that was the last char
                     {
                         SEC          // Perfect match
@@ -1606,7 +1606,7 @@ unit File
     
                 
                 // Compare with directory character (clear high bit)
-                LDA DirectoryBuffer, X
+                LDA directoryBuffer, X
                 PHA                  // Save original with high bit
                 AND #0x7F           // Clear high bit for comparison
                 CMP [ZP.STR], Y
@@ -1649,13 +1649,13 @@ unit File
     initializeSaveState()
     {
         // Clear file position counters
-        STZ FilePosition         // FilePositionL
-        STZ FilePosition + 1     // FilePositionH
-        STZ SectorPositionL      // Byte position within current sector
-        STZ SectorPositionH
+        STZ filePosition         // filePositionL
+        STZ filePosition + 1     // filePositionH
+        STZ sectorPositionL      // Byte position within current sector
+        STZ sectorPositionH
         
         // Clear next sector (will be allocated when needed)
-        STZ NextFileSector
+        STZ nextFileSector
     }
     
     // TODO : inline
@@ -1670,7 +1670,7 @@ unit File
     // Clear FAT buffer to all zeros
     clearFATBuffer()
     {
-        LDA #(FATBuffer / 256) // MSB - assume page aligned
+        LDA #(fatBuffer / 256) // MSB - assume page aligned
         Memory.ClearPage();
     }
     
@@ -1678,32 +1678,32 @@ unit File
     // Clear directory buffer to all zeros  
     clearDirectoryBuffer()
     {
-        LDA #(DirectoryBuffer / 256) // MSB - assume page aligned
+        LDA #(directoryBuffer / 256) // MSB - assume page aligned
         Memory.ClearPage();
     }
     
-    // Load FAT from EEPROM sector 0 into FATBuffer
+    // Load FAT from EEPROM sector 0 into fatBuffer
     // Input: None
-    // Output: FATBuffer loaded with FAT data
+    // Output: fatBuffer loaded with FAT data
     // Munts: A, EEPROM operation registers
     loadFAT()
     {
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
         STZ ZP.IDYL
         
-        LDA #(FATBuffer / 256)   // RAM address MSB = FATBuffer (must be page aligned)
+        LDA #(fatBuffer / 256)   // RAM address MSB = fatBuffer (must be page aligned)
         STA ZP.IDXH
         EEPROM.ReadPage();
       
         //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
-    // Write FATBuffer to EEPROM sector 0
+    // Write fatBuffer to EEPROM sector 0
     writeFAT()
     {
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
         
-        LDA #(FATBuffer / 256)   // RAM address MSB = FATBuffer (must be page aligned)
+        LDA #(fatBuffer / 256)   // RAM address MSB = fatBuffer (must be page aligned)
         STA ZP.IDXH
         
         EEPROM.WritePage();
@@ -1712,14 +1712,14 @@ unit File
     }
     
     // Input: A = directory sector number to load
-    // Output: DirectoryBuffer contains specified directory sector
+    // Output: directoryBuffer contains specified directory sector
     // Munts: A, EEPROM operation registers
     loadDirectorySector()
     {
         STA ZP.IDYH                      // EEPROM address MSB = sector number
-        STA CurrentDirectorySector       // Remember which sector we loaded
+        STA currentDirectorySector       // Remember which sector we loaded
         
-        LDA #(DirectoryBuffer / 256)    // RAM address MSB = DirectoryBuffer
+        LDA #(directoryBuffer / 256)    // RAM address MSB = directoryBuffer
         STA ZP.IDXH
         
         EEPROM.ReadPage();
@@ -1727,13 +1727,13 @@ unit File
     
     // New parameterized writeDirectory (takes sector in A)
     // Input: A = directory sector number to write
-    // Output: DirectoryBuffer written to specified sector
+    // Output: directoryBuffer written to specified sector
     // Munts: A, EEPROM operation registers  
     writeDirectorySector()
     {
         STA ZP.IDYH                      // EEPROM address MSB = sector number
         
-        LDA #(DirectoryBuffer / 256)    // RAM address MSB = DirectoryBuffer
+        LDA #(directoryBuffer / 256)    // RAM address MSB = directoryBuffer
         STA ZP.IDXH
         
         EEPROM.WritePage();
@@ -1746,7 +1746,7 @@ unit File
     getNextDirectorySector()
     {
         TAY                              // Y = current sector
-        LDA FATBuffer, Y                 // Get next sector from FAT
+        LDA fatBuffer, Y                 // Get next sector from FAT
     }
     
     // Allocate new directory sector and link it to chain
@@ -1773,12 +1773,12 @@ unit File
             PLA                          // A = previous last sector
             TAX                          // X = previous sector
             TYA                          // A = new sector
-            STA FATBuffer, X             // Link previous to new
+            STA fatBuffer, X             // Link previous to new
             
             // Mark new sector as end-of-chain
             TAY
             LDA #1                       // End-of-chain marker
-            STA FATBuffer, Y
+            STA fatBuffer, Y
             
             // Clear the new directory sector
             TYA                          // A = new sector number
@@ -1798,20 +1798,20 @@ unit File
     
     // Find free directory entry across all directory sectors
     // Output: C set if entry found, NC if directory full
-    //         CurrentFileEntry = global entry index (0-255) if found
-    //         CurrentDirectorySector = sector containing the entry
+    //         currentFileEntry = global entry index (0-255) if found
+    //         currentDirectorySector = sector containing the entry
     // Munts: A, X, Y
     findFreeDirectoryEntry()
     {
         
         LDA #1                           // Start with first directory sector
-        STA CurrentDirectorySector
-        STZ CurrentFileEntry             // Start with entry 0
+        STA currentDirectorySector
+        STZ currentFileEntry             // Start with entry 0
         
         loop // Single exit - main search loop
         {
             // Load current directory sector
-            LDA CurrentDirectorySector 
+            LDA currentDirectorySector 
             loadDirectorySector(); 
             
             // Search entries in this sector
@@ -1822,20 +1822,20 @@ unit File
                 entryToOffset(); // Y * 16 -> X, munts A
                 
                 // Check if entry is free (fileLength == 0)
-                LDA DirectoryBuffer + 0, X  // Length LSB
-                ORA DirectoryBuffer + 1, X  // Length MSB
+                LDA directoryBuffer + 0, X  // Length LSB
+                ORA directoryBuffer + 1, X  // Length MSB
                 if (Z)
                 {
                     // Found free entry!
-                    // CurrentFileEntry = (CurrentDirectorySector - 1) * 16 + Y
-                    LDA CurrentDirectorySector
+                    // currentFileEntry = (currentDirectorySector - 1) * 16 + Y
+                    LDA currentDirectorySector
                     DEC                     // Sector 1 = entries 0-15
                     ASL A ASL A ASL A ASL A // * 16
-                    STA CurrentFileEntry
+                    STA currentFileEntry
                     TYA                     // Add local entry index
                     CLC
-                    ADC CurrentFileEntry
-                    STA CurrentFileEntry
+                    ADC currentFileEntry
+                    STA currentFileEntry
                     SEC                    // Success - found entry
                     break;                 // Exit main loop with success
                 }
@@ -1849,13 +1849,13 @@ unit File
             if (C) { break; }            // Exit with found entry
             
             // No free entry in this sector, check for next
-            LDA CurrentDirectorySector
+            LDA currentDirectorySector
             getNextDirectorySector();
             CMP #1                       // End-of-chain?
             if (Z)
             {
                 // Need to allocate new directory sector
-                LDA CurrentDirectorySector
+                LDA currentDirectorySector
                 allocateDirectorySector();
                 if (NC)
                 {
@@ -1865,14 +1865,14 @@ unit File
                 }
                 
                 // New sector allocated in A
-                STA CurrentDirectorySector
+                STA currentDirectorySector
                 loadDirectorySector();
                 
                 // First entry in new sector is free
-                LDA CurrentDirectorySector
+                LDA currentDirectorySector
                 DEC
                 ASL A ASL A ASL A ASL A          // * 16
-                STA CurrentFileEntry
+                STA currentFileEntry
                 
                 // Need to write the FAT with the new link
                 writeFAT();
@@ -1882,7 +1882,7 @@ unit File
             }
             
             // Move to next existing directory sector
-            STA CurrentDirectorySector
+            STA currentDirectorySector
             // Continue to next iteration of main loop
         }
     }
@@ -1995,12 +1995,12 @@ unit File
     const string endLabel    = "End-of-chain: ";
     
     const string fileStateHeader     = "=== FILE STATE ===";
-    const string currentEntryLabel   = "CurrentFileEntry: ";  
-    const string startSectorLabel    = "FileStartSector: ";
-    const string currentSectorLabel  = "CurrentFileSector: ";
-    const string nextSectorLabel     = "NextFileSector: ";
-    const string filePositionLabel   = "FilePosition: ";
-    const string sectorPositionLabel = "SectorPosition: ";
+    const string currentEntryLabel   = "currentFileEntry: ";  
+    const string startSectorLabel    = "fileStartSector: ";
+    const string currentSectorLabel  = "currentFileSector: ";
+    const string nextSectorLabel     = "nextFileSector: ";
+    const string filePositionLabel   = "filePosition: ";
+    const string sectorPositionLabel = "sectorPosition: ";
     
     const string debugHeader         = "--- DEBUG INFO ---";
     const string dirUtilLabel        = "Dir entries used: ";
@@ -2037,8 +2037,8 @@ unit File
             loop // Process entries in current sector
             {
                 // Check if entry is in use (length != 0)
-                LDA DirectoryBuffer + 0, Y
-                ORA DirectoryBuffer + 1, Y
+                LDA directoryBuffer + 0, Y
+                ORA directoryBuffer + 1, Y
                 if (NZ)
                 {
                     // Print entry number as #global [local]
@@ -2078,7 +2078,7 @@ unit File
                     Print.Space();
                     LDA #'@'
                     Print.Char();
-                    LDA DirectoryBuffer + 2, Y  // Start sector
+                    LDA directoryBuffer + 2, Y  // Start sector
                     Print.Hex();
                     
                     Print.NewLine();
@@ -2161,7 +2161,7 @@ unit File
                 {
                     // Not a directory sector - check FAT value
                     LDY ZP.M0            // Restore sector number
-                    LDA FATBuffer, Y
+                    LDA fatBuffer, Y
                     if (Z)
                     {
                         LDA #'.'         // Free sector
@@ -2231,7 +2231,7 @@ unit File
         LDY #0
         loop // Count all sectors
         {
-            LDA FATBuffer, Y
+            LDA fatBuffer, Y
             if (Z)
             {
                 INC ZP.UWIDE1 // free sector
@@ -2337,70 +2337,70 @@ unit File
         Print.String();
         Print.NewLine();
         
-        // CurrentFileEntry
+        // currentFileEntry
         LDA #(currentEntryLabel % 256)
         STA ZP.STRL
         LDA #(currentEntryLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA CurrentFileEntry
+        LDA currentFileEntry
         Print.Hex();
         Print.NewLine();
         
-        // FileStartSector  
+        // fileStartSector  
         LDA #(startSectorLabel % 256)
         STA ZP.STRL
         LDA #(startSectorLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA FileStartSector
+        LDA fileStartSector
         Print.Hex();
         Print.NewLine();
         
-        // CurrentFileSector
+        // currentFileSector
         LDA #(currentSectorLabel % 256)
         STA ZP.STRL
         LDA #(currentSectorLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA CurrentFileSector
+        LDA currentFileSector
         Print.Hex();
         Print.NewLine();
         
-        // NextFileSector
+        // nextFileSector
         LDA #(nextSectorLabel % 256)
         STA ZP.STRL
         LDA #(nextSectorLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA NextFileSector
+        LDA nextFileSector
         Print.Hex();
         Print.NewLine();
         
-        // FilePosition (16-bit)
+        // filePosition (16-bit)
         LDA #(filePositionLabel % 256)
         STA ZP.STRL
         LDA #(filePositionLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA FilePosition         // FilePositionL
+        LDA filePosition         // filePositionL
         STA ZP.TOPL
-        LDA FilePosition + 1     // FilePositionH  
+        LDA filePosition + 1     // filePositionH  
         STA ZP.TOPH
         LDA #0
         STA ZP.TOPT
         Print.Hex();
         Print.NewLine();
         
-        // SectorPosition (16-bit)
+        // sectorPosition (16-bit)
         LDA #(sectorPositionLabel % 256)
         STA ZP.STRL
         LDA #(sectorPositionLabel / 256)
         STA ZP.STRH
         Print.String();
-        LDA SectorPositionL
+        LDA sectorPositionL
         STA ZP.TOPL
-        LDA SectorPositionH  
+        LDA sectorPositionH  
         STA ZP.TOPH
         LDA #0
         STA ZP.TOPT
@@ -2422,38 +2422,38 @@ unit File
         PHY
         
         // Read file's first sector
-        LDA DirectoryBuffer + 2, X  // Start sector at offset +2
+        LDA directoryBuffer + 2, X  // Start sector at offset +2
         readSector();               // Load sector into FileDataBuffer
         
-        STZ SectorPositionL     // Set to 0 for first line
+        STZ sectorPositionL     // Set to 0 for first line
         printHexDumpLine();
         
         LDA # 0x10
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         LDA # 0x20
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         LDA # 0x30
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         LDA # 0x40
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         LDA # 0x50
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         LDA # 0x60
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         LDA # 0x70
-        STA SectorPositionL     // Use as offset counter
+        STA sectorPositionL     // Use as offset counter
         printHexDumpLine();
         
         
@@ -2463,7 +2463,7 @@ unit File
     }
     
     // Print one line of hex dump (16 bytes)
-    // Input: SectorPositionL = starting byte offset (0 or 16)
+    // Input: sectorPositionL = starting byte offset (0 or 16)
     // Munts: A, X, Y
     printHexDumpLine()
     {
@@ -2472,14 +2472,14 @@ unit File
         Print.Spaces();
         
         // Print address (00: or 10:)
-        LDA SectorPositionL
+        LDA sectorPositionL
         Print.Hex();             // Prints 00 or 10
         LDA #':'
         Print.Char();
         Print.Space();
         
         // Print 16 hex bytes
-        LDX SectorPositionL      // Starting offset
+        LDX sectorPositionL      // Starting offset
         LDY #0                   // Counter
         
         loop
@@ -2498,7 +2498,7 @@ unit File
         LDY #2 Print.Spaces();
         
         // Print ASCII representation
-        LDX SectorPositionL      // Starting offset
+        LDX sectorPositionL      // Starting offset
         LDY #0                   // Counter
         
         loop
@@ -2597,7 +2597,7 @@ unit File
     }
     
     // Print sector allocation info for all files
-    // Input: None (uses DirectoryBuffer and FATBuffer)
+    // Input: None (uses directoryBuffer and fatBuffer)
     // Output: Per-file sector allocation printed to serial
     // Munts: A, X, Y
     // Note: Iterates through directory entries, calls printFileSectorInfo() for each used entry
@@ -2610,8 +2610,8 @@ unit File
             entryToOffset(); // Y * 16 -> X, munts A
             
             // Check if entry is in use
-            LDA DirectoryBuffer + 0, X  // Length LSB
-            ORA DirectoryBuffer + 1, X  // Length MSB
+            LDA directoryBuffer + 0, X  // Length LSB
+            ORA directoryBuffer + 1, X  // Length MSB
             if (NZ)
             {
                 // Print sector info for this file
@@ -2629,7 +2629,7 @@ unit File
     // Output: One line printed: "  Sector XX: FILENAME.EXT (size bytes, N sectors)"
     // Preserves: None
     // Munts: A, X, Y, ZP.TOP registers
-    // Note: Converts entry index to byte offset internally for DirectoryBuffer access
+    // Note: Converts entry index to byte offset internally for directoryBuffer access
     //       Calls printFilenameFromDirectory() and printFileSizeFromDirectory()
     printFileSectorInfo()
     {
@@ -2644,7 +2644,7 @@ unit File
         Print.String();
         
         // Print start sector number
-        LDA DirectoryBuffer + 2, X  // Start sector
+        LDA directoryBuffer + 2, X  // Start sector
         Print.Hex();
         
         LDA #':'
@@ -2671,10 +2671,10 @@ unit File
         Print.Space();
         
         // Calculate sectors used: (filesize + 255) / 256
-        LDA DirectoryBuffer + 0, X  // Size low
+        LDA directoryBuffer + 0, X  // Size low
         CLC
         ADC #255                    // Add 255 for ceiling division
-        LDA DirectoryBuffer + 1, X  // Size high  
+        LDA directoryBuffer + 1, X  // Size high  
         ADC #0                      // Add carry
         STA ZP.TOPL                 // Result is sectors used
         STZ ZP.TOPH
@@ -2691,8 +2691,8 @@ unit File
         Print.Space();Print.Space();
         
         // Start walking the FAT chain
-        LDA DirectoryBuffer + 2, X  // Get start sector
-        STA CurrentFileSector       // Use as chain walker
+        LDA directoryBuffer + 2, X  // Get start sector
+        STA currentFileSector       // Use as chain walker
         STZ TransferLength          // Count actual sectors in chain
         
         loop // Walk FAT chain
@@ -2702,15 +2702,15 @@ unit File
             Print.Char();
             LDA #'x'
             Print.Char();
-            LDA CurrentFileSector
+            LDA currentFileSector
             Print.Hex();
             
             INC TransferLength      // Count this sector
             
             // Get next sector from FAT
-            LDY CurrentFileSector
-            LDA FATBuffer, Y
-            STA NextFileSector
+            LDY currentFileSector
+            LDA fatBuffer, Y
+            STA nextFileSector
             
             // Check if end of chain
             CMP #1                  // 1 = end-of-chain marker
@@ -2725,8 +2725,8 @@ unit File
             Print.Space();
             
             // Move to next sector
-            LDA NextFileSector
-            STA CurrentFileSector
+            LDA nextFileSector
+            STA currentFileSector
         }
         
         
@@ -2741,14 +2741,14 @@ unit File
     {
         // Count free sectors
         LDY #2                   // Start from sector 2 (skip system)
-        STZ SectorPositionL      // Free sector count
+        STZ sectorPositionL      // Free sector count
         
         loop
         {
-            LDA FATBuffer, Y
+            LDA fatBuffer, Y
             if (Z)
             {
-                INC SectorPositionL  // Count free sectors
+                INC sectorPositionL  // Count free sectors
             }
             
             INY
@@ -2761,7 +2761,7 @@ unit File
         STA ZP.STRH
         Print.String();
         
-        LDA SectorPositionL
+        LDA sectorPositionL
         STA ZP.TOPL
         STZ ZP.TOPH
         STZ ZP.TOPT

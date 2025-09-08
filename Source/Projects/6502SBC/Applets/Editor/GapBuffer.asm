@@ -198,108 +198,113 @@ unit GapBuffer
         // Check if already at position
         LDA gbTempL
         CMP gbGapStartL
-        if (NZ) { BRA needMove; }
-        LDA gbTempH
-        CMP gbGapStartH
-        if (Z) { return; }  // Already there
-        
-needMove:
-        // Determine direction
-        LDA gbTempH
-        CMP gbGapStartH
         if (Z)
         {
-            LDA gbTempL
-            CMP gbGapStartL
-        }
-        if (C)  // target < gap start (move gap left)
-        {
-            // Calculate bytes to move: gbGapStart - target
-            SEC
-            LDA gbGapStartL
-            SBC gbTempL
-            STA gbCountL
-            LDA gbGapStartH
-            SBC gbTempH
-            STA gbCountH
-            
-            // Source: buffer + target
-            CLC
-            LDA gbBufferL
-            ADC gbTempL
-            STA gbSrcL
-            LDA gbBufferH
-            ADC gbTempH
-            STA gbSrcH
-            
-            // Destination: buffer + gbGapEnd - count
-            SEC
-            LDA gbGapEndL
-            SBC gbCountL
-            STA gbDstL
-            LDA gbGapEndH
-            SBC gbCountH
-            STA gbDstH
-            CLC
-            LDA gbDstL
-            ADC gbBufferL
-            STA gbDstL
-            LDA gbDstH
-            ADC gbBufferH
-            STA gbDstH
-            
-            // Copy bytes
-            copyBytes();
-            
-            // Update gap position
-            SEC
-            LDA gbGapEndL
-            SBC gbCountL
-            STA gbGapEndL
-            LDA gbGapEndH
-            SBC gbCountH
-            STA gbGapEndH
-        }
-        else  // target > gap start (move gap right)
-        {
-            // Calculate bytes to move: target - gbGapStart
-            SEC
-            LDA gbTempL
-            SBC gbGapStartL
-            STA gbCountL
             LDA gbTempH
-            SBC gbGapStartH
-            STA gbCountH
-            
-            // Source: buffer + gbGapEnd
-            CLC
-            LDA gbBufferL
-            ADC gbGapEndL
-            STA gbSrcL
-            LDA gbBufferH
-            ADC gbGapEndH
-            STA gbSrcH
-            
-            // Destination: buffer + gbGapStart
-            CLC
-            LDA gbBufferL
-            ADC gbGapStartL
-            STA gbDstL
-            LDA gbBufferH
-            ADC gbGapStartH
-            STA gbDstH
-            
-            // Copy bytes
-            copyBytes();
-            
-            // Update gap position
-            CLC
-            LDA gbGapEndL
-            ADC gbCountL
-            STA gbGapEndL
-            LDA gbGapEndH
-            ADC gbCountH
-            STA gbGapEndH
+            CMP gbGapStartH
+            if (Z) { return; }  // Already there
+        }
+        
+        // Determine direction and move gap
+        loop  // Single iteration for structure
+        {
+            LDA gbTempH
+            CMP gbGapStartH
+            if (Z)
+            {
+                LDA gbTempL
+                CMP gbGapStartL
+            }
+            if (C)  // target < gap start (move gap left)
+            {
+                // Calculate bytes to move: gbGapStart - target
+                SEC
+                LDA gbGapStartL
+                SBC gbTempL
+                STA gbCountL
+                LDA gbGapStartH
+                SBC gbTempH
+                STA gbCountH
+                
+                // Source: buffer + target
+                CLC
+                LDA gbBufferL
+                ADC gbTempL
+                STA gbSrcL
+                LDA gbBufferH
+                ADC gbTempH
+                STA gbSrcH
+                
+                // Destination: buffer + gbGapEnd - count
+                SEC
+                LDA gbGapEndL
+                SBC gbCountL
+                STA gbDstL
+                LDA gbGapEndH
+                SBC gbCountH
+                STA gbDstH
+                CLC
+                LDA gbDstL
+                ADC gbBufferL
+                STA gbDstL
+                LDA gbDstH
+                ADC gbBufferH
+                STA gbDstH
+                
+                // Copy bytes
+                copyBytes();
+                
+                // Update gap position
+                SEC
+                LDA gbGapEndL
+                SBC gbCountL
+                STA gbGapEndL
+                LDA gbGapEndH
+                SBC gbCountH
+                STA gbGapEndH
+            }
+            else  // target > gap start (move gap right)
+            {
+                // Calculate bytes to move: target - gbGapStart
+                SEC
+                LDA gbTempL
+                SBC gbGapStartL
+                STA gbCountL
+                LDA gbTempH
+                SBC gbGapStartH
+                STA gbCountH
+                
+                // Source: buffer + gbGapEnd
+                CLC
+                LDA gbBufferL
+                ADC gbGapEndL
+                STA gbSrcL
+                LDA gbBufferH
+                ADC gbGapEndH
+                STA gbSrcH
+                
+                // Destination: buffer + gbGapStart
+                CLC
+                LDA gbBufferL
+                ADC gbGapStartL
+                STA gbDstL
+                LDA gbBufferH
+                ADC gbGapStartH
+                STA gbDstH
+                
+                // Copy bytes
+                copyBytes();
+                
+                // Update gap position
+                CLC
+                LDA gbGapEndL
+                ADC gbCountL
+                STA gbGapEndL
+                LDA gbGapEndH
+                ADC gbCountH
+                STA gbGapEndH
+            }
+            break;
         }
         
         // Set new gap start
@@ -336,9 +341,9 @@ needMove:
             
             // Increment pointers
             INC ZP.IDXL
-            if (Z) { INC ZP.IDXH; }
+            if (Z) { INC ZP.IDXH }
             INC ZP.IDYL
-            if (Z) { INC ZP.IDYH; }
+            if (Z) { INC ZP.IDYH }
             
             // Decrement count
             SEC
@@ -360,38 +365,50 @@ needMove:
     // Note: Assumes gap is at correct position
     InsertChar()
     {
-        // Check if gap is full
-        LDA gbGapStartL
-        CMP gbGapEndL
-        if (NZ) { BRA hasSpace; }
-        LDA gbGapStartH
-        CMP gbGapEndH
-        if (NZ) { BRA hasSpace; }
+        PHA  // Save character
         
-        // Gap is full - need to grow buffer
-        growBuffer();
-        if (NC) { return; }  // Growth failed
-        
-hasSpace:
-        // Store character at gap start
-        PHA
-        CLC
-        LDA gbBufferL
-        ADC gbGapStartL
-        STA ZP.IDXL
-        LDA gbBufferH
-        ADC gbGapStartH
-        STA ZP.IDXH
-        
-        PLA
-        LDY #0
-        STA [ZP.IDX], Y
-        
-        // Advance gap start
-        INC gbGapStartL
-        if (Z) { INC gbGapStartH; }
-        
-        SEC  // Success
+        loop  // Single iteration for structure
+        {
+            // Check if gap is full
+            LDA gbGapStartL
+            CMP gbGapEndL
+            if (Z)
+            {
+                LDA gbGapStartH
+                CMP gbGapEndH
+                if (Z)
+                {
+                    // Gap is full - need to grow buffer
+                    growBuffer();
+                    if (NC) 
+                    { 
+                        PLA  // Clean up stack
+                        CLC
+                        break;  // Growth failed
+                    }
+                }
+            }
+            
+            // Store character at gap start
+            CLC
+            LDA gbBufferL
+            ADC gbGapStartL
+            STA ZP.IDXL
+            LDA gbBufferH
+            ADC gbGapStartH
+            STA ZP.IDXH
+            
+            PLA  // Restore character
+            LDY #0
+            STA [ZP.IDX], Y
+            
+            // Advance gap start
+            INC gbGapStartL
+            if (Z) { INC gbGapStartH }
+            
+            SEC  // Success
+            break;
+        }
     }
     
     // Delete character before gap (backspace)
@@ -409,7 +426,7 @@ hasSpace:
         
         // Move gap start back
         LDA gbGapStartL
-        if (Z) { DEC gbGapStartH; }
+        if (Z) { DEC gbGapStartH }
         DEC gbGapStartL
         
         SEC  // Success
@@ -419,24 +436,29 @@ hasSpace:
     // Note: Assumes gap is at correct position
     DeleteForward()
     {
-        // Check if at end
-        LDA gbGapEndL
-        CMP gbBufferSizeL
-        if (NZ) { BRA canDelete; }
-        LDA gbGapEndH
-        CMP gbBufferSizeH
-        if (Z)
+        loop  // Single iteration for structure
         {
-            CLC  // At end of buffer
-            return;
+            // Check if at end
+            LDA gbGapEndL
+            CMP gbBufferSizeL
+            if (Z)
+            {
+                LDA gbGapEndH
+                CMP gbBufferSizeH
+                if (Z)
+                {
+                    CLC  // At end of buffer
+                    break;
+                }
+            }
+            
+            // Move gap end forward
+            INC gbGapEndL
+            if (Z) { INC gbGapEndH }
+            
+            SEC  // Success
+            break;
         }
-        
-canDelete:
-        // Move gap end forward
-        INC gbGapEndL
-        if (Z) { INC gbGapEndH; }
-        
-        SEC  // Success
     }
     
     // Get character at logical position
@@ -450,58 +472,101 @@ canDelete:
         LDA ZP.ACCH
         STA gbTempH
         
-        // Check bounds
-        GetTextLength();
-        LDA ZP.ACCH
-        CMP gbTempH
-        if (C) { BRA outOfBounds }
-        if (Z)
+        loop  // Single iteration for structure
         {
-            LDA ZP.ACCL
-            CMP gbTempL
-            if (C) { BRA outOfBounds }
-            if (Z) { BRA outOfBounds }
+            // Check bounds
+            GetTextLength();
+            
+            // Compare position against text length
+            LDA ZP.ACCH
+            CMP gbTempH
+            if (C)
+            {
+                // text length > position, valid
+            }
+            else
+            {
+                if (Z)
+                {
+                    LDA ZP.ACCL
+                    CMP gbTempL
+                    if (NC)
+                    {
+                        // Out of bounds (position >= length)
+                        LDA #0
+                        break;
+                    }
+                }
+                else
+                {
+                    // Out of bounds (position > length)
+                    LDA #0
+                    break;
+                }
+            }
+            
+            // Convert logical to physical position
+            // Check if position is before or after gap
+            LDA gbTempH
+            CMP gbGapStartH
+            if (C)
+            {
+                // Position is before gap, use as-is
+            }
+            else
+            {
+                if (Z)
+                {
+                    LDA gbTempL
+                    CMP gbGapStartL
+                    if (C)
+                    {
+                        // Position is before gap, use as-is
+                    }
+                    else
+                    {
+                        // Position is at or after gap, adjust
+                        SEC
+                        LDA gbGapEndL
+                        SBC gbGapStartL
+                        CLC
+                        ADC gbTempL
+                        STA gbTempL
+                        LDA gbGapEndH
+                        SBC gbGapStartH
+                        ADC gbTempH
+                        STA gbTempH
+                    }
+                }
+                else
+                {
+                    // Position is after gap, adjust
+                    SEC
+                    LDA gbGapEndL
+                    SBC gbGapStartL
+                    CLC
+                    ADC gbTempL
+                    STA gbTempL
+                    LDA gbGapEndH
+                    SBC gbGapStartH
+                    ADC gbTempH
+                    STA gbTempH
+                }
+            }
+            
+            // Read from physical position
+            CLC
+            LDA gbBufferL
+            ADC gbTempL
+            STA ZP.IDXL
+            LDA gbBufferH
+            ADC gbTempH
+            STA ZP.IDXH
+            
+            LDY #0
+            LDA [ZP.IDX], Y
+            break;
         }
-        
-        // Convert logical to physical position
-        LDA gbTempH
-        CMP gbGapStartH
-        if (C) { BRA beforeGap }
-        if (Z)
-        {
-            LDA gbTempL
-            CMP gbGapStartL
-            if (C) { BRA beforeGap }
-        }
-        
-        // Position is after gap - add gap size
-        SEC
-        LDA gbGapEndL
-        SBC gbGapStartL
-        CLC
-        ADC gbTempL
-        STA gbTempL
-        LDA gbGapEndH
-        SBC gbGapStartH
-        ADC gbTempH
-        STA gbTempH
-        
-beforeGap:
-        // Read from physical position
-        CLC
-        LDA gbBufferL
-        ADC gbTempL
-        STA ZP.IDXL
-        LDA gbBufferH
-        ADC gbTempH
-        STA ZP.IDXH
-        
-        LDY #0
-        LDA [ZP.IDX], Y
-        return;
-        
-outOfBounds:
-        LDA #0
     }
     
     // Grow buffer when gap is full
