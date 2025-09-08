@@ -56,37 +56,50 @@ unit Definitions
     // Available for application use - 148 bytes total
     // =====================================================
     //
-    // APPLICATION MODULE ALLOCATIONS (16-byte aligned):
+    // APPLICATION MODULE ALLOCATIONS:
     // -------------------------------------------------------
-    // 0x58-0x5F: Reserved (8 bytes)
-    //   - Available for small system extensions
+    // 0x58-0x5F: Available (8 bytes)
+    //   - Free for application use
     //
-    // 0x60-0x6F: Debug & Screen (shared 16-byte block)
+    // 0x60-0x66: Debug & Screen (7 bytes used)
     //   0x60-0x64: Debug (5 bytes)
     //     - debugRow, debugEnabled, debugEntries
+    //     - debugByte, debugNibble
     //   0x65-0x66: Screen (2 bytes)
     //     - screenStrL, screenStrH (temporary string pointer)
-    //   [0x67-0x6F available for Debug/Screen expansion]
+    // 0x67-0x6F: Available (9 bytes)
+    //   - Free for application expansion
     //
     // 0x70-0x7A: ScreenBuffer (11 bytes)
     //   - CursorCol, CursorRow, Foreground, Background
     //   - Attributes, sbWidth, sbHeight
     //   - sbBuffer (2 bytes), sbSuspendCount, sbCursorVisible
+    // 0x7B-0x7E: Available (4 bytes)
+    //   - Free for application use
     //
     // 0x7F: Keyboard (1 byte)
-    //   - kbEscState
+    //   - kbEscState (escape sequence state machine)
     //
-    // 0x80-0x8B: GapBuffer (11 bytes)
+    // 0x80-0x8B: GapBuffer (12 bytes)
     //   - gbBuffer (2 bytes), gbGapStart (2 bytes)
     //   - gbGapEnd (2 bytes), gbBufferSize (2 bytes)
-    //   - [0x8C-0x87 available for GapBuffer expansion]
+    //   - GapValue (2 bytes), gbTempSize (2 bytes)
+    // 0x8C-0x8F: Available (4 bytes)
+    //   - Free for GapBuffer expansion
     //
+    // 0x90-0x9A: View (11 bytes)
+    //   - vwScreenCols, vwScreenRows, vwCurrentRow
+    //   - vwTopLine (2 bytes), vwLineCount (2 bytes)
+    //   - vwTemp (2 bytes), vwPos (2 bytes)
     //
-    //
-    //
-    // 0x90-0xEB: Available (44 bytes)
+    // 0x9B-0xEB: Available (81 bytes)
     //   - Free for additional application modules
     //
+    // =====================================================
+    // SUMMARY:
+    // Used: 42 bytes (Debug:5, Screen:2, ScreenBuffer:11,
+    //                 Keyboard:1, GapBuffer:12, View:11)
+    // Available: 106 bytes (in various blocks)
     // =====================================================
     
     
