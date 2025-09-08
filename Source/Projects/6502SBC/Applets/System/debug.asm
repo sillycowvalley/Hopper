@@ -161,8 +161,10 @@ unit Debug
     // Input: ZP.STR = string pointer
     String()
     {
+        PHP
+        
         LDA debugEnabled
-        if (Z) { return; }
+        if (Z) { PLP return; }
         
         PHX
         PHY
@@ -181,12 +183,14 @@ unit Debug
         
         PLY
         PLX
+        PLP
     }
     
     // Output byte in hex
     // Input: A = byte value
     Byte()
     {
+        PHP
         PHX
         PHY
             
@@ -219,14 +223,16 @@ unit Debug
         PLA
         PLY
         PLX
+        PLP
     }
     
     // Output word (16-bit) in hex
     // Input: ZP.ACC = word value
     Word()
     {
+        PHP
         LDA debugEnabled
-        if (Z) { return; }
+        if (Z) { PLP return; }
         
         PHX
         PHY
@@ -248,12 +254,14 @@ unit Debug
         
         PLY
         PLX
+        PLP
     }
     
     // Output labeled byte
     // Input: ZP.STR = label, then call with A = byte
     LabeledByte()
     {
+        PHP
         PHA
         loop
         {
@@ -289,14 +297,16 @@ unit Debug
             break;
         } // single exit
         PLA
+        PLP
     }
     
     // Output labeled word
     // Input: ZP.STR = label, ZP.ACC = word
     LabeledWord()
     {
+        PHP
         LDA debugEnabled
-        if (Z) { return; }
+        if (Z) { PLP return; }
         
         PHX
         PHY
@@ -322,15 +332,17 @@ unit Debug
         
         PLY
         PLX
+        PLP
     }
     
     // Dump memory bytes (leaf function - can use M0-M17)
     // Input: ZP.IDX = start address, A = byte count
     DumpMemory()
     {
+        PHP
         STA dumpCount  // Save count
         LDA debugEnabled
-        if (Z) { return; }
+        if (Z) { PLP return; }
         
         PHX
         PHY
@@ -392,5 +404,6 @@ unit Debug
         
         PLY
         PLX
+        PLP
     }
 }

@@ -1,5 +1,7 @@
 unit GapBuffer
 {
+    friend TestGapBuffer;
+    
     uses "System/Definitions"
     uses "System/Memory"
     
@@ -23,6 +25,11 @@ unit GapBuffer
     const uint gbBufferSizeL = gbSlots+6;
     const uint gbBufferSizeH = gbSlots+7;
     
+    // Public value for arguments and return values
+    const uint GapValue = gbSlots+8;     // Common return value and argument for GapBuffer methods
+    const uint GapValueL = gbSlots+8;
+    const uint GapValueH = gbSlots+9;
+    
     // Leaf workspace for calculations (don't survive function calls)
     const uint gbTemp = ZP.M0;     // Temporary 16-bit value
     const uint gbTempL = ZP.M0;
@@ -42,9 +49,13 @@ unit GapBuffer
     // Output: C set on success, clear on failure
     Initialize()
     {
-        // Save requested size
+        // Save requested size for Memory.Allocate (uses ZP.ACC)
         STA ZP.ACCL
         STY ZP.ACCH
+        
+        // Save size in our workspace too
+        STA gbBufferSizeL
+        STY gbBufferSizeH
         
         // Allocate buffer
         Memory.Allocate();
@@ -68,12 +79,6 @@ unit GapBuffer
         STA gbBufferL
         LDA ZP.IDXH
         STA gbBufferH
-        
-        // Store buffer size
-        LDA ZP.ACCL
-        STA gbBufferSizeL
-        LDA ZP.ACCH
-        STA gbBufferSizeH
         
         // Gap starts at beginning and spans entire buffer
         STZ gbGapStartL
@@ -111,6 +116,8 @@ unit GapBuffer
             STZ gbGapStartH
             STZ gbGapEndL
             STZ gbGapEndH
+            STZ GapValueL
+            STZ GapValueH
         }
     }
     
@@ -127,55 +134,61 @@ unit GapBuffer
         STA gbGapEndH
     }
     
-    // Public read-only accessors
+    // Get gap start position
+    // Output: GapValue = gap start position
     GetGapStart()
     {
         LDA gbGapStartL
-        STA ZP.ACCL
+        STA GapValueL
         LDA gbGapStartH
-        STA ZP.ACCH
+        STA GapValueH
     }
     
+    // Get gap end position
+    // Output: GapValue = gap end position
     GetGapEnd()
     {
         LDA gbGapEndL
-        STA ZP.ACCL
+        STA GapValueL
         LDA gbGapEndH
-        STA ZP.ACCH
+        STA GapValueH
     }
     
+    // Get text length
+    // Output: GapValue = text length
     GetTextLength()
     {
         // TextLength = BufferSize - (GapEnd - GapStart)
         SEC
         LDA gbGapEndL
         SBC gbGapStartL
-        STA gbTempL
+        STA GapValueL
         LDA gbGapEndH
         SBC gbGapStartH
-        STA gbTempH
+        STA GapValueH
         
         SEC
         LDA gbBufferSizeL
-        SBC gbTempL
-        STA ZP.ACCL
+        SBC GapValueL
+        STA GapValueL
         LDA gbBufferSizeH
-        SBC gbTempH
-        STA ZP.ACCH
+        SBC GapValueH
+        STA GapValueH
     }
     
+    // Check if gap is at position
+    // Input: GapValue = position
+    // Output: C set if gap is at position
     IsGapAtPosition()
     {
-        // Input: ACC = position
-        // Output: C set if gap is at position
-        LDA ZP.ACCL
+        LDA GapValueL
         CMP gbGapStartL
         if (NZ)
         {
             CLC
             return;
         }
-        LDA ZP.ACCH
+        LDA GapValueH
         CMP gbGapStartH
         if (NZ)
         {
@@ -186,13 +199,13 @@ unit GapBuffer
     }
     
     // Move gap to specified position
-    // Input: ACC = target position
+    // Input: GapValue = target position
     MoveGapTo()
     {
         // Save target position
-        LDA ZP.ACCL
+        LDA GapValueL
         STA gbTempL
-        LDA ZP.ACCH
+        LDA GapValueH
         STA gbTempH
         
         // Check if already at position
@@ -462,47 +475,40 @@ unit GapBuffer
     }
     
     // Get character at logical position
-    // Input: ACC = position
+    // Input: GapValue = position
     // Output: A = character (0 if out of bounds)
     GetCharAt()
     {
         // Save position
-        LDA ZP.ACCL
+        LDA GapValueL
         STA gbTempL
-        LDA ZP.ACCH
+        LDA GapValueH
         STA gbTempH
         
         loop  // Single iteration for structure
         {
             // Get text length for bounds check
-            GetTextLength();  // Returns in ZP.ACC
+            GetTextLength();  // Returns in GapValue
             
             // Check if position >= text length (out of bounds)
             LDA gbTempH
-            CMP ZP.ACCH
+            CMP GapValueH
             if (C)  // position.H >= length.H
             {
-                if (Z)  // position.H == length.H
+                if (NZ)  // position.H > length.H, definitely out of bounds
                 {
-                    LDA gbTempL
-                    CMP ZP.ACCL
-                    if (NC)  // position.L < length.L, so valid
-                    {
-                        // Continue to conversion
-                    }
-                    else
-                    {
-                        // position.L >= length.L, out of bounds
-                        LDA #0
-                        break;
-                    }
-                }
-                else
-                {
-                    // position.H > length.H, out of bounds
-                    LDA #0
+                    LDA #0xFF  // Return 0xFF to indicate OOB path 1
                     break;
                 }
+                // High bytes equal, check low bytes
+                LDA gbTempL
+                CMP GapValueL
+                if (C)  // position.L >= length.L, out of bounds
+                {
+                    LDA #0xFE  // Return 0xFE to indicate OOB path 2
+                    break;
+                }
+                // position.L < length.L, so position < length (valid)
             }
             // else position.H < length.H, so position < length (valid)
             
@@ -512,13 +518,28 @@ unit GapBuffer
             CMP gbGapStartH
             if (C)  // position.H >= gap_start.H
             {
-                if (Z)  // position.H == gap_start.H
+                if (NZ)  // position.H > gap_start.H, definitely after gap
                 {
+                    // Add gap size to skip over gap
+                    SEC
+                    LDA gbGapEndL
+                    SBC gbGapStartL
+                    CLC
+                    ADC gbTempL
+                    STA gbTempL
+                    LDA gbGapEndH
+                    SBC gbGapStartH
+                    ADC gbTempH
+                    STA gbTempH
+                }
+                else
+                {
+                    // High bytes equal, check low bytes
                     LDA gbTempL
                     CMP gbGapStartL
-                    if (C)  // position.L >= gap_start.L
+                    if (C)  // position.L >= gap_start.L, at or after gap
                     {
-                        // Position >= gap start, add gap size
+                        // Add gap size to skip over gap
                         SEC
                         LDA gbGapEndL
                         SBC gbGapStartL
@@ -532,34 +553,25 @@ unit GapBuffer
                     }
                     // else position < gap start, no adjustment
                 }
-                else
-                {
-                    // position.H > gap_start.H, add gap size
-                    SEC
-                    LDA gbGapEndL
-                    SBC gbGapStartL
-                    CLC
-                    ADC gbTempL
-                    STA gbTempL
-                    LDA gbGapEndH
-                    SBC gbGapStartH
-                    ADC gbTempH
-                    STA gbTempH
-                }
             }
-            // else position.H < gap_start.H, no adjustment needed
+            // else position.H < gap_start.H, before gap, no adjustment
             
             // Read from physical position
             CLC
             LDA gbBufferL
             ADC gbTempL
-            STA ZP.IDXL
+            STA gbTempL
             LDA gbBufferH
             ADC gbTempH
-            STA ZP.IDXH
+            STA gbTempH
             
-            LDY #0
-            LDA [ZP.IDX], Y
+            LDA [gbTemp]
+            
+            // If we got 0, return 0xFD to distinguish from actual 0
+            if (Z)
+            {
+                LDA #0xFD
+            }
             break;
         }
     }
@@ -576,7 +588,7 @@ unit GapBuffer
         ASL gbTempL
         ROL gbTempH
         
-        // Allocate new buffer
+        // Allocate new buffer (uses ZP.ACC for BIOS call)
         LDA gbTempL
         STA ZP.ACCL
         LDA gbTempH
