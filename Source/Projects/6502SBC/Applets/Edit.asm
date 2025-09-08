@@ -68,6 +68,9 @@ program SimpleEditor
             return;
         }
         
+        // Track if last char was CR for \r\n handling
+        STZ ZP.TEMP  // 0 = last char not CR, 1 = last char was CR
+        
         // Read file chunks and insert into GapBuffer
         loop
         {
@@ -93,9 +96,48 @@ program SimpleEditor
                 }
                 
                 LDA File.FileDataBuffer, Y
-                PHY
-                GapBuffer.InsertChar();
-                PLY
+
+                // Handle line ending normalization
+                CMP #'\r'  // CR
+                if (Z)
+                {
+                    // Found CR - convert to LF and remember we saw it
+                    PHY
+                    LDA #'\n'
+                    GapBuffer.InsertChar();
+                    PLY
+                    LDA #1
+                    STA ZP.TEMP  // Mark that we saw CR
+                }
+                else
+                {
+                    CMP #'\n'  // LF
+                    if (Z)
+                    {
+                        // Found LF - check if it follows CR
+                        LDA ZP.TEMP
+                        if (Z)  // Last char was NOT CR
+                        {
+                            // Standalone LF - insert it
+                            PHY
+                            LDA #'\n'
+                            GapBuffer.InsertChar();
+                            PLY
+                        }
+                        // else: LF after CR (\r\n) - skip it, already inserted \n for the \r
+                        STZ ZP.TEMP  // Clear CR flag
+                    }
+                    else
+                    {
+                        // Regular character - insert as-is
+                        PHY
+                        LDA File.FileDataBuffer, Y  // RELOAD THE CHARACTER!
+                        GapBuffer.InsertChar();
+                        PLY
+                        STZ ZP.TEMP  // Clear CR flag
+                    }
+                }
+                
                 INY
                 if (Z) { break; }  // Y wrapped to 0 after 255
             }
@@ -127,8 +169,6 @@ program SimpleEditor
         // Main loop
         loop
         {
-View.Dump();            
-            
             // Get key
             Keyboard.GetKey();
             
