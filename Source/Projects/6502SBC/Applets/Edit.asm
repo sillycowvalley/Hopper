@@ -1,6 +1,7 @@
 program SimpleEditor
 {
     #define CPU_65C02S
+    #define DEBUG
     
     uses "System/Definitions"
     uses "System/Print"
@@ -126,6 +127,8 @@ program SimpleEditor
         // Main loop
         loop
         {
+View.Dump();            
+            
             // Get key
             Keyboard.GetKey();
             
@@ -144,6 +147,14 @@ program SimpleEditor
                 {
                     View.CursorDown();
                 }
+                case Key.Left:
+                {
+                    View.CursorLeft();
+                }
+                case Key.Right:
+                {
+                    View.CursorRight();
+                }
                 default:
                 {
                     // Ignore other keys
@@ -154,5 +165,6 @@ program SimpleEditor
         // Cleanup
         View.Dispose();
         Screen.Reset();
+        Screen.Clear();
     }
 }

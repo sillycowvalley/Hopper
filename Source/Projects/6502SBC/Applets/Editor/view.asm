@@ -11,20 +11,21 @@ unit View
     const byte vwScreenCols = vwSlots+0;     // Screen width (80)
     const byte vwScreenRows = vwSlots+1;     // Screen height (24)
     const byte vwCurrentRow = vwSlots+2;     // Current cursor row on screen (0-23)
-    const uint vwTopLine = vwSlots+3;        // First visible line number
-    const byte vwTopLineL = vwSlots+3;
-    const byte vwTopLineH = vwSlots+4;
-    const uint vwLineCount = vwSlots+5;      // Total lines in document
-    const byte vwLineCountL = vwSlots+5;
-    const byte vwLineCountH = vwSlots+6;
+    const byte vwCurrentCol = vwSlots+3;     // Current cursor column on screen (0-79)
+    const uint vwTopLine = vwSlots+4;        // First visible line number
+    const byte vwTopLineL = vwSlots+5;
+    const byte vwTopLineH = vwSlots+6;
+    const uint vwLineCount = vwSlots+7;      // Total lines in document
+    const byte vwLineCountL = vwSlots+8;
+    const byte vwLineCountH = vwSlots+9;
     
     // Temporary workspace
-    const uint vwTemp = vwSlots+7;
-    const byte vwTempL = vwSlots+7;
-    const byte vwTempH = vwSlots+8;
-    const uint vwPos = vwSlots+9;            // Current position in text
-    const byte vwPosL = vwSlots+9;
-    const byte vwPosH = vwSlots+10;
+    const uint vwTemp = vwSlots+10;
+    const byte vwTempL = vwSlots+10;
+    const byte vwTempH = vwSlots+11;
+    const uint vwPos = vwSlots+12;            // Current position in text
+    const byte vwPosL = vwSlots+12;
+    const byte vwPosH = vwSlots+13;
     
     const string memoryMsg = "Out of memory in View!\n";
     
@@ -70,6 +71,7 @@ unit View
         
         // Initialize view state
         STZ vwCurrentRow
+        STZ vwCurrentCol
         STZ vwTopLineL
         STZ vwTopLineH
         STZ vwLineCountL
@@ -81,6 +83,7 @@ unit View
     {
         // Initialize view state
         STZ vwCurrentRow
+        STZ vwCurrentCol
         STZ vwTopLineL
         STZ vwTopLineH
         
@@ -156,8 +159,6 @@ unit View
     // Render the current view
     Render()
     {
-        ScreenBuffer.HideCursor();
-        
         ScreenBuffer.Suspend();
         
         // Start at top of viewport
@@ -213,14 +214,22 @@ unit View
             if (C) { break; }  // row >= screenRows
         }
         
+        ScreenBuffer.Resume();
+        
         // Position cursor
-        LDA #0
+        View.Update();
+    }
+    
+    Update()
+    {
+        ScreenBuffer.Suspend();
+        
+        // Position cursor
+        LDA vwCurrentCol
         LDY vwCurrentRow
         ScreenBuffer.GotoXY();
         
         ScreenBuffer.Resume();
-        
-        ScreenBuffer.ShowCursor();
     }
     
     // Helper: Find next newline from current vwPos
@@ -283,7 +292,10 @@ unit View
                 LDA vwPosL
                 CMP vwTempL
             }
-            if (C) { break; }  // pos >= length
+            if (C)
+            {
+                break;   // pos >= length
+            }
             
             // Get character
             LDA vwPosL
@@ -298,13 +310,34 @@ unit View
             
             // Check for newline
             CMP #'\n'
-            if (Z) { break; }
+            if (Z)
+            {
+                break;
+            }
             
             // Check if at right edge
             CPX vwScreenCols
-            if (C) { break; }  // col >= screenCols
+            if (C) 
+            {
+                break;  // col >= screenCols
+            }
             
             // Display character
+            ScreenBuffer.Char();
+            INX
+        }
+        
+        // fill the remainder of the line with ' '
+        loop
+        {
+            // Check if at right edge
+            CPX vwScreenCols
+            if (C) 
+            {
+                break;  // col >= screenCols
+            }
+            
+            LDA #' '
             ScreenBuffer.Char();
             INX
         }
@@ -312,71 +345,237 @@ unit View
     
     CursorUp()
     {
-        LDA vwCurrentRow
-        if (NZ)
+        loop
         {
-            // Move up on screen
-            DEC vwCurrentRow
-        }
-        else
-        {
-            // At top of screen, scroll up if possible
-            LDA vwTopLineL
-            ORA vwTopLineH
+            LDA vwCurrentRow
             if (NZ)
             {
-                // Scroll up
-                LDA vwTopLineL
-                if (Z) { DEC vwTopLineH }
-                DEC vwTopLineL
-                
-                Render();
+                // Move up on screen
+                DEC vwCurrentRow
             }
-        }
+            else
+            {
+                // At top of screen, scroll up if possible
+                LDA vwTopLineL
+                ORA vwTopLineH
+                if (NZ)
+                {
+                    // Scroll up
+                    LDA vwTopLineL
+                    if (Z) { DEC vwTopLineH }
+                    DEC vwTopLineL
+                    
+                    Render();
+                    break;
+                }
+            }
+            
+            View.Update(); // render cursor
+            
+            break;
+        } // loop
     }
     
     CursorDown()
     {
-        // Check if at last line of document
+        loop
+        {
+            // Check if at last line of document
+            CLC
+            LDA vwTopLineL
+            ADC vwCurrentRow
+            STA vwTempL
+            LDA vwTopLineH
+            ADC #0
+            STA vwTempH
+            
+            // Increment to get next line
+            INC vwTempL
+            if (Z) { INC vwTempH }
+            
+            // Check if next line exists
+            LDA vwTempH
+            CMP vwLineCountH
+            if (Z)
+            {
+                LDA vwTempL
+                CMP vwLineCountL
+            }
+            if (C) 
+            {
+                break;  // nextLine >= lineCount
+            }
+            
+            // Move down
+            INC vwCurrentRow
+            LDA vwCurrentRow
+            CMP vwScreenRows
+            if (C)  // row >= screenRows
+            {
+                // At bottom of screen, scroll down
+                DEC vwCurrentRow
+                INC vwTopLineL
+                if (Z) { INC vwTopLineH }
+                
+                Render();
+                break;
+            }
+            
+            View.Update(); // render cursor
+            
+            break;
+        } // loop
+    }
+    
+    CursorLeft()
+    {
+    }
+    
+    CursorRight()
+    {
+    }
+    
+    
+    #ifdef DEBUG
+    // Debug helper: Dump view state
+    const string viewDumpLabel = "= VIEW STATE DUMP =";
+    const string cursorRowLabel = "CursRow:";
+    const string cursorColLabel = "CursCol:";
+    const string topLineLabel = "TopLine:";
+    const string lineCountLabel = "Lines:";
+    const string currentPosLabel = "CurPos:";
+    const string viewportLabel = "Viewport:";
+    
+    Dump()
+    {
+        PHX
+        PHY
+        
+        // Save ZP.IDX
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        Debug.Clear();
+        
+        // Header
+        LDA #(viewDumpLabel % 256)
+        STA ZP.STRL
+        LDA #(viewDumpLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Current cursor row on screen
+        LDA #(cursorRowLabel % 256)
+        STA ZP.STRL
+        LDA #(cursorRowLabel / 256)
+        STA ZP.STRH
+        LDA vwCurrentRow
+        Debug.LabeledByte();
+        
+        // Current cursor row on screen
+        LDA #(cursorColLabel % 256)
+        STA ZP.STRL
+        LDA #(cursorColLabel / 256)
+        STA ZP.STRH
+        LDA vwCurrentCol
+        Debug.LabeledByte();
+        
+        // Top visible line number
+        LDA #(topLineLabel % 256)
+        STA ZP.STRL
+        LDA #(topLineLabel / 256)
+        STA ZP.STRH
+        LDA vwTopLineL
+        STA ZP.ACCL
+        LDA vwTopLineH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Total line count
+        LDA #(lineCountLabel % 256)
+        STA ZP.STRL
+        LDA #(lineCountLabel / 256)
+        STA ZP.STRH
+        LDA vwLineCountL
+        STA ZP.ACCL
+        LDA vwLineCountH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Current position in text (if being tracked)
+        LDA #(currentPosLabel % 256)
+        STA ZP.STRL
+        LDA #(currentPosLabel / 256)
+        STA ZP.STRH
+        LDA vwPosL
+        STA ZP.ACCL
+        LDA vwPosH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Calculate and show viewport range (first to last visible line)
+        LDA #(viewportLabel % 256)
+        STA ZP.STRL
+        LDA #(viewportLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // First visible line
+        LDA vwTopLineL
+        STA ZP.ACCL
+        LDA vwTopLineH
+        STA ZP.ACCH
+        Debug.Word();
+        
+        // Calculate last visible line (topLine + screenRows - 1)
         CLC
         LDA vwTopLineL
-        ADC vwCurrentRow
-        STA vwTempL
+        ADC vwScreenRows
+        STA ZP.ACCL
         LDA vwTopLineH
         ADC #0
-        STA vwTempH
+        STA ZP.ACCH
         
-        // Increment to get next line
-        INC vwTempL
-        if (Z) { INC vwTempH }
+        // Subtract 1
+        LDA ZP.ACCL
+        if (Z) { DEC ZP.ACCH }
+        DEC ZP.ACCL
         
-        // Check if next line exists
-        LDA vwTempH
+        // But don't exceed lineCount - 1
+        LDA ZP.ACCH
         CMP vwLineCountH
         if (Z)
         {
-            LDA vwTempL
+            LDA ZP.ACCL
             CMP vwLineCountL
         }
-        if (C) 
+        if (C)  // lastVisible >= lineCount
         {
-            return;  // nextLine >= lineCount
+            // Use lineCount - 1
+            LDA vwLineCountL
+            STA ZP.ACCL
+            LDA vwLineCountH
+            STA ZP.ACCH
+            
+            LDA ZP.ACCL
+            if (Z) { DEC ZP.ACCH }
+            DEC ZP.ACCL
         }
         
-        // Move down
-        INC vwCurrentRow
-        LDA vwCurrentRow
-        CMP vwScreenRows
-        if (C)  // row >= screenRows
-        {
-            // At bottom of screen, scroll down
-            DEC vwCurrentRow
-            INC vwTopLineL
-            if (Z) { INC vwTopLineH }
-            
-            Render();
-        }
+        Debug.Word();
+        
+        // Restore ZP.IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
     }
+#endif
     
     
 }
