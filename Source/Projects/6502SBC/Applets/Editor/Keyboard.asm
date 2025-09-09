@@ -15,6 +15,7 @@ unit Keyboard
         // ASCII control codes
         Backspace = 0x08,
         Tab       = 0x09,
+        CtrlJ     = 0x0A,  // Line feed - Help key
         Enter     = 0x0D,
         Escape    = 0x1B,
         
@@ -36,6 +37,9 @@ unit Keyboard
         PageDown  = 135,
         Delete    = 136,
         Insert    = 137,
+        F1        = 138,
+        F2        = 139,
+        F3        = 140,
     }
     
     // Initialize keyboard

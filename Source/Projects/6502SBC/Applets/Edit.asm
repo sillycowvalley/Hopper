@@ -14,6 +14,7 @@ program SimpleEditor
     uses "Editor/Keyboard"
     uses "Editor/GapBuffer"
     uses "Editor/View"
+    uses "Editor/Help"
     
     
     // Messages
@@ -351,6 +352,15 @@ showGapPosition();
                         View.SetCursorPosition();
                     }
                 }
+                
+                case Key.F1:
+                case Key.CtrlJ:
+                {
+                    Help.Show();
+                    View.Redraw();
+                }
+                
+                
                 default:
                 {
                     // Check if printable

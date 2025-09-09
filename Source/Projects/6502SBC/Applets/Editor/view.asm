@@ -585,6 +585,11 @@ unit View
         TXA  // Return length in A
     }
     
+    Redraw()
+    {
+        ScreenBuffer.Redraw();
+    }
+    
     // Render the current view
     Render()
     {

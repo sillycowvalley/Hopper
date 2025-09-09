@@ -151,6 +151,5 @@ const byte edFlags = 0x9F;
 | Show help           | F1, Ctrl+J       | F1           |
 | Insert tab (4 spaces)| Tab             | Tab          |
 | Undo/Redo toggle    | Alt+Backspace    | Ctrl+Z       |
-| Insert control char | Ctrl+P           | -            |
 
 
