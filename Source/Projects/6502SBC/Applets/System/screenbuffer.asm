@@ -57,15 +57,11 @@ unit ScreenBuffer
     const byte msbRow     = ZP.M2;
     const byte msbCol     = ZP.M3;
     
-    //const byte msbOffset  = ZP.M4;
-    //const byte msbOffsetL = ZP.M4;
-    //const byte msbOffsetH = ZP.M5;
+    const byte msbCharacter = ZP.M4;
+    const byte msbAttribute = ZP.M5;
     
-    const byte msbCharacter = ZP.M6;
-    const byte msbAttribute = ZP.M7;
-    
-    const byte msbLastRow   = ZP.M8;
-    const byte msbLastCol   = ZP.M9;
+    const byte msbLastRow   = ZP.M6;
+    const byte msbLastCol   = ZP.M7;
     
     
     // Helper: calculate buffer offset for A = col, Y = row
@@ -86,10 +82,14 @@ unit ScreenBuffer
                 CMP sbLastOffsetCol
                 if (Z)
                 {
-                    INC sbOffsetL
-                    if (Z) { INC sbOffsetH }
-                    INC sbOffsetL
-                    if (Z) { INC sbOffsetH }
+                    CLC
+                    LDA sbOffsetL
+                    ADC #2
+                    STA sbOffsetL
+                    if (C)
+                    {
+                        INC sbOffsetH
+                    }
                     break;
                 }
             }
