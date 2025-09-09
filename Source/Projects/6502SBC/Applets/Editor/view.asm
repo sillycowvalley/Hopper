@@ -134,12 +134,7 @@ unit View
         STZ vwLineCountH
         INC vwLineCountL  // Start with 1 line
         
-        // Get text length
-        GapBuffer.GetTextLength();
-        LDA GapBuffer.GapValueL
-        STA vwLeafTempL
-        LDA GapBuffer.GapValueH
-        STA vwLeafTempH
+        GapBuffer.GetCharAtFastPrep();
         
         // Scan for newlines
         STZ vwPosL
@@ -149,11 +144,11 @@ unit View
         {
             // Check if at end
             LDA vwPosH
-            CMP vwLeafTempH
+            CMP FastLengthH
             if (Z)
             {
                 LDA vwPosL
-                CMP vwLeafTempL
+                CMP FastLengthL
             }
             if (C) { break; }  // pos >= length
             
@@ -162,7 +157,7 @@ unit View
             STA GapBuffer.GapValueL
             LDA vwPosH
             STA GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
+            GapBuffer.GetCharAtFast();
             
             // Check for newline
             CMP #'\n'
@@ -196,12 +191,7 @@ unit View
         ADC #0
         STA ZP.ACCH
         
-        // Get text length for bounds checking
-        GapBuffer.GetTextLength(); // -> GapValue
-        LDA GapBuffer.GapValueH
-        STA ZP.IDXH
-        LDA GapBuffer.GapValueL
-        STA ZP.IDXL
+        GapBuffer.GetCharAtFastPrep();
         
         // Start at beginning of document
         STZ vwPosL
@@ -234,11 +224,11 @@ unit View
             
             // Check if at end of document
             LDA vwPosH
-            CMP ZP.IDXH
+            CMP FastLengthH
             if (Z)
             {
                 LDA vwPosL
-                CMP ZP.IDXL
+                CMP FastLengthL
             }
             if (C)
             {
@@ -251,7 +241,7 @@ unit View
             STA GapBuffer.GapValueL
             LDA vwPosH
             STA GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
+            GapBuffer.GetCharAtFast();
             
             // Update row/column based on character
             CMP #'\n'
@@ -294,21 +284,16 @@ unit View
         LDA GapBuffer.GapValueH
         STA ZP.ACCH
         
-        // Get text length for bounds checking
-        GapBuffer.GetTextLength(); // -> GapValue
-        LDA GapBuffer.GapValueL
-        STA ZP.IDXL
-        LDA GapBuffer.GapValueH
-        STA ZP.IDXH
+        GapBuffer.GetCharAtFastPrep();
         
         // Clamp target to text length if beyond EOF
         LDA ZP.ACCH
-        CMP ZP.IDXH
+        CMP FastLengthH
         if (C)  // target.H > length.H
         {
-            LDA ZP.IDXL
+            LDA FastLengthL
             STA ZP.ACCL
-            LDA ZP.IDXH
+            LDA FastLengthH
             STA ZP.ACCH
         }
         else
@@ -316,10 +301,10 @@ unit View
             if (Z)  // target.H == length.H
             {
                 LDA ZP.ACCL
-                CMP ZP.IDXL
+                CMP FastLengthL
                 if (C)  // target.L > length.L
                 {
-                    LDA ZP.IDXL
+                    LDA FastLengthL
                     STA ZP.ACCL
                 }
             }
@@ -351,11 +336,11 @@ unit View
             
             // Check if at end of document (shouldn't happen due to clamping)
             LDA vwPosH
-            CMP ZP.IDXH
+            CMP FastLengthH
             if (Z)
             {
                 LDA vwPosL
-                CMP ZP.IDXL
+                CMP FastLengthL
             }
             if (C)
             {
@@ -368,7 +353,7 @@ unit View
             STA GapBuffer.GapValueL
             LDA vwPosH
             STA GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
+            GapBuffer.GetCharAtFast();
             
             // Update row/column based on character
             CMP #'\n'
@@ -560,22 +545,18 @@ unit View
         }
         
         // Now count characters on this line
-        GapBuffer.GetTextLength();
-        LDA GapBuffer.GapValueL
-        STA vwLeafTempL
-        LDA GapBuffer.GapValueH
-        STA vwLeafTempH
+        GapBuffer.GetCharAtFastPrep();
         
         LDX #0  // Character counter
         loop
         {
             // Check if at end of text
             LDA vwPosH
-            CMP vwLeafTempH
+            CMP FastLengthH
             if (Z)
             {
                 LDA vwPosL
-                CMP vwLeafTempL
+                CMP FastLengthL
             }
             if (C) { break; }
             
@@ -584,7 +565,7 @@ unit View
             STA GapBuffer.GapValueL
             LDA vwPosH
             STA GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
+            GapBuffer.GetCharAtFast();
             
             // Check for newline
             CMP #'\n'
@@ -646,6 +627,8 @@ unit View
             }
         }
                 
+        GapBuffer.GetCharAtFastPrep();
+        
         // Render visible lines
         LDY #0  // Screen row
         loop
@@ -693,22 +676,17 @@ unit View
     //         Leaves vwPos pointing AT the newline, not AFTER it
     findNextNewline()
     {
-        // Get text length
-        GapBuffer.GetTextLength();
-        LDA GapBuffer.GapValueL
-        STA vwLeafTempL
-        LDA GapBuffer.GapValueH
-        STA vwLeafTempH
+        GapBuffer.GetCharAtFastPrep();
         
         loop
         {
             // Check if at end
             LDA vwPosH
-            CMP vwLeafTempH
+            CMP FastLengthH
             if (Z)
             {
                 LDA vwPosL
-                CMP vwLeafTempL
+                CMP FastLengthL
             }
             if (C) { break; }  // pos >= length
             
@@ -717,7 +695,7 @@ unit View
             STA GapBuffer.GapValueL
             LDA vwPosH
             STA GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
+            GapBuffer.GetCharAtFast();
             
             // Advance position
             INC vwPosL
@@ -732,23 +710,16 @@ unit View
     // Render one line from current vwPos
     renderLine()
     {
-        // Get text length
-        GapBuffer.GetTextLength();
-        LDA GapBuffer.GapValueL
-        STA vwLeafTempL
-        LDA GapBuffer.GapValueH
-        STA vwLeafTempH
-        
         LDX #0  // Column counter
         loop
         {
             // Check if at end of document
             LDA vwPosH
-            CMP vwLeafTempH
+            CMP GapBuffer.FastLengthH
             if (Z)
             {
                 LDA vwPosL
-                CMP vwLeafTempL
+                CMP GapBuffer.FastLengthL
             }
             if (C)
             {
@@ -760,7 +731,7 @@ unit View
             STA GapBuffer.GapValueL
             LDA vwPosH
             STA GapBuffer.GapValueH
-            GapBuffer.GetCharAt();
+            GapBuffer.GetCharAtFast();
             
             // Advance position
             INC vwPosL

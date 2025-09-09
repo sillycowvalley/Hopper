@@ -35,6 +35,12 @@ unit GapBuffer
     const uint gbTempSizeL = gbSlots+10;
     const uint gbTempSizeH = gbSlots+11;
     
+    // GetCharAtFast
+    const uint gbGapSizeL  = gbSlots+12;
+    const uint gbGapSizeH  = gbSlots+13;
+    const uint FastLengthL   = gbSlots+14;
+    const uint FastLengthH   = gbSlots+15;
+    
     // Leaf workspace for calculations (don't survive function calls)
     const uint mgbTemp   = ZP.M0;     // Temporary 16-bit value
     const uint mgbTempL  = ZP.M0;
@@ -620,6 +626,115 @@ unit GapBuffer
         LDA gbGapEndH
         SBC gbGapStartH
         STA mgbCountH
+    }
+    
+    GetCharAtFastPrep()
+    {
+        getGapSize();
+        LDA mgbCountL
+        STA gbGapSizeL
+        LDA mgbCountH
+        STA gbGapSizeH
+        
+        GetTextLength();
+        LDA GapValueL
+        STA FastLengthL
+        LDA GapValueH
+        STA FastLengthH
+    }
+    
+    // Get character at logical position
+    // Input: GapValue = position
+    // Output: A = character (0 if out of bounds)
+    GetCharAtFast()
+    {
+        // Save position
+        LDA GapValueL
+        STA mgbTempL
+        LDA GapValueH
+        STA mgbTempH
+        
+        loop  // Single iteration for structure
+        {
+            // Check if position >= text length (out of bounds)
+            LDA mgbTempH
+            CMP FastLengthH
+            if (C)  // position.H >= length.H
+            {
+                if (NZ)  // position.H > length.H, definitely out of bounds
+                {
+                    LDA #0
+                    break;
+                }
+                // High bytes equal, check low bytes
+                LDA mgbTempL
+                CMP FastLengthL
+                if (C)  // position.L >= length.L, out of bounds
+                {
+                    LDA #0
+                    break;
+                }
+                // position.L < length.L, so position < length (valid)
+            }
+            // else position.H < length.H, so position < length (valid)
+            
+            // Convert logical to physical position
+            // Check if position >= gap start
+            LDA mgbTempH
+            CMP gbGapStartH
+            if (C)  // position.H >= gap_start.H
+            {
+                if (NZ)  // position.H > gap_start.H, definitely after gap
+                {
+                    // Add gap size to position
+                    CLC
+                    LDA mgbTempL
+                    ADC gbGapSizeL
+                    STA mgbTempL
+                    LDA mgbTempH
+                    ADC gbGapSizeH
+                    STA mgbTempH
+                }
+                else
+                {
+                    // High bytes equal, check low bytes
+                    LDA mgbTempL
+                    CMP gbGapStartL
+                    if (C)  // position.L >= gap_start.L, at or after gap
+                    {
+                        // Add gap size to position
+                        CLC
+                        LDA mgbTempL
+                        ADC gbGapSizeL
+                        STA mgbTempL
+                        LDA mgbTempH
+                        ADC gbGapSizeH
+                        STA mgbTempH
+                    }
+                    // else position < gap start, no adjustment
+                }
+            }
+            // else position.H < gap_start.H, before gap, no adjustment
+            
+            // Read from physical position
+            CLC
+            LDA gbBufferL
+            ADC mgbTempL
+            STA mgbTempL
+            LDA gbBufferH
+            ADC mgbTempH
+            STA mgbTempH
+            
+            
+            LDA [mgbTemp]
+            
+            // If we got 0, return 0xFD to distinguish from actual 0
+            if (Z)
+            {
+                LDA #0
+            }
+            break;
+        }
     }
     
     // Get character at logical position
