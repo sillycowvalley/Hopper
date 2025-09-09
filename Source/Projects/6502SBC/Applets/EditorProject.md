@@ -80,7 +80,6 @@ const byte edFlags = 0x9F;
   - Undo buffer
   - Search string buffer
   - Filename buffer
-```
 
 
 
