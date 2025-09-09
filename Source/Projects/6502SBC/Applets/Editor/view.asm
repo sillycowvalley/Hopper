@@ -69,23 +69,7 @@ unit View
             CLC
             return;
         }
-        
-        // Initialize GapBuffer (8KB)
-        LDA #(8192 % 256)
-        LDY #(8192 / 256)
-        GapBuffer.Initialize();
-        if (NC)
-        {
-            ScreenBuffer.Dispose();
-            LDA #(memoryMsg % 256)
-            STA ZP.STRL
-            LDA #(memoryMsg / 256)
-            STA ZP.STRH
-            Print.String();
-            CLC
-            return;
-        }
-        
+                
         // Initialize view state
         STZ vwCurrentRow
         STZ vwCurrentCol
@@ -1027,6 +1011,89 @@ unit View
         }
         
         View.Update();
+    }
+    
+    // Move cursor to top of file (first line, first column)
+    CursorTop()
+    {
+        // Set viewport to top of document
+        STZ vwTopLineL
+        STZ vwTopLineH
+        
+        // Position cursor at top-left
+        STZ vwCurrentRow
+        STZ vwCurrentCol
+        
+        // Redraw screen from the top
+        Render();
+    }
+    
+    // Move cursor to bottom of file (last line)
+    CursorBottom()
+    {
+        loop
+        {
+            // Check if document fits entirely on screen
+            LDA vwLineCountH
+            if (Z)  // High byte is 0
+            {
+                LDA vwLineCountL
+                CMP vwScreenRows
+                if (NC)  // lineCount < screenRows
+                {
+                    // Document fits on screen
+                    // Keep vwTopLine at 0
+                    STZ vwTopLineL
+                    STZ vwTopLineH
+                    
+                    // Position cursor at last line
+                    LDA vwLineCountL
+                    if (NZ)  // If not empty document
+                    {
+                        DEC A  // Convert to 0-based
+                    }
+                    STA vwCurrentRow
+                    
+                    // Position at beginning of last line (could change to end)
+                    STZ vwCurrentCol
+                    
+                    Render();
+                    break;
+                }
+            }
+            
+            // Document is longer than screen
+            // Calculate topLine = lineCount - screenRows
+            SEC
+            LDA vwLineCountL
+            SBC vwScreenRows
+            STA vwTopLineL
+            LDA vwLineCountH
+            SBC #0
+            STA vwTopLineH
+            
+            // Check for underflow (shouldn't happen but be safe)
+            if (MI)
+            {
+                STZ vwTopLineL
+                STZ vwTopLineH
+            }
+            
+            // Position cursor at bottom of screen
+            LDA vwScreenRows
+            DEC A  // Last visible row (0-based)
+            STA vwCurrentRow
+            
+            // Position at beginning of last line
+            STZ vwCurrentCol
+            
+            // Could alternatively position at end of last line:
+            // getCurrentLineLength();  // Get length of last line
+            // STA vwCurrentCol        // Position at end
+            
+            Render();
+            break;
+        }
     }
     
     // Internal: Update line/col display (right side of status)

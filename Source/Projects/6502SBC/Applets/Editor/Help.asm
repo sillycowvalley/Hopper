@@ -5,27 +5,29 @@ unit Help
     uses "Editor/Keyboard"
     
     // Help screen lines (pre-formatted for 80 columns)
-    const string helpTitle    = "               TURBO PASCAL EDITOR - COMMAND REFERENCE                          ";
+    const string helpTitle    = "               Hopper BIOS EDITOR - COMMAND REFERENCE                           ";
     const string helpLine1    = "";
-    const string helpHeader1  = "CURSOR MOVEMENT         BLOCK OPERATIONS         FILE OPERATIONS";
-    const string helpLine2    = "---------------         ----------------         ---------------";
-    const string helpLine3    = "Ctrl+S  Left           Ctrl+K B  Mark begin     F2       Save";
-    const string helpLine4    = "Ctrl+D  Right          Ctrl+K K  Mark end       Ctrl+K S Save";
-    const string helpLine5    = "Ctrl+E  Up             Ctrl+K C  Copy block     Ctrl+K D Save & exit";
-    const string helpLine6    = "Ctrl+X  Down           Ctrl+K V  Move block     Ctrl+K X Exit";
-    const string helpLine7    = "Ctrl+A  Word left      Ctrl+K Y  Delete block   Ctrl+K Q Quit (no save)";
-    const string helpLine8    = "Ctrl+F  Word right     Ctrl+K H  Hide block     F3       Open file";
-    const string helpLine9    = "Ctrl+R  Page up        Ctrl+K W  Write block";
-    const string helpLine10   = "Ctrl+C  Page down      Ctrl+K R  Read file      DELETE OPERATIONS";
-    const string helpLine11   = "Home    Start of line                           -----------------";
-    const string helpLine12   = "End     End of line    FIND/REPLACE             Ctrl+H   Backspace";
-    const string helpLine13   = "Ctrl+Q S  Home         -------------            Ctrl+G   Delete char";
-    const string helpLine14   = "Ctrl+Q D  End          Ctrl+Q F  Find           Ctrl+T   Delete word";
-    const string helpLine15   = "Ctrl+Q R  Top of file  Ctrl+Q A  Replace        Ctrl+Y   Delete line";
-    const string helpLine16   = "Ctrl+Q C  End of file  Ctrl+L    Find next      Ctrl+Q Y Delete to EOL";
-    const string helpLine17   = "Ctrl+Q B  Block begin";
-    const string helpLine18   = "Ctrl+Q K  Block end    MODERN ALIASES:   Ctrl+C=Copy, Ctrl+X=Cut,  Ctrl+V=Paste";
-    const string helpLine19   = "                       Ctrl+Z=Undo/Redo, Ctrl+S=Save, Ctrl+O=Open, Ctrl+N=New";
+    const string helpHeader1  = "CURSOR MOVEMENT          BLOCK OPERATIONS           FILE OPERATIONS";
+    const string helpLine2    = "---------------          ----------------           ---------------";
+    const string helpLine3    = "Arrows  Left             Ctrl+K B  Mark begin       F2       Save";
+    const string helpLine4    = "        Right            Ctrl+K K  Mark end         Ctrl+K S Save";
+    const string helpLine5    = "        Up               Ctrl+K C  Copy block       Ctrl+K D Save & exit";
+    const string helpLine6    = "        Down             Ctrl+K V  Move block       Ctrl+K Q Quit (no save)";
+    const string helpLine7    = "Home    Start of line    Ctrl+K Y  Delete block     F3       Open file";
+    const string helpLine8    = "End     End of line      Ctrl+K H  Hide block       ";
+    const string helpLine9    = "PgUp    Page up          Ctrl+K W  Write block";
+    const string helpLine10   = "PgDn    Page down        Ctrl+K R  Read file        DELETE OPERATIONS";
+    const string helpLine11   = "                                                    -----------------";
+    const string helpLine12   = "CLASSIC MOVEMENT         FIND/REPLACE               Ctrl+H   Backspace";
+    const string helpLine13   = "----------------         -------------              Ctrl+G   Delete char";
+    const string helpLine14   = "Ctrl+Q R  Top of file    Ctrl+Q F  Find             Ctrl+T   Delete word";
+    const string helpLine15   = "Ctrl+Q C  End of file    Ctrl+Q A  Replace          Ctrl+Y   Delete line";
+    const string helpLine16   = "Ctrl+Q B  Block begin    Ctrl+L    Find next        Ctrl+Q Y Delete to EOL";
+    const string helpLine17   = "Ctrl+Q K  Block end";
+    const string helpLine18   = "                         MODERN ALIASES:  Ctrl+C=Copy, Ctrl+X=Cut, Ctrl+V=Paste";
+    const string helpLine19   = "                         ---------------  Ctrl+Z=Undo/Redo, Ctrl+S=Save,";
+    const string helpLine20   = "                                          Ctrl+O=Open, Ctrl+N=New";
+    
     const string helpBottom   = "                        Press any key to return to editor                       ";
     
     // Display help screen
@@ -177,6 +179,13 @@ unit Help
         LDA #(helpLine19 % 256)
         STA ZP.STRL
         LDA #(helpLine19 / 256)
+        STA ZP.STRH
+        printLine();
+        INY  
+        
+        LDA #(helpLine20 % 256)
+        STA ZP.STRL
+        LDA #(helpLine20 / 256)
         STA ZP.STRH
         printLine();
         INY  

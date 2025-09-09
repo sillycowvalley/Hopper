@@ -19,12 +19,33 @@ unit Keyboard
         Enter     = 0x0D,
         Escape    = 0x1B,
         
-        // Control key combinations
-        CtrlC     = 0x03,
-        CtrlS     = 0x13,
-        CtrlQ     = 0x11,
-        CtrlO     = 0x0F,
-        CtrlN     = 0x0E,
+         // Control key combinations (in ASCII order)
+        CtrlA     = 0x01,  // Word left
+        CtrlB     = 0x02,  // (unused - available)
+        CtrlC     = 0x03,  // Page down (or modern Copy)
+        CtrlD     = 0x04,  // Character right
+        CtrlE     = 0x05,  // Line up
+        CtrlF     = 0x06,  // Word right (or modern Find)
+        CtrlG     = 0x07,  // Delete character
+        CtrlH     = 0x08,  // Delete left (same as Backspace)
+        CtrlI     = 0x09,  // (same as Tab)
+        CtrlJ     = 0x0A,  // (same as Linefeed)
+        CtrlK     = 0x0B,  // Block operations prefix
+        CtrlL     = 0x0C,  // Repeat last find
+        CtrlM     = 0x0D,  // (same as Enter)
+        CtrlN     = 0x0E,  // New file (modern)
+        CtrlO     = 0x0F,  // Open file (modern)
+        CtrlP     = 0x10,  // Insert control character
+        CtrlQ     = 0x11,  // Quick movement prefix
+        CtrlR     = 0x12,  // Page up
+        CtrlS     = 0x13,  // Character left (or modern Save)
+        CtrlT     = 0x14,  // Delete word right
+        CtrlU     = 0x15,  // (unused - available)
+        CtrlV     = 0x16,  // Paste (modern)
+        CtrlW     = 0x17,  // (unused - available)
+        CtrlX     = 0x18,  // Line down (or modern Cut)
+        CtrlY     = 0x19,  // Delete entire line
+        CtrlZ     = 0x1A,  // Undo/Redo (modern)
         
         // Extended keys (non-ASCII)
         Up        = 128,
