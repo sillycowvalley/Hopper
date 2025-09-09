@@ -15,7 +15,7 @@ unit Keyboard
         // ASCII control codes
         Backspace = 0x08,
         Tab       = 0x09,
-        CtrlJ     = 0x0A,  // Line feed - Help key
+        Linefeed  = 0x0A,
         Enter     = 0x0D,
         Escape    = 0x1B,
         

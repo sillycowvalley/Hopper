@@ -4,7 +4,7 @@ unit Screen
     uses "System/Serial"
     
     // Zero page allocation - shares block with Debug
-    const byte screenSlots = 0x65;
+    const byte screenSlots = 0x67;
     const byte screenStrL = screenSlots+0;  // Temporary string pointer low
     const byte screenStrH = screenSlots+1;  // Temporary string pointer high
     

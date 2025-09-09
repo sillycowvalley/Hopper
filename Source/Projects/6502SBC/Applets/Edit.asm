@@ -1,4 +1,4 @@
-program SimpleEditor
+program Edit
 {
     #define CPU_65C02S
     #define DEBUG
@@ -11,18 +11,181 @@ program SimpleEditor
     uses "System/Serial"
     uses "System/Debug"
     uses "System/ScreenBuffer"
+    
     uses "Editor/Keyboard"
     uses "Editor/GapBuffer"
     uses "Editor/View"
     uses "Editor/Help"
+    uses "Editor/Prompt"
+    
+    const byte edSlots       = 0xA0;
+    const byte EditorFlags   = edSlots;
+    // Bit 0 - modified
+    
+    const byte currentFilename  = edSlots+1;
+    const byte currentFilenameL = edSlots+1;
+    const byte currentFilenameH = edSlots+2;
     
     
     // Messages
+    const string saveChanges = "Save modified file";
+    const string saveAsPrompt = "Save as: ";
+
     const string loadingMsg = "Loading BIGTEST...\n";
     const string notFoundMsg = "File not found!\n";
     const string errorMsg = "Error loading file!\n";
     const string fileName = "BIGTEST";      
     
+    Initialize()
+    {
+        loop
+        {
+            STZ EditorFlags
+            STZ currentFilenameL
+            STZ currentFilenameH
+    
+#ifdef DEBUG        
+            Debug.Initialize();
+#endif
+            // Clear screen
+            Screen.Clear();
+            
+            // Initialize keyboard
+            Keyboard.Initialize();
+            
+            // Initialize view
+            View.Initialize();
+            if (NC) { break; }
+            
+            Prompt.Initialize();
+            if (NC) { break; }
+            
+            SEC   
+            break;
+        } // single exit
+    }
+    disposeFilename()
+    {
+        LDA currentFilenameL
+        ORA currentFilenameH
+        if (NZ)
+        {
+            LDA currentFilenameL
+            STA ZP.IDXL
+            LDA currentFilenameH
+            STA ZP.IDXH
+            Memory.Free();
+            STZ currentFilenameL
+            STZ currentFilenameH
+        }
+    }
+    Dispose()
+    {
+        View.Dispose();
+        Prompt.Dispose();
+        Screen.Reset();
+        Screen.Clear();
+    
+        disposeFilename();    
+    }
+    
+    // Check modified flag before operations
+    checkModified()  // Returns C clear if should abort operation
+    {
+        if (BBS0, EditorFlags)  // Modified?
+        {
+            LDA #(saveChanges % 256)
+            STA ZP.STRL
+            LDA #(saveChanges / 256)
+            STA ZP.STRH
+            Prompt.AskYN();
+            if (C)  // Yes, save
+            {
+                saveFile();
+                if (NC)  // Save failed
+                {
+                    CLC
+                    return;
+                }
+            }
+        }
+        SEC  // OK to proceed
+    }
+    
+    // New file
+    newFile()
+    {
+        checkModified();
+        if (NC) { return; }
+        
+        GapBuffer.Clear();
+        disposeFilename();
+        RMB0 EditorFlags  // Clear modified
+        View.CountLines();
+        View.Render();
+    }
+    
+    // Save file
+    saveFile()
+    {
+        // Check if we have a filename
+        LDA currentFilenameL
+        ORA currentFilenameH
+        if (Z)
+        {
+            saveFileAs();
+            return;
+        }
+        
+        // Save to current filename
+        LDA currentFilenameL
+        STA ZP.STRL
+        LDA currentFilenameH
+        STA ZP.STRH
+        
+        // TODO ... actual save code ...
+        
+        RMB0 EditorFlags  // Clear modified
+        SEC
+    }
+    
+    // Save as
+    saveFileAs()
+    {
+        LDA #(saveAsPrompt % 256)
+        STA ZP.STRL
+        LDA #(saveAsPrompt / 256)
+        STA ZP.STRH
+        Prompt.GetFilename();
+        if (NC)  // Cancelled
+        {
+            CLC
+            return;
+        }
+        // resulting string in STR
+        // length in A
+        PHA
+        disposeFilename();
+        PLA
+        STA ZP.ACCL
+        INC ZP.ACCL // \0 terminator
+        STZ ZP.ACCH
+        Memory.Allocate();
+        LDA ZP.IDXL
+        STA currentFilenameL
+        LDA ZP.IDXH
+        STA currentFilenameH
+        
+        LDY #0
+        loop
+        {
+            LDA [STR], Y
+            STA [currentFilename], Y
+            if (Z) { break; }
+            INY
+        }
+        saveFile();
+    }
         
     // Load BIGTEST file into GapBuffer
     loadFile()
@@ -208,21 +371,12 @@ program SimpleEditor
     
     Hopper()
     {
-        Debug.Initialize();
-        
-        // Clear screen
-        Screen.Clear();
-        
-        // Initialize keyboard
-        Keyboard.Initialize();
-        
-        // Initialize view
-        View.Initialize();
+        Edit.Initialize();
         if (NC)
         {
             return;
         }
-        
+                
         // Load the test file
         loadFile();
         View.ApplyGapBuffer();
@@ -331,6 +485,7 @@ showGapPosition();
                     }
                 }
                 
+                case Key.Linefeed: // VT100 Paste
                 case Key.Enter:
                 {
                     View.GetCursorPosition();
@@ -354,7 +509,6 @@ showGapPosition();
                 }
                 
                 case Key.F1:
-                case Key.CtrlJ:
                 {
                     Help.Show();
                     View.Redraw();
@@ -391,10 +545,7 @@ showGapPosition();
                 }
             }
         }
-        
         // Cleanup
-        View.Dispose();
-        Screen.Reset();
-        Screen.Clear();
+        Edit.Dispose();
     }
 }

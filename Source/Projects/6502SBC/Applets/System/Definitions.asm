@@ -38,9 +38,6 @@ unit Definitions
     // 0x42-0x51: FS0-FS15 (File unit workspace)
     // 0x52-0x57: File operation parameters
     //
-    
-    
-    
     // =====================================================
     // HARDWARE I/O (0xEC-0xFF) - PLATFORM DEPENDENT
     // -------------------------------------------------------
@@ -49,8 +46,7 @@ unit Definitions
     // 0xF0-0xFF: VIA 65C22 registers
     //   - PORTB/A, DDRB/A, timers, shift register
     //   - ACR, PCR, IFR, IER, ORA
-    
-    
+    //
     // =====================================================
     // APPLICATION ZERO PAGE (0x58-0xEB)
     // Available for application use - 148 bytes total
@@ -61,45 +57,55 @@ unit Definitions
     // 0x58-0x5F: Available (8 bytes)
     //   - Free for application use
     //
-    // 0x60-0x66: Debug & Screen (7 bytes used)
-    //   0x60-0x64: Debug (5 bytes)
-    //     - debugRow, debugEnabled, debugEntries
-    //     - debugByte, debugNibble
-    //   0x65-0x66: Screen (2 bytes)
-    //     - screenStrL, screenStrH (temporary string pointer)
-    // 0x67-0x6F: Available (9 bytes)
+    // 0x60-0x65: Debug (6 bytes)
+    //   - debugRow, debugCol (0x60-0x61)
+    //   - debugEnabled, debugEntries (0x62-0x63)
+    //   - dumpCount (0x64-0x65, uint)
+    //
+    // 0x66: Available (1 byte)
+    //   - Free for application use
+    //
+    // 0x67-0x68: Screen (2 bytes) [RELOCATED FROM 0x65]
+    //   - screenStrL, screenStrH (temporary string pointer)
+    //
+    // 0x69-0x6F: Available (7 bytes)
     //   - Free for application expansion
     //
-    // 0x70-0x7A: ScreenBuffer (11 bytes)
-    //   - CursorCol, CursorRow, Foreground, Background
-    //   - Attributes, sbWidth, sbHeight
-    //   - sbBuffer (2 bytes), sbSuspendCount, sbCursorVisible
-    // 0x7B-0x7E: Available (4 bytes)
-    //   - Free for application use
+    // 0x70-0x7E: ScreenBuffer (15 bytes)
+    //   - CursorCol, CursorRow, Foreground, Background (0x70-0x73)
+    //   - Attributes, sbWidth, sbHeight (0x74-0x76)
+    //   - sbBuffer (0x77-0x78, uint)
+    //   - sbSuspendCount, sbCursorVisible (0x79-0x7A)
+    //   - sbLastOffsetCol, sbLastOffsetRow (0x7B-0x7C)
+    //   - sbOffsetL, sbOffsetH (0x7D-0x7E)
     //
     // 0x7F: Keyboard (1 byte)
     //   - kbEscState (escape sequence state machine)
     //
-    // 0x80-0x8B: GapBuffer (12 bytes)
-    //   - gbBuffer (2 bytes), gbGapStart (2 bytes)
-    //   - gbGapEnd (2 bytes), gbBufferSize (2 bytes)
-    //   - GapValue (2 bytes), gbTempSize (2 bytes)
-    // 0x8C-0x8F: Available (4 bytes)
-    //   - Free for GapBuffer expansion
+    // 0x80-0x8F: GapBuffer (16 bytes)
+    //   - gbBuffer (0x80-0x81, uint), gbGapStart (0x82-0x83, uint)
+    //   - gbGapEnd (0x84-0x85, uint), gbBufferSize (0x86-0x87, uint)
+    //   - GapValue (0x88-0x89, uint), gbTempSize (0x8A-0x8B, uint)
+    //   - gbGapSizeL/H (0x8C-0x8D), FastLengthL/H (0x8E-0x8F)
     //
-    // 0x90-0x9A: View (11 bytes)
-    //   - vwScreenCols, vwScreenRows, vwCurrentRow
-    //   - vwTopLine (2 bytes), vwLineCount (2 bytes)
-    //   - vwTemp (2 bytes), vwPos (2 bytes)
+    // 0x90-0x9F: View (16 bytes)
+    //   - vwScreenCols, vwScreenRows, vwCurrentRow, vwCurrentCol (0x90-0x93)
+    //   - vwTopLineL/H (0x95-0x96), vwLineCountL/H (0x98-0x99)
+    //   - vwPosL/H (0x9A-0x9B), vwLeafTempL/H (0x9C-0x9D)
+    //   - vwSkipCountL/H (0x9E-0x9F)
     //
-    // 0x9B-0xEB: Available (81 bytes)
+    // 0xA0-0xA3: Prompt (4 bytes)
+    //   - promptBuffer (0xA0-0xA1, uint)
+    //   - promptLength, promptMaxLen (0xA2-0xA3)
+    //
+    // 0xA4-0xEB: Available (72 bytes)
     //   - Free for additional application modules
     //
     // =====================================================
     // SUMMARY:
-    // Used: 42 bytes (Debug:5, Screen:2, ScreenBuffer:11,
-    //                 Keyboard:1, GapBuffer:12, View:11)
-    // Available: 106 bytes (in various blocks)
+    // Used: 78 bytes (Debug:6, Screen:2, ScreenBuffer:15,
+    //                 Keyboard:1, GapBuffer:16, View:16, Prompt:4)
+    // Available: 70 bytes (in various blocks)
     // =====================================================
     
     
