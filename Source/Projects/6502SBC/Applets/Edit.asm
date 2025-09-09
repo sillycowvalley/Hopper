@@ -26,11 +26,13 @@ program SimpleEditor
     // Load BIGTEST file into GapBuffer
     loadFile()
     {
+        View.StatusClear();
         LDA #(loadingMsg % 256)
         STA ZP.STRL
         LDA #(loadingMsg / 256)
         STA ZP.STRH
-        Print.String();
+        LDY #0
+        View.StatusString();
         
         // Set filename
         LDA #(fileName % 256)
@@ -43,11 +45,13 @@ program SimpleEditor
         File.Exists();
         if (NC)
         {
+            View.StatusClear();
             LDA #(notFoundMsg % 256)
             STA ZP.STRL
             LDA #(notFoundMsg / 256)
             STA ZP.STRH
-            Print.String();
+            LDY #0
+            View.StatusString();
             return;
         }
         
@@ -60,11 +64,13 @@ program SimpleEditor
         File.StartLoad();
         if (NC)
         {
+            View.StatusClear();
             LDA #(errorMsg % 256)
             STA ZP.STRL
             LDA #(errorMsg / 256)
             STA ZP.STRH
-            Print.String();
+            LDY #0
+            View.StatusString();
             return;
         }
         
@@ -142,6 +148,7 @@ program SimpleEditor
                 if (Z) { break; }  // Y wrapped to 0 after 255
             }
         }
+        View.StatusClear();  // Clear the "Loading..." message
     }
     
     

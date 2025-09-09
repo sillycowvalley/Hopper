@@ -446,6 +446,106 @@ unit ScreenBuffer
         Resume();
     }
     
+    
+    // Print decimal number (up to 9999)
+    Decimal()  // Input: ZP.ACC = value (0-9999)
+    {
+        Suspend();
+        
+        // Check for 1000s
+        LDX #0          // Thousands counter
+        loop
+        {
+            LDA ZP.ACCH
+            CMP #(1000 / 256)
+            if (C)      // ACCH >= high byte of 1000
+            {
+                if (Z)  // ACCH == high byte of 1000
+                {
+                    LDA ZP.ACCL
+                    CMP #(1000 % 256)
+                    if (NC) { break; }  // ACC < 1000
+                }
+                // else ACCH > high byte of 1000
+            }
+            else
+            {
+                break;  // ACC < 1000
+            }
+            
+            // Subtract 1000
+            SEC
+            LDA ZP.ACCL
+            SBC #(1000 % 256)
+            STA ZP.ACCL
+            LDA ZP.ACCH
+            SBC #(1000 / 256)
+            STA ZP.ACCH
+            INX
+        }
+        CPX #0
+        if (NZ)         // Print thousands if non-zero
+        {
+            TXA
+            ORA #'0'
+            ScreenBuffer.Char();
+        }
+        
+        // Check for 100s
+        LDX #0          // Hundreds counter
+        loop
+        {
+            LDA ZP.ACCH
+            if (NZ) { break; }  // >= 256, so >= 100
+            LDA ZP.ACCL
+            CMP #100
+            if (NC) { break; }  // < 100
+            
+            // Subtract 100
+            SEC
+            SBC #100
+            STA ZP.ACCL
+            INX
+        }
+        CPX #0
+        if (NZ)         // Print hundreds
+        {
+            TXA
+            ORA #'0'
+            ScreenBuffer.Char();
+        }
+        
+        // Check for 10s
+        LDX #0          // Tens counter
+        loop
+        {
+            LDA ZP.ACCL
+            CMP #10
+            if (NC) { break; }  // < 10
+            
+            // Subtract 10
+            SEC
+            SBC #10
+            STA ZP.ACCL
+            INX
+        }
+        CPX #0
+        if (NZ)         // Print tens
+        {
+            TXA
+            ORA #'0'
+            ScreenBuffer.Char();
+        }
+        
+        // Always print ones digit
+        LDA ZP.ACCL
+        ORA #'0'
+        ScreenBuffer.Char();
+        
+        Resume();
+    }
+    
+    
     // Force redraw everything
     Redraw()
     {

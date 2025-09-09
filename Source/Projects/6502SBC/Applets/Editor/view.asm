@@ -33,19 +33,26 @@ unit View
     const byte vwSkipCountH = vwSlots+15;
     
     const string memoryMsg = "Out of memory in View!\n";
+    const string rowLabel  = "Ln:";
+    const string colLabel  = "  Ch:";
+    
+    const byte viewWidth              = 80;
+    const byte viewHeight             = 25;
+    const byte statusAreaHeight       = 1;
+    const byte positionIndicatorWidth = 20;
     
     // Initialize View
     Initialize()
     {
         // Save screen dimensions
-        LDA #80
+        LDA # viewWidth
         STA vwScreenCols
-        LDA #24  // Leave room for status line
+        LDA # (viewHeight - statusAreaHeight)
         STA vwScreenRows
         
         // Initialize ScreenBuffer
-        LDA #80
-        LDY #25  // Full screen including status line
+        LDA # viewWidth
+        LDY # viewHeight  // Full screen including status line
         ScreenBuffer.Initialize();
         if (NC)
         {
@@ -324,6 +331,8 @@ unit View
         LDA vwCurrentCol
         LDY vwCurrentRow
         ScreenBuffer.GotoXY();
+        
+        updatePosition();
         
         ScreenBuffer.Resume();
     }
@@ -668,6 +677,161 @@ unit View
         View.Update();
     }
     
+    // Internal: Update line/col display (right side of status)
+    updatePosition()
+    {
+        ScreenBuffer.Suspend();
+        
+        LDA # (viewWidth - positionIndicatorWidth)
+        LDY # (viewHeight - statusAreaHeight)
+        ScreenBuffer.GotoXY();
+        
+        // Print line
+        LDA #(rowLabel / 256)
+        STA ZP.STRH
+        LDA #(rowLabel % 256)
+        STA ZP.STRL
+        ScreenBuffer.String();
+        
+        // Calculate document line (topLine + currentRow + 1)
+        CLC
+        LDA vwTopLineL
+        ADC vwCurrentRow
+        STA ZP.ACCL
+        LDA vwTopLineH
+        ADC #0
+        STA ZP.ACCH
+        INC ZP.ACCL
+        if (Z) { INC ZP.ACCH }
+        ScreenBuffer.Decimal();
+        
+        LDA #'/'
+        ScreenBuffer.Char();
+        
+        // Print total lines (assumes < 256)
+        LDA vwLineCountL
+        STA ZP.ACCL
+        LDA vwLineCountH
+        STA ZP.ACCH
+        ScreenBuffer.Decimal();
+        
+        // Print column
+        LDA #(colLabel / 256)
+        STA ZP.STRH
+        LDA #(colLabel % 256)
+        STA ZP.STRL
+        ScreenBuffer.String();
+        
+        LDA vwCurrentCol
+        INC A           // Make 1-based
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        ScreenBuffer.Decimal();
+        
+        // Clear to end of line
+        loop
+        {
+            LDA ScreenBuffer.CursorCol
+            CMP # viewWidth
+            if (C) { break; }
+            LDA #' '
+            ScreenBuffer.Char();
+        }
+        
+        // Position cursor
+        LDA vwCurrentCol
+        LDY vwCurrentRow
+        ScreenBuffer.GotoXY();
+        
+        ScreenBuffer.Resume();
+    }
+    
+    // Public: Clear user portion of status line (columns 0-64)
+    StatusClear()
+    {
+        ScreenBuffer.Suspend();
+        
+        LDA #0
+        LDY # (viewHeight - statusAreaHeight)
+        ScreenBuffer.GotoXY();
+        
+        LDX # (viewWidth - positionIndicatorWidth)
+        loop
+        {
+            PHX
+            LDA #' '
+            ScreenBuffer.Char();
+            PLX
+            DEX
+            if (Z) { break; }
+        }
+        
+        // Position cursor
+        LDA vwCurrentCol
+        LDY vwCurrentRow
+        ScreenBuffer.GotoXY();
+        
+        ScreenBuffer.Resume();
+    }
+    
+    // Public: Write string to status line
+    StatusString()  // Input: ZP.STR = string, Y = start column (0-64)
+    {
+        ScreenBuffer.Suspend();
+        
+        TYA
+        LDY # (viewHeight - statusAreaHeight)
+        ScreenBuffer.GotoXY();
+        
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            if (Z) { break; }
+            
+            // Stop at column 65 to protect line/col area
+            LDA ScreenBuffer.CursorCol
+            CMP # (viewWidth - positionIndicatorWidth)
+            if (C) { break; }
+            
+            LDA [ZP.STR], Y
+            ScreenBuffer.Char();
+            INY
+        }
+        
+        // Position cursor
+        LDA vwCurrentCol
+        LDY vwCurrentRow
+        ScreenBuffer.GotoXY();
+        
+        ScreenBuffer.Resume();
+    }
+    
+    // Public: Write character to status line
+    StatusChar()  // Input: A = character, Y = column (0-64)
+    {
+        CPY # (viewWidth - positionIndicatorWidth)
+        if (C) { return; }  // Protect line/col area
+        
+        ScreenBuffer.Suspend();
+        
+        PHA
+        TYA
+        LDY # (viewHeight - statusAreaHeight)
+        ScreenBuffer.GotoXY();
+        PLA
+        
+        ScreenBuffer.Char();
+        
+        // Position cursor
+        LDA vwCurrentCol
+        LDY vwCurrentRow
+        ScreenBuffer.GotoXY();
+        
+        ScreenBuffer.Resume();
+    }
+    
+       
 #ifdef DEBUG
     // Debug helper: Dump view state
     const string viewDumpLabel = "= VIEW STATE DUMP =";
