@@ -632,7 +632,7 @@ unit View
         ScreenBuffer.Resume();
         
         // Position cursor
-        View.Update();
+        View.Update(); // render position change
     }
     
     Update()
@@ -692,6 +692,8 @@ unit View
     // Warning: assumes GapBuffer.GetCharAtFastPrep() has been called before entering
     renderLine()
     {
+        ScreenBuffer.CharFastPrep();
+        
         LDX #0  // Column counter
         loop
         {
@@ -734,7 +736,7 @@ unit View
             }
             
             // Display character
-            ScreenBuffer.Char();
+            ScreenBuffer.CharFast();
             INX
         }
         
@@ -749,7 +751,7 @@ unit View
             }
             
             LDA #' '
-            ScreenBuffer.Char();
+            ScreenBuffer.CharFast();
             INX
         }
     }
@@ -794,12 +796,12 @@ unit View
                     DEC vwTopLineL
                     constrainCursorColumn();
                     
-                    Render();
+                    View.Render();
                     break;
                 }
             }
             
-            View.Update(); // render cursor
+            View.Update(); // render position change
             
             break;
         } // loop
@@ -847,12 +849,12 @@ unit View
                 if (Z) { INC vwTopLineH }
                 
                 constrainCursorColumn();
-                Render();
+                View.Render();
                 break;
             }
             
             constrainCursorColumn();
-            View.Update(); // render cursor
+            View.Update(); // render position change
             
             break;
         } // loop
@@ -873,7 +875,7 @@ unit View
             break;
         }
         
-        View.Update();
+        View.Update(); // render position change
     }
     
     CursorRight()
@@ -898,7 +900,7 @@ unit View
             break;
         }
         
-        View.Update();
+        View.Update(); // render position change
     }
     
     // Move cursor to beginning of current line
@@ -923,7 +925,7 @@ unit View
         }
         STA vwCurrentCol
         
-        View.Update();
+        View.Update(); // render position change
     }
 
     // Move up one page
@@ -946,11 +948,11 @@ unit View
             }
             
             constrainCursorColumn();
-            Render();
+            View.Render();
             break;
         }
         
-        View.Update();
+        View.Update(); // render position change
     }
     
     // Move down one page
@@ -998,11 +1000,11 @@ unit View
             }
             
             constrainCursorColumn();
-            Render();
+            View.Render();
             break;
         }
         
-        View.Update();
+        View.Update(); // render position change
     }
     
     // Move cursor to top of file (first line, first column)

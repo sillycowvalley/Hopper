@@ -44,10 +44,10 @@ unit ScreenBuffer
     const byte sbSuspendCount  = zeroPageSlots+9;
     const byte sbCursorVisible = zeroPageSlots+10;
     
-    const byte sbLastOffsetCol = zeroPageSlots+11;
-    const byte sbLastOffsetRow = zeroPageSlots+12;
-    const byte sbOffsetL       = zeroPageSlots+13; // most recent offset calculated by calculateOffset()
-    const byte sbOffsetH       = zeroPageSlots+14;
+    const byte sbOffsetL       = zeroPageSlots+11; // most recent offset calculated by calculateOffset()
+    const byte sbOffsetH       = zeroPageSlots+12;
+    const byte sbLastOffsetCol = zeroPageSlots+13;
+    const byte sbLastOffsetRow = zeroPageSlots+14;
     
     // Leaf node workspace slots
     const uint msbSize    = ZP.M0;        // Total buffer size (2 bytes)
@@ -286,7 +286,7 @@ unit ScreenBuffer
         DEC sbSuspendCount
         if (Z)
         {
-            Update();
+            ScreenBuffer.Update();
         }
     }
     
@@ -365,6 +365,70 @@ unit ScreenBuffer
         
         Resume();
     }    
+    
+    // to be called from renderLine
+    CharFastPrep()
+    {
+        packAttributes();
+        STA msbAttribute
+        
+        LDA CursorCol
+        LDY CursorRow
+        calculateOffset();
+        
+        // Add base address to offset
+        CLC
+        LDA sbOffsetL
+        ADC sbBufferL
+        STA ZP.IDXL
+        LDA sbOffsetH
+        ADC sbBufferH
+        STA ZP.IDXH
+    }
+    
+    // to be called from renderLine
+    CharFast() // Input: A = character
+    {
+        CMP [ZP.IDX]
+        if (NZ) // character has changed
+        {
+            // Store character with dirty bit
+            ORA #dirtyBit
+            STA [ZP.IDX]
+            
+            // Store packed attributes
+            LDA msbAttribute
+            LDY #1
+            STA [ZP.IDX], Y
+        }
+        else
+        {
+            LDY #1
+            LDA msbAttribute
+            CMP [ZP.IDX], Y
+            if (NZ) // attributes have changed
+            {
+                STA [ZP.IDX], Y
+                
+                // mark cell as dirty
+                STA [ZP.IDX]
+                ORA #dirtyBit
+                STA [ZP.IDX]
+            }
+        }
+        // advance cursor
+        INC CursorCol
+        
+        // prepare IDXL for the next call to CharFast()
+        CLC
+        LDA ZP.IDXL
+        ADC #2
+        STA ZP.IDXL
+        if (C)
+        {
+            INC ZP.IDXH
+        }
+    }
     
     // Write character at cursor position
     Char() // Input: A = character
@@ -587,7 +651,7 @@ unit ScreenBuffer
         }
                 
         // Now update
-        Update();
+        ScreenBuffer.Update();
     }
     
     Update()
@@ -602,7 +666,9 @@ unit ScreenBuffer
             // Hide cursor during update
             Screen.HideCursor();
         }
-        
+Time.Millis();
+LDA TOP0        
+Debug.Byte();      
         
         // Start at beginning of buffer
         LDA sbBufferL
@@ -733,7 +799,8 @@ unit ScreenBuffer
                 Screen.Char(); // SysCalls : munt A, X
                 
                 INC msbLastCol // drawing Char advanced column
-            }
+            } // dirty
+            
             // Move to next cell (2 bytes forward)
             CLC
             LDA ZP.IDXL
@@ -766,7 +833,7 @@ unit ScreenBuffer
                 STZ msbCol
                 INC msbRow
             }
-        }
+        } // cell loop
         
         // Position hardware cursor if visible
         LDA sbCursorVisible
