@@ -781,6 +781,22 @@ unit View
         }
     }
     
+    // Helper: Constrain cursor column to current line length
+    constrainCursorColumn()
+    {
+        // Get current line length
+        getCurrentLineLength();  // Returns length in A
+        
+        // If cursor is beyond line length, move it to end of line
+        CMP vwCurrentCol
+        if (NC)  // length < currentCol
+        {
+            // Set cursor to end of line (length)
+            STA vwCurrentCol
+        }
+        // else currentCol is valid, leave it alone
+    }
+    
     CursorUp()
     {
         loop
@@ -790,6 +806,7 @@ unit View
             {
                 // Move up on screen
                 DEC vwCurrentRow
+                constrainCursorColumn();
             }
             else
             {
@@ -802,6 +819,7 @@ unit View
                     LDA vwTopLineL
                     if (Z) { DEC vwTopLineH }
                     DEC vwTopLineL
+                    constrainCursorColumn();
                     
                     Render();
                     break;
@@ -855,10 +873,12 @@ unit View
                 INC vwTopLineL
                 if (Z) { INC vwTopLineH }
                 
+                constrainCursorColumn();
                 Render();
                 break;
             }
             
+            constrainCursorColumn();
             View.Update(); // render cursor
             
             break;
@@ -952,6 +972,7 @@ unit View
                 STZ vwTopLineH
             }
             
+            constrainCursorColumn();
             Render();
             break;
         }
@@ -1003,6 +1024,7 @@ unit View
                 STA vwTopLineH
             }
             
+            constrainCursorColumn();
             Render();
             break;
         }
