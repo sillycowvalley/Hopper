@@ -82,7 +82,7 @@ program CreateTestFile
         }
         
         // Write the file content - repeat pattern multiple times to get ~2KB
-        LDX #10  // Repeat 10 times
+        LDX #20  // Repeat 20 times
         loop
         {
             PHX

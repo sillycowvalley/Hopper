@@ -169,6 +169,7 @@ program SimpleEditor
         // Main loop
         loop
         {
+//View.Dump();            
             // Get key
             Keyboard.GetKey();
             
@@ -179,6 +180,7 @@ program SimpleEditor
                 {
                     break;  // Exit
                 }
+                
                 case Key.Up:
                 {
                     View.CursorUp();
@@ -195,6 +197,25 @@ program SimpleEditor
                 {
                     View.CursorRight();
                 }
+                
+                case Key.Home:
+                {
+                    View.CursorHome();
+                }
+                case Key.End:
+                {
+                    View.CursorEnd();
+                }
+                
+                case Key.PageUp:
+                {
+                    View.PageUp();
+                }
+                case Key.PageDown:
+                {
+                    View.PageDown();
+                }
+                
                 default:
                 {
                     // Ignore other keys

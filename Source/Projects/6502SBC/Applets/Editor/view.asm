@@ -197,7 +197,7 @@ unit View
                 }
                 if (C) { break; }
                 
-                findNextNewline();// uses vwLeafTemp
+                findNextNewline();// uses vwLeafTemp
                 
                 INC vwSkipCountL
                 if (Z) { INC vwSkipCountH }
@@ -290,20 +290,6 @@ unit View
                 if (Z) { INC vwSkipCountH }
             }
         }
-    
-View.Dump();          
-LDA vwSkipCountL
-STA ZP.ACCL      
-LDA vwSkipCountH
-STA ZP.ACCH
-Debug.Word();        
-
-LDA vwPosL
-STA ZP.ACCL      
-LDA vwPosH
-STA ZP.ACCH
-Debug.Word();
-
                 
         // Render visible lines
         LDY #0  // Screen row
@@ -580,8 +566,109 @@ Debug.Word();
         View.Update();
     }
     
+    // Move cursor to beginning of current line
+    CursorHome()
+    {
+        STZ vwCurrentCol
+        View.Update();
+    }
     
-    #ifdef DEBUG
+    // Move cursor to end of current line
+    CursorEnd()
+    {
+        // Get current line length
+        getCurrentLineLength();  // Returns length in A
+        
+        // Position cursor at end (or at line length if shorter than cursor pos)
+        CMP vwScreenCols
+        if (C)  // lineLength >= screenCols
+        {
+            LDA vwScreenCols
+            DEC A  // Column 79 for 80-column screen
+        }
+        STA vwCurrentCol
+        
+        View.Update();
+    }
+
+    // Move up one page
+    PageUp()
+    {
+        loop
+        {
+            // Can scroll a full page
+            SEC
+            LDA vwTopLineL
+            SBC vwScreenRows
+            STA vwTopLineL
+            LDA vwTopLineH
+            SBC #0
+            STA vwTopLineH
+            if (MI)
+            {
+                STZ vwTopLineL
+                STZ vwTopLineH
+            }
+            
+            Render();
+            break;
+        }
+        
+        View.Update();
+    }
+    
+    // Move down one page
+    PageDown()
+    {
+        loop
+        {
+            // Calculate maximum valid TopLine (LineCount - screenRows)
+            SEC
+            LDA vwLineCountL
+            SBC vwScreenRows
+            STA ZP.ACCL
+            LDA vwLineCountH
+            SBC #0
+            STA ZP.ACCH
+            if (MI)  // Document shorter than screen
+            {
+                STZ ZP.ACCL
+                STZ ZP.ACCH
+            }
+            
+            // Add screenRows to TopLine
+            CLC
+            LDA vwTopLineL
+            ADC vwScreenRows
+            STA vwTopLineL
+            LDA vwTopLineH
+            ADC #0
+            STA vwTopLineH
+            
+            // Clamp to maximum if exceeded
+            LDA vwTopLineH
+            CMP ZP.ACCH
+            if (Z)
+            {
+                LDA vwTopLineL
+                CMP ZP.ACCL
+            }
+            if (C)  // TopLine > maximum
+            {
+                LDA ZP.ACCL
+                STA vwTopLineL
+                LDA ZP.ACCH
+                STA vwTopLineH
+            }
+            
+            Render();
+            break;
+        }
+        
+        View.Update();
+    }
+    
+#ifdef DEBUG
     // Debug helper: Dump view state
     const string viewDumpLabel = "= VIEW STATE DUMP =";
     const string cursorRowLabel = "CursRow:";

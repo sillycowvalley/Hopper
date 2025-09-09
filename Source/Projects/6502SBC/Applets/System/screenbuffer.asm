@@ -363,15 +363,34 @@ unit ScreenBuffer
                 ADC sbBufferH
                 STA ZP.IDXH
                 
-                // Store character with dirty bit
                 LDA ZP.TEMP
-                ORA #dirtyBit
-                STA [ZP.IDX]
-                
-                // Store packed attributes
-                packAttributes();
-                LDY #1
-                STA [ZP.IDX], Y
+                CMP [ZP.IDX]
+                if (NZ) // character has changed
+                {
+                    // Store character with dirty bit
+                    ORA #dirtyBit
+                    STA [ZP.IDX]
+                    
+                    // Store packed attributes
+                    packAttributes();
+                    LDY #1
+                    STA [ZP.IDX], Y
+                }
+                else
+                {
+                    LDY #1
+                    packAttributes();
+                    CMP [ZP.IDX], Y
+                    if (NZ) // attributes have changed
+                    {
+                        STA [ZP.IDX], Y
+                        
+                        // mark cell as dirty
+                        LDA ZP.TEMP
+                        ORA #dirtyBit
+                        STA [ZP.IDX]
+                    }
+                }
             }
         }
         
@@ -380,6 +399,7 @@ unit ScreenBuffer
         Resume();
         PLY
     }
+    
     // Write string at cursor position
     String() // Input : STR = string
     {
