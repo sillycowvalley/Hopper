@@ -269,29 +269,21 @@ unit View
         STA ZP.ACCH
         
         GapBuffer.GetCharAtFastPrep();
-        
+     
         // Clamp target to text length if beyond EOF
         LDA ZP.ACCH
         CMP FastLengthH
-        if (C)  // target.H > length.H
+        if (Z)  // target.H == length.H
+        {
+            LDA ZP.ACCL
+            CMP FastLengthL
+        }
+        if (C)  // target.L >= length.L
         {
             LDA FastLengthL
             STA ZP.ACCL
             LDA FastLengthH
             STA ZP.ACCH
-        }
-        else
-        {
-            if (Z)  // target.H == length.H
-            {
-                LDA ZP.ACCL
-                CMP FastLengthL
-                if (C)  // target.L > length.L
-                {
-                    LDA FastLengthL
-                    STA ZP.ACCL
-                }
-            }
         }
         
         // Start at beginning of document
@@ -652,7 +644,7 @@ unit View
         LDY vwCurrentRow
         ScreenBuffer.GotoXY();
         
-        updatePosition();
+        UpdatePosition();
         
         ScreenBuffer.Resume();
     }
@@ -997,7 +989,7 @@ unit View
                 LDA vwTopLineL
                 CMP ZP.ACCL
             }
-            if (C)  // TopLine > maximum
+            if (C)  // TopLine >= maximum
             {
                 LDA ZP.ACCL
                 STA vwTopLineL

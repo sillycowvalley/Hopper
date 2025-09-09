@@ -667,15 +667,12 @@ Print.NewLine(); Print.String();
                 {
                     View.PageDown();
                 }
-                /*
                 case 'r':
                 case 'R':
                 {
-                    View.GetCursorPosition();
-                    View.SetCursorPosition();
-showGapPosition();
+                    //View.GetCursorPosition();
+                    //View.SetCursorPosition();
                 }
-                */
                 
                 
                 case Key.Backspace:

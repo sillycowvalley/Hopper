@@ -7,16 +7,12 @@ program Dot
     uses "System/Serial"
     uses "System/Long"
     
+    uses "Editor/Keyboard"
+    
     // Screen dimensions
     const byte screenWidth = 80;
     const byte screenHeight = 24;
     
-    // Special key codes  
-    const byte keyUp = 128;
-    const byte keyDown = 129;
-    const byte keyRight = 130;
-    const byte keyLeft = 131;
-    const byte keyEsc = 0x1B;
     
     // Our own zero page variables (not used by BIOS)
     const byte curX = 0x58;      // Current X position
@@ -34,7 +30,7 @@ program Dot
     // Send ESC character
     sendEsc()
     {
-        LDA #keyEsc
+        LDA # Key.Escape
         Print.Char();
     }
     
@@ -101,91 +97,6 @@ program Dot
         Print.Char();
     }
     
-    // Get key with VT100 escape sequence interpretation
-    getKey()  // Returns key in A
-    {
-        loop
-        {
-            // Check if we're in an escape sequence
-            LDA escState
-            if (NZ)
-            {
-                // We're processing an escape sequence
-                CMP #1
-                if (Z)
-                {
-                    // Got ESC, waiting for [
-                    Serial.WaitForChar();
-                    CMP #'['
-                    if (Z)
-                    {
-                        LDA #2
-                        STA escState
-                        continue;  // Get next char
-                    }
-                    else
-                    {
-                        // Not a bracket, reset and return ESC
-                        STZ escState
-                        LDA #keyEsc
-                        return;
-                    }
-                }
-                
-                // escState = 2, got ESC[, waiting for direction
-                Serial.WaitForChar();
-                PHA  // Save the character
-                
-                // Reset state
-                STZ escState
-                
-                // Check arrow key codes using switch
-                PLA
-                switch (A)
-                {
-                    case 'A':
-                    {
-                        LDA #keyUp
-                        return;
-                    }
-                    case 'B':
-                    {
-                        LDA #keyDown
-                        return;
-                    }
-                    case 'C':
-                    {
-                        LDA #keyRight
-                        return;
-                    }
-                    case 'D':
-                    {
-                        LDA #keyLeft
-                        return;
-                    }
-                    default:
-                    {
-                        // Unknown sequence, return the char
-                        return;
-                    }
-                }
-            }
-            
-            // Normal character processing
-            Serial.WaitForChar();
-            CMP #keyEsc
-            if (Z)
-            {
-                // Start of escape sequence
-                LDA #1
-                STA escState
-                continue;  // Process next char
-            }
-            
-            // Regular character
-            return;
-        }
-    }
     
     // Move the star to a new position
     moveStar()  // New position in curX, curY
@@ -225,11 +136,11 @@ program Dot
         // Main loop
         loop
         {
-            getKey();
+            Keyboard.GetKey();
             STA lastKey  // Store key for multiple comparisons
             
             // Check for ESC to exit
-            CMP #keyEsc
+            CMP # Key.Escape
             if (Z) 
             { 
                 break; 
@@ -242,7 +153,7 @@ program Dot
             LDA lastKey  // Load key for switch
             switch (A)
             {
-                case 128:
+                case Key.Up:
                 {
                     LDA curY
                     CMP #2  // Minimum Y is 1, but check against 2 for decrement
@@ -251,7 +162,7 @@ program Dot
                         DEC curY
                     }
                 }
-                case 129:
+                case Key.Down:
                 {
                     LDA curY
                     CMP #screenHeight
@@ -260,7 +171,7 @@ program Dot
                         INC curY
                     }
                 }
-                case 131:
+                case Key.Left:
                 {
                     LDA curX
                     CMP #2  // Minimum X is 1, but check against 2 for decrement
@@ -269,7 +180,7 @@ program Dot
                         DEC curX
                     }
                 }
-                case 130:
+                case Key.Right:
                 {
                     LDA curX
                     CMP #screenWidth
