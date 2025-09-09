@@ -37,9 +37,19 @@ unit Keyboard
         PageDown  = 135,
         Delete    = 136,
         Insert    = 137,
+        
         F1        = 138,
         F2        = 139,
         F3        = 140,
+        F4        = 141,
+        F5        = 142,
+        F6        = 143,
+        F7        = 144,
+        F8        = 145,
+        F9        = 146,
+        F10       = 147,
+        F11       = 148,
+        F12       = 149,
     }
     
     // Initialize keyboard
@@ -202,20 +212,70 @@ unit Keyboard
                 case '1':  // Could be Home or function key
                 {
                     processNumericEscape();
-                    if (NC)
+                    if (C)  // Valid sequence
                     {
+                        // A contains either '~' (single digit) or the second digit
+                        CMP #'~'
+                        if (Z)
+                        {
+                            // ESC[1~ = Home
+                            LDA # Key.Home
+                        }
+                        else
+                        {
+                            // Two-digit sequence, check which one
+                            switch (A)
+                            {
+                                case '1': { LDA #Key.F1 }   // ESC[11~
+                                case '2': { LDA #Key.F2 }   // ESC[12~
+                                case '3': { LDA #Key.F3 }   // ESC[13~
+                                case '4': { LDA #Key.F4 }   // ESC[14~
+                                case '5': { LDA #Key.F5 }   // ESC[15~
+                                // Note: ESC[16~ is skipped!
+                                case '7': { LDA #Key.F6 }   // ESC[17~
+                                case '8': { LDA #Key.F7 }   // ESC[18~
+                                case '9': { LDA #Key.F8 }   // ESC[19~
+                                default:  { CLC break; }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        CLC  // Continue processing
                         break;
                     }
-                    LDA #Key.Home
                 }
-                case '2':  // Insert
+                case '2':  // Could be Insert or function key
                 {
                     processNumericEscape();
-                    if (NC)
+                    if (C)  // Valid sequence
                     {
+                        // A contains either '~' (single digit) or the second digit
+                        CMP #'~'
+                        if (Z)
+                        {
+                            // ESC[2~ = Home
+                            LDA # Key.Insert
+                        }
+                        else
+                        {
+                            // Two-digit sequence, check which one
+                            switch (A)
+                            {
+                                case '0': { LDA #Key.F9 }    // ESC[20~
+                                case '1': { LDA #Key.F10 }   // ESC[21~
+                                // Note: ESC[22~ is skipped!
+                                case '3': { LDA #Key.F11 }   // ESC[23~
+                                case '4': { LDA #Key.F12 }   // ESC[24~
+                                default:  { CLC break; }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        CLC  // Continue processing
                         break;
                     }
-                    LDA #Key.Insert
                 }
                 case '3':  // Delete
                 {
@@ -271,14 +331,33 @@ unit Keyboard
     {
         Serial.WaitForChar();
         CMP #'~'
-        if (NZ)
+        if (Z)
         {
-            CLC  // Invalid sequence
+            // Single digit sequence (ESC[n~)
+            SEC  // Valid but we don't know which key
+            return;
         }
-        else
+        // Check for second digit
+        CMP #'0'
+        if (C)  // >= '0'
         {
-            SEC  // Valid sequence
+            CMP # ('9'+1)
+            if (NC)  // < '9'+1, so it's a digit
+            {
+                // Save second digit and check for ~
+                PHA
+                Serial.WaitForChar();
+                CMP #'~'
+                if (Z)
+                {
+                    PLA  // Get second digit back
+                    SEC  // Valid two-digit sequence
+                    return;
+                }
+                PLA
+            }
         }
+        
     }
 
     // Process ESC O state
