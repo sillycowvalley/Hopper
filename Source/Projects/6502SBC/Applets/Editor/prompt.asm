@@ -6,12 +6,14 @@ unit Prompt
     uses "View"
     
     // Zero page for prompt input buffer
-    const byte promptSlots   = 0xA3;
-    const uint promptBuffer  = promptSlots+0;
-    const byte promptBufferL = promptSlots+0;
-    const byte promptBufferH = promptSlots+1;
-    const byte promptLength  = promptSlots+2;
-    const byte promptMaxLen  = promptSlots+3;
+    const byte promptSlots    = 0xA3;
+    const uint promptBuffer   = promptSlots+0;
+    const byte promptBufferL  = promptSlots+0;
+    const byte promptBufferH  = promptSlots+1;
+    const byte promptLength   = promptSlots+2;
+    const byte promptMaxLen   = promptSlots+3;
+    const byte promptStartCol = promptSlots+4;
+    const byte promptLastChar = promptSlots+5;
     
     const string ynPrompt = " (Y/N)? ";
     
@@ -116,6 +118,8 @@ unit Prompt
         STA promptMaxLen
         STZ promptLength
         
+        SMB3 EditorFlags // prompt mode
+        
         // Clear status line and show prompt
         View.StatusClear();
         LDY #0
@@ -123,18 +127,17 @@ unit Prompt
         
         // Remember where input starts
         LDA ScreenBuffer.CursorCol
-        PHA  // Save start column
+        STA promptStartCol
         
         // Input loop
         loop
         {
             Keyboard.GetKey();
-            
+            STA promptLastChar
             switch (A)
             {
                 case Key.Escape:
                 {
-                    PLA  // Clean stack
                     View.StatusClear();
                     CLC  // Cancelled
                     break;
@@ -147,7 +150,6 @@ unit Prompt
                     LDA #0
                     STA [promptBuffer], Y
                     
-                    PLA  // Clean stack
                     View.StatusClear();
                     
                     LDA promptBufferL
@@ -168,12 +170,11 @@ unit Prompt
                         DEC promptLength
                         
                         // Move cursor back and erase
-                        PLA
-                        PHA
                         CLC
+                        LDA promptStartCol
                         ADC promptLength
                         TAY
-                        LDA #' '
+                        LDA # Key.Backspace
                         View.StatusChar();
                     }
                 }
@@ -181,44 +182,33 @@ unit Prompt
                 default:
                 {
                     // Check if printable
-                    PHA
                     Keyboard.IsPrintable();
                     if (C)
                     {
                         // Check length
                         LDA promptLength
                         CMP promptMaxLen
-                        if (C)  // length < max
+                        if (NC)  // length < max
                         {
                             // Store character
-                            PLA
                             LDY promptLength
+                            LDA promptLastChar
                             STA [promptBuffer], Y
                             
                             // Display it
-                            PHA
-                            PLA
-                            PHA  // Get start column
                             CLC
+                            LDA promptStartCol
                             ADC promptLength
                             TAY
-                            PLA
+                            LDA promptLastChar
                             View.StatusChar();
-                            
                             INC promptLength
                         }
-                        else
-                        {
-                            PLA  // Discard character
-                        }
-                    }
-                    else
-                    {
-                        PLA  // Not printable
                     }
                 }
             }
         } // loop
+        RMB3 EditorFlags // not in prompt mode
     }
     
     // Get filename (convenience wrapper)

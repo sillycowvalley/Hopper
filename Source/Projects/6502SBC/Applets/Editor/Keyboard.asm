@@ -160,7 +160,28 @@ unit Keyboard
     // Output: C set if result ready in A, clear to continue
     processEscState()
     {
-        Serial.WaitForChar();
+        // Short delay to see if this is part of an escape sequence
+        // Escape sequences arrive quickly (<5ms), human typing is slower
+        LDA #10         // 10ms timeout
+        STA ZP.TOP0
+        STZ ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Time.Delay();
+        
+        // Check if another character arrived
+        Serial.IsAvailable();
+        if (NC)  // No character available
+        {
+            // Standalone ESC key - return it immediately
+            STZ kbEscState
+            LDA #Key.Escape
+            SEC  // Result ready
+            return;
+        }
+        
+        // Character available - part of escape sequence
+        Serial.WaitForChar();  // Get the character
         
         loop
         {

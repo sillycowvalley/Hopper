@@ -9,6 +9,7 @@ program Edit
     uses "System/Memory"
     uses "System/File"
     uses "System/Serial"
+    uses "System/Time"
     uses "System/Debug"
     uses "System/ScreenBuffer"
     
@@ -23,8 +24,9 @@ program Edit
     // Bit  0:   Modified flag (0=clean, 1=modified)
     // Bit  1:   Exiting
     // Bit  2:   Selection active (0=no, 1=yes)
-    // Bits 3-4: Undo state (00=empty, 01=can_undo, 10=can_redo, 11=reserved)
-    // Bits 5-7: Reserved for future use
+    // Bit  3:   prompt mode
+    // Bits 4-5: Undo state (00=empty, 01=can_undo, 10=can_redo, 11=reserved)
+    // Bits 6-7: Reserved for future use
     
     const byte currentFilename  = edSlots+1;
     const byte currentFilenameL = edSlots+1;
@@ -207,6 +209,7 @@ program Edit
         disposeFilename();
         RMB0 EditorFlags  // Clear modified
         View.CountLines();
+        View.UpdatePosition();
         View.Render();
     }
     
@@ -228,10 +231,14 @@ program Edit
         STA ZP.STRL
         LDA currentFilenameH
         STA ZP.STRH
+LDA #0
+LDY #26        
+Screen.GotoXY();
+Print.NewLine(); Print.String();             
         
         // TODO ... actual save code ...
-        
         RMB0 EditorFlags  // Clear modified
+        View.UpdatePosition();
         SEC
     }
     
@@ -386,6 +393,7 @@ program Edit
                
         // Clear modified flag
         RMB0 EditorFlags
+        View.UpdatePosition();
         
         // Reset cursor to top of file
         STZ GapBuffer.GapValueL
@@ -536,10 +544,10 @@ program Edit
         Keyboard.GetKey();
         // Convert to uppercase
         CMP #'a'
-        if (C)
+        if (C) // >= a
         {
             CMP #'z'+1
-            if (NC)
+            if (NC) // < z+1
             {
                 AND #0xDF
             }

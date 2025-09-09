@@ -1097,13 +1097,25 @@ unit View
     }
     
     // Internal: Update line/col display (right side of status)
-    updatePosition()
+    UpdatePosition()
     {
         ScreenBuffer.Suspend();
         
         LDA # (viewWidth - positionIndicatorWidth)
         LDY # (viewHeight - statusAreaHeight)
         ScreenBuffer.GotoXY();
+        
+         // Show modified indicator if bit 0 of EditorFlags is set
+        if (BBS0, Edit.EditorFlags)  // Modified?
+        {
+            LDA #'*'
+            ScreenBuffer.Char();
+        }
+        else
+        {
+            LDA #' '
+            ScreenBuffer.Char();
+        }
         
         // Print line
         LDA #(rowLabel / 256)
@@ -1218,10 +1230,13 @@ unit View
             INY
         }
         
-        // Position cursor
-        LDA vwCurrentCol
-        LDY vwCurrentRow
-        ScreenBuffer.GotoXY();
+        if (BBR3, EditorFlags) // prompt mode?
+        {
+            // Position cursor
+            LDA vwCurrentCol
+            LDY vwCurrentRow
+            ScreenBuffer.GotoXY();
+        }
         
         ScreenBuffer.Resume();
     }
@@ -1234,19 +1249,37 @@ unit View
         
         ScreenBuffer.Suspend();
         
-        PHA
-        TYA
-        LDY # (viewHeight - statusAreaHeight)
-        ScreenBuffer.GotoXY();
-        PLA
+        CMP # Key.Backspace
+        if (Z)
+        {
+            TYA
+            PHA
+            LDY # (viewHeight - statusAreaHeight)
+            ScreenBuffer.GotoXY();
+            LDA #' '
+            ScreenBuffer.Char();
+            
+            PLA
+            LDY # (viewHeight - statusAreaHeight)
+            ScreenBuffer.GotoXY();
+        }
+        else
+        {
+            PHA
+            TYA
+            LDY # (viewHeight - statusAreaHeight)
+            ScreenBuffer.GotoXY();
+            PLA
+            ScreenBuffer.Char();
+        }
         
-        ScreenBuffer.Char();
-        
-        // Position cursor
-        LDA vwCurrentCol
-        LDY vwCurrentRow
-        ScreenBuffer.GotoXY();
-        
+        if (BBR3, EditorFlags) // prompt mode?
+        {
+            // Position cursor
+            LDA vwCurrentCol
+            LDY vwCurrentRow
+            ScreenBuffer.GotoXY();
+        }
         ScreenBuffer.Resume();
     }
     
