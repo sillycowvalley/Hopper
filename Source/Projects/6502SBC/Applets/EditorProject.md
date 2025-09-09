@@ -81,3 +81,77 @@ const byte edFlags = 0x9F;
   - Search string buffer
   - Filename buffer
 ```
+
+
+
+# Turbo Pascal Key Bindings
+
+## Cursor Movement
+| Command              | Turbo Pascal Key | Modern Alias |
+|---------------------|------------------|--------------|
+| Character left      | Ctrl+S           | ←            |
+| Character right     | Ctrl+D           | →            |
+| Line up             | Ctrl+E           | ↑            |
+| Line down           | Ctrl+X           | ↓            |
+| Word left           | Ctrl+A           | Ctrl+←       |
+| Word right          | Ctrl+F           | Ctrl+→       |
+| Page up             | Ctrl+R           | PgUp         |
+| Page down           | Ctrl+C           | PgDn         |
+| Beginning of line   | Ctrl+Q S         | Home         |
+| End of line         | Ctrl+Q D         | End          |
+| Beginning of file   | Ctrl+Q R         | Ctrl+Home    |
+| End of file         | Ctrl+Q C         | Ctrl+End     |
+| Go to block begin   | Ctrl+Q B         | -            |
+| Go to block end     | Ctrl+Q K         | -            |
+
+## Block Operations
+| Command              | Turbo Pascal Key | Modern Alias |
+|---------------------|------------------|--------------|
+| Mark block begin    | Ctrl+K B         | -            |
+| Mark block end      | Ctrl+K K         | -            |
+| Mark single word    | Ctrl+K T         | -            |
+| Copy block          | Ctrl+K C         | Ctrl+C       |
+| Move block (cut)    | Ctrl+K V         | Ctrl+X       |
+| Paste               | -                | Ctrl+V       |
+| Delete block        | Ctrl+K Y         | -            |
+| Hide/unmark block   | Ctrl+K H         | -            |
+| Select all          | -                | Ctrl+A       |
+| Write block to file | Ctrl+K W         | -            |
+| Read file           | Ctrl+K R         | -            |
+
+## Delete Operations
+| Command              | Turbo Pascal Key | Modern Alias |
+|---------------------|------------------|--------------|
+| Delete left         | Ctrl+H           | Backspace    |
+| Delete character    | Ctrl+G           | Delete       |
+| Delete word right   | Ctrl+T           | -            |
+| Delete entire line  | Ctrl+Y           | -            |
+| Delete to end of line| Ctrl+Q Y        | -            |
+
+## File Operations
+| Command              | Turbo Pascal Key | Modern Alias |
+|---------------------|------------------|--------------|
+| Save file           | F2, Ctrl+K S     | Ctrl+S       |
+| Save and continue   | Ctrl+K S         | -            |
+| Save and exit       | Ctrl+K D         | -            |
+| Exit                | Ctrl+K X         | Alt+X        |
+| Quit (no save)      | Ctrl+K Q         | -            |
+| Open file           | F3               | Ctrl+O       |
+| New file            | -                | Ctrl+N       |
+
+## Find/Replace
+| Command              | Turbo Pascal Key | Modern Alias |
+|---------------------|------------------|--------------|
+| Find text           | Ctrl+Q F         | Ctrl+F       |
+| Find and replace    | Ctrl+Q A         | Ctrl+H       |
+| Repeat last find    | Ctrl+L           | F3, Ctrl+G   |
+
+## Miscellaneous
+| Command              | Turbo Pascal Key | Modern Alias |
+|---------------------|------------------|--------------|
+| Show help           | F1, Ctrl+J       | F1           |
+| Insert tab (4 spaces)| Tab             | Tab          |
+| Undo/Redo toggle    | Alt+Backspace    | Ctrl+Z       |
+| Insert control char | Ctrl+P           | -            |
+
+
