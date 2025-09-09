@@ -174,7 +174,7 @@ unit View
     }
     
     // Get cursor's logical position in GapBuffer
-    // Output: GapBuffer.GapValue = cursor position
+    // Output: GapBuffer.GapValue = logical cursor position in document stream
     GetCursorPosition()
     {
         // Calculate target row (absolute in document)
@@ -268,6 +268,233 @@ unit View
         STA GapBuffer.GapValueL
         LDA vwPosH
         STA GapBuffer.GapValueH
+    }
+    
+    
+    // Set cursor position from logical position in GapBuffer
+    // Input: GapBuffer.GapValue = target position in document
+    // Output: Updates vwCurrentRow, vwCurrentCol, and vwTopLine if needed
+    SetCursorPosition()
+    {
+        // Save target position
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        
+        // Get text length for bounds checking
+        GapBuffer.GetTextLength(); // -> GapValue
+        LDA GapBuffer.GapValueL
+        STA ZP.IDXL
+        LDA GapBuffer.GapValueH
+        STA ZP.IDXH
+        
+        // Clamp target to text length if beyond EOF
+        LDA ZP.ACCH
+        CMP ZP.IDXH
+        if (C)  // target.H > length.H
+        {
+            LDA ZP.IDXL
+            STA ZP.ACCL
+            LDA ZP.IDXH
+            STA ZP.ACCH
+        }
+        else
+        {
+            if (Z)  // target.H == length.H
+            {
+                LDA ZP.ACCL
+                CMP ZP.IDXL
+                if (C)  // target.L > length.L
+                {
+                    LDA ZP.IDXL
+                    STA ZP.ACCL
+                }
+            }
+        }
+        
+        // Start at beginning of document
+        STZ vwPosL
+        STZ vwPosH
+        STZ vwCurCol
+        STZ vwCurRowL
+        STZ vwCurRowH
+        
+        // Walk through document to find target position
+        loop
+        {
+            // Check if we've reached target position
+            LDA vwPosH
+            CMP ZP.ACCH
+            if (Z)
+            {
+                LDA vwPosL
+                CMP ZP.ACCL
+            }
+            if (C)  // pos >= target
+            {
+                // Found it
+                break;
+            }
+            
+            // Check if at end of document (shouldn't happen due to clamping)
+            LDA vwPosH
+            CMP ZP.IDXH
+            if (Z)
+            {
+                LDA vwPosL
+                CMP ZP.IDXL
+            }
+            if (C)
+            {
+                // At EOF
+                break;
+            }
+            
+            // Get character at current position
+            LDA vwPosL
+            STA GapBuffer.GapValueL
+            LDA vwPosH
+            STA GapBuffer.GapValueH
+            GapBuffer.GetCharAt();
+            
+            // Update row/column based on character
+            CMP #'\n'
+            if (Z)
+            {
+                // Newline - next row, column 0
+                INC vwCurRowL
+                if (Z) { INC vwCurRowH }  // Fixed: check Z not C
+                STZ vwCurCol
+            }
+            else
+            {
+                // Regular character - next column
+                INC vwCurCol
+            }
+            
+            // Advance position
+            INC vwPosL
+            if (Z) { INC vwPosH }
+        }
+        
+        // Now vwCurRow contains absolute row, vwCurCol contains column
+        // Check if row is visible on screen
+        
+        loop
+        {
+            // Check if row < vwTopLine (scrolled off top)
+            LDA vwCurRowH
+            CMP vwTopLineH
+            if (C)  // row.H >= topLine.H
+            {
+                if (Z)  // row.H == topLine.H
+                {
+                    LDA vwCurRowL
+                    CMP vwTopLineL
+                    if (NC)  // row.L < topLine.L
+                    {
+                        // Row is above viewport - scroll up
+                        LDA vwCurRowL
+                        STA vwTopLineL
+                        LDA vwCurRowH
+                        STA vwTopLineH
+                        STZ vwCurrentRow
+                        
+                        LDX #1 // Render
+                        break;
+                    }
+                }
+                // else row.H > topLine.H, so row is below topLine
+            }
+            else  // row.H < topLine.H
+            {
+                // Row is above viewport - scroll up
+                LDA vwCurRowL
+                STA vwTopLineL
+                LDA vwCurRowH
+                STA vwTopLineH
+                STZ vwCurrentRow
+                
+                LDX #1  // Render
+                break;
+            }
+            
+            // Check if row >= vwTopLine + vwScreenRows (scrolled off bottom)
+            CLC
+            LDA vwTopLineL
+            ADC vwScreenRows
+            STA ZP.IDYL  // Reuse IDY for bottom limit
+            LDA vwTopLineH
+            ADC #0
+            STA ZP.IDYH
+            
+            LDA vwCurRowH
+            CMP ZP.IDYH
+            if (C)  // row.H >= bottom.H
+            {
+                if (Z)  // row.H == bottom.H
+                {
+                    LDA vwCurRowL
+                    CMP ZP.IDYL
+                    if (NC)  // row.L < bottom.L
+                    {
+                        // Row is visible - calculate screen row
+                        SEC
+                        LDA vwCurRowL
+                        SBC vwTopLineL
+                        STA vwCurrentRow
+                        
+                        LDX #0  // Update
+                        break;
+                    }
+                }
+                // Row is below viewport - scroll down
+                
+                // New topLine = row - (screenRows - 1)
+                SEC
+                LDA vwCurRowL
+                SBC vwScreenRows
+                STA vwTopLineL
+                LDA vwCurRowH
+                SBC #0
+                STA vwTopLineH
+                
+                INC vwTopLineL  // +1 because we subtracted screenRows but want row visible
+                if (Z) { INC vwTopLineH }
+                
+                // Cursor at bottom of screen
+                LDA vwScreenRows
+                DEC A
+                STA vwCurrentRow
+                
+                LDX #1 // Render
+            }
+            else  // row.H < bottom.H, so row is visible
+            {
+                // Row is visible - calculate screen row
+                SEC
+                LDA vwCurRowL
+                SBC vwTopLineL
+                STA vwCurrentRow
+                
+                LDX #0  // Update
+            }
+            break;
+        } // loop
+        
+        // Set column
+        LDA vwCurCol
+        STA vwCurrentCol
+        CPX #1
+        if (Z)
+        {
+            View.Render();
+        }
+        else
+        {
+            View.Update();
+        }
     }
     
     // Helper: Get length of current line (topLine + currentRow)

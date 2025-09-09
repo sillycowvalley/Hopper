@@ -282,7 +282,7 @@ showGapPosition();
                 case 'R':
                 {
                     View.GetCursorPosition();
-                    //View.SetCursorPosition();
+                    View.SetCursorPosition();
 showGapPosition();
                 }
                 
