@@ -46,8 +46,8 @@ unit ScreenBuffer
     
     const byte sbLastOffsetCol = zeroPageSlots+11;
     const byte sbLastOffsetRow = zeroPageSlots+12;
-    const byte sbLastOffsetL   = zeroPageSlots+13;
-    const byte sbLastOffsetH   = zeroPageSlots+14;
+    const byte sbOffsetL       = zeroPageSlots+13; // most recent offset calculated by calculateOffset()
+    const byte sbOffsetH       = zeroPageSlots+14;
     
     // Leaf node workspace slots
     const uint msbSize    = ZP.M0;        // Total buffer size (2 bytes)
@@ -57,9 +57,9 @@ unit ScreenBuffer
     const byte msbRow     = ZP.M2;
     const byte msbCol     = ZP.M3;
     
-    const byte msbOffset  = ZP.M4;
-    const byte msbOffsetL = ZP.M4;
-    const byte msbOffsetH = ZP.M5;
+    //const byte msbOffset  = ZP.M4;
+    //const byte msbOffsetL = ZP.M4;
+    //const byte msbOffsetH = ZP.M5;
     
     const byte msbCharacter = ZP.M6;
     const byte msbAttribute = ZP.M7;
@@ -86,10 +86,10 @@ unit ScreenBuffer
                 CMP sbLastOffsetCol
                 if (Z)
                 {
-                    INC sbLastOffsetL
-                    if (Z) { INC sbLastOffsetH }
-                    INC sbLastOffsetL
-                    if (Z) { INC sbLastOffsetH }
+                    INC sbOffsetL
+                    if (Z) { INC sbOffsetH }
+                    INC sbOffsetL
+                    if (Z) { INC sbOffsetH }
                     break;
                 }
             }
@@ -101,8 +101,8 @@ unit ScreenBuffer
             STY sbLastOffsetRow
             
             // offset = (sbRow * sbWidth + sbCol) * 2
-            STZ sbLastOffsetL
-            STZ sbLastOffsetH
+            STZ sbOffsetL
+            STZ sbOffsetH
             
             // Add sbWidth to offset sbRow times
             LDX msbRow
@@ -111,12 +111,12 @@ unit ScreenBuffer
                 loop
                 {
                     CLC
-                    LDA sbLastOffsetL
+                    LDA sbOffsetL
                     ADC sbWidth
-                    STA sbLastOffsetL
-                    LDA sbLastOffsetH
+                    STA sbOffsetL
+                    LDA sbOffsetH
                     ADC #0
-                    STA sbLastOffsetH
+                    STA sbOffsetH
                     DEX
                     if (Z) { break; }
                 }
@@ -124,25 +124,19 @@ unit ScreenBuffer
             
             // Add sbCol
             CLC
-            LDA sbLastOffsetL
+            LDA sbOffsetL
             ADC msbCol
-            STA sbLastOffsetL
-            LDA sbLastOffsetH
+            STA sbOffsetL
+            LDA sbOffsetH
             ADC #0
-            STA sbLastOffsetH
+            STA sbOffsetH
             
             // Double for 2 bytes per cell
-            ASL sbLastOffsetL
-            ROL sbLastOffsetH
+            ASL sbOffsetL
+            ROL sbOffsetH
             
             break;
         } // single exit
-        
-        // until we migrate away from using msbOffset:
-        LDA sbLastOffsetH
-        STA msbOffsetH
-        LDA sbLastOffsetL
-        STA msbOffsetL
         
         PLX
     }
@@ -177,9 +171,9 @@ unit ScreenBuffer
         
         // Calculate total size = width (A) * height (Y) * 2
         calculateBufferSize();
-        LDA msbOffsetL
+        LDA sbOffsetL
         STA ZP.ACCL
-        LDA msbOffsetH
+        LDA sbOffsetH
         STA ZP.ACCH
         
         // Allocate current buffer
@@ -333,9 +327,9 @@ unit ScreenBuffer
         
         // Calculate total cells = width * height into IDY
         calculateBufferSize();
-        LDA msbOffsetL
+        LDA sbOffsetL
         STA ZP.IDYL
-        LDA msbOffsetH
+        LDA sbOffsetH
         STA ZP.IDYH
         // byte size / 2 -> cell size 
         LSR ZP.IDYH
@@ -345,7 +339,7 @@ unit ScreenBuffer
         loop
         {
             // Store space with dirty bit
-            LDA #('_' | dirtyBit)
+            LDA #(' ' | dirtyBit)
             STA [ZP.IDX]
             
             // Store attributes
@@ -393,10 +387,10 @@ unit ScreenBuffer
                 
                 // Add base address to offset
                 CLC
-                LDA msbOffsetL
+                LDA sbOffsetL
                 ADC sbBufferL
                 STA ZP.IDXL
-                LDA msbOffsetH
+                LDA sbOffsetH
                 ADC sbBufferH
                 STA ZP.IDXH
                 
@@ -518,9 +512,9 @@ unit ScreenBuffer
         
         // Calculate total cells = width * height into IDY
         calculateBufferSize();
-        LDA msbOffsetL
+        LDA sbOffsetL
         STA ZP.IDYL
-        LDA msbOffsetH
+        LDA sbOffsetH
         STA ZP.IDYH
         // byte size / 2 -> cell size 
         LSR ZP.IDYH
