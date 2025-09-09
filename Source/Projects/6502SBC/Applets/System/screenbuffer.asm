@@ -44,6 +44,11 @@ unit ScreenBuffer
     const byte sbSuspendCount  = zeroPageSlots+9;
     const byte sbCursorVisible = zeroPageSlots+10;
     
+    const byte sbLastOffsetCol = zeroPageSlots+11;
+    const byte sbLastOffsetRow = zeroPageSlots+12;
+    const byte sbLastOffsetL   = zeroPageSlots+13;
+    const byte sbLastOffsetH   = zeroPageSlots+14;
+    
     // Leaf node workspace slots
     const uint msbSize    = ZP.M0;        // Total buffer size (2 bytes)
     const uint msbSizeL   = ZP.M0;
@@ -67,45 +72,77 @@ unit ScreenBuffer
     calculateOffset() // Returns offset in sbOffset, munts X
     {
         PHX
-        
-        // save arguments
-        STA msbCol
-        STY msbRow
-        
-        // offset = (sbRow * sbWidth + sbCol) * 2
-        STZ msbOffsetL
-        STZ msbOffsetH
-        
-        // Add sbWidth to offset sbRow times
-        LDX msbRow
-        if (NZ)
+        loop
         {
-            loop
+            CPY sbLastOffsetRow
+            if (Z)
             {
-                CLC
-                LDA msbOffsetL
-                ADC sbWidth
-                STA msbOffsetL
-                LDA msbOffsetH
-                ADC #0
-                STA msbOffsetH
-                DEX
-                if (Z) { break; }
+                CMP sbLastOffsetCol
+                if (Z)
+                {
+                    break;
+                } 
+                INC sbLastOffsetCol
+                CMP sbLastOffsetCol
+                if (Z)
+                {
+                    INC sbLastOffsetL
+                    if (Z) { INC sbLastOffsetH }
+                    INC sbLastOffsetL
+                    if (Z) { INC sbLastOffsetH }
+                    break;
+                }
             }
-        }
+            
+            // save arguments
+            STA msbCol
+            STA sbLastOffsetCol
+            STY msbRow
+            STY sbLastOffsetRow
+            
+            // offset = (sbRow * sbWidth + sbCol) * 2
+            STZ sbLastOffsetL
+            STZ sbLastOffsetH
+            
+            // Add sbWidth to offset sbRow times
+            LDX msbRow
+            if (NZ)
+            {
+                loop
+                {
+                    CLC
+                    LDA sbLastOffsetL
+                    ADC sbWidth
+                    STA sbLastOffsetL
+                    LDA sbLastOffsetH
+                    ADC #0
+                    STA sbLastOffsetH
+                    DEX
+                    if (Z) { break; }
+                }
+            }
+            
+            // Add sbCol
+            CLC
+            LDA sbLastOffsetL
+            ADC msbCol
+            STA sbLastOffsetL
+            LDA sbLastOffsetH
+            ADC #0
+            STA sbLastOffsetH
+            
+            // Double for 2 bytes per cell
+            ASL sbLastOffsetL
+            ROL sbLastOffsetH
+            
+            break;
+        } // single exit
         
-        // Add sbCol
-        CLC
-        LDA msbOffsetL
-        ADC msbCol
-        STA msbOffsetL
-        LDA msbOffsetH
-        ADC #0
+        // until we migrate away from using msbOffset:
+        LDA sbLastOffsetH
         STA msbOffsetH
-        
-        // Double for 2 bytes per cell
-        ASL msbOffsetL
-        ROL msbOffsetH
+        LDA sbLastOffsetL
+        STA msbOffsetL
         
         PLX
     }
@@ -604,11 +641,22 @@ unit ScreenBuffer
                 INC msbLastCol // drawing Char advanced column
             }
             // Move to next cell (2 bytes forward)
-            Shared.IncIDX();
-            Shared.IncIDX();
+            CLC
+            LDA ZP.IDXL
+            ADC #2
+            STA ZP.IDXL
+            if (C)
+            {
+                INC ZP.IDXH
+            }
             
             // Decrement cell counter
-            Shared.DecIDY();
+            LDA ZP.IDYL
+            if (Z)
+            {
+                DEC ZP.IDYH
+            }
+            DEC ZP.IDYL
             
             // Check if done
             LDA ZP.IDYL
@@ -712,9 +760,9 @@ unit ScreenBuffer
                 STA [ZP.IDX], Y
             }
             
-            IncIDX();
-            IncIDX();
-            DecIDY();
+            Shared.IncIDX();
+            Shared.IncIDX();
+            Shared.DecIDY();
             LDA ZP.IDYH
             ORA ZP.IDYL
             if (Z) { break; }
@@ -733,8 +781,8 @@ unit ScreenBuffer
             STA [ZP.IDX], Y
         
             
-            IncIDX();
-            IncIDX();
+            Shared.IncIDX();
+            Shared.IncIDX();
             DEX
             if (Z) { break; }
         }
@@ -768,8 +816,8 @@ unit ScreenBuffer
         STA ZP.IDXH
         
         // Back up by 2 bytes to point to last cell(on the 2nd last row)
-        DecIDX();
-        DecIDX();
+        Shared.DecIDX();
+        Shared.DecIDX();
         
         // Calculate cells to process = (height-1) * width
         // byte size / 2 -> cell size 
@@ -821,10 +869,10 @@ unit ScreenBuffer
             }
             
             // Move backwards by one cell
-            DecIDX();
-            DecIDX();
+            Shared.DecIDX();
+            Shared.DecIDX();
             
-            DecIDY();
+            Shared.DecIDY();
             LDA ZP.IDYH
             ORA ZP.IDYL
             if (Z) { break; }
