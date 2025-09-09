@@ -278,6 +278,13 @@ showGapPosition();
                 {
                     View.PageDown();
                 }
+                case 'r':
+                case 'R':
+                {
+                    View.GetCursorPosition();
+                    //View.SetCursorPosition();
+showGapPosition();
+                }
                 
                 default:
                 {

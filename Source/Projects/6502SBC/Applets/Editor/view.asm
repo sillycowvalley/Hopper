@@ -27,10 +27,15 @@ unit View
     const uint vwLeafTemp  = vwSlots+12;     // used only in leaf methods
     const byte vwLeafTempL = vwSlots+12;
     const byte vwLeafTempH = vwSlots+13;
-    
+        
     const uint vwSkipCount  = vwSlots+14;     // used only in Render
     const byte vwSkipCountL = vwSlots+14;
     const byte vwSkipCountH = vwSlots+15;
+    
+    const byte vwCurCol    = vwLeafTempL;
+    const byte vwCurRowL   = vwLeafTempH;
+    const byte vwCurRowH   = vwSkipCount;
+    
     
     const string memoryMsg = "Out of memory in View!\n";
     const string rowLabel  = "Ln:";
@@ -172,7 +177,7 @@ unit View
     // Output: GapBuffer.GapValue = cursor position
     GetCursorPosition()
     {
-        // Calculate which document line we're on
+        // Calculate target row (absolute in document)
         CLC
         LDA vwTopLineL
         ADC vwCurrentRow
@@ -181,52 +186,89 @@ unit View
         ADC #0
         STA ZP.ACCH
         
-        // Find start of that line
+        // Get text length for bounds checking
+        GapBuffer.GetTextLength(); // -> GapValue
+        LDA GapBuffer.GapValueH
+        STA ZP.IDXH
+        LDA GapBuffer.GapValueL
+        STA ZP.IDXL
+        
+        // Start at beginning of document
         STZ vwPosL
         STZ vwPosH
+        STZ vwCurCol
+        STZ vwCurRowL
+        STZ vwCurRowH
         
-        // Skip to current line if not on first line
-        LDA ZP.ACCL
-        ORA ZP.ACCH
-        if (NZ)
+        // Walk through document
+        loop
         {
-            STZ vwSkipCountL
-            STZ vwSkipCountH
-            
-            loop
+            // Check if we're at target position
+            LDA vwCurRowL
+            CMP ZP.ACCL // absolute target row L
+            if (Z)
             {
-                // Check if reached target line
-                LDA vwSkipCountH
-                CMP ZP.ACCH
+                LDA vwCurRowH
+                CMP ZP.ACCH // absolute target row H
                 if (Z)
                 {
-                    LDA vwSkipCountL
-                    CMP ZP.ACCL
+                    LDA vwCurCol
+                    CMP vwCurrentCol // col target
+                    if (Z)
+                    {
+                        // Found it (0-based : don't count the last character)
+                        break;
+                    }
                 }
-                if (C) { break; }  // skipCount >= targetLine
-                
-                findNextNewline();  // Advances vwPos past newline
-                
-                INC vwSkipCountL
-                if (Z) { INC vwSkipCountH }
             }
+            
+            // Check if at end of document
+            LDA vwPosH
+            CMP ZP.IDXH
+            if (Z)
+            {
+                LDA vwPosL
+                CMP ZP.IDXL
+            }
+            if (C)
+            {
+                // At EOF
+                break;
+            }
+            
+            // Get character at current position
+            LDA vwPosL
+            STA GapBuffer.GapValueL
+            LDA vwPosH
+            STA GapBuffer.GapValueH
+            GapBuffer.GetCharAt();
+            
+            // Update row/column based on character
+            CMP #'\n'
+            if (Z)
+            {
+                // Newline - next row, column 0
+                INC vwCurRowL
+                if (Z) { INC vwCurRowH }
+                STZ vwCurCol
+            }
+            else
+            {
+                // Regular character - next column
+                INC vwCurCol
+            }
+            
+            // Always advance position
+            INC vwPosL
+            if (Z) { INC vwPosH }
         }
         
-        // Now vwPos is at start of current line
-        // Add column offset to get cursor position
-        CLC
+        // Return position in GapBuffer.GapValue
         LDA vwPosL
-        ADC vwCurrentCol
         STA GapBuffer.GapValueL
         LDA vwPosH
-        ADC #0
         STA GapBuffer.GapValueH
-        
-        // That's it - return the logical position
-    } 
-    
-    
-    
+    }
     
     // Helper: Get length of current line (topLine + currentRow)
     getCurrentLineLength()  // Returns length in A (capped at screenCols)
@@ -349,7 +391,7 @@ unit View
                 }
                 
                 // Find next newline
-                findNextNewline();
+                findNextNewline(); // vwPos = position of the newline character (NOT past it!)
                 
                 // Count the line
                 INC vwSkipCountL
@@ -396,7 +438,12 @@ unit View
         ScreenBuffer.Resume();
     }
     
-    // Helper: Find next newline from current vwPos
+    // Find next newline from current vwPos position
+    // Input:  vwPos = starting position to search from
+    // Output: vwPos = position of the newline character (NOT past it!)
+    //         A = '\n' if newline found, or last char if EOF reached
+    // Note:   Scans forward from vwPos until '\n' or EOF is found
+    //         Leaves vwPos pointing AT the newline, not AFTER it
     findNextNewline()
     {
         // Get text length
