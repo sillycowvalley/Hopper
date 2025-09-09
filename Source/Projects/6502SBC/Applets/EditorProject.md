@@ -1,4 +1,3 @@
-```markdown
 # SimpleEditor Feature Roadmap
 
 ## Implementation Notes
@@ -82,5 +81,3 @@ const byte edFlags = 0x9F;
   - Search string buffer
   - Filename buffer
 ```
-
-This organization saves zero page space by packing 4+ state variables into a single byte, leaving more room for the selection position variables and other needed pointers.
