@@ -105,7 +105,7 @@ unit View
         STZ vwTopLineH
         
         // Count lines in the loaded text
-        countLines();
+        CountLines();
         
         // Initial render
         ScreenBuffer.Suspend();
@@ -123,8 +123,13 @@ unit View
     
     
     // Count lines in the document
-    countLines()
+    CountLines()
     {
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
         STZ vwLineCountL
         STZ vwLineCountH
         INC vwLineCountL  // Start with 1 line
@@ -171,6 +176,11 @@ unit View
             INC vwPosL
             if (Z) { INC vwPosH }
         }
+        
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
     }
     
     // Get cursor's logical position in GapBuffer
@@ -276,6 +286,8 @@ unit View
     // Output: Updates vwCurrentRow, vwCurrentCol, and vwTopLine if needed
     SetCursorPosition()
     {
+        PHX
+        
         // Save target position
         LDA GapBuffer.GapValueL
         STA ZP.ACCL
@@ -482,6 +494,14 @@ unit View
             }
             break;
         } // loop
+        
+        // force Render?
+        PLY
+        CPY #1
+        if (Z)
+        {
+            LDX #1
+        }
         
         // Set column
         LDA vwCurCol

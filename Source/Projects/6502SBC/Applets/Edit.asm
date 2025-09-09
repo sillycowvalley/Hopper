@@ -230,7 +230,7 @@ program SimpleEditor
         loop
         {
 //View.Dump(); 
-showGapPosition();
+//showGapPosition();
 //GapBuffer.Dump();
                       
             // Get key
@@ -278,6 +278,7 @@ showGapPosition();
                 {
                     View.PageDown();
                 }
+                /*
                 case 'r':
                 case 'R':
                 {
@@ -285,9 +286,97 @@ showGapPosition();
                     View.SetCursorPosition();
 showGapPosition();
                 }
+                */
                 
+                
+                case Key.Backspace:
+                {
+                    View.GetCursorPosition();  // Get logical position
+                    
+                    // Can't backspace from position 0
+                    LDA GapBuffer.GapValueL
+                    ORA GapBuffer.GapValueH
+                    if (NZ)
+                    {
+                        GapBuffer.MoveGapTo();
+                        GapBuffer.Backspace();
+                        if (C)  // Success
+                        {
+                            // Logical position moves back one
+                            LDA GapBuffer.GapValueL
+                            if (Z) { DEC GapBuffer.GapValueH }
+                            DEC GapBuffer.GapValueL
+                            
+                            // Recount lines if needed
+                            View.CountLines();
+                            
+                            // Let View handle cursor positioning
+                            LDX #1 // Render
+                            View.SetCursorPosition();
+                        }
+                    }
+                }
+                case Key.Delete:
+                {
+                    View.GetCursorPosition();  // Get logical position
+                    GapBuffer.MoveGapTo();
+                    GapBuffer.Delete();
+                    if (C)  // Success
+                    {
+                        // Position doesn't change for delete
+                        View.CountLines();
+                        LDX #1 // Render
+                        View.SetCursorPosition();  // Refreshes display
+                    }
+                }
+                
+                case Key.Enter:
+                {
+                    View.GetCursorPosition();
+                    GapBuffer.MoveGapTo();
+                    
+                    LDA #'\n'
+                    GapBuffer.InsertChar();
+                    if (C)  // Success
+                    {
+                        // Advance logical position by 1
+                        INC GapBuffer.GapValueL
+                        if (Z) { INC GapBuffer.GapValueH }
+                        
+                        // Update line count
+                        View.CountLines();
+                        
+                        // Let View handle positioning to start of new line
+                        LDX #1 // Render
+                        View.SetCursorPosition();
+                    }
+                }
                 default:
                 {
+                    // Check if printable
+                    Keyboard.IsPrintable();
+                    if (C)  // Is printable
+                    {
+                        PHA
+                        
+                        // Get current position and move gap there
+                        View.GetCursorPosition();  // Returns position in GapValue
+                        GapBuffer.MoveGapTo();     // Moves gap to GapValue position
+                        
+                        // Insert the character
+                        PLA
+                        GapBuffer.InsertChar();
+                        if (C)  // Success
+                        {
+                            // Advance logical position by 1
+                            INC GapBuffer.GapValueL
+                            if (Z) { INC GapBuffer.GapValueH }
+                            
+                            // Let View figure out where cursor should be
+                            LDX #1 // Render
+                            View.SetCursorPosition();
+                        }
+                    }
                     // Ignore other keys
                 }
             }
