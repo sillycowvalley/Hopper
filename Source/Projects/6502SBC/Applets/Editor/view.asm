@@ -168,6 +168,65 @@ unit View
         }
     }
     
+    // Get cursor's logical position in GapBuffer
+    // Output: GapBuffer.GapValue = cursor position
+    GetCursorPosition()
+    {
+        // Calculate which document line we're on
+        CLC
+        LDA vwTopLineL
+        ADC vwCurrentRow
+        STA ZP.ACCL
+        LDA vwTopLineH
+        ADC #0
+        STA ZP.ACCH
+        
+        // Find start of that line
+        STZ vwPosL
+        STZ vwPosH
+        
+        // Skip to current line if not on first line
+        LDA ZP.ACCL
+        ORA ZP.ACCH
+        if (NZ)
+        {
+            STZ vwSkipCountL
+            STZ vwSkipCountH
+            
+            loop
+            {
+                // Check if reached target line
+                LDA vwSkipCountH
+                CMP ZP.ACCH
+                if (Z)
+                {
+                    LDA vwSkipCountL
+                    CMP ZP.ACCL
+                }
+                if (C) { break; }  // skipCount >= targetLine
+                
+                findNextNewline();  // Advances vwPos past newline
+                
+                INC vwSkipCountL
+                if (Z) { INC vwSkipCountH }
+            }
+        }
+        
+        // Now vwPos is at start of current line
+        // Add column offset to get cursor position
+        CLC
+        LDA vwPosL
+        ADC vwCurrentCol
+        STA GapBuffer.GapValueL
+        LDA vwPosH
+        ADC #0
+        STA GapBuffer.GapValueH
+        
+        // That's it - return the logical position
+    } 
+    
+    
+    
     
     // Helper: Get length of current line (topLine + currentRow)
     getCurrentLineLength()  // Returns length in A (capped at screenCols)

@@ -152,6 +152,59 @@ program SimpleEditor
     }
     
     
+    const string gapPosLabel = "Gap:";
+    const string hexDigits = "0123456789ABCDEF";
+    
+    
+    showGapPosition()
+    {
+        // Get cursor position in GapBuffer
+        View.GetCursorPosition();
+        
+        // Display in status area at column 40
+        View.StatusClear();
+        
+        LDA #(gapPosLabel % 256)
+        STA ZP.STRL
+        LDA #(gapPosLabel / 256)
+        STA ZP.STRH
+        LDY #40
+        View.StatusString();
+        
+        LDA GapBuffer.GapValueH
+        LSR A LSR A LSR A LSR A
+        TAX
+        LDA hexDigits, X
+        LDY #45
+        View.StatusChar();
+        
+        LDA GapBuffer.GapValueH
+        AND #0x0F
+        TAX
+        LDA hexDigits, X
+        LDY #46
+        View.StatusChar();
+        
+        LDA GapBuffer.GapValueL
+        LSR LSR LSR LSR
+        TAX
+        LDA hexDigits, X
+        LDY #47
+        View.StatusChar();
+        
+        LDA GapBuffer.GapValueL
+        AND #0x0F
+        TAX
+        LDA hexDigits, X
+        LDY #48
+        View.StatusChar();
+    }
+    
+    
+    
+    
+    
+    
     Hopper()
     {
         Debug.Initialize();
@@ -176,7 +229,10 @@ program SimpleEditor
         // Main loop
         loop
         {
-//View.Dump();            
+//View.Dump(); 
+showGapPosition();
+//GapBuffer.Dump();
+                      
             // Get key
             Keyboard.GetKey();
             
