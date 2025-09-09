@@ -708,6 +708,7 @@ unit View
     }
     
     // Render one line from current vwPos
+    // Warning: assumes GapBuffer.GetCharAtFastPrep() has been called before entering
     renderLine()
     {
         LDX #0  // Column counter
