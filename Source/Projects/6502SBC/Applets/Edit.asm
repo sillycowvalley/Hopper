@@ -1365,6 +1365,79 @@ program Edit
         View.SetCursorPosition();
     }
     
+    // Helper: Delete entire line
+    deleteLine()
+    {
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        
+        // Find start of line
+        findLineStart();
+        LDA GapBuffer.GapValueL
+        STA currentPosL
+        LDA GapBuffer.GapValueH
+        STA currentPosH
+        
+        // Find end of line from cursor position (need to restore cursor first)
+        View.GetCursorPosition();
+        findLineEnd();
+        LDA GapBuffer.GapValueL
+        STA targetPosL
+        LDA GapBuffer.GapValueH
+        STA targetPosH
+        
+        // Check if there's a newline at the end position
+        GapBuffer.GetCharAt();  // Check character at targetPos
+        CMP #'\n'
+        if (Z)
+        {
+            // Include the newline in deletion
+            INC targetPosL
+            if (Z) { INC targetPosH }
+        }
+        
+        // Move gap to start of line
+        LDA currentPosL
+        STA GapBuffer.GapValueL
+        LDA currentPosH
+        STA GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        
+        // Calculate number of characters to delete
+        SEC
+        LDA targetPosL
+        SBC currentPosL
+        STA editCountL
+        LDA targetPosH
+        SBC currentPosH
+        STA editCountH
+        
+        // Delete the line
+        loop
+        {
+            LDA editCountL
+            ORA editCountH
+            if (Z) { break; }  // Done
+            
+            GapBuffer.Delete();
+            if (NC) { break; }  // Delete failed
+            
+            LDA editCountL
+            if (Z) { DEC editCountH }
+            DEC editCountL
+        }
+        
+        // Set modified flag
+        SMB0 EditorFlags
+        
+        // Update display and position cursor at start of line
+        View.CountLines();
+        LDX #1  // Force render
+        View.SetCursorPosition();
+    }
+    
+    
+    
     backspace()
     {
         View.GetCursorPosition();  // Get logical position
@@ -1833,6 +1906,10 @@ BlockDump();
                         {
                             delete(); continue;
                         }
+                        case Key.CtrlY:
+                        {
+                            deleteLine(); continue;
+                        }
                         case Key.CtrlE:
                         {
                             View.CursorUp(); continue;
@@ -1873,6 +1950,10 @@ BlockDump();
                         case Key.Delete:
                         {
                             delete(); continue;
+                        }
+                        case Key.CtrlY:
+                        {
+                            deleteLine(); continue;
                         }
                         case Key.CtrlN:
                         {
