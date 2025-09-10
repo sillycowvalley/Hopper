@@ -1216,6 +1216,11 @@ program Edit
                 LDX #1
                 clearBlock();
             }
+            case Key.CtrlY: // finger still down on <ctrl>
+            case 'Y':       // Delete block
+            {
+                deleteBlock();
+            }
             case Key.CtrlT: // finger still down on <ctrl>
             case 'T':       // Mark single word
             {
@@ -1493,6 +1498,37 @@ program Edit
         markModifiedAndRefresh();
     }
     
+    deleteBlock()
+    {
+        // Check if block is active
+        if (BBR2, EditorFlags) { return; }  // No block
+        
+        // Copy block positions to current/target
+        LDA BlockStartL
+        STA currentPosL
+        LDA BlockStartH
+        STA currentPosH
+        
+        LDA BlockEndL
+        STA targetPosL
+        LDA BlockEndH
+        STA targetPosH
+        
+        // Move gap and delete
+        moveGapToCurrent();
+        calculateCount();
+        deleteCountCharacters();
+        
+        // Clear block and update
+        LDX #0  // Don't render yet
+        clearBlock();
+        
+        SMB0 EditorFlags  // Modified
+        View.CountLines();
+        LDX #1
+        View.SetCursorPosition();
+    }
+        
     
     // Helper: Delete entire line
     deleteLine()
