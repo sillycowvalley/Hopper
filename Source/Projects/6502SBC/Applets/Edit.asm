@@ -69,11 +69,22 @@ program Edit
     const byte writeBufferL = edSlots+17;  //     Low byte of write buffer pointer
     const byte writeBufferH = edSlots+18;  //     High byte of write buffer pointer
     
+    // Find and Replace buffers
+    const byte findBuffer   = edSlots+19;
+    const byte findBufferL  = edSlots+19;
+    const byte findBufferH  = edSlots+20;
+    
+    const byte replaceBuffer   = edSlots+21;
+    const byte replaceBufferL  = edSlots+21;
+    const byte replaceBufferH  = edSlots+22;
+    
+    
+    
 #ifdef DEBUG
-    const byte crPos   = edSlots+19;
-    const byte crPosL  = edSlots+20;
-    const byte crPosH  = edSlots+21;
-    const byte crCol   = edSlots+22;
+    const byte crPos   = edSlots+23;
+    const byte crPosL  = edSlots+24;
+    const byte crPosH  = edSlots+25;
+    const byte crCol   = edSlots+26;
 #endif    
     
     // Messages
@@ -101,6 +112,11 @@ program Edit
             STZ currentFilenameH
             STZ clipBoardL
             STZ clipBoardH
+            
+            STZ findBufferL
+            STZ findBufferH
+            STZ replaceBufferL
+            STZ replaceBufferH
             
             // Initialize block bounds to invalid
             LDA #0xFF
@@ -802,10 +818,32 @@ program Edit
             STZ clipBoardL
             STZ clipBoardH
         }
+        
+        LDA findBufferL
+        ORA findBufferH
+        if (NZ)
+        {
+            LDA findBufferL
+            STA ZP.IDXL
+            LDA findBufferH
+            STA ZP.IDXH
+            Memory.Free();
+            STZ findBufferL
+            STZ findBufferH
+        }
+        LDA replaceBufferL
+        ORA replaceBufferH
+        if (NZ)
+        {
+            LDA replaceBufferL
+            STA ZP.IDXL
+            LDA replaceBufferH
+            STA ZP.IDXH
+            Memory.Free();
+            STZ replaceBufferL
+            STZ replaceBufferH
+        }
     }
-    
-   
-    
     
     // Check modified flag before file operations
     // Output: A = 0 (cancel), 1 (proceed without save), 2 (saved and proceed)

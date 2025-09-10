@@ -107,7 +107,7 @@ unit Definitions
     //   - promptStartCol (0xB4)
     //   - promptLastChar (0xB5)
     //
-    // 0xB6-0xCA: Edit (21 bytes, +4 in DEBUG mode)
+    // 0xB6-0xFA: Edit (21 bytes, +4 in DEBUG mode)
     //   - EditorFlags (0xB6)
     //   - currentFilename (0xB7-0xB8, uint)
     //   - BlockStart (0xB9-0xBA, uint)
@@ -119,7 +119,7 @@ unit Definitions
     //   - editStore (0xC5-0xC6, uint)
     //   - DEBUG: crPos (0xC7-0xC8, uint), crCol (0xC9) [conditional]
     //
-    // 0xCB-0xEB: Available (33 bytes, 29 if Edit DEBUG mode)
+    // 0xD0-0xEB: Available (33 bytes, 29 if Edit DEBUG mode)
     //   - Free for additional application modules
     //
     // =====================================================
