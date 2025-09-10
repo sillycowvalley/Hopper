@@ -1114,6 +1114,44 @@ program Edit
         } // loop
     }
     
+    restoreFilename()
+    {
+        // restore editor filename
+        disposeFilename();
+        LDA editStoreL
+        STA currentFilenameL
+        LDA editStoreH
+        STA currentFilenameH
+    }
+    
+    importFile()
+    {
+        // store editor filename
+        LDA currentFilenameL
+        STA editStoreL
+        LDA currentFilenameH
+        STA editStoreH
+        
+        STZ currentFilenameL
+        STZ currentFilenameH
+        
+        // Prompt for filename
+        LDA #(openPrompt % 256)
+        STA ZP.STRL
+        LDA #(openPrompt / 256)
+        STA ZP.STRH
+        Prompt.GetFilename();
+        if (NC)  // Cancelled
+        {
+            restoreFilename();
+            return;
+        }
+        LDX #1
+        openFileSTR();
+        
+        restoreFilename();
+    }
+    
     
     exportFile()
     {
@@ -1136,11 +1174,7 @@ program Edit
         Prompt.GetFilename();
         if (NC)  // Cancelled
         {
-            // restore editor filename
-            LDA editStoreL
-            STA currentFilenameL
-            LDA editStoreH
-            STA currentFilenameH
+            restoreFilename();
             CLC
             return;
         }
@@ -1148,11 +1182,7 @@ program Edit
         LDX #1
         saveFile();
         
-        // restore editor filename        
-        LDA editStoreL
-        STA currentFilenameL
-        LDA editStoreH
-        STA currentFilenameH
+        restoreFilename();
     }
     
     // Save as
@@ -1176,6 +1206,7 @@ program Edit
         clearBlock(); // discards block and renders
     }
     
+      
     // Open file (with modified check)
     openFile()
     {
@@ -1193,17 +1224,30 @@ program Edit
         {
             return;
         }
+        LDX #0
         openFileSTR();
     }
+    
     // name at STR, A = length
+    // X = 0 means entire document, X = 1 means import at cursor
     openFileSTR()
     {        
+        CPX #1
+        if (Z)
+        {
+            SMB6 EditorFlags // block file operation
+        }
+        else
+        {
+            RMB6 EditorFlags // document file operation
+        }
+        
         makeFilename();
         LDA currentFilenameL
         STA ZP.STRL
         LDA currentFilenameH
         STA ZP.STRH
-        
+                
         // Check if file exists
         LDA # FileType.Any
         File.Exists();
@@ -1219,8 +1263,17 @@ program Edit
             return;
         }
         
-        // Clear current buffer
-        GapBuffer.Clear();
+        if (BBR6, EditorFlags)
+        {
+            // Clear current buffer
+            GapBuffer.Clear();
+        }
+        else
+        {
+            // Move gap to cursor position
+            View.GetCursorPosition();
+            GapBuffer.MoveGapTo();
+        }
         
         // Open for reading
         LDA currentFilenameL
@@ -1313,19 +1366,31 @@ program Edit
             }
         }
         
-        LDX #0
-        clearBlock(); // discards block, render will happen in View.ApplyGapBuffer() below
-               
-        // Clear modified flag
-        RMB0 EditorFlags
         
-        // Reset cursor to top of file
-        STZ GapBuffer.GapValueL
-        STZ GapBuffer.GapValueH
+        if (BBR6, EditorFlags)
+        {
+            // Document operation - clear modified
+            RMB0 EditorFlags
+            LDX #0
+            clearBlock();
         
-        View.ApplyGapBuffer();
-        
-        View.UpdatePosition();
+            // Reset cursor to top of file
+            STZ GapBuffer.GapValueL
+            STZ GapBuffer.GapValueH   
+            
+            View.ApplyGapBuffer();
+            View.UpdatePosition();
+        }
+        else
+        {
+            // Import operation - set modified
+            resetBlock();
+            SMB0 EditorFlags
+            
+            View.CountLines();
+            LDX #1
+            View.SetCursorPosition();
+        }
         
         // Show success message briefly
         LDA #(loadedMsg % 256)
@@ -1461,7 +1526,11 @@ program Edit
             {
                 exportFile();
             }
-            
+            case Key.CtrlR: // finger still down on <ctrl>
+            case 'R':       // Import file at cursor position
+            {
+                importFile();
+            }
             case Key.CtrlT: // finger still down on <ctrl>
             case 'T':       // Mark single word
             {
@@ -2435,6 +2504,7 @@ program Edit
         if (C)
         {
             // STR = name, A = length
+            LDX #0
             openFileSTR();
         }
         
