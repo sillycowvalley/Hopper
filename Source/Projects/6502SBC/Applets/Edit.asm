@@ -1380,15 +1380,13 @@ program Edit
         // Update display to show marked word
         View.Render();
     }
-     
+     
     
     // Helper: Delete from cursor to end of line
     deleteToEOL()
     {
         // Get current cursor position
         View.GetCursorPosition();  // Returns in GapBuffer.GapValue
-        
-        // Save current position
         LDA GapBuffer.GapValueL
         STA currentPosL
         LDA GapBuffer.GapValueH
@@ -1396,8 +1394,6 @@ program Edit
         
         // Find end of line
         findLineEnd();  // Returns position of \n or EOF
-        
-        // Save end position
         LDA GapBuffer.GapValueL
         STA targetPosL
         LDA GapBuffer.GapValueH
@@ -1418,39 +1414,14 @@ program Edit
         }
         
         // Move gap to current position
-        LDA currentPosL
-        STA GapBuffer.GapValueL
-        LDA currentPosH
-        STA GapBuffer.GapValueH
-        GapBuffer.MoveGapTo();
+        moveGapToCurrent();
         
-        // Calculate number of characters to delete
-        SEC
-        LDA targetPosL
-        SBC currentPosL
-        STA editCountL
-        LDA targetPosH
-        SBC currentPosH
-        STA editCountH
+        // characters to delete: editCount = targetPos - currentPos
+        calculateCount();
         
         // Delete characters
-        loop
-        {
-            // Check if done
-            LDA editCountL
-            ORA editCountH
-            if (Z) { break; }  // Deleted all characters
-            
-            // Delete one character
-            GapBuffer.Delete();
-            if (NC) { break; }  // Delete failed
-            
-            // Decrement counter
-            LDA editCountL
-            if (Z) { DEC editCountH }
-            DEC editCountL
-        }
-        
+        deleteCountCharacters();
+               
         // Set modified flag
         SMB0 EditorFlags
         
@@ -1483,9 +1454,7 @@ program Edit
         if (NZ)
         {
             // Move back one to ensure we're in the previous word
-            LDA GapBuffer.GapValueL
-            if (Z) { DEC GapBuffer.GapValueH }
-            DEC GapBuffer.GapValueL
+            decGapValue();
         }
         
         findWordStart();  // Find beginning of word
@@ -1499,8 +1468,6 @@ program Edit
     deleteWord()
     {
         View.GetCursorPosition();  // Get current position
-        
-        // Save current position
         LDA GapBuffer.GapValueL
         STA currentPosL
         LDA GapBuffer.GapValueH
@@ -1509,8 +1476,6 @@ program Edit
         // Find end of word (including trailing spaces)
         LDX #0  // Delete mode - stop at end of word
         findWordEnd();
-        
-        // Save target position
         LDA GapBuffer.GapValueL
         STA targetPosL
         LDA GapBuffer.GapValueH
@@ -1527,35 +1492,13 @@ program Edit
         }
         
         // Move gap to current position
-        LDA currentPosL
-        STA GapBuffer.GapValueL
-        LDA currentPosH
-        STA GapBuffer.GapValueH
-        GapBuffer.MoveGapTo();
+        moveGapToCurrent();
         
-        // Calculate number of characters to delete
-        SEC
-        LDA targetPosL
-        SBC currentPosL
-        STA editCountL
-        LDA targetPosH
-        SBC currentPosH
-        STA editCountH
+        // characters to delete: editCount = targetPos - currentPos
+        calculateCount();
         
         // Delete characters
-        loop
-        {
-            LDA editCountL
-            ORA editCountH
-            if (Z) { break; }  // Done
-            
-            GapBuffer.Delete();
-            if (NC) { break; }  // Delete failed
-            
-            LDA editCountL
-            if (Z) { DEC editCountH }
-            DEC editCountL
-        }
+        deleteCountCharacters();
         
         // Set modified flag
         SMB0 EditorFlags
@@ -1599,35 +1542,13 @@ program Edit
         }
         
         // Move gap to start of line
-        LDA currentPosL
-        STA GapBuffer.GapValueL
-        LDA currentPosH
-        STA GapBuffer.GapValueH
-        GapBuffer.MoveGapTo();
+        moveGapToCurrent();
         
-        // Calculate number of characters to delete
-        SEC
-        LDA targetPosL
-        SBC currentPosL
-        STA editCountL
-        LDA targetPosH
-        SBC currentPosH
-        STA editCountH
+        // characters to delete: editCount = targetPos - currentPos
+        calculateCount();
         
         // Delete the line
-        loop
-        {
-            LDA editCountL
-            ORA editCountH
-            if (Z) { break; }  // Done
-            
-            GapBuffer.Delete();
-            if (NC) { break; }  // Delete failed
-            
-            LDA editCountL
-            if (Z) { DEC editCountH }
-            DEC editCountL
-        }
+        deleteCountCharacters();
         
         // Set modified flag
         SMB0 EditorFlags
@@ -1714,10 +1635,7 @@ program Edit
         Char.IsAlphaNumeric();  // Sets C if alphanumeric
     }
     
-    // Find start of word at or before current position
-    // Input: GapBuffer.GapValue = starting position
-    // Output: GapBuffer.GapValue = word start position
-    findWordStart()
+    getCharAtFastPrep()
     {
         LDA GapBuffer.GapValueL
         PHA
@@ -1730,7 +1648,81 @@ program Edit
         STA GapBuffer.GapValueH
         PLA
         STA GapBuffer.GapValueL
-        
+    }
+    
+    // C if at end, NC if not
+    checkIfAtEnd()
+    {
+        LDA GapBuffer.GapValueH
+        CMP FastLengthH
+        if (Z)
+        {
+            LDA GapBuffer.GapValueL
+            CMP FastLengthL
+        }
+    }
+    
+    incGapValue()
+    {
+        INC GapBuffer.GapValueL
+        if (Z) { INC GapBuffer.GapValueH }
+    }
+    decGapValue()
+    {
+        LDA GapBuffer.GapValueL
+        if (Z) { DEC GapBuffer.GapValueH }
+        DEC GapBuffer.GapValueL
+    }
+    decEditCount()
+    {
+       LDA editCountL
+       if (Z) { DEC editCountH }
+       DEC editCountL   
+    }   
+    
+    // editCount = targetPos - currentPos
+    calculateCount()
+    {
+        SEC
+        LDA targetPosL
+        SBC currentPosL
+        STA editCountL
+        LDA targetPosH
+        SBC currentPosH
+        STA editCountH
+    }
+    
+    moveGapToCurrent()
+    {
+        LDA currentPosL
+        STA GapBuffer.GapValueL
+        LDA currentPosH
+        STA GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+    }
+    
+    deleteCountCharacters()
+    {
+        loop
+        {
+            LDA editCountL
+            ORA editCountH
+            if (Z)  { break; }  // Delete done
+            
+            GapBuffer.Delete();
+            if (NC) { break; }  // Delete failed
+            
+            decEditCount();
+        }
+    }
+    
+    // Find start of word at or before current position
+    // Input: GapBuffer.GapValue = starting position
+    // Output: GapBuffer.GapValue = word start position
+    findWordStart()
+    {
+        getCharAtFastPrep();
+                    
         // If we're past end, back up
         LDA GapBuffer.GapValueH
         CMP FastLengthH
@@ -1741,10 +1733,14 @@ program Edit
         }
         if (C)  // >= length
         {
-            // Back up to last valid position
+            // Back up to last valid position (FastLength - 1)
+            SEC
             LDA FastLengthL
-            if (Z) { DEC GapBuffer.GapValueH }
-            DEC GapBuffer.GapValueL
+            SBC #1
+            STA GapBuffer.GapValueL
+            LDA FastLengthH
+            SBC #0
+            STA GapBuffer.GapValueH
         }
         
         // Skip backward over non-word chars
@@ -1760,9 +1756,7 @@ program Edit
             if (C) { break; }  // Found word char
             
             // Move back
-            LDA GapBuffer.GapValueL
-            if (Z) { DEC GapBuffer.GapValueH }
-            DEC GapBuffer.GapValueL
+            decGapValue();
         }
         
         // Now skip backward over word chars to find start
@@ -1774,17 +1768,14 @@ program Edit
             if (Z) { break; }  // At position 0
             
             // Look at previous character
-            LDA GapBuffer.GapValueL
-            if (Z) { DEC GapBuffer.GapValueH }
-            DEC GapBuffer.GapValueL
+            decGapValue();
             
             GapBuffer.GetCharAtFast();
             isWordChar();
             if (NC)  // Not word char
             {
                 // Move forward one to start of word
-                INC GapBuffer.GapValueL
-                if (Z) { INC GapBuffer.GapValueH }
+                incGapValue();
                 break;
             }
         }
@@ -1799,29 +1790,13 @@ program Edit
     {
         PHX  // Save the mode flag
         
-        LDA GapBuffer.GapValueL
-        PHA
-        LDA GapBuffer.GapValueH
-        PHA
-        
-        GapBuffer.GetCharAtFastPrep();
-        
-        PLA
-        STA GapBuffer.GapValueH
-        PLA
-        STA GapBuffer.GapValueL
+        getCharAtFastPrep();
         
         // Skip forward over word chars
         loop
         {
             // Check if at end
-            LDA GapBuffer.GapValueH
-            CMP FastLengthH
-            if (Z)
-            {
-                LDA GapBuffer.GapValueL
-                CMP FastLengthL
-            }
+            checkIfAtEnd();
             if (C) { break; }  // >= length
             
             GapBuffer.GetCharAtFast();
@@ -1829,8 +1804,7 @@ program Edit
             if (NC) { break; }  // Not word char
             
             // Move forward
-            INC GapBuffer.GapValueL
-            if (Z) { INC GapBuffer.GapValueH }
+            incGapValue();
         }
         
         // Check if we should skip to next word
@@ -1842,13 +1816,7 @@ program Edit
         loop
         {
             // Check if at end
-            LDA GapBuffer.GapValueH
-            CMP FastLengthH
-            if (Z)
-            {
-                LDA GapBuffer.GapValueL
-                CMP FastLengthL
-            }
+            checkIfAtEnd();
             if (C) { break; }  // >= length
             
             GapBuffer.GetCharAtFast();
@@ -1861,8 +1829,7 @@ program Edit
             if (C) { break; }  // Found next word
             
             // Move forward over space
-            INC GapBuffer.GapValueL
-            if (Z) { INC GapBuffer.GapValueH }
+            incGapValue();
         }
     }
     
@@ -1871,18 +1838,7 @@ program Edit
     // Output: GapBuffer.GapValue = start of line (after previous \n or 0)
     findLineStart()
     {
-        LDA GapBuffer.GapValueL
-        PHA
-        LDA GapBuffer.GapValueH
-        PHA
-        
-        GapBuffer.GetCharAtFastPrep();
-        
-        PLA
-        STA GapBuffer.GapValueH
-        PLA
-        STA GapBuffer.GapValueL
-        
+        getCharAtFastPrep();
         
         // Search backward for newline
         loop
@@ -1893,17 +1849,13 @@ program Edit
             if (Z) { break; }  // At position 0
             
             // Move back and check
-            LDA GapBuffer.GapValueL
-            if (Z) { DEC GapBuffer.GapValueH }
-            DEC GapBuffer.GapValueL
-            
+            decGapValue();
             GapBuffer.GetCharAtFast();
             CMP #'\n'
             if (Z)
             {
                 // Found newline, move forward to start of line
-                INC GapBuffer.GapValueL
-                if (Z) { INC GapBuffer.GapValueH }
+                incGapValue();
                 break;
             }
         }
@@ -1914,30 +1866,13 @@ program Edit
     // Output: GapBuffer.GapValue = position of \n (or EOF)
     findLineEnd()
     {
-        LDA GapBuffer.GapValueL
-        PHA
-        LDA GapBuffer.GapValueH
-        PHA
-        
-        GapBuffer.GetCharAtFastPrep(); // initializes FastLength (and gbGapSize)
-        
-        // Restore our starting position
-        PLA
-        STA GapBuffer.GapValueH
-        PLA
-        STA GapBuffer.GapValueL
+        getCharAtFastPrep();
         
         // Search forward for newline
         loop
         {
             // Check if at end
-            LDA GapBuffer.GapValueH
-            CMP FastLengthH
-            if (Z)
-            {
-                LDA GapBuffer.GapValueL
-                CMP FastLengthL
-            }
+            checkIfAtEnd();
             if (C) { break; }  // >= length (at EOF)
             
             GapBuffer.GetCharAtFast();
@@ -1945,8 +1880,7 @@ program Edit
             if (Z) { break; }  // Found newline
             
             // Move forward
-            INC GapBuffer.GapValueL
-            if (Z) { INC GapBuffer.GapValueH }
+            incGapValue();
         }
     }
     
