@@ -189,6 +189,9 @@ unit GapBuffer
             return;
         }
         
+        // Save original operation type
+        PHA
+        
         PHX
         
         // Swap gbGapStart with undoGapStart
@@ -220,6 +223,26 @@ unit GapBuffer
         LDA undoOp
         EOR #0b00000011  // Toggles between 1 and 2
         STA undoOp
+        
+        // Determine cursor position based on what we just undid
+        PLA  // Get original operation type
+        CMP #UndoOp.Deleted
+        if (Z)  // Just undid a delete (restored text)
+        {
+            // Cursor goes to start of restored text (the old gap position)
+            LDA undoGapStartL  // This now has the old "deleted" position
+            STA GapValueL
+            LDA undoGapStartH
+            STA GapValueH
+        }
+        else  // Just undid an insert (removed text)
+        {
+            // Cursor goes to current gap (where text was removed)
+            LDA gbGapStartL
+            STA GapValueL
+            LDA gbGapStartH
+            STA GapValueH
+        }
         
         SEC  // Success
     }

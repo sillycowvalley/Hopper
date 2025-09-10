@@ -28,7 +28,7 @@ program Edit
     // Bit  1:   Exiting
     // Bit  2:   Block active (0=no, 1=yes)
     // Bit  3:   prompt mode
-    // Bits 4-5: Undo state (00=empty, 01=can_undo, 10=can_redo, 11=reserved)
+    // Bits 4-5: unused
     // Bit  6:   0 - document file operation, 1 = block file operation
     // Bit  7:   Filename entry
     
@@ -2491,6 +2491,22 @@ program Edit
         SEC  // Argument exists
     }
     
+    undoToggle()
+    {
+        GapBuffer.ToggleUndo();
+        if (C)
+        {
+            // GapValue now contains recommended cursor position
+            
+            // Update line count if text was added/removed
+            View.CountLines();
+            
+            // Update cursor to position returned by ToggleUndo
+            LDX #1  // Force render
+            View.SetCursorPosition();
+        }
+    }
+    
     
     Hopper()
     {
@@ -2725,19 +2741,7 @@ GapBuffer.Dump();
                         }
                         case Key.CtrlZ:
                         {
-                            GapBuffer.ToggleUndo();
-                            if (C)
-                            {
-                                // Get the new gap position (where cursor should be)
-                                GapBuffer.GetGapStart();  // Returns in GapValue
-                                
-                                // Update line count if text was added/removed
-                                View.CountLines();
-                                
-                                // Update cursor to new position and render
-                                LDX #1  // Force render
-                                View.SetCursorPosition();
-                            }
+                            undoToggle();
                         }
                         
                         case Key.Up:
