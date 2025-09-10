@@ -1,7 +1,9 @@
 program Edit
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
+    
+    //#define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
@@ -38,15 +40,19 @@ program Edit
     const byte BlockStartL = edSlots+3;
     const byte BlockStartH = edSlots+4;
     
-    const uint BlockEnd = edSlots+5;         // Logical position in GapBuffer  
+    const uint BlockEnd = edSlots+5;     // Logical position in GapBuffer  
     const byte BlockEndL = edSlots+5;
     const byte BlockEndH = edSlots+6;
     
+    const uint clipBoard  = edSlots+7;
+    const byte clipBoardL = edSlots+7;
+    const byte clipBoardH = edSlots+8;
+    
 #ifdef DEBUG
-    const uint crPos   = edSlots+7;
-    const byte crPosL  = edSlots+7;
-    const byte crPosH  = edSlots+8;
-    const byte crCol   = edSlots+9;
+    const uint crPos   = edSlots+9;
+    const byte crPosL  = edSlots+9;
+    const byte crPosH  = edSlots+10;
+    const byte crCol   = edSlots+11;
 #endif    
     
     // Messages
@@ -73,6 +79,8 @@ program Edit
             STZ EditorFlags
             STZ currentFilenameL
             STZ currentFilenameH
+            STZ clipBoardL
+            STZ clipBoardH
             
             // Initialize block bounds to invalid
             LDA #0xFF
@@ -503,7 +511,20 @@ program Edit
         Screen.Reset();
         Screen.Clear();
     
-        disposeFilename();    
+        disposeFilename();   
+        
+        LDA clipBoardL 
+        ORA clipBoardH
+        if (NZ)
+        {
+            LDA clipBoardL
+            STA ZP.IDXL
+            LDA clipBoardH
+            STA ZP.IDXH
+            Memory.Free();
+            STZ clipBoardL
+            STZ clipBoardH
+        }
     }
     
    
@@ -603,7 +624,7 @@ program Edit
     // Save file
     saveFile()
     {
-        if (BBR0, EditorFlags) { return; } // not modified
+        if (BBR0, EditorFlags) { SEC return; } // not modified
         
         View.StatusClear();
         
@@ -1043,6 +1064,12 @@ program Edit
                 View.StatusClear();
                 saveFile();
             }
+            case Key.CtrlO: // finger still down on <ctrl>
+            case 'O':       // Open file
+            {
+                View.StatusClear();
+                openFile();
+            }
             default:
             {
                 // Unknown command - clear status and beep?
@@ -1146,6 +1173,49 @@ program Edit
         }
     }
     
+    backspace()
+    {
+        View.GetCursorPosition();  // Get logical position
+        
+        // Can't backspace from position 0
+        LDA GapBuffer.GapValueL
+        ORA GapBuffer.GapValueH
+        if (NZ)
+        {
+            GapBuffer.MoveGapTo();
+            GapBuffer.Backspace();
+            if (C)  // Success
+            {
+                SMB0 EditorFlags // modified
+                // Logical position moves back one
+                LDA GapBuffer.GapValueL
+                if (Z) { DEC GapBuffer.GapValueH }
+                DEC GapBuffer.GapValueL
+                
+                // Recount lines if needed
+                View.CountLines();
+                
+                // Let View handle cursor positioning
+                LDX #1 // Render
+                View.SetCursorPosition();
+            }
+        }
+    }
+    delete()
+    {
+        View.GetCursorPosition();  // Get logical position
+        GapBuffer.MoveGapTo();
+        GapBuffer.Delete();
+        if (C)  // Success
+        {
+            SMB0 EditorFlags // modified
+            // Position doesn't change for delete
+            View.CountLines();
+            LDX #1 // Render
+            View.SetCursorPosition();  // Refreshes display
+        }
+    }
+    
     
     
     Hopper()
@@ -1165,7 +1235,7 @@ program Edit
 //showGapPosition();
 //GapBuffer.Dump();
 
-BlockDump();
+//BlockDump();
                       
             // Get key
             Keyboard.GetKey();
@@ -1178,109 +1248,9 @@ BlockDump();
                     handleCtrlK();
                     if (BBS1, EditorFlags) { break; } // exit
                 }
-                case Key.CtrlN:
-                {
-                    newFile();
-                }
-                case Key.F3:
-                case Key.CtrlO:
-                {
-                    openFile();
-                }
-                case Key.F2:
-                case Key.CtrlS:
-                {
-                    saveFile();
-                }
                 case Key.CtrlQ:
                 {
                     handleCtrlQ();
-                }
-                case Key.Up:
-                {
-                    View.CursorUp();
-                }
-                case Key.Down:
-                {
-                    View.CursorDown();
-                }
-                case Key.Left:
-                {
-                    View.CursorLeft();
-                }
-                case Key.Right:
-                {
-                    View.CursorRight();
-                }
-                
-                case Key.Home:
-                {
-                    View.CursorHome();
-                }
-                case Key.End:
-                {
-                    View.CursorEnd();
-                }
-                
-                case Key.PageUp:
-                {
-                    View.PageUp();
-                }
-                case Key.PageDown:
-                {
-                    View.PageDown();
-                }
-                /*
-                case 'r':
-                case 'R':
-                {
-                    //View.GetCursorPosition();
-                    //View.SetCursorPosition();
-                }
-                */
-                
-                
-                case Key.Backspace:
-                {
-                    View.GetCursorPosition();  // Get logical position
-                    
-                    // Can't backspace from position 0
-                    LDA GapBuffer.GapValueL
-                    ORA GapBuffer.GapValueH
-                    if (NZ)
-                    {
-                        GapBuffer.MoveGapTo();
-                        GapBuffer.Backspace();
-                        if (C)  // Success
-                        {
-                            SMB0 EditorFlags // modified
-                            // Logical position moves back one
-                            LDA GapBuffer.GapValueL
-                            if (Z) { DEC GapBuffer.GapValueH }
-                            DEC GapBuffer.GapValueL
-                            
-                            // Recount lines if needed
-                            View.CountLines();
-                            
-                            // Let View handle cursor positioning
-                            LDX #1 // Render
-                            View.SetCursorPosition();
-                        }
-                    }
-                }
-                case Key.Delete:
-                {
-                    View.GetCursorPosition();  // Get logical position
-                    GapBuffer.MoveGapTo();
-                    GapBuffer.Delete();
-                    if (C)  // Success
-                    {
-                        SMB0 EditorFlags // modified
-                        // Position doesn't change for delete
-                        View.CountLines();
-                        LDX #1 // Render
-                        View.SetCursorPosition();  // Refreshes display
-                    }
                 }
                 
                 case Key.Linefeed: // VT100 Paste
@@ -1316,6 +1286,103 @@ BlockDump();
                 
                 default:
                 {
+#if defined (TURBO)   
+                    switch (A)
+                    {
+                        case Key.Backspace:
+                        {
+                            backspace(); continue;
+                        }
+                        case Key.CtrlG:
+                        {
+                            delete(); continue;
+                        }
+                        case Key.CtrlE:
+                        {
+                            View.CursorUp(); continue;
+                        }
+                        case Key.CtrlX:
+                        {
+                            View.CursorDown(); continue;
+                        }
+                        case Key.CtrlS:
+                        {
+                            View.CursorLeft(); continue;
+                        }
+                        case Key.CtrlD:
+                        {
+                            View.CursorRight(); continue;
+                        }
+                        case Key.CtrlR:
+                        {
+                            View.PageUp(); continue;
+                        }
+                        case Key.CtrlC:
+                        {
+                            View.PageDown(); continue;
+                        }
+                    }
+#else                 
+                    switch (A)
+                    {
+                        case Key.Backspace:
+                        {
+                            backspace(); continue;
+                        }
+                        case Key.Delete:
+                        {
+                            delete(); continue;
+                        }
+                        case Key.CtrlN:
+                        {
+                            newFile(); continue;
+                        }
+                        case Key.F3:
+                        case Key.CtrlO:
+                        {
+                            openFile(); continue;
+                        }
+                        case Key.F2:
+                        case Key.CtrlS:
+                        {
+                            saveFile(); continue;
+                        }
+                        
+                        case Key.Up:
+                        {
+                            View.CursorUp(); continue;
+                        }
+                        case Key.Down:
+                        {
+                            View.CursorDown(); continue;
+                        }
+                        case Key.Left:
+                        {
+                            View.CursorLeft(); continue;
+                        }
+                        case Key.Right:
+                        {
+                            View.CursorRight(); continue;
+                        }
+                        case Key.Home:
+                        {
+                            View.CursorHome(); continue;
+                        }
+                        case Key.End:
+                        {
+                            View.CursorEnd(); continue;
+                        }
+                        case Key.PageUp:
+                        {
+                            View.PageUp(); continue;
+                        }
+                        case Key.PageDown:
+                        {
+                            View.PageDown(); continue;
+                        }
+                    }
+#endif
+                    
                     // Check if printable
                     Char.IsPrintable();
                     if (C)  // Is printable

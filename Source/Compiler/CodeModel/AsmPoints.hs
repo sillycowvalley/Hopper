@@ -170,6 +170,7 @@ unit AsmPoints
                 case OpCode.STX_z:
                 case OpCode.PHX:
                 case OpCode.CPX_n:
+                case OpCode.CPX_z:
                 case OpCode.DEC_nnX:
                 case OpCode.INC_nnX:
                 {
@@ -184,6 +185,7 @@ unit AsmPoints
                 case OpCode.STY_nn:
                 case OpCode.STY_z:
                 case OpCode.CPY_n:
+                case OpCode.CPY_z:
                 case OpCode.PHY:
                 {
                     walkStats |= WalkStats.ReadY;

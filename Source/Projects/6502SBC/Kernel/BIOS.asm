@@ -284,6 +284,8 @@ program BIOS
         LDX # MessageExtras.SuffixColon
         Error.MessageNL();
         
+        Shared.ZeroTop();
+        
         // Process Intel HEX lines
         loop
         {
@@ -294,6 +296,17 @@ program BIOS
         // Close file
         LDA # 0x80 // high bit for executable file
         File.EndSave();
+        
+        Print.NewLine();
+        
+        LDA # ErrorID.HEXDone
+        LDX # (MessageExtras.SuffixColon|MessageExtras.SuffixSpace)
+        Error.Message();
+        Long.Print();
+        LDA # ErrorID.BytesLabel
+        LDX # MessageExtras.PrefixSpace
+        Error.MessageNL();
+        
     }
     
     processIHexLine()  // Returns C set to continue, NC for EOF
@@ -356,7 +369,11 @@ program BIOS
             if (Z) { break; }
             Serial.HexIn();
             STA Address.HexBuffer, Y
-            Print.Hex();
+            //Print.Hex();
+            
+            INC ZP.TOP0
+            if (Z) { INC ZP.TOP1 }
+            
             INY
             DEX
         }
@@ -370,8 +387,13 @@ program BIOS
         {
             File.AppendStream();
         }
-        Print.NewLine();
-        
+        LDA ZP.TOP0
+        AND # 0b01111111
+        if (Z)
+        {
+            LDA #'.'
+            Print.Char();
+        }
         SEC              // Continue processing
     }
     

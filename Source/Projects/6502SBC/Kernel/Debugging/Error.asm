@@ -167,6 +167,7 @@ unit Error // ErrorID.asm
         EEPROMLabel         = 0x3B,
         OverwriteWarning    = 0x3C,
         ReadyForHEX         = 0x3D,
+        HEXDone             = 0x3E,
         
     }
     
@@ -197,6 +198,7 @@ unit Error // ErrorID.asm
         2, ErrorID.SystemReady,       ErrorWord.HOPPER, ErrorWord.BIOS,
         1, ErrorID.OverwriteWarning,  ErrorWord.OVERWRITE,
         3, ErrorID.ReadyForHEX,       ErrorWord.READY, ErrorWord.FOR, ErrorWord.HEX,
+        1, ErrorID.HEXDone,           ErrorWord.HEX,
         
         0  // End marker
     };
