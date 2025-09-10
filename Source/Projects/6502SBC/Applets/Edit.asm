@@ -1087,14 +1087,20 @@ program Edit
             case Key.CtrlB: // finger still down on <ctrl>
             case 'B':       // Beginning of block
             {
-                View.StatusClear();
-                View.CursorHome();
+                if (BBS2, EditorFlags) // block active
+                {
+                    View.StatusClear();
+                    View.CursorBlockStart();
+                }
             }
             case Key.CtrlK: // finger still down on <ctrl>
             case 'K':       // End of block
             {
-                View.StatusClear();
-                View.CursorEnd();
+                if (BBS2, EditorFlags) // block active
+                {
+                    View.StatusClear();
+                    View.CursorBlockEnd();
+                }
             }
             
             case Key.CtrlS: // finger still down on <ctrl>

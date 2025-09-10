@@ -1063,6 +1063,8 @@ unit View
         
         View.UpdatePosition(); // render position change
     }
+    
+        
 
     // Move up one page
     PageUp()
@@ -1141,6 +1143,40 @@ unit View
         }
         
         View.UpdatePosition(); // render position change
+    }
+    
+    // Move cursor to block start position
+    CursorBlockStart()
+    {
+        // Check if block is active (defensive)
+        if (BBR2, Edit.EditorFlags) { return; }
+        
+        // Load block start position into GapValue
+        LDA Edit.BlockStartL
+        STA GapBuffer.GapValueL
+        LDA Edit.BlockStartH
+        STA GapBuffer.GapValueH
+        
+        // Move cursor to that position (handles scrolling if needed)
+        LDX #1  // Force render
+        SetCursorPosition();
+    }
+    
+    // Move cursor to block end position
+    CursorBlockEnd()
+    {
+        // Check if block is active (defensive)
+        if (BBR2, Edit.EditorFlags) { return; }
+        
+        // Load block end position into GapValue
+        LDA Edit.BlockEndL
+        STA GapBuffer.GapValueL
+        LDA Edit.BlockEndH
+        STA GapBuffer.GapValueH
+        
+        // Move cursor to that position (handles scrolling if needed)
+        LDX #1  // Force render
+        SetCursorPosition();
     }
     
     // Move cursor to top of file (first line, first column)
