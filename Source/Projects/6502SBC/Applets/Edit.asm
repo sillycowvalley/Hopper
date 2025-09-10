@@ -3,7 +3,7 @@ program Edit
     #define CPU_65C02S
     //#define DEBUG
     
-    //#define TURBO
+    #define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
@@ -30,7 +30,7 @@ program Edit
     // Bit  3:   prompt mode
     // Bits 4-5: Undo state (00=empty, 01=can_undo, 10=can_redo, 11=reserved)
     // Bit  6:   0 - document file operation, 1 = block file operation
-    // Bit  7:   Reserved for future use
+    // Bit  7:   Filename entry
     
     const byte currentFilename  = edSlots+1;
     const byte currentFilenameL = edSlots+1;
@@ -60,14 +60,17 @@ program Edit
     const byte editCountL = edSlots+13;
     const byte editCountH = edSlots+14;
     
-    const byte editStoreL = edSlots+15;
-    const byte editStoreH = edSlots+16;
+    const byte editStoreL   = edSlots+15;
+    const byte editStoreH   = edSlots+16;
+    const byte writeBuffer  = edSlots+17;
+    const byte writeBufferL = edSlots+17;
+    const byte writeBufferH = edSlots+18;
     
 #ifdef DEBUG
-    const byte crPos   = edSlots+17;
-    const byte crPosL  = edSlots+18;
-    const byte crPosH  = edSlots+19;
-    const byte crCol   = edSlots+20;
+    const byte crPos   = edSlots+19;
+    const byte crPosL  = edSlots+20;
+    const byte crPosH  = edSlots+21;
+    const byte crCol   = edSlots+22;
 #endif    
     
     // Messages
@@ -85,9 +88,6 @@ program Edit
     const string ctrlQPrompt = "^Q ";
     
     const string noBeginMsg = "No block begin! Use ^K B first.";
-    
-    const string writeBuffer = " ";
-    
     
     Initialize()
     {
@@ -772,11 +772,7 @@ program Edit
         loop
         {
             LDA [STR], Y
-            Char.IsLower();
-            if (C)
-            {
-                Char.ToUpper();
-            }
+            Char.ToUpper();
             STA [currentFilename], Y
             if (Z) { break; }
             INY
@@ -918,8 +914,12 @@ program Edit
                 SEC
                 break;
             }
-            STA [File.SectorSource]
-            File.AppendStream();
+            STA [writeBuffer]
+            LDA writeBufferL
+            STA File.SectorSourceL
+            LDA writeBufferH
+            STA File.SectorSourceH
+            File.AppendStream(); // munts SectorSource
             if (NC)
             {
                 CLC
@@ -961,8 +961,12 @@ program Edit
             }
             
             GapBuffer.GetCharAtFast();
-            STA [File.SectorSource]
-            File.AppendStream();
+            STA [writeBuffer]
+            LDA writeBufferL
+            STA File.SectorSourceL
+            LDA writeBufferH
+            STA File.SectorSourceH
+            File.AppendStream(); // munts SectorSource
             if (NC)
             {
                 CLC
@@ -999,11 +1003,6 @@ program Edit
             return;
         }
         
-LDA #0    
-LDY #26    
-Screen.GotoXY();     
-LDA #'a' Print.Char();   
-        
         // Save to current filename
         LDA currentFilenameL
         STA ZP.STRL
@@ -1014,15 +1013,12 @@ LDA #'a' Print.Char();
         File.Exists();
         if (C)
         {
-LDA #'b' Print.Char();            
             File.Delete();
         }
-LDA #'c' Print.Char();        
         
         File.StartSave();
         if (NC)
         {
-LDA #'d' Print.Char();
             LDA #(savingErrorMsg % 256)
             STA ZP.STRL
             LDA #(savingErrorMsg / 256)
@@ -1032,15 +1028,13 @@ LDA #'d' Print.Char();
             CLC
             return;
         }
-LDA #'a' Print.Char();       
          
-        LDA #1
+        LDA #8 // only need 1 byte
         STA ZP.ACCL   
         STZ ZP.ACCH
         Memory.Allocate();
         if (NC)
         {
-LDA #'f' Print.Char();
             LDA #(savingErrorMsg % 256)
             STA ZP.STRL
             LDA #(savingErrorMsg / 256)
@@ -1051,27 +1045,23 @@ LDA #'f' Print.Char();
             return;
         }
         LDA ZP.IDXL
-        STA File.SectorSourceL
+        STA writeBufferL
         LDA ZP.IDXH
-        STA File.SectorSourceH
-LDA #'g' Print.Char();        
+        STA writeBufferH
         
         loop
         {
             if (BBR6, EditorFlags)
             {
-LDA #'h' Print.Char();                
                 saveDocument();
             }
             else
             {
-LDA #'i' Print.Char();                
                 saveBlock();
             }
             
             if (NC)
             {
-LDA #'j' Print.Char();
                 LDA #(savingErrorMsg % 256)
                 STA ZP.STRL
                 LDA #(savingErrorMsg / 256)
@@ -1081,12 +1071,10 @@ LDA #'j' Print.Char();
                 CLC
                 break;
             }
-LDA #'k' Print.Char();            
             LDA #0x00  // Data file (not executable)
             File.EndSave();
             if (NC)
             {
-LDA #'m' Print.Char();
                 LDA #(savingErrorMsg % 256)
                 STA ZP.STRL
                 LDA #(savingErrorMsg / 256)
@@ -1096,15 +1084,13 @@ LDA #'m' Print.Char();
                 CLC
                 break;
             }
-LDA #'n' Print.Char();
-            LDA File.SectorSourceL
+            LDA writeBufferL
             STA ZP.IDXL
-            LDA File.SectorSourceH
+            LDA writeBufferH
             STA ZP.IDXH
             Memory.Free();
             if (NC)
             {
-LDA #'o' Print.Char();
                 LDA #(savingErrorMsg % 256)
                 STA ZP.STRL
                 LDA #(savingErrorMsg / 256)
@@ -1114,7 +1100,6 @@ LDA #'o' Print.Char();
                 CLC
                 break;
             }
-LDA #'p' Print.Char();
 
             RMB0 EditorFlags  // Clear modified
             
@@ -1123,8 +1108,6 @@ LDA #'p' Print.Char();
             LDA #(savedMsg / 256)
             STA ZP.STRH
             
-LDA #'q' Print.Char();
-LDA #' ' Print.Char();            
             LDY #0
             View.StatusStringPause();
 

@@ -182,8 +182,22 @@ unit Prompt
                 
                 default:
                 {
-                    // Check if printable
-                    Char.IsPrintable();
+                    if (BBS7, EditorFlags) // filename mode
+                    {
+                        Char.IsAlphaNumeric();
+                        if (NC) 
+                        {
+                            continue;
+                        }
+                        Char.ToUpper();
+                        STA promptLastChar
+                        SEC
+                    }
+                    else
+                    {
+                        // Check if printable
+                        Char.IsPrintable();
+                    }
                     if (C)
                     {
                         // Check length
@@ -217,8 +231,10 @@ unit Prompt
     // Output: C set if entered, promptBuffer contains filename
     GetFilename()
     {
+        SMB7 EditorFlags // entering a filename
         LDA #13  // Max filename length for EEPROM filesystem
         GetString();
+        RMB7 EditorFlags // entering a filename
     }
     
     

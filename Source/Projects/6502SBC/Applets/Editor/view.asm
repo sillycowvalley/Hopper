@@ -1421,7 +1421,20 @@ unit View
     
     StatusCharPause()  // Input: A = character, Y = column (0-64)
     {
-        StatusChar();
+        PHA
+        ScreenBuffer.Suspend();
+        
+        TYA
+        LDY # (viewHeight - statusAreaHeight)
+        ScreenBuffer.GotoXY();
+        
+        ScreenBuffer.SetBold();
+        PLA
+        ScreenBuffer.Char();
+        ScreenBuffer.SetNotBold();
+        
+        ScreenBuffer.Resume();
+        
         LDA # 255 // 255 ms 
         Shared.LoadTopByte();
         Time.Delay();
