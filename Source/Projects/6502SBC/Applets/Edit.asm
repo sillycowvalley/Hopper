@@ -23,48 +23,51 @@ program Edit
     uses "Editor/Prompt"
     
     const byte edSlots       = 0xB6;
+    
     const byte EditorFlags   = edSlots;
-    // Bit  0:   Modified flag (0=clean, 1=modified)
-    // Bit  1:   Exiting
-    // Bit  2:   Block active (0=no, 1=yes)
-    // Bit  3:   prompt mode
+    // Bit  0:   Modified flag (0=clean, 1=modified) - set on any edit, cleared on save
+    // Bit  1:   Exiting - set to quit editor (^K Q or ^K D)
+    // Bit  2:   Block active (0=no, 1=yes) - indicates text selection active
+    // Bit  3:   prompt mode - set during filename/command prompts
     // Bits 4-5: unused
-    // Bit  6:   0 - document file operation, 1 = block file operation
-    // Bit  7:   Filename entry
+    // Bit  6:   0 = document file operation, 1 = block file operation (import/export vs open/save)
+    // Bit  7:   Filename entry - set during filename input
     
-    const byte currentFilename  = edSlots+1;
-    const byte currentFilenameL = edSlots+1;
-    const byte currentFilenameH = edSlots+2;
+    const byte currentFilename  = edSlots+1;  // Pointer to allocated filename string
+    const byte currentFilenameL = edSlots+1;  // Low byte of filename string pointer
+    const byte currentFilenameH = edSlots+2;  // High byte of filename string pointer
     
-    // Block state
-    const byte BlockStart = edSlots+3;  // Logical position in GapBuffer
-    const byte BlockStartL = edSlots+3;
-    const byte BlockStartH = edSlots+4;
+    // Block state - text selection boundaries
+    const byte BlockStart = edSlots+3;   // Start of selected block (logical position in text)
+    const byte BlockStartL = edSlots+3;  //       Low byte of block start position  
+    const byte BlockStartH = edSlots+4;  //       High byte of block start position
     
-    const byte BlockEnd = edSlots+5;     // Logical position in GapBuffer  
-    const byte BlockEndL = edSlots+5;
-    const byte BlockEndH = edSlots+6;
+    const byte BlockEnd = edSlots+5;     // End of selected block (logical position in text)
+    const byte BlockEndL = edSlots+5;    //       Low byte of block end position
+    const byte BlockEndH = edSlots+6;    //       High byte of block end position
     
-    const byte clipBoard  = edSlots+7;
-    const byte clipBoardL = edSlots+7;
-    const byte clipBoardH = edSlots+8;
+    const byte clipBoard  = edSlots+7;   // Pointer to allocated clipboard buffer (null-terminated)
+    const byte clipBoardL = edSlots+7;   //       Low byte of clipboard buffer pointer
+    const byte clipBoardH = edSlots+8;   //       High byte of clipboard buffer pointer
     
-    const byte currentPos  = edSlots+9;
-    const byte currentPosL = edSlots+9;
-    const byte currentPosH = edSlots+10;
+    // Temporary work variables used during editing operations
+    const byte currentPos  = edSlots+9;  // Temp: current position for delete/copy operations
+    const byte currentPosL = edSlots+9;  //       Low byte of current working position
+    const byte currentPosH = edSlots+10; //       High byte of current working position
     
-    const byte targetPos  = edSlots+11;
-    const byte targetPosL = edSlots+11;
-    const byte targetPosH = edSlots+12;
+    const byte targetPos  = edSlots+11;  // Temp: target position for delete/move operations  
+    const byte targetPosL = edSlots+11;  //       Low byte of target position
+    const byte targetPosH = edSlots+12;  //       High byte of target position
     
-    const byte editCountL = edSlots+13;
-    const byte editCountH = edSlots+14;
+    const byte editCountL = edSlots+13;  //       Low byte of character count for bulk operations
+    const byte editCountH = edSlots+14;  //       High byte of character count (delete/copy length)
     
-    const byte editStoreL   = edSlots+15;
-    const byte editStoreH   = edSlots+16;
-    const byte writeBuffer  = edSlots+17;
-    const byte writeBufferL = edSlots+17;
-    const byte writeBufferH = edSlots+18;
+    const byte editStoreL   = edSlots+15;  // Temp storage for main filename during import/export
+    const byte editStoreH   = edSlots+16;  //     High byte of stored filename pointer
+    
+    const byte writeBuffer  = edSlots+17;  // Single-byte buffer used for file save streaming
+    const byte writeBufferL = edSlots+17;  //     Low byte of write buffer pointer
+    const byte writeBufferH = edSlots+18;  //     High byte of write buffer pointer
     
 #ifdef DEBUG
     const byte crPos   = edSlots+19;

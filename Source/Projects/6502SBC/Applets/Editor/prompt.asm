@@ -8,13 +8,15 @@ unit Prompt
     
     // Zero page for prompt input buffer
     const byte promptSlots    = 0xB0;
-    const uint promptBuffer   = promptSlots+0;
-    const byte promptBufferL  = promptSlots+0;
-    const byte promptBufferH  = promptSlots+1;
-    const byte promptLength   = promptSlots+2;
-    const byte promptMaxLen   = promptSlots+3;
-    const byte promptStartCol = promptSlots+4;
-    const byte promptLastChar = promptSlots+5;
+    
+    const uint promptBuffer   = promptSlots+0;   // Pointer to 80-byte allocated input buffer
+    const byte promptBufferL  = promptSlots+0;   //       Low byte of input buffer pointer
+    const byte promptBufferH  = promptSlots+1;   //       High byte of input buffer pointer
+    
+    const byte promptLength   = promptSlots+2;   // Current number of characters entered (0-promptMaxLen)
+    const byte promptMaxLen   = promptSlots+3;   // Maximum input length allowed (set by caller, e.g. 13 for filenames)
+    const byte promptStartCol = promptSlots+4;   // Screen column where input begins (after prompt text)
+    const byte promptLastChar = promptSlots+5;   // Temp storage for last typed character (for uppercase conversion)
     
     const string ynPrompt = " (Y/N)? ";
     
