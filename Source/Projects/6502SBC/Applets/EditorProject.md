@@ -6,8 +6,6 @@
 | **Auto-indent** | Match prev line indent | Enter | Enter | **NOT STARTED** | Scan previous line, count leading spaces |
 | **Block Copy** | Copy block to cursor | Ctrl+K C | Ctrl+K C | **NOT STARTED** | copyBlockToClipboard(), insertClipboard() |
 | **Block Move** | Move block to cursor | Ctrl+K V | Ctrl+K V | **NOT STARTED** | copyBlockToClipboard() + deleteBlock() + insertClipboard() |
-| **Modern Copy** | Copy to clipboard | N/A | Ctrl+C | **NOT STARTED** | copyBlockToClipboard() |
-| **Modern Cut** | Cut to clipboard | N/A | Ctrl+X | **NOT STARTED** | copyBlockToClipboard() + deleteBlock() |
 | **Modern Paste** | Paste from clipboard | N/A | Ctrl+V | **NOT STARTED** | insertClipboard() |
 | **Write Block** | Save block to file | Ctrl+K W | Ctrl+K W | **NOT STARTED** | saveBlockToFile() - iterate block, write |
 | **Read File** | Insert file at cursor | Ctrl+K R | Ctrl+K R | **NOT STARTED** | insertFileAtCursor() - read file, insert |

@@ -3,7 +3,7 @@ program Edit
     #define CPU_65C02S
     #define DEBUG
     
-    #define TURBO
+    //#define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
@@ -127,6 +127,48 @@ program Edit
         } // single exit
     }
     
+    
+    // Helper: Allocate new clipboard buffer
+    // Input:  editCountL/H = size needed (will add 1 for null terminator)
+    // Output: C set if success, NC if failed
+    //         clipBoardL/H updated with new pointer
+    allocateClipboard()
+    {
+        // Free old clipboard if exists
+        LDA clipBoardL
+        ORA clipBoardH
+        if (NZ)
+        {
+            LDA clipBoardL
+            STA ZP.IDXL
+            LDA clipBoardH
+            STA ZP.IDXH
+            Memory.Free();
+            STZ clipBoardL
+            STZ clipBoardH
+        }
+        
+        // Allocate new clipboard (editCount + 1)
+        CLC
+        LDA editCountL
+        ADC #1
+        STA ZP.ACCL
+        LDA editCountH
+        ADC #0
+        STA ZP.ACCH
+        
+        Memory.Allocate();
+        if (NC) { return; }  // Failed
+        
+        // Store new clipboard pointer
+        LDA ZP.IDXL
+        STA clipBoardL
+        LDA ZP.IDXH
+        STA clipBoardH
+        
+        SEC  // Success
+    }
+    
 #ifdef DEBUG
     // Debug helper: Dump block state
     const string blockDumpLabel = "= BLOCK STATE =";
@@ -139,6 +181,26 @@ program Edit
     const string endCRLabel = "EndCR:";
     const string wordStartLabel = "WrdStart:";
     const string wordEndLabel = "WrdEnd:";
+    
+    DumpClipboard()
+    {
+        LDA #0
+        LDY #26          
+        Screen.GotoXY();        
+        LDY #0
+        loop
+        {
+            LDA [clipBoard], Y
+            if (Z) { break; }
+            Print.Hex(); Print.Space();
+            INY
+            TYA
+            AND # 0x0F
+            if (Z) { Print.NewLine(); }
+            CPY # 0x60
+            if (Z) { break; }
+        } 
+    }
     
     BlockDump()
     {
@@ -1219,6 +1281,7 @@ program Edit
             case Key.CtrlY: // finger still down on <ctrl>
             case 'Y':       // Delete block
             {
+                LDX #0  // Just delete, no copy
                 deleteBlock();
             }
             case Key.CtrlT: // finger still down on <ctrl>
@@ -1498,10 +1561,66 @@ program Edit
         markModifiedAndRefresh();
     }
     
+    copyBlockClipboard()
+    {
+        // Check if block is active
+        if (BBR2, EditorFlags) { return; }  // No block
+        
+        // Set up positions
+        LDA BlockStartL
+        STA currentPosL
+        LDA BlockStartH
+        STA currentPosH
+        
+        LDA BlockEndL
+        STA targetPosL
+        LDA BlockEndH
+        STA targetPosH
+        
+        // Calculate size
+        calculateCount();
+        
+        // Allocate clipboard
+        allocateClipboard();
+        if (NC) { return; }  // Failed
+        
+        // Move gap to start of block
+        moveGapToCurrent();
+        
+        getCharAtFastPrep();
+        
+        // Copy to clipboard
+        LDA clipBoardL
+        STA ZP.IDYL
+        LDA clipBoardH
+        STA ZP.IDYH
+        
+        loop
+        {
+            LDA editCountL
+            ORA editCountH
+            if (Z) { break; }  // Done
+            
+            GapBuffer.GetCharAtFast();
+            STA [IDY]
+            
+            incGapValue();
+            Shared.IncIDY();
+            decEditCount();
+        }
+        
+        // Null terminate
+        LDA #0
+        STA [IDY]
+    }
+    
+    // Input: X = 0: just delete, X = 1: copy to clipboard first (cut)
     deleteBlock()
     {
         // Check if block is active
         if (BBR2, EditorFlags) { return; }  // No block
+        
+        PHX
         
         // Copy block positions to current/target
         LDA BlockStartL
@@ -1517,7 +1636,17 @@ program Edit
         // Move gap and delete
         moveGapToCurrent();
         calculateCount();
-        deleteCountCharacters();
+        
+        PLX
+        CPX #1
+        if (Z)
+        {
+            copyAndDeleteCountCharacters();
+        }
+        else
+        {
+            deleteCountCharacters();
+        }
         
         // Clear block and update
         LDX #0  // Don't render yet
@@ -1709,6 +1838,33 @@ program Edit
         View.CountLines();
         LDX #1
         View.SetCursorPosition();
+    }
+    
+    // Input: X = 0: just delete, X = 1: copy to clipboard first (cut)
+    copyAndDeleteCountCharacters()
+    {
+        allocateClipboard();
+        if (NC) { return; }  // Allocation failed
+    
+        LDA clipBoardL
+        STA ZP.IDYL
+        LDA clipBoardH
+        STA ZP.IDYH
+        loop
+        {
+            LDA editCountL
+            ORA editCountH
+            if (Z)  { break; }  // Delete done
+            
+            GapBuffer.Delete(); // returns A
+            if (NC) { break; }  // Delete failed
+            STA [IDY]
+            Shared.IncIDY();
+            
+            decEditCount();
+        }
+        LDA #0
+        STA [IDY]
     }
     
     deleteCountCharacters()
@@ -2169,6 +2325,17 @@ BlockDump();
                         case Key.CtrlA:
                         {
                             selectAll(); continue;
+                        }
+                        
+                        case Key.CtrlX:  // Cut (copy then delete)
+                        {
+                            LDX #1  // Copy to clipboard first
+                            deleteBlock();
+                        }
+                        case Key.CtrlC:  // Copy (copy then delete)
+                        {
+                            copyBlockClipboard();
+DumpClipboard();                            
                         }
                         
                         case Key.Up:

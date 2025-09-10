@@ -580,6 +580,7 @@ unit GapBuffer
         SEC  // Success
     }
     
+    // returns deleted character in A, or 0
     Delete()
     {
         // Check if at end
@@ -591,6 +592,7 @@ unit GapBuffer
             CMP gbBufferSizeH
             if (Z)
             {
+                LDA #0
                 CLC  // At end of buffer
                 return;
             }
@@ -604,14 +606,16 @@ unit GapBuffer
         LDA gbBufferH
         ADC gbGapEndH
         STA ZP.IDXH
+        LDA [ZP.IDX] // retrieve old character
+        PHA
         LDA #0
-        LDY #0
-        STA [ZP.IDX], Y
+        STA [ZP.IDX]
         
         // Move gap end forward
         INC gbGapEndL
         if (Z) { INC gbGapEndH }
         
+        PLA  // Restore deleted character to A
         SEC  // Success
     }    
     
