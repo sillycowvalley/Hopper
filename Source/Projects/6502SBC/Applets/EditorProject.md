@@ -3,13 +3,11 @@
 | Feature | Description | TURBO Keys | Hopper Keys | Status | Missing Machinery |
 |---------|-------------|------------|-------------|--------|-------------------|
 | **Undo/Redo** | Toggle undo/redo | Alt+Backspace | Ctrl+Z | **NOT STARTED** | Undo buffer, state tracking, save/restore operations |
-| **Command Line** | Open file on startup | N/A | N/A | **NOT STARTED** | Parse argument in Hopper(), call openFile() |
 | **Auto-indent** | Match prev line indent | Enter | Enter | **NOT STARTED** | Scan previous line, count leading spaces |
 | **Block Delete** | Delete selected block | Ctrl+K Y | Ctrl+K Y | **NOT STARTED** | deleteBlock() - move gap to consume block |
 | **Block Copy** | Copy block to cursor | Ctrl+K C | Ctrl+K C | **NOT STARTED** | copyBlockToClipboard(), insertClipboard() |
 | **Block Move** | Move block to cursor | Ctrl+K V | Ctrl+K V | **NOT STARTED** | copyBlockToClipboard() + deleteBlock() + insertClipboard() |
 | **Mark Word** | Mark word at cursor | Ctrl+K T | Ctrl+K T | **NOT STARTED** | findWordBoundaries(), set block markers |
-| **Select All** | Select entire document | N/A | Ctrl+A | **NOT STARTED** | Set BlockStart=0, BlockEnd=EOF |
 | **Modern Copy** | Copy to clipboard | N/A | Ctrl+C | **NOT STARTED** | copyBlockToClipboard() |
 | **Modern Cut** | Cut to clipboard | N/A | Ctrl+X | **NOT STARTED** | copyBlockToClipboard() + deleteBlock() |
 | **Modern Paste** | Paste from clipboard | N/A | Ctrl+V | **NOT STARTED** | insertClipboard() |
