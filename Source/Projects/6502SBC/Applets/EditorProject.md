@@ -23,8 +23,6 @@
 | **Find** | Find text | Ctrl+Q F | Ctrl+Q F | **NOT STARTED** | Pattern buffer, search algorithm |
 | **Replace** | Find & replace | Ctrl+Q A | Ctrl+Q A | **NOT STARTED** | Find + prompt + replace logic |
 | **Find Next** | Repeat last find | Ctrl+L | Ctrl+L, F3, Ctrl+G | **NOT STARTED** | Store pattern, continue from cursor |
-| **Exit w/Save** | Exit with save prompt | Ctrl+K X | Alt+X | **NOT STARTED** | Like Ctrl+K Q but always prompts |
-| **Help Alias** | Show help screen | Ctrl+J | Ctrl+J | **NOT STARTED** | Just add case for Ctrl+J to call Help.Show() |
 
 ## Core Infrastructure Still Needed
 
