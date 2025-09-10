@@ -137,6 +137,8 @@ program Edit
     const string blockEndLabel = "BlkEnd:";
     const string startCRLabel = "StartCR:";
     const string endCRLabel = "EndCR:";
+    const string wordStartLabel = "WrdStart:";
+    const string wordEndLabel = "WrdEnd:";
     
     BlockDump()
     {
@@ -284,8 +286,6 @@ program Edit
         
         
         
-        // Add after the findLineEnd() test in BlockDump():
-
         // Test findLineStart()
         LDA #(startCRLabel % 256)  // Reuse this label
         STA ZP.STRL
@@ -342,6 +342,67 @@ program Edit
             GapBuffer.GetCharAt();
             Debug.Byte();
         }
+        
+        
+        
+        
+        
+        // Test findWordStart()
+        LDA #(wordStartLabel % 256)
+        STA ZP.STRL
+        LDA #(wordStartLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Get current cursor position
+        View.GetCursorPosition();
+        
+        // Show current position
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Call findWordStart()
+        findWordStart();
+        
+        // Show what findWordStart() returned
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Test findWordEnd()
+        LDA #(wordEndLabel % 256)
+        STA ZP.STRL
+        LDA #(wordEndLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Get current cursor position again
+        View.GetCursorPosition();
+        
+        // Show current position
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Call findWordEnd()
+        LDX #0  // Delete mode - stop at end of word
+        findWordEnd();
+        
+        // Show what findWordEnd() returned
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();    
+        
+        
         
         
         // Restore ZP.IDX
@@ -1365,6 +1426,113 @@ program Edit
         View.SetCursorPosition();
     }
     
+    // Helper: Move cursor one word right
+    wordRight()
+    {
+        View.GetCursorPosition();  // Get current position in GapValue
+        LDX #1  // Navigation mode - skip to next word
+        findWordEnd();  // Find end of word/start of next
+        
+        // Set cursor to new position
+        LDX #1  // Force render
+        View.SetCursorPosition();
+    }
+    
+    // Helper: Move cursor one word left  
+    wordLeft()
+    {
+        View.GetCursorPosition();  // Get current position
+        
+        // If not at beginning, move back one char first
+        LDA GapBuffer.GapValueL
+        ORA GapBuffer.GapValueH
+        if (NZ)
+        {
+            // Move back one to ensure we're in the previous word
+            LDA GapBuffer.GapValueL
+            if (Z) { DEC GapBuffer.GapValueH }
+            DEC GapBuffer.GapValueL
+        }
+        
+        findWordStart();  // Find beginning of word
+        
+        // Set cursor to new position
+        LDX #1  // Force render
+        View.SetCursorPosition();
+    }
+    
+    // Helper: Delete word forward
+    deleteWord()
+    {
+        View.GetCursorPosition();  // Get current position
+        
+        // Save current position
+        LDA GapBuffer.GapValueL
+        STA currentPosL
+        LDA GapBuffer.GapValueH
+        STA currentPosH
+        
+        // Find end of word (including trailing spaces)
+        LDX #0  // Delete mode - stop at end of word
+        findWordEnd();
+        
+        // Save target position
+        LDA GapBuffer.GapValueL
+        STA targetPosL
+        LDA GapBuffer.GapValueH
+        STA targetPosH
+        
+        // Check if already at target (nothing to delete)
+        LDA currentPosL
+        CMP targetPosL
+        if (Z)
+        {
+            LDA currentPosH
+            CMP targetPosH
+            if (Z) { return; }  // Nothing to delete
+        }
+        
+        // Move gap to current position
+        LDA currentPosL
+        STA GapBuffer.GapValueL
+        LDA currentPosH
+        STA GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        
+        // Calculate number of characters to delete
+        SEC
+        LDA targetPosL
+        SBC currentPosL
+        STA editCountL
+        LDA targetPosH
+        SBC currentPosH
+        STA editCountH
+        
+        // Delete characters
+        loop
+        {
+            LDA editCountL
+            ORA editCountH
+            if (Z) { break; }  // Done
+            
+            GapBuffer.Delete();
+            if (NC) { break; }  // Delete failed
+            
+            LDA editCountL
+            if (Z) { DEC editCountH }
+            DEC editCountL
+        }
+        
+        // Set modified flag
+        SMB0 EditorFlags
+        
+        // Update display
+        View.CountLines();
+        LDX #1  // Force render
+        View.SetCursorPosition();
+    }
+    
+    
     // Helper: Delete entire line
     deleteLine()
     {
@@ -1517,7 +1685,17 @@ program Edit
     // Output: GapBuffer.GapValue = word start position
     findWordStart()
     {
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
         GapBuffer.GetCharAtFastPrep();
+        
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
         
         // If we're past end, back up
         LDA GapBuffer.GapValueH
@@ -1581,9 +1759,23 @@ program Edit
     // Find end of word at or after current position
     // Input: GapBuffer.GapValue = starting position
     // Output: GapBuffer.GapValue = position after word
+    //        X = 0: stop at first non-word char (for delete)
+    //        X = 1: skip to next word (for navigation)
     findWordEnd()
     {
+        PHX  // Save the mode flag
+        
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
         GapBuffer.GetCharAtFastPrep();
+        
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
         
         // Skip forward over word chars
         loop
@@ -1606,6 +1798,11 @@ program Edit
             INC GapBuffer.GapValueL
             if (Z) { INC GapBuffer.GapValueH }
         }
+        
+        // Check if we should skip to next word
+        PLX  // Get mode flag
+        CPX #0
+        if (Z) { return; }  // Mode 0: stop here (for delete)
         
         // Skip forward over non-word chars
         loop
@@ -1910,6 +2107,20 @@ BlockDump();
                         {
                             deleteLine(); continue;
                         }
+                        
+                        case Key.CtrlF:  // Word right
+                        {
+                            wordRight();
+                        }
+                        case Key.CtrlA:  // Word left (TURBO mode only)
+                        {
+                            wordLeft();
+                        }
+                        case Key.CtrlT:  // Delete word forward
+                        {
+                            deleteWord();
+                        }
+                        
                         case Key.CtrlE:
                         {
                             View.CursorUp(); continue;
@@ -1955,6 +2166,15 @@ BlockDump();
                         {
                             deleteLine(); continue;
                         }
+                        case Key.CtrlF:  // Word right
+                        {
+                            wordRight();
+                        }
+                        case Key.CtrlT:  // Delete word forward
+                        {
+                            deleteWord();
+                        }
+                        
                         case Key.CtrlN:
                         {
                             newFile(); continue;
