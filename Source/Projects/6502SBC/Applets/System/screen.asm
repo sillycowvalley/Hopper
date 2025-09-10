@@ -4,9 +4,13 @@ unit Screen
     uses "System/Serial"
     
     // Zero page allocation - shares block with Debug
-    const byte screenSlots = 0x67;
-    const byte screenStrL = screenSlots+0;  // Temporary string pointer low
-    const byte screenStrH = screenSlots+1;  // Temporary string pointer high
+    const byte screenSlots       = 0x67;
+    const byte screenStrL        = screenSlots+0;  // Temporary string pointer low
+    const byte screenStrH        = screenSlots+1;  // Temporary string pointer high
+    const byte currentAttributes = screenSlots+2;
+    const byte workingAttributes = screenSlots+3;
+    const byte workingStatus     = screenSlots+4;
+    const byte workingColour     = screenSlots+5;
     
     // ANSI/VT100 color codes
     enum Color
@@ -31,7 +35,7 @@ unit Screen
     const string showCursor = "\x1B[?25h";
     const string saveCursor = "\x1B[s";
     const string restoreCursor = "\x1B[u";
-    const string reset = "\x1B[0m";
+    const string reset = "\x1B[0;32;40m"; // ensure green on black default
     const string boldOn  = "\x1B[1m";
     const string boldOff = "\x1B[22m";
     const string dim = "\x1B[2m";
@@ -40,6 +44,7 @@ unit Screen
     const string inverseOn = "\x1B[7m";
     const string inverseOff = "\x1B[27m";
     const string normal = "\x1B[0m";
+    const string escape = "\x1B[";
     
     // Private helper to output a string without using ZP.STR
     printString()  // Input: A = low byte, Y = high byte of string address
@@ -160,7 +165,197 @@ unit Screen
         LDA #(reset % 256)
         LDY #(reset / 256)
         printString();
+        LDA # 0b00000111
+        STA currentAttributes
         PLY
+    }
+    
+    // Attributes are:
+    // Bit 0-2 : foreground colour
+    // Bit 3-5 : background colour
+    // Bit 6   : bold
+    // Bit 7   : inverse
+    
+    // A = packed attributes:
+    //     - from  ScreenBuffer.Update() 
+    //     - after a Screen.Reset()  (currentAttributes = 0b00000111)
+    //
+    SetAttributes()
+    {
+        CMP currentAttributes
+        if (Z) { return; } // no change
+        
+        STA workingAttributes
+        
+        // "ESC["
+        LDA #(escape % 256)
+        LDY #(escape / 256)
+        printString();
+        
+        RMB0 workingStatus
+        
+        // BOLD
+        LDA currentAttributes
+        AND # Attribute.Bold
+        if (Z)
+        {
+            // currently not bold
+            LDA workingAttributes
+            AND # Attribute.Bold
+            if (Z)
+            {
+                // still not bold
+            }
+            else
+            {
+                // switch to bold "1"
+                LDA #'1'
+                Serial.WriteChar();
+                LDA currentAttributes
+                ORA # Attribute.Bold
+                STA currentAttributes
+                SMB0 workingStatus
+            }
+        }
+        else
+        {
+            // currently bold
+            LDA workingAttributes
+            AND # Attribute.Bold
+            if (Z)
+            {
+                // switch to not bold: "22"
+                LDA #'2'
+                Serial.WriteChar();
+                Serial.WriteChar();
+                LDA currentAttributes
+                EOR # Attribute.Bold
+                STA currentAttributes
+                SMB0 workingStatus
+            }
+            else
+            {
+                // still bold
+            }
+        }
+        
+        // INVERSE
+        LDA currentAttributes
+        AND # Attribute.Inverse
+        if (Z)
+        {
+            // currently not bold
+            LDA workingAttributes
+            AND # Attribute.Inverse
+            if (Z)
+            {
+                // still not inverse
+            }
+            else
+            {
+                if (BBS0, workingStatus)
+                {
+                    LDA #';'
+                    Serial.WriteChar();
+                }
+                // switch to inverse "7"
+                LDA #'7'
+                Serial.WriteChar();
+                LDA currentAttributes
+                ORA # Attribute.Inverse
+                STA currentAttributes
+                SMB0 workingStatus
+            }
+        }
+        else
+        {
+            // currently inverse
+            LDA workingAttributes
+            AND # Attribute.Inverse
+            if (Z)
+            {
+                if (BBS0, workingStatus)
+                {
+                    LDA #';'
+                    Serial.WriteChar();
+                }
+                // switch to not inverse: "27"
+                LDA #'2'
+                Serial.WriteChar();
+                LDA #'7'
+                Serial.WriteChar();
+                LDA currentAttributes
+                EOR # Attribute.Inverse
+                STA currentAttributes
+                SMB0 workingStatus
+            }
+            else
+            {
+                // still inverse
+            }
+        }
+        
+        // FOREGROUND
+        LDA workingAttributes
+        AND # 0b00000111
+        STA workingColour
+        
+        LDA currentAttributes
+        AND # 0b00000111
+        CMP workingColour
+        if (NZ)
+        {
+            // foreground has changed
+            if (BBS0, workingStatus)
+            {
+                LDA #';'
+                Serial.WriteChar();
+            }
+            LDA currentAttributes
+            EOR # 0b00000111
+            ORA workingColour
+            STA currentAttributes
+            LDA #'3'
+            Serial.WriteChar();
+            CLC
+            LDA workingColour   
+            ADC #'0'
+            Serial.WriteChar();
+            SMB0 workingStatus
+        }
+        
+        // BACKGROUND
+        LDA workingAttributes
+        AND # 0b00111000
+        STA workingColour
+        
+        LDA currentAttributes
+        AND # 0b00111000
+        CMP workingColour
+        if (NZ)
+        {
+            // background has changed
+            if (BBS0, workingStatus)
+            {
+                LDA #';'
+                Serial.WriteChar();
+            }
+            LDA currentAttributes
+            EOR # 0b00111000
+            ORA workingColour
+            STA currentAttributes
+            LDA #'4'
+            Serial.WriteChar();
+                
+            LDA workingColour
+            LSR A LSR A LSR A
+            CLC
+            ADC #'0'
+            Serial.WriteChar();
+        }
+                
+        LDA #'m'
+        Serial.WriteChar();
     }
     
     // Enable bold/bright text

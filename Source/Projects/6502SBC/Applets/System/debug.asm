@@ -14,7 +14,7 @@ unit Debug
     const byte debugEnabled = debugSlots+2; // Debug output enabled flag
     const byte debugEntries = debugSlots+3; // Nested calls to store and restore
     
-    const uint dumpCount    = debugSlots+4;
+    const byte dumpCount    = debugSlots+4;
     
     
     // Constants - use camelCase, not ALL_CAPS

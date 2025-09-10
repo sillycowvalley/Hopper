@@ -718,7 +718,9 @@ unit ScreenBuffer
                 if (NZ)
                 {
                     STA msbAttribute // new current attribute
+                    Screen.SetAttributes();
                     
+                    /*
                     // Apply bold if needed
                     if (BBS6, msbAttribute)
                     {
@@ -778,6 +780,7 @@ unit ScreenBuffer
                         AND #0b00000111
                         Screen.Background(); // SysCalls : munt A, X
                     }
+                    */
                 }
                 LDA msbLastCol
                 CMP msbCol

@@ -1270,6 +1270,7 @@ unit View
         LDA # (viewWidth - positionIndicatorWidth)
         LDY # (viewHeight - statusAreaHeight)
         ScreenBuffer.GotoXY();
+        ScreenBuffer.SetBold();
         
          // Show modified indicator if bit 0 of EditorFlags is set
         if (BBS0, Edit.EditorFlags)  // Modified?
@@ -1324,6 +1325,8 @@ unit View
         STA ZP.ACCL
         STZ ZP.ACCH
         ScreenBuffer.Decimal();
+        
+        ScreenBuffer.SetNotBold();
         
         // Clear to end of line
         loop
@@ -1386,6 +1389,7 @@ unit View
         TYA
         LDY # (viewHeight - statusAreaHeight)
         ScreenBuffer.GotoXY();
+        ScreenBuffer.SetBold();
         
         LDY #0
         loop
@@ -1411,6 +1415,7 @@ unit View
             ScreenBuffer.GotoXY();
         }
         
+        ScreenBuffer.SetNotBold();
         ScreenBuffer.Resume();
     }
     

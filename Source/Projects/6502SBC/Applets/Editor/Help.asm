@@ -60,6 +60,7 @@ unit Help
     {
         // Clear screen and home cursor
         Screen.Clear();
+        Screen.Reset();
         
         // Title in inverse video
         Screen.Inverse();
@@ -217,6 +218,7 @@ unit Help
         
         
         // Bottom prompt in inverse at line 24
+        Screen.Reset();
         Screen.Inverse();
         LDA #(helpBottom % 256)
         STA ZP.STRL

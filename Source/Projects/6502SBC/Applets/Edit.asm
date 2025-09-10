@@ -1,7 +1,7 @@
 program Edit
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
     
     //#define TURBO
     
@@ -37,23 +37,23 @@ program Edit
     const byte currentFilenameH = edSlots+2;
     
     // Block state
-    const uint BlockStart = edSlots+3;  // Logical position in GapBuffer
+    const byte BlockStart = edSlots+3;  // Logical position in GapBuffer
     const byte BlockStartL = edSlots+3;
     const byte BlockStartH = edSlots+4;
     
-    const uint BlockEnd = edSlots+5;     // Logical position in GapBuffer  
+    const byte BlockEnd = edSlots+5;     // Logical position in GapBuffer  
     const byte BlockEndL = edSlots+5;
     const byte BlockEndH = edSlots+6;
     
-    const uint clipBoard  = edSlots+7;
+    const byte clipBoard  = edSlots+7;
     const byte clipBoardL = edSlots+7;
     const byte clipBoardH = edSlots+8;
     
-    const uint currentPos  = edSlots+9;
+    const byte currentPos  = edSlots+9;
     const byte currentPosL = edSlots+9;
     const byte currentPosH = edSlots+10;
     
-    const uint targetPos  = edSlots+11;
+    const byte targetPos  = edSlots+11;
     const byte targetPosL = edSlots+11;
     const byte targetPosH = edSlots+12;
     
@@ -64,7 +64,7 @@ program Edit
     const byte editStoreH = edSlots+16;
     
 #ifdef DEBUG
-    const uint crPos   = edSlots+17;
+    const byte crPos   = edSlots+17;
     const byte crPosL  = edSlots+18;
     const byte crPosH  = edSlots+19;
     const byte crCol   = edSlots+20;
@@ -999,6 +999,11 @@ program Edit
             return;
         }
         
+LDA #0    
+LDY #26    
+Screen.GotoXY();     
+LDA #'a' Print.Char();   
+        
         // Save to current filename
         LDA currentFilenameL
         STA ZP.STRL
@@ -1009,12 +1014,15 @@ program Edit
         File.Exists();
         if (C)
         {
+LDA #'b' Print.Char();            
             File.Delete();
         }
+LDA #'c' Print.Char();        
         
         File.StartSave();
         if (NC)
         {
+LDA #'d' Print.Char();
             LDA #(savingErrorMsg % 256)
             STA ZP.STRL
             LDA #(savingErrorMsg / 256)
@@ -1024,13 +1032,15 @@ program Edit
             CLC
             return;
         }
-        
+LDA #'a' Print.Char();       
+         
         LDA #1
         STA ZP.ACCL   
         STZ ZP.ACCH
         Memory.Allocate();
         if (NC)
         {
+LDA #'f' Print.Char();
             LDA #(savingErrorMsg % 256)
             STA ZP.STRL
             LDA #(savingErrorMsg / 256)
@@ -1044,20 +1054,24 @@ program Edit
         STA File.SectorSourceL
         LDA ZP.IDXH
         STA File.SectorSourceH
+LDA #'g' Print.Char();        
         
         loop
         {
             if (BBR6, EditorFlags)
             {
+LDA #'h' Print.Char();                
                 saveDocument();
             }
             else
             {
+LDA #'i' Print.Char();                
                 saveBlock();
             }
             
             if (NC)
             {
+LDA #'j' Print.Char();
                 LDA #(savingErrorMsg % 256)
                 STA ZP.STRL
                 LDA #(savingErrorMsg / 256)
@@ -1067,11 +1081,12 @@ program Edit
                 CLC
                 break;
             }
-            
+LDA #'k' Print.Char();            
             LDA #0x00  // Data file (not executable)
             File.EndSave();
             if (NC)
             {
+LDA #'m' Print.Char();
                 LDA #(savingErrorMsg % 256)
                 STA ZP.STRL
                 LDA #(savingErrorMsg / 256)
@@ -1081,7 +1096,7 @@ program Edit
                 CLC
                 break;
             }
-
+LDA #'n' Print.Char();
             LDA File.SectorSourceL
             STA ZP.IDXL
             LDA File.SectorSourceH
@@ -1089,6 +1104,7 @@ program Edit
             Memory.Free();
             if (NC)
             {
+LDA #'o' Print.Char();
                 LDA #(savingErrorMsg % 256)
                 STA ZP.STRL
                 LDA #(savingErrorMsg / 256)
@@ -1098,7 +1114,7 @@ program Edit
                 CLC
                 break;
             }
-        
+LDA #'p' Print.Char();
 
             RMB0 EditorFlags  // Clear modified
             
@@ -1106,9 +1122,12 @@ program Edit
             STA ZP.STRL
             LDA #(savedMsg / 256)
             STA ZP.STRH
+            
+LDA #'q' Print.Char();
+LDA #' ' Print.Char();            
             LDY #0
             View.StatusStringPause();
-            
+
             SEC
             break;
         } // loop

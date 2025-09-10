@@ -65,10 +65,12 @@ unit Definitions
     // 0x66: Available (1 byte)
     //   - Free for application use
     //
-    // 0x67-0x68: Screen (2 bytes) [RELOCATED FROM 0x65]
-    //   - screenStrL, screenStrH (temporary string pointer)
+    // 0x67-0x6C: Screen (6 bytes)
+    //   - screenStrL, screenStrH (0x67-0x68, temporary string pointer)
+    //   - currentAttributes, workingAttributes (0x69-0x6A)
+    //   - workingStatus, workingColour (0x6B-0x6C)
     //
-    // 0x69-0x6F: Available (7 bytes)
+    // 0x6D-0x6F: Available (3 bytes)
     //   - Free for application expansion
     //
     // 0x70-0x7E: ScreenBuffer (15 bytes)
@@ -88,26 +90,46 @@ unit Definitions
     //   - GapValue (0x88-0x89, uint), gbTempSize (0x8A-0x8B, uint)
     //   - gbGapSizeL/H (0x8C-0x8D), FastLengthL/H (0x8E-0x8F)
     //
-    // 0x90-0xAF: View (32 bytes)
+    // 0x90-0x9F: View (16 bytes)
     //   - vwScreenCols, vwScreenRows, vwCurrentRow, vwCurrentCol (0x90-0x93)
-    //   - vwTopLineL/H (0x95-0x96), vwLineCountL/H (0x98-0x99)
+    //   - vwTopLine (0x94-0x95, uint) [Note: was incorrectly shown as 0x95-0x96]
+    //   - vwTopLineL, vwTopLineH (0x95-0x96)
+    //   - vwLineCount (0x97-0x98, uint) [Note: was incorrectly shown as 0x98-0x99]
+    //   - vwLineCountL, vwLineCountH (0x98-0x99)
     //   - vwPosL/H (0x9A-0x9B), vwLeafTempL/H (0x9C-0x9D)
     //   - vwSkipCountL/H (0x9E-0x9F)
     //
+    // 0xA0-0xAF: Available (16 bytes)
+    //   - Free for application use
+    //
     // 0xB0-0xB5: Prompt (6 bytes)
-    //   - promptBuffer (0xB0-0xB5, uint)
-    //   - promptLength, promptMaxLen (0xA2-0xA3)
+    //   - promptBuffer (0xB0-0xB1, uint)
+    //   - promptLength (0xB2)
+    //   - promptMaxLen (0xB3)
+    //   - promptStartCol (0xB4)
+    //   - promptLastChar (0xB5)
     //
-    // 0xB6-0xCF: Edit
+    // 0xB6-0xCA: Edit (21 bytes, +4 in DEBUG mode)
+    //   - EditorFlags (0xB6)
+    //   - currentFilename (0xB7-0xB8, uint)
+    //   - BlockStart (0xB9-0xBA, uint)
+    //   - BlockEnd (0xBB-0xBC, uint)
+    //   - clipBoard (0xBD-0xBE, uint)
+    //   - currentPos (0xBF-0xC0, uint)
+    //   - targetPos (0xC1-0xC2, uint)
+    //   - editCount (0xC3-0xC4, uint)
+    //   - editStore (0xC5-0xC6, uint)
+    //   - DEBUG: crPos (0xC7-0xC8, uint), crCol (0xC9) [conditional]
     //
-    // 0xD0-0xEB: Available
+    // 0xCB-0xEB: Available (33 bytes, 29 if Edit DEBUG mode)
     //   - Free for additional application modules
     //
     // =====================================================
     // SUMMARY:
-    // Used: 78 bytes (Debug:6, Screen:2, ScreenBuffer:15,
-    //                 Keyboard:1, GapBuffer:16, View:16, Prompt:4)
-    // Available: 70 bytes (in various blocks)
+    // Used: 115 bytes (Debug:6, Screen:6, ScreenBuffer:15,
+    //                  Keyboard:1, GapBuffer:16, View:16, 
+    //                  Prompt:6, Edit:21 [+4 in DEBUG])
+    // Available: 33 bytes (in various blocks)
     // =====================================================
     
     
