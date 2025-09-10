@@ -43,12 +43,11 @@
 - Block operations (deleteBlock, copyBlock)
 
 ## Implementation Priority
-1. **Simple additions** (Tab, Help alias, Hide Block) - trivial
-2. **Clipboard core** - enables many features
-3. **Block operations** - completes block functionality
-4. **Delete operations** - common editing needs
-5. **Word movement** - better navigation
-6. **Find/Replace** - essential for larger files
-7. **Auto-indent** - quality of life
-8. **Undo/Redo** - complex but valuable
-9. **Command line** - workflow improvement
+1. **Clipboard core** - enables many features
+2. **Block operations** - completes block functionality
+3. **Delete operations** - common editing needs
+4. **Word movement** - better navigation
+5. **Find/Replace** - essential for larger files
+6. **Auto-indent** - quality of life
+7. **Undo/Redo** - complex but valuable
+8. **Command line** - workflow improvement
