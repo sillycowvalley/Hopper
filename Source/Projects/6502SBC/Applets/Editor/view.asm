@@ -1,9 +1,9 @@
 unit View
 {
+    uses "System/Definitions"
     uses "System/ScreenBuffer"
     uses "System/Shared"
     uses "Editor/GapBuffer"
-    
     
     // Zero page allocation
     const byte vwSlots = 0x90;
@@ -611,23 +611,47 @@ unit View
                 
         GapBuffer.GetCharAtFastPrep();
         
-        // Render visible lines
-        LDY #0  // Screen row
-        loop
+        if (BBR2, Edit.EditorFlags) 
         {
-            PHY
-            
-            // Position cursor at start of line
-            LDA #0
-            ScreenBuffer.GotoXY();
-            
-            // Render one line
-            renderLine();
-            
-            PLY
-            INY
-            CPY vwScreenRows
-            if (C) { break; }  // row >= screenRows
+            // Render visible lines (no block active)
+            LDY #0  // Screen row
+            loop
+            {
+                PHY
+                
+                // Position cursor at start of line
+                LDA #0
+                ScreenBuffer.GotoXY();
+                
+                // Render one line
+                renderLine();
+                
+                PLY
+                INY
+                CPY vwScreenRows
+                if (C) { break; }  // row >= screenRows
+            }
+        }
+        else
+        {
+            // Render visible lines (block active)
+            LDY #0  // Screen row
+            loop
+            {
+                PHY
+                
+                // Position cursor at start of line
+                LDA #0
+                ScreenBuffer.GotoXY();
+                
+                // Render one line
+                renderLineWithBlock();
+                
+                PLY
+                INY
+                CPY vwScreenRows
+                if (C) { break; }  // row >= screenRows
+            }
         }
         
         ScreenBuffer.Resume();
@@ -686,6 +710,117 @@ unit View
             // Check for newline
             CMP #'\n'
             if (Z) { break; }
+        }
+    }
+    
+    
+    // Helper: Check if current vwPos is within block
+    // Input: vwPos = current position
+    // Output: C set if within block, clear if not
+    isPositionInBlock()
+    {
+        // Check vwPos >= BlockStart
+        LDA vwPosH
+        CMP Edit.BlockStartH
+        if (Z)  // vwPos.H == BlockStart.H
+        {
+            LDA vwPosL
+            CMP Edit.BlockStartL
+        }
+        if (NC) { CLC return; }  // vwPos < BlockStart
+        
+        // vwPos >= BlockStart, now check upper bound
+        
+        // Check vwPos < BlockEnd
+        LDA vwPosH
+        CMP Edit.BlockEndH
+        if (Z)  // High bytes equal
+        {
+            LDA vwPosL
+            CMP Edit.BlockEndL
+        }
+        if (NC)  // vwPos < BlockEnd
+        {
+            SEC  // In block
+            return;
+        }
+        CLC  // Not in block
+    }
+    
+    // Render one line with block highlighting
+    // Warning: assumes GapBuffer.GetCharAtFastPrep() has been called before entering
+    renderLineWithBlock()
+    {
+        ScreenBuffer.CharFastPrep();  // Sets up msbAttribute
+        
+        LDX #0  // Column counter
+        loop
+        {
+            // Check if at end of document
+            LDA vwPosH
+            CMP GapBuffer.FastLengthH
+            if (Z)
+            {
+                LDA vwPosL
+                CMP GapBuffer.FastLengthL
+            }
+            if (C) { break; }  // pos >= length
+            
+            // Check if position is in block
+            isPositionInBlock();
+            if (C)  // In block
+            {
+                // Inverse On
+                LDA ScreenBuffer.msbAttribute
+                ORA # Attribute.Inverse
+                STA ScreenBuffer.msbAttribute
+            }
+            else
+            {
+                // Inverse Off
+                LDA ScreenBuffer.msbAttribute
+                AND # 0b01111111
+                STA ScreenBuffer.msbAttribute
+            }
+            
+            // Get character
+            LDA vwPosL
+            STA GapBuffer.GapValueL
+            LDA vwPosH
+            STA GapBuffer.GapValueH
+            GapBuffer.GetCharAtFast(); // -> A
+            
+            // Advance position
+            INC vwPosL
+            if (Z) { INC vwPosH }
+            
+            // Check for newline
+            CMP #'\n'
+            if (Z) { break; }
+            
+            // Check if at right edge
+            CPX vwScreenCols
+            if (C) { break; }  // col >= screenCols
+                       
+            // Display character
+            ScreenBuffer.CharFast();
+            INX
+        }
+        
+        // Inverse Off
+        LDA ScreenBuffer.msbAttribute
+        AND # 0b01111111
+        STA ScreenBuffer.msbAttribute
+        
+        // Fill the remainder of the line with spaces
+        loop
+        {
+            CPX vwScreenCols
+            if (C) { break; }  // col >= screenCols
+            
+            LDA #' '
+            ScreenBuffer.CharFast();
+            INX
         }
     }
     
@@ -1232,7 +1367,7 @@ unit View
             INY
         }
         
-        if (BBR3, EditorFlags) // prompt mode?
+        if (BBR3, Edit.EditorFlags) // prompt mode?
         {
             // Position cursor
             LDA vwCurrentCol
@@ -1283,7 +1418,7 @@ unit View
             ScreenBuffer.Char();
         }
         
-        if (BBR3, EditorFlags) // prompt mode?
+        if (BBR3, Edit.EditorFlags) // prompt mode?
         {
             // Position cursor
             LDA vwCurrentCol

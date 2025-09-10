@@ -88,17 +88,17 @@ unit Definitions
     //   - GapValue (0x88-0x89, uint), gbTempSize (0x8A-0x8B, uint)
     //   - gbGapSizeL/H (0x8C-0x8D), FastLengthL/H (0x8E-0x8F)
     //
-    // 0x90-0x9F: View (16 bytes)
+    // 0x90-0xAF: View (32 bytes)
     //   - vwScreenCols, vwScreenRows, vwCurrentRow, vwCurrentCol (0x90-0x93)
     //   - vwTopLineL/H (0x95-0x96), vwLineCountL/H (0x98-0x99)
     //   - vwPosL/H (0x9A-0x9B), vwLeafTempL/H (0x9C-0x9D)
     //   - vwSkipCountL/H (0x9E-0x9F)
     //
-    // 0xA0-0xA5: Prompt (6 bytes)
-    //   - promptBuffer (0xA0-0xA5, uint)
+    // 0xB0-0xB5: Prompt (6 bytes)
+    //   - promptBuffer (0xB0-0xB5, uint)
     //   - promptLength, promptMaxLen (0xA2-0xA3)
     //
-    // 0xA6-0xAA: Edit (5 bytes)
+    // 0xB6-0xBA: Edit (5 bytes)
     //
     // 0xB0-0xEB: Available (72 bytes)
     //   - Free for additional application modules

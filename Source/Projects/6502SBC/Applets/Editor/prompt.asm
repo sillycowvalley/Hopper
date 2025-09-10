@@ -7,7 +7,7 @@ unit Prompt
     uses "View"
     
     // Zero page for prompt input buffer
-    const byte promptSlots    = 0xA0;
+    const byte promptSlots    = 0xB0;
     const uint promptBuffer   = promptSlots+0;
     const byte promptBufferL  = promptSlots+0;
     const byte promptBufferH  = promptSlots+1;

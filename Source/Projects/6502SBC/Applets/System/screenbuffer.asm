@@ -6,6 +6,8 @@ unit ScreenBuffer
     uses "Screen"
     uses "Shared"
     
+    friend View;
+    
     // Attribute bit flags
     enum Attribute
     {
@@ -411,7 +413,7 @@ unit ScreenBuffer
                 STA [ZP.IDX], Y
                 
                 // mark cell as dirty
-                STA [ZP.IDX]
+                LDA [ZP.IDX]
                 ORA #dirtyBit
                 STA [ZP.IDX]
             }

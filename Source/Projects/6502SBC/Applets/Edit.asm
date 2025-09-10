@@ -20,11 +20,11 @@ program Edit
     uses "Editor/Help"
     uses "Editor/Prompt"
     
-    const byte edSlots       = 0xA6;
+    const byte edSlots       = 0xB6;
     const byte EditorFlags   = edSlots;
     // Bit  0:   Modified flag (0=clean, 1=modified)
     // Bit  1:   Exiting
-    // Bit  2:   Selection active (0=no, 1=yes)
+    // Bit  2:   Block active (0=no, 1=yes)
     // Bit  3:   prompt mode
     // Bits 4-5: Undo state (00=empty, 01=can_undo, 10=can_redo, 11=reserved)
     // Bits 6-7: Reserved for future use
@@ -32,6 +32,22 @@ program Edit
     const byte currentFilename  = edSlots+1;
     const byte currentFilenameL = edSlots+1;
     const byte currentFilenameH = edSlots+2;
+    
+    // Block state
+    const uint BlockStart = edSlots+3;  // Logical position in GapBuffer
+    const byte BlockStartL = edSlots+3;
+    const byte BlockStartH = edSlots+4;
+    
+    const uint BlockEnd = edSlots+5;         // Logical position in GapBuffer  
+    const byte BlockEndL = edSlots+5;
+    const byte BlockEndH = edSlots+6;
+    
+#ifdef DEBUG
+    const uint crPos   = edSlots+7;
+    const byte crPosL  = edSlots+7;
+    const byte crPosH  = edSlots+8;
+    const byte crCol   = edSlots+9;
+#endif    
     
     // Messages
     const string saveChangesPrompt = "Save changes? (Y/N/Esc): ";
@@ -45,6 +61,8 @@ program Edit
     const string ctrlKPrompt = "^K ";
     const string ctrlQPrompt = "^Q ";
     
+    const string noBeginMsg = "No block begin! Use ^K B first.";
+    
     const string writeBuffer = " ";
     
     
@@ -55,6 +73,13 @@ program Edit
             STZ EditorFlags
             STZ currentFilenameL
             STZ currentFilenameH
+            
+            // Initialize block bounds to invalid
+            LDA #0xFF
+            STA Edit.BlockStartL
+            STA Edit.BlockStartH
+            STA Edit.BlockEndL
+            STA Edit.BlockEndH
     
 #ifdef DEBUG        
             Debug.Initialize();
@@ -82,6 +107,350 @@ program Edit
             break;
         } // single exit
     }
+    
+#ifdef DEBUG
+    // Debug helper: Dump block state
+    const string blockDumpLabel = "= BLOCK STATE =";
+    const string blockActiveLabel = "Active:";
+    const string bufferSizeLabel = "BufSize:";
+    const string cursorPosLabel = "CursPos:";
+    const string blockStartLabel = "BlkStart:";
+    const string blockEndLabel = "BlkEnd:";
+    const string startCRLabel = "StartCR:";
+    const string endCRLabel = "EndCR:";
+    
+    BlockDump()
+    {
+        PHX
+        PHY
+        
+        // Save ZP.IDX
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        Debug.Clear();
+        
+        // Header
+        LDA #(blockDumpLabel % 256)
+        STA ZP.STRL
+        LDA #(blockDumpLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Block active status
+        LDA #(blockActiveLabel % 256)
+        STA ZP.STRL
+        LDA #(blockActiveLabel / 256)
+        STA ZP.STRH
+        if (BBS2, Edit.EditorFlags)
+        {
+            LDA #1
+        }
+        else
+        {
+            LDA #0
+        }
+        Debug.LabeledByte();
+        
+        // Buffer size
+        LDA #(bufferSizeLabel % 256)
+        STA ZP.STRL
+        LDA #(bufferSizeLabel / 256)
+        STA ZP.STRH
+        GapBuffer.GetTextLength();
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Current cursor position in gap buffer
+        LDA #(cursorPosLabel % 256)
+        STA ZP.STRL
+        LDA #(cursorPosLabel / 256)
+        STA ZP.STRH
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        if (BBS2, Edit.EditorFlags)  // Block active?
+        {
+            // Block start position
+            LDA #(blockStartLabel % 256)
+            STA ZP.STRL
+            LDA #(blockStartLabel / 256)
+            STA ZP.STRH
+            LDA Edit.BlockStartL
+            STA ZP.ACCL
+            LDA Edit.BlockStartH
+            STA ZP.ACCH
+            Debug.LabeledWord();
+            
+            // Block end position
+            LDA #(blockEndLabel % 256)
+            STA ZP.STRL
+            LDA #(blockEndLabel / 256)
+            STA ZP.STRH
+            LDA Edit.BlockEndL
+            STA ZP.ACCL
+            LDA Edit.BlockEndH
+            STA ZP.ACCH
+            Debug.LabeledWord();
+            
+            // Convert block start to col,row
+            LDA #(startCRLabel % 256)
+            STA ZP.STRL
+            LDA #(startCRLabel / 256)
+            STA ZP.STRH
+            Debug.String();
+            LDA Edit.BlockStartL
+            STA GapBuffer.GapValueL
+            LDA Edit.BlockStartH
+            STA GapBuffer.GapValueH
+            convertPositionToCR();  // Returns col in A, row in ACC
+            Debug.Byte();          // Show column
+            Debug.Word();          // Show row
+            
+            // Convert block end to col,row
+            LDA #(endCRLabel % 256)
+            STA ZP.STRL
+            LDA #(endCRLabel / 256)
+            STA ZP.STRH
+            Debug.String();
+            LDA Edit.BlockEndL
+            STA GapBuffer.GapValueL
+            LDA Edit.BlockEndH
+            STA GapBuffer.GapValueH
+            convertPositionToCR();  // Returns col in A, row in ACC
+            Debug.Byte();          // Show column
+            Debug.Word();          // Show row
+        }
+        
+        // Restore ZP.IDX
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        PLY
+        PLX
+    }
+
+    
+    // Helper: Convert logical position to col,row
+    // Input: GapBuffer.GapValue = position
+    // Output: A = column, ZP.ACC = row
+    convertPositionToCR()
+    {
+        // Save target position
+        LDA GapBuffer.GapValueL
+        STA crPosL
+        LDA GapBuffer.GapValueH
+        STA crPosH
+        
+        GapBuffer.GetCharAtFastPrep();
+        
+        // Walk through document counting lines and columns
+        STZ GapBuffer.GapValueL      // Start at position 0
+        STZ GapBuffer.GapValueH
+        STZ ZP.ACCL     // Row counter
+        STZ ZP.ACCH
+        STZ crCol       // Column counter
+        
+        loop
+        {
+            // Check if we've reached target
+            LDA GapBuffer.GapValueH
+            CMP crPosH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP crPosL
+            }
+            if (Z)  // Found position
+            {
+                LDA crCol   // Return column in A
+                break;
+            }
+            
+            // Check if at end
+            LDA GapBuffer.GapValueH
+            CMP GapBuffer.FastLengthH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP GapBuffer.FastLengthL
+            }
+            if (C)  // At EOF
+            {
+                LDA crCol   // Return current column
+                break;
+            }
+            
+            // Get character at current position
+            GapBuffer.GetCharAtFast();
+            
+            // Check for newline
+            CMP #'\n'
+            if (Z)
+            {
+                INC ZP.ACCL
+                if (Z) { INC ZP.ACCH }
+                STZ crCol   // Reset column to 0
+            }
+            else
+            {
+                INC crCol   // Next column
+            }
+            
+            // Advance position
+            INC GapBuffer.GapValueL
+            if (Z) { INC GapBuffer.GapValueH }
+        }
+        
+        // A = column, ACC = row
+    }
+
+
+#endif
+
+
+
+    
+    
+    // discard current block and trigger redraw if needed
+    // X = 1 to force a redraw, 0 = no redraw
+    clearBlock()
+    {
+        // Check if there was actually a block to clear
+        if (BBR2, Edit.EditorFlags) 
+        { 
+            return;  // No block active, nothing to do
+        }
+        
+        // Clear the block active flag
+        RMB2 Edit.EditorFlags
+        
+        // Set to invalid position (0xFFFF)
+        LDA #0xFF
+        STA Edit.BlockStartL
+        STA Edit.BlockStartH
+        STA Edit.BlockEndL
+        STA Edit.BlockEndH
+        
+        // Force redraw to remove highlighting
+        CPX #1
+        if (Z)
+        {
+            View.Render();
+        }
+    }
+    
+    // Helper: Mark block begin at current cursor position
+    blockBegin()
+    {
+        // Clear any existing block
+        LDX #0 // 
+        if (BBS2, Edit.EditorFlags) 
+        {
+            LDX #1 // unless there was an existing block .. render it away
+        }
+        clearBlock();
+        
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        
+        // Store as block start
+        LDA GapBuffer.GapValueL
+        STA Edit.BlockStartL
+        LDA GapBuffer.GapValueH
+        STA Edit.BlockStartH
+        
+        // Clear block active flag (need both endpoints)
+        RMB2 Edit.EditorFlags
+        
+    }
+    
+    // Helper: Mark block end at current cursor position
+    blockEnd()
+    {
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        
+        // Check if block start has been set (not 0xFFFF)
+        LDA Edit.BlockStartL
+        AND Edit.BlockStartH
+        CMP #0xFF
+        if (Z)  // Both bytes are 0xFF
+        {
+            // No begin marker - show error
+            LDA #(noBeginMsg % 256)
+            STA ZP.STRL
+            LDA #(noBeginMsg / 256)
+            STA ZP.STRH
+            LDY #0
+            View.StatusStringPause();
+            return;
+        }
+        
+        // Store as block end
+        LDA GapBuffer.GapValueL
+        STA Edit.BlockEndL
+        LDA GapBuffer.GapValueH
+        STA Edit.BlockEndH
+        
+        // Normalize: ensure Start <= End
+        // Compare End to Start
+        LDA Edit.BlockEndH
+        CMP Edit.BlockStartH
+        if (Z)  // End.H == Start.H
+        {
+            // High bytes equal, check low
+            LDA Edit.BlockEndL
+            CMP Edit.BlockStartL
+        }                
+        if (NC)  // End < Start
+        {
+            // Swap them
+            swapBlockEndpoints();
+        }
+        
+        // Set block active flag
+        SMB2 Edit.EditorFlags
+        
+        // Show the highlighted block
+        View.Render();
+    }
+    
+    // Helper: Swap block start and end
+    swapBlockEndpoints()
+    {
+        // Swap Start and End
+        LDA Edit.BlockStartL
+        PHA
+        LDA Edit.BlockEndL
+        STA Edit.BlockStartL
+        PLA
+        STA Edit.BlockEndL
+        
+        LDA Edit.BlockStartH
+        PHA
+        LDA Edit.BlockEndH
+        STA Edit.BlockStartH
+        PLA
+        STA Edit.BlockEndH
+    }
+    
+    
+    
+    
+    
+    
     disposeFilename()
     {
         LDA currentFilenameL
@@ -221,6 +590,9 @@ program Edit
         GapBuffer.Clear();
         disposeFilename();
         RMB0 EditorFlags  // Clear modified
+        
+        LDX #0
+        clearBlock(); // discards block, render will happen in View.ApplyGapBuffer() below
         
         // cursor to 0,0
         // CountLines
@@ -393,6 +765,9 @@ program Edit
         }
         makeFilename();
         saveFile();
+        
+        LDX #1
+        clearBlock(); // discards block and renders
     }
     
     // Open file (with modified check)
@@ -526,16 +901,20 @@ program Edit
                 if (Z) { break; }  // Y wrapped to 0 after 255
             }
         }
+        
+        LDX #0
+        clearBlock(); // discards block, render will happen in View.ApplyGapBuffer() below
                
         // Clear modified flag
         RMB0 EditorFlags
-        View.UpdatePosition();
         
         // Reset cursor to top of file
         STZ GapBuffer.GapValueL
         STZ GapBuffer.GapValueH
         
         View.ApplyGapBuffer();
+        
+        View.UpdatePosition();
         
         // Show success message briefly
         LDA #(loadedMsg % 256)
@@ -630,17 +1009,20 @@ program Edit
         // Process the command
         switch (A)
         {
-            case 'B':  // Mark block begin
+            case Key.CtrlB: // finger still down on <ctrl>
+            case 'B':       // Mark block begin
             {
                 View.StatusClear();
-                // TODO markBlockBegin();
+                blockBegin();
             }
-            case 'K':  // Mark block end
+            case Key.CtrlK: // finger still down on <ctrl>
+            case 'K':       // Mark block end
             {
                 View.StatusClear();
-                // TODO markBlockEnd();
+                blockEnd();
             }
-            case 'D':  // Done - save and exit
+            case Key.CtrlD: // finger still down on <ctrl>
+            case 'D':       // Done - save and exit
             {
                 View.StatusClear();
                 saveFile();
@@ -649,12 +1031,14 @@ program Edit
                     SMB1 EditorFlags // exit
                 }
             }
-            case 'Q':  // Quit without save
+            case Key.CtrlQ: // finger still down on <ctrl>
+            case 'Q':       // Quit without save
             {
                 View.StatusClear();
                 SMB1 EditorFlags // exit
             }
-            case 'S':  // Save
+            case Key.CtrlS: // finger still down on <ctrl>
+            case 'S':       // Save
             {
                 View.StatusClear();
                 saveFile();
@@ -700,32 +1084,51 @@ program Edit
         
         switch (A)
         {
-            case 'S':  // Beginning of line
+            case Key.CtrlB: // finger still down on <ctrl>
+            case 'B':       // Beginning of block
             {
                 View.StatusClear();
                 View.CursorHome();
             }
-            case 'D':  // End of line
+            case Key.CtrlK: // finger still down on <ctrl>
+            case 'K':       // End of block
             {
                 View.StatusClear();
                 View.CursorEnd();
             }
-            case 'R':  // Top of file
+            
+            case Key.CtrlS: // finger still down on <ctrl>
+            case 'S':       // Beginning of line
+            {
+                View.StatusClear();
+                View.CursorHome();
+            }
+            case Key.CtrlD: // finger still down on <ctrl>
+            case 'D':       // End of line
+            {
+                View.StatusClear();
+                View.CursorEnd();
+            }
+            case Key.CtrlR: // finger still down on <ctrl>
+            case 'R':       // Top of file
             {
                 View.StatusClear();
                 View.CursorTop();
             }
-            case 'C':  // End of file
+            case Key.CtrlC: // finger still down on <ctrl>
+            case 'C':       // End of file
             {
                 View.StatusClear();
                 View.CursorBottom();
             }
-            case 'F':  // Find
+            case Key.CtrlF: // finger still down on <ctrl>
+            case 'F':       // Find
             {
                 View.StatusClear();
                 // TODO findText();
             }
-            case 'A':  // Replace
+            case Key.CtrlA: // finger still down on <ctrl>
+            case 'A':       // Replace
             {
                 View.StatusClear();
                 // TODO replaceText();
@@ -755,6 +1158,8 @@ program Edit
 //View.Dump(); 
 //showGapPosition();
 //GapBuffer.Dump();
+
+BlockDump();
                       
             // Get key
             Keyboard.GetKey();
