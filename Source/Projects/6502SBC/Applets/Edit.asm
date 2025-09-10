@@ -1,7 +1,7 @@
 program Edit
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
     
     //#define TURBO
     
@@ -2531,7 +2531,7 @@ program Edit
         {
 //View.Dump(); 
 //showGapPosition();
-GapBuffer.Dump();
+//GapBuffer.Dump();
                       
             // Get key
             Keyboard.GetKey();
@@ -2686,11 +2686,29 @@ GapBuffer.Dump();
                         }
                         case Key.Backspace:
                         {
-                            backspace(); continue;
+                            if (BBS2, EditorFlags)  // Block active?
+                            {
+                                LDX #0  // Just delete, don't copy to clipboard
+                                deleteBlock();
+                            }
+                            else
+                            {
+                                backspace();
+                            }
+                            continue;
                         }
                         case Key.Delete:
                         {
-                            delete(); continue;
+                            if (BBS2, EditorFlags)  // Block active?
+                            {
+                                LDX #0  // Just delete, don't copy to clipboard
+                                deleteBlock();
+                            }
+                            else
+                            {
+                                delete();
+                            }
+                            continue;
                         }
                         case Key.CtrlY:
                         {
@@ -2784,9 +2802,21 @@ GapBuffer.Dump();
                     if (C)  // Is printable
                     {
                         PHA
-                        
+
+#if defined(TURBO)
                         resetBlock();
-                        
+#else
+                        // If block active, delete it first
+                        if (BBS2, EditorFlags)
+                        {
+                            LDX #0  // Just delete
+                            deleteBlock();
+                        }
+                        else
+                        {
+                            resetBlock();
+                        }
+#endif                        
                         // Get current position and move gap there
                         View.GetCursorPosition();  // Returns position in GapValue
                         GapBuffer.MoveGapTo();     // Moves gap to GapValue position
