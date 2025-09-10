@@ -169,6 +169,49 @@ program Edit
         SEC  // Success
     }
     
+    // Helper: Get clipboard length
+    // Output: editCountL/H = length (not including null terminator)
+    //         Z flag set if clipboard is empty/non-existent
+    getClipboardLength()
+    {
+        // Check if clipboard exists
+        LDA clipBoardL
+        ORA clipBoardH
+        if (Z) 
+        { 
+            STZ editCountL
+            STZ editCountH
+            return;  // Z flag already set
+        }
+        
+        // Count bytes in clipboard
+        LDA clipBoardL
+        STA ZP.IDYL
+        LDA clipBoardH
+        STA ZP.IDYH
+        
+        STZ editCountL
+        STZ editCountH
+        
+        loop
+        {
+            LDA [IDY]
+            if (Z) { break; }  // Hit null terminator
+            
+            // Increment count
+            INC editCountL
+            if (Z) { INC editCountH }
+            
+            // Increment pointer
+            Shared.IncIDY();
+        }
+        
+        // editCountL/H contains length
+        // Set Z flag based on whether length is 0
+        LDA editCountL
+        ORA editCountH
+    }
+    
 #ifdef DEBUG
     // Debug helper: Dump block state
     const string blockDumpLabel = "= BLOCK STATE =";
@@ -1288,12 +1331,14 @@ program Edit
                 LDX #0  // Just delete, no copy
                 deleteBlock();
             }
-            case 'C':  // Copy block to cursor
+            case Key.CtrlC: // finger still down on <ctrl>
+            case 'C':       // Copy block to cursor
             {
                 copyBlockClipboard();
                 insertClipboard();
             }
-            case 'V':  // Move block to cursor
+            case Key.CtrlV: // finger still down on <ctrl>
+            case 'V':       // Move block to cursor
             {
                 moveBlock();
             }
@@ -1672,10 +1717,63 @@ program Edit
     
     moveBlock()
     {
-BlockDump();
-Serial.WaitForChar();        
+        // Check if block is active
+        if (BBR2, EditorFlags) { return; }  // No block
         
         View.GetCursorPosition();
+        loop
+        {
+            // 1. GapValue < BlockStart     ->    position unchanged after delete
+            LDA GapBuffer.GapValueH
+            CMP BlockStartH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP BlockStartL
+            }
+            if (NC)
+            {
+                // GapValue < BlockStart
+                break; // nothing needs to be done
+            }
+            
+            // 2. GapValue >= BlockEnd      ->    GapValue -= (BlockEnd - BlockStart)
+            //    (positions after block shift back when block is deleted)
+            LDA GapBuffer.GapValueH
+            CMP BlockEndH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP BlockEndL
+            }
+            if (C)
+            {
+                // GapValue >= BlockEnd
+                
+                // GapValue -= (BlockEnd - BlockStart) required
+                SEC
+                LDA BlockEndL
+                SBC BlockStartL
+                STA editCountL                
+                LDA BlockEndH
+                SBC BlockStartH
+                STA editCountH 
+                  
+                SEC
+                LDA GapBuffer.GapValueL
+                SBC editCountL
+                STA GapBuffer.GapValueL                
+                LDA GapBuffer.GapValueH
+                SBC editCountH
+                STA GapBuffer.GapValueH                                             
+                break;
+            }
+            
+            // 3. GapValue inside block (>= BlockStart && < BlockEnd) -> error/exit
+            //    (can't move block to inside itself)        
+            return;
+        } // loop
+        
         LDA GapBuffer.GapValueL
         PHA
         LDA GapBuffer.GapValueH
@@ -1683,20 +1781,16 @@ Serial.WaitForChar();
         
         LDX #1  // Cut to clipboard
         deleteBlock();
-
-BlockDump();
-DumpClipboard();
-Serial.WaitForChar();
         
         PLA
         STA GapBuffer.GapValueH
         PLA
         STA GapBuffer.GapValueL
         
-BlockDump();
-Serial.WaitForChar();
-        
-        GapBuffer.MoveGapTo(); 
+        GapBuffer.MoveGapTo();
+        LDX #0  // Don't render yet
+        View.SetCursorPosition();  // Update View's cursor
+    
         insertClipboard();
     }
     
