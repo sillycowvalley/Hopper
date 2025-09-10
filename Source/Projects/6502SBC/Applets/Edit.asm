@@ -1220,6 +1220,11 @@ program Edit
                 LDX #1
                 clearBlock();
             }
+            case Key.CtrlT: // finger still down on <ctrl>
+            case 'T':       // Mark single word
+            {
+                markWord();
+            }
             case Key.CtrlD: // finger still down on <ctrl>
             case 'D':       // Done - save and exit
             {
@@ -1347,6 +1352,35 @@ program Edit
         }
     }
     
+    // Helper: Mark the word at cursor as a block
+    markWord()
+    {
+        // Get current cursor position
+        View.GetCursorPosition();
+        
+        // Find start of word
+        findWordStart();
+        LDA GapBuffer.GapValueL
+        STA Edit.BlockStartL
+        LDA GapBuffer.GapValueH
+        STA Edit.BlockStartH
+        
+        // Go back to cursor position and find end of word
+        View.GetCursorPosition();
+        LDX #0  // Delete mode - stop at end of word, not spaces
+        findWordEnd();
+        LDA GapBuffer.GapValueL
+        STA Edit.BlockEndL
+        LDA GapBuffer.GapValueH
+        STA Edit.BlockEndH
+        
+        // Set block active flag
+        SMB2 EditorFlags
+        
+        // Update display to show marked word
+        View.Render();
+    }
+     
     
     // Helper: Delete from cursor to end of line
     deleteToEOL()
