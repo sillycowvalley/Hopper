@@ -736,8 +736,6 @@ unit GapBuffer
         STA ZP.IDXH
         LDA [ZP.IDX] // retrieve old character
         PHA
-        LDA #0
-        STA [ZP.IDX]
         
         // Move gap end forward
         INC gbGapEndL
@@ -1122,16 +1120,21 @@ unit GapBuffer
     const string gapStartLabel = "GapS:";
     const string gapEndLabel = "GapE:";
     const string sizeLabel = "Size:";
+    
+    // Undo state labels
+    const string undoOpLabel = "UndoOp:";
+    const string undoStartLabel = "UndoS:";
+    const string undoEndLabel = "UndoE:";
+    
     const string rawLabel = "Raw:";
     const string logLabel = "Log:";
-    
     
     Dump()
     {
         PHX
         PHY
         
-         // Save ZP.IDX
+        // Save ZP.IDX
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
@@ -1201,7 +1204,37 @@ unit GapBuffer
         STA ZP.ACCH
         Debug.LabeledWord();
         
-        // Dump first 16 raw bytes from buffer
+        // Undo operation type
+        LDA #(undoOpLabel % 256)
+        STA ZP.STRL
+        LDA #(undoOpLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.undoOp
+        Debug.LabeledByte();  // Shows 0=None, 1=Inserted, 2=Deleted
+        
+        // Undo gap start
+        LDA #(undoStartLabel % 256)
+        STA ZP.STRL
+        LDA #(undoStartLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.undoGapStartL
+        STA ZP.ACCL
+        LDA GapBuffer.undoGapStartH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Undo gap end
+        LDA #(undoEndLabel % 256)
+        STA ZP.STRL
+        LDA #(undoEndLabel / 256)
+        STA ZP.STRH
+        LDA GapBuffer.undoGapEndL
+        STA ZP.ACCL
+        LDA GapBuffer.undoGapEndH
+        STA ZP.ACCH
+        Debug.LabeledWord();
+        
+        // Dump first 64 raw bytes from buffer
         LDA #(rawLabel % 256)
         STA ZP.STRL
         LDA #(rawLabel / 256)
@@ -1212,17 +1245,17 @@ unit GapBuffer
         STA ZP.IDXL
         LDA GapBuffer.gbBufferH
         STA ZP.IDXH
-        LDA # 64
+        LDA #48
         Debug.DumpMemory();
         
-        // Show what GetCharAt returns for first 8 positions
+        // Show what GetCharAt returns for first 48 positions
         LDA #(logLabel % 256)
         STA ZP.STRL
         LDA #(logLabel / 256)
         STA ZP.STRH
         Debug.String();
         
-        LDX #48
+        LDX #32
         STZ ZP.IDYL  // Position counter
         loop
         {

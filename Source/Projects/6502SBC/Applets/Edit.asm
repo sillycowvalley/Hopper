@@ -1,9 +1,9 @@
 program Edit
 {
     #define CPU_65C02S
-    //#define DEBUG
+    #define DEBUG
     
-    #define TURBO
+    //#define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
@@ -2515,7 +2515,7 @@ program Edit
         {
 //View.Dump(); 
 //showGapPosition();
-//GapBuffer.Dump();
+GapBuffer.Dump();
                       
             // Get key
             Keyboard.GetKey();
@@ -2722,6 +2722,22 @@ program Edit
                         case Key.CtrlC:  // Copy (copy then delete)
                         {
                             copyBlockClipboard();
+                        }
+                        case Key.CtrlZ:
+                        {
+                            GapBuffer.ToggleUndo();
+                            if (C)
+                            {
+                                // Get the new gap position (where cursor should be)
+                                GapBuffer.GetGapStart();  // Returns in GapValue
+                                
+                                // Update line count if text was added/removed
+                                View.CountLines();
+                                
+                                // Update cursor to new position and render
+                                LDX #1  // Force render
+                                View.SetCursorPosition();
+                            }
                         }
                         
                         case Key.Up:
