@@ -1042,6 +1042,13 @@ program Edit
                 View.StatusClear();
                 blockEnd();
             }
+            case Key.CtrlH: // finger still down on <ctrl>
+            case 'H':       // 'hide' block
+            {
+                View.StatusClear();
+                LDX #1
+                clearBlock();
+            }
             case Key.CtrlD: // finger still down on <ctrl>
             case 'D':       // Done - save and exit
             {
@@ -1273,6 +1280,44 @@ program Edit
                         
                         // Let View handle positioning to start of new line
                         LDX #1 // Render
+                        View.SetCursorPosition();
+                    }
+                }
+                case Key.Tab:
+                {
+                    View.GetCursorPosition();
+                    GapBuffer.MoveGapTo();
+                    
+                    // Insert 4 spaces
+                    LDX #4
+                    loop
+                    {
+                        PHX
+                        LDA #' '
+                        GapBuffer.InsertChar();
+                        if (NC)  // Failed
+                        {
+                            PLX
+                            break;
+                        }
+                        
+                        // Advance logical position
+                        INC GapBuffer.GapValueL
+                        if (Z) { INC GapBuffer.GapValueH }
+                        
+                        PLX
+                        DEX
+                        if (Z) { break; }
+                    }
+                    
+                    // Set modified flag if any spaces were inserted
+                    CPX #4
+                    if (NZ)  // Some spaces were inserted
+                    {
+                        SMB0 EditorFlags  // Set modified flag
+                        
+                        // Update display
+                        LDX #1  // Force render
                         View.SetCursorPosition();
                     }
                 }
