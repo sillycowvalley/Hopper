@@ -4,7 +4,6 @@
 |---------|-------------|------------|-------------|--------|-------------------|
 | **Undo/Redo** | Toggle undo/redo | Alt+Backspace | Ctrl+Z | **NOT STARTED** | Undo buffer, state tracking, save/restore operations |
 | **Auto-indent** | Match prev line indent | Enter | Enter | **NOT STARTED** | Scan previous line, count leading spaces |
-| **Block Delete** | Delete selected block | Ctrl+K Y | Ctrl+K Y | **NOT STARTED** | deleteBlock() - move gap to consume block |
 | **Block Copy** | Copy block to cursor | Ctrl+K C | Ctrl+K C | **NOT STARTED** | copyBlockToClipboard(), insertClipboard() |
 | **Block Move** | Move block to cursor | Ctrl+K V | Ctrl+K V | **NOT STARTED** | copyBlockToClipboard() + deleteBlock() + insertClipboard() |
 | **Modern Copy** | Copy to clipboard | N/A | Ctrl+C | **NOT STARTED** | copyBlockToClipboard() |
