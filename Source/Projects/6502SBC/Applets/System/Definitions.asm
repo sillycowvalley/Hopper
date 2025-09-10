@@ -98,9 +98,9 @@ unit Definitions
     //   - promptBuffer (0xB0-0xB5, uint)
     //   - promptLength, promptMaxLen (0xA2-0xA3)
     //
-    // 0xB6-0xBA: Edit (5 bytes)
+    // 0xB6-0xCF: Edit
     //
-    // 0xB0-0xEB: Available (72 bytes)
+    // 0xD0-0xEB: Available
     //   - Free for additional application modules
     //
     // =====================================================

@@ -20,7 +20,7 @@
 | **Word Right** | Move word right | Ctrl+F | N/A (TURBO) | **NOT STARTED** | Skip non-spaces, then spaces |
 | **Find** | Find text | Ctrl+Q F | Ctrl+Q F | **NOT STARTED** | Pattern buffer, search algorithm |
 | **Replace** | Find & replace | Ctrl+Q A | Ctrl+Q A | **NOT STARTED** | Find + prompt + replace logic |
-| **Find Next** | Repeat last find | Ctrl+L | Ctrl+L, F3, Ctrl+G | **NOT STARTED** | Store pattern, continue from cursor |
+| **Find Next** | Repeat last find | Ctrl+L | Ctrl+L, F3 | **NOT STARTED** | Store pattern, continue from cursor |
 
 ## Core Infrastructure Still Needed
 

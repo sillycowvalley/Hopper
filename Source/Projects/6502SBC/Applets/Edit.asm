@@ -1,9 +1,9 @@
 program Edit
 {
     #define CPU_65C02S
-    //#define DEBUG
+    #define DEBUG
     
-    //#define TURBO
+    #define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
@@ -48,11 +48,22 @@ program Edit
     const byte clipBoardL = edSlots+7;
     const byte clipBoardH = edSlots+8;
     
+    const uint currentPos  = edSlots+9;
+    const byte currentPosL = edSlots+9;
+    const byte currentPosH = edSlots+10;
+    
+    const uint targetPos  = edSlots+11;
+    const byte targetPosL = edSlots+11;
+    const byte targetPosH = edSlots+12;
+    
+    const byte editCountL = edSlots+13;
+    const byte editCountH = edSlots+14;
+    
 #ifdef DEBUG
-    const uint crPos   = edSlots+9;
-    const byte crPosL  = edSlots+9;
-    const byte crPosH  = edSlots+10;
-    const byte crCol   = edSlots+11;
+    const uint crPos   = edSlots+15;
+    const byte crPosL  = edSlots+15;
+    const byte crPosH  = edSlots+16;
+    const byte crCol   = edSlots+17;
 #endif    
     
     // Messages
@@ -238,6 +249,100 @@ program Edit
             Debug.Byte();          // Show column
             Debug.Word();          // Show row
         }
+        
+        // Test findLineEnd()
+        LDA #(endCRLabel % 256)  // Reuse this label
+        STA ZP.STRL
+        LDA #(endCRLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        
+        // Show current position
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Call findLineEnd()
+        findLineEnd();  // Modifies GapBuffer.GapValue
+        
+        // Show what findLineEnd() returned
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Show the character at that position
+        GapBuffer.GetCharAt();
+        Debug.Byte();
+        
+        
+        
+        
+        // Add after the findLineEnd() test in BlockDump():
+
+        // Test findLineStart()
+        LDA #(startCRLabel % 256)  // Reuse this label
+        STA ZP.STRL
+        LDA #(startCRLabel / 256)
+        STA ZP.STRH
+        Debug.String();
+        
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        
+        // Show current position
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Call findLineStart()
+        findLineStart();  // Modifies GapBuffer.GapValue
+        
+        // Show what findLineStart() returned
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        Debug.Word();
+        
+        // Show the character at that position
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
+        // Show the character at that position
+        GapBuffer.GetCharAt();
+        Debug.Byte();
+        
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
+        
+        // If not at position 0, show the character before (should be '\n')
+        LDA GapBuffer.GapValueL
+        ORA GapBuffer.GapValueH
+        if (NZ)  // Not at beginning
+        {
+            // Back up one
+            LDA GapBuffer.GapValueL
+            if (Z) { DEC GapBuffer.GapValueH }
+            DEC GapBuffer.GapValueL
+            
+            // Show previous character (should be 0x0A)
+            GapBuffer.GetCharAt();
+            Debug.Byte();
+        }
+        
         
         // Restore ZP.IDX
         PLA
@@ -1169,10 +1274,95 @@ program Edit
             {
                 // TODO replaceText();
             }
+            
+            case Key.CtrlY: // finger still down on <ctrl>
+            case 'Y':       // Delete to end of line
+            {
+                deleteToEOL();
+            }
             default:
             {
             }
         }
+    }
+    
+    
+    // Helper: Delete from cursor to end of line
+    deleteToEOL()
+    {
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns in GapBuffer.GapValue
+        
+        // Save current position
+        LDA GapBuffer.GapValueL
+        STA currentPosL
+        LDA GapBuffer.GapValueH
+        STA currentPosH
+        
+        // Find end of line
+        findLineEnd();  // Returns position of \n or EOF
+        
+        // Save end position
+        LDA GapBuffer.GapValueL
+        STA targetPosL
+        LDA GapBuffer.GapValueH
+        STA targetPosH
+        
+        // Check if we're already at end of line
+        LDA currentPosL
+        CMP targetPosL
+        if (Z)
+        {
+            LDA currentPosH
+            CMP targetPosH
+            if (Z)
+            {
+                // Already at end, nothing to delete
+                return;
+            }
+        }
+        
+        // Move gap to current position
+        LDA currentPosL
+        STA GapBuffer.GapValueL
+        LDA currentPosH
+        STA GapBuffer.GapValueH
+        GapBuffer.MoveGapTo();
+        
+        // Calculate number of characters to delete
+        SEC
+        LDA targetPosL
+        SBC currentPosL
+        STA editCountL
+        LDA targetPosH
+        SBC currentPosH
+        STA editCountH
+        
+        // Delete characters
+        loop
+        {
+            // Check if done
+            LDA editCountL
+            ORA editCountH
+            if (Z) { break; }  // Deleted all characters
+            
+            // Delete one character
+            GapBuffer.Delete();
+            if (NC) { break; }  // Delete failed
+            
+            // Decrement counter
+            LDA editCountL
+            if (Z) { DEC editCountH }
+            DEC editCountL
+        }
+        
+        // Set modified flag
+        SMB0 EditorFlags
+        
+        // Update display
+        View.CountLines();
+        LDX #1  // Force render
+        View.SetCursorPosition();
     }
     
     backspace()
@@ -1236,6 +1426,224 @@ program Edit
         
         // Show the highlighted block
         View.Render();
+    }
+    
+    
+    
+    // Helper: Check if character is part of a word
+    // Input: A = character
+    // Output: C set if word char, clear if not
+    isWordChar()
+    {
+        // Word chars are alphanumeric
+        Char.IsAlphaNumeric();  // Sets C if alphanumeric
+    }
+    
+    // Find start of word at or before current position
+    // Input: GapBuffer.GapValue = starting position
+    // Output: GapBuffer.GapValue = word start position
+    findWordStart()
+    {
+        GapBuffer.GetCharAtFastPrep();
+        
+        // If we're past end, back up
+        LDA GapBuffer.GapValueH
+        CMP FastLengthH
+        if (Z)
+        {
+            LDA GapBuffer.GapValueL
+            CMP FastLengthL
+        }
+        if (C)  // >= length
+        {
+            // Back up to last valid position
+            LDA FastLengthL
+            if (Z) { DEC GapBuffer.GapValueH }
+            DEC GapBuffer.GapValueL
+        }
+        
+        // Skip backward over non-word chars
+        loop
+        {
+            // Check if at beginning
+            LDA GapBuffer.GapValueL
+            ORA GapBuffer.GapValueH
+            if (Z) { break; }  // At position 0
+            
+            GapBuffer.GetCharAtFast();
+            isWordChar();
+            if (C) { break; }  // Found word char
+            
+            // Move back
+            LDA GapBuffer.GapValueL
+            if (Z) { DEC GapBuffer.GapValueH }
+            DEC GapBuffer.GapValueL
+        }
+        
+        // Now skip backward over word chars to find start
+        loop
+        {
+            // Check if at beginning
+            LDA GapBuffer.GapValueL
+            ORA GapBuffer.GapValueH
+            if (Z) { break; }  // At position 0
+            
+            // Look at previous character
+            LDA GapBuffer.GapValueL
+            if (Z) { DEC GapBuffer.GapValueH }
+            DEC GapBuffer.GapValueL
+            
+            GapBuffer.GetCharAtFast();
+            isWordChar();
+            if (NC)  // Not word char
+            {
+                // Move forward one to start of word
+                INC GapBuffer.GapValueL
+                if (Z) { INC GapBuffer.GapValueH }
+                break;
+            }
+        }
+    }
+    
+    // Find end of word at or after current position
+    // Input: GapBuffer.GapValue = starting position
+    // Output: GapBuffer.GapValue = position after word
+    findWordEnd()
+    {
+        GapBuffer.GetCharAtFastPrep();
+        
+        // Skip forward over word chars
+        loop
+        {
+            // Check if at end
+            LDA GapBuffer.GapValueH
+            CMP FastLengthH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP FastLengthL
+            }
+            if (C) { break; }  // >= length
+            
+            GapBuffer.GetCharAtFast();
+            isWordChar();
+            if (NC) { break; }  // Not word char
+            
+            // Move forward
+            INC GapBuffer.GapValueL
+            if (Z) { INC GapBuffer.GapValueH }
+        }
+        
+        // Skip forward over non-word chars
+        loop
+        {
+            // Check if at end
+            LDA GapBuffer.GapValueH
+            CMP FastLengthH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP FastLengthL
+            }
+            if (C) { break; }  // >= length
+            
+            GapBuffer.GetCharAtFast();
+            
+            // Stop at newline
+            CMP #'\n'
+            if (Z) { break; }
+            
+            isWordChar();
+            if (C) { break; }  // Found next word
+            
+            // Move forward over space
+            INC GapBuffer.GapValueL
+            if (Z) { INC GapBuffer.GapValueH }
+        }
+    }
+    
+    // Find start of current line
+    // Input: GapBuffer.GapValue = position
+    // Output: GapBuffer.GapValue = start of line (after previous \n or 0)
+    findLineStart()
+    {
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
+        GapBuffer.GetCharAtFastPrep();
+        
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
+        
+        
+        // Search backward for newline
+        loop
+        {
+            // Check if at beginning
+            LDA GapBuffer.GapValueL
+            ORA GapBuffer.GapValueH
+            if (Z) { break; }  // At position 0
+            
+            // Move back and check
+            LDA GapBuffer.GapValueL
+            if (Z) { DEC GapBuffer.GapValueH }
+            DEC GapBuffer.GapValueL
+            
+            GapBuffer.GetCharAtFast();
+            CMP #'\n'
+            if (Z)
+            {
+                // Found newline, move forward to start of line
+                INC GapBuffer.GapValueL
+                if (Z) { INC GapBuffer.GapValueH }
+                break;
+            }
+        }
+    }
+    
+    // Find end of current line  
+    // Input: GapBuffer.GapValue = position
+    // Output: GapBuffer.GapValue = position of \n (or EOF)
+    findLineEnd()
+    {
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
+        GapBuffer.GetCharAtFastPrep(); // initializes FastLength (and gbGapSize)
+        
+        // Restore our starting position
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
+        
+        // Search forward for newline
+        loop
+        {
+            // Check if at end
+            LDA GapBuffer.GapValueH
+            CMP FastLengthH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP FastLengthL
+            }
+            if (C) { break; }  // >= length (at EOF)
+            
+            GapBuffer.GetCharAtFast();
+            CMP #'\n'
+            if (Z) { break; }  // Found newline
+            
+            // Move forward
+            INC GapBuffer.GapValueL
+            if (Z) { INC GapBuffer.GapValueH }
+        }
     }
     
     // Helper: Check for command line argument
@@ -1325,7 +1733,7 @@ program Edit
 //showGapPosition();
 //GapBuffer.Dump();
 
-//BlockDump();
+BlockDump();
                       
             // Get key
             Keyboard.GetKey();
