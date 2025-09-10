@@ -29,7 +29,8 @@ program Edit
     // Bit  2:   Block active (0=no, 1=yes)
     // Bit  3:   prompt mode
     // Bits 4-5: Undo state (00=empty, 01=can_undo, 10=can_redo, 11=reserved)
-    // Bits 6-7: Reserved for future use
+    // Bit  6:   0 - document file operation, 1 = block file operation
+    // Bit  7:   Reserved for future use
     
     const byte currentFilename  = edSlots+1;
     const byte currentFilenameL = edSlots+1;
@@ -59,17 +60,22 @@ program Edit
     const byte editCountL = edSlots+13;
     const byte editCountH = edSlots+14;
     
+    const byte editStoreL = edSlots+15;
+    const byte editStoreH = edSlots+16;
+    
 #ifdef DEBUG
-    const uint crPos   = edSlots+15;
-    const byte crPosL  = edSlots+15;
-    const byte crPosH  = edSlots+16;
-    const byte crCol   = edSlots+17;
+    const uint crPos   = edSlots+17;
+    const byte crPosL  = edSlots+18;
+    const byte crPosH  = edSlots+19;
+    const byte crCol   = edSlots+20;
 #endif    
     
     // Messages
     const string saveChangesPrompt = "Save changes? (Y/N/Esc): ";
     const string saveAsPrompt = "Save as: ";
+    const string exportPrompt = "Export as: ";
     const string openPrompt = "Open file: ";
+    const string importPrompt = "Import file: ";
     const string notFoundMsg = "File not found!";
     const string loadingErrorMsg = "Error loading file!";
     const string savingErrorMsg = "Error saving file!";
@@ -835,6 +841,7 @@ program Edit
                 case 'Y':  // Save and continue
                 {
                     View.StatusClear();
+                    LDX #0
                     saveFile();
                     if (C)  // Save succeeded
                     {
@@ -893,10 +900,93 @@ program Edit
         View.ApplyGapBuffer();
     }
     
+    
+    saveDocument()
+    {
+        GapBuffer.GetCharAtFastPrep();
+        
+        STZ GapBuffer.GapValueL
+        STZ GapBuffer.GapValueH
+        LDA #1
+        STA TransferLengthL
+        STZ TransferLengthH
+        loop
+        {
+            GapBuffer.GetCharAtFast();
+            if (Z)
+            {
+                SEC
+                break;
+            }
+            STA [File.SectorSource]
+            File.AppendStream();
+            if (NC)
+            {
+                CLC
+                break;
+            }
+            
+            incGapValue();
+        }
+    }
+    
+    saveBlock()
+    {
+        GapBuffer.GetCharAtFastPrep();
+        
+        // Start at block beginning
+        LDA BlockStartL
+        STA GapBuffer.GapValueL
+        LDA BlockStartH
+        STA GapBuffer.GapValueH
+        
+        LDA #1
+        STA TransferLengthL
+        STZ TransferLengthH
+        
+        loop
+        {
+            // Check if we've reached BlockEnd
+            LDA GapBuffer.GapValueH
+            CMP BlockEndH
+            if (Z)
+            {
+                LDA GapBuffer.GapValueL
+                CMP BlockEndL
+            }
+            if (C)  // >= BlockEnd
+            {
+                SEC
+                break;
+            }
+            
+            GapBuffer.GetCharAtFast();
+            STA [File.SectorSource]
+            File.AppendStream();
+            if (NC)
+            {
+                CLC
+                break;
+            }
+            
+            incGapValue();
+        }
+    }
+    
     // Save file
+    // X = 0 means whole document, X = 1 means block
     saveFile()
     {
-        if (BBR0, EditorFlags) { SEC return; } // not modified
+        CPX #1
+        if (Z)
+        {
+            SMB6 EditorFlags // block file operation
+        }
+        else
+        {
+            if (BBR0, EditorFlags) { SEC return; } // not modified
+            RMB6 EditorFlags // document file operation
+        }
         
         View.StatusClear();
         
@@ -957,33 +1047,15 @@ program Edit
         
         loop
         {
-            // Prepare for fast character access
-            GapBuffer.GetCharAtFastPrep();
-            
-            STZ GapBuffer.GapValueL
-            STZ GapBuffer.GapValueH
-
-            LDA #1
-            STA TransferLengthL
-            STZ TransferLengthH
-            loop
+            if (BBR6, EditorFlags)
             {
-                GetCharAtFast();
-                if (Z)
-                {
-                    SEC
-                    break;
-                }
-                STA [File.SectorSource]
-                File.AppendStream();
-                if (NC)
-                {
-                    CLC
-                    break;
-                }
-                
-                incGapValue();
+                saveDocument();
             }
+            else
+            {
+                saveBlock();
+            }
+            
             if (NC)
             {
                 LDA #(savingErrorMsg % 256)
@@ -1042,6 +1114,47 @@ program Edit
         } // loop
     }
     
+    
+    exportFile()
+    {
+        // Check if block is active
+        if (BBR2, EditorFlags) { return; }  // No block
+        
+        // store editor filename
+        LDA currentFilenameL
+        STA editStoreL
+        LDA currentFilenameH
+        STA editStoreH
+        
+        STZ currentFilenameL
+        STZ currentFilenameH
+        
+        LDA #(exportPrompt % 256)
+        STA ZP.STRL
+        LDA #(exportPrompt / 256)
+        STA ZP.STRH
+        Prompt.GetFilename();
+        if (NC)  // Cancelled
+        {
+            // restore editor filename
+            LDA editStoreL
+            STA currentFilenameL
+            LDA editStoreH
+            STA currentFilenameH
+            CLC
+            return;
+        }
+        makeFilename();
+        LDX #1
+        saveFile();
+        
+        // restore editor filename        
+        LDA editStoreL
+        STA currentFilenameL
+        LDA editStoreH
+        STA currentFilenameH
+    }
+    
     // Save as
     saveFileAs()
     {
@@ -1056,6 +1169,7 @@ program Edit
             return;
         }
         makeFilename();
+        LDX #0
         saveFile();
         
         LDX #1
@@ -1342,6 +1456,12 @@ program Edit
             {
                 moveBlock();
             }
+            case Key.CtrlW: // finger still down on <ctrl>
+            case 'W':       // Write block to file
+            {
+                exportFile();
+            }
+            
             case Key.CtrlT: // finger still down on <ctrl>
             case 'T':       // Mark single word
             {
@@ -1350,6 +1470,7 @@ program Edit
             case Key.CtrlD: // finger still down on <ctrl>
             case 'D':       // Done - save and exit
             {
+                LDX #0
                 saveFile();
                 if (C)
                 {
@@ -1364,6 +1485,7 @@ program Edit
             case Key.CtrlS: // finger still down on <ctrl>
             case 'S':       // Save
             {
+                LDX #0
                 saveFile();
             }
             case Key.CtrlO: // finger still down on <ctrl>
@@ -2507,6 +2629,7 @@ program Edit
                         case Key.F2:
                         case Key.CtrlS:
                         {
+                            LDX #0
                             saveFile(); continue;
                         }
                         
