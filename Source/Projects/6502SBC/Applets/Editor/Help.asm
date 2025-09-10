@@ -41,7 +41,7 @@ unit Help
     const string helpLine7    = "Home    Start of line    Ctrl+K Y  Delete block     Ctrl+K D Save & Done (exit)";
     const string helpLine8    = "End     End of line      Ctrl+K W  Write block      Ctrl+K Q Quit (abandon)";
     const string helpLine9    = "PgUp    Page up          Ctrl+K R  Read file        Ctrl+N   New File";
-    const string helpLine10   = "PgDn    Page down                                   ";
+    const string helpLine10   = "PgDn    Page down        Ctrl+A    Select all";
     const string helpLine11   = "                                                    DELETE OPERATIONS";
     const string helpLine12   = "CLASSIC MOVEMENT         FIND/REPLACE               -----------------";
     const string helpLine13   = "----------------         -------------              Ctrl+H   Backspace";

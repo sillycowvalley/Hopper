@@ -1025,34 +1025,33 @@ program Edit
         PHA
         LDY #3  // Position after "^K "
         View.StatusCharPause();
-        PLA
         
+        
+        View.StatusClear();
+                
+        PLA
         // Process the command
         switch (A)
         {
             case Key.CtrlB: // finger still down on <ctrl>
             case 'B':       // Mark block begin
             {
-                View.StatusClear();
                 blockBegin();
             }
             case Key.CtrlK: // finger still down on <ctrl>
             case 'K':       // Mark block end
             {
-                View.StatusClear();
                 blockEnd();
             }
             case Key.CtrlH: // finger still down on <ctrl>
             case 'H':       // 'hide' block
             {
-                View.StatusClear();
                 LDX #1
                 clearBlock();
             }
             case Key.CtrlD: // finger still down on <ctrl>
             case 'D':       // Done - save and exit
             {
-                View.StatusClear();
                 saveFile();
                 if (C)
                 {
@@ -1062,25 +1061,21 @@ program Edit
             case Key.CtrlQ: // finger still down on <ctrl>
             case 'Q':       // Quit without save
             {
-                View.StatusClear();
                 SMB1 EditorFlags // exit
             }
             case Key.CtrlS: // finger still down on <ctrl>
             case 'S':       // Save
             {
-                View.StatusClear();
                 saveFile();
             }
             case Key.CtrlO: // finger still down on <ctrl>
             case 'O':       // Open file
             {
-                View.StatusClear();
                 openFile();
             }
             default:
             {
                 // Unknown command - clear status and beep?
-                View.StatusClear();
             }
         }
     }
@@ -1114,6 +1109,10 @@ program Edit
         PHA
         LDY #3  // Position after "^Q "
         View.StatusCharPause();
+        
+        View.StatusClear();
+                    
+                    
         PLA
         
         switch (A)
@@ -1123,7 +1122,6 @@ program Edit
             {
                 if (BBS2, EditorFlags) // block active
                 {
-                    View.StatusClear();
                     View.CursorBlockStart();
                 }
             }
@@ -1132,7 +1130,6 @@ program Edit
             {
                 if (BBS2, EditorFlags) // block active
                 {
-                    View.StatusClear();
                     View.CursorBlockEnd();
                 }
             }
@@ -1140,42 +1137,35 @@ program Edit
             case Key.CtrlS: // finger still down on <ctrl>
             case 'S':       // Beginning of line
             {
-                View.StatusClear();
                 View.CursorHome();
             }
             case Key.CtrlD: // finger still down on <ctrl>
             case 'D':       // End of line
             {
-                View.StatusClear();
                 View.CursorEnd();
             }
             case Key.CtrlR: // finger still down on <ctrl>
             case 'R':       // Top of file
             {
-                View.StatusClear();
                 View.CursorTop();
             }
             case Key.CtrlC: // finger still down on <ctrl>
             case 'C':       // End of file
             {
-                View.StatusClear();
                 View.CursorBottom();
             }
             case Key.CtrlF: // finger still down on <ctrl>
             case 'F':       // Find
             {
-                View.StatusClear();
                 // TODO findText();
             }
             case Key.CtrlA: // finger still down on <ctrl>
             case 'A':       // Replace
             {
-                View.StatusClear();
                 // TODO replaceText();
             }
             default:
             {
-                View.StatusClear();
             }
         }
     }
@@ -1221,6 +1211,26 @@ program Edit
             LDX #1 // Render
             View.SetCursorPosition();  // Refreshes display
         }
+    }
+    
+    selectAll()
+    {
+        // Set block start to beginning
+        STZ Edit.BlockStartL
+        STZ Edit.BlockStartH
+        
+        // Set block end to text length
+        GapBuffer.GetTextLength();  // Returns in GapValue
+        LDA GapBuffer.GapValueL
+        STA Edit.BlockEndL
+        LDA GapBuffer.GapValueH
+        STA Edit.BlockEndH
+        
+        // Set block active flag
+        SMB2 EditorFlags
+        
+        // Show the highlighted block
+        View.Render();
     }
     
     
@@ -1370,6 +1380,11 @@ program Edit
 #else                 
                     switch (A)
                     {
+                        case Key.Escape:
+                        {
+                            LDX #1
+                            clearBlock(); continue;
+                        }
                         case Key.Backspace:
                         {
                             backspace(); continue;
@@ -1391,6 +1406,11 @@ program Edit
                         case Key.CtrlS:
                         {
                             saveFile(); continue;
+                        }
+                        
+                        case Key.CtrlA:
+                        {
+                            selectAll(); continue;
                         }
                         
                         case Key.Up:
