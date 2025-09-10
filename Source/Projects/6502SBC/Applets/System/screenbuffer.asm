@@ -666,9 +666,6 @@ unit ScreenBuffer
             // Hide cursor during update
             Screen.HideCursor();
         }
-Time.Millis();
-LDA TOP0        
-Debug.Byte();      
         
         // Start at beginning of buffer
         LDA sbBufferL

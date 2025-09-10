@@ -94,11 +94,13 @@ unit Definitions
     //   - vwPosL/H (0x9A-0x9B), vwLeafTempL/H (0x9C-0x9D)
     //   - vwSkipCountL/H (0x9E-0x9F)
     //
-    // 0xA0-0xA3: Prompt (4 bytes)
-    //   - promptBuffer (0xA0-0xA1, uint)
+    // 0xA0-0xA5: Prompt (6 bytes)
+    //   - promptBuffer (0xA0-0xA5, uint)
     //   - promptLength, promptMaxLen (0xA2-0xA3)
     //
-    // 0xA4-0xEB: Available (72 bytes)
+    // 0xA6-0xAA: Edit (5 bytes)
+    //
+    // 0xB0-0xEB: Available (72 bytes)
     //   - Free for additional application modules
     //
     // =====================================================

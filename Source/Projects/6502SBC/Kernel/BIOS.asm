@@ -3,6 +3,7 @@ program BIOS
     #define HOPPER_BIOS
     
     //#define DEBUG     // mimimum of 874 bytes
+    //#define FILEDEBUG
     #define CPU_65C02S
     
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)

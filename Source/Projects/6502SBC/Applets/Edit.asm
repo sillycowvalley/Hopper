@@ -12,6 +12,7 @@ program Edit
     uses "System/Time"
     uses "System/Debug"
     uses "System/ScreenBuffer"
+    uses "System/Char"
     
     uses "Editor/Keyboard"
     uses "Editor/GapBuffer"
@@ -19,7 +20,7 @@ program Edit
     uses "Editor/Help"
     uses "Editor/Prompt"
     
-    const byte edSlots       = 0xA0;
+    const byte edSlots       = 0xA6;
     const byte EditorFlags   = edSlots;
     // Bit  0:   Modified flag (0=clean, 1=modified)
     // Bit  1:   Exiting
@@ -32,16 +33,19 @@ program Edit
     const byte currentFilenameL = edSlots+1;
     const byte currentFilenameH = edSlots+2;
     
-    
     // Messages
     const string saveChangesPrompt = "Save changes? (Y/N/Esc): ";
     const string saveAsPrompt = "Save as: ";
     const string openPrompt = "Open file: ";
     const string notFoundMsg = "File not found!";
-    const string errorMsg = "Error loading file!";
+    const string loadingErrorMsg = "Error loading file!";
+    const string savingErrorMsg = "Error saving file!";
     const string loadedMsg = "File loaded.";
+    const string savedMsg  = "File saved.";
     const string ctrlKPrompt = "^K ";
     const string ctrlQPrompt = "^Q ";
+    
+    const string writeBuffer = " ";
     
     
     Initialize()
@@ -113,6 +117,11 @@ program Edit
         loop
         {
             LDA [STR], Y
+            Char.IsLower();
+            if (C)
+            {
+                Char.ToUpper();
+            }
             STA [currentFilename], Y
             if (Z) { break; }
             INY
@@ -153,7 +162,6 @@ program Edit
         loop
         {
             Keyboard.GetKey();
-            
             // Convert to uppercase
             CMP #'y'
             if (Z) { LDA #'Y' }
@@ -192,10 +200,13 @@ program Edit
                 default:
                 {
                     // Invalid key, continue loop
+                    continue;
                 }
-            }
-            break;  // Exit loop once we have a valid choice
-        }
+            } // switch
+            
+            // Exit loop once we have a valid choice
+            break;
+        } // loop
     }
     
     
@@ -205,18 +216,25 @@ program Edit
         checkModified();
         if (Z)  { return; } // A = 0 means cancelled
         
+        View.StatusClear();
+        
         GapBuffer.Clear();
         disposeFilename();
         RMB0 EditorFlags  // Clear modified
-        View.CountLines();
-        View.UpdatePosition();
-        View.Render();
+        
+        // cursor to 0,0
+        // CountLines
+        // Render
+        View.ApplyGapBuffer();
     }
     
     // Save file
     saveFile()
     {
         if (BBR0, EditorFlags) { return; } // not modified
+        
+        View.StatusClear();
+        
         // Check if we have a filename
         LDA currentFilenameL
         ORA currentFilenameH
@@ -231,15 +249,133 @@ program Edit
         STA ZP.STRL
         LDA currentFilenameH
         STA ZP.STRH
-LDA #0
-LDY #26        
-Screen.GotoXY();
-Print.NewLine(); Print.String();             
         
-        // TODO ... actual save code ...
-        RMB0 EditorFlags  // Clear modified
-        View.UpdatePosition();
-        SEC
+        LDA # FileType.Any // all files
+        File.Exists();
+        if (C)
+        {
+            File.Delete();
+        }
+        
+        File.StartSave();
+        if (NC)
+        {
+            LDA #(savingErrorMsg % 256)
+            STA ZP.STRL
+            LDA #(savingErrorMsg / 256)
+            STA ZP.STRH
+            LDY #0
+            View.StatusStringPause();
+            CLC
+            return;
+        }
+        
+        LDA #1
+        STA ZP.ACCL   
+        STZ ZP.ACCH
+        Memory.Allocate();
+        if (NC)
+        {
+            LDA #(savingErrorMsg % 256)
+            STA ZP.STRL
+            LDA #(savingErrorMsg / 256)
+            STA ZP.STRH
+            LDY #0
+            View.StatusStringPause();
+            CLC
+            return;
+        }
+        LDA ZP.IDXL
+        STA File.SectorSourceL
+        LDA ZP.IDXH
+        STA File.SectorSourceH
+        
+        loop
+        {
+            // Prepare for fast character access
+            GapBuffer.GetCharAtFastPrep();
+            
+            STZ GapBuffer.GapValueL
+            STZ GapBuffer.GapValueH
+
+            LDA #1
+            STA TransferLengthL
+            STZ TransferLengthH
+            loop
+            {
+                GetCharAtFast();
+                if (Z)
+                {
+                    SEC
+                    break;
+                }
+                STA [File.SectorSource]
+                File.AppendStream();
+                if (NC)
+                {
+                    CLC
+                    break;
+                }
+                
+                INC GapBuffer.GapValueL
+                if (Z) { INC GapBuffer.GapValueH }      
+            }
+            if (NC)
+            {
+                LDA #(savingErrorMsg % 256)
+                STA ZP.STRL
+                LDA #(savingErrorMsg / 256)
+                STA ZP.STRH
+                LDY #0
+                View.StatusStringPause();
+                CLC
+                break;
+            }
+            
+            LDA #0x00  // Data file (not executable)
+            File.EndSave();
+            if (NC)
+            {
+                LDA #(savingErrorMsg % 256)
+                STA ZP.STRL
+                LDA #(savingErrorMsg / 256)
+                STA ZP.STRH
+                LDY #0
+                View.StatusStringPause();
+                CLC
+                break;
+            }
+
+            LDA File.SectorSourceL
+            STA ZP.IDXL
+            LDA File.SectorSourceH
+            STA ZP.IDXH
+            Memory.Free();
+            if (NC)
+            {
+                LDA #(savingErrorMsg % 256)
+                STA ZP.STRL
+                LDA #(savingErrorMsg / 256)
+                STA ZP.STRH
+                LDY #0
+                View.StatusStringPause();
+                CLC
+                break;
+            }
+        
+
+            RMB0 EditorFlags  // Clear modified
+            
+            LDA #(savedMsg % 256)
+            STA ZP.STRL
+            LDA #(savedMsg / 256)
+            STA ZP.STRH
+            LDY #0
+            View.StatusStringPause();
+            
+            SEC
+            break;
+        } // loop
     }
     
     // Save as
@@ -260,7 +396,7 @@ Print.NewLine(); Print.String();
     }
     
     // Open file (with modified check)
-    fileOpen()
+    openFile()
     {
         // Check if current file modified
         checkModified();
@@ -293,7 +429,7 @@ Print.NewLine(); Print.String();
             LDA #(notFoundMsg / 256)
             STA ZP.STRH
             LDY #0
-            View.StatusString();
+            View.StatusStringPause();
             return;
         }
         
@@ -309,12 +445,12 @@ Print.NewLine(); Print.String();
         File.StartLoad();
         if (NC)
         {
-            LDA #(errorMsg % 256)
+            LDA #(loadingErrorMsg % 256)
             STA ZP.STRL
-            LDA #(errorMsg / 256)
+            LDA #(loadingErrorMsg / 256)
             STA ZP.STRH
             LDY #0
-            View.StatusString();
+            View.StatusStringPause();
             return;
         }
         
@@ -407,7 +543,7 @@ Print.NewLine(); Print.String();
         LDA #(loadedMsg / 256)
         STA ZP.STRH
         LDY #0
-        View.StatusString();
+        View.StatusStringPause();
     }
       
     const string gapPosLabel = "Gap:";
@@ -488,7 +624,7 @@ Print.NewLine(); Print.String();
         // Echo the complete command
         PHA
         LDY #3  // Position after "^K "
-        View.StatusChar();
+        View.StatusCharPause();
         PLA
         
         // Process the command
@@ -508,7 +644,10 @@ Print.NewLine(); Print.String();
             {
                 View.StatusClear();
                 saveFile();
-                SMB1 EditorFlags // exit
+                if (C)
+                {
+                    SMB1 EditorFlags // exit
+                }
             }
             case 'Q':  // Quit without save
             {
@@ -556,7 +695,7 @@ Print.NewLine(); Print.String();
         // Echo the complete command
         PHA
         LDY #3  // Position after "^Q "
-        View.StatusChar();
+        View.StatusCharPause();
         PLA
         
         switch (A)
@@ -628,7 +767,20 @@ Print.NewLine(); Print.String();
                     handleCtrlK();
                     if (BBS1, EditorFlags) { break; } // exit
                 }
-                
+                case Key.CtrlN:
+                {
+                    newFile();
+                }
+                case Key.F3:
+                case Key.CtrlO:
+                {
+                    openFile();
+                }
+                case Key.F2:
+                case Key.CtrlS:
+                {
+                    saveFile();
+                }
                 case Key.CtrlQ:
                 {
                     handleCtrlQ();
@@ -667,12 +819,14 @@ Print.NewLine(); Print.String();
                 {
                     View.PageDown();
                 }
+                /*
                 case 'r':
                 case 'R':
                 {
                     //View.GetCursorPosition();
                     //View.SetCursorPosition();
                 }
+                */
                 
                 
                 case Key.Backspace:
@@ -752,7 +906,7 @@ Print.NewLine(); Print.String();
                 default:
                 {
                     // Check if printable
-                    Keyboard.IsPrintable();
+                    Char.IsPrintable();
                     if (C)  // Is printable
                     {
                         PHA

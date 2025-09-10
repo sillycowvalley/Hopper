@@ -797,13 +797,15 @@ unit File
         PHA
         LDA ZP.STRH
         PHA
-        
+
         loop // Single exit for cleanup
         {
             // Validate filename format
             File.ValidateFilename();
-            if (NC) { BIT ZP.EmulatorPCL break; }
-            
+            if (NC) 
+            {
+                BIT ZP.EmulatorPCL break;
+            }
             initializeFATandDirectory();
             
             // Find the file in directory
@@ -1438,6 +1440,7 @@ unit File
         loop
         {
             LDA [ZP.STR], Y
+            Char.ToUpper();
             if (Z) 
             { 
                 // End of filename - set high bit on last character
@@ -2051,9 +2054,7 @@ unit File
                     LDA #'#'
                     Print.Char();
                     TXA                  // Global entry number to A
-                    STA ZP.TOPL         
-                    STZ ZP.TOPH
-                    STZ ZP.TOPT
+                    Shared.LoadTopByte();
                     Print.Decimal();    // Print global index
                     
                     Print.Space();
@@ -2268,10 +2269,9 @@ unit File
         LDA #(dirSectorsLabel / 256)
         STA ZP.STRH
         Print.String();
-        STZ ZP.TOP1
+        
         LDA ZP.UWIDE0
-        STA ZP.TOP0
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         Print.NewLine();
         
@@ -2281,10 +2281,9 @@ unit File
         LDA #(freeLabel / 256)
         STA ZP.STRH
         Print.String();
-        STZ ZP.TOP1
+        
         LDA ZP.UWIDE1
-        STA ZP.TOP0
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         Print.NewLine();
         
@@ -2294,10 +2293,9 @@ unit File
         LDA #(usedLabel / 256)
         STA ZP.STRH
         Print.String();
-        STZ ZP.TOP1
+        
         LDA ZP.UWIDE2
-        STA ZP.TOP0
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         Print.NewLine();
         
@@ -2307,10 +2305,9 @@ unit File
         LDA #(endLabel / 256)
         STA ZP.STRH
         Print.String();
-        STZ ZP.TOP1
+        
         LDA ZP.UWIDE3
-        STA ZP.TOP0
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         Print.NewLine();
         
@@ -2550,18 +2547,14 @@ unit File
         
         // File count already in TransferLengthL
         LDA TransferLengthL
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         
         LDA #'/'
         Print.Char();
         
         LDA #16                  // Max directory entries
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         
         Print.NewLine();
@@ -2676,9 +2669,8 @@ unit File
         ADC #255                    // Add 255 for ceiling division
         LDA directoryBuffer + 1, X  // Size high  
         ADC #0                      // Add carry
-        STA ZP.TOPL                 // Result is sectors used
-        STZ ZP.TOPH
-        STZ ZP.TOPT
+        // Result is sectors used
+        Shared.LoadTopByte();
         Print.Decimal();
         
         LDA #(sectorsLabel % 256)
@@ -2762,18 +2754,14 @@ unit File
         Print.String();
         
         LDA sectorPositionL
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         
         LDA #'/'
         Print.Char();
         
         LDA #254                 // Total usable sectors (256 - 2 system)
-        STA ZP.TOPL
-        STZ ZP.TOPH
-        STZ ZP.TOPT
+        Shared.LoadTopByte();
         Print.Decimal();
         
         Print.NewLine();

@@ -1,6 +1,7 @@
 unit View
 {
     uses "System/ScreenBuffer"
+    uses "System/Shared"
     uses "Editor/GapBuffer"
     
     
@@ -632,7 +633,7 @@ unit View
         ScreenBuffer.Resume();
         
         // Position cursor
-        View.Update(); // render position change
+        View.UpdatePosition(); // render position change
     }
     
     Update()
@@ -801,7 +802,7 @@ unit View
                 }
             }
             
-            View.Update(); // render position change
+            View.UpdatePosition(); // render position change
             
             break;
         } // loop
@@ -854,7 +855,7 @@ unit View
             }
             
             constrainCursorColumn();
-            View.Update(); // render position change
+            View.UpdatePosition(); // render position change
             
             break;
         } // loop
@@ -875,7 +876,7 @@ unit View
             break;
         }
         
-        View.Update(); // render position change
+        View.UpdatePosition(); // render position change
     }
     
     CursorRight()
@@ -900,14 +901,14 @@ unit View
             break;
         }
         
-        View.Update(); // render position change
+        View.UpdatePosition(); // render position change
     }
     
     // Move cursor to beginning of current line
     CursorHome()
     {
         STZ vwCurrentCol
-        View.Update();
+        View.UpdatePosition(); // render position change
     }
     
     // Move cursor to end of current line
@@ -925,7 +926,7 @@ unit View
         }
         STA vwCurrentCol
         
-        View.Update(); // render position change
+        View.UpdatePosition(); // render position change
     }
 
     // Move up one page
@@ -952,7 +953,7 @@ unit View
             break;
         }
         
-        View.Update(); // render position change
+        View.UpdatePosition(); // render position change
     }
     
     // Move down one page
@@ -1004,7 +1005,7 @@ unit View
             break;
         }
         
-        View.Update(); // render position change
+        View.UpdatePosition(); // render position change
     }
     
     // Move cursor to top of file (first line, first column)
@@ -1198,6 +1199,13 @@ unit View
         
         ScreenBuffer.Resume();
     }
+    StatusStringPause()  // Input: ZP.STR = string, Y = start column (0-64)
+    {
+        StatusString();
+        LDA # 255 // 255 ms 
+        Shared.LoadTopByte();
+        Time.Delay();
+    }
     
     // Public: Write string to status line
     StatusString()  // Input: ZP.STR = string, Y = start column (0-64)
@@ -1233,6 +1241,14 @@ unit View
         }
         
         ScreenBuffer.Resume();
+    }
+    
+    StatusCharPause()  // Input: A = character, Y = column (0-64)
+    {
+        StatusChar();
+        LDA # 255 // 255 ms 
+        Shared.LoadTopByte();
+        Time.Delay();
     }
     
     // Public: Write character to status line

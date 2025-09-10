@@ -2,11 +2,12 @@ unit Prompt
 {
     uses "System/Serial"
     uses "System/Screen"
+    uses "System/Char"
     uses "Keyboard"
     uses "View"
     
     // Zero page for prompt input buffer
-    const byte promptSlots    = 0xA3;
+    const byte promptSlots    = 0xA0;
     const uint promptBuffer   = promptSlots+0;
     const byte promptBufferL  = promptSlots+0;
     const byte promptBufferH  = promptSlots+1;
@@ -182,7 +183,7 @@ unit Prompt
                 default:
                 {
                     // Check if printable
-                    Keyboard.IsPrintable();
+                    Char.IsPrintable();
                     if (C)
                     {
                         // Check length

@@ -83,4 +83,17 @@ unit Print
         }
         PLY
     }
+    
+    // Print 16-bit decimal number with no leading zeros
+    // Input:  ZP.LTOP0-3 = 32 bit signed LONG (if ZP.TOPT == BASICType.LONG)
+    // Output: Decimal number printed to serial
+    // Preserves: X, Y, A
+    // Munts: Flags
+    Decimal()
+    {
+        // allowed types: zero, INT, LONG
+        PHA
+        Long.Print();
+        PLA
+    }
 }

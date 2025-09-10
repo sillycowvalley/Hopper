@@ -3,6 +3,8 @@ unit Keyboard
     uses "System/Definitions"
     uses "System/Serial"
     uses "System/Time"
+    uses "System/Char"
+    uses "System/Shared"
     
     // Zero page allocation
     const byte kbSlots = 0x7F;
@@ -164,10 +166,7 @@ unit Keyboard
         // Short delay to see if this is part of an escape sequence
         // Escape sequences arrive quickly (<5ms), human typing is slower
         LDA #10         // 10ms timeout
-        STA ZP.TOP0
-        STZ ZP.TOP1
-        STZ ZP.TOP2
-        STZ ZP.TOP3
+        Shared.LoadTopByte();
         Time.Delay();
         
         // Check if another character arrived
@@ -436,21 +435,4 @@ unit Keyboard
         } // single exit
     }
     
-    // Check if a key is printable
-    // Input: A = key code
-    // Output: C set if printable, clear if control/special
-    IsPrintable()
-    {
-        CMP #32
-        if (C)  // >= 32
-        {
-            CMP #127
-            if (NC)  // < 127
-            {
-                SEC  // Printable
-                return;
-            }
-        }
-        CLC  // Not printable
-    }
 }
