@@ -334,9 +334,7 @@ program Edit
         if (NZ)  // Not at beginning
         {
             // Back up one
-            LDA GapBuffer.GapValueL
-            if (Z) { DEC GapBuffer.GapValueH }
-            DEC GapBuffer.GapValueL
+            decGapValue();
             
             // Show previous character (should be 0x0A)
             GapBuffer.GetCharAt();
@@ -483,8 +481,7 @@ program Edit
             }
             
             // Advance position
-            INC GapBuffer.GapValueL
-            if (Z) { INC GapBuffer.GapValueH }
+            incGapValue();
         }
         
         // A = column, ACC = row
@@ -876,8 +873,7 @@ program Edit
                     break;
                 }
                 
-                INC GapBuffer.GapValueL
-                if (Z) { INC GapBuffer.GapValueH }      
+                incGapValue();
             }
             if (NC)
             {
@@ -1422,13 +1418,7 @@ program Edit
         // Delete characters
         deleteCountCharacters();
                
-        // Set modified flag
-        SMB0 EditorFlags
-        
-        // Update display
-        View.CountLines();
-        LDX #1  // Force render
-        View.SetCursorPosition();
+        markModifiedAndRefresh();
     }
     
     // Helper: Move cursor one word right
@@ -1500,13 +1490,7 @@ program Edit
         // Delete characters
         deleteCountCharacters();
         
-        // Set modified flag
-        SMB0 EditorFlags
-        
-        // Update display
-        View.CountLines();
-        LDX #1  // Force render
-        View.SetCursorPosition();
+        markModifiedAndRefresh();
     }
     
     
@@ -1550,13 +1534,7 @@ program Edit
         // Delete the line
         deleteCountCharacters();
         
-        // Set modified flag
-        SMB0 EditorFlags
-        
-        // Update display and position cursor at start of line
-        View.CountLines();
-        LDX #1  // Force render
-        View.SetCursorPosition();
+        markModifiedAndRefresh();
     }
     
     
@@ -1574,18 +1552,10 @@ program Edit
             GapBuffer.Backspace();
             if (C)  // Success
             {
-                SMB0 EditorFlags // modified
                 // Logical position moves back one
-                LDA GapBuffer.GapValueL
-                if (Z) { DEC GapBuffer.GapValueH }
-                DEC GapBuffer.GapValueL
+                decGapValue();
                 
-                // Recount lines if needed
-                View.CountLines();
-                
-                // Let View handle cursor positioning
-                LDX #1 // Render
-                View.SetCursorPosition();
+                markModifiedAndRefresh();
             }
         }
     }
@@ -1596,11 +1566,7 @@ program Edit
         GapBuffer.Delete();
         if (C)  // Success
         {
-            SMB0 EditorFlags // modified
-            // Position doesn't change for delete
-            View.CountLines();
-            LDX #1 // Render
-            View.SetCursorPosition();  // Refreshes display
+            markModifiedAndRefresh();
         }
     }
     
@@ -1699,6 +1665,14 @@ program Edit
         LDA currentPosH
         STA GapBuffer.GapValueH
         GapBuffer.MoveGapTo();
+    }
+    
+    markModifiedAndRefresh()
+    {
+        SMB0 EditorFlags
+        View.CountLines();
+        LDX #1
+        View.SetCursorPosition();
     }
     
     deleteCountCharacters()
@@ -2001,8 +1975,7 @@ BlockDump();
                     {
                         SMB0 EditorFlags // modified
                         // Advance logical position by 1
-                        INC GapBuffer.GapValueL
-                        if (Z) { INC GapBuffer.GapValueH }
+                        incGapValue();
                         
                         // Update line count
                         View.CountLines();
@@ -2031,8 +2004,7 @@ BlockDump();
                         }
                         
                         // Advance logical position
-                        INC GapBuffer.GapValueL
-                        if (Z) { INC GapBuffer.GapValueH }
+                        incGapValue();
                         
                         PLX
                         DEX
@@ -2215,8 +2187,7 @@ BlockDump();
                         {
                             SMB0 EditorFlags // modified
                             // Advance logical position by 1
-                            INC GapBuffer.GapValueL
-                            if (Z) { INC GapBuffer.GapValueH }
+                            incGapValue();
                             
                             // Let View figure out where cursor should be
                             LDX #1 // Render
