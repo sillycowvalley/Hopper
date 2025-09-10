@@ -552,8 +552,12 @@ program Edit
 
 #endif
 
-
-
+    // used to reset / clear the block on any edit
+    resetBlock()
+    {
+        LDA #0
+        clearBlock();
+    }
     
     
     // discard current block and trigger redraw if needed
@@ -1284,6 +1288,15 @@ program Edit
                 LDX #0  // Just delete, no copy
                 deleteBlock();
             }
+            case 'C':  // Copy block to cursor
+            {
+                copyBlockClipboard();
+                insertClipboard();
+            }
+            case 'V':  // Move block to cursor
+            {
+                moveBlock();
+            }
             case Key.CtrlT: // finger still down on <ctrl>
             case 'T':       // Mark single word
             {
@@ -1449,6 +1462,8 @@ program Edit
     // Helper: Delete from cursor to end of line
     deleteToEOL()
     {
+        resetBlock();
+        
         // Get current cursor position
         View.GetCursorPosition();  // Returns in GapBuffer.GapValue
         LDA GapBuffer.GapValueL
@@ -1525,6 +1540,8 @@ program Edit
     // Helper: Delete word forward
     deleteWord()
     {
+        resetBlock();
+        
         View.GetCursorPosition();  // Get current position
         LDA GapBuffer.GapValueL
         STA currentPosL
@@ -1557,6 +1574,45 @@ program Edit
         
         // Delete characters
         deleteCountCharacters();
+        
+        markModifiedAndRefresh();
+    }
+    
+    
+    // Helper: Insert clipboard contents at cursor
+    insertClipboard()
+    {
+        resetBlock();
+        
+        // Check if clipboard exists
+        LDA clipBoardL
+        ORA clipBoardH
+        if (Z) { return; }  // No clipboard
+        
+        // Move gap to cursor
+        View.GetCursorPosition();
+        GapBuffer.MoveGapTo();
+        
+        // Set up IDY to read clipboard
+        LDA clipBoardL
+        STA currentPosL
+        LDA clipBoardH
+        STA currentPosH
+        
+        // Insert clipboard contents
+        loop
+        {
+            LDA [currentPos]
+            if (Z) { break; }  // Hit null terminator
+            
+            GapBuffer.InsertChar();
+            if (NC) { break; }  // Insert failed (out of space)
+            
+            incGapValue();
+            
+            INC currentPosL
+            if (Z) { INC currentPosH }
+        }
         
         markModifiedAndRefresh();
     }
@@ -1614,6 +1670,36 @@ program Edit
         STA [IDY]
     }
     
+    moveBlock()
+    {
+BlockDump();
+Serial.WaitForChar();        
+        
+        View.GetCursorPosition();
+        LDA GapBuffer.GapValueL
+        PHA
+        LDA GapBuffer.GapValueH
+        PHA
+        
+        LDX #1  // Cut to clipboard
+        deleteBlock();
+
+BlockDump();
+DumpClipboard();
+Serial.WaitForChar();
+        
+        PLA
+        STA GapBuffer.GapValueH
+        PLA
+        STA GapBuffer.GapValueL
+        
+BlockDump();
+Serial.WaitForChar();
+        
+        GapBuffer.MoveGapTo(); 
+        insertClipboard();
+    }
+    
     // Input: X = 0: just delete, X = 1: copy to clipboard first (cut)
     deleteBlock()
     {
@@ -1662,6 +1748,8 @@ program Edit
     // Helper: Delete entire line
     deleteLine()
     {
+        resetBlock();
+        
         // Get current cursor position
         View.GetCursorPosition();  // Returns in GapBuffer.GapValue
         
@@ -1706,6 +1794,8 @@ program Edit
     
     backspace()
     {
+        resetBlock();
+        
         View.GetCursorPosition();  // Get logical position
         
         // Can't backspace from position 0
@@ -1726,6 +1816,8 @@ program Edit
     }
     delete()
     {
+        resetBlock();
+        
         View.GetCursorPosition();  // Get logical position
         GapBuffer.MoveGapTo();
         GapBuffer.Delete();
@@ -2136,8 +2228,6 @@ program Edit
 //View.Dump(); 
 //showGapPosition();
 //GapBuffer.Dump();
-
-BlockDump();
                       
             // Get key
             Keyboard.GetKey();
@@ -2157,7 +2247,9 @@ BlockDump();
                 
                 case Key.Linefeed: // VT100 Paste
                 case Key.Enter:
-                {
+                {             
+                    resetBlock();
+                            
                     View.GetCursorPosition();
                     GapBuffer.MoveGapTo();
                     
@@ -2179,6 +2271,8 @@ BlockDump();
                 }
                 case Key.Tab:
                 {
+                    resetBlock();
+                            
                     View.GetCursorPosition();
                     GapBuffer.MoveGapTo();
                     
@@ -2332,10 +2426,13 @@ BlockDump();
                             LDX #1  // Copy to clipboard first
                             deleteBlock();
                         }
+                        case Key.CtrlV:  // Paste
+                        {
+                            insertClipboard();
+                        }
                         case Key.CtrlC:  // Copy (copy then delete)
                         {
                             copyBlockClipboard();
-DumpClipboard();                            
                         }
                         
                         case Key.Up:
@@ -2378,6 +2475,8 @@ DumpClipboard();
                     if (C)  // Is printable
                     {
                         PHA
+                        
+                        resetBlock();
                         
                         // Get current position and move gap there
                         View.GetCursorPosition();  // Returns position in GapValue
