@@ -84,13 +84,13 @@ unit Definitions
     // 0x7F: Keyboard (1 byte)
     //   - kbEscState (escape sequence state machine)
     //
-    // 0x80-0x8F: GapBuffer (16 bytes)
+    // 0x80-0x9F: GapBuffer (32 bytes)
     //   - gbBuffer (0x80-0x81, uint), gbGapStart (0x82-0x83, uint)
     //   - gbGapEnd (0x84-0x85, uint), gbBufferSize (0x86-0x87, uint)
     //   - GapValue (0x88-0x89, uint), gbTempSize (0x8A-0x8B, uint)
     //   - gbGapSizeL/H (0x8C-0x8D), FastLengthL/H (0x8E-0x8F)
     //
-    // 0x90-0x9F: View (16 bytes)
+    // 0xA0-0xAF: View (16 bytes)
     //   - vwScreenCols, vwScreenRows, vwCurrentRow, vwCurrentCol (0x90-0x93)
     //   - vwTopLine (0x94-0x95, uint) [Note: was incorrectly shown as 0x95-0x96]
     //   - vwTopLineL, vwTopLineH (0x95-0x96)
@@ -99,8 +99,6 @@ unit Definitions
     //   - vwPosL/H (0x9A-0x9B), vwLeafTempL/H (0x9C-0x9D)
     //   - vwSkipCountL/H (0x9E-0x9F)
     //
-    // 0xA0-0xAF: Available (16 bytes)
-    //   - Free for application use
     //
     // 0xB0-0xB5: Prompt (6 bytes)
     //   - promptBuffer (0xB0-0xB1, uint)

@@ -1,6 +1,5 @@
 unit GapBuffer
 {
-    friend TestGapBuffer;
     
     uses "System/Definitions"
     uses "System/Memory"
@@ -9,51 +8,69 @@ unit GapBuffer
     const byte gbSlots = 0x80;
     
     // Private zero page state
-    const uint gbBuffer = gbSlots+0;    // Start of allocated buffer
-    const uint gbBufferL = gbSlots+0;
-    const uint gbBufferH = gbSlots+1;
+    const byte gbBuffer = gbSlots+0;    // Start of allocated buffer
+    const byte gbBufferL = gbSlots+0;
+    const byte gbBufferH = gbSlots+1;
     
-    const uint gbGapStart = gbSlots+2;  // Current gap position
-    const uint gbGapStartL = gbSlots+2;
-    const uint gbGapStartH = gbSlots+3;
+    const byte gbGapStart = gbSlots+2;  // Current gap position
+    const byte gbGapStartL = gbSlots+2;
+    const byte gbGapStartH = gbSlots+3;
     
-    const uint gbGapEnd = gbSlots+4;    // End of gap
-    const uint gbGapEndL = gbSlots+4;
-    const uint gbGapEndH = gbSlots+5;
+    const byte gbGapEnd = gbSlots+4;    // End of gap
+    const byte gbGapEndL = gbSlots+4;
+    const byte gbGapEndH = gbSlots+5;
     
-    const uint gbBufferSize = gbSlots+6; // Total allocated size
-    const uint gbBufferSizeL = gbSlots+6;
-    const uint gbBufferSizeH = gbSlots+7;
+    const byte gbBufferSize = gbSlots+6; // Total allocated size
+    const byte gbBufferSizeL = gbSlots+6;
+    const byte gbBufferSizeH = gbSlots+7;
     
     // Public value for arguments and return values
-    const uint GapValue = gbSlots+8;     // Common return value and argument for GapBuffer methods
-    const uint GapValueL = gbSlots+8;
-    const uint GapValueH = gbSlots+9;
+    const byte GapValue = gbSlots+8;     // Common return value and argument for GapBuffer methods
+    const byte GapValueL = gbSlots+8;
+    const byte GapValueH = gbSlots+9;
     
     // Private temporary workspace (doesn't need to survive between method calls)
-    const uint gbTempSize = gbSlots+10;   // Temp storage for growBuffer
-    const uint gbTempSizeL = gbSlots+10;
-    const uint gbTempSizeH = gbSlots+11;
+    const byte gbTempSize = gbSlots+10;   // Temp storage for growBuffer
+    const byte gbTempSizeL = gbSlots+10;
+    const byte gbTempSizeH = gbSlots+11;
     
     // GetCharAtFast
-    const uint gbGapSizeL  = gbSlots+12;
-    const uint gbGapSizeH  = gbSlots+13;
-    const uint FastLengthL   = gbSlots+14;
-    const uint FastLengthH   = gbSlots+15;
+    const byte gbGapSizeL  = gbSlots+12;
+    const byte gbGapSizeH  = gbSlots+13;
+    const byte FastLengthL   = gbSlots+14;
+    const byte FastLengthH   = gbSlots+15;
+    
+    enum UndoOp
+    {
+        None     = 0b00000000,
+        Inserted = 0b00000001,
+        Deleted  = 0b00000010,
+    }
+    
+    // Undo state (part of GapBuffer!)
+    const byte undoOp       = gbSlots+16;
+    
+    const byte undoGapStart = gbSlots+17;
+    const byte undoGapStartL = gbSlots+17;
+    const byte undoGapStartH = gbSlots+18;
+    
+    const byte undoGapEnd   = gbSlots+19;
+    const byte undoGapEndL  = gbSlots+19;
+    const byte undoGapEndH  = gbSlots+20;
     
     // Leaf workspace for calculations (don't survive function calls)
-    const uint mgbTemp   = ZP.M0;     // Temporary 16-bit value
-    const uint mgbTempL  = ZP.M0;
-    const uint mgbTempH  = ZP.M1;
-    const uint mgbCount  = ZP.M2;    // Copy count
-    const uint mgbCountL = ZP.M2;
-    const uint mgbCountH = ZP.M3;
-    const uint mgbSrc    = ZP.M4;      // Source pointer
-    const uint mgbSrcL   = ZP.M4;
-    const uint mgbSrcH   = ZP.M5;
-    const uint mgbDst    = ZP.M6;      // Destination pointer
-    const uint mgbDstL   = ZP.M6;
-    const uint mgbDstH   = ZP.M7;
+    const byte mgbTemp   = ZP.M0;     // Temporary 16-bit value
+    const byte mgbTempL  = ZP.M0;
+    const byte mgbTempH  = ZP.M1;
+    const byte mgbCount  = ZP.M2;    // Copy count
+    const byte mgbCountL = ZP.M2;
+    const byte mgbCountH = ZP.M3;
+    const byte mgbSrc    = ZP.M4;      // Source pointer
+    const byte mgbSrcL   = ZP.M4;
+    const byte mgbSrcH   = ZP.M5;
+    const byte mgbDst    = ZP.M6;      // Destination pointer
+    const byte mgbDstL   = ZP.M6;
+    const byte mgbDstH   = ZP.M7;
     
     // Initialize gap buffer
     // Input: A,Y = size to allocate
@@ -100,6 +117,8 @@ unit GapBuffer
         LDA gbBufferSizeH
         STA gbGapEndH
         
+        STZ undoOp
+        
         SEC  // Success
     }
     
@@ -132,6 +151,79 @@ unit GapBuffer
         }
     }
     
+    CanUndo()  // Public
+    {
+        LDA undoOp
+        if (Z) 
+        { 
+            CLC 
+        }
+        else 
+        { 
+            SEC 
+        }
+    }
+    
+    resetUndoState()
+    {
+        // Clear any existing undo
+        STZ undoOp
+        
+        // Save current gap boundaries
+        LDA gbGapStartL
+        STA undoGapStartL
+        LDA gbGapStartH
+        STA undoGapStartH
+        LDA gbGapEndL
+        STA undoGapEndL
+        LDA gbGapEndH
+        STA undoGapEndH
+    }
+    
+    ToggleUndo()  // Public - the magic method
+    {
+        LDA undoOp
+        if (Z) 
+        { 
+            CLC  // Nothing to undo
+            return;
+        }
+        
+        PHX
+        
+        // Swap gbGapStart with undoGapStart
+        LDX gbGapStartL
+        LDA undoGapStartL
+        STA gbGapStartL
+        STX undoGapStartL
+        
+        LDX gbGapStartH
+        LDA undoGapStartH
+        STA gbGapStartH
+        STX undoGapStartH
+            
+        // Swap gbGapEnd with undoGapEnd
+        LDX gbGapEndL
+        LDA undoGapEndL
+        STA gbGapEndL
+        STX undoGapEndL
+        
+        LDX gbGapEndH
+        LDA undoGapEndH
+        STA gbGapEndH
+        STX undoGapEndH
+        
+        PLX
+        
+        
+        // Flip the operation type
+        LDA undoOp
+        EOR #0b00000011  // Toggles between 1 and 2
+        STA undoOp
+        
+        SEC  // Success
+    }
+    
     // Clear buffer (make it empty)
     Clear()
     {
@@ -143,6 +235,8 @@ unit GapBuffer
         STA gbGapEndL
         LDA gbBufferSizeH
         STA gbGapEndH
+        
+        resetUndoState();
     }
     
     // Get gap start position
@@ -214,6 +308,9 @@ unit GapBuffer
     //        Modifies IDX and IDY (via copyBytes)
     MoveGapTo()
     {
+        // this is the transaction boundary
+        resetUndoState();
+        
         // Save target position
         LDA GapValueL
         STA mgbTempL
@@ -554,6 +651,22 @@ unit GapBuffer
             INC gbGapStartL
             if (Z) { INC gbGapStartH }
             
+            // Record as an insert
+            LDA undoOp
+            if (Z)
+            {
+                LDA #UndoOp.Inserted
+                STA undoOp
+            }
+            else
+            {
+                CMP #UndoOp.Inserted
+                if (NZ)
+                {
+                    BRK  // Mixed transaction - crash!
+                }
+            }
+            
             SEC  // Success
             break;
         }
@@ -576,6 +689,21 @@ unit GapBuffer
         LDA gbGapStartL
         if (Z) { DEC gbGapStartH }
         DEC gbGapStartL
+        
+        LDA undoOp
+        if (Z)
+        {
+            LDA #UndoOp.Deleted
+            STA undoOp
+        }
+        else
+        {
+            CMP #UndoOp.Deleted
+            if (NZ)
+            {
+                BRK  // Mixed transaction - crash!
+            }
+        }
         
         SEC  // Success
     }
@@ -614,6 +742,22 @@ unit GapBuffer
         // Move gap end forward
         INC gbGapEndL
         if (Z) { INC gbGapEndH }
+        
+        // Record as a delete
+        LDA undoOp
+        if (Z)
+        {
+            LDA #UndoOp.Deleted
+            STA undoOp
+        }
+        else
+        {
+            CMP #UndoOp.Deleted
+            if (NZ)
+            {
+                BRK  // Mixed transaction - crash!
+            }
+        }
         
         PLA  // Restore deleted character to A
         SEC  // Success

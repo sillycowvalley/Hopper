@@ -6,7 +6,7 @@ unit View
     uses "Editor/GapBuffer"
     
     // Zero page allocation
-    const byte vwSlots = 0x90;
+    const byte vwSlots = 0xA0;
     
     // View state
     const byte vwScreenCols = vwSlots+0;     // Screen width (80)
