@@ -207,10 +207,6 @@ countEntry:
             break;
         }
     }
-    Add()
-    {
-        commonAdd();
-    }
     Sub()
     {
         // Flip the sign of TOP
@@ -222,7 +218,7 @@ countEntry:
         {
             SMB7 ZP.TOP3
         }
-        commonAdd();
+        Add();
     }
     
     handleExponentOverflow()
@@ -265,7 +261,7 @@ countEntry:
             ZeroResult();
         }
     }
-    commonAdd()
+    Add()
     {
         loop
         {

@@ -17,7 +17,7 @@ program BIOS
     
     
     // Optional components
-    //#define HASFLOAT  // currently ~1250 bytes
+    #define HASFLOAT  // currently ~1250 bytes
     #define HASEEPROM
     
     uses "Definitions/Limits"
@@ -330,6 +330,12 @@ program BIOS
         STA TransferLengthL
         STZ TransferLengthH
         
+        if (BBR7, ZP.TOP0)
+        {
+            LDA #'.'
+            Print.Char();
+        }
+        
         // Skip address (4 hex chars = 2 bytes)
         Serial.HexIn();  // Address high (ignore)
         Serial.HexIn();  // Address low (ignore)
@@ -340,6 +346,11 @@ program BIOS
         if (Z)   
         {
             Serial.HexIn(); // chomp the FF
+            Serial.IsAvailable();
+            if (C)
+            {
+                Serial.WaitForChar(); // final newline
+            }
             CLC             // Signal EOF
             return;
         }
@@ -386,13 +397,6 @@ program BIOS
         if (NZ)
         {
             File.AppendStream();
-        }
-        LDA ZP.TOP0
-        AND # 0b01111111
-        if (Z)
-        {
-            LDA #'.'
-            Print.Char();
         }
         SEC              // Continue processing
     }

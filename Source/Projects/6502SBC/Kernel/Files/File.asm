@@ -1206,10 +1206,7 @@ unit File
         {
             // Calculate global entry index
             PHA                      // Save slot again
-            LDA currentDirectorySector
-            DEC
-            ASL A ASL A ASL A ASL A
-            STA currentFileEntry
+            getCurrentSectorFirstEntry();
             PLA                      // Get slot
             CLC
             ADC currentFileEntry
@@ -1692,7 +1689,6 @@ unit File
     loadFAT()
     {
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
-        STZ ZP.IDYL
         
         LDA #(fatBuffer / 256)   // RAM address MSB = fatBuffer (must be page aligned)
         STA ZP.IDXH
@@ -1797,7 +1793,16 @@ unit File
             SEC                          // Success
             break;
         }
-    }  
+    } 
+    
+    // currentFileEntry = (currentDirectorySector - 1) x 16
+    getCurrentSectorFirstEntry()
+    {
+        LDA currentDirectorySector
+        DEC                     // Sector 1 = entries 0-15
+        ASL A ASL A ASL A ASL A // * 16
+        STA currentFileEntry
+    }
     
     // Find free directory entry across all directory sectors
     // Output: C set if entry found, NC if directory full
@@ -1831,10 +1836,7 @@ unit File
                 {
                     // Found free entry!
                     // currentFileEntry = (currentDirectorySector - 1) * 16 + Y
-                    LDA currentDirectorySector
-                    DEC                     // Sector 1 = entries 0-15
-                    ASL A ASL A ASL A ASL A // * 16
-                    STA currentFileEntry
+                    getCurrentSectorFirstEntry();
                     TYA                     // Add local entry index
                     CLC
                     ADC currentFileEntry
@@ -1872,10 +1874,7 @@ unit File
                 loadDirectorySector();
                 
                 // First entry in new sector is free
-                LDA currentDirectorySector
-                DEC
-                ASL A ASL A ASL A ASL A          // * 16
-                STA currentFileEntry
+                getCurrentSectorFirstEntry();
                 
                 // Need to write the FAT with the new link
                 writeFAT();
@@ -1890,7 +1889,6 @@ unit File
         }
     }
     
-        
     // Read arbitrary sector into FileDataBuffer
     // Input: A = sector number (0-255)
     // Output: 256 bytes copied from EEPROM to FileDataBuffer
@@ -1901,9 +1899,7 @@ unit File
         
         LDA #(FileDataBuffer / 256) // RAM address MSB = FileDataBuffer (must be page aligned)
         STA ZP.IDXH
-        
         EEPROM.ReadPage();
-        
         //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
     
@@ -1916,7 +1912,6 @@ unit File
         LDA #(FileDataBuffer / 256) // RAM address MSB = FileDataBuffer (must be page aligned)
         STA ZP.IDXH
         EEPROM.WritePage();
-        
         //BIT ZP.ACC // any instruction to defeat the tailcall optimization (JSR -> JMP) for the emulator
     }
 
