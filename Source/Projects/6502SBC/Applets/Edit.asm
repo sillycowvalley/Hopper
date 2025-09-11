@@ -78,6 +78,10 @@ program Edit
     const byte replaceBufferL  = edSlots+21;
     const byte replaceBufferH  = edSlots+22;
     
+    const byte findPosition    = ZP.IDYL;
+    const byte findPositionL   = ZP.IDYL;
+    const byte findPositionH   = ZP.IDYH;
+    
     
     
 #ifdef DEBUG
@@ -93,13 +97,17 @@ program Edit
     const string exportPrompt = "Export as: ";
     const string openPrompt = "Open file: ";
     const string importPrompt = "Import file: ";
-    const string notFoundMsg = "File not found!";
     const string loadingErrorMsg = "Error loading file!";
     const string savingErrorMsg = "Error saving file!";
     const string loadedMsg = "File loaded.";
     const string savedMsg  = "File saved.";
     const string ctrlKPrompt = "^K ";
     const string ctrlQPrompt = "^Q ";
+    
+    const string findPrompt = "Find: ";
+    const string notFoundMsg = "Not found.";
+    const string foundMsg = "Found";
+    const string memoryError = "Out of memory";
     
     const string noBeginMsg = "No block begin! Use ^K B first.";
     
@@ -1076,9 +1084,9 @@ program Edit
         Memory.Allocate();
         if (NC)
         {
-            LDA #(savingErrorMsg % 256)
+            LDA #(memoryError % 256)
             STA ZP.STRL
-            LDA #(savingErrorMsg / 256)
+            LDA #(memoryError / 256)
             STA ZP.STRH
             LDY #0
             View.StatusStringPause();
@@ -1143,6 +1151,8 @@ program Edit
             }
 
             RMB0 EditorFlags  // Clear modified
+            
+            View.UpdatePosition(); 
             
             LDA #(savedMsg % 256)
             STA ZP.STRL
@@ -1605,6 +1615,7 @@ program Edit
             {
                 openFile();
             }
+            
             default:
             {
                 // Unknown command - clear status and beep?
@@ -1687,10 +1698,11 @@ program Edit
                 View.CursorBottom();
             }
             case Key.CtrlF: // finger still down on <ctrl>
-            case 'F':       // Find
+            case 'F':       // Find text
             {
-                // TODO findText();
+                find();
             }
+            
             case Key.CtrlA: // finger still down on <ctrl>
             case 'A':       // Replace
             {
@@ -2548,6 +2560,259 @@ program Edit
         }
     }
     
+    // Find text from current position
+    find()
+    {
+        // Prompt for search string
+        LDA #(findPrompt % 256)
+        STA ZP.STRL
+        LDA #(findPrompt / 256)
+        STA ZP.STRH
+        LDA #40  // Max search length
+        Prompt.GetString();
+        if (NC)  // Cancelled
+        {
+            return;
+        }
+        
+        // A contains length, STR points to prompt buffer
+        if (Z)  // Empty string
+        {
+            return;
+        }
+        PHA  // Save length
+        
+        // Allocate findBuffer if needed
+        LDA findBufferL
+        ORA findBufferH
+        if (Z)  // Not allocated yet
+        {
+            LDA #80  // Allocate 80 bytes for find buffer
+            STA ZP.ACCL
+            STZ ZP.ACCH
+            Memory.Allocate();
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z)  // Allocation failed
+            {
+                PLA  // Clean stack
+                LDA #(memoryError % 256)
+                STA ZP.STRL
+                LDA #(memoryError / 256)
+                STA ZP.STRH
+                LDY #0
+                View.StatusStringPause();
+                return;
+            }
+            
+            LDA ZP.IDXL
+            STA findBufferL
+            LDA ZP.IDXH
+            STA findBufferH
+        }
+        
+        // Copy search string to findBuffer
+        PLA  // Get length back
+        TAX  // X = length
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            STA [findBuffer], Y
+            INY
+            DEX
+            if (Z) { break; }
+        }
+        // Add null terminator
+        LDA #0
+        STA [findBuffer], Y
+        
+        // Perform the search
+        doFind();
+    }
+    
+    // Find next occurrence (Ctrl+L)
+    findNext()
+    {
+        // Check if we have a search string
+        LDA findBufferL
+        ORA findBufferH
+        if (Z)  // No previous search
+        {
+            find();  // Prompt for new search
+            return;
+        }
+        
+        doFind();
+    }
+    
+    // Internal: Perform the actual search
+    // Assumes findBuffer contains the search string
+    doFind()
+    {
+        // Get current cursor position
+        View.GetCursorPosition();  // Returns position in GapBuffer.GapValue
+        
+        // Start searching from next character
+        incGapValue();
+        
+        // Save search start position
+        LDA GapBuffer.GapValueL
+        STA findPositionL
+        LDA GapBuffer.GapValueH
+        STA findPositionH
+        
+        // Get text length for bounds checking
+        GapBuffer.GetTextLength();  // Returns in GapBuffer.GapValue
+        LDA GapBuffer.GapValueL
+        STA ZP.ACCL
+        LDA GapBuffer.GapValueH
+        STA ZP.ACCH
+        
+        // Main search loop
+        loop
+        {
+            // Check if we've reached end of text
+            LDA findPositionH
+            CMP ZP.ACCH
+            if (Z)
+            {
+                LDA findPositionL
+                CMP ZP.ACCL
+            }
+            if (C)  // pos >= length
+            {
+                // Not found
+                View.StatusClear();
+                LDA #(notFoundMsg % 256)
+                STA ZP.STRL
+                LDA #(notFoundMsg / 256)
+                STA ZP.STRH
+                LDY #0
+                View.StatusStringPause();
+                return;
+            }
+            
+            // Check if character at current position matches first char of search string
+            LDA findPositionL
+            STA GapBuffer.GapValueL
+            LDA findPositionH
+            STA GapBuffer.GapValueH
+            GapBuffer.GetCharAt();
+            
+            CMP [findBuffer]
+            if (Z)  // First character matches
+            {
+                // Check rest of string
+                matchCheck();
+                if (C)  // Full match found
+                {
+                    // Move cursor to match position
+                    LDA findPositionL
+                    STA GapBuffer.GapValueL
+                    LDA findPositionH
+                    STA GapBuffer.GapValueH
+                    LDY #0  // Don't force render
+                    View.SetCursorPosition();
+                    
+                    // Show success message
+                    View.StatusClear();
+                    LDA #(foundMsg % 256)
+                    STA ZP.STRL
+                    LDA #(foundMsg / 256)
+                    STA ZP.STRH
+                    LDY #0
+                    View.StatusStringPause();
+                    return;
+                }
+            }
+            
+            // Move to next position
+            INC findPositionL
+            if (Z) { INC findPositionH }
+        }
+    }
+    
+    // Helper: Check if full string matches at current position
+    // Input: IDY = position to check
+    // Output: C set if match, clear if no match
+    matchCheck()
+    {
+        PHX
+        PHY
+        
+        // Save current check position
+        LDA findPositionL
+        PHA
+        LDA findPositionH
+        PHA
+        
+        LDY #0  // Index into search string
+        loop
+        {
+            // Get character from search string
+            LDA [findBuffer], Y
+            if (Z)  // End of search string - match!
+            {
+                SEC
+                break;
+            }
+            
+            // Save search character
+            PHA
+            
+            // Get character from text
+            LDA findPositionL
+            STA GapBuffer.GapValueL
+            LDA findPositionH
+            STA GapBuffer.GapValueH
+            GapBuffer.GetCharAt();
+            STA ZP.TEMP  // Save text character
+            
+            // Compare
+            PLA  // Get search character back
+            CMP ZP.TEMP
+            if (NZ)  // No match
+            {
+                CLC
+                break;
+            }
+            
+            // Move to next character
+            INC findPositionL
+            if (Z) { INC findPositionH }
+            INY
+            
+            // Check if we've gone past end of text
+            LDA findPositionH
+            CMP ZP.ACCH
+            if (Z)
+            {
+                LDA findPositionH
+                CMP ZP.ACCL
+            }
+            if (C)  // Past end of text
+            {
+                CLC  // No match
+                break;
+            }
+        }
+        
+        // Restore position
+        PLA
+        STA findPositionH
+        PLA
+        STA findPositionL
+        
+        PLY
+        PLX
+    }
+    
+    
+    
+    
+    
     
     Hopper()
     {
@@ -2658,6 +2923,10 @@ program Edit
                 {
                     Help.Show();
                     View.Redraw();
+                }
+                case Key.CtrlL:
+                {
+                    findNext();
                 }
                 
                 
