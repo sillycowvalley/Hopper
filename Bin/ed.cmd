@@ -1,2 +1,2 @@
-cd /source/projects/6502sbc/kernel
-edit bios
+cd /source/projects/6502sbc/Applets/C
+edit cc

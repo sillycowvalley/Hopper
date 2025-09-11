@@ -5,6 +5,13 @@ unit Errors
         None = 0,
         SourceNotFound,
         SourceLoadingError,
+        OutOfMemory,
+        UnexpectedCharacter, // 4
+        UnterminatedComment,
+        UnterminatedString,
+        TokenTooLong,
+        StringTooLong,
+        
     }
     
     const string errorMessage = "Error: ";
