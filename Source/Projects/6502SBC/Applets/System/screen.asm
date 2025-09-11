@@ -1,8 +1,5 @@
 unit Screen
 {
-    uses "System/Definitions"
-    uses "System/Serial"
-    
     // Zero page allocation - shares block with Debug
     const byte screenSlots       = 0x67;
     const byte screenStrL        = screenSlots+0;  // Temporary string pointer low

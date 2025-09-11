@@ -1,10 +1,5 @@
 unit Debug
 {
-    uses "System/Definitions"
-    uses "System/Screen"
-    uses "System/Print"
-    uses "System/Serial"
-    
     // Zero page allocation - single base + offsets
     const byte debugSlots = 0x60;
     

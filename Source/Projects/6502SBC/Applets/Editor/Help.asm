@@ -1,8 +1,5 @@
 unit Help
 {
-    uses "System/Screen"
-    uses "System/Serial"
-    uses "Editor/Keyboard"
     
     // Help screen lines (pre-formatted for 80 columns)
     

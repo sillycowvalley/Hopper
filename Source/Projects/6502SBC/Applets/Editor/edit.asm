@@ -5,22 +5,22 @@ program Edit
     
     //#define TURBO
     
-    uses "System/Definitions"
-    uses "System/Print"
-    uses "System/Screen"
-    uses "System/Memory"
-    uses "System/File"
-    uses "System/Serial"
-    uses "System/Time"
-    uses "System/Debug"
-    uses "System/ScreenBuffer"
-    uses "System/Char"
-    
-    uses "Editor/Keyboard"
-    uses "Editor/GapBuffer"
-    uses "Editor/View"
-    uses "Editor/Help"
-    uses "Editor/Prompt"
+    uses "../System/Definitions"
+    uses "../System/Print"
+    uses "../System/Screen"
+    uses "../System/Memory"
+    uses "../System/File"
+    uses "../System/Serial"
+    uses "../System/Time"
+    uses "../System/Debug"
+    uses "../System/ScreenBuffer"
+    uses "../System/Char"
+     
+    uses "./Keyboard"
+    uses "./GapBuffer"
+    uses "./View"
+    uses "./Help"
+    uses "./Prompt"
     
     const byte edSlots       = 0xB6;
     

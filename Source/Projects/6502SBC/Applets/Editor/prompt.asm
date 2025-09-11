@@ -1,10 +1,5 @@
 unit Prompt
 {
-    uses "System/Serial"
-    uses "System/Screen"
-    uses "System/Char"
-    uses "Keyboard"
-    uses "View"
     
     // Zero page for prompt input buffer
     const byte promptSlots    = 0xB0;

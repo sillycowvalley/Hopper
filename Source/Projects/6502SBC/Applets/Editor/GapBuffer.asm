@@ -1,9 +1,6 @@
 unit GapBuffer
 {
     
-    uses "System/Definitions"
-    uses "System/Memory"
-    
     // Zero page allocation
     const byte gbSlots = 0x80;
     

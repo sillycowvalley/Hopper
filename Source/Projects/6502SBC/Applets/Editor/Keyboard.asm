@@ -1,11 +1,5 @@
 unit Keyboard
 {
-    uses "System/Definitions"
-    uses "System/Serial"
-    uses "System/Time"
-    uses "System/Char"
-    uses "System/Shared"
-    
     // Zero page allocation
     const byte kbSlots = 0x7F;
     

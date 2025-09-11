@@ -1,9 +1,5 @@
 unit View
 {
-    uses "System/Definitions"
-    uses "System/ScreenBuffer"
-    uses "System/Shared"
-    uses "Editor/GapBuffer"
     
     // Zero page allocation
     const byte vwSlots = 0xA0;
