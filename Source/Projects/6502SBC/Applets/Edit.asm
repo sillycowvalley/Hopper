@@ -3,7 +3,7 @@ program Edit
     #define CPU_65C02S
     //#define DEBUG
     
-    //#define TURBO
+    #define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
@@ -108,6 +108,8 @@ program Edit
     const string notFoundMsg = "Not found.";
     const string foundMsg = "Found";
     const string memoryError = "Out of memory";
+    const string replacePrompt = "Replace with: ";
+    const string replacedMsg = "Replaced";
     
     const string noBeginMsg = "No block begin! Use ^K B first.";
     
@@ -1703,12 +1705,6 @@ program Edit
                 find();
             }
             
-            case Key.CtrlA: // finger still down on <ctrl>
-            case 'A':       // Replace
-            {
-                // TODO replaceText();
-            }
-            
             case Key.CtrlY: // finger still down on <ctrl>
             case 'Y':       // Delete to end of line
             {
@@ -2560,8 +2556,10 @@ program Edit
         }
     }
     
-    // Find text from current position
-    find()
+    // Common function to get find string and set up findBuffer
+    // Returns: C set if successful, C clear if cancelled or error
+    //          A contains length of find string (if successful)
+    getFindString()
     {
         // Prompt for search string
         LDA #(findPrompt % 256)
@@ -2572,12 +2570,13 @@ program Edit
         Prompt.GetString();
         if (NC)  // Cancelled
         {
+            CLC
             return;
         }
         
-        // A contains length, STR points to prompt buffer
         if (Z)  // Empty string
         {
+            CLC
             return;
         }
         PHA  // Save length
@@ -2603,6 +2602,7 @@ program Edit
                 STA ZP.STRH
                 LDY #0
                 View.StatusStringPause();
+                CLC
                 return;
             }
             
@@ -2614,6 +2614,7 @@ program Edit
         
         // Copy search string to findBuffer
         PLA  // Get length back
+        PHA  // Save for return
         TAX  // X = length
         LDY #0
         loop
@@ -2627,6 +2628,19 @@ program Edit
         // Add null terminator
         LDA #0
         STA [findBuffer], Y
+        
+        PLA  // Get length for return
+        SEC  // Success
+    }
+    
+    // Simplified Find
+    find()
+    {
+        getFindString();
+        if (NC)  // Cancelled or error
+        {
+            return;
+        }
         
         // Perform the search
         doFind();
@@ -2733,7 +2747,7 @@ program Edit
             if (Z) { INC findPositionH }
         }
     }
-    
+        
     // Helper: Check if full string matches at current position
     // Input: IDY = position to check
     // Output: C set if match, clear if no match

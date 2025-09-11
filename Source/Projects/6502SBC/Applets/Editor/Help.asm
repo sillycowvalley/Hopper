@@ -23,8 +23,8 @@ unit Help
     const string helpLine12   = "QUICK MOVEMENT           FIND/REPLACE               Ctrl+H   Backspace";
     const string helpLine13   = "----------------         -------------              Ctrl+G   Delete char";
     const string helpLine14   = "Ctrl+Q S  Start of line  Ctrl+Q F  Find             Ctrl+T   Delete word";
-    const string helpLine15   = "Ctrl+Q D  End of line    Ctrl+Q A  Replace          Ctrl+Y   Delete line";
-    const string helpLine16   = "Ctrl+Q R  Top of file    Ctrl+L    Find next        Ctrl+Q Y Delete to EOL";
+    const string helpLine15   = "Ctrl+Q D  End of line    Ctrl+L    Find next        Ctrl+Y   Delete line";
+    const string helpLine16   = "Ctrl+Q R  Top of file                               Ctrl+Q Y Delete to EOL";
     const string helpLine17   = "Ctrl+Q C  End of file";
     const string helpLine18   = "Ctrl+Q B  Block begin";
     const string helpLine19   = "Ctrl+Q K  Block end ";
@@ -46,8 +46,8 @@ unit Help
     const string helpLine12   = "CLASSIC MOVEMENT         FIND/REPLACE               -----------------";
     const string helpLine13   = "----------------         -------------              Ctrl+H   Backspace";
     const string helpLine14   = "Ctrl+Q R  Top of file    Ctrl+Q F  Find             Ctrl+G   Delete char";
-    const string helpLine15   = "Ctrl+Q C  End of file    Ctrl+Q A  Replace          Ctrl+T   Delete word";
-    const string helpLine16   = "Ctrl+Q B  Block begin    Ctrl+L    Find next        Ctrl+Y   Delete line";
+    const string helpLine15   = "Ctrl+Q C  End of file    Ctrl+L    Find next        Ctrl+T   Delete word";
+    const string helpLine16   = "Ctrl+Q B  Block begin                               Ctrl+Y   Delete line";
     const string helpLine17   = "Ctrl+Q K  Block end                                 Ctrl+Q Y Delete to EOL";
     const string helpLine18   = "";
     const string helpLine19   = "                         MODERN ALIASES:  Ctrl+C=Copy, Ctrl+X=Cut, Ctrl+V=Paste";
