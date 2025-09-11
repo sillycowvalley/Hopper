@@ -1,4 +1,4 @@
-program StrapC
+program CC
 {
     #define CPU_65C02S
     
