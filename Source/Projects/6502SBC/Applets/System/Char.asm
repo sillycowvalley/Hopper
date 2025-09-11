@@ -5,6 +5,8 @@ unit Char
     const byte XON        = 0x11; // <ctrl><Q>
     
     const byte EOL        = 0x0A;
+    const byte CR         = 0x0D;
+    
     const byte Escape     = 0x1B;
     const byte Slash      = 0x5C;
     const byte Formfeed   = 0x0C;

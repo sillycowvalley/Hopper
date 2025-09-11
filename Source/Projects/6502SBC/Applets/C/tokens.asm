@@ -1,7 +1,7 @@
 unit Tokens
 {
     // Token types - EndOfFile = 0 for easy checking
-    enum Token    
+    enum Token
     {
         EndOfFile    = 0,   // Makes if (Z) work for EOF check
         
@@ -56,7 +56,6 @@ unit Tokens
     }
     
     // Keyword table for recognition
-    // Each entry: null-terminated string followed by token type
     const string kwVoid   = "void";
     const string kwChar   = "char";
     const string kwInt    = "int";
@@ -67,9 +66,7 @@ unit Tokens
     const string kwWhile  = "while";
     const string kwReturn = "return";
     
-    // Table of keyword addresses and their token types
-    // Would be cleaner with a struct, but using parallel arrays
-    const byte keywordCount = 9;
+    
     
     // Check if string at [tokenBuffer] matches keyword
     // Input: ZP.STR points to keyword string to check
@@ -84,7 +81,7 @@ unit Tokens
             LDA [ZP.STR], Y
             if (Z)  // End of keyword
             {
-                LDA [Lexer.TokenType], Y
+                LDA [Lexer.TokenBuffer], Y
                 if (Z)  // Also end of token
                 {
                     SEC  // Match!
@@ -99,7 +96,7 @@ unit Tokens
                 }
             }
             
-            CMP [Lexer.TokenType], Y
+            CMP [Lexer.TokenBuffer], Y
             if (NZ)
             {
                 CLC  // No match
@@ -112,7 +109,6 @@ unit Tokens
     }
     
     // Check token buffer against all keywords
-    // Updates Lexer.tokenType if keyword found
     CheckKeywords()
     {
         // Check "void"
@@ -136,7 +132,7 @@ unit Tokens
         matchKeyword();
         if (C)
         {
-            LDA # Token.Char
+            LDA #Token.Char
             STA Lexer.TokenType
             return;
         }
@@ -235,23 +231,118 @@ unit Tokens
         // Not a keyword, must be identifier
         LDA #Token.Identifier
         STA Lexer.TokenType
+        SEC
     }
     
-    // Debug: Print token type name (for testing)
-    PrintType()  // Input: A = token type
+#ifdef DEBUG    
+    // Token type names for debugging
+    const string nameEOF         = "EOF";
+    const string nameIdentifier  = "ID";
+    const string nameInteger     = "NUM";
+    const string nameString      = "STR";
+    const string nameCharLit     = "CHR";
+    
+    const string nameVoid        = "void";
+    const string nameChar        = "char";
+    const string nameInt         = "int";
+    const string nameLong        = "long";
+    const string nameIf          = "if";
+    const string nameElse        = "else";
+    const string nameFor         = "for";
+    const string nameWhile       = "while";
+    const string nameReturn      = "return";
+    const string nameBreak       = "break";
+    const string nameContinue    = "continue";
+    
+    const string namePlus        = "+";
+    const string nameMinus       = "-";
+    const string nameStar        = "*";
+    const string nameSlash       = "/";
+    const string namePercent     = "%";
+    const string nameAssign      = "=";
+    const string nameEqual       = "==";
+    const string nameNotEqual    = "!=";
+    const string nameLess        = "<";
+    const string nameGreater     = ">";
+    const string nameLessEqual   = "<=";
+    const string nameGreaterEqual = ">=";
+    const string nameLogicalAnd  = "&&";
+    const string nameLogicalOr   = "||";
+    const string nameNot         = "!";
+    const string nameIncrement   = "++";
+    const string nameDecrement   = "--";
+    
+    const string nameSemicolon   = ";";
+    const string nameComma       = ",";
+    const string nameLeftParen   = "(";
+    const string nameRightParen  = ")";
+    const string nameLeftBrace   = "{";
+    const string nameRightBrace  = "}";
+    const string nameLeftBracket = "[";
+    const string nameRightBracket = "]";
+    const string nameAmpersand   = "&";
+    
+    const string nameUnknown     = "?";
+    
+    
+    PrintToken()  // Input: A = token
     {
         switch (A)
         {
-            case Token.EndOfFile:      { Print.Char(); LDA #'E' Print.Char(); LDA #'O' Print.Char(); LDA #'F' Print.Char(); }
-            case Token.Identifier:     { Print.Char(); LDA #'I' Print.Char(); LDA #'D' Print.Char(); }
-            case Token.IntegerLiteral: { Print.Char(); LDA #'N' Print.Char(); LDA #'U' Print.Char(); LDA #'M' Print.Char(); }
-            case Token.StringLiteral:  { Print.Char(); LDA #'S' Print.Char(); LDA #'T' Print.Char(); LDA #'R' Print.Char(); }
-            case Token.Plus:           { Print.Char(); LDA #'+' Print.Char(); }
-            case Token.Minus:          { Print.Char(); LDA #'-' Print.Char(); }
-            case Token.Star:           { Print.Char(); LDA #'*' Print.Char(); }
-            case Token.Semicolon:      { Print.Char(); LDA #';' Print.Char(); }
-            // ... etc
-            default:                   { Print.Hex(); }
+            // Literals and special
+            case Token.EndOfFile:      { LDA #(nameEOF % 256)         STA ZP.STRL  LDA #(nameEOF / 256)         STA ZP.STRH }
+            case Token.Identifier:     { LDA #(nameIdentifier % 256)  STA ZP.STRL  LDA #(nameIdentifier / 256)  STA ZP.STRH }
+            case Token.IntegerLiteral: { LDA #(nameInteger % 256)     STA ZP.STRL  LDA #(nameInteger / 256)     STA ZP.STRH }
+            case Token.StringLiteral:  { LDA #(nameString % 256)      STA ZP.STRL  LDA #(nameString / 256)      STA ZP.STRH }
+            case Token.CharLiteral:    { LDA #(nameCharLit % 256)     STA ZP.STRL  LDA #(nameCharLit / 256)     STA ZP.STRH }
+            
+            // Keywords
+            case Token.Void:           { LDA #(nameVoid % 256)        STA ZP.STRL  LDA #(nameVoid / 256)        STA ZP.STRH }
+            case Token.Char:           { LDA #(nameChar % 256)        STA ZP.STRL  LDA #(nameChar / 256)        STA ZP.STRH }
+            case Token.Int:            { LDA #(nameInt % 256)         STA ZP.STRL  LDA #(nameInt / 256)         STA ZP.STRH }
+            case Token.Long:           { LDA #(nameLong % 256)        STA ZP.STRL  LDA #(nameLong / 256)        STA ZP.STRH }
+            case Token.If:             { LDA #(nameIf % 256)          STA ZP.STRL  LDA #(nameIf / 256)          STA ZP.STRH }
+            case Token.Else:           { LDA #(nameElse % 256)        STA ZP.STRL  LDA #(nameElse / 256)        STA ZP.STRH }
+            case Token.For:            { LDA #(nameFor % 256)         STA ZP.STRL  LDA #(nameFor / 256)         STA ZP.STRH }
+            case Token.While:          { LDA #(nameWhile % 256)       STA ZP.STRL  LDA #(nameWhile / 256)       STA ZP.STRH }
+            case Token.Return:         { LDA #(nameReturn % 256)      STA ZP.STRL  LDA #(nameReturn / 256)      STA ZP.STRH }
+            case Token.Break:          { LDA #(nameBreak % 256)       STA ZP.STRL  LDA #(nameBreak / 256)       STA ZP.STRH }
+            case Token.Continue:       { LDA #(nameContinue % 256)    STA ZP.STRL  LDA #(nameContinue / 256)    STA ZP.STRH }
+            
+            // Operators
+            case Token.Plus:           { LDA #(namePlus % 256)        STA ZP.STRL  LDA #(namePlus / 256)        STA ZP.STRH }
+            case Token.Minus:          { LDA #(nameMinus % 256)       STA ZP.STRL  LDA #(nameMinus / 256)       STA ZP.STRH }
+            case Token.Star:           { LDA #(nameStar % 256)        STA ZP.STRL  LDA #(nameStar / 256)        STA ZP.STRH }
+            case Token.Slash:          { LDA #(nameSlash % 256)       STA ZP.STRL  LDA #(nameSlash / 256)       STA ZP.STRH }
+            case Token.Percent:        { LDA #(namePercent % 256)     STA ZP.STRL  LDA #(namePercent / 256)     STA ZP.STRH }
+            case Token.Assign:         { LDA #(nameAssign % 256)      STA ZP.STRL  LDA #(nameAssign / 256)      STA ZP.STRH }
+            case Token.Equal:          { LDA #(nameEqual % 256)       STA ZP.STRL  LDA #(nameEqual / 256)       STA ZP.STRH }
+            case Token.NotEqual:       { LDA #(nameNotEqual % 256)    STA ZP.STRL  LDA #(nameNotEqual / 256)    STA ZP.STRH }
+            case Token.Less:           { LDA #(nameLess % 256)        STA ZP.STRL  LDA #(nameLess / 256)        STA ZP.STRH }
+            case Token.Greater:        { LDA #(nameGreater % 256)     STA ZP.STRL  LDA #(nameGreater / 256)     STA ZP.STRH }
+            case Token.LessEqual:      { LDA #(nameLessEqual % 256)   STA ZP.STRL  LDA #(nameLessEqual / 256)   STA ZP.STRH }
+            case Token.GreaterEqual:   { LDA #(nameGreaterEqual % 256) STA ZP.STRL LDA #(nameGreaterEqual / 256) STA ZP.STRH }
+            case Token.LogicalAnd:     { LDA #(nameLogicalAnd % 256)  STA ZP.STRL  LDA #(nameLogicalAnd / 256)  STA ZP.STRH }
+            case Token.LogicalOr:      { LDA #(nameLogicalOr % 256)   STA ZP.STRL  LDA #(nameLogicalOr / 256)   STA ZP.STRH }
+            case Token.Not:            { LDA #(nameNot % 256)         STA ZP.STRL  LDA #(nameNot / 256)         STA ZP.STRH }
+            case Token.Increment:      { LDA #(nameIncrement % 256)   STA ZP.STRL  LDA #(nameIncrement / 256)   STA ZP.STRH }
+            case Token.Decrement:      { LDA #(nameDecrement % 256)   STA ZP.STRL  LDA #(nameDecrement / 256)   STA ZP.STRH }
+            
+            // Punctuation
+            case Token.Semicolon:      { LDA #(nameSemicolon % 256)   STA ZP.STRL  LDA #(nameSemicolon / 256)   STA ZP.STRH }
+            case Token.Comma:          { LDA #(nameComma % 256)       STA ZP.STRL  LDA #(nameComma / 256)       STA ZP.STRH }
+            case Token.LeftParen:      { LDA #(nameLeftParen % 256)   STA ZP.STRL  LDA #(nameLeftParen / 256)   STA ZP.STRH }
+            case Token.RightParen:     { LDA #(nameRightParen % 256)  STA ZP.STRL  LDA #(nameRightParen / 256)  STA ZP.STRH }
+            case Token.LeftBrace:      { LDA #(nameLeftBrace % 256)   STA ZP.STRL  LDA #(nameLeftBrace / 256)   STA ZP.STRH }
+            case Token.RightBrace:     { LDA #(nameRightBrace % 256)  STA ZP.STRL  LDA #(nameRightBrace / 256)  STA ZP.STRH }
+            case Token.LeftBracket:    { LDA #(nameLeftBracket % 256) STA ZP.STRL  LDA #(nameLeftBracket / 256) STA ZP.STRH }
+            case Token.RightBracket:   { LDA #(nameRightBracket % 256) STA ZP.STRL LDA #(nameRightBracket / 256) STA ZP.STRH }
+            case Token.Ampersand:      { LDA #(nameAmpersand % 256)   STA ZP.STRL  LDA #(nameAmpersand / 256)   STA ZP.STRH }
+            
+            default:                       { LDA #(nameUnknown % 256)     STA ZP.STRL  LDA #(nameUnknown / 256)     STA ZP.STRH }
         }
+        
+        Print.String();
     }
+#endif    
 }

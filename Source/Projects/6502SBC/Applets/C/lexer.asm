@@ -20,9 +20,9 @@ unit Lexer
     const byte currentChar   = lexSlots+2;  // Current character
     const byte peekChar      = lexSlots+3;  // Lookahead character
     
-    const byte tokenBuffer   = lexSlots+4;  // Pointer to token string buffer
-    const byte tokenBufferL  = lexSlots+4;
-    const byte tokenBufferH  = lexSlots+5;
+    const byte TokenBuffer   = lexSlots+4;  // Pointer to token string buffer
+    const byte TokenBufferL  = lexSlots+4;
+    const byte TokenBufferH  = lexSlots+5;
     
     const byte tokenLength   = lexSlots+6;  // Current token length
     const byte TokenType     = lexSlots+7;  // Current token type
@@ -32,11 +32,10 @@ unit Lexer
     const byte tokenValueH   = lexSlots+9;
     
     // File reading state
-    const byte bufferIndex   = lexSlots+10; // Index into current FileDataBuffer
-    const byte bufferEnd     = lexSlots+11; // End of valid data in buffer
-    const byte hasMoreData   = lexSlots+12; // Flag: more file data available
+    const byte bufferIndexL  = lexSlots+10; // Index into current FileDataBuffer
+    const byte bufferIndexH  = lexSlots+11;
     
-    const byte maxTokenLength = 32;
+    const byte maxTokenLength = 64;
     
     // Initialize lexer
     Initialize()
@@ -55,9 +54,9 @@ unit Lexer
         }
         
         LDA ZP.IDXL
-        STA tokenBufferL
+        STA TokenBufferL
         LDA ZP.IDXH
-        STA tokenBufferH
+        STA TokenBufferH
         
         // Initialize state
         LDA #1
@@ -67,11 +66,6 @@ unit Lexer
         STZ tokenLength
         STZ TokenType
         
-        LDA #1
-        STA hasMoreData  // Assume more data initially
-        STZ bufferIndex
-        STZ bufferEnd
-        
         // Prime the pump - get first chunk
         refillBuffer();
         if (NC) 
@@ -79,6 +73,9 @@ unit Lexer
             CLC
             return; 
         }
+        
+        STZ peekChar
+        STZ currentChar
         
         // Get first two characters
         advance();
@@ -93,14 +90,12 @@ unit Lexer
         File.NextStream();
         if (NC)
         {
-            STZ hasMoreData
             CLC
             return;
         }
         
-        STZ bufferIndex
-        LDA File.TransferLengthL
-        STA bufferEnd
+        STZ bufferIndexL
+        STZ bufferIndexH
         
         SEC
     }
@@ -113,7 +108,7 @@ unit Lexer
         STA currentChar
         
         // Check for newline
-        CMP #Char.EOL
+        CMP # Char.EOL
         if (Z)
         {
             INC currentLineL
@@ -123,34 +118,40 @@ unit Lexer
             }
         }
         
-        // Get next character
-        LDA bufferIndex
-        CMP bufferEnd
-        if (Z)  // Need more data
+        LDA bufferIndexH
+        CMP File.TransferLengthH
+        if (Z)
         {
-            LDA hasMoreData
-            if (Z)
+            LDA bufferIndexL
+            CMP File.TransferLengthL
+            if (Z)  // Need more data
             {
-                STZ peekChar  // EOF
-                return;
-            }
-            
-            refillBuffer();
-            if (NC)
-            {
-                STZ peekChar  // EOF
-                return;
+                refillBuffer();
+                if (NC)
+                {
+                    STZ peekChar  // EOF
+                    return;
+                }
             }
         }
         
         // Get character from buffer
+        
+        // Load FileDataBuffer address into zero page pointer
+        LDA #(File.FileDataBuffer % 256)
+        STA ZP.IDXL
+        LDA #(File.FileDataBuffer / 256)
+        STA ZP.IDXH
+        
+        // Now read via indirect indexed
         PHY
-        LDY bufferIndex
-        LDA File.FileDataBuffer, Y
+        LDY bufferIndexL // 0..255
+        LDA [ZP.IDX], Y
         STA peekChar
         PLY
         
-        INC bufferIndex
+        INC bufferIndexL
+        if (Z) { INC bufferIndexH }
     }
     
     // Skip whitespace and comments
@@ -163,13 +164,13 @@ unit Lexer
             CMP #' '
             if (Z) { advance(); continue; }
             
-            CMP #Char.Tab
+            CMP # Char.Tab
             if (Z) { advance(); continue; }
             
-            CMP #Char.EOL
+            CMP # Char.EOL
             if (Z) { advance(); continue; }
             
-            CMP #13  // CR
+            CMP # Char.CR
             if (Z) { advance(); continue; }
             
             // Check for // comment
@@ -185,9 +186,9 @@ unit Lexer
                     {
                         advance();
                         LDA currentChar
-                        if (Z) { break; }  // EOF
-                        CMP #Char.EOL
-                        if (Z) { break; }
+                        if (Z) { SEC break; }  // EOF
+                        CMP # Char.EOL
+                        if (Z) { SEC break; }
                     }
                     continue;
                 }
@@ -208,11 +209,12 @@ unit Lexer
                     loop
                     {
                         LDA currentChar
-                        if (Z) 
+                        if (Z) // EOF without */
                         { 
                             LDA #Error.UnterminatedComment
                             Errors.ShowError();
-                            break; 
+                            CLC
+                            return; 
                         }
                         
                         CMP #'*'
@@ -224,17 +226,18 @@ unit Lexer
                             {
                                 advance();  // Skip /
                                 advance();  // Move past comment
+                                SEC
                                 break;
                             }
                         }
                         advance();
-                    }
+                    } // loop
                     continue;
                 }
             }
-            
+            SEC
             break;  // Not whitespace
-        }
+        } // loop
     }
     
     // Collect identifier or keyword
@@ -251,7 +254,7 @@ unit Lexer
             {
                 LDA currentChar
                 CMP #'_'
-                if (NZ) { break; }  // End of identifier
+                if (NZ) { SEC break; }  // End of identifier
             }
             
             // Add to token buffer
@@ -261,25 +264,29 @@ unit Lexer
             {
                 LDA #Error.TokenTooLong
                 Errors.ShowError();
+                CLC
                 break;
             }
             
             LDA currentChar
-            STA [tokenBuffer], Y
+            STA [TokenBuffer], Y
             INC tokenLength
             
             advance();
+        } // loop
+        if (C)
+        {
+            // Null terminate
+            LDY tokenLength
+            LDA #0
+            STA [TokenBuffer], Y
         }
-        
-        // Null terminate
-        LDX tokenLength
-        LDA #0
-        STA [tokenBuffer], Y
-        
         PLY
-        
-        // Check for keywords
-        checkKeyword();
+        if (C)
+        {
+            // Check for keywords
+            checkKeyword();
+        }
     }
     
     // Check if identifier is a keyword
@@ -321,11 +328,65 @@ unit Lexer
             STA tokenValueH
             
             advance();
-        }
+        } // loop
         
         LDA #Token.IntegerLiteral
         STA TokenType
+        SEC
     }
+    
+    scanCharLiteral()
+    {
+        advance();  // Skip opening quote
+        
+        LDA currentChar
+        if (Z)  // EOF
+        {
+            LDA #Error.UnterminatedString  // Reuse this error
+            Errors.ShowError();
+            CLC
+            PLY
+            return;
+        }
+        
+        // Handle escape sequences
+        CMP #92  // Backslash ASCII
+        if (Z)
+        {
+            advance();
+            LDA currentChar
+            switch (A)
+            {
+                case 'n':  { LDA # Char.EOL }
+                case 't':  { LDA # Char.Tab }
+                case '\\':   { LDA '\\' }  // Backslash
+                case '\'':   { LDA '\'' }  // Single quote
+                default:   { } // Use as-is
+            }
+        }
+        
+        STA tokenValueL  // Store character value
+        STZ tokenValueH
+        
+        advance();
+        LDA currentChar
+        CMP #39  // Single quote
+        if (NZ)  // Should be closing quote
+        {
+            LDA #Error.UnterminatedString  // Reuse this error
+            Errors.ShowError();
+            CLC
+            return;
+        }
+        
+        advance();  // Skip closing quote
+        
+        LDA #Token.CharLiteral
+        STA TokenType
+        SEC
+    }
+    
+    
     
     // Scan string literal
     scanString()
@@ -341,6 +402,7 @@ unit Lexer
             {
                 LDA #Error.UnterminatedString
                 Errors.ShowError();
+                CLC
                 break;
             }
             
@@ -348,6 +410,7 @@ unit Lexer
             if (Z)
             {
                 advance();  // Skip closing quote
+                SEC
                 break;
             }
             
@@ -374,22 +437,25 @@ unit Lexer
             {
                 LDA # Error.StringTooLong
                 Errors.ShowError();
+                CLC
                 break;
             }
             
-            STA [tokenBuffer], Y
+            STA [TokenBuffer], Y
             INC tokenLength
             
             advance();
+        } // loop
+        if (C)
+        {
+            // Null terminate
+            LDY tokenLength
+            LDA #0
+            STA [TokenBuffer], Y
+            
+            LDA #Token.StringLiteral
+            STA TokenType
         }
-        
-        // Null terminate
-        LDY tokenLength
-        LDA #0
-        STA [tokenBuffer], Y
-        
-        LDA #Token.StringLiteral
-        STA TokenType
         PLY
     }
     
@@ -397,194 +463,216 @@ unit Lexer
     NextToken()  // Returns token type in A
     {
         skipWhitespace();
-        
-        LDA currentChar
-        if (Z)  // EOF
+        if (NC)
         {
-            LDA # Token.EndOfFile
-            STA TokenType
             return;
         }
-        
-        // Check for identifier/keyword
-        Char.IsAlpha();
-        if (C)
+        loop
         {
-            scanIdentifier();
-            LDA TokenType
-            return;
-        }
+            LDA currentChar
+            if (Z)  // EOF
+            {
+                LDA # Token.EndOfFile
+                STA TokenType
+                SEC
+                break;
+            }
+            
+            // Check for identifier/keyword
+            Char.IsAlpha();
+            if (C)
+            {
+                scanIdentifier();
+                break;
+            }
+            
+            // Check for number
+            LDA currentChar
+            Char.IsDigit();
+            if (C)
+            {
+                scanNumber();
+                break;
+            }
+            
+            // Check for string
+            LDA currentChar
+            CMP #'"'
+            if (Z)
+            {
+                scanString();
+                break;
+            }
+            
+            // Check for character literal
+            LDA currentChar
+            CMP #'\''
+            if (Z)
+            {
+                scanCharLiteral();
+                if (NC) { return; }
+                break;
+            }
         
-        // Check for number
-        LDA currentChar
-        Char.IsDigit();
-        if (C)
-        {
-            scanNumber();
-            LDA TokenType
-            return;
-        }
-        
-        // Check for string
-        LDA currentChar
-        CMP #'"'
-        if (Z)
-        {
-            scanString();
-            LDA TokenType
-            return;
-        }
-        
-        // Single and double character operators
-        switch (A)
-        {
-            case '+': 
-            { 
-                advance();
-                LDA #Token.Plus
-                STA TokenType
-            }
-            case '-':
+            // Single and double character operators
+            switch (A)
             {
-                advance();
-                LDA #Token.Minus
-                STA TokenType
-            }
-            case '*':
-            {
-                advance();
-                LDA #Token.Star
-                STA TokenType
-            }
-            case '/':
-            {
-                advance();
-                LDA #Token.Slash
-                STA TokenType
-            }
-            case '%':
-            {
-                advance();
-                LDA #Token.Percent
-                STA TokenType
-            }
-            case '(':
-            {
-                advance();
-                LDA #Token.LeftParen
-                STA TokenType
-            }
-            case ')':
-            {
-                advance();
-                LDA #Token.RightParen
-                STA TokenType
-            }
-            case '{':
-            {
-                advance();
-                LDA #Token.LeftBrace
-                STA TokenType
-            }
-            case '}':
-            {
-                advance();
-                LDA #Token.RightBrace
-                STA TokenType
-            }
-            case ';':
-            {
-                advance();
-                LDA #Token.Semicolon
-                STA TokenType
-            }
-            case ',':
-            {
-                advance();
-                LDA #Token.Comma
-                STA TokenType
-            }
-            case '=':
-            {
-                advance();
-                LDA peekChar
-                CMP #'='
-                if (Z)
-                {
+                case '+': 
+                { 
                     advance();
-                    LDA #Token.Equal
-                }
-                else
-                {
-                    LDA #Token.Assign
-                }
-                STA TokenType
-            }
-            case '<':
-            {
-                advance();
-                LDA peekChar
-                CMP #'='
-                if (Z)
-                {
-                    advance();
-                    LDA #Token.LessEqual
-                }
-                else
-                {
-                    LDA #Token.Less
-                }
-                STA TokenType
-            }
-            case '>':
-            {
-                advance();
-                LDA peekChar
-                CMP #'='
-                if (Z)
-                {
-                    advance();
-                    LDA #Token.GreaterEqual
-                }
-                else
-                {
-                    LDA #Token.Greater
-                }
-                STA TokenType
-            }
-            case '!':
-            {
-                advance();
-                LDA peekChar
-                CMP #'='
-                if (Z)
-                {
-                    advance();
-                    LDA # Token.NotEqual
+                    LDA #Token.Plus
                     STA TokenType
                 }
-                else
+                case '-':
+                {
+                    advance();
+                    LDA #Token.Minus
+                    STA TokenType
+                }
+                case '*':
+                {
+                    advance();
+                    LDA #Token.Star
+                    STA TokenType
+                }
+                case '/':
+                {
+                    advance();
+                    LDA #Token.Slash
+                    STA TokenType
+                }
+                case '%':
+                {
+                    advance();
+                    LDA #Token.Percent
+                    STA TokenType
+                }
+                case '(':
+                {
+                    advance();
+                    LDA #Token.LeftParen
+                    STA TokenType
+                }
+                case ')':
+                {
+                    advance();
+                    LDA #Token.RightParen
+                    STA TokenType
+                }
+                case '{':
+                {
+                    advance();
+                    LDA #Token.LeftBrace
+                    STA TokenType
+                }
+                case '}':
+                {
+                    advance();
+                    LDA #Token.RightBrace
+                    STA TokenType
+                }
+                case ';':
+                {
+                    advance();
+                    LDA #Token.Semicolon
+                    STA TokenType
+                }
+                case ',':
+                {
+                    advance();
+                    LDA #Token.Comma
+                    STA TokenType
+                }
+                case '=':
+                {
+                    advance();
+                    LDA peekChar
+                    CMP #'='
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.Equal
+                    }
+                    else
+                    {
+                        LDA #Token.Assign
+                    }
+                    STA TokenType
+                }
+                case '<':
+                {
+                    advance();
+                    LDA peekChar
+                    CMP #'='
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.LessEqual
+                    }
+                    else
+                    {
+                        LDA #Token.Less
+                    }
+                    STA TokenType
+                }
+                case '>':
+                {
+                    advance();
+                    LDA peekChar
+                    CMP #'='
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.GreaterEqual
+                    }
+                    else
+                    {
+                        LDA #Token.Greater
+                    }
+                    STA TokenType
+                }
+                case '!':
+                {
+                    advance();
+                    LDA peekChar
+                    CMP #'='
+                    if (Z)
+                    {
+                        advance();
+                        LDA # Token.NotEqual
+                        STA TokenType
+                    }
+                    else
+                    {
+                        LDA # Error.UnexpectedCharacter
+                        Errors.ShowError();
+                        CLC
+                        break;
+                    }
+                }
+                default:
                 {
                     LDA # Error.UnexpectedCharacter
                     Errors.ShowError();
+                    CLC
+                    break;
                 }
-            }
-            default:
-            {
-                LDA # Error.UnexpectedCharacter
-                Errors.ShowError();
-            }
+            } // switch
+            SEC
+            break;
+        } // loop
+        if (C)
+        {
+            LDA TokenType
         }
-        
-        LDA TokenType
     }
     
     // Cleanup
     Dispose()
     {
-        LDA tokenBufferL
+        LDA TokenBufferL
         STA ZP.IDXL
-        LDA tokenBufferH
+        LDA TokenBufferH
         STA ZP.IDXH
         Memory.Free();
     }

@@ -1,6 +1,7 @@
 program CC
 {
     #define CPU_65C02S
+    #define DEBUG
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -55,17 +56,16 @@ program CC
         LDA sourceNameH
         STA ZP.STRH
         Print.String();
-        
+
         Lexer.Initialize();
-        
         loop
         {
-            Lexer.NextToken();  // Returns token type in A
-            if (Z) { break; }   // EOF is 0
+            Lexer.NextToken();  // Returns token type in A (and Lexer.TokenType)
+            if (NC) { break; }  // error
+            if (Z)  { break; }   // EOF is 0
             
-            LDA Lexer.TokenType
-            Print.Hex();
-            Print.Space();
+            // do something with token ..
+            
         }   
         
         Lexer.Dispose();
