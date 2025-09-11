@@ -212,7 +212,143 @@ unit Keyboard
             break;
         } // single exit
     }
-
+    
+    processEscUp()
+    {
+        LDA # Key.Up
+        SEC
+    }
+    processEscDown()
+    {
+        LDA # Key.Down
+        SEC
+    }
+    processEscLeft()
+    {
+        LDA # Key.Left
+        SEC
+    }
+    processEscRight()
+    {
+        LDA # Key.Right
+        SEC
+    }
+    processEscHome()
+    {
+        LDA # Key.Home
+        SEC
+    }
+    processEscEnd()
+    {
+        LDA # Key.End
+        SEC
+    }
+    processEsc1()
+    {
+        processNumericEscape();
+        if (C)  // Valid sequence
+        {
+            // A contains either '~' (single digit) or the second digit
+            CMP #'~'
+            if (Z)
+            {
+                // ESC[1~ = Home
+                LDA # Key.Home
+                SEC
+            }
+            else
+            {
+                // Two-digit sequence, check which one
+                switch (A)
+                {
+                    case '1': { LDA #Key.F1 SEC }   // ESC[11~
+                    case '2': { LDA #Key.F2 SEC }   // ESC[12~
+                    case '3': { LDA #Key.F3 SEC }   // ESC[13~
+                    case '4': { LDA #Key.F4 SEC }   // ESC[14~
+                    case '5': { LDA #Key.F5 SEC }   // ESC[15~
+                    // Note: ESC[16~ is skipped!
+                    case '7': { LDA #Key.F6 SEC }   // ESC[17~
+                    case '8': { LDA #Key.F7 SEC }   // ESC[18~
+                    case '9': { LDA #Key.F8 SEC }   // ESC[19~
+                    default:  { CLC             }
+                }
+            }
+        }
+        else
+        {
+            CLC  // Continue processing
+        }
+    }
+    processEsc2()
+    {
+        processNumericEscape();
+        if (C)  // Valid sequence
+        {
+            // A contains either '~' (single digit) or the second digit
+            CMP #'~'
+            if (Z)
+            {
+                // ESC[2~ = Home
+                LDA # Key.Insert
+                SEC
+            }
+            else
+            {
+                // Two-digit sequence, check which one
+                switch (A)
+                {
+                    case '0': { LDA #Key.F9  SEC }    // ESC[20~
+                    case '1': { LDA #Key.F10 SEC }   // ESC[21~
+                    // Note: ESC[22~ is skipped!
+                    case '3': { LDA #Key.F11 SEC }   // ESC[23~
+                    case '4': { LDA #Key.F12 SEC }   // ESC[24~
+                    default:  { CLC              }
+                }
+            }
+        }
+        else
+        {
+            CLC  // Continue processing
+        }
+    }
+    
+    processEscUnknown()
+    {
+        CLC  // Continue processing
+    }
+    processEsc3()
+    {
+        processNumericEscape();
+        if (C)
+        {
+            LDA #Key.Delete
+        }
+    }
+    processEsc4()
+    {
+        processNumericEscape();
+        if (C)
+        {
+            LDA #Key.End
+        }
+    }
+    processEsc5()
+    {
+        processNumericEscape();
+        if (C)
+        {
+            LDA #Key.PageUp
+        }
+    }
+    processEsc6()
+    {
+        processNumericEscape();
+        if (C)
+        {
+            LDA #Key.PageDown
+        }
+    }
+    
     // Process ESC[ state
     // Output: C set if result ready in A, clear to continue
     processEscBracketState()
@@ -222,149 +358,64 @@ unit Keyboard
         // Reset state
         STZ kbEscState
         
-        loop
+        // Check for arrow keys and special keys
+        TAX
+        switch (X)
         {
-            // Check for arrow keys and special keys
-            switch (A)
+            case 'A':  // Up arrow
             {
-                case 'A':  // Up arrow
-                {
-                    LDA #Key.Up
-                }
-                case 'B':  // Down arrow
-                {
-                    LDA #Key.Down
-                }
-                case 'C':  // Right arrow
-                {
-                    LDA #Key.Right
-                }
-                case 'D':  // Left arrow
-                {
-                    LDA #Key.Left
-                }
-                case 'H':  // Home
-                {
-                    LDA #Key.Home
-                }
-                case 'F':  // End
-                {
-                    LDA #Key.End
-                }
-                case '1':  // Could be Home or function key
-                {
-                    processNumericEscape();
-                    if (C)  // Valid sequence
-                    {
-                        // A contains either '~' (single digit) or the second digit
-                        CMP #'~'
-                        if (Z)
-                        {
-                            // ESC[1~ = Home
-                            LDA # Key.Home
-                        }
-                        else
-                        {
-                            // Two-digit sequence, check which one
-                            switch (A)
-                            {
-                                case '1': { LDA #Key.F1 }   // ESC[11~
-                                case '2': { LDA #Key.F2 }   // ESC[12~
-                                case '3': { LDA #Key.F3 }   // ESC[13~
-                                case '4': { LDA #Key.F4 }   // ESC[14~
-                                case '5': { LDA #Key.F5 }   // ESC[15~
-                                // Note: ESC[16~ is skipped!
-                                case '7': { LDA #Key.F6 }   // ESC[17~
-                                case '8': { LDA #Key.F7 }   // ESC[18~
-                                case '9': { LDA #Key.F8 }   // ESC[19~
-                                default:  { CLC break; }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        CLC  // Continue processing
-                        break;
-                    }
-                }
-                case '2':  // Could be Insert or function key
-                {
-                    processNumericEscape();
-                    if (C)  // Valid sequence
-                    {
-                        // A contains either '~' (single digit) or the second digit
-                        CMP #'~'
-                        if (Z)
-                        {
-                            // ESC[2~ = Home
-                            LDA # Key.Insert
-                        }
-                        else
-                        {
-                            // Two-digit sequence, check which one
-                            switch (A)
-                            {
-                                case '0': { LDA #Key.F9 }    // ESC[20~
-                                case '1': { LDA #Key.F10 }   // ESC[21~
-                                // Note: ESC[22~ is skipped!
-                                case '3': { LDA #Key.F11 }   // ESC[23~
-                                case '4': { LDA #Key.F12 }   // ESC[24~
-                                default:  { CLC break; }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        CLC  // Continue processing
-                        break;
-                    }
-                }
-                case '3':  // Delete
-                {
-                    processNumericEscape();
-                    if (NC)
-                    {
-                        break;
-                    }
-                    LDA #Key.Delete
-                }
-                case '4':  // End
-                {
-                    processNumericEscape();
-                    if (NC)
-                    {
-                        break;
-                    }
-                    LDA #Key.End
-                }
-                case '5':  // Page Up
-                {
-                    processNumericEscape();
-                    if (NC)
-                    {
-                        break;
-                    }
-                    LDA #Key.PageUp
-                }
-                case '6':  // Page Down
-                {
-                    processNumericEscape();
-                    if (NC)
-                    {
-                        break;
-                    }
-                    LDA #Key.PageDown
-                }
-                default:
-                {
-                    // Unknown sequence, continue
-                    CLC  // Continue processing
-                    break;
-                }
+                processEscUp();
             }
-            SEC
-            break;
-        } // single exit
+            case 'B':  // Down arrow
+            {
+                processEscDown();
+            }
+            case 'C':  // Right arrow
+            {
+                processEscRight();
+            }
+            case 'D':  // Left arrow
+            {
+                processEscLeft();
+            }
+            case 'H':  // Home
+            {
+                processEscHome();
+            }
+            case 'F':  // End
+            {
+                processEscEnd();
+            }
+            case '1':  // Could be Home or function key
+            {
+                processEsc1();
+            }
+            case '2':  // Could be Insert or function key
+            {
+                processEsc2();
+            }
+            case '3':  // Delete
+            {
+                processEsc3();
+            }
+            case '4':  // End
+            {
+                processEsc4();
+            }
+            case '5':  // Page Up
+            {
+                processEsc5();
+            }
+            case '6':  // Page Down
+            {
+                processEsc6();
+            }
+            default:
+            {
+                // Unknown sequence, continue
+                processEscUnknown();
+            }
+        }
     }
 
     // Process numeric escape sequences (ESC[n~)

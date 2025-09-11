@@ -145,7 +145,7 @@ unit Prompt
                     CLC  // Cancelled
                     break;
                 }
-                
+                case Key.Linefeed: // VT100 Paste
                 case Key.Enter:
                 {
                     // Null terminate the string

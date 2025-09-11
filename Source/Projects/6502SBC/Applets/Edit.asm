@@ -3,7 +3,7 @@ program Edit
     #define CPU_65C02S
     //#define DEBUG
     
-    #define TURBO
+    //#define TURBO
     
     uses "System/Definitions"
     uses "System/Print"
