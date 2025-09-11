@@ -1,7 +1,5 @@
 unit Lexer
 {
-    friend CC;
-    
     uses "../System/Definitions"
     uses "../System/File"
     uses "../System/Memory"

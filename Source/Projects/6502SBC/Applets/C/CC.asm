@@ -13,6 +13,8 @@ program CC
     uses "Errors"
     uses "Tokens"
     uses "Lexer"
+    uses "AST"
+    uses "Parser"
     
     const string messageCompiling = "Compiling ";
     
@@ -58,6 +60,7 @@ program CC
         Print.String();
 
         Lexer.Initialize();
+        AST.Initialize();
         loop
         {
             Lexer.NextToken();  // Returns token type in A (and Lexer.TokenType)
@@ -66,9 +69,12 @@ program CC
             
             // do something with token ..
             
-        }   
+        }  
+        
+        AST.PrintTree(); 
         
         Lexer.Dispose();
+        AST.Dispose();
         Print.NewLine();
     }
 }
