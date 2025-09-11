@@ -60,27 +60,28 @@ unit Shared
         PLA
     }
     
+    // munts X and A
     SwapNextTop()
     {
-        LDY ZP.TOP0
+        LDX ZP.TOP0
         LDA ZP.NEXT0
         STA ZP.TOP0
-        STY ZP.NEXT0
+        STX ZP.NEXT0
         
-        LDY ZP.TOP1
+        LDX ZP.TOP1
         LDA ZP.NEXT1
         STA ZP.TOP1
-        STY ZP.NEXT1
+        STX ZP.NEXT1
         
-        LDY ZP.TOP2
+        LDX ZP.TOP2
         LDA ZP.NEXT2
         STA ZP.TOP2
-        STY ZP.NEXT2
+        STX ZP.NEXT2
         
-        LDY ZP.TOP3
+        LDX ZP.TOP3
         LDA ZP.NEXT3
         STA ZP.TOP3
-        STY ZP.NEXT3
+        STX ZP.NEXT3
     }
     
     LoadByte()  // A = byte value, X = slot

@@ -94,4 +94,85 @@ unit Float
         LDX # SysCall.FloatEQ
         JMP [ZP.BIOSDISPATCH]
     }
+    
+    // Not equal comparison
+    // Input:  ZP.NEXT, ZP.TOP = values to compare (IEEE floats)
+    // Output: C set if NEXT != TOP, clear otherwise
+    // Note:   NaN != NaN per IEEE 754
+    NE()
+    {
+        LDX # SysCall.FloatEQ
+        JSR [ZP.BIOSDISPATCH]
+        
+        // Invert the carry flag
+        if (C)
+        {
+            CLC  // Were equal, so not equal = false
+        }
+        else
+        {
+            SEC  // Were not equal, so not equal = true
+        }
+    }
+    
+    // Greater than or equal comparison
+    // Input:  ZP.NEXT, ZP.TOP = values to compare (IEEE floats)
+    // Output: C set if NEXT >= TOP, clear otherwise
+    // Note:   NEXT >= TOP is equivalent to !(NEXT < TOP)
+    GE()
+    {
+        LDX # SysCall.FloatLT
+        JSR [ZP.BIOSDISPATCH]
+        
+        // Invert the result: !(NEXT < TOP) = NEXT >= TOP
+        if (C)
+        {
+            CLC  // NEXT < TOP, so NEXT >= TOP is false
+        }
+        else
+        {
+            SEC  // !(NEXT < TOP), so NEXT >= TOP is true
+        }
+    }
+    
+    / Less than or equal comparison
+    // Input:  ZP.NEXT, ZP.TOP = values to compare (IEEE floats)
+    // Output: C set if NEXT <= TOP, clear otherwise
+    // Note:   NEXT <= TOP is equivalent to !(TOP < NEXT)
+    LE()
+    {
+        Shared.SwapNextTop();
+        
+        // Check if TOP < NEXT
+        LDX # SysCall.FloatLT
+        JSR [ZP.BIOSDISPATCH]
+        
+        Shared.SwapNextTop(); // restore them (does not affect C)
+        
+        // Invert the result: !(TOP < NEXT) = NEXT <= TOP
+        if (C)
+        {
+            
+            CLC  // TOP < NEXT, so NEXT <= TOP is false
+        }
+        else
+        {
+            SEC  // !(TOP < NEXT), so NEXT <= TOP is true
+        }
+    }
+    
+    // Greater than comparison
+    // Input:  ZP.NEXT, ZP.TOP = values to compare (IEEE floats)
+    // Output: C set if NEXT > TOP, clear otherwise
+    // Note:   NEXT > TOP is equivalent to TOP < NEXT
+    GT()
+    {
+        Shared.SwapNextTop();
+        
+        // Now check if TOP < NEXT (which means original NEXT > TOP)
+        LDX # SysCall.FloatLT
+        JMP [ZP.BIOSDISPATCH]
+        
+        Shared.SwapNextTop(); // restore them (does not affect C)
+    }
 }
