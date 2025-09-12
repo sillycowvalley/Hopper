@@ -43,8 +43,7 @@ program CC
         Memory.Allocate();
         if (NC)
         {
-            LDA #Error.OutOfMemory
-            Errors.ShowError();
+            Errors.OutOfMemory();
             return;
         }
         
@@ -65,7 +64,7 @@ program CC
             if (Z)
             {
                 LDA # Error.FilenameTooLong
-                Errors.ShowError();
+                Errors.Show();
                 CLC
                 return;
             }
@@ -106,7 +105,7 @@ program CC
         if (NC)
         {
             LDA # Error.SourceNotFound
-            Errors.ShowError();
+            Errors.Show();
             return;
         }
         Args.GetFilename();
@@ -120,7 +119,7 @@ program CC
         if (NC)
         {
             LDA # Error.SourceLoadingError
-            Errors.ShowError();
+            Errors.Show();
             return;     
         }
         
@@ -143,8 +142,7 @@ program CC
         AST.Initialize();
         if (NC)
         {
-            LDA # Error.OutOfMemory
-            Errors.ShowError();
+            Errors.OutOfMemory();
             return;
         }
 

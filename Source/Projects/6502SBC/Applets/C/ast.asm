@@ -123,7 +123,7 @@ unit AST
         if (NC)
         {
             PLA
-            Parser.OutOfMemoryError();
+            Errors.OutOfMemory();
             return;
         }
         

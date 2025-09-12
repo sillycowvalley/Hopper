@@ -23,16 +23,44 @@ unit CodeGen
     const string msgSaved = "Saved ";
     const string msgBytes = " bytes\n";
     
+    const string msgMain = "main";
+    
+    const string sysprintf = "printf";
+    
     // 6502 opcodes
     enum OpCode
     {
+        JSR     = 0x20,
         JMP_ABS = 0x4C,
         RTS     = 0x60,
-        LDA_IMM = 0xA9,
+        JMP_IND = 0x6C,
         STA_ZP  = 0x85,
         LDX_IMM = 0xA2,
-        JMP_IND = 0x6C,
+        LDA_IMM = 0xA9,
     }    
+    
+    // Check if function name is a system function
+    // Input: ZP.STR = function name
+    // Output: A = syscall number, C set if system function
+    isSystemFunction()
+    {
+        // Check for "printf"
+        LDA #(sysprintf % 256)
+        STA ZP.IDYL
+        LDA #(sysprintf / 256)
+        STA ZP.IDYH
+        compareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.PrintString
+            SEC
+            return;
+        }
+             
+        // TODO : add more system functions here...
+        
+        CLC  // Not a system function
+    }
     
     Initialize()
     {
@@ -137,7 +165,13 @@ PHA Print.Hex(); Print.Space(); PLA
         STA ZP.ACCH
         
         Memory.Allocate();  // New buffer in IDX
-        if (NC) { PLY return; }  // Failed to allocate : TODO : print the error here
+        if (NC) 
+        { 
+            // Failed to allocate
+            Errors.OutOfMemory();
+            PLY
+            return; 
+        }  
         
         // Copy old buffer to new
         LDA ZP.IDXL
@@ -255,42 +289,456 @@ PHA Print.Hex(); Print.Space(); PLA
         emitStrings();
     }
     
-    // Generate code for main function
-    emitMain()
+    // Compare [STR] with [IDY], return C set if equal
+    compareStrings()
     {
-        // Patch the JMP at offset 1-2 to point to main
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            CMP [ZP.IDY], Y
+            if (NZ)
+            {
+                CLC  // Not equal
+                return;
+            }
+            // Check if we hit null terminator
+            if (Z)
+            {
+                SEC  // Equal (both null)
+                return;
+            }
+            INY
+        }
+    }
+    
+    // Find a function (for now, just returns first function)
+    // Input:  STR = function name
+    // Output: IDX = Function node, C set on success
+    findFunction()
+    {
+        // Get first child of Program
+        AST.GetRoot();  // -> IDX
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        
+        LDY #AST.iChild
+        LDA [AST.astNode], Y
+        TAX
+        INY
+        LDA [AST.astNode], Y
+        STA AST.astNodeH
+        STX AST.astNodeL
+        loop
+        {
+            // Check it's a Function
+            LDY #AST.iNodeType
+            LDA [AST.astNode], Y
+            CMP #AST.NodeType.Function
+            if (Z)
+            {
+                // compare STR to name
+                // Get function's identifier child (assume it is the first child)
+                LDY #AST.iChild
+                LDA [AST.astNode], Y
+                TAX
+                INY
+                LDA [AST.astNode], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Get identifier's string pointer
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                TAX
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Compare strings [STR] with [IDY]
+                compareStrings();
+                if (C)
+                {
+                    // Found it! Return astNode as Function
+                    LDA AST.astNodeL
+                    STA ZP.IDXL
+                    LDA AST.astNodeH
+                    STA ZP.IDXH
+                    SEC
+                    break;
+                }
+            }
+            
+            // try next sibling
+            LDY #AST.iNext
+            LDA [AST.astNode], Y
+            TAX
+            INY
+            LDA [AST.astNode], Y
+            STA AST.astNodeH
+            STX AST.astNodeL
+            
+            LDA AST.astNodeH
+            ORA AST.astNodeL
+            if (Z)
+            {
+                CLC
+                break;
+            }
+        } // loop
+    }
+    
+    // Patch JMP to main
+    patchMainJump()
+    {
+        // Calculate absolute address (0x0800 + offset)
         CLC
         LDA codeOffsetL
-        ADC #0x00
+        ADC # (BIOSInterface.EntryPoint % 256)
         STA ZP.ACCL
         LDA codeOffsetH
-        ADC #0x08    // Base 0x0800
+        ADC # (BIOSInterface.EntryPoint / 256)
         STA ZP.ACCH
         
-        // Write low byte of main address
+        // Write to offset 1-2
         LDY #1
         LDA ZP.ACCL
         STA [codeBuffer], Y
-        
-        // Write high byte at offset 2
         INY
         LDA ZP.ACCH
         STA [codeBuffer], Y
+    }
+    
+    generatePrintfCall()
+    {
+Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
+Print.NewLine();        
+        loop
+        {
+            // first child is identifier (which we already know is "printf")
+            LDY #AST.iChild
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            // Move to first argument (sibling of identifier)
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            // Should be a StringLit node
+            LDY #AST.iNodeType
+            LDA [ZP.IDX], Y
+            CMP #AST.NodeType.StringLit
+            if (NZ) 
+            {
+                LDA # Token.StringLiteral
+                Errors.Expected();
+                break;
+            }
+            
+            // Get string's offset (stored during emitStrings)
+            LDY #AST.iOffset
+            LDA [ZP.IDX], Y
+            STA ZP.ACCL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.ACCH
+            
+            // Add base 0x0800
+            CLC
+            LDA ZP.ACCL
+            ADC #0x00
+            STA ZP.ACCL
+            LDA ZP.ACCH
+            ADC #0x08
+            STA ZP.ACCH
+            
+            // Generate: LDA #low(string)
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { break;}
+            LDA ZP.ACCL
+            EmitByte();if (NC) { break;}
+            
+            // Generate: STA ZP.STRL
+            LDA #OpCode.STA_ZP
+            EmitByte();if (NC) { break;}
+            LDA #ZP.STRL
+            EmitByte();if (NC) { break;}
+            
+            // Generate: LDA #high(string)
+            LDA #OpCode.LDA_IMM
+            EmitByte();if (NC) { break;}
+            LDA ZP.ACCH
+            EmitByte();if (NC) { break;}
+            
+            // Generate: STA ZP.STRH
+            LDA # OpCode.STA_ZP
+            EmitByte();if (NC) { break;}
+            LDA # ZP.STRH
+            EmitByte();if (NC) { break;}
+            
+            // Generate: LDX #SysCall.PrintString
+            LDA #OpCode.LDX_IMM
+            EmitByte();if (NC) { break;}
+            LDA #BIOSInterface.SysCall.PrintString
+            EmitByte();if (NC) { break;}
+            
+            emitDispatchCall();
+            break;
+        } // single exit
+    }
+    
+    // Generate code for function call
+    generateCallExpr()  // Input: IDX = CallExpr node
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
         
-        // For now, just emit RTS at current location
-        // TODO: Walk AST to find main function node
-        // TODO: Store offset in function node
-        // TODO: Generate printf call
+        loop
+        {
+            // First child is function identifier, second child (sibling) is first argument
+            LDY #AST.iChild
+            LDA [ZP.IDX], Y
+            STA AST.astNodeL
+            INY
+            LDA [ZP.IDX], Y
+            STA AST.astNodeH
+            
+            // Get function name string
+            LDY #AST.iData
+            LDA [AST.astNode], Y
+            STA ZP.STRL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.STRH
+            
+            // Check if it's a system function
+            isSystemFunction();  // -> A = syscall#, C = is system
+            if (C)
+            {
+                switch (A)
+                {
+                    case SysCall.PrintString:
+                    {
+                        generatePrintfCall();
+                    }
+                    default:
+                    {
+                        LDA # Error.NotImplemented
+                        Errors.Show();
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // generateUserFunctionCall();  // Future: JSR to user function
+                LDA # Error.NotImplemented
+                Errors.Show();
+                break;
+            }
+            break;
+        } // single exit
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL 
+    }
+    
+    // Generate code for a statement
+    generateStatement()  // Input: IDX = statement node
+    {
+        // Check statement type
+        LDY #AST.iNodeType
+        LDA [ZP.IDX], Y
+        switch (A)
+        {
+            case NodeType.ExprStmt:
+            {
+                // Get the expression (child)
+                LDY #AST.iChild
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                // Check expression type
+                LDY #AST.iNodeType
+                LDA [ZP.IDX], Y
+                switch (A)
+                {
+                    case NodeType.CallExpr:
+                    {
+                        generateCallExpr();
+                    }
+                    default:
+                    {
+                        // Future: BinOp, Assign, etc.
+                        LDA #Error.NotImplemented
+                        Errors.Show();
+                    }
+                }
+            }
+            default:
+            {
+                // Future: case AST.NodeType.If, For, Return, etc.
+                LDA # Error.NotImplemented
+                Errors.Show();
+            }
+        }
+    }
+    
+    // Generate code for compound statement
+    generateBlock()  // Input: IDX = CompoundStmt
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        
+        
+        // Get first child (first statement)
+        LDY #AST.iChild
+        LDA [AST.astNode], Y
+        TAX
+        INY
+        LDA [AST.astNode], Y
+        STA AST.astNodeH
+        STX AST.astNodeL
+                
+        // Process all statements (they're siblings)
+        loop
+        {
+            LDA AST.astNodeH
+            ORA AST.astNodeL
+            if (Z) { break; }  // No more statements
+            
+            LDA AST.astNodeL
+            STA ZP.IDXL
+            LDA AST.astNodeH
+            STA ZP.IDXH
+            generateStatement();  // Uses IDX
+            
+            // Move to next statement
+            LDY #AST.iNext
+            LDA [AST.astNode], Y
+            TAX
+            INY
+            LDA [AST.astNode], Y
+            STA AST.astNodeH
+            STX AST.astNodeL
+        }
+        
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    }
+    
+    // Generate code for function body
+    generateFunctionBody()  // Input: IDX = Function node
+    {
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        
+        // Function's children are: identifier, then block (as siblings)
+        // Skip to the block
+        LDY #AST.iChild
+        LDA [AST.astNode], Y
+        STA ZP.IDXL
+        INY
+        LDA [AST.astNode], Y
+        STA ZP.IDXH
+        
+        // IDX = identifier, get its sibling (block)
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Now IDX = CompoundStmt
+        generateBlock();  // Process all statements in block
         
         LDA # OpCode.RTS
         EmitByte();
+    }
+    
+    
+    // Generate code for main function
+    emitMain()
+    {
+         // Find main function in AST
+        LDA # (msgMain % 256)
+        STA ZP.STRL
+        LDA # (msgMain / 256)
+        STA ZP.STRH
+        findFunction();      // -> IDX = main Function node
+        if (NC)
+        {
+            LDA # Error.NoEntryPoint
+            Errors.Show();
+            return; 
+        }
+        
+        // Store code offset in Function node
+        LDY #AST.iOffset
+        LDA codeOffsetL
+        STA [ZP.IDX], Y
+        INY
+        LDA codeOffsetH
+        STA [ZP.IDX], Y
+        
+        // Patch the JMP at start
+        patchMainJump();
+        
+        // Generate code for function body
+        generateFunctionBody();  // Uses IDX = Function node
         
         SEC
     }
     
+    emitDispatchCall()
+    {
+        LDA # OpCode.JSR
+        EmitByte();
+        
+        // Add base to offset to get absolute address (4th byte into our code after the entrypoint JMP)
+        CLC
+        LDA # (BIOSInterface.EntryPoint % 256)
+        ADC # 3
+        EmitByte();
+        LDA # (BIOSInterface.EntryPoint / 256)
+        EmitByte();
+    }
+    
     Compile()
     {
-Print.NewLine();  
+Print.NewLine(); // for EmitByte 
       
         // 1. Reserve 3 bytes for JMP to main
         LDA # OpCode.JMP_ABS
@@ -303,12 +751,26 @@ Print.NewLine();
         EmitByte();  // Placeholder high
         if (NC) { return; }
         
-        // 2. Walk AST and emit all string literals
+        // 2. Emit our generic BIOS dispatch function (needs to be callable with JSR)
+        LDA # OpCode.JMP_IND
+        EmitByte();
+        if (NC) { return; }
+        LDA # ZP.BIOSDISPATCH
+        EmitByte();
+        if (NC) { return; }
+        LDA #0x00
+        EmitByte();
+        if (NC) { return; }
+        LDA # OpCode.RTS
+        EmitByte();  // JMP absolute
+        if (NC) { return; }
+        
+        // 3. Walk AST and emit all string literals
         AST.GetRoot();  // -> IDX
         emitStrings();
         if (NC) { return; }
         
-        // 3. Generate main function
+        // 4. Generate main function
         emitMain();
         if (NC) { return; }
         
@@ -333,7 +795,7 @@ Print.NewLine();
         if (NC)
         {
             LDA #Error.FileSaveError
-            Errors.ShowError();
+            Errors.Show();
             return;
         }
         
@@ -354,7 +816,7 @@ Print.NewLine();
         if (NC)
         {
             LDA # Error.FileSaveError
-            Errors.ShowError();
+            Errors.Show();
             return;
         }
         
@@ -364,7 +826,7 @@ Print.NewLine();
         if (NC)
         {
             LDA # Error.FileSaveError
-            Errors.ShowError();
+            Errors.Show();
             return;
         }
         

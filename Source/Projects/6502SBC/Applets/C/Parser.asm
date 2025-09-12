@@ -28,132 +28,7 @@ unit Parser
     const byte callNodeL     = parserSlots+7;
     const byte callNodeH     = parserSlots+8;
     
-    // Error messages
-    const string msgExpected = "Expected ";
-    const string msgError = "Error: 0x";
-    const string expectVoid  = "void";
-    const string expectIdent = "identifier";
-    const string msgLine     = "Line ";
-    const string msgColon    = ": ";
-    
-    printErrorLine()
-    {
-        LDA #(msgLine % 256)
-        STA ZP.STRL
-        LDA #(msgLine / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        Lexer.GetLineNumber(); // -> ACC
-        Shared.MoveAccToTop();
-        Long.Print();
-        
-        LDA #(msgColon % 256)
-        STA ZP.STRL
-        LDA #(msgColon / 256)
-        STA ZP.STRH
-        Print.String();
-    }
-    
-    // Helper: print "Expected X" error
-    // Input: A = token that was expected
-    printExpectedError()
-    {
-        PHA
-        
-        printErrorLine();
-               
-        LDA #(msgExpected % 256)
-        STA ZP.STRL
-        LDA #(msgExpected / 256)
-        STA ZP.STRH
-        Print.String();
-        PLA
-        
-        // A contains the token that was expected
-        loop
-        {
-            switch (A)
-            {
-                case Token.Void:
-                {
-                    LDA #(expectVoid % 256)
-                    STA ZP.STRL
-                    LDA #(expectVoid / 256)
-                    STA ZP.STRH
-                    Print.String();
-                    break;
-                }
-                case Token.Identifier:
-                {
-                    LDA #(expectIdent % 256)
-                    STA ZP.STRL
-                    LDA #(expectIdent / 256)
-                    STA ZP.STRH
-                    Print.String();
-                    break;
-                }
-                case Token.LeftParen:
-                {
-                    LDA #'('
-                    break;
-                }
-                case Token.RightParen:
-                {
-                    LDA #')'
-                    break;
-                }
-                case Token.LeftBrace:
-                {
-                    LDA #'{'
-                    break;
-                }
-                case Token.RightBrace:
-                {
-                    LDA #'}'
-                    break;
-                }
-                case Token.Semicolon:
-                {
-                    LDA #';'
-                    break;
-                }
-                default:
-                {
-                    LDA #'?'
-                    break;
-                }
-            }
-            Print.Char();
-            break;
-        } // loop
-        Print.NewLine();
-        CLC
-    }
-    
-    printError()
-    {
-        PHA
-        
-        printErrorLine();
-        
-        LDA #(msgError % 256)
-        STA ZP.STRL
-        LDA #(msgError / 256)
-        STA ZP.STRH
-        Print.String();
-        
-        PLA
-        Print.Hex(); // error #
-        Print.NewLine();
-        CLC
-    }
-    OutOfMemoryError()
-    {
-        LDA # Error.OutOfMemory
-        printError();
-        CLC
-    }
+       
     
     // Helper: consume current token and get next
     consume()
@@ -162,7 +37,7 @@ unit Parser
         if (NC) 
         {
             LDA # Error.UnexpectedFailure
-            printError();
+            Errors.Show();
             return;
         }
         STA currentToken
@@ -177,7 +52,7 @@ unit Parser
         if (NZ)
         {
             // Error - unexpected token
-            printExpectedError();
+            Errors.Expected();
             return;
         }
         consume();  // Get next token
@@ -208,7 +83,7 @@ unit Parser
             Memory.Allocate(); // -> IDX
             if (NC) 
             { 
-                Parser.OutOfMemoryError();
+                Errors.OutOfMemory();
                 break; 
             }
             
@@ -261,7 +136,7 @@ unit Parser
             CMP currentToken
             if (NZ)
             {
-                printExpectedError();
+                Errors.Expected();
                 break;
             }
             
@@ -385,7 +260,7 @@ unit Parser
                 if (Z) 
                 {
                     LDA #Token.RightBrace
-                    printExpectedError();
+                    Errors.Expected();
                     break;
                 }
                 
@@ -487,7 +362,7 @@ unit Parser
         CMP currentToken
         if (NZ)
         {
-            printExpectedError(); 
+            Errors.Expected(); 
             return;
         }
         
@@ -651,7 +526,7 @@ unit Parser
             if (NC) 
             { 
                 LDA # Error.SyntaxError
-                printError();
+                Errors.Show();
                 break; 
             }
             
@@ -665,7 +540,7 @@ unit Parser
             if (NZ)
             {
                 LDA # Error.SyntaxError
-                printError();
+                Errors.Show();
                 break;
             }
             

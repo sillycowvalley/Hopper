@@ -45,8 +45,7 @@ unit Lexer
         Memory.Allocate();
         if (NC)
         {
-            LDA #Error.OutOfMemory
-            Errors.ShowError();
+            Errors.OutOfMemory();
             CLC
             return;
         }
@@ -219,7 +218,7 @@ unit Lexer
                         if (Z) // EOF without */
                         { 
                             LDA #Error.UnterminatedComment
-                            Errors.ShowError();
+                            Errors.Show();
                             CLC
                             return; 
                         }
@@ -270,7 +269,7 @@ unit Lexer
             if (Z)
             {
                 LDA #Error.TokenTooLong
-                Errors.ShowError();
+                Errors.Show();
                 CLC
                 break;
             }
@@ -350,7 +349,7 @@ unit Lexer
         if (Z)  // EOF
         {
             LDA #Error.UnterminatedString  // Reuse this error
-            Errors.ShowError();
+            Errors.Show();
             CLC
             PLY
             return;
@@ -381,7 +380,7 @@ unit Lexer
         if (NZ)  // Should be closing quote
         {
             LDA #Error.UnterminatedString  // Reuse this error
-            Errors.ShowError();
+            Errors.Show();
             CLC
             return;
         }
@@ -408,7 +407,7 @@ unit Lexer
             if (Z)  // EOF
             {
                 LDA #Error.UnterminatedString
-                Errors.ShowError();
+                Errors.Show();
                 CLC
                 break;
             }
@@ -443,7 +442,7 @@ unit Lexer
             if (Z)
             {
                 LDA # Error.StringTooLong
-                Errors.ShowError();
+                Errors.Show();
                 CLC
                 break;
             }
@@ -652,7 +651,7 @@ unit Lexer
                     else
                     {
                         LDA # Error.UnexpectedCharacter
-                        Errors.ShowError();
+                        Errors.Show();
                         CLC
                         break;
                     }
@@ -660,7 +659,7 @@ unit Lexer
                 default:
                 {
                     LDA # Error.UnexpectedCharacter
-                    Errors.ShowError();
+                    Errors.Show();
                     CLC
                     break;
                 }
