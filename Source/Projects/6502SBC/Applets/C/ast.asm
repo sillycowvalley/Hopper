@@ -1,5 +1,7 @@
 unit AST
 {
+    friend Parser;
+    
     // AST zero page allocation
     const byte astSlots = 0x80;
     
@@ -162,6 +164,14 @@ unit AST
         PLY
     }
     
+    GetRoot() // -> IDX
+    {
+        LDA AST.astRootL
+        STA ZP.IDXL
+        LDA AST.astRootH
+        STA ZP.IDXH
+    }   
+    
     // Set first child of a node
     // Input: ZP.IDX = parent node, ZP.IDY = child node
     SetFirstChild()
@@ -197,6 +207,77 @@ unit AST
         LDA ZP.ACCH
         STA [ZP.IDX], Y
     }
+    
+    // Walk to the end of sibling list
+    // Input:  ZP.IDX = starting node
+    // Output: ZP.IDX = last node in sibling chain
+    walkToLastSibling() // -> IDX
+    {
+        PHY
+        
+        loop
+        {
+            LDY # iNext
+            LDA [ZP.IDX], Y
+            STA ZP.TEMP
+            INY
+            LDA [ZP.IDX], Y
+            
+            ORA ZP.TEMP  // Check if null
+            if (Z) { break; }  // Found end of list
+            
+            // Move to next sibling
+            STA ZP.IDXH
+            LDA ZP.TEMP
+            STA ZP.IDXL
+        }
+        PLY
+    }
+
+    // Add a child to a node (handles existing children)
+    // Input: ZP.IDX = parent node, ZP.IDY = new child node
+    AddChild()
+    {
+        PHY
+        
+        // Check if parent already has a child
+        LDY # iChild
+        LDA [ZP.IDX], Y
+        STA ZP.TEMP
+        INY
+        LDA [ZP.IDX], Y
+        
+        ORA ZP.TEMP  // Check if null
+        if (Z)  // No existing child
+        {
+            // Just set as first child
+            SetFirstChild();// IDX[iChild] = IDY
+        }
+        else
+        {
+            // Has existing child - load it
+            STA ZP.IDXH
+            LDA ZP.TEMP
+            STA ZP.IDXL  // IDX = first child
+            
+            // Walk to end of sibling list
+            walkToLastSibling(); // -> IDX (last sibling)
+            
+            // IDX = last sibling, IDY = new node to add
+            SetNextSibling();// IDX[iNext] = IDY
+        }
+        
+        PLY
+    }
+    
+    // Add a sibling to a node (walks to end of list)
+    // Input: ZP.IDX = node, ZP.IDY = new sibling
+    AddSibling()
+    {
+        walkToLastSibling(); // -> IDX (last in chain)
+        SetNextSibling();// IDX[iNext] = IDY
+    }
+    
     
 #if defined(DEBUG)
 

@@ -1,3 +1,3 @@
 void main() {
-    printf("Hello World!\n", s);
+    printf("Hello World!\n");
 }

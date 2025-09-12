@@ -58,20 +58,29 @@ program CC
         LDA sourceNameH
         STA ZP.STRH
         Print.String();
+        Print.NewLine();
+        
+        AST.Initialize();
+        if (NC)
+        {
+            LDA # Error.OutOfMemory
+            Errors.ShowError();
+            return;
+        }
 
         Lexer.Initialize();
-        AST.Initialize();
-        loop
+        if (NC)
         {
-            Lexer.NextToken();  // Returns token type in A (and Lexer.TokenType)
-            if (NC) { break; }  // error
-            if (Z)  { break; }   // EOF is 0
-            
-            // do something with token ..
-            
-        }  
+            AST.Dispose();
+            return;
+        }
         
-        AST.PrintTree(); 
+        // Parse the program
+        Parser.Parse();
+        if (C)
+        {
+            AST.PrintTree(); 
+        }
         
         Lexer.Dispose();
         AST.Dispose();
