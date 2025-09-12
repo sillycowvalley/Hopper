@@ -15,7 +15,7 @@ unit Errors
         UnexpectedFailure, // consume() failed?
         
         NoEntryPoint,
-        NotImplemented,
+        NotImplemented,    // 0x0C
         
         FilenameTooLong,
         FileSaveError,

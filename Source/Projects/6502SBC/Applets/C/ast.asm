@@ -26,6 +26,7 @@ unit AST
         CharLit      = 8,   // Character literal (8 bits stored in Data)
         IntLit       = 9,   // Integer literal (16 bits stored in Data)
         LongLit      = 10,  // Long literal    (32 bits stored in Data+ )
+        VarDecl      = 11,  // Variable declaration 
         
         AfterLast           // see freeNode()
     }
@@ -64,7 +65,12 @@ unit AST
     //     [7-8]  Code offset index (where string ends up in the codegen buffer)
     // const byte iData     = 5;
     // const byte iOffset   = 7; 
-       
+    
+    // VarDecl node:
+    //     [5-6]  Initializer expression (optional)
+    //     [7]    Variable type (Token.Long/Int/Char)
+    const byte iInitializer = 5;
+    const byte iVarType = 7;
     
     Initialize()
     {
@@ -356,6 +362,9 @@ unit AST
     const string nodeId       = "ID ";
     const string nodeStr      = "STR ";
     const string nodeInt      = "INT ";
+    const string nodeLong     = "LONG ";
+    const string nodeChar     = "CHAR ";
+    const string nodeVarDecl  = "VAR "; 
     const string nodeUnknown  = "??";
     
     // Print the AST tree with indentation
@@ -509,12 +518,29 @@ unit AST
                 }
                 Long.Print();
             }
+             case NodeType.VarDecl:
+            {
+                LDA #(nodeVarDecl % 256)
+                STA ZP.STRL
+                LDA #(nodeVarDecl / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                // Print the type
+                LDY #iVarType
+                LDA [ZP.IDX], Y
+                switch (A)
+                {
+                    case Token.Long:  { LDA # (nodeLong % 256)    STA ZP.STRL LDA # (nodeLong / 256)    STA ZP.STRH }
+                    case Token.Int:   { LDA # (nodeInt % 256)     STA ZP.STRL LDA # (nodeInt / 256)     STA ZP.STRH }
+                    case Token.Char:  { LDA # (nodeChar % 256)    STA ZP.STRL LDA # (nodeChar / 256)    STA ZP.STRH }
+                    default:          { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
+                }
+                Print.String();
+            }
             default:
             {
-                LDA #(nodeUnknown % 256)
-                STA ZP.STRL
-                LDA #(nodeUnknown / 256)
-                STA ZP.STRH
+                LDA #(nodeUnknown % 256) STA ZP.STRL LDA #(nodeUnknown / 256) STA ZP.STRH
                 Print.String();
             }
         } // switch

@@ -1,6 +1,6 @@
 // Noel's RetroLab Benchmark
 void main() {
-    long s = 0;
+    long s;
     
     //long st = seconds();
     //long start = millis();

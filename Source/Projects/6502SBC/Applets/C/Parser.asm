@@ -20,9 +20,9 @@ unit Parser
     const byte compoundNodeL = parserSlots+3;
     const byte compoundNodeH = parserSlots+4;
     
-    const uint exprStmtNode  = parserSlots+5;   // parseExpressionStatement's node
-    const byte exprStmtNodeL = parserSlots+5;
-    const byte exprStmtNodeH = parserSlots+6;
+    const uint stmtNode      = parserSlots+5;   // parseExpressionStatement's and parseVariableDeclaration's node
+    const byte stmtNodeL     = parserSlots+5;
+    const byte stmtNodeH     = parserSlots+6;
     
     const uint callNode      = parserSlots+7;   // parseCallExpression's node
     const byte callNodeL     = parserSlots+7;
@@ -248,6 +248,144 @@ unit Parser
         }
     }
     
+    
+    // Parse variable declaration: long s;
+    parseVariableDeclaration() // -> IDY = VarDecl node
+    {
+        // currentToken already has the type (Long/Int/Char)
+        LDA currentToken
+        STA ZP.TEMP  // Save type in zero page instead of stack
+        
+        consume();  // Move past type token
+        if (NC) { return; }
+        
+        LDA stmtNodeH
+        PHA
+        LDA stmtNodeL
+        PHA
+        
+        STZ stmtNodeH
+        STZ stmtNodeL
+        
+        loop
+        {
+            // Create VarDecl node
+            LDA #AST.NodeType.VarDecl
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Save VarDecl node
+            LDA ZP.IDXL
+            STA stmtNodeL
+            LDA ZP.IDXH
+            STA stmtNodeH
+            
+            // Set variable type from TEMP
+            LDY #AST.iVarType
+            LDA ZP.TEMP
+            STA [ZP.IDX], Y
+            
+            // Expect identifier
+            LDA #Token.Identifier
+            CMP currentToken
+            if (NZ)
+            {
+                Errors.Expected();
+                break;
+            }
+            
+            // Create identifier node
+            LDA #AST.NodeType.Identifier
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Save identifier node
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
+            
+            // Copy variable name
+            copyTokenString(); // -> STR
+            if (NC)
+            {
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                AST.FreeNode();  // Free identifier
+                break;
+            }
+            
+            // Set identifier data
+            LDA ZP.STRL
+            STA ZP.ACCL
+            LDA ZP.STRH
+            STA ZP.ACCH
+            
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            AST.SetData(); // IDX[iData] = ACC
+            
+            // Move identifier to IDY
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            // Get VarDecl node back
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            
+            // Add identifier as child of VarDecl
+            AST.AddChild(); // IDX = VarDecl, IDY = identifier
+            
+            consume();  // Move past identifier
+            if (NC) { break; }
+            
+            // TODO: Check for '=' for initialization
+            // For now, just expect ';'
+            
+            LDA #Token.Semicolon
+            expect();
+            if (NC) { break; }
+            
+            // Return VarDecl in IDY
+            LDA stmtNodeL
+            STA ZP.IDYL
+            LDA stmtNodeH
+            STA ZP.IDYH
+            
+            STZ stmtNodeL
+            STZ stmtNodeH
+            
+            SEC
+            break;
+        } // single exit
+        
+        LDA stmtNodeL
+        ORA stmtNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
+        
+        PLA
+        STA stmtNodeL
+        PLA
+        STA stmtNodeH
+    }
+    
     // Parse: { ... }
     parseCompoundStatement() // -> IDY
     {
@@ -291,9 +429,22 @@ unit Parser
                     Errors.Expected();
                     break;
                 }
-                // Parse expression statement
-                parseExpressionStatement(); // -> IDY
-                if (NC) { break; }
+                switch(A)
+                {
+                    case Token.Long:
+                    case Token.Int:
+                    case Token.Char:
+                    {
+                        parseVariableDeclaration(); // -> IDY
+                        if (NC) { break; }
+                    }
+                    default:
+                    {
+                        // Parse expression statement
+                        parseExpressionStatement(); // -> IDY
+                        if (NC) { break; }
+                    }
+                }
                 
                 // Add statement as child of compound
                 LDA compoundNodeL
@@ -302,9 +453,8 @@ unit Parser
                 STA ZP.IDXH
                 
                 AST.AddChild(); // IDX = compound, IDY = statement
-                
-                // TODO: continue loop for more statements
             } // inner loop
+            
             if (NC) { break; }
             
             // Consume '}'
@@ -329,9 +479,9 @@ unit Parser
         if (NZ)
         {
             // not an ideal exit
-            LDA functionNodeL
+            LDA compoundNodeL
             STA ZP.IDXL
-            LDA functionNodeH
+            LDA compoundNodeH
             STA ZP.IDXH
             AST.FreeNode();
             CLC
@@ -351,38 +501,38 @@ unit Parser
         AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
-        LDA exprStmtNodeH
+        LDA stmtNodeH
         PHA
-        LDA exprStmtNodeL
+        LDA stmtNodeL
         PHA
         
-        STZ exprStmtNodeH
-        STZ exprStmtNodeL
+        STZ stmtNodeH
+        STZ stmtNodeL
         
         loop
         {
             // Save expr statement node
             LDA ZP.IDXL
-            STA exprStmtNodeL
+            STA stmtNodeL
             LDA ZP.IDXH
-            STA exprStmtNodeH
+            STA stmtNodeH
             
             // Parse function call
             parseCallExpression(); // -> IDY
             if (NC) { break; }
             
             // Get expr statement back in IDX
-            LDA exprStmtNodeL
+            LDA stmtNodeL
             STA ZP.IDXL
-            LDA exprStmtNodeH
+            LDA stmtNodeH
             STA ZP.IDXH
             
             AST.AddChild(); // IDX = expr statement, IDY = call
             
             // Move expr statement to IDY for return
-            LDA exprStmtNodeL
+            LDA stmtNodeL
             STA ZP.IDYL
-            LDA exprStmtNodeH
+            LDA stmtNodeH
             STA ZP.IDYH
             
             // Expect ';'
@@ -390,30 +540,30 @@ unit Parser
             expect();
             if (NC) { break; }
             
-            STZ exprStmtNodeH
-            STZ exprStmtNodeL
+            STZ stmtNodeH
+            STZ stmtNodeL
             
             SEC
             break;
         } // single exit
         
-        LDA exprStmtNodeL
-        ORA exprStmtNodeH
+        LDA stmtNodeL
+        ORA stmtNodeH
         if (NZ)
         {
             // not an ideal exit
-            LDA exprStmtNodeL
+            LDA stmtNodeL
             STA ZP.IDXL
-            LDA exprStmtNodeH
+            LDA stmtNodeH
             STA ZP.IDXH
             AST.FreeNode();
             CLC
         }
         
         PLA
-        STA exprStmtNodeL
+        STA stmtNodeL
         PLA
-        STA exprStmtNodeH
+        STA stmtNodeH
     }
     
     // Parse: identifier ( arguments )
@@ -616,7 +766,6 @@ unit Parser
             {
                 case Token.Void:
                 {
-                    //TODO: for now, just parse one function
                     parseFunction(); // -> IDY
                     if (NC) { break; }   
                     
@@ -626,7 +775,7 @@ unit Parser
                     
                     // Check if there's more after the function
                     LDA currentToken
-                    CMP #Token.EndOfFile
+                    CMP # Token.EndOfFile
                     if (NZ)
                     {
                         LDA # Error.SyntaxError
@@ -635,22 +784,17 @@ unit Parser
                     }  
                 }
                 case Token.Long:
-                {
-                    LDA # Error.NotImplemented
-                    Errors.Show();
-                    break;
-                }
                 case Token.Int:
-                {
-                    LDA # Error.NotImplemented
-                    Errors.Show();
-                    break;
-                }
                 case Token.Char:
                 {
-                    LDA # Error.NotImplemented
-                    Errors.Show();
-                    break;
+                    // Could be variable declaration or function
+                    // TODO: for now, assume variable (since functions must be void)
+                    parseVariableDeclaration(); // A = type, -> IDY
+                    if (NC) { break; }
+                    
+                    // Add variable to AST root
+                    AST.GetRoot(); // -> IDX
+                    AST.AddChild(); // IDX = root, IDY = VarDecl
                 }
             }
                         

@@ -3,21 +3,43 @@ unit CodeGen
     // Code generation state
     const byte cgSlots = 0x90;
     
-    const byte codeBuffer    = cgSlots+0;   // Pointer to allocated buffer
-    const byte codeBufferL   = cgSlots+0;
-    const byte codeBufferH   = cgSlots+1;
-    const byte codeOffset    = cgSlots+2;   // RELATIVE offset in buffer (0-based)
-    const byte codeOffsetL   = cgSlots+2;
-    const byte codeOffsetH   = cgSlots+3;
-    const byte codeSize      = cgSlots+4;   // Current allocated size
-    const byte codeSizeL     = cgSlots+4;   
-    const byte codeSizeH     = cgSlots+5;   
-    const byte stringBuffer  = cgSlots+6;  // String literals
-    const byte stringBufferL = cgSlots+6;  // String literals
-    const byte stringBufferH = cgSlots+7;  // String literals
-    const byte stringOffset  = cgSlots+8;  // RELATIVE offset in string buffer
-    const byte stringOffsetL = cgSlots+8;
-    const byte stringOffsetH = cgSlots+9;
+    const byte codeBuffer     = cgSlots+0;   // Pointer to allocated buffer
+    const byte codeBufferL    = cgSlots+0;
+    const byte codeBufferH    = cgSlots+1;
+    const byte codeOffset     = cgSlots+2;   // RELATIVE offset in buffer (0-based)
+    const byte codeOffsetL    = cgSlots+2;
+    const byte codeOffsetH    = cgSlots+3;
+    const byte codeSize       = cgSlots+4;   // Current allocated size
+    const byte codeSizeL      = cgSlots+4;   
+    const byte codeSizeH      = cgSlots+5;   
+    const byte stringBuffer   = cgSlots+6;  // String literals
+    const byte stringBufferL  = cgSlots+6;  // String literals
+    const byte stringBufferH  = cgSlots+7;  // String literals
+    const byte stringOffset   = cgSlots+8;  // RELATIVE offset in string buffer
+    const byte stringOffsetL  = cgSlots+8;
+    const byte stringOffsetH  = cgSlots+9;
+    
+    const byte functionLocals = cgSlots+10; // Count of locals in current function
+    
+    const byte runtimeZeroPageSlots = 0x60;
+    const byte runtimeBP            = runtimeZeroPageSlots+0; // Base pointer for stack frame
+    
+    const byte runtimeStack0        = runtimeZeroPageSlots+1;
+    const byte runtimeStack0L       = runtimeZeroPageSlots+1;
+    const byte runtimeStack0H       = runtimeZeroPageSlots+2;
+    
+    const byte runtimeStack1        = runtimeZeroPageSlots+3;
+    const byte runtimeStack1L       = runtimeZeroPageSlots+3;
+    const byte runtimeStack1H       = runtimeZeroPageSlots+4;
+    
+    const byte runtimeStack2        = runtimeZeroPageSlots+5;
+    const byte runtimeStack2L       = runtimeZeroPageSlots+5;
+    const byte runtimeStack2H       = runtimeZeroPageSlots+6;
+    
+    const byte runtimeStack3        = runtimeZeroPageSlots+7;
+    const byte runtimeStack3L       = runtimeZeroPageSlots+7;
+    const byte runtimeStack3H       = runtimeZeroPageSlots+8;
+    
     
     // Success message
     const string msgSaved = "Saved ";
@@ -30,13 +52,24 @@ unit CodeGen
     // 6502 opcodes
     enum OpCode
     {
+        INC_A   = 0x1A,
         JSR     = 0x20,
+        PHA     = 0x48,
         JMP_ABS = 0x4C,
         RTS     = 0x60,
+        STZ_ZP  = 0x64,
+        PLA     = 0x68,
         JMP_IND = 0x6C,
         STA_ZP  = 0x85,
+        STX_ZP  = 0x86, 
+        TXS     = 0x9A,
         LDX_IMM = 0xA2,
+        LDA_ZP  = 0xA5, 
+        LDX_ZP  = 0xA6,
         LDA_IMM = 0xA9,
+        TSX     = 0xBA,
+        DEX     = 0xCA,
+        INC_ZP  = 0xE6, 
     }    
     
     // Check if function name is a system function
@@ -106,8 +139,13 @@ unit CodeGen
     {
         PHA
         
-PHA Print.Hex(); Print.Space(); PLA
-
+        TAX
+        
+        LDA ZP.ACCL
+        PHA
+        LDA ZP.ACCH
+        PHA
+        
         loop
         {
             // Check if we need to grow buffer
@@ -119,7 +157,9 @@ PHA Print.Hex(); Print.Space(); PLA
                 CMP codeSizeL
                 if (Z)
                 {
+                    PHX
                     growBuffer();  // Double the size
+                    PLX
                     if (NC) { break; }
                 }
             }
@@ -128,15 +168,14 @@ PHA Print.Hex(); Print.Space(); PLA
             CLC
             LDA codeBufferL
             ADC codeOffsetL
-            STA ZP.IDXL
+            STA ZP.ACCL
             LDA codeBufferH
             ADC codeOffsetH
-            STA ZP.IDXH
+            STA ZP.ACCH
             
             // Store byte
-            PLA  // Get byte back
-            PHA
-            STA [ZP.IDX]
+            TXA
+            STA [ZP.ACC]
             
             // Increment offset (relative!)
             INC codeOffsetL
@@ -145,6 +184,11 @@ PHA Print.Hex(); Print.Space(); PLA
             SEC
             break;
         } // single exit
+        
+        PLA
+        STA ZP.ACCH
+        PLA
+        STA ZP.ACCL
         
         PLA
         
@@ -405,29 +449,8 @@ PHA Print.Hex(); Print.Space(); PLA
         STA ZP.ACCH
     }
     
-    // Patch JMP to main
-    patchMainJump()
-    {
-        // Calculate absolute address
-        LDA codeOffsetL
-        STA ZP.ACCL
-        LDA codeOffsetH
-        STA ZP.ACCH
-        addEntryPoint();
-        
-        // Write to offset 1-2
-        LDY #1
-        LDA ZP.ACCL
-        STA [codeBuffer], Y
-        INY
-        LDA ZP.ACCH
-        STA [codeBuffer], Y
-    }
-    
     generatePrintfCall()
     {
-Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
-Print.NewLine();        
         loop
         {
             // first child is identifier (which we already know is "printf")
@@ -471,7 +494,7 @@ Print.NewLine();
             addEntryPoint();
             
             // Generate: LDA #low(string)
-            LDA #OpCode.LDA_IMM
+            LDA # OpCode.LDA_IMM
             EmitByte(); if (NC) { break;}
             LDA ZP.ACCL
             EmitByte();if (NC) { break;}
@@ -556,12 +579,24 @@ Print.NewLine();
                 Errors.Show();
                 break;
             }
+            SEC
             break;
         } // single exit
         PLA
         STA AST.astNodeH
         PLA
         STA AST.astNodeL 
+    }
+    
+    generateVarDecl()
+    {
+        // Get variable type
+        LDY #AST.iVarType
+        LDA [ZP.IDX], Y
+        
+        // TODO
+                
+        SEC
     }
     
     // Generate code for a statement
@@ -591,6 +626,10 @@ Print.NewLine();
                     case NodeType.CallExpr:
                     {
                         generateCallExpr();
+                    }
+                    case NodeType.VarDecl:
+                    {
+                        generateVarDecl();
                     }
                     default:
                     {
@@ -687,11 +726,64 @@ Print.NewLine();
         STA ZP.IDXH
         STX ZP.IDXL
         
-        // Now IDX = CompoundStmt
-        generateBlock();  // Process all statements in block
+        // Initialize local count
+        STZ functionLocals
         
-        LDA # OpCode.RTS
-        EmitByte();
+        // Generate function prologue
+        //    LDA #runtimeBP
+        //    PHA
+        //    TSX            // Get current stack pointer
+        //    STX runtimeBP  // Save as base pointer
+        loop
+        {
+            // push BP
+            LDA # OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA # runtimeBP
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.PHA
+            EmitByte(); if (NC) { break; }
+            
+            // BP = SP
+            LDA # OpCode.TSX
+            EmitByte(); if (NC) { break; }
+            LDA # OpCode.STX_ZP
+            EmitByte(); if (NC) { break; }
+            LDA # runtimeBP
+            EmitByte(); if (NC) { break; }
+            
+            // Now IDX = CompoundStmt
+            generateBlock();  // Process all statements in block
+            
+            // Generate function epilogue
+            // Restore stack pointer
+            //
+            //    LDX #runtimeBP
+            //    TXS
+            //    PLA
+            //    STA #runtimeBP
+            // 
+                   
+            // SP = BP     
+            LDA # OpCode.LDX_ZP
+            EmitByte(); if (NC) { break; }
+            LDA # runtimeBP
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.TXS
+            EmitByte(); if (NC) { break; }
+            
+            // pop BP
+            LDA # OpCode.PLA
+            EmitByte(); if (NC) { break; }
+            LDA # OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA # runtimeBP
+            EmitByte(); if (NC) { break; }
+            
+            LDA # OpCode.RTS
+            EmitByte(); if (NC) { break; }
+            break;
+        }
     }
     
     
@@ -719,9 +811,6 @@ Print.NewLine();
         LDA codeOffsetH
         STA [ZP.IDX], Y
         
-        // Patch the JMP at start
-        patchMainJump();
-        
         // Generate code for function body
         generateFunctionBody();  // Uses IDX = Function node
         
@@ -731,52 +820,134 @@ Print.NewLine();
     emitDispatchCall()
     {
         LDA # OpCode.JSR
-        EmitByte();
+        EmitByte(); if (NC) { return; }
         
         // Add base to offset to get absolute address (4th byte into our code after the entrypoint JMP)
         CLC
         LDA # (BIOSInterface.EntryPoint % 256)
         ADC # 3
-        EmitByte();
+        EmitByte(); if (NC) { return; }
         LDA # (BIOSInterface.EntryPoint / 256)
-        EmitByte();
+        EmitByte(); 
+    }
+    
+    // Patch JMP to main
+    patchEntryJump()
+    {
+        // Calculate absolute address
+        LDA codeOffsetL
+        STA ZP.ACCL
+        LDA codeOffsetH
+        STA ZP.ACCH
+        addEntryPoint();
+        
+        // Write to offset 1-2
+        LDY #1
+        LDA ZP.ACCL
+        STA [codeBuffer], Y
+        INY
+        LDA ZP.ACCH
+        STA [codeBuffer], Y
+    }
+    
+    createStack()
+    {
+        // Patch JMP to main
+        patchEntryJump();
+    
+        // Allocate 1022 bytes (0x0400) for the parallel stack (1022 + 2 allocator size bytes = 1024)
+        LDA #0xFE
+        STA ZP.ACCL
+        LDA #0x03
+        STA ZP.ACCH
+        
+        // Call Memory.Allocate via BIOS dispatch
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.MemAllocate
+        EmitByte(); if (NC) { return; }
+        emitDispatchCall();
+        
+        // Assume since this is the first allocation, Memory.Allocate returns page-aligned for 1K allocation
+        // After 2-byte header, base address will be xx00
+        
+        // zero the LSB's since we are page aligned
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0L
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1L
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2L
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3L
+        EmitByte(); if (NC) { return; }
+        
+        // now the MSB's
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXH
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0H
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.INC_A
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1H
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.INC_A
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2H
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.INC_A
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3H
+        EmitByte(); if (NC) { return; }
     }
     
     Compile()
     {
-Print.NewLine(); // for EmitByte 
-      
         // 1. Reserve 3 bytes for JMP to main
         LDA # OpCode.JMP_ABS
-        EmitByte();  // JMP absolute
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; } // JMP absolute
         LDA #0
-        EmitByte();  // Placeholder low
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; } // Placeholder low
         LDA #0
-        EmitByte();  // Placeholder high
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; } // Placeholder high
         
         // 2. Emit our generic BIOS dispatch function (needs to be callable with JSR)
         LDA # OpCode.JMP_IND
-        EmitByte();
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; }
         LDA # ZP.BIOSDISPATCH
-        EmitByte();
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; }
         LDA #0x00
-        EmitByte();
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; }
         LDA # OpCode.RTS
-        EmitByte();  // JMP absolute
-        if (NC) { return; }
+        EmitByte(); if (NC) { return; } // JMP absolute
         
         // 3. Walk AST and emit all string literals
         AST.GetRoot();  // -> IDX
         emitStrings();
         if (NC) { return; }
         
-        // 4. Generate main function
+        // 4. create the runtime stack
+        createStack();
+        if (NC) { return; }
+        
+        // 5. Generate main function
         emitMain();
         if (NC) { return; }
         
@@ -856,7 +1027,121 @@ Print.NewLine(); // for EmitByte
         STA ZP.STRH
         Print.String();
         
+#if defined(DEBUG)        
+        // Add diagnostic hex dump
+        Print.NewLine();
+        dumpCodeBuffer();
+        Print.NewLine();
+#endif        
+        
         SEC
+    }
+    
+    
+    // Add this function to CodeGen unit (codegen.asm)
+
+    // Diagnostic hex dump of code buffer
+    // Shows 16 bytes per row with addresses starting at 0x0800
+    dumpCodeBuffer()
+    {
+        PHY
+        PHX
+        
+        // Start at beginning of code buffer
+        LDA codeBufferL
+        STA ZP.IDYL
+        LDA codeBufferH
+        STA ZP.IDYH
+        
+        // Track virtual address (starts at 0x0800)
+        LDA #0x00
+        STA ZP.ACCL
+        LDA #0x08
+        STA ZP.ACCH
+        
+        // Track bytes remaining
+        LDA codeOffsetL
+        STA ZP.IDXL
+        LDA codeOffsetH
+        STA ZP.IDXH
+        
+        loop
+        {
+            // Check if we have bytes left
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { break; }
+            
+            // Print address
+            LDA ZP.ACCH
+            Print.Hex();
+            LDA ZP.ACCL
+            Print.Hex();
+            LDA #':'
+            Print.Char();
+            Print.Space();
+            
+            // Print up to 16 bytes on this row
+            LDX #16
+            loop
+            {
+                // Check if we have bytes left
+                LDA ZP.IDXL
+                ORA ZP.IDXH
+                if (Z) 
+                { 
+                    // Pad with spaces if less than 16 bytes on last row
+                    loop
+                    {
+                        PHX
+                        Print.Space();
+                        Print.Space();
+                        Print.Space();
+                        PLX
+                        DEX
+                        if (Z) { break; }
+                    }
+                    break; 
+                }
+                
+                PHX
+                // Print byte
+                LDA [ZP.IDY]
+                Print.Hex();
+                Print.Space();
+                PLX
+                
+                // Advance buffer pointer
+                INC ZP.IDYL
+                if (Z) { INC ZP.IDYH }
+                
+                // Decrement bytes remaining
+                LDA ZP.IDXL
+                if (Z)
+                {
+                    DEC ZP.IDXH
+                }
+                DEC ZP.IDXL
+                
+                // Decrement column counter
+                DEX
+                if (Z) { break; }
+            }
+            
+            Print.NewLine();
+            
+            // Advance virtual address by 16
+            CLC
+            LDA ZP.ACCL
+            ADC #16
+            STA ZP.ACCL
+            LDA ZP.ACCH
+            ADC #0
+            STA ZP.ACCH
+        }
+        
+        PLX
+        PLY
     }
 }
 
