@@ -222,7 +222,7 @@ PHA Print.Hex(); Print.Space(); PLA
     {
         LDA ZP.IDXL
         ORA ZP.IDXH
-        if (Z) { return; }  // Null node
+        if (Z) { SEC return; }  // Null node
         
         // Check if this is a StringLit
         LDY # AST.iNodeType
@@ -252,6 +252,7 @@ PHA Print.Hex(); Print.Space(); PLA
             {
                 LDA [ZP.STR], Y
                 EmitByte();
+                if (NC) { return; }
                 if (Z) { break; }  // Including null
                 INY
             }
@@ -278,6 +279,7 @@ PHA Print.Hex(); Print.Space(); PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
+        if (NC) { return; } 
         
         LDY #AST.iNext
         LDA [ZP.IDX], Y
@@ -458,6 +460,7 @@ Print.NewLine();
             }
             
             // Get string's offset (stored during emitStrings)
+            // TODO : should be an expression -> STR
             LDY #AST.iOffset
             LDA [ZP.IDX], Y
             STA ZP.ACCL

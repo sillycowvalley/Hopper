@@ -1,6 +1,7 @@
 // Noel's RetroLab Benchmark
 void main() {
-    long s;
+    //long s = 0;
+    /*
     long st = seconds();
     long start = millis();
 
@@ -12,8 +13,8 @@ void main() {
         }
         putchar('.');
     }
-
-    printf("%ld\n", s);
-    printf("%ld ms\n", millis() - start);
-    printf("%ld seconds\n", seconds() - st);
+    */
+    //printf("%ld\n", s);
+    //printf("%ld ms\n", millis() - start);
+    //printf("%ld seconds\n", seconds() - st);
 }

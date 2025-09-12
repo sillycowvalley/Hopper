@@ -200,6 +200,8 @@ unit Lexer
                 }
             }
             
+            LDA currentChar 
+            
             // Check for /* comment
             CMP #'/'
             if (Z)
