@@ -4,7 +4,7 @@ void main() {
     
     //long st = seconds();
     //long start = millis();
-    // s = 0;
+    s = 0;
     /*
     int i, j;
     for (i = 1; i <= 10; i++) {

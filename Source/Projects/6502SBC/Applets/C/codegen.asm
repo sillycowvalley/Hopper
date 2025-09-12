@@ -566,6 +566,7 @@ unit CodeGen
                     }
                     default:
                     {
+LDA #'d' Print.Char();                        
                         LDA # Error.NotImplemented
                         Errors.Show();
                         break;
@@ -575,6 +576,7 @@ unit CodeGen
             else
             {
                 // generateUserFunctionCall();  // Future: JSR to user function
+LDA #'e' Print.Char();
                 LDA # Error.NotImplemented
                 Errors.Show();
                 break;
@@ -588,15 +590,47 @@ unit CodeGen
         STA AST.astNodeL 
     }
     
+    // VarDecl node in IDX
     generateVarDecl()
     {
-        // Get variable type
-        LDY #AST.iVarType
-        LDA [ZP.IDX], Y
+        loop
+        {
+            // Allocate stack space for the variable - just push a dummy value
+            LDA #OpCode.PHA
+            EmitByte(); if (NC) { return; }
         
-        // TODO
-                
-        SEC
+            // Store the BP offset in the VarDecl node for later reference
+            // Locals are at negative offsets: first local at BP-1, second at BP-2, etc.
+            LDY # AST.iOffset  // Reuse the offset field for BP offset
+            LDA functionLocals
+            EOR #0xFF         // Negate (two's complement without the +1)
+            STA [ZP.IDX], Y   // Store as BP-relative offset (-1, -2, etc.)
+            
+            // Update the local count
+            INC functionLocals
+            
+            LDY # AST.iInitializer
+            LDA [ZP.IDX], Y
+            STA ZP.IDYL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDYH
+            
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (NZ)  // Has initializer
+            {
+                // TODO: Generate code for initializer expression
+                // For now, just error
+LDA #'a' Print.Char();                
+                LDA # Error.NotImplemented
+                Errors.Show();
+                break;
+            }
+                    
+            SEC
+            break;
+        }
     }
     
     // Generate code for a statement
@@ -607,6 +641,10 @@ unit CodeGen
         LDA [ZP.IDX], Y
         switch (A)
         {
+            case NodeType.VarDecl:
+            {
+                generateVarDecl();
+            }
             case NodeType.ExprStmt:
             {
                 // Get the expression (child)
@@ -627,13 +665,10 @@ unit CodeGen
                     {
                         generateCallExpr();
                     }
-                    case NodeType.VarDecl:
-                    {
-                        generateVarDecl();
-                    }
                     default:
                     {
                         // Future: BinOp, Assign, etc.
+LDA #'b' Print.Char();                        
                         LDA #Error.NotImplemented
                         Errors.Show();
                     }
@@ -642,6 +677,7 @@ unit CodeGen
             default:
             {
                 // Future: case AST.NodeType.If, For, Return, etc.
+LDA #'c' Print.Char();                
                 LDA # Error.NotImplemented
                 Errors.Show();
             }

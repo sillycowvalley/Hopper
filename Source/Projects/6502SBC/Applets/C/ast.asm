@@ -68,9 +68,12 @@ unit AST
     
     // VarDecl node:
     //     [5-6]  Initializer expression (optional)
-    //     [7]    Variable type (Token.Long/Int/Char)
+    //     [7]    offset on stack relative to BP (signed single byte offset)
+    //     [8]    <unused>
+    //     [9]    Variable type (Token.Long/Int/Char)
     const byte iInitializer = 5;
-    const byte iVarType = 7;
+    // const byte iOffset   = 7;
+    const byte iVarType     = 9;
     
     Initialize()
     {

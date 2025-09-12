@@ -112,32 +112,26 @@ unit Errors
                 case Token.LeftParen:
                 {
                     LDA #'('
-                    break;
                 }
                 case Token.RightParen:
                 {
                     LDA #')'
-                    break;
                 }
                 case Token.LeftBrace:
                 {
                     LDA #'{'
-                    break;
                 }
                 case Token.RightBrace:
                 {
                     LDA #'}'
-                    break;
                 }
                 case Token.Semicolon:
                 {
                     LDA #';'
-                    break;
                 }
                 default:
                 {
                     LDA #'?'
-                    break;
                 }
             }
             Print.Char();
