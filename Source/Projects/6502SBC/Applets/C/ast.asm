@@ -27,6 +27,8 @@ unit AST
         IntLit       = 9,   // Integer literal (16 bits stored in Data)
         LongLit      = 10,  // Long literal    (32 bits stored in Data+ )
         VarDecl      = 11,  // Variable declaration 
+        Assign       = 12,  // Assignment expression
+        BinOp        = 13,  // Binary operation (+, -, *, /, etc.)
         
         AfterLast           // see freeNode()
     }

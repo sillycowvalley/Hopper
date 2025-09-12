@@ -100,9 +100,10 @@ void main() {
 <assignment> ::= <relational> ("=" <assignment>)?
 <relational> ::= <additive> (("<" | ">" | "<=" | ">=") <additive>)*
 <additive> ::= <multiplicative> (("+" | "-") <multiplicative>)*
-<multiplicative> ::= <primary> (("*" | "/" | "%") <primary>)*
+<multiplicative> ::= <postfix> (("*" | "/" | "%") <postfix>)*
+<postfix> ::= <primary> ("(" <arg-list>? ")")*
 <primary> ::= <identifier> | <integer> | <string> | "(" <expression> ")"
-            | <identifier> "(" <arg-list>? ")"
+            
 ```
 
 ### Built-in Functions
