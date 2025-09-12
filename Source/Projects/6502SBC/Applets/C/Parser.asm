@@ -20,7 +20,7 @@ unit Parser
     const string expectIdent = "identifier";
     
     // Helper: print "Expected X" error
-    // Input: ZP.STR = what was expected
+    // Input: A = token that was expected
     printExpectedError()
     {
         PHA
@@ -57,26 +57,32 @@ unit Parser
                 case Token.LeftParen:
                 {
                     LDA #'('
+                    break;
                 }
                 case Token.RightParen:
                 {
                     LDA #')'
+                    break;
                 }
                 case Token.LeftBrace:
                 {
                     LDA #'{'
+                    break;
                 }
                 case Token.RightBrace:
                 {
                     LDA #'}'
+                    break;
                 }
                 case Token.Semicolon:
                 {
                     LDA #';'
+                    break;
                 }
                 default:
                 {
                     LDA #'?'
+                    break;
                 }
             }
             Print.Char();
@@ -119,7 +125,7 @@ unit Parser
         
         // Create function node
         LDA # AST.NodeType.Function
-        AST.CreateNode();
+        AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
         // Save function node
@@ -140,7 +146,7 @@ unit Parser
         
         // Create identifier node for function name
         LDA # AST.NodeType.Identifier
-        AST.CreateNode();
+        AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
         // Copy function name from lexer's token buffer
@@ -148,19 +154,21 @@ unit Parser
         STA ZP.ACCL
         LDA Lexer.TokenBufferH
         STA ZP.ACCH
-        AST.SetData();  // Store name pointer in identifier node
+        AST.SetData(); // IDX[iData] = ACC
         
-        // Set identifier as child of function
+        // Move identifier to IDY
         LDA ZP.IDXL
         STA ZP.IDYL
         LDA ZP.IDXH
         STA ZP.IDYH
         
+        // Get function node back in IDX
         LDA currentNodeL
         STA ZP.IDXL
         LDA currentNodeH
         STA ZP.IDXH
-        AST.SetFirstChild();
+        
+        AST.AddChild(); // IDX = function, IDY = identifier
         
         consume();  // Move past identifier
         if (NC) { return; }
@@ -179,24 +187,15 @@ unit Parser
         parseCompoundStatement(); // -> IDY
         if (NC) { return; }
         
-        // Set compound statement as sibling of function name
+        // Add compound as another child of function
         LDA currentNodeL
         STA ZP.IDXL
         LDA currentNodeH
         STA ZP.IDXH
         
-        // Get the identifier node (first child)
-        LDY # AST.iChild
-        LDA [ZP.IDX], Y
-        STA ZP.IDYL
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDYH  // IDX = identifier
+        AST.AddChild(); // IDX = function, IDY = compound
         
-        // IDY already contains compound statement from parseCompoundStatement()
-        AST.SetNextSibling(); // Set compound as sibling of identifier
-        
-        // Restore function node in IDY
+        // Return function node in IDY
         LDA currentNodeL
         STA ZP.IDYL
         LDA currentNodeH
@@ -206,7 +205,7 @@ unit Parser
     }
     
     // Parse: { ... }
-    parseCompoundStatement()
+    parseCompoundStatement() // -> IDY
     {
         // Expect '{'
         LDA # Token.LeftBrace
@@ -215,7 +214,7 @@ unit Parser
         
         // Create compound statement node
         LDA # AST.NodeType.CompoundStmt
-        AST.CreateNode();
+        AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
         // Save compound node
@@ -240,34 +239,26 @@ unit Parser
                 return;
             }
             
-            // TODO: for now, just parse expression statements
-            parseExpressionStatement();
+            // Parse expression statement
+            parseExpressionStatement(); // -> IDY
             if (NC) { return; }
             
             // Add statement as child of compound
-            // TODO: simplified for now - just one statement
             LDA currentNodeL
-            STA ZP.IDYL
-            LDA currentNodeH
-            STA ZP.IDYH
-            
-            LDA ZP.IDXL
-            STA currentNodeL
-            LDA ZP.IDXH
-            STA currentNodeH
-            
-            LDA ZP.IDYL
             STA ZP.IDXL
-            LDA ZP.IDYH
+            LDA currentNodeH
             STA ZP.IDXH
-            AST.SetFirstChild();
+            
+            AST.AddChild(); // IDX = compound, IDY = statement
+            
+            // TODO: continue loop for more statements
         }
         
         // Consume '}'
         consume();
         if (NC) { return; }
         
-        // Restore compound node
+        // Return compound node in IDY
         LDA currentNodeL
         STA ZP.IDYL
         LDA currentNodeH
@@ -277,21 +268,21 @@ unit Parser
     }
     
     // Parse: expression ;
-    parseExpressionStatement()
+    parseExpressionStatement() // -> IDY
     {
         // Create expression statement node
         LDA #AST.NodeType.ExprStmt
-        AST.CreateNode();
+        AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
-        // Save it
+        // Save expr statement node
         LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
         PHA
         
-        // TODO: for now, just parse function calls
-        parseCallExpression();
+        // Parse function call
+        parseCallExpression(); // -> IDY
         if (NC) 
         {
             PLA
@@ -299,17 +290,19 @@ unit Parser
             return; 
         }
         
-        // Set call as child of expr statement
-        LDA ZP.IDXL
-        STA ZP.IDYL
-        LDA ZP.IDXH
-        STA ZP.IDYH
-        
+        // Get expr statement back in IDX
         PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
-        AST.SetFirstChild();
+        
+        AST.AddChild(); // IDX = expr statement, IDY = call
+        
+        // Move expr statement to IDY for return
+        LDA ZP.IDXL
+        STA ZP.IDYL
+        LDA ZP.IDXH
+        STA ZP.IDYH
         
         // Expect ';'
         LDA # Token.Semicolon
@@ -320,7 +313,7 @@ unit Parser
     }
     
     // Parse: identifier ( arguments )
-    parseCallExpression()
+    parseCallExpression() // -> IDY
     {
         // Expect identifier
         LDA #Token.Identifier
@@ -333,7 +326,7 @@ unit Parser
         
         // Create call node
         LDA #AST.NodeType.CallExpr
-        AST.CreateNode();
+        AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
         // Save call node
@@ -344,7 +337,7 @@ unit Parser
         
         // Create identifier node for function name
         LDA #AST.NodeType.Identifier
-        AST.CreateNode();
+        AST.CreateNode(); // -> IDX
         if (NC) 
         {
             PLA
@@ -357,24 +350,27 @@ unit Parser
         STA ZP.ACCL
         LDA Lexer.TokenBufferH
         STA ZP.ACCH
-        AST.SetData();
+        AST.SetData(); // IDX[iData] = ACC
         
-        // Set identifier as first child of call
+        // Move identifier to IDY
         LDA ZP.IDXL
         STA ZP.IDYL
         LDA ZP.IDXH
         STA ZP.IDYH
         
+        // Get call node back in IDX
         PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
         
+        AST.AddChild(); // IDX = call, IDY = identifier
+        
+        // Save call node again
+        LDA ZP.IDXL
         PHA
         LDA ZP.IDXH
         PHA
-        
-        AST.SetFirstChild();
         
         consume();  // Move past identifier
         if (NC) 
@@ -394,14 +390,14 @@ unit Parser
             return; 
         }
         
-        // Parse arguments  TODO: for now, just string literal
+        // Parse arguments
         LDA currentToken
         CMP # Token.StringLiteral
         if (Z)
         {
             // Create string literal node
             LDA # AST.NodeType.StringLit
-            AST.CreateNode();
+            AST.CreateNode(); // -> IDX
             if (NC) 
             {
                 PLA
@@ -414,44 +410,56 @@ unit Parser
             STA ZP.ACCL
             LDA Lexer.TokenBufferH
             STA ZP.ACCH
-            AST.SetData();
+            AST.SetData(); // IDX[iData] = ACC
             
-            // Set string as sibling of function name
+            // Move string to IDY
             LDA ZP.IDXL
             STA ZP.IDYL
             LDA ZP.IDXH
             STA ZP.IDYH
             
-            // Get call node back
+            // Get call node back in IDX
             PLA
             STA ZP.IDXH
             PLA
             STA ZP.IDXL
             
-            // Get identifier (first child)
-            LDY # AST.iChild
-            LDA [ZP.IDX], Y
-            TAX
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDXH
-            STX ZP.IDXL
+            AST.AddChild(); // IDX = call, IDY = string arg
             
-            AST.SetNextSibling();
+            // Save call node again for return
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
             
             consume();  // Move past string
-            if (NC) { return; }
+            if (NC) 
+            {
+                PLA
+                PLA
+                return; 
+            }
         }
         else
         {
-            PLA
-            PLA
+            // No arguments - just restore call node for return
         }
         
         // Expect ')'
         LDA #Token.RightParen
         expect();
-        if (NC) { return; }
+        if (NC) 
+        {
+            PLA
+            PLA
+            return; 
+        }
+        
+        // Return call node in IDY
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
         
         SEC
     }
@@ -467,9 +475,9 @@ unit Parser
         parseFunction(); // -> IDY
         if (NC) { return; }
         
-        // Add function (IDY) to AST root (IDX)
+        // Add function to AST root
         AST.GetRoot(); // -> IDX
-        AST.SetFirstChild();
+        AST.AddChild(); // IDX = root, IDY = function
         
         SEC
     }
