@@ -391,17 +391,27 @@ PHA Print.Hex(); Print.Space(); PLA
         } // loop
     }
     
+    // ZP.ACC + 0x0800 -> ZP.ACC
+    addEntryPoint()
+    {
+        CLC
+        LDA ZP.ACCL
+        ADC # (BIOSInterface.EntryPoint % 256)
+        STA ZP.ACCL
+        LDA ZP.ACCH
+        ADC # (BIOSInterface.EntryPoint / 256)
+        STA ZP.ACCH
+    }
+    
     // Patch JMP to main
     patchMainJump()
     {
-        // Calculate absolute address (0x0800 + offset)
-        CLC
+        // Calculate absolute address
         LDA codeOffsetL
-        ADC # (BIOSInterface.EntryPoint % 256)
         STA ZP.ACCL
         LDA codeOffsetH
-        ADC # (BIOSInterface.EntryPoint / 256)
         STA ZP.ACCH
+        addEntryPoint();
         
         // Write to offset 1-2
         LDY #1
@@ -455,14 +465,7 @@ Print.NewLine();
             LDA [ZP.IDX], Y
             STA ZP.ACCH
             
-            // Add base 0x0800
-            CLC
-            LDA ZP.ACCL
-            ADC #0x00
-            STA ZP.ACCL
-            LDA ZP.ACCH
-            ADC #0x08
-            STA ZP.ACCH
+            addEntryPoint();
             
             // Generate: LDA #low(string)
             LDA #OpCode.LDA_IMM
