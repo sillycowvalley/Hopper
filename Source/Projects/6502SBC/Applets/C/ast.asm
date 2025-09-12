@@ -251,7 +251,7 @@ unit AST
         if (Z)  // No existing child
         {
             // Just set as first child
-            SetFirstChild();// IDX[iChild] = IDY
+            SetFirstChild();// IDX[iChild] = IDY
         }
         else
         {
@@ -264,7 +264,7 @@ unit AST
             walkToLastSibling(); // -> IDX (last sibling)
             
             // IDX = last sibling, IDY = new node to add
-            SetNextSibling();// IDX[iNext] = IDY
+            SetNextSibling();// IDX[iNext] = IDY
         }
         
         PLY
@@ -275,7 +275,7 @@ unit AST
     AddSibling()
     {
         walkToLastSibling(); // -> IDX (last in chain)
-        SetNextSibling();// IDX[iNext] = IDY
+        SetNextSibling();// IDX[iNext] = IDY
     }
     
     
@@ -451,7 +451,8 @@ unit AST
                 STA ZP.STRH
                 Print.String();
             }
-        }
+        } // switch
+        Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
         
         Print.NewLine();
         

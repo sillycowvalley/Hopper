@@ -10,9 +10,23 @@ unit Parser
     const byte parserSlots = 0x90;
     
     const byte currentToken = parserSlots+0;   // Current token type
-    const uint currentNode  = parserSlots+1;   // Node being built
-    const byte currentNodeL = parserSlots+1;
-    const byte currentNodeH = parserSlots+2;
+    
+    // Separate node storage for each parse function
+    const uint functionNode  = parserSlots+1;   // parseFunction's node
+    const byte functionNodeL = parserSlots+1;
+    const byte functionNodeH = parserSlots+2;
+    
+    const uint compoundNode  = parserSlots+3;   // parseCompoundStatement's node
+    const byte compoundNodeL = parserSlots+3;
+    const byte compoundNodeH = parserSlots+4;
+    
+    const uint exprStmtNode  = parserSlots+5;   // parseExpressionStatement's node
+    const byte exprStmtNodeL = parserSlots+5;
+    const byte exprStmtNodeH = parserSlots+6;
+    
+    const uint callNode      = parserSlots+7;   // parseCallExpression's node
+    const byte callNodeL     = parserSlots+7;
+    const byte callNodeH     = parserSlots+8;
     
     // Error messages
     const string msgExpected = "Expected ";
@@ -130,9 +144,9 @@ unit Parser
         
         // Save function node
         LDA ZP.IDXL
-        STA currentNodeL
+        STA functionNodeL
         LDA ZP.IDXH
-        STA currentNodeH
+        STA functionNodeH
         
         // Expect identifier (function name)
         LDA # Token.Identifier
@@ -163,9 +177,9 @@ unit Parser
         STA ZP.IDYH
         
         // Get function node back in IDX
-        LDA currentNodeL
+        LDA functionNodeL
         STA ZP.IDXL
-        LDA currentNodeH
+        LDA functionNodeH
         STA ZP.IDXH
         
         AST.AddChild(); // IDX = function, IDY = identifier
@@ -188,17 +202,17 @@ unit Parser
         if (NC) { return; }
         
         // Add compound as another child of function
-        LDA currentNodeL
+        LDA functionNodeL
         STA ZP.IDXL
-        LDA currentNodeH
+        LDA functionNodeH
         STA ZP.IDXH
         
         AST.AddChild(); // IDX = function, IDY = compound
         
         // Return function node in IDY
-        LDA currentNodeL
+        LDA functionNodeL
         STA ZP.IDYL
-        LDA currentNodeH
+        LDA functionNodeH
         STA ZP.IDYH
         
         SEC
@@ -219,9 +233,9 @@ unit Parser
         
         // Save compound node
         LDA ZP.IDXL
-        STA currentNodeL
+        STA compoundNodeL
         LDA ZP.IDXH
-        STA currentNodeH
+        STA compoundNodeH
         
         // Parse statements until '}'
         loop
@@ -244,9 +258,9 @@ unit Parser
             if (NC) { return; }
             
             // Add statement as child of compound
-            LDA currentNodeL
+            LDA compoundNodeL
             STA ZP.IDXL
-            LDA currentNodeH
+            LDA compoundNodeH
             STA ZP.IDXH
             
             AST.AddChild(); // IDX = compound, IDY = statement
@@ -259,9 +273,9 @@ unit Parser
         if (NC) { return; }
         
         // Return compound node in IDY
-        LDA currentNodeL
+        LDA compoundNodeL
         STA ZP.IDYL
-        LDA currentNodeH
+        LDA compoundNodeH
         STA ZP.IDYH
         
         SEC
@@ -277,31 +291,26 @@ unit Parser
         
         // Save expr statement node
         LDA ZP.IDXL
-        PHA
+        STA exprStmtNodeL
         LDA ZP.IDXH
-        PHA
+        STA exprStmtNodeH
         
         // Parse function call
         parseCallExpression(); // -> IDY
-        if (NC) 
-        {
-            PLA
-            PLA
-            return; 
-        }
+        if (NC) { return; }
         
         // Get expr statement back in IDX
-        PLA
-        STA ZP.IDXH
-        PLA
+        LDA exprStmtNodeL
         STA ZP.IDXL
+        LDA exprStmtNodeH
+        STA ZP.IDXH
         
         AST.AddChild(); // IDX = expr statement, IDY = call
         
         // Move expr statement to IDY for return
-        LDA ZP.IDXL
+        LDA exprStmtNodeL
         STA ZP.IDYL
-        LDA ZP.IDXH
+        LDA exprStmtNodeH
         STA ZP.IDYH
         
         // Expect ';'
@@ -331,19 +340,14 @@ unit Parser
         
         // Save call node
         LDA ZP.IDXL
-        PHA
+        STA callNodeL
         LDA ZP.IDXH
-        PHA
+        STA callNodeH
         
         // Create identifier node for function name
         LDA #AST.NodeType.Identifier
         AST.CreateNode(); // -> IDX
-        if (NC) 
-        {
-            PLA
-            PLA
-            return; 
-        }
+        if (NC) { return; }
         
         // Copy function name
         LDA Lexer.TokenBufferL
@@ -359,36 +363,20 @@ unit Parser
         STA ZP.IDYH
         
         // Get call node back in IDX
-        PLA
-        STA ZP.IDXH
-        PLA
+        LDA callNodeL
         STA ZP.IDXL
+        LDA callNodeH
+        STA ZP.IDXH
         
         AST.AddChild(); // IDX = call, IDY = identifier
         
-        // Save call node again
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
         consume();  // Move past identifier
-        if (NC) 
-        {
-            PLA
-            PLA
-            return; 
-        }
+        if (NC) { return; }
         
         // Expect '('
         LDA #Token.LeftParen
         expect();
-        if (NC) 
-        {
-            PLA
-            PLA
-            return; 
-        }
+        if (NC) { return; }
         
         // Parse arguments
         LDA currentToken
@@ -398,12 +386,7 @@ unit Parser
             // Create string literal node
             LDA # AST.NodeType.StringLit
             AST.CreateNode(); // -> IDX
-            if (NC) 
-            {
-                PLA
-                PLA
-                return; 
-            }
+            if (NC) { return; }
             
             // Copy string data
             LDA Lexer.TokenBufferL
@@ -419,47 +402,27 @@ unit Parser
             STA ZP.IDYH
             
             // Get call node back in IDX
-            PLA
-            STA ZP.IDXH
-            PLA
+            LDA callNodeL
             STA ZP.IDXL
+            LDA callNodeH
+            STA ZP.IDXH
             
             AST.AddChild(); // IDX = call, IDY = string arg
             
-            // Save call node again for return
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
-            
             consume();  // Move past string
-            if (NC) 
-            {
-                PLA
-                PLA
-                return; 
-            }
-        }
-        else
-        {
-            // No arguments - just restore call node for return
+            if (NC) { return; }
         }
         
         // Expect ')'
         LDA #Token.RightParen
         expect();
-        if (NC) 
-        {
-            PLA
-            PLA
-            return; 
-        }
+        if (NC) { return; }
         
         // Return call node in IDY
-        PLA
-        STA ZP.IDYH
-        PLA
+        LDA callNodeL
         STA ZP.IDYL
+        LDA callNodeH
+        STA ZP.IDYH
         
         SEC
     }
