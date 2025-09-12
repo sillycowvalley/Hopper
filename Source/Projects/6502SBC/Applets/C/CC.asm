@@ -157,29 +157,33 @@ program CC
         Parser.Parse();
         if (C)
         {
+#if defined(DEBUG)        
             AST.PrintTree(); 
-        }
-        CodeGen.Initialize();
-        CodeGen.Compile();
-        if (C)
-        {
-            // Create output filename by appending 'X'
-            makeOutputName(); // -> STR
-            if (NC) { return; }
-            CodeGen.Save();
-        }
+#endif        
+            CodeGen.Initialize();
+            CodeGen.Compile();
+            if (C)
+            {
+                // Create output filename by appending 'X'
+                makeOutputName(); // -> STR
+                if (C)
+                {
+                    CodeGen.Save();
+                }
+            }
         
 #if defined(DEBUG) 
-        LDA #(msgCompiled % 256)
-        STA ZP.STRL
-        LDA #(msgCompiled / 256)
-        STA ZP.STRH
-        Print.String();
-        Memory.Available();
-        Shared.MoveAccToTop();
-        Long.Print();
-        Print.NewLine();
-#endif        
+            LDA #(msgCompiled % 256)
+            STA ZP.STRL
+            LDA #(msgCompiled / 256)
+            STA ZP.STRH
+            Print.String();
+            Memory.Available();
+            Shared.MoveAccToTop();
+            Long.Print();
+            Print.NewLine();
+#endif      
+        }  
         
         LDA outputNameL
         ORA outputNameH
