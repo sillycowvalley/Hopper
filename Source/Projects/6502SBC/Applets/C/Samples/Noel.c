@@ -1,10 +1,11 @@
 // Noel's RetroLab Benchmark
 void main() {
-    //long s = 0;
+    long s = 0;
+    
+    //long st = seconds();
+    //long start = millis();
+    // s = 0;
     /*
-    long st = seconds();
-    long start = millis();
-
     int i, j;
     for (i = 1; i <= 10; i++) {
         s = 0;

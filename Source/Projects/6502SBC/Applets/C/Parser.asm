@@ -120,6 +120,9 @@ unit Parser
         
         loop
         {
+            STZ functionNodeL
+            STZ functionNodeH
+            
             // Create function node
             LDA # AST.NodeType.Function
             AST.CreateNode(); // -> IDX
@@ -143,7 +146,10 @@ unit Parser
             // Create identifier node for function name
             LDA # AST.NodeType.Identifier
             AST.CreateNode(); // -> IDX
-            if (NC) { break; }
+            if (NC)
+            {
+                break;
+            }
             
             // Save identifier node
             LDA ZP.IDXL
@@ -202,7 +208,10 @@ unit Parser
             
             // Parse compound statement (function body)
             parseCompoundStatement(); // -> IDY
-            if (NC) { break; }
+            if (NC)
+            {
+                break;
+            }
             
             // Add compound as another child of function
             LDA functionNodeL
@@ -218,9 +227,25 @@ unit Parser
             LDA functionNodeH
             STA ZP.IDYH
             
+            STZ functionNodeL
+            STZ functionNodeH
+            
             SEC
             break;
         } // single exit
+        
+        LDA functionNodeL
+        ORA functionNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA functionNodeL
+            STA ZP.IDXL
+            LDA functionNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
     }
     
     // Parse: { ... }
@@ -238,6 +263,9 @@ unit Parser
         
         loop
         {
+            STZ compoundNodeL
+            STZ compoundNodeH
+            
             // Create compound statement node
             LDA # AST.NodeType.CompoundStmt
             AST.CreateNode(); // -> IDX
@@ -263,7 +291,6 @@ unit Parser
                     Errors.Expected();
                     break;
                 }
-                
                 // Parse expression statement
                 parseExpressionStatement(); // -> IDY
                 if (NC) { break; }
@@ -290,9 +317,25 @@ unit Parser
             LDA compoundNodeH
             STA ZP.IDYH
             
+            STZ compoundNodeL
+            STZ compoundNodeH
+            
             SEC
             break;
         } // single exit
+        
+        LDA compoundNodeL
+        ORA compoundNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA functionNodeL
+            STA ZP.IDXL
+            LDA functionNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
         
         PLA
         STA compoundNodeL
@@ -312,6 +355,9 @@ unit Parser
         PHA
         LDA exprStmtNodeL
         PHA
+        
+        STZ exprStmtNodeH
+        STZ exprStmtNodeL
         
         loop
         {
@@ -344,9 +390,25 @@ unit Parser
             expect();
             if (NC) { break; }
             
+            STZ exprStmtNodeH
+            STZ exprStmtNodeL
+            
             SEC
             break;
         } // single exit
+        
+        LDA exprStmtNodeL
+        ORA exprStmtNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA exprStmtNodeL
+            STA ZP.IDXL
+            LDA exprStmtNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
         
         PLA
         STA exprStmtNodeL
@@ -370,6 +432,9 @@ unit Parser
         PHA
         LDA callNodeL
         PHA
+        
+        STZ callNodeH
+        STZ callNodeL
         
         loop
         {
@@ -506,9 +571,25 @@ unit Parser
             LDA callNodeH
             STA ZP.IDYH
             
+            STZ callNodeL
+            STZ callNodeH
+            
             SEC
             break;
         } // single exit
+        
+        LDA callNodeL
+        ORA callNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA callNodeL
+            STA ZP.IDXL
+            LDA callNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
         
         PLA
         STA callNodeL
@@ -530,24 +611,49 @@ unit Parser
                 break; 
             }
             
-            //TODO: for now, just parse one function
-            parseFunction(); // -> IDY
-            if (NC) { break; }
-            
-            // Check if there's more after the function
             LDA currentToken
-            CMP #Token.EndOfFile
-            if (NZ)
+            switch (A)
             {
-                LDA # Error.SyntaxError
-                Errors.Show();
-                break;
+                case Token.Void:
+                {
+                    //TODO: for now, just parse one function
+                    parseFunction(); // -> IDY
+                    if (NC) { break; }   
+                    
+                    // Add function to AST root
+                    AST.GetRoot(); // -> IDX
+                    AST.AddChild(); // IDX = root, IDY = function   
+                    
+                    // Check if there's more after the function
+                    LDA currentToken
+                    CMP #Token.EndOfFile
+                    if (NZ)
+                    {
+                        LDA # Error.SyntaxError
+                        Errors.Show();
+                        break;
+                    }  
+                }
+                case Token.Long:
+                {
+                    LDA # Error.NotImplemented
+                    Errors.Show();
+                    break;
+                }
+                case Token.Int:
+                {
+                    LDA # Error.NotImplemented
+                    Errors.Show();
+                    break;
+                }
+                case Token.Char:
+                {
+                    LDA # Error.NotImplemented
+                    Errors.Show();
+                    break;
+                }
             }
-            
-            // Add function to AST root
-            AST.GetRoot(); // -> IDX
-            AST.AddChild(); // IDX = root, IDY = function
-            
+                        
             SEC
             break;
         } // single exit

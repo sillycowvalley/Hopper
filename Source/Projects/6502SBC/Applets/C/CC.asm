@@ -150,17 +150,32 @@ program CC
         if (NC)
         {
             AST.Dispose();
+            Errors.OutOfMemory();
+            return;
+        }
+        CodeGen.Initialize();
+        if (NC)
+        {
+            AST.Dispose();
+            Lexer.Dispose();
+            Errors.OutOfMemory();
             return;
         }
         
         // Parse the program
         Parser.Parse();
+#if defined(DEBUG)                
+        PHP
+        LDA AST.astRootL
+        ORA AST.astRootH
+        if (NZ)  // Have an AST?
+        {
+            AST.PrintTree(); 
+        }
+        PLP
+#endif        
         if (C)
         {
-#if defined(DEBUG)        
-            AST.PrintTree(); 
-#endif        
-            CodeGen.Initialize();
             CodeGen.Compile();
             if (C)
             {

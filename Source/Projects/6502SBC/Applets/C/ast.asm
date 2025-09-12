@@ -1,6 +1,6 @@
 unit AST
 {
-    friend Parser, CodeGen;
+    friend Parser, CodeGen, CC;
     
     // AST zero page allocation
     const byte astSlots = 0x80;
@@ -26,6 +26,8 @@ unit AST
         CharLit      = 8,   // Character literal (8 bits stored in Data)
         IntLit       = 9,   // Integer literal (16 bits stored in Data)
         LongLit      = 10,  // Long literal    (32 bits stored in Data+ )
+        
+        AfterLast           // see freeNode()
     }
     
     // Common node structure:
@@ -102,7 +104,7 @@ unit AST
             STA ZP.IDXL
             LDA astRootH
             STA ZP.IDXH
-            freeNode();
+            FreeNode();
             
             STZ astRootL
             STZ astRootH
@@ -136,7 +138,7 @@ unit AST
     
     // Recursively free a node and its children
     // Input: ZP.IDX = node pointer
-    freeNode()
+    FreeNode()
     {
         LDA ZP.IDXL
         ORA ZP.IDXH
@@ -147,54 +149,78 @@ unit AST
         PHA
         LDA astNodeH
         PHA
-        
-        LDA ZP.IDXL
-        STA astNodeL
-        LDA ZP.IDXH
-        STA astNodeH
-        
-        
-        // Free string data if applicable
-        LDY #iNodeType
-        LDA [astNode], Y
-        switch (A)
+        loop
         {
-            case NodeType.StringLit:
-            case NodeType.Identifier:
+            LDA ZP.IDXL
+            STA astNodeL
+            LDA ZP.IDXH
+            STA astNodeH
+            
+            // Check node type is valid before processing
+            LDY #iNodeType
+            LDA [astNode], Y
+            CMP # NodeType.AfterLast
+            if (C)  // >=  than max node type?
             {
-                LDY #iData
-                LDA [astNode], Y
-                STA ZP.IDXL
-                INY
-                LDA [astNode], Y
+                // Corrupted node - just free it without recursion
+                LDA astNodeH 
                 STA ZP.IDXH
+                LDA astNodeL
+                STA ZP.IDXL
                 Memory.Free();
+                
+                break;
             }
-        }
         
-        // Free first child if exists
-        LDY # iChild
-        LDA [astNode], Y
-        STA ZP.IDXL
-        INY
-        LDA [astNode], Y
-        STA ZP.IDXH
-        freeNode();
         
-        // Free next sibling if exists
-        LDY # iNext
-        LDA [astNode], Y
-        STA ZP.IDXL
-        INY
-        LDA [astNode], Y
-        STA ZP.IDXH
-        freeNode();
-        
-        LDA astNodeH 
-        STA ZP.IDXH
-        LDA astNodeL
-        STA ZP.IDXL
-        Memory.Free();
+            // Free string data if applicable
+            switch (A)
+            {
+                case NodeType.StringLit:
+                case NodeType.Identifier:
+                {
+                    LDY #iData
+                    LDA [astNode], Y
+                    STA ZP.IDXL
+                    INY
+                    LDA [astNode], Y
+                    STA ZP.IDXH
+                    
+                    // Check if pointer looks valid
+                    LDA ZP.IDXL
+                    ORA ZP.IDXH
+                    if (NZ)
+                    {
+                        Memory.Free();
+                    }
+                }
+            }
+            
+            // Free first child if exists
+            LDY # iChild
+            LDA [astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [astNode], Y
+            STA ZP.IDXH
+            FreeNode();
+            
+            // Free next sibling if exists
+            LDY # iNext
+            LDA [astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [astNode], Y
+            STA ZP.IDXH
+            FreeNode();
+            
+            LDA astNodeH 
+            STA ZP.IDXH
+            LDA astNodeL
+            STA ZP.IDXL
+            Memory.Free();
+            break;
+        } // single exit
         
         PLA 
         STA astNodeH
