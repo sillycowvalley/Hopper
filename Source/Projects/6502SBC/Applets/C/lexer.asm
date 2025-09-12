@@ -82,6 +82,15 @@ unit Lexer
         SEC
     }
     
+    // Get current line number for error reporting
+    GetLineNumber() // -> ACC
+    {
+        LDA currentLineL
+        STA ZP.ACCL
+        LDA currentLineH
+        STA ZP.ACCH
+    }
+    
     // Refill buffer from file
     refillBuffer()
     {

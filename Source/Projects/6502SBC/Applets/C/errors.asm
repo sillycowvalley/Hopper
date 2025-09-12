@@ -11,7 +11,8 @@ unit Errors
         UnterminatedString,
         TokenTooLong,
         StringTooLong,
-        
+        SyntaxError,
+        UnexpectedFailure, // consume() failed?
     }
     
     const string errorMessage = "Error: ";

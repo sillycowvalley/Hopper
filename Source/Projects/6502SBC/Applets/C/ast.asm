@@ -95,7 +95,7 @@ unit AST
         if (NC)
         {
             PLA
-            CLC
+            Parser.OutOfMemoryError();
             return;
         }
         
@@ -227,6 +227,7 @@ unit AST
             if (Z) { break; }  // Found end of list
             
             // Move to next sibling
+            LDA [ZP.IDX], Y
             STA ZP.IDXH
             LDA ZP.TEMP
             STA ZP.IDXL
@@ -256,6 +257,7 @@ unit AST
         else
         {
             // Has existing child - load it
+            LDA [ZP.IDX], Y
             STA ZP.IDXH
             LDA ZP.TEMP
             STA ZP.IDXL  // IDX = first child
