@@ -15,16 +15,93 @@ program CC
     uses "Lexer"
     uses "AST"
     uses "Parser"
+    uses "CodeGen"
     
     const string messageCompiling = "Compiling ";
     
+#if defined(DEBUG)    
+    const string msgStart = "Start: ";
+    const string msgCompiled = "After compile: ";
+    const string msgCleaned = "After cleanup: ";
+#endif    
+    
     const byte ccSlots = 0x60;
-    const byte sourceName  = ccSlots+1;
-    const byte sourceNameL = ccSlots+1;
-    const byte sourceNameH = ccSlots+2;
+    const byte sourceName  = ccSlots+0;
+    const byte sourceNameL = ccSlots+0;
+    const byte sourceNameH = ccSlots+1;
+    const uint outputName  = ccSlots+2;
+    const byte outputNameL = ccSlots+2;
+    const byte outputNameH = ccSlots+3;
+    
+    // Create output filename: "HELLO" -> "HELLOX"
+    makeOutputName()
+    {
+        // Allocate buffer for output name (14 bytes max + X + null)
+        LDA #16
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();
+        if (NC)
+        {
+            LDA #Error.OutOfMemory
+            Errors.ShowError();
+            return;
+        }
+        
+        LDA ZP.IDXL
+        STA outputNameL
+        LDA ZP.IDXH
+        STA outputNameH
+        
+        // Copy source name
+        LDY #0
+        loop
+        {
+            LDA [sourceName], Y
+            if (Z) { break; }  // Found null
+            STA [ZP.IDX], Y
+            INY
+            CPY #13  // Max filename length
+            if (Z)
+            {
+                LDA # Error.FilenameTooLong
+                Errors.ShowError();
+                CLC
+                return;
+            }
+        }
+        
+        // Append 'X'
+        LDA #'X'
+        STA [ZP.IDX], Y
+        INY
+        
+        // Null terminate
+        LDA #0
+        STA [ZP.IDX], Y
+        
+        LDA outputNameL
+        STA STRL
+        LDA outputNameH
+        STA STRH
+        
+        SEC
+    }
+
     
     Hopper()
     {
+#if defined(DEBUG) 
+        LDA #(msgStart % 256)
+        STA ZP.STRL
+        LDA #(msgStart / 256)
+        STA ZP.STRH
+        Print.String();
+        Memory.Available();  // Returns in ZP.ACC
+        Shared.MoveAccToTop();
+        Long.Print();
+        Print.NewLine();
+#endif        
         Args.HasFilename();
         if (NC)
         {
@@ -60,6 +137,9 @@ program CC
         Print.String();
         Print.NewLine();
         
+        STZ outputNameL
+        STZ outputNameH
+        
         AST.Initialize();
         if (NC)
         {
@@ -81,9 +161,56 @@ program CC
         {
             AST.PrintTree(); 
         }
+        CodeGen.Initialize();
+        CodeGen.Compile();
+        if (C)
+        {
+            // Create output filename by appending 'X'
+            makeOutputName(); // -> STR
+            if (NC) { return; }
+            CodeGen.Save();
+        }
         
+#if defined(DEBUG) 
+        LDA #(msgCompiled % 256)
+        STA ZP.STRL
+        LDA #(msgCompiled / 256)
+        STA ZP.STRH
+        Print.String();
+        Memory.Available();
+        Shared.MoveAccToTop();
+        Long.Print();
+        Print.NewLine();
+#endif        
+        
+        LDA outputNameL
+        ORA outputNameH
+        if (NZ)
+        {
+            LDA outputNameL
+            STA ZP.IDXL
+            LDA outputNameH
+            STA ZP.IDXH
+            Memory.Free();
+        }
+        
+        CodeGen.Dispose();
         Lexer.Dispose();
         AST.Dispose();
+        
+#if defined(DEBUG) 
+        LDA #(msgCleaned % 256)
+        STA ZP.STRL
+        LDA #(msgCleaned / 256)
+        STA ZP.STRH
+        Print.String();
+        Memory.Available();
+        Shared.MoveAccToTop();
+        Long.Print();
+        Print.NewLine();
+#endif        
+        
+        
         Print.NewLine();
     }
 }

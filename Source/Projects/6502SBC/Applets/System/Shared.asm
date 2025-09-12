@@ -37,6 +37,15 @@ unit Shared
         }
         DEC ZP.IDXL
     }
+    DecACC()
+    {
+        LDA ZP.ACCL
+        if (Z)
+        {
+            DEC ZP.ACCH
+        }
+        DEC ZP.ACCL
+    }
     
     IncACC()
     {

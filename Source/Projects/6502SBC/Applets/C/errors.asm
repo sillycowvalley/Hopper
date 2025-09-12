@@ -13,6 +13,9 @@ unit Errors
         StringTooLong,
         SyntaxError,
         UnexpectedFailure, // consume() failed?
+        
+        FilenameTooLong,
+        FileSaveError,
     }
     
     const string errorMessage = "Error: ";

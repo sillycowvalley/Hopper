@@ -1,6 +1,6 @@
 unit AST
 {
-    friend Parser;
+    friend Parser, CodeGen;
     
     // AST zero page allocation
     const byte astSlots = 0x80;
@@ -8,6 +8,10 @@ unit AST
     const uint astRoot      = astSlots+0;  // Root of AST tree
     const byte astRootL     = astSlots+0;
     const byte astRootH     = astSlots+1;
+    
+    const uint astNode      = astSlots+2;
+    const byte astNodeL     = astSlots+2;
+    const byte astNodeH     = astSlots+3;
     
     // Node types
     enum NodeType
@@ -18,23 +22,47 @@ unit AST
         ExprStmt     = 4,   // Expression statement
         CallExpr     = 5,   // Function call
         Identifier   = 6,   // Variable/function name
-        StringLit    = 7,   // String literal
-        IntLit       = 8,   // Integer literal (32 bits)
+        StringLit    = 7,   // String literal  (Data is a pointer to a string)
+        CharLit      = 8,   // Character literal (8 bits stored in Data)
+        IntLit       = 9,   // Integer literal (16 bits stored in Data)
+        LongLit      = 10,  // Long literal    (32 bits stored in Data+ )
     }
     
-    // Node structure (8 bytes):
-    // [0] = NodeType
-    // [1] = Reserved/flags
-    // [2-3] = Data pointer (for strings) or value
-    // [4-5] = First child pointer
-    // [6-7] = Next sibling pointer
+    // Common node structure:
+    //     [0] = NodeType
+    //     [1-2] = First child pointer
+    //     [3-4] = Next sibling pointer
+    
+    const byte nodeSize = 14; // minimum allocation is 16 bytes - 2 for the allocator
     
     const byte iNodeType = 0;
-    const byte iData     = 2;
-    const byte iChild    = 4;
-    const byte iNext     = 6;
+    const byte iChild    = 1;
+    const byte iNext     = 3;
     
-    const byte nodeSize = 8;
+    // Program node (root):
+    // ExprStmt node:
+    // CompoundStmt node:
+    // CallExpr node:
+    //     No additional fields
+    
+    
+    // Function node:
+    //     [5]    Return type
+    //     [6]    <unused>
+    //     [7-8]  Code offset (where function starts in buffer)
+    const byte iReturnType = 5;
+    const byte iOffset   = 7; // Code offset index (where code ends up in the codegen buffer)
+    
+    // Identifier node:
+    //     [5-6]  Data pointer -> string
+    const byte iData     = 5; 
+    
+    // StringLit node:
+    //     [5-6]  Data pointer -> string
+    //     [7-8]  Code offset index (where string ends up in the codegen buffer)
+    // const byte iData     = 5;
+    // const byte iOffset   = 7; 
+       
     
     Initialize()
     {
@@ -114,54 +142,64 @@ unit AST
         ORA ZP.IDXH
         if (Z) { return; }  // Null pointer
         
-        PHY
+        // Save current node pointer for recursion
+        LDA astNodeL
+        PHA
+        LDA astNodeH
+        PHA
         
-        // Save current node pointer
         LDA ZP.IDXL
-        PHA
+        STA astNodeL
         LDA ZP.IDXH
-        PHA
+        STA astNodeH
+        
+        
+        // Free string data if applicable
+        LDY #iNodeType
+        LDA [astNode], Y
+        switch (A)
+        {
+            case NodeType.StringLit:
+            case NodeType.Identifier:
+            {
+                LDY #iData
+                LDA [astNode], Y
+                STA ZP.IDXL
+                INY
+                LDA [astNode], Y
+                STA ZP.IDXH
+                Memory.Free();
+            }
+        }
         
         // Free first child if exists
         LDY # iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        freeNode();
-        
-        // Restore node pointer
-        PLA
-        STA ZP.IDXH
-        PLA
+        LDA [astNode], Y
         STA ZP.IDXL
-        
-        // Save again
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
+        INY
+        LDA [astNode], Y
+        STA ZP.IDXH
+        freeNode();
         
         // Free next sibling if exists
         LDY # iNext
-        LDA [ZP.IDX], Y
-        TAX
+        LDA [astNode], Y
+        STA ZP.IDXL
         INY
-        LDA [ZP.IDX], Y
+        LDA [astNode], Y
         STA ZP.IDXH
-        STX ZP.IDXL
         freeNode();
         
-        // Restore and free this node
-        PLA
-        STA ZP.IDXL
-        PLA
+        LDA astNodeH 
         STA ZP.IDXH
+        LDA astNodeL
+        STA ZP.IDXL
         Memory.Free();
         
-        PLY
+        PLA 
+        STA astNodeH
+        PLA
+        STA astNodeL
     }
     
     GetRoot() // -> IDX

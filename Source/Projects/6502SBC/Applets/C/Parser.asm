@@ -7,7 +7,7 @@ unit Parser
     uses "AST"
     
     // Parser zero page
-    const byte parserSlots = 0x90;
+    const byte parserSlots = 0xB0;
     
     const byte currentToken = parserSlots+0;   // Current token type
     
