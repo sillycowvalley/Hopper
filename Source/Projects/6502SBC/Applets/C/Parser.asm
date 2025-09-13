@@ -24,10 +24,13 @@ unit Parser
     const byte stmtNodeL     = parserSlots+5;
     const byte stmtNodeH     = parserSlots+6;
     
-    const uint callNode      = parserSlots+7;   // parseCallExpression's node
-    const byte callNodeL     = parserSlots+7;
-    const byte callNodeH     = parserSlots+8;
+    const uint exprNode      = parserSlots+7;   // parseCallExpression's node
+    const byte exprNodeL     = parserSlots+7;
+    const byte exprNodeH     = parserSlots+8;
     
+    const uint rhsExprNode   = parserSlots+9;   // Right expression node
+    const byte rhsExprNodeL  = parserSlots+9;
+    const byte rhsExprNodeH  = parserSlots+10;
        
     
     // Helper: consume current token and get next
@@ -501,38 +504,40 @@ unit Parser
         AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
-        LDA stmtNodeH
+        LDA exprNodeH
         PHA
-        LDA stmtNodeL
+        LDA exprNodeL
         PHA
         
-        STZ stmtNodeH
-        STZ stmtNodeL
+        STZ exprNodeH
+        STZ exprNodeL
         
         loop
         {
             // Save expr statement node
             LDA ZP.IDXL
-            STA stmtNodeL
+            STA exprNodeL
             LDA ZP.IDXH
-            STA stmtNodeH
+            STA exprNodeH
             
-            // Parse function call
-            parseCallExpression(); // -> IDY
+            // Parse the expression
+            parseExpression(); // -> IDY
             if (NC) { break; }
             
+
+            
             // Get expr statement back in IDX
-            LDA stmtNodeL
+            LDA exprNodeL
             STA ZP.IDXL
-            LDA stmtNodeH
+            LDA exprNodeH
             STA ZP.IDXH
             
-            AST.AddChild(); // IDX = expr statement, IDY = call
+            AST.AddChild(); // IDX = expr statement, IDY = expression
             
             // Move expr statement to IDY for return
-            LDA stmtNodeL
+            LDA exprNodeL
             STA ZP.IDYL
-            LDA stmtNodeH
+            LDA exprNodeH
             STA ZP.IDYH
             
             // Expect ';'
@@ -540,129 +545,272 @@ unit Parser
             expect();
             if (NC) { break; }
             
-            STZ stmtNodeH
-            STZ stmtNodeL
+            STZ exprNodeL
+            STZ exprNodeH
             
             SEC
             break;
         } // single exit
         
-        LDA stmtNodeL
-        ORA stmtNodeH
+        LDA exprNodeL
+        ORA exprNodeH
         if (NZ)
         {
             // not an ideal exit
-            LDA stmtNodeL
+            LDA exprNodeL
             STA ZP.IDXL
-            LDA stmtNodeH
+            LDA exprNodeH
             STA ZP.IDXH
             AST.FreeNode();
             CLC
         }
         
         PLA
-        STA stmtNodeL
+        STA exprNodeL
         PLA
-        STA stmtNodeH
+        STA exprNodeH
     }
     
-    // Parse: identifier ( arguments )
-    parseCallExpression() // -> IDY
+    // Top-level expression parser
+    parseExpression() // -> IDY
     {
-        // Expect identifier
-        LDA #Token.Identifier
-        CMP currentToken
+        parseAssignment(); // -> IDY
+    }
+    
+    // Parse assignment expressions (right-associative)
+    parseAssignment() // -> IDY
+    {
+        // Parse left side
+        parseRelational(); // -> IDY
+        if (NC) { return; }
+        
+        // Check for assignment operator
+        LDA currentToken
+        CMP #Token.Assign
         if (NZ)
         {
-            Errors.Expected(); 
+            // No assignment - return what we have
+            SEC
             return;
         }
         
-        LDA callNodeH
+        // Save current exprNode state
+        LDA exprNodeH
         PHA
-        LDA callNodeL
+        LDA exprNodeL
+        PHA
+        LDA rhsExprNodeH
+        PHA
+        LDA rhsExprNodeL
         PHA
         
-        STZ callNodeH
-        STZ callNodeL
+        STZ exprNodeL
+        STZ exprNodeH
+        STZ rhsExprNodeL
+        STZ rhsExprNodeH
         
         loop
         {
-            // Create call node
-            LDA #AST.NodeType.CallExpr
+            // Save left side
+            LDA ZP.IDYL
+            STA exprNodeL
+            LDA ZP.IDYH
+            STA exprNodeH
+            
+            consume();  // Skip '='
+            if (NC) { break; }
+            
+            // Parse right side (recursive for right-associativity)
+            parseAssignment(); // -> IDY
+            if (NC) { break; }
+            
+            // Save right side
+            LDA ZP.IDYL
+            STA rhsExprNodeL
+            LDA ZP.IDYH
+            STA rhsExprNodeH
+            
+            // Create Assign node
+            LDA #AST.NodeType.Assign
             AST.CreateNode(); // -> IDX
             if (NC) { break; }
             
-            // Save call node
-            LDA ZP.IDXL
-            STA callNodeL
-            LDA ZP.IDXH
-            STA callNodeH
+            // Add left side as first child
+            LDA exprNodeL
+            STA ZP.IDYL
+            LDA exprNodeH
+            STA ZP.IDYH
             
-            // Create identifier node for function name
-            LDA #AST.NodeType.Identifier
-            AST.CreateNode(); // -> IDX
-            if (NC) { break; }
+            AST.AddChild(); // IDX = Assign, IDY = left side
             
-            // Save identifier node
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
+            // Add right side as second child
+            LDA rhsExprNodeL
+            STA ZP.IDYL
+            LDA rhsExprNodeH
+            STA ZP.IDYH
             
-            // Copy function name
-            copyTokenString(); // -> STR
-            if (NC) 
-            {
-                PLA
-                PLA
-                break; 
-            }
+            AST.AddChild(); // IDX = Assign, IDY = right side
             
-            // Move STR to ACC for SetData
-            LDA ZP.STRL
-            STA ZP.ACCL
-            LDA ZP.STRH
-            STA ZP.ACCH
-            
-            // Restore identifier node and set data
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
-            AST.SetData(); // IDX[iData] = ACC
-            
-            // Move identifier to IDY
+            // Return Assign node in IDY
             LDA ZP.IDXL
             STA ZP.IDYL
             LDA ZP.IDXH
             STA ZP.IDYH
             
-            // Get call node back in IDX
-            LDA callNodeL
+            // Clear our work nodes
+            STZ exprNodeL
+            STZ exprNodeH
+            STZ rhsExprNodeL
+            STZ rhsExprNodeH
+            
+            SEC
+            break;
+        } // single exit
+        
+        // Clean up on error
+        LDA exprNodeL
+        ORA exprNodeH
+        if (NZ)
+        {
+            LDA exprNodeL
             STA ZP.IDXL
-            LDA callNodeH
+            LDA exprNodeH
             STA ZP.IDXH
-            
-            AST.AddChild(); // IDX = call, IDY = identifier
-            
-            consume();  // Move past identifier
-            if (NC) { break; }
-            
-            // Expect '('
-            LDA #Token.LeftParen
-            expect();
-            if (NC) { break; }
-            
-            // Parse arguments
+            AST.FreeNode();
+        }
+        
+        LDA rhsExprNodeL
+        ORA rhsExprNodeH
+        if (NZ)
+        {
+            LDA rhsExprNodeL
+            STA ZP.IDXL
+            LDA rhsExprNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
+        
+        // Restore state
+        PLA
+        STA rhsExprNodeL
+        PLA
+        STA rhsExprNodeH
+        PLA
+        STA exprNodeL
+        PLA
+        STA exprNodeH
+    }
+       
+    // Parse relational operators (<, >, <=, >=)
+    parseRelational() // -> IDY
+    {
+        // For now, just pass through
+        parseAdditive(); // -> IDY
+        
+        // TODO: Handle relational operators
+        // loop
+        // {
+        //     LDA currentToken
+        //     CMP #Token.Less / Greater / LessEqual / GreaterEqual
+        //     ...
+        // }
+    }
+    
+    // Parse additive operators (+, -)
+    parseAdditive() // -> IDY
+    {
+        // For now, just pass through
+        parseMultiplicative(); // -> IDY
+        
+        // TODO: Handle + and -
+        // loop
+        // {
+        //     LDA currentToken
+        //     CMP #Token.Plus / Minus
+        //     ...
+        // }
+    }
+    
+    // Parse multiplicative operators (*, /, %)
+    parseMultiplicative() // -> IDY
+    {
+        // For now, just pass through
+        parsePostfix(); // -> IDY
+        
+        // TODO: Handle *, /, %
+        // loop
+        // {
+        //     LDA currentToken
+        //     CMP #Token.Star / Slash / Percent
+        //     ...
+        // }
+    }
+    
+    // Parse postfix expressions (function calls, array indexing, etc.)
+    parsePostfix() // -> IDY
+    {
+        // Start with a primary
+        parsePrimary(); // -> IDY
+        if (NC) { return; }
+        
+        // Check for postfix operators
+        loop
+        {
             LDA currentToken
-            CMP # Token.StringLiteral
+            CMP #Token.LeftParen
             if (Z)
             {
-                // Create string literal node
-                LDA # AST.NodeType.StringLit
+                // Convert to function call
+                parseCallExpression(); // -> IDY (uses IDY as the identifier)
+                // Continue checking for more postfix ops
+                continue;
+            }
+            
+            // TODO: Add array indexing with '['
+            
+            break;  // No more postfix operators
+        }
+        SEC
+    }
+    
+    // Parse primary expressions (literals, identifiers, parenthesized)
+    parsePrimary() // -> IDY
+    {
+        LDA currentToken
+        switch (A)
+        {
+            case Token.IntegerLiteral:
+            {
+                // Create IntLit node
+                LDA #AST.NodeType.IntLit
                 AST.CreateNode(); // -> IDX
-                if (NC) { break; }
+                if (NC) { return; }
+                
+                // Store the value
+                LDY #AST.iData
+                LDA Lexer.TokenValueL
+                STA [ZP.IDX], Y
+                INY
+                LDA Lexer.TokenValueH
+                STA [ZP.IDX], Y
+                
+                // Move to IDY for return
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                consume();  // Move past the literal
+                SEC
+            }
+            
+            case Token.StringLiteral:
+            {
+                // Create StringLit node
+                LDA #AST.NodeType.StringLit
+                AST.CreateNode(); // -> IDX
+                if (NC) { return; }
                 
                 // Save string node
                 LDA ZP.IDXL
@@ -672,11 +820,11 @@ unit Parser
                 
                 // Copy string data
                 copyTokenString(); // -> STR
-                if (NC) 
+                if (NC)
                 {
                     PLA
                     PLA
-                    break; 
+                    return;
                 }
                 
                 // Move STR to ACC for SetData
@@ -692,61 +840,201 @@ unit Parser
                 STA ZP.IDXL
                 AST.SetData(); // IDX[iData] = ACC
                 
-                // Move string to IDY
+                // Move to IDY for return
                 LDA ZP.IDXL
                 STA ZP.IDYL
                 LDA ZP.IDXH
                 STA ZP.IDYH
                 
-                // Get call node back in IDX
-                LDA callNodeL
-                STA ZP.IDXL
-                LDA callNodeH
-                STA ZP.IDXH
-                
-                AST.AddChild(); // IDX = call, IDY = string arg
-                
-                consume();  // Move past string
-                if (NC) { break; }
+                consume();  // Move past the literal
+                SEC
             }
+            
+            case Token.Identifier:
+            {
+                // Create Identifier node
+                LDA #AST.NodeType.Identifier
+                AST.CreateNode(); // -> IDX
+                if (NC) { return; }
+                
+                // Save identifier node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Copy identifier name
+                copyTokenString(); // -> STR
+                if (NC)
+                {
+                    PLA
+                    PLA
+                    return;
+                }
+                
+                // Move STR to ACC for SetData
+                LDA ZP.STRL
+                STA ZP.ACCL
+                LDA ZP.STRH
+                STA ZP.ACCH
+                
+                // Restore identifier node and set data
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                AST.SetData(); // IDX[iData] = ACC
+                
+                // Move to IDY for return
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                consume();  // Move past identifier
+                SEC
+            }
+            
+            case Token.LeftParen:
+            {
+                consume();  // Skip '('
+                if (NC) { return; }
+                
+                parseExpression(); // -> IDY (recursive)
+                if (NC) { return; }
+                
+                // Expect ')'
+                LDA #Token.RightParen
+                expect();
+            }
+            
+            default:
+            {
+                // Unexpected token
+                LDA #Error.SyntaxError
+                Errors.Show();
+                CLC
+            }
+        }
+    }
+    
+    // Parse function call (when we've seen identifier followed by '(')
+    // Input: IDY = identifier node
+    // Output: IDY = CallExpr node
+    parseCallExpression() // -> IDY
+    {
+        // At this point, currentToken should be '(' and IDY has the identifier
+        LDA currentToken
+        CMP #Token.LeftParen
+        if (NZ)
+        {
+            // Not a function call, just return the identifier
+            SEC
+            return;
+        }
+        
+        consume();  // Skip '('
+        if (NC) { return; }
+        
+        LDA exprNodeH
+        PHA
+        LDA exprNodeL
+        PHA
+        
+        STZ exprNodeH
+        STZ exprNodeL
+        
+        loop
+        {
+            // Create CallExpr node
+            LDA #AST.NodeType.CallExpr
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Save call node
+            LDA ZP.IDXL
+            STA exprNodeL
+            LDA ZP.IDXH
+            STA exprNodeH
+        
+            // Add identifier as first child of CallExpr
+            AST.AddChild(); // IDX = CallExpr, IDY = identifier
+        
+            // Parse arguments
+            LDA currentToken
+            CMP #Token.RightParen
+            if (NZ)  // Has arguments
+            {
+                loop
+                {
+                    parseExpression(); // -> IDY
+                    if (NC)
+                    {
+                        break;
+                    }
+                    
+                    // Restore CallExpr to IDX
+                    LDA exprNodeH
+                    STA ZP.IDXH
+                    LDA exprNodeL
+                    STA ZP.IDXL
+                
+                    // Add argument as child
+                    AST.AddChild(); // IDX = CallExpr, IDY = argument
+                
+                    
+                    // Check for comma
+                    LDA currentToken
+                    CMP #Token.Comma
+                    if (Z)
+                    {
+                        consume();
+                        if (NC) { break; }
+                        continue;
+                    }
+                    break;
+                } // argument loop
+                if (NC) { break; }
+            } // arguments
             
             // Expect ')'
             LDA #Token.RightParen
             expect();
             if (NC) { break; }
-            
-            // Return call node in IDY
-            LDA callNodeL
+        
+            // Return CallExpr in IDY
+            LDA exprNodeL
             STA ZP.IDYL
-            LDA callNodeH
+            LDA exprNodeH
             STA ZP.IDYH
             
-            STZ callNodeL
-            STZ callNodeH
+            STZ exprNodeL
+            STZ exprNodeH
             
             SEC
             break;
         } // single exit
         
-        LDA callNodeL
-        ORA callNodeH
+        LDA exprNodeL
+        ORA exprNodeH
         if (NZ)
         {
             // not an ideal exit
-            LDA callNodeL
+            LDA exprNodeL
             STA ZP.IDXL
-            LDA callNodeH
+            LDA exprNodeH
             STA ZP.IDXH
             AST.FreeNode();
             CLC
         }
         
         PLA
-        STA callNodeL
+        STA exprNodeL
         PLA
-        STA callNodeH
+        STA exprNodeH
     }
     
+       
     // Main parse function
     Parse()
     {

@@ -25,9 +25,9 @@ unit Lexer
     const byte tokenLength   = lexSlots+6;  // Current token length
     const byte TokenType     = lexSlots+7;  // Current token type
     
-    const byte tokenValue    = lexSlots+8;  // Token value (for numbers)
-    const byte tokenValueL   = lexSlots+8;
-    const byte tokenValueH   = lexSlots+9;
+    const byte TokenValue    = lexSlots+8;  // Token value (for numbers)
+    const byte TokenValueL   = lexSlots+8;
+    const byte TokenValueH   = lexSlots+9;
     
     // File reading state
     const byte bufferIndexL  = lexSlots+10; // Index into current FileDataBuffer
@@ -93,7 +93,30 @@ unit Lexer
     // Refill buffer from file
     refillBuffer()
     {
+        // Save IDY before File call
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        // Save IDX before File call
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         File.NextStream();
+        
+        // Restore IDX after File call
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        // Restore IDY after File call
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        
         if (NC)
         {
             CLC
@@ -306,8 +329,8 @@ unit Lexer
     // Scan number
     scanNumber()
     {
-        STZ tokenValueL
-        STZ tokenValueH
+        STZ TokenValueL
+        STZ TokenValueH
         
         loop
         {
@@ -317,9 +340,9 @@ unit Lexer
             
             // value = value * 10 + digit
             // Multiply current value by 10
-            LDA tokenValueL
+            LDA TokenValueL
             STA ZP.ACCL
-            LDA tokenValueH
+            LDA TokenValueH
             STA ZP.ACCH
             
             // TODO: Multiply by 10
@@ -329,11 +352,11 @@ unit Lexer
             SEC
             SBC #'0'
             CLC
-            ADC tokenValueL
-            STA tokenValueL
+            ADC TokenValueL
+            STA TokenValueL
             LDA #0
-            ADC tokenValueH
-            STA tokenValueH
+            ADC TokenValueH
+            STA TokenValueH
             
             advance();
         } // loop
@@ -373,8 +396,8 @@ unit Lexer
             }
         }
         
-        STA tokenValueL  // Store character value
-        STZ tokenValueH
+        STA TokenValueL  // Store character value
+        STZ TokenValueH
         
         advance();
         LDA currentChar

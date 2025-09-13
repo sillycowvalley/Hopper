@@ -28,7 +28,6 @@ unit AST
         LongLit      = 10,  // Long literal    (32 bits stored in Data+ )
         VarDecl      = 11,  // Variable declaration 
         Assign       = 12,  // Assignment expression
-        BinOp        = 13,  // Binary operation (+, -, *, /, etc.)
         
         AfterLast           // see freeNode()
     }
@@ -310,11 +309,23 @@ unit AST
         PLY
     }
 
-    // Add a child to a node (handles existing children)
-    // Input: ZP.IDX = parent node, ZP.IDY = new child node
+    // Add a child node to a parent node
+    // Input:  ZP.IDX = parent node (preserved)
+    //         ZP.IDY = child node to add
+    // Output: Child added to parent's child list
+    //         If parent has no children, child becomes first child
+    //         If parent has children, child is appended as last sibling
+    // Note:   IDX is preserved (still points to parent after call)
+    //         IDY is preserved
     AddChild()
     {
         PHY
+        
+        // Save parent node
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         
         // Check if parent already has a child
         LDY # iChild
@@ -344,6 +355,12 @@ unit AST
             SetNextSibling();// IDX[iNext] = IDY
         }
         
+        // Restore parent node
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
         PLY
     }
     
@@ -370,6 +387,7 @@ unit AST
     const string nodeLong     = "LONG ";
     const string nodeChar     = "CHAR ";
     const string nodeVarDecl  = "VAR "; 
+    const string nodeAssign   = "ASSIGN";
     const string nodeUnknown  = "??";
     
     // Print the AST tree with indentation
@@ -523,7 +541,7 @@ unit AST
                 }
                 Long.Print();
             }
-             case NodeType.VarDecl:
+            case NodeType.VarDecl:
             {
                 LDA #(nodeVarDecl % 256)
                 STA ZP.STRL
@@ -543,8 +561,18 @@ unit AST
                 }
                 Print.String();
             }
+            case NodeType.Assign:
+            {
+                LDA #(nodeAssign % 256)
+                STA ZP.STRL
+                LDA #(nodeAssign / 256)
+                STA ZP.STRH
+                Print.String();
+            }
+            
             default:
             {
+                Print.Hex(); Print.Space();
                 LDA #(nodeUnknown % 256) STA ZP.STRL LDA #(nodeUnknown / 256) STA ZP.STRH
                 Print.String();
             }
