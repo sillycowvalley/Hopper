@@ -243,7 +243,7 @@ unit Lexer
                         if (Z) // EOF without */
                         { 
                             LDA #Error.UnterminatedComment
-                            Errors.Show();
+                            Errors.ShowLine();
                             CLC
                             return; 
                         }
@@ -294,7 +294,7 @@ unit Lexer
             if (Z)
             {
                 LDA #Error.TokenTooLong
-                Errors.Show();
+                Errors.ShowLine();
                 CLC
                 break;
             }
@@ -388,7 +388,7 @@ unit Lexer
         if (Z)  // EOF
         {
             LDA #Error.UnterminatedString  // Reuse this error
-            Errors.Show();
+            Errors.ShowLine();
             CLC
             return;
         }
@@ -424,7 +424,7 @@ unit Lexer
         if (NZ)  // Should be closing quote
         {
             LDA #Error.UnterminatedString  // Reuse this error
-            Errors.Show();
+            Errors.ShowLine();
             CLC
             return;
         }
@@ -451,7 +451,7 @@ unit Lexer
             if (Z)  // EOF
             {
                 LDA #Error.UnterminatedString
-                Errors.Show();
+                Errors.ShowLine();
                 CLC
                 break;
             }
@@ -486,7 +486,7 @@ unit Lexer
             if (Z)
             {
                 LDA # Error.StringTooLong
-                Errors.Show();
+                Errors.ShowLine();
                 CLC
                 break;
             }
@@ -695,7 +695,7 @@ unit Lexer
                     else
                     {
                         LDA # Error.UnexpectedCharacter
-                        Errors.Show();
+                        Errors.ShowLine();
                         CLC
                         break;
                     }
@@ -703,7 +703,7 @@ unit Lexer
                 default:
                 {
                     LDA # Error.UnexpectedCharacter
-                    Errors.Show();
+                    Errors.ShowLine();
                     CLC
                     break;
                 }

@@ -13,6 +13,10 @@ unit AST
     const byte astNodeL     = astSlots+2;
     const byte astNodeH     = astSlots+3;
     
+    const uint astTempNode   = astSlots+4;
+    const byte astTempNodeL  = astSlots+4;
+    const byte astTempNodeH  = astSlots+5;
+    
     // Node types
     enum NodeType
     {

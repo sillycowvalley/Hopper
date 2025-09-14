@@ -50,9 +50,6 @@ unit Errors
     {
         PHA
         
-        Lexer.GetLineNumber(); // -> ACC
-        printErrorLine();
-        
         LDA #(msgError % 256)
         STA ZP.STRL
         LDA #(msgError / 256)
@@ -63,6 +60,16 @@ unit Errors
         Print.Hex(); // error #
         Print.NewLine();
         CLC
+    }
+    
+    ShowLine()
+    {
+        PHA
+        Lexer.GetLineNumber(); // -> ACC
+        printErrorLine();
+        
+        PLA
+        Show();
     }
     
     // Show error with specific line number
@@ -81,17 +88,9 @@ unit Errors
         
         printErrorLine();
         
-        // Print error code
-        LDA #(msgError % 256)
-        STA ZP.STRL
-        LDA #(msgError / 256)
-        STA ZP.STRH
-        Print.String();
-        
         PLA
-        Print.Hex(); // error #
-        Print.NewLine();
-        CLC
+        Show();
+        
         PLY
     }
     
@@ -111,17 +110,9 @@ unit Errors
         
         printErrorLine();
         
-        // Print error code
-        LDA #(msgError % 256)
-        STA ZP.STRL
-        LDA #(msgError / 256)
-        STA ZP.STRH
-        Print.String();
-        
         PLA
-        Print.Hex(); // error #
-        Print.NewLine();
-        CLC
+        Show();
+        
         PLY
     }
     OutOfMemory()

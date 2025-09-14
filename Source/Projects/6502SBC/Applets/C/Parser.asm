@@ -40,7 +40,7 @@ unit Parser
         if (NC) 
         {
             LDA # Error.UnexpectedFailure
-            Errors.Show();
+            Errors.ShowLine();
             return;
         }
         STA currentToken
@@ -1009,7 +1009,7 @@ unit Parser
             {
                 // Unexpected token
                 LDA #Error.SyntaxError
-                Errors.Show();
+                Errors.ShowLine();
                 CLC
             }
         }
@@ -1142,7 +1142,7 @@ unit Parser
             if (NC) 
             { 
                 LDA # Error.SyntaxError
-                Errors.Show();
+                Errors.ShowLine();
                 break; 
             }
             
@@ -1164,7 +1164,7 @@ unit Parser
                     if (NZ)
                     {
                         LDA # Error.SyntaxError
-                        Errors.Show();
+                        Errors.ShowLine();
                         break;
                     }  
                 }

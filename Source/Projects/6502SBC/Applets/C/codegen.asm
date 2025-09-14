@@ -1,5 +1,7 @@
 unit CodeGen
 {
+    uses "AST"
+    
     // Code generation state
     const byte cgSlots = 0x90;
     
@@ -62,14 +64,18 @@ unit CodeGen
         JMP_IND = 0x6C,
         STA_ZP  = 0x85,
         STX_ZP  = 0x86, 
+        TXA     = 0x8A,
         TXS     = 0x9A,
         LDX_IMM = 0xA2,
         LDA_ZP  = 0xA5, 
         LDX_ZP  = 0xA6,
+        TAY     = 0xA8,
         LDA_IMM = 0xA9,
+        LDA_IND_Y = 0xB1,
         TSX     = 0xBA,
         DEX     = 0xCA,
         INC_ZP  = 0xE6, 
+        INX = 0xE8,
     }    
     
     // Check if a function name corresponds to a system function
@@ -154,6 +160,8 @@ unit CodeGen
         PHA
         LDA ZP.ACCH
         PHA
+        LDA ZP.TEMP
+        PHA
         
         loop
         {
@@ -194,6 +202,8 @@ unit CodeGen
             break;
         } // single exit
         
+        PLA
+        STA ZP.TEMP
         PLA
         STA ZP.ACCH
         PLA
@@ -373,6 +383,117 @@ unit CodeGen
                 return;
             }
             INY
+        }
+    }
+    
+    // Find VarDecl node for an identifier
+    // Input: ZP.STR = identifier name
+    // Output: IDX = VarDecl node, C set if found
+    findVariable()
+    {
+        // For now, search the compound statement for matching VarDecl
+        // This is simplified - real implementation would handle scoping
+        
+        // Start from function's compound statement
+        AST.GetRoot();  // Get program root
+        
+        // Get first child (should be function)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Skip to compound statement (second child of function)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Now search children of compound for VarDecl nodes
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        loop
+        {
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { CLC break; }  // Not found
+            
+            // Check if it's a VarDecl
+            LDY #AST.iNodeType
+            LDA [ZP.IDX], Y
+            CMP #AST.NodeType.VarDecl
+            if (Z)
+            {
+                // Get its identifier child
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                LDY #AST.iChild
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Get identifier's name
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                TAX
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Compare with target name
+                CodeGen.compareStrings();  // STR vs IDY
+                if (C)
+                {
+                    // Found it!
+                    PLA
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    SEC
+                    break;
+                }
+                
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+            }
+            
+            // Move to next sibling
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
         }
     }
     
@@ -594,7 +715,9 @@ unit CodeGen
                     }
                     default:
                     {
-LDA #'d' Print.Char();                        
+#ifdef DEBUG
+Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
+#endif     
                         LDA # Error.NotImplemented
                         Errors.ShowIDX();
                         break;
@@ -604,7 +727,9 @@ LDA #'d' Print.Char();
             else
             {
                 // generateUserFunctionCall();  // Future: JSR to user function
-LDA #'e' Print.Char();
+#ifdef DEBUG
+Print.Hex(); LDA #'u' Print.Char();LDA #'f' Print.Char();
+#endif
                 LDA # Error.NotImplemented
                 Errors.ShowIDX();
                 break;
@@ -654,7 +779,7 @@ LDA #'e' Print.Char();
                 // TODO: Generate code for initializer expression
                 // For now, just error
 #ifdef DEBUG
-                Print.Hex(); LDA 'v' Print.Char();
+Print.Hex(); LDA #'v' Print.Char();
 #endif
                 LDA # Error.NotImplemented
                 Errors.ShowIDY();
@@ -666,6 +791,240 @@ LDA #'e' Print.Char();
         }
     }
     
+    // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
+    pushNEXT()
+    {
+        // TSX - get current stack pointer
+        LDA #OpCode.TSX
+        EmitByte(); if (NC) { return; }
+        
+        // Store NEXT0 to stack page 0
+        // LDA ZP.NEXT0
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        // STA runtimeStack0,X
+        LDA # OpCode.STA_ABS_X
+        EmitByte(); if (NC) { return; }
+        LDA #0x00  // Low byte (page-aligned)
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0H  // High byte from runtime setup
+        EmitByte(); if (NC) { return; }
+        
+        // Store NEXT1 to stack page 1
+        // LDA ZP.NEXT1
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        // STA runtimeStack1,X
+        LDA # OpCode.STA_ABS_X
+        EmitByte(); if (NC) { return; }
+        LDA #0x00
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1H
+        EmitByte(); if (NC) { return; }
+        
+        // Store NEXT2 to stack page 2
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        // STA runtimeStack2,X
+        LDA # OpCode.STA_ABS_X
+        EmitByte(); if (NC) { return; }
+        LDA #0x00
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2H
+        EmitByte(); if (NC) { return; }
+        
+        // Store NEXT3 to stack page 3
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        // STA runtimeStack3,X
+        LDA # OpCode.STA_ABS_X
+        EmitByte(); if (NC) { return; }
+        LDA #0x00
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3H
+        EmitByte(); if (NC) { return; }
+        
+        // DEX - point to new top (the value we just pushed)
+        LDA #OpCode.DEX
+        EmitByte(); if (NC) { return; }
+        
+        // TXS - update stack pointer
+        LDA #OpCode.TXS
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to pop 32-bit value from stack into ZP.NEXT
+    popNEXT()
+    {
+        // TSX - get current stack pointer
+        LDA #OpCode.TSX
+        EmitByte(); if (NC) { return; }
+        
+        // INX - point to top value (SP points one past)
+        LDA #OpCode.INX  
+        EmitByte(); if (NC) { return; }
+        
+        // Transfer X to Y for indirect indexed addressing
+        LDA #OpCode.TXA         // 0x8A - Transfer X to A
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.TAY         // 0xA8 - Transfer A to Y  
+        EmitByte(); if (NC) { return; }
+        
+        // Load NEXT0 from stack via pointer
+        // LDA [runtimeStack0],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0
+        EmitByte(); if (NC) { return; }
+        // STA ZP.NEXT0
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0 
+        EmitByte(); if (NC) { return; }
+        
+        // Load NEXT1 from stack via pointer
+        // LDA [runtimeStack1],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1
+        EmitByte(); if (NC) { return; }
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+                
+        // Load NEXT2 from stack via pointer
+        // LDA [runtimeStack2],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2
+        EmitByte(); if (NC) { return; }
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // Load NEXT3 from stack via pointer
+        // LDA [runtimeStack3],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3
+        EmitByte(); if (NC) { return; }
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+                                              
+        // TXS - update stack pointer (now points to next free)
+        LDA #OpCode.TXS
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    
+    // Generate code to store ZP.NEXT at BP+offset
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    putNEXT()
+    {
+        STA ZP.TEMP  // Save offset
+        
+        loop
+        {
+            // LDX runtimeBP
+            LDA #OpCode.LDX_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeBP
+            EmitByte(); if (NC) { break; }
+            
+            // Add offset to X (offset is negative, so this moves backwards)
+            LDA ZP.TEMP
+            if (MI)  // Negative offset
+            {
+                // Need to DEX for each negative offset
+                EOR #0xFF  // Convert to positive
+                INC A      // Two's complement
+                TAY
+                loop
+                {
+                    if (Z) { break; }
+                    LDA #OpCode.DEX
+                    EmitByte(); if (NC) { break; }
+                    DEY
+                }
+            }
+            if (NC) { break; }
+            
+            // Now X points to the variable's location
+            // Store NEXT0
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ABS_X
+            EmitByte(); if (NC) { break; }
+            LDA #0x00
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack0H
+            EmitByte(); if (NC) { break; }
+            
+            // Store NEXT1
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ABS_X
+            EmitByte(); if (NC) { break; }
+            LDA #0x00
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack1H
+            EmitByte(); if (NC) { break; }
+            
+            // Store NEXT2
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ABS_X
+            EmitByte(); if (NC) { break; }
+            LDA #0x00
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack2H
+            EmitByte(); if (NC) { break; }
+            
+            // Store NEXT3
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ABS_X
+            EmitByte(); if (NC) { break; }
+            LDA #0x00
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack3H
+            EmitByte(); if (NC) { break; }
+            
+            SEC
+            break;
+        } // single exit
+    }
+
+
     // Generate code for an integer literal
     // Input: IDX = IntLit or LongLit node
     // Output: Value loaded into ZP.TOP0-3
@@ -694,51 +1053,8 @@ LDA #'e' Print.Char();
         LDA [ZP.IDY], Y
         STA ZP.NEXT3
         
-        // Generate inline code to load these values
-        // LDA #byte0
-        LDA #OpCode.LDA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA ZP.NEXT0
-        EmitByte(); if (NC) { return; }
-        // STA ZP.TOP0
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP0
-        EmitByte(); if (NC) { return; }
-        
-        // LDA #byte1
-        LDA #OpCode.LDA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA ZP.NEXT1
-        EmitByte(); if (NC) { return; }
-        // STA ZP.TOP1
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP1
-        EmitByte(); if (NC) { return; }
-        
-        // LDA #byte2
-        LDA #OpCode.LDA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA ZP.NEXT2
-        EmitByte(); if (NC) { return; }
-        // STA ZP.TOP2
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP2
-        EmitByte(); if (NC) { return; }
-        
-        // LDA #byte3
-        LDA #OpCode.LDA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA ZP.NEXT3
-        EmitByte(); if (NC) { return; }
-        // STA ZP.TOP3
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP3
-        EmitByte(); if (NC) { return; }
-        
+        pushNEXT();
+              
         SEC
     }
     
@@ -761,7 +1077,7 @@ LDA #'e' Print.Char();
             default:
             {
 #ifdef DEBUG
-                Print.Hex(); LDA 'e' Print.Char();
+Print.Hex(); LDA #'e' Print.Char();
 #endif
                 LDA #Error.NotImplemented
                 Errors.ShowIDX();
@@ -776,64 +1092,81 @@ LDA #'e' Print.Char();
     generateAssignment()
     {
         // Save Assign node
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        
         LDA ZP.IDXL
-        PHA
+        STA AST.astNodeL
         LDA ZP.IDXH
-        PHA
+        STA AST.astNodeH
         
-        // Get right-hand side (second child - the value)
-        // First get to first child
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
+        loop
+        {
+            // First get to first child (identifier) and push it
+            LDY #AST.iChild
+            LDA [ZP.IDX], Y
+            PHA
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            PHA
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            // Now get its sibling (second child -> RHS expression)
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            // Generate code for RHS expression (puts value in ZP.TOP)
+            generateExpression();
+            if (C)
+            {
+                popNEXT();
+            }
+            
+            // restore the identifer node
+            PLA
+            STA ZP.IDXH
+            PLA
+            STA ZP.IDXL
+            
+            if (NC) { break; }
+            
+            // Get identifier's name
+            LDY #AST.iData
+            LDA [ZP.IDX], Y
+            STA ZP.STRL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.STRH
+            
+            // Find the VarDecl for this identifier
+            findVariable();  // -> IDX
+            if (NC) { break; } // Variable not found!
+            
+            // Get the BP offset from VarDecl
+            LDY #AST.iOffset
+            LDA [ZP.IDX], Y  // This is the signed offset
+            
+            // Store NEXT at BP+offset
+            putNEXT();  // A = offset
+            
+                
+            SEC
+            break;
+        } // single exit
         
-        // Now get its sibling (second child)
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        // Generate code for RHS expression (puts value in ZP.TOP)
-        generateExpression();
-        if (NC) { PLA PLA return; }
-        
-        // Now we have value in ZP.TOP0-3
-        // Need to store it to the variable (first child of Assign)
-        
-        // Restore Assign node
         PLA
-        STA ZP.IDXH
+        STA AST.astNodeH
         PLA
-        STA ZP.IDXL
-        
-        // Get first child (the variable identifier)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        // For now, assume it's the first local variable (BP-relative offset 0)
-        // Generate: store TOP to stack at BP offset
-        
-        // TODO: Look up variable's actual offset
-        // For now, 's' is first local, so X = 0
-        
-        // Store each byte to its stack page
-        // LDA ZP.TOP0
-        // TODO
-        
-        
-        SEC
+        STA AST.astNodeL
     }
     
     // Generate code for a statement
@@ -847,10 +1180,6 @@ LDA #'e' Print.Char();
         LDA [ZP.IDX], Y
         switch (A)
         {
-            case NodeType.Assign:
-            {
-                generateAssignment();
-            }
             case NodeType.VarDecl:
             {
                 generateVarDecl();
@@ -875,11 +1204,15 @@ LDA #'e' Print.Char();
                     {
                         generateCallExpr();
                     }
+                    case NodeType.Assign:
+                    {
+                        generateAssignment();
+                    }
                     default:
                     {
                         // Future: BinOp, Assign, etc.
 #ifdef DEBUG
-                        Print.Hex(); LDA 'e' Print.Char();LDA 's' Print.Char();
+Print.Hex(); LDA #'e' Print.Char();LDA #'s' Print.Char();
 #endif
                         LDA #Error.NotImplemented
                         Errors.ShowIDX();
@@ -890,7 +1223,7 @@ LDA #'e' Print.Char();
             {
                 // Future: case AST.NodeType.If, For, Return, etc.
 #ifdef DEBUG                
-                Print.Hex(); LDA 's' Print.Char();
+Print.Hex(); LDA #'s' Print.Char();
 #endif                
                 LDA # Error.NotImplemented
                 Errors.ShowIDX();
