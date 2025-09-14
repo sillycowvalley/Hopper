@@ -2,8 +2,8 @@
 void main() {
     long s = 1000;
     long st = seconds();
-/*
-    long start = millis();
+    //long start = millis();
+    /*
     int i, j;
     for (i = 1; i <= 10; i++) {
         s = 0;
@@ -16,5 +16,7 @@ void main() {
     printf("%ld\n", s);
     //printf("%ld ms\n", millis() - start);
     //printf("%ld seconds\n", seconds() - st);
-    printf("%ld seconds\n", st);
+    st = seconds() - st;
+    printf("%ld elapsed\n", st);
+    //printf("%ld seconds\n", seconds());
 }

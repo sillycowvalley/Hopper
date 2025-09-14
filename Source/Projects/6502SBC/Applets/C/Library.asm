@@ -8,6 +8,10 @@ unit Library
     const byte libArgL = libSlots+0;
     const byte libArgH = libSlots+1;
     
+    const byte libStr  = libSlots+2;
+    const byte libStrL = libSlots+2;
+    const byte libStrH = libSlots+3;
+    
     const string sysprintf  = "printf";
     const string sysmillis  = "millis";
     const string sysseconds = "seconds";
@@ -330,11 +334,11 @@ unit Library
             // Get pointer to actual string data in heap
             LDY #AST.iData
             LDA [ZP.IDX], Y
-            STA ZP.STRL
+            STA libStrL
             INY
             LDA [ZP.IDX], Y
-            STA ZP.STRH
-            
+            STA libStrH
+                        
             // Get first value argument (sibling of format string)
             LDY #AST.iNext
             LDA [ZP.IDX], Y
@@ -347,6 +351,11 @@ unit Library
             LDY #0
             loop
             {
+                LDA libStrL
+                STA ZP.STRL
+                LDA libStrH
+                STA ZP.STRH
+                
                 // Start a literal run - emit runtime loop to print chars
                 emitLiteralRun(); if (NC) { break; }
                 
@@ -361,7 +370,10 @@ unit Library
                 CMP #'d'  // %d - int
                 if (Z)
                 {
-                    emitIntFormatter(); if (NC) { break; }  // Same as %d
+                    PHY
+                    emitIntFormatter();
+                    PLY
+                    if (NC) { break; }  // Same as %d
                     INY
                     continue;
                 }
@@ -374,7 +386,10 @@ unit Library
                     CMP #'d'
                     if (Z)
                     {
-                        emitIntFormatter(); if (NC) { break; }  // Same as %d
+                        PHY
+                        emitIntFormatter(); 
+                        PLY
+                        if (NC) { break; }  // Same as %d
                         INY
                         continue;
                     }

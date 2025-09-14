@@ -1151,10 +1151,6 @@ Print.Hex(); LDA #'v' Print.Char();
             // Calculate effective offset into Y
             calculateBPOffset(); if (NC) { break; }
                        
-            // Transfer A to Y
-            LDA #OpCode.TAY
-            EmitByte(); if (NC) { break; }
-            
             // Load NEXT0 through pointer
             LDA #OpCode.LDA_IND_Y
             EmitByte(); if (NC) { break; }
@@ -1426,7 +1422,6 @@ Print.Hex(); LDA #'e' Print.Char();
             
             // Store NEXT at BP+offset
             putNEXT();  // A = offset
-            
                 
             SEC
             break;

@@ -31,6 +31,13 @@ unit Parser
     const uint rhsExprNode   = parserSlots+9;   // Right expression node
     const byte rhsExprNodeL  = parserSlots+9;
     const byte rhsExprNodeH  = parserSlots+10;
+    
+    const uint binNode   = parserSlots+11;
+    const byte binNodeL  = parserSlots+11;
+    const byte binNodeH  = parserSlots+12;
+    
+    const byte binOp     = parserSlots+13;
+    
        
     
     // Helper: consume current token and get next
@@ -754,7 +761,7 @@ unit Parser
     // Top-level expression parser
     parseExpression() // -> IDY
     {
-        parseAssignment(); // -> IDY
+        parseAssignment(); // ->IDY
     }
     
     // Parse assignment expressions (right-associative)
@@ -897,19 +904,105 @@ unit Parser
         // }
     }
     
-    // Parse additive operators (+, -)
-    parseAdditive() // -> IDY
+    parseAdditive()  // -> IDY
     {
-        // For now, just pass through
-        parseMultiplicative(); // -> IDY
+        parseMultiplicative();  // Parse left side -> IDY
         
-        // TODO: Handle + and -
-        // loop
-        // {
-        //     LDA currentToken
-        //     CMP #Token.Plus / Minus
-        //     ...
-        // }
+        loop
+        {
+            LDA currentToken
+            switch (A)
+            {
+                case Token.Plus:
+                {
+                    LDA #BinOpType.Add
+                }
+                case Token.Minus:
+                {
+                    LDA #BinOpType.Sub
+                }
+                default:
+                {
+                    break;  // Not +/-, return what we have
+                }
+            }
+            LDX binOp
+            PHX
+            
+            STA binOp
+            
+            LDA binNodeL
+            PHA
+            LDA binNodeH
+            PHA
+            
+            loop
+            {
+                consume();  // Consume the operator
+                if (NC) { break; }
+                
+                // Create BinOp node
+                LDA # AST.NodeType.BinOp
+                AST.CreateNode();  // -> IDX
+                if (NC) { break; }
+                LDA ZP.IDXH
+                STA binNodeH
+                LDA ZP.IDXL
+                STA binNodeL
+                
+                // Set operator type
+                LDA binOp
+                LDY #AST.iBinOp
+                STA [ZP.IDX], Y
+                
+                // Add left operand as first child
+                AST.AddChild();  // IDX = BinOp, IDY = left
+                
+                // Parse right operand
+                parseMultiplicative();  // -> IDY
+                if (NC) { break; }
+                
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                
+                // Add right operand as second child
+                AST.AddChild();  // IDX = BinOp, IDY = right
+                
+                // Move BinOp to IDY for next iteration (left-associative)
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                STZ binNodeH
+                STZ binNodeL
+                
+                SEC
+                break;
+                
+            } // single exit
+            
+            LDA binNodeH
+            ORA binNodeL
+            if (NZ)
+            {
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                AST.FreeNode();
+            }
+            
+            PLA
+            STA binNodeH
+            PLA
+            STA binNodeL
+            PLA
+            STA binOp
+            if (NC) { break; }
+        } // loop
     }
     
     // Parse multiplicative operators (*, /, %)

@@ -34,8 +34,18 @@ unit AST
         LongLit      = 10,  // Long literal    (32 bits stored in Data+ )
         VarDecl      = 11,  // Variable declaration 
         Assign       = 12,  // Assignment expression
+        BinOp        = 13,  // Binary operation
         
         AfterLast           // see freeNode()
+    }
+    
+    enum BinOpType
+    {
+        Add = 1,   // +
+        Sub = 2,   // -
+        Mul = 3,   // *
+        Div = 4,   // /
+        Mod = 5,   // %
     }
     
     // Common node structure:
@@ -76,13 +86,17 @@ unit AST
     // const byte iOffset   = 9; 
     
     // VarDecl node:
-    //     [7-8]  Initializer expression (optional)8
+    //     [7-8]  Initializer expression (optional)
     //     [9]    offset on stack relative to BP (signed single byte offset)
     //     [10]   <unused>
     //     [11]   Variable type (Token.Long/Int/Char)
     const byte iInitializer = 7;
     // const byte iOffset   = 9;
     const byte iVarType     = 11;
+    
+    // BinOp node:
+    //     [7]    BinOpType
+    const byte iBinOp = 7;
     
     Initialize()
     {
@@ -425,7 +439,15 @@ unit AST
     const string nodeChar     = "CHAR ";
     const string nodeVarDecl  = "VAR "; 
     const string nodeAssign   = "ASSIGN";
+    const string nodeBinOp = "BINOP ";
     const string nodeUnknown  = "??";
+    
+    
+    const string opAdd = "+";
+    const string opSub = "-";
+    const string opMul = "*";
+    const string opDiv = "/";
+    const string opMod = "%";
     
     const string nodeBPOffset = "[BP";
     
@@ -513,6 +535,64 @@ unit AST
                 STA ZP.STRH
                 Print.String();
             }
+            case NodeType.BinOp:
+            {
+                LDA #(nodeBinOp % 256)
+                STA ZP.STRL
+                LDA #(nodeBinOp / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                // Print the operator
+                LDY #iBinOp
+                LDA [ZP.IDX], Y
+                switch (A)
+                {
+                    case BinOpType.Add:
+                    {
+                        LDA #(opAdd % 256)
+                        STA ZP.STRL
+                        LDA #(opAdd / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.Sub:
+                    {
+                        LDA #(opSub % 256)
+                        STA ZP.STRL
+                        LDA #(opSub / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.Mul:
+                    {
+                        LDA #(opMul % 256)
+                        STA ZP.STRL
+                        LDA #(opMul / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.Div:
+                    {
+                        LDA #(opDiv % 256)
+                        STA ZP.STRL
+                        LDA #(opDiv / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.Mod:
+                    {
+                        LDA #(opMod % 256)
+                        STA ZP.STRL
+                        LDA #(opMod / 256)
+                        STA ZP.STRH
+                    }
+                    default:
+                    {
+                        LDA #'?'
+                        Print.Char();
+                        return;
+                    }
+                }
+                Print.String();
+            }
+            
             case NodeType.Identifier:
             {
                 LDA #(nodeId % 256)
@@ -563,6 +643,7 @@ unit AST
                 }
                 LDA #'"'
                 Print.Char();
+                Print.Space(); LDA ZP.STRH Print.Hex();LDA ZP.STRL Print.Hex();
             }
             case NodeType.IntLit:
             case NodeType.LongLit:  // Handle both the same way (both are 32-bit)
