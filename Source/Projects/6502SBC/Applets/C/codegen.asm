@@ -1369,7 +1369,7 @@ Print.Hex(); LDA #'v' Print.Char();
                 // Emit: LDX #SysCall.LongSub
                 LDA #OpCode.LDX_IMM
                 EmitByte(); if (NC) { return; }
-                LDA #BIOSInterface.SysCall.LongSub
+                LDA # BIOSInterface.SysCall.LongSub
                 EmitByte(); if (NC) { return; }
             }
         }
