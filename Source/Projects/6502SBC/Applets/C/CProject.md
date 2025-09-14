@@ -403,6 +403,60 @@ B1 64       LDA [runtimeStack1],Y    ; Load byte 1
 9A          TXS                      ; Update stack
 ```
 
+
+# Disassembly Task Description
+
+## Definition
+**Disassemble**: Convert raw hexadecimal machine code bytes back into human-readable 6502 assembly language instructions with addresses and mnemonics.
+
+## Purpose
+Disassembly is essential for debugging the CC compiler's code generation by allowing inspection of the actual machine code produced to identify bugs in the emitted instruction sequences.
+
+## Format Requirements
+
+### Input
+Raw hex dump with addresses, typically from `dumpCodeBuffer()`:
+```
+0800: 4C 18 08 6C 22 00 60 25 6C 64 0A 00 25 6C 64 20
+0810: 73 65 63 6F 6E 64 73 00 A2 00 20 03 08 64 61 64
+```
+
+### Output
+Formatted assembly listing using Hopper syntax conventions:
+```hopper
+0800: JMP 0x0818           ; Jump to main
+0803: JMP [0x0022]         ; BIOS dispatcher (indirect)
+0806: RTS
+0818: LDX #0x00            ; SysCall.MemAllocate  
+081A: JSR 0x0803           ; Call BIOS
+081D: STZ 0x61             ; runtimeStack0L = 0
+```
+
+## Conventions
+- Use Hopper hex notation: `0x` prefix, not `$`
+- Show addresses on the left as `XXXX:`
+- Include meaningful comments for:
+  - Jump/call targets
+  - Zero page variable names when known
+  - System call numbers
+  - String literal contents
+- Group related instruction sequences
+- Identify bugs with "BUG:" annotations
+
+## Common Patterns to Recognize
+- Stack operations (TSX/TXS sequences)
+- BIOS calls (LDX #syscall, JSR dispatcher)
+- BP-relative addressing (LDA BP, CLC, ADC #offset, TAY)
+- Parallel stack access (STA [0x61],Y through [0x67],Y)
+
+## Example Annotations
+- `; Reserve return slot` for TSX/DEX/TXS
+- `; Marshal result to stack` for TOP→stack transfers
+- `; BUG: Should be #0xFF` for incorrect values
+- `; Function prologue/epilogue` for standard sequences
+
+
+
 ### Common Issues to Watch For
 
 1. **Wrong Addressing Mode**: Look for opcodes 0xBD/0x9D (absolute,X) when you should see 0xB1/0x91 (indirect,Y)

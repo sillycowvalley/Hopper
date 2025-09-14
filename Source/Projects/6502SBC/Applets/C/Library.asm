@@ -8,7 +8,9 @@ unit Library
     const byte libArgL = libSlots+0;
     const byte libArgH = libSlots+1;
     
-    const string sysprintf = "printf";
+    const string sysprintf  = "printf";
+    const string sysmillis  = "millis";
+    const string sysseconds = "seconds";
     
     // Emit a JSR to the BIOS dispatch function
     // Output: C set on success, clear on failure
@@ -58,7 +60,34 @@ unit Library
             SEC
             return;
         }
-             
+         
+        // Check for "millis"
+        LDA #(sysmillis % 256)
+        STA ZP.IDYL
+        LDA #(sysmillis / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.TimeMillis
+            SEC
+            return;
+        }    
+        
+        // Check for "seconds"
+        LDA #(sysseconds % 256)
+        STA ZP.IDYL
+        LDA #(sysseconds / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.TimeSeconds
+            SEC
+            return;
+        }    
+        
+        
         // TODO : add more system functions here...
         
         CLC  // Not a system function
@@ -152,6 +181,33 @@ unit Library
         SEC
     }
     
+    MillisCall()
+    {
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.TimeMillis
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        CodeGen.pushTOP();
+        
+        SEC
+    }
+    
+    SecondsCall()
+    {
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.TimeSeconds
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        CodeGen.pushTOP();
+        
+        SEC
+    }
     
     // Generate code to print int/long argument
     // Uses current argument node in ZP.NEXT

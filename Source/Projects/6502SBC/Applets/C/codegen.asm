@@ -365,6 +365,7 @@ unit CodeGen
                 return;
             }
             // Check if we hit null terminator
+            CMP #0
             if (Z)
             {
                 SEC  // Equal (both null)
@@ -628,6 +629,14 @@ unit CodeGen
         
         loop
         {
+            // ALWAYS reserve return slot for ANY function call
+            LDA # OpCode.TSX
+            EmitByte(); if (NC) { break; }
+            LDA # OpCode.DEX
+            EmitByte(); if (NC) { break; }
+            LDA # OpCode.TXS
+            EmitByte(); if (NC) { break; }
+            
             // First child is function identifier, second child (sibling) is first argument
             LDY #AST.iChild
             LDA [ZP.IDX], Y
@@ -653,6 +662,14 @@ unit CodeGen
                     case SysCall.PrintString:
                     {
                         Library.PrintfCall();
+                    }
+                    case SysCall.TimeMillis:
+                    {
+                        Library.MillisCall();
+                    }
+                    case SysCall.TimeSeconds:
+                    {
+                        Library.SecondsCall();
                     }
                     default:
                     {
@@ -786,6 +803,78 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        // STA [runtimeStack3],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3
+        EmitByte(); if (NC) { return; }
+        
+        // DEX - point to new top (the value we just pushed)
+        LDA #OpCode.DEX
+        EmitByte(); if (NC) { return; }
+        
+        // TXS - update stack pointer
+        LDA #OpCode.TXS
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to push 32-bit value from ZP.TOP onto runtime stack
+    pushTOP()
+    {
+        // TSX - get current stack pointer
+        LDA #OpCode.TSX
+        EmitByte(); if (NC) { return; }
+        
+        // Transfer X to Y for indirect indexed addressing
+        LDA #OpCode.TXA
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        EmitByte(); if (NC) { return; }
+        
+        // Store TOP0 to stack via pointer
+        // LDA ZP.TOP0
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        // STA [runtimeStack0],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0
+        EmitByte(); if (NC) { return; }
+        
+        // Store TOP1 to stack via pointer
+        // LDA ZP.TOP1
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        // STA [runtimeStack1],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1
+        EmitByte(); if (NC) { return; }
+        
+        // Store TOP2 to stack via pointer
+        // LDA ZP.TOP2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP2
+        EmitByte(); if (NC) { return; }
+        // STA [runtimeStack2],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2
+        EmitByte(); if (NC) { return; }
+        
+        // Store TOP3 to stack via pointer
+        // LDA ZP.TOP3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP3
         EmitByte(); if (NC) { return; }
         // STA [runtimeStack3],Y
         LDA #OpCode.STA_IND_Y
@@ -1250,6 +1339,10 @@ Print.Hex(); LDA #'v' Print.Char();
             {
                 generateLoadIdentifier();
             }
+            case NodeType.CallExpr:
+            {
+                generateCallExpr();
+            }
             default:
             {
 #ifdef DEBUG
@@ -1379,6 +1472,14 @@ Print.Hex(); LDA #'e' Print.Char();
                     case NodeType.CallExpr:
                     {
                         generateCallExpr();
+                        
+                        // Expression left a value on the stack - discard it
+                        LDA # OpCode.TSX
+                        EmitByte();
+                        LDA # OpCode.INX      // Pop the unused return value
+                        EmitByte();
+                        LDA # OpCode.TXS
+                        EmitByte();
                     }
                     case NodeType.Assign:
                     {

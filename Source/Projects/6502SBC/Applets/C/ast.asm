@@ -1,5 +1,7 @@
 unit AST
 {
+    uses "../System/Shared"
+    
     friend Parser, CodeGen, Library, CC, Errors;
     
     // AST zero page allocation
@@ -425,6 +427,8 @@ unit AST
     const string nodeAssign   = "ASSIGN";
     const string nodeUnknown  = "??";
     
+    const string nodeBPOffset = "[BP";
+    
     // Print the AST tree with indentation
     // Input: ZP.IDX = node pointer, ZP.TEMP = indent level
     PrintNode()
@@ -672,6 +676,45 @@ unit AST
                     default:          { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
                 }
                 Print.String();
+                
+                // Print the BP offset
+                LDA #(nodeBPOffset % 256)
+                STA ZP.STRL
+                LDA #(nodeBPOffset / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                // Get and print the signed offset
+                LDY #iOffset
+                LDA [ZP.IDX], Y
+                
+                // Check if negative (bit 7 set)
+                if (MI)
+                {
+                    // It's negative, print minus sign
+                    PHA
+                    LDA #'-'
+                    Print.Char();
+                    PLA
+                    
+                    // Negate to get absolute value
+                    EOR #0xFF
+                    CLC
+                    ADC #1
+                }
+                else
+                {
+                    PHA
+                    LDA #'+'
+                    Print.Char();
+                    PLA
+                }
+                LDX # ZP.TOP
+                Shared.LoadByte();
+                Long.Print();
+                
+                LDA #']'
+                Print.Char();
             }
             case NodeType.Assign:
             {
