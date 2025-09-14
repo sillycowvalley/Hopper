@@ -1315,6 +1315,74 @@ Print.Hex(); LDA #'v' Print.Char();
         
         SEC
     }    
+    
+    
+    generateBinOp()
+    {
+        // Get operator type
+        LDY #AST.iBinOp
+        LDA [ZP.IDX], Y
+        PHA  // Save operator
+        
+        // Generate left operand
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        generateExpression(); if (NC) { PLA return; }
+        
+        // Left operand is now on stack
+        
+        // Generate right operand
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        generateExpression(); if (NC) { PLA return; }
+        
+        // Right operand is now on stack
+        
+        // Pop both operands
+        CodeGen.popTOP();    // Right operand -> TOP
+        CodeGen.popNEXT();   // Left operand -> NEXT
+        
+        // Perform operation based on saved operator
+        PLA  // Get operator type
+        switch (A)
+        {
+            case BinOpType.Add:
+            {
+                // Emit: LDX #SysCall.LongAdd
+                LDA #OpCode.LDX_IMM
+                EmitByte(); if (NC) { return; }
+                LDA #BIOSInterface.SysCall.LongAdd
+                EmitByte(); if (NC) { return; }
+            }
+            case BinOpType.Sub:
+            {
+                // Emit: LDX #SysCall.LongSub
+                LDA #OpCode.LDX_IMM
+                EmitByte(); if (NC) { return; }
+                LDA #BIOSInterface.SysCall.LongSub
+                EmitByte(); if (NC) { return; }
+            }
+        }
+        
+        // Emit: JSR dispatch
+        Library.EmitDispatchCall(); if (NC) { return; }
+        
+        // Result is in NEXT, push it
+        CodeGen.pushNEXT();
+        
+        SEC
+    }
+    
     // Generate code for an expression
     // Input: IDX = expression node
     // Output: Result in ZP.TOP0-3 or on stack
@@ -1338,6 +1406,10 @@ Print.Hex(); LDA #'v' Print.Char();
             case NodeType.CallExpr:
             {
                 generateCallExpr();
+            }
+            case NodeType.BinOp:
+            {
+                generateBinOp();
             }
             default:
             {
