@@ -72,9 +72,10 @@ unit CodeGen
         INC_ZP  = 0xE6, 
     }    
     
-    // Check if function name is a system function
-    // Input: ZP.STR = function name
-    // Output: A = syscall number, C set if system function
+    // Check if a function name corresponds to a system function
+    // Input: ZP.STR = function name to check
+    // Output: A = syscall number if system function
+    //         C set if system function, clear if user function
     isSystemFunction()
     {
         // Check for "printf"
@@ -95,6 +96,9 @@ unit CodeGen
         CLC  // Not a system function
     }
     
+    // Initialize code generation buffers and state
+    // Allocates initial 4KB code buffer
+    // Output: C set on success, clear on failure
     Initialize()
     {
         // Start with 4KB
@@ -117,6 +121,7 @@ unit CodeGen
         STZ codeSizeL
     }
     
+    // Clean up and free allocated code generation buffers
     Dispose()
     {
         // Free code buffer
@@ -135,6 +140,10 @@ unit CodeGen
         }
     }
     
+    // Emit a single byte to the code buffer
+    // Input: A = byte to emit
+    // Output: C set on success, clear on failure
+    // Note: Automatically grows buffer if needed
     EmitByte()  // A = byte to emit
     {
         PHA
@@ -194,6 +203,9 @@ unit CodeGen
         
     }
     
+    // Double the size of the code buffer when it fills up
+    // Internal helper for EmitByte
+    // Output: C set on success, clear on failure
     growBuffer()
     {
         PHY
@@ -261,7 +273,10 @@ unit CodeGen
         PLY
     }
     
-    // Recursively walk AST and emit string literals
+    // Recursively walk AST and emit all string literals
+    // Input: IDX = AST node to start from
+    // Output: C set on success, clear on failure
+    // Note: Updates iOffset field of StringLit nodes with code offset
     emitStrings()  // Input: IDX = node
     {
         LDA ZP.IDXL
@@ -335,7 +350,10 @@ unit CodeGen
         emitStrings();
     }
     
-    // Compare [STR] with [IDY], return C set if equal
+    // Compare two null-terminated strings
+    // Input: ZP.STR = first string pointer
+    //        ZP.IDY = second string pointer
+    // Output: C set if strings are equal, clear if different
     compareStrings()
     {
         LDY #0
@@ -358,9 +376,10 @@ unit CodeGen
         }
     }
     
-    // Find a function (for now, just returns first function)
-    // Input:  STR = function name
-    // Output: IDX = Function node, C set on success
+    // Find a function node in the AST by name
+    // Input: ZP.STR = function name to find
+    // Output: IDX = Function node if found
+    //         C set on success, clear if not found
     findFunction()
     {
         // Get first child of Program
@@ -437,7 +456,9 @@ unit CodeGen
         } // loop
     }
     
-    // ZP.ACC + 0x0800 -> ZP.ACC
+    // Add the BIOS entry point address (0x0800) to value in ACC
+    // Input: ZP.ACC = relative offset
+    // Output: ZP.ACC = absolute address (offset + 0x0800)
     addEntryPoint()
     {
         CLC
@@ -449,6 +470,10 @@ unit CodeGen
         STA ZP.ACCH
     }
     
+    // Generate code for a printf system call
+    // Input: IDX = CallExpr node for printf
+    // Output: C set on success, clear on failure
+    // Note: Currently only supports string literal as first argument
     generatePrintfCall()
     {
         loop
@@ -528,7 +553,10 @@ unit CodeGen
         } // single exit
     }
     
-    // Generate code for function call
+    // Generate code for a function call expression
+    // Input: IDX = CallExpr node
+    // Output: C set on success, clear on failure
+    // Note: Dispatches to system or user function generation
     generateCallExpr()  // Input: IDX = CallExpr node
     {
         LDA AST.astNodeL
@@ -590,7 +618,10 @@ LDA #'e' Print.Char();
         STA AST.astNodeL 
     }
     
-    // VarDecl node in IDX
+    // Generate code for a variable declaration
+    // Input: IDX = VarDecl node
+    // Output: C set on success, clear on failure
+    // Note: Allocates stack space and records BP offset in node
     generateVarDecl()
     {
         loop
@@ -636,8 +667,9 @@ LDA #'e' Print.Char();
     }
     
     // Generate code for an integer literal
-    // Input: IDX = IntLit/LongLit node
-    // Output: Value in ZP.TOP0-3
+    // Input: IDX = IntLit or LongLit node
+    // Output: Value loaded into ZP.TOP0-3
+    //         C set on success, clear on failure
     generateIntLiteral()  // Input: IDX = literal node
     {
         // Get pointer to 32-bit value in heap
@@ -710,6 +742,10 @@ LDA #'e' Print.Char();
         SEC
     }
     
+    // Generate code for an expression
+    // Input: IDX = expression node
+    // Output: Result in ZP.TOP0-3 or on stack
+    //         C set on success, clear on failure
     generateExpression()
     {
         LDY #AST.iNodeType
@@ -733,8 +769,10 @@ LDA #'e' Print.Char();
         }
     }
     
-    // Generate code for assignment
+    // Generate code for an assignment expression
     // Input: IDX = Assign node
+    // Output: C set on success, clear on failure
+    // Note: Currently incomplete - needs variable lookup
     generateAssignment()
     {
         // Save Assign node
@@ -799,6 +837,9 @@ LDA #'e' Print.Char();
     }
     
     // Generate code for a statement
+    // Input: IDX = statement node
+    // Output: C set on success, clear on failure
+    // Note: Dispatches to appropriate statement generator
     generateStatement()  // Input: IDX = statement node
     {
         // Check statement type
@@ -857,7 +898,10 @@ LDA #'e' Print.Char();
         }
     }
     
-    // Generate code for compound statement
+    // Generate code for a compound statement (block)
+    // Input: IDX = CompoundStmt node
+    // Output: C set on success, clear on failure
+    // Note: Processes all child statements sequentially
     generateBlock()  // Input: IDX = CompoundStmt
     {
         LDA AST.astNodeL
@@ -909,7 +953,10 @@ LDA #'e' Print.Char();
         STA AST.astNodeL
     }
     
-    // Generate code for function body
+    // Generate code for a function body
+    // Input: IDX = Function node
+    // Output: C set on success, clear on failure
+    // Note: Generates prologue, body statements, and epilogue
     generateFunctionBody()  // Input: IDX = Function node
     {
         LDA ZP.IDXL
@@ -996,7 +1043,9 @@ LDA #'e' Print.Char();
     }
     
     
-    // Generate code for main function
+    // Generate code for the main function
+    // Output: C set on success, clear on failure
+    // Note: Finds main in AST and generates its body
     emitMain()
     {
          // Find main function in AST
@@ -1026,6 +1075,9 @@ LDA #'e' Print.Char();
         SEC
     }
     
+    // Emit a JSR to the BIOS dispatch function
+    // Output: C set on success, clear on failure
+    // Note: Assumes X register contains syscall number
     emitDispatchCall()
     {
         LDA # OpCode.JSR
@@ -1040,7 +1092,8 @@ LDA #'e' Print.Char();
         EmitByte(); 
     }
     
-    // Patch JMP to main
+    // Patch the initial JMP instruction to point to main
+    // Note: Called after main's address is known
     patchEntryJump()
     {
         // Calculate absolute address
@@ -1059,6 +1112,9 @@ LDA #'e' Print.Char();
         STA [codeBuffer], Y
     }
     
+    // Generate code to allocate the runtime stack
+    // Output: C set on success, clear on failure
+    // Note: Allocates 1K parallel stack, sets up stack pointers
     createStack()
     {
         // Patch JMP to main
@@ -1127,6 +1183,9 @@ LDA #'e' Print.Char();
         EmitByte(); if (NC) { return; }
     }
     
+    // Main compile function
+    // Output: C set on success, clear on failure
+    // Note: Coordinates all code generation phases
     Compile()
     {
         // 1. Reserve 3 bytes for JMP to main
@@ -1165,8 +1224,10 @@ LDA #'e' Print.Char();
         SEC
     }
 
-    // Save generated code to file
-    // Input: ZP.STR = output filename (e.g., "HELLOX")
+    // Save generated code to an executable file
+    // Input: ZP.STR = output filename
+    // Output: C set on success, clear on failure
+    // Note: Deletes existing file, marks output as executable
     Save()
     {
         LDA # FileType.Any // all files
@@ -1246,11 +1307,9 @@ LDA #'e' Print.Char();
         SEC
     }
     
-    
-    // Add this function to CodeGen unit (codegen.asm)
-
-    // Diagnostic hex dump of code buffer
+    // Diagnostic hex dump of generated code
     // Shows 16 bytes per row with addresses starting at 0x0800
+    // Note: Debug function only, included when DEBUG defined
     dumpCodeBuffer()
     {
         PHY
@@ -1353,4 +1412,3 @@ LDA #'e' Print.Char();
         PLY
     }
 }
-
