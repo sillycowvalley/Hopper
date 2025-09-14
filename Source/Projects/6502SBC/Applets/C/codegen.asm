@@ -27,6 +27,12 @@ unit CodeGen
     const byte functionLocals = cgSlots+10; // Count of locals in current function
     const byte storeOp        = cgSlots+11;
     
+    const byte forwardPatchL  = cgSlots+12;
+    const byte forwardPatchH  = cgSlots+13;
+    
+    const byte backwardPatchL  = cgSlots+14;
+    const byte backwardPatchH  = cgSlots+15;
+    
     const byte runtimeZeroPageSlots = 0x60;
     const byte runtimeBP            = runtimeZeroPageSlots+0; // Base pointer for stack frame
     
@@ -56,6 +62,7 @@ unit CodeGen
     // 65C02S opcodes
     enum OpCode
     {
+        ORA_ZP  = 0x05,
         CLC     = 0x18,
         INC_A   = 0x1A,
         JSR     = 0x20,
@@ -85,6 +92,7 @@ unit CodeGen
         CMP_IMM = 0xC9,
         INY     = 0xC8,
         DEX     = 0xCA,
+        BNE     = 0xD0, 
         INC_ZP  = 0xE6, 
         INX     = 0xE8,
         SBC_IMM = 0xE9, 
@@ -1848,7 +1856,16 @@ Print.Hex(); LDA #'v' Print.Char();
             case NodeType.BinOp:
             {
                 generateBinOp();
+            }            
+            case NodeType.Assign:
+            {
+                generateAssignment();
             }
+            case NodeType.PostfixOp:
+            {
+                generatePostfixOp();
+            }
+            
             default:
             {
 #ifdef DEBUG
@@ -1943,6 +1960,210 @@ Print.Hex(); LDA #'e' Print.Char();
         STA AST.astNodeL
     }
     
+    // Generate code for a for loop
+    // Input: IDX = For node
+    // Output: C set on success, clear on failure
+    generateFor()
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        
+        // Save the For node pointer
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        
+        loop
+        {
+            // Generate init expression if present
+            LDY #AST.iForInit
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (NZ)
+            {
+                generateExpression(); if (NC) { break; }
+                // Init result is not used, pop it
+                LDA #OpCode.TSX
+                EmitByte(); if (NC) { break; }
+                LDA #OpCode.INX
+                EmitByte(); if (NC) { break; }
+                LDA #OpCode.TXS
+                EmitByte(); if (NC) { break; }
+            }
+            
+            // Record loop start position (codeBuffer + codeOffset)
+            LDA codeOffsetL
+            STA ZP.ACCL
+            LDA codeOffsetH
+            STA ZP.ACCH
+            AddEntryPoint(); // Convert to runtime address -> ACC
+            LDA ZP.ACCL
+            STA backwardPatchL
+            LDA ZP.ACCH
+            STA backwardPatchH
+            
+            // Generate exit condition if present
+            LDY #AST.iForExit
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (NZ)
+            {
+                generateExpression(); if (NC) { break; }
+                
+                // Pop result to check it
+                popNEXT(); if (NC) { break; }
+                
+                // Test if NEXT is zero (false)
+                LDA #OpCode.LDA_ZP
+                EmitByte(); if (NC) { break; }
+                LDA #ZP.NEXT0
+                EmitByte(); if (NC) { break; }
+                
+                LDA # OpCode.ORA_ZP
+                EmitByte(); if (NC) { break; }
+                LDA #ZP.NEXT1
+                EmitByte(); if (NC) { break; }
+                
+                LDA # OpCode.ORA_ZP
+                EmitByte(); if (NC) { break; }
+                LDA #ZP.NEXT2
+                EmitByte(); if (NC) { break; }
+                
+                LDA # OpCode.ORA_ZP
+                EmitByte(); if (NC) { break; }
+                LDA #ZP.NEXT3
+                EmitByte(); if (NC) { break; }
+                
+                // BNE skip_exit (if true, continue loop)
+                LDA # OpCode.BNE
+                EmitByte(); if (NC) { break; }
+                LDA #3  // Skip over JMP instruction (3 bytes)
+                EmitByte(); if (NC) { break; }
+                
+                // JMP to exit (will patch address later)
+                LDA #OpCode.JMP_ABS
+                EmitByte(); if (NC) { break; }
+                
+                // Save current offset for patching
+                LDA codeOffsetL
+                STA forwardPatchL
+                LDA codeOffsetH
+                STA forwardPatchH
+                
+                // Emit placeholder address
+                LDA #0
+                EmitByte(); if (NC) { break; }
+                EmitByte(); if (NC) { break; }
+            }
+            else
+            {
+                // No exit condition - mark as no patch needed
+                STZ forwardPatchL
+                STZ forwardPatchH
+            }
+            
+            // Generate body (child of For node)
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            generateBlock(); if (NC) { break; }
+            
+            // Generate next expression if present
+            LDY #AST.iForNext
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (NZ)
+            {
+                generateExpression(); if (NC) { break; }
+                // Next result is not used, pop it
+                LDA #OpCode.TSX
+                EmitByte(); if (NC) { break; }
+                LDA #OpCode.INX
+                EmitByte(); if (NC) { break; }
+                LDA #OpCode.TXS
+                EmitByte(); if (NC) { break; }
+            }
+            
+            // JMP back to loop start
+            LDA #OpCode.JMP_ABS
+            EmitByte(); if (NC) { break; }
+            
+            // Emit the backward jump address
+            LDA backwardPatchL
+            EmitByte(); if (NC) { break; }
+            LDA backwardPatchH
+            EmitByte(); if (NC) { break; }
+            
+            // Patch forward jump if needed
+            LDA forwardPatchL
+            ORA forwardPatchH
+            if (NZ)
+            {
+                // Calculate current absolute position
+                LDA codeOffsetL
+                STA ZP.ACCL
+                LDA codeOffsetH
+                STA ZP.ACCH
+                AddEntryPoint(); // Convert to runtime address -> ACC
+                
+                // Calculate patch location (codeBuffer + forwardPatch offset)
+                LDA codeBufferL
+                CLC
+                ADC forwardPatchL
+                STA ZP.IDXL
+                LDA codeBufferH
+                ADC forwardPatchH
+                STA ZP.IDXH
+                
+                // Write exit address at patch location
+                LDY #0
+                LDA ZP.ACCL
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.ACCH
+                STA [ZP.IDX], Y
+            }
+            
+            SEC
+            break;
+        } // single exit
+        
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    }
+            
+    
+    
+    
+    
+    
     // Generate code for a statement
     // Input: IDX = statement node
     // Output: C set on success, clear on failure
@@ -1958,6 +2179,10 @@ Print.Hex(); LDA #'e' Print.Char();
             {
                 generateVarDecl();
             }
+            case NodeType.For:
+            {
+                generateFor();
+            }
             case NodeType.ExprStmt:
             {
                 // Get the expression (child)
@@ -1969,41 +2194,16 @@ Print.Hex(); LDA #'e' Print.Char();
                 STA ZP.IDXH
                 STX ZP.IDXL
                 
-                // Check expression type
-                LDY # AST.iNodeType
-                LDA [ZP.IDX], Y
-                switch (A)
-                {
-                    case NodeType.CallExpr:
-                    {
-                        generateCallExpr();
-                        
-                        // Expression left a value on the stack - discard it
-                        LDA # OpCode.TSX
-                        EmitByte();
-                        LDA # OpCode.INX      // Pop the unused return value
-                        EmitByte();
-                        LDA # OpCode.TXS
-                        EmitByte();
-                    }
-                    case NodeType.Assign:
-                    {
-                        generateAssignment();
-                    }
-                    case NodeType.PostfixOp:
-                    {
-                        generatePostfixOp();
-                    }
-                    default:
-                    {
-                        // Future: BinOp, Assign, etc.
-#ifdef DEBUG
-Print.Hex(); LDA #'e' Print.Char();LDA #'s' Print.Char();
-#endif
-                        LDA #Error.NotImplemented
-                        Errors.ShowIDX();
-                    }
-                }
+                // Generate the expression (any type)
+                generateExpression();
+                
+                // ALL expression statements discard the value
+                LDA # OpCode.TSX
+                EmitByte();
+                LDA # OpCode.INX      // Pop the unused return value
+                EmitByte();
+                LDA # OpCode.TXS
+                EmitByte();
             }
             default:
             {
