@@ -17,6 +17,9 @@ unit Errors
         NoEntryPoint,
         NotImplemented,    // 0x0C
         
+        TooFewArguments,
+        UndefinedIdentifier,
+        
         FilenameTooLong,
         FileSaveError,
     }

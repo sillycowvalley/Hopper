@@ -1,11 +1,12 @@
 unit Library
 {
     uses "AST"
+    uses "Errors"
     
     const byte libSlots = 0xC0;
-    const byte formatArg  = libSlots+0;
-    const byte formatArgL = libSlots+0;
-    const byte formatArgH = libSlots+1;
+    const byte libArg  = libSlots+0;
+    const byte libArgL = libSlots+0;
+    const byte libArgH = libSlots+1;
     
     const string sysprintf = "printf";
     
@@ -151,6 +152,54 @@ unit Library
         SEC
     }
     
+    
+    // Generate code to print int/long argument
+    // Uses current argument node in ZP.NEXT
+    // Output: C set on success, clear on failure
+    emitIntFormatter()
+    {
+        // Check we have an argument
+        LDA libArgL
+        ORA libArgH
+        if (Z)
+        {
+            LDA # Error.TooFewArguments
+            Errors.ShowIDX();
+            CLC
+            return;
+        }
+        
+        // Generate code to evaluate the expression
+        // This will push result onto runtime stack
+        LDA libArgL
+        STA ZP.IDXL
+        LDA libArgH
+        STA ZP.IDXH
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop from stack into ZP.TOP
+        CodeGen.popTOP(); if (NC) { return; }
+        
+        // Call Long.Print
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.LongPrint
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        // Move to next argument
+        LDY #AST.iNext
+        LDA [libArg], Y
+        TAX
+        INY
+        LDA [libArg], Y
+        STA libArgH
+        STX libArgL
+        
+        SEC
+    }
+    
     // Generate code for a printf system call
     // Input: IDX = CallExpr node for printf
     // Output: C set on success, clear on failure
@@ -230,6 +279,14 @@ unit Library
             LDA [ZP.IDX], Y
             STA ZP.STRH
             
+            // Get first value argument (sibling of format string)
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            STA libArgL
+            INY
+            LDA [ZP.IDX], Y
+            STA libArgH
+            
             // Walk format string at compile time
             LDY #0
             loop
@@ -248,7 +305,7 @@ unit Library
                 CMP #'d'  // %d - int
                 if (Z)
                 {
-                    // TODO: Generate code to evaluate current arg and print as int
+                    emitIntFormatter(); if (NC) { break; }  // Same as %d
                     INY
                     continue;
                 }
@@ -261,7 +318,7 @@ unit Library
                     CMP #'d'
                     if (Z)
                     {
-                        // TODO: Generate code for long
+                        emitIntFormatter(); if (NC) { break; }  // Same as %d
                         INY
                         continue;
                     }

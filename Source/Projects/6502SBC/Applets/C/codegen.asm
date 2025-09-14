@@ -565,6 +565,41 @@ unit CodeGen
         } // loop
     }
     
+    // Generate code to load an identifier's value and push to stack
+    // Input: IDX = Identifier node
+    // Output: C set on success, clear on failure
+    //         Generated code pushes value to stack
+    generateLoadIdentifier()
+    {
+        // Get identifier name from node
+        LDY #AST.iData
+        LDA [ZP.IDX], Y
+        STA ZP.STRL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.STRH
+        
+        // Find the variable declaration
+        findVariable();
+        if (NC)
+        {
+            LDA # Error.UndefinedIdentifier
+            Errors.ShowIDX();
+            return;
+        }
+        
+        // IDX now points to VarDecl node
+        // Get the BP offset (stored during declaration processing)
+        LDY #AST.iOffset
+        LDA [ZP.IDX], Y
+        
+        // Generate code to load from BP+offset into ZP.NEXT
+        getNEXT(); if (NC) { return; }
+        
+        // Generate code to push ZP.NEXT onto stack
+        pushNEXT();
+    }
+    
     // Add the BIOS entry point address (0x0800) to value in ACC
     // Input: ZP.ACC = relative offset
     // Output: ZP.ACC = absolute address (offset + 0x0800)
@@ -840,6 +875,80 @@ Print.Hex(); LDA #'v' Print.Char();
         
         SEC
     }
+    
+    
+    // Generate code to pop 32-bit value from stack into ZP.TOP
+    popTOP()
+    {
+        // TSX - get current stack pointer
+        LDA #OpCode.TSX
+        EmitByte(); if (NC) { return; }
+        
+        // INX - point to top value (SP points one past)
+        LDA #OpCode.INX  
+        EmitByte(); if (NC) { return; }
+        
+        // Transfer X to Y for indirect indexed addressing
+        LDA #OpCode.TXA
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        EmitByte(); if (NC) { return; }
+        
+        // Load TOP0 from stack via pointer
+        // LDA [runtimeStack0],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP0
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP0 
+        EmitByte(); if (NC) { return; }
+        
+        // Load TOP1 from stack via pointer
+        // LDA [runtimeStack1],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP1
+        EmitByte(); if (NC) { return; }
+                
+        // Load TOP2 from stack via pointer
+        // LDA [runtimeStack2],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP2
+        EmitByte(); if (NC) { return; }
+        
+        // Load TOP3 from stack via pointer
+        // LDA [runtimeStack3],Y
+        LDA #OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP3
+        EmitByte(); if (NC) { return; }
+                                              
+        // TXS - update stack pointer (now points to next free)
+        LDA #OpCode.TXS
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
     
     // Generate code to calculate effective Y offset from BP
     // Input: A = logical offset (signed)
@@ -1136,6 +1245,10 @@ Print.Hex(); LDA #'v' Print.Char();
             case NodeType.LongLit:
             {
                 generateIntLiteral();
+            }
+            case NodeType.Identifier:
+            {
+                generateLoadIdentifier();
             }
             default:
             {
