@@ -1020,6 +1020,59 @@ unit Parser
         // }
     }
     
+    // Input: A = PostfixOpType, IDY = expression to apply postfix to
+    // Output: IDY = PostfixOp node
+    parsePostfixOperator() // -> IDY
+    {
+        // Save operator type
+        PHA
+        
+        // Save the expression
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        loop
+        {
+            // Create PostfixOp node
+            LDA #AST.NodeType.PostfixOp
+            AST.CreateNode(); // -> IDX
+            if (NC) 
+            { 
+                PLA
+                PLA
+                PLA
+                break; 
+            }
+            
+            // Restore expression as IDY
+            PLA
+            STA ZP.IDYH
+            PLA
+            STA ZP.IDYL
+            
+            // Set the operator type
+            PLA  // Get operator type
+            LDY #AST.iPostfixOp
+            STA [ZP.IDX], Y
+            
+            // Add expression as child of PostfixOp
+            AST.AddChild(); // IDX = PostfixOp, IDY = expression
+            if (NC) { break; }
+            
+            // Move PostfixOp to IDY for return
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            consume(); // Move past ++ or --
+            SEC
+            break;
+        }
+    }
+    
     // Parse postfix expressions (function calls, array indexing, etc.)
     parsePostfix() // -> IDY
     {
@@ -1031,20 +1084,33 @@ unit Parser
         loop
         {
             LDA currentToken
-            CMP #Token.LeftParen
-            if (Z)
+            switch (A)
             {
-                // Convert to function call
-                parseCallExpression(); // -> IDY (uses IDY as the identifier)
-                // Continue checking for more postfix ops
-                continue;
+                case Token.LeftParen:
+                {
+                    // Convert to function call
+                    parseCallExpression(); // -> IDY (uses IDY as the identifier)
+                    if (NC) { break; }
+                    // Continue checking for more postfix ops
+                    continue;
+                }
+                case Token.Increment: // ++
+                {
+                    LDA #PostfixOpType.Increment
+                    parsePostfixOperator(); // -> IDY
+                    if (NC) { break; }
+                }
+                case Token.Decrement: // --
+                {
+                    LDA #PostfixOpType.Decrement
+                    parsePostfixOperator(); // -> IDY
+                    if (NC) { break; }
+                }
             }
-            
             // TODO: Add array indexing with '['
-            
+            SEC
             break;  // No more postfix operators
         }
-        SEC
     }
     
     // Parse primary expressions (literals, identifiers, parenthesized)

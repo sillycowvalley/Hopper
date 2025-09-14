@@ -567,18 +567,6 @@ unit Lexer
             // Single and double character operators
             switch (A)
             {
-                case '+': 
-                { 
-                    advance();
-                    LDA #Token.Plus
-                    STA TokenType
-                }
-                case '-':
-                {
-                    advance();
-                    LDA #Token.Minus
-                    STA TokenType
-                }
                 case '*':
                 {
                     advance();
@@ -633,10 +621,42 @@ unit Lexer
                     LDA #Token.Comma
                     STA TokenType
                 }
+                case '+': 
+                { 
+                    advance();
+                    LDA currentChar  
+                    CMP #'+'
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.Increment
+                    }
+                    else
+                    {
+                        LDA #Token.Plus
+                    }
+                    STA TokenType
+                }
+                case '-':
+                {
+                    advance();
+                    LDA currentChar
+                    CMP #'-'
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.Decrement
+                    }
+                    else
+                    {
+                        LDA #Token.Minus
+                    }
+                    STA TokenType
+                }
                 case '=':
                 {
                     advance();
-                    LDA peekChar
+                    LDA currentChar
                     CMP #'='
                     if (Z)
                     {
@@ -652,7 +672,7 @@ unit Lexer
                 case '<':
                 {
                     advance();
-                    LDA peekChar
+                    LDA currentChar
                     CMP #'='
                     if (Z)
                     {
@@ -668,7 +688,7 @@ unit Lexer
                 case '>':
                 {
                     advance();
-                    LDA peekChar
+                    LDA currentChar
                     CMP #'='
                     if (Z)
                     {
@@ -684,7 +704,7 @@ unit Lexer
                 case '!':
                 {
                     advance();
-                    LDA peekChar
+                    LDA currentChar
                     CMP #'='
                     if (Z)
                     {

@@ -671,6 +671,10 @@ unit CodeGen
                     {
                         Library.SecondsCall();
                     }
+                    case SysCall.PrintChar:
+                    {
+                        Library.PutcharCall();
+                    }
                     default:
                     {
 #ifdef DEBUG
@@ -1319,68 +1323,95 @@ Print.Hex(); LDA #'v' Print.Char();
     
     generateBinOp()
     {
-        // Get operator type
-        LDY #AST.iBinOp
-        LDA [ZP.IDX], Y
-        PHA  // Save operator
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
         
-        // Generate left operand
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        generateExpression(); if (NC) { PLA return; }
-        
-        // Left operand is now on stack
-        
-        // Generate right operand
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        generateExpression(); if (NC) { PLA return; }
-        
-        // Right operand is now on stack
-        
-        // Pop both operands
-        CodeGen.popTOP();    // Right operand -> TOP
-        CodeGen.popNEXT();   // Left operand -> NEXT
-        
-        // Perform operation based on saved operator
-        PLA  // Get operator type
-        switch (A)
+        // Save the BinOp node pointer
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        LDA ZP.IDXL
+        STA AST.astNodeL
+
+        loop
         {
-            case BinOpType.Add:
+            // Get operator type
+            LDY #AST.iBinOp
+            LDA [AST.astNode], Y
+            PHA  // Save operator
+            
+            // Generate left operand
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            generateExpression(); if (NC) { PLA break; }
+            
+            // Left operand is now on stack
+            
+            // Generate right operand
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            generateExpression(); if (NC) { PLA break; }
+            
+            // Right operand is now on stack
+            
+            // Pop both operands
+            CodeGen.popTOP();    // Right operand -> TOP
+            CodeGen.popNEXT();   // Left operand -> NEXT
+            
+            // Perform operation based on saved operator
+            PLA  // Get operator type
+            switch (A)
             {
-                // Emit: LDX #SysCall.LongAdd
-                LDA #OpCode.LDX_IMM
-                EmitByte(); if (NC) { return; }
-                LDA #BIOSInterface.SysCall.LongAdd
-                EmitByte(); if (NC) { return; }
+                case BinOpType.Add:
+                {
+                    // Emit: LDX #SysCall.LongAdd
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA #BIOSInterface.SysCall.LongAdd
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.Sub:
+                {
+                    // Emit: LDX #SysCall.LongSub
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongSub
+                    EmitByte(); if (NC) { break; }
+                }
             }
-            case BinOpType.Sub:
-            {
-                // Emit: LDX #SysCall.LongSub
-                LDA #OpCode.LDX_IMM
-                EmitByte(); if (NC) { return; }
-                LDA # BIOSInterface.SysCall.LongSub
-                EmitByte(); if (NC) { return; }
-            }
-        }
+            
+            // Emit: JSR dispatch
+            Library.EmitDispatchCall(); if (NC) { break; }
+            
+            // Result is in NEXT, push it
+            CodeGen.pushNEXT();
+            SEC
+            break;
+        } // single exit
         
-        // Emit: JSR dispatch
-        Library.EmitDispatchCall(); if (NC) { return; }
-        
-        // Result is in NEXT, push it
-        CodeGen.pushNEXT();
-        
-        SEC
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
     }
     
     // Generate code for an expression
@@ -1389,16 +1420,17 @@ Print.Hex(); LDA #'v' Print.Char();
     //         C set on success, clear on failure
     generateExpression()
     {
-        LDY #AST.iNodeType
+        LDY # AST.iNodeType
         LDA [ZP.IDX], Y
         
         switch (A)
         {
+            case NodeType.CharLit:
             case NodeType.IntLit:
             case NodeType.LongLit:
             {
                 generateIntLiteral();
-            }
+            } 
             case NodeType.Identifier:
             {
                 generateLoadIdentifier();

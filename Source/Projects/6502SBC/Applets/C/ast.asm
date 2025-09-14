@@ -35,6 +35,7 @@ unit AST
         VarDecl      = 11,  // Variable declaration 
         Assign       = 12,  // Assignment expression
         BinOp        = 13,  // Binary operation
+        PostfixOp    = 14,  // Postfix operation
         
         AfterLast           // see freeNode()
     }
@@ -46,6 +47,18 @@ unit AST
         Mul = 3,   // *
         Div = 4,   // /
         Mod = 5,   // %
+        
+        LT = 6,    // 
+        GT = 7,    // >
+        LE = 8,    // <=
+        GE = 9,    // >=
+        EQ = 10,   // ==
+        NE = 11,   // !=
+    }
+    enum PostfixOpType
+    {
+        Increment,
+        Decrement
     }
     
     // Common node structure:
@@ -97,6 +110,10 @@ unit AST
     // BinOp node:
     //     [7]    BinOpType
     const byte iBinOp = 7;
+    
+    // PostfixOp node:
+    //     [7]    PostfixOpType
+    const byte iPostfixOp = 7;
     
     Initialize()
     {
@@ -439,7 +456,8 @@ unit AST
     const string nodeChar     = "CHAR ";
     const string nodeVarDecl  = "VAR "; 
     const string nodeAssign   = "ASSIGN";
-    const string nodeBinOp = "BINOP ";
+    const string nodeBinOp    = "BINOP ";
+    const string nodePostfixOp= "POSTFIX ";
     const string nodeUnknown  = "??";
     
     
@@ -448,6 +466,9 @@ unit AST
     const string opMul = "*";
     const string opDiv = "/";
     const string opMod = "%";
+    
+    const string opIncrement = "++";
+    const string opDecrement = "--";
     
     const string nodeBPOffset = "[BP";
     
@@ -535,6 +556,38 @@ unit AST
                 STA ZP.STRH
                 Print.String();
             }
+            
+            case NodeType.PostfixOp:
+            {
+                LDA #(nodePostfixOp % 256)
+                STA ZP.STRL
+                LDA #(nodePostfixOp / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                // Print the operator
+                LDY #iBinOp
+                LDA [ZP.IDX], Y
+                switch (A)
+                {
+                    case PostfixOpType.Increment:
+                    {
+                        LDA #(opIncrement % 256)
+                        STA ZP.STRL
+                        LDA #(opIncrement / 256)
+                        STA ZP.STRH
+                    }
+                    case PostfixOpType.Decrement:
+                    {
+                        LDA #(opDecrement % 256)
+                        STA ZP.STRL
+                        LDA #(opDecrement / 256)
+                        STA ZP.STRH
+                    }
+                }
+                Print.String();
+            }
+            
             case NodeType.BinOp:
             {
                 LDA #(nodeBinOp % 256)

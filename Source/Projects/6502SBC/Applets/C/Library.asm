@@ -15,6 +15,7 @@ unit Library
     const string sysprintf  = "printf";
     const string sysmillis  = "millis";
     const string sysseconds = "seconds";
+    const string sysputchar = "putchar";
     
     // Emit a JSR to the BIOS dispatch function
     // Output: C set on success, clear on failure
@@ -89,7 +90,20 @@ unit Library
             LDA # BIOSInterface.SysCall.TimeSeconds
             SEC
             return;
-        }    
+        }   
+        
+        // Check for "seconds"
+        LDA #(sysputchar % 256)
+        STA ZP.IDYL
+        LDA #(sysputchar / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.PrintChar
+            SEC
+            return;
+        }  
         
         
         // TODO : add more system functions here...
@@ -182,6 +196,48 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         // done:
+        SEC
+    }
+    
+    PutcharCall()
+    {
+        // Get first argument node (skip identifier, get its sibling)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Generate argument and pop to NEXT
+        CodeGen.generateExpression(); if (NC) { return; }
+        CodeGen.popNEXT(); if (NC) { return; }
+        
+        // Move character from NEXT0 to A and call PrintChar
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #BIOSInterface.SysCall.PrintChar
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        // Push character back as return value (already in NEXT0, rest is zero)
+        CodeGen.pushNEXT();
+        
         SEC
     }
     
