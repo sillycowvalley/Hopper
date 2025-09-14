@@ -63,6 +63,94 @@ unit Library
         CLC  // Not a system function
     }
     
+    // Emit runtime loop to print literal characters until % or \0
+    // Input:  Y = current position in format string
+    // Output: Y = position after literal run (at % or \0)
+    //         C set on success, clear on failure
+    emitLiteralRun()
+    {
+        // Check if we have any literals to print
+        LDA [ZP.STR], Y
+        if (Z) { SEC return; }  // End of string
+        CMP #'%'
+        if (Z)
+        {
+            PHY
+            INY
+            LDA [ZP.STR], Y
+            CMP #'%'  // Check for %%
+            PLY
+            if (NZ) { SEC return; }  // Not %%, stop run
+        }
+        
+        // Emit: LDY #offset
+        LDA # OpCode.LDY_IMM
+        EmitByte(); if (NC) { return; }
+        TYA  // Current offset into string
+        EmitByte(); if (NC) { return; }
+        
+// loopStart:
+        // Emit: LDA [ZP.STR],Y
+        LDA # OpCode.LDA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.STR
+        EmitByte(); if (NC) { return; }
+        
+        // find the Y value for the end of this run
+        loop
+        {
+            LDA [ZP.STR], Y
+            if (Z) { break; }  // End of string
+            
+            CMP #'%'
+            if (Z)
+            {
+                INY
+                LDA [ZP.STR], Y
+                DEY
+                CMP #'%'
+                if (NZ) { break; }  // Not %%, end run
+                INY  // Skip first %
+            }
+            
+            INY
+        }
+        
+        // Emit: CMP #end_offset
+        LDA # OpCode.CPY_IMM
+        EmitByte(); if (NC) { return; }
+        TYA  // End offset
+        EmitByte(); if (NC) { return; }
+        
+        // Emit: BEQ done
+        LDA # OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA # 8  // Skip next 8 bytes
+        EmitByte(); if (NC) { return; }
+        
+        // Emit: LDX #PrintChar
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.PrintChar
+        EmitByte(); if (NC) { return; }
+        
+        // Emit: JSR dispatch
+        EmitDispatchCall(); if (NC) { return; }
+        
+        // Emit: INY
+        LDA # OpCode.INY
+        EmitByte(); if (NC) { return; }
+        
+        // Emit: BRA loop
+        LDA # OpCode.BRA
+        EmitByte(); if (NC) { return; }
+        LDA # 0xF2  // CPY(2) + BEQ(2) + LDX(2) + JSR(3) + INY(1) + LDA(2) + 2 more = 14
+        EmitByte(); if (NC) { return; }
+        
+        // done:
+        SEC
+    }
+    
     // Generate code for a printf system call
     // Input: IDX = CallExpr node for printf
     // Output: C set on success, clear on failure
@@ -134,39 +222,55 @@ unit Library
             LDA # ZP.STRH
             EmitByte();if (NC) { break;}
             
-            // at this point at runtime, the format string is in ZP.STR
+            // Get pointer to actual string data in heap
+            LDY #AST.iData
+            LDA [ZP.IDX], Y
+            STA ZP.STRL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.STRH
             
-            // Generate: LDY #0
-            LDA # OpCode.LDY_IMM
-            EmitByte(); if (NC) { break; }
-            LDA # 0
-            EmitByte(); if (NC) { break; }
-            
-//loopStart            :
-            // Generate: LDA [ZP.STR],Y
-            LDA # OpCode.LDA_IND_Y
-            EmitByte(); if (NC) { break; }
-            LDA # ZP.STR
-            EmitByte(); if (NC) { break; }
-            
-            // Generate: BEQ done
-            LDA # OpCode.BEQ
-            EmitByte(); if (NC) { break; }
-            LDA # 8     // Skip next 8 bytes: LDX(2) + JSR(3) + INY(1) + BRA(2)
-            EmitByte(); if (NC) { break; }
-            
-            EmitPrintChar();
-            
-            // Generate: INY
-            LDA # OpCode.INY
-            EmitByte(); if (NC) { break; }
-            
-            // Generate: BRA loopStart
-            LDA # OpCode.BRA
-            EmitByte(); if (NC) { break; }
-            LDA # 0xF4  // -12 in two's complement (go back 12 bytes to LDA [ZP.STR],Y)
-            EmitByte(); if (NC) { break; }
-// done:                      
+            // Walk format string at compile time
+            LDY #0
+            loop
+            {
+                // Start a literal run - emit runtime loop to print chars
+                emitLiteralRun(); if (NC) { break; }
+                
+                // Check what stopped the run
+                LDA [ZP.STR], Y
+                if (Z) { break; }  // End of string
+                
+                // Must be a % formatter
+                INY  // Skip '%'
+                LDA [ZP.STR], Y
+                
+                CMP #'d'  // %d - int
+                if (Z)
+                {
+                    // TODO: Generate code to evaluate current arg and print as int
+                    INY
+                    continue;
+                }
+                
+                CMP #'l'  // %ld - long
+                if (Z)
+                {
+                    INY
+                    LDA [ZP.STR], Y
+                    CMP #'d'
+                    if (Z)
+                    {
+                        // TODO: Generate code for long
+                        INY
+                        continue;
+                    }
+                    DEY  // Not %ld
+                }
+                
+                // Unknown formatter - treat % as literal
+                DEY  // Back to '%'
+            }
             
             SEC  // Success
             break;

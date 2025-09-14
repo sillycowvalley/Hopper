@@ -52,7 +52,7 @@ unit CodeGen
     
     const string msgMain = "main";
     
-    // 6502 opcodes
+    // 65C02S opcodes
     enum OpCode
     {
         CLC     = 0x18,
@@ -79,6 +79,8 @@ unit CodeGen
         LDA_IMM = 0xA9,
         LDA_IND_Y = 0xB1,
         TSX     = 0xBA,
+        CPY_IMM = 0xC0,
+        CMP_IMM = 0xC9,
         INY     = 0xC8,
         DEX     = 0xCA,
         INC_ZP  = 0xE6, 
