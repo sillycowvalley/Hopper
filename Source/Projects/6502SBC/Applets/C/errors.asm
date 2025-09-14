@@ -128,6 +128,7 @@ unit Errors
     {
         PHA
         
+        Lexer.GetLineNumber(); // -> ACC
         printErrorLine();
                
         LDA #(msgExpected % 256)

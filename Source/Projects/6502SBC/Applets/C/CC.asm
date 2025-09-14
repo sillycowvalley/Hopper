@@ -16,6 +16,7 @@ program CC
     uses "AST"
     uses "Parser"
     uses "CodeGen"
+    uses "Library"
     
     const string messageCompiling = "Compiling ";
     

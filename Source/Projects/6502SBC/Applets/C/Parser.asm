@@ -113,6 +113,58 @@ unit Parser
         PLY
     }
     
+    duplicateString() // STR -> STR
+    {
+        PHY
+        
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        loop
+        {
+            // Get string length
+            LDY #0
+            loop
+            {
+                LDA [STR], Y
+                if (Z) { break; }
+                INY
+            }
+            INY  // Include null terminator
+            
+            STY ZP.ACCL
+            STZ ZP.ACCH
+            Memory.Allocate();
+            if (NC) { Errors.OutOfMemory(); break; }
+            
+            // copy string
+            LDY #0
+            loop
+            {
+                LDA [STR], Y
+                STA [IDX], Y
+                if (Z) { break; }
+                INY
+            }
+            
+            LDA ZP.IDXL
+            STA ZP.STRL
+            LDA ZP.IDXH
+            STA ZP.STRH
+        
+            SEC
+            break;    
+        } // single exit
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        PLY   
+    }
+    
     // Parse: void main() { ... }
     parseFunction() // -> IDY
     {
@@ -350,9 +402,137 @@ unit Parser
             consume();  // Move past identifier
             if (NC) { break; }
             
-            // TODO: Check for '=' for initialization
-            // For now, just expect ';'
             
+            // Check for '=' for initialization
+            LDA currentToken
+            CMP #Token.Assign
+            if (Z)  // We have an initializer
+            {
+                consume();  // Move past '='
+                if (NC) { break; }
+                
+                // Parse the initializer expression (e.g., "0" in "s = 0")
+                parseExpression();  // Returns expression in IDY
+                if (NC) { break; }
+                
+                // Save the initializer expression for later
+                LDA ZP.IDYL
+                PHA
+                LDA ZP.IDYH
+                PHA
+                
+                // Create an ASSIGN node for the initialization
+                LDA #AST.NodeType.Assign
+                AST.CreateNode();  // Returns new node in IDX
+                if (NC) { break; }
+                
+                // Save the ASSIGN node while we build its children
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Get the original identifier from the VarDecl (to duplicate it)
+                LDA stmtNodeL
+                STA ZP.IDXL
+                LDA stmtNodeH
+                STA ZP.IDXH
+                AST.GetFirstChild();  // Get identifier in IDY
+                
+                // Extract the string pointer from the original identifier
+                LDY #AST.iData  
+                LDA [ZP.IDY], Y
+                STA ZP.STRL
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.STRH
+                
+                // Duplicate the string (to avoid double-free)
+                if (C)
+                {
+                    duplicateString(); // STR -> STR
+                }
+                
+                // Create new identifier node for the ASSIGN
+                LDA #AST.NodeType.Identifier
+                if (C)
+                {
+                    AST.CreateNode(); // -> IDX
+                }
+                
+                // Point the new identifier to the duplicated string
+                LDA ZP.STRL
+                STA ZP.ACCL
+                LDA ZP.STRH
+                STA ZP.ACCH
+                if (C)
+                {
+                    AST.SetData(); // IDX[iData] = ACC (new string copy)
+                }
+                
+                // Move new identifier to IDY for adding to ASSIGN
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                // Restore ASSIGN node to IDX
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                
+                // Add identifier as first child of ASSIGN (left side)
+                if (C)
+                {
+                    AST.AddChild();  // IDX = ASSIGN, IDY = identifier
+                }
+                
+                // Restore initializer expression to IDY
+                PLA
+                STA ZP.IDYH
+                PLA
+                STA ZP.IDYL
+                
+                // Add initializer as second child of ASSIGN (right side)
+                AST.AddChild();  // IDX = ASSIGN, IDY = initializer
+                if (NC) { break; }
+                
+                // ASSIGN is now complete with both children
+                // Move it to IDY to wrap in ExprStmt
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                // Create ExprStmt wrapper (assignments as statements need this)
+                LDA #AST.NodeType.ExprStmt
+                AST.CreateNode();  // Returns new node in IDX
+                if (NC) { break; }
+                
+                // Add complete ASSIGN as child of ExprStmt
+                AST.AddChild();  // IDX = ExprStmt, IDY = ASSIGN
+                if (NC) { break; }
+                
+                // Move ExprStmt to IDY for adding as sibling
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                // Restore VarDecl to IDX for adding sibling
+                LDA stmtNodeL
+                STA ZP.IDXL
+                LDA stmtNodeH
+                STA ZP.IDXH
+                
+                // Add ExprStmt as sibling to VarDecl
+                // (Both will be added to block by parseCompoundStatement)
+                AST.AddSibling();  // IDX = VarDecl, IDY = ExprStmt
+                if (NC) { break; }
+            }
+            
+                        
             LDA #Token.Semicolon
             expect();
             if (NC) { break; }

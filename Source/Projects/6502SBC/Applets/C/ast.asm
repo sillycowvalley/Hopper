@@ -1,6 +1,6 @@
 unit AST
 {
-    friend Parser, CodeGen, CC, Errors;
+    friend Parser, CodeGen, Library, CC, Errors;
     
     // AST zero page allocation
     const byte astSlots = 0x80;
@@ -278,6 +278,19 @@ unit AST
         INY
         LDA ZP.IDYH
         STA [ZP.IDX], Y
+    }
+    
+    // Get first child of a node
+    // Input: ZP.IDX = parent node
+    // Output ZP.IDY = child node
+    GetFirstChild()
+    {
+        LDY # iChild
+        LDA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
     }
     
     // Set next sibling of a node  

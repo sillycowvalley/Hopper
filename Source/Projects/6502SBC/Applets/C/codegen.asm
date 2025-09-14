@@ -1,6 +1,9 @@
 unit CodeGen
 {
     uses "AST"
+    uses "Library"
+    
+    friend Library;
     
     // Code generation state
     const byte cgSlots = 0x90;
@@ -49,8 +52,6 @@ unit CodeGen
     
     const string msgMain = "main";
     
-    const string sysprintf = "printf";
-    
     // 6502 opcodes
     enum OpCode
     {
@@ -64,11 +65,13 @@ unit CodeGen
         PLA     = 0x68,
         ADC_IMM = 0x69,
         JMP_IND = 0x6C,
+        BRA     = 0x80,
         STA_ZP  = 0x85,
         STX_ZP  = 0x86, 
         TXA     = 0x8A,
         STA_IND_Y = 0x91,
         TXS     = 0x9A,
+        LDY_IMM = 0xA0,
         LDX_IMM = 0xA2,
         LDA_ZP  = 0xA5, 
         LDX_ZP  = 0xA6,
@@ -76,34 +79,14 @@ unit CodeGen
         LDA_IMM = 0xA9,
         LDA_IND_Y = 0xB1,
         TSX     = 0xBA,
+        INY     = 0xC8,
         DEX     = 0xCA,
         INC_ZP  = 0xE6, 
-        INX = 0xE8,
+        INX     = 0xE8,
+        BEQ     = 0xF0,
     }    
     
-    // Check if a function name corresponds to a system function
-    // Input: ZP.STR = function name to check
-    // Output: A = syscall number if system function
-    //         C set if system function, clear if user function
-    isSystemFunction()
-    {
-        // Check for "printf"
-        LDA #(sysprintf % 256)
-        STA ZP.IDYL
-        LDA #(sysprintf / 256)
-        STA ZP.IDYH
-        compareStrings();  // Compare [STR] with [IDY]
-        if (C)
-        {
-            LDA # BIOSInterface.SysCall.PrintString
-            SEC
-            return;
-        }
-             
-        // TODO : add more system functions here...
-        
-        CLC  // Not a system function
-    }
+    
     
     // Initialize code generation buffers and state
     // Allocates initial 4KB code buffer
@@ -367,7 +350,7 @@ unit CodeGen
     // Input: ZP.STR = first string pointer
     //        ZP.IDY = second string pointer
     // Output: C set if strings are equal, clear if different
-    compareStrings()
+    CompareStrings()
     {
         LDY #0
         loop
@@ -471,7 +454,7 @@ unit CodeGen
                 STX ZP.IDYL
                 
                 // Compare with target name
-                CodeGen.compareStrings();  // STR vs IDY
+                CodeGen.CompareStrings();  // STR vs IDY
                 if (C)
                 {
                     // Found it!
@@ -548,7 +531,7 @@ unit CodeGen
                 STX ZP.IDYL
                 
                 // Compare strings [STR] with [IDY]
-                compareStrings();
+                CodeGen.CompareStrings();
                 if (C)
                 {
                     // Found it! Return astNode as Function
@@ -583,7 +566,7 @@ unit CodeGen
     // Add the BIOS entry point address (0x0800) to value in ACC
     // Input: ZP.ACC = relative offset
     // Output: ZP.ACC = absolute address (offset + 0x0800)
-    addEntryPoint()
+    AddEntryPoint()
     {
         CLC
         LDA ZP.ACCL
@@ -594,89 +577,7 @@ unit CodeGen
         STA ZP.ACCH
     }
     
-    // Generate code for a printf system call
-    // Input: IDX = CallExpr node for printf
-    // Output: C set on success, clear on failure
-    // Note: Currently only supports string literal as first argument
-    generatePrintfCall()
-    {
-        loop
-        {
-            // first child is identifier (which we already know is "printf")
-            LDY #AST.iChild
-            LDA [ZP.IDX], Y
-            TAX
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDXH
-            STX ZP.IDXL
-            
-            // Move to first argument (sibling of identifier)
-            LDY #AST.iNext
-            LDA [ZP.IDX], Y
-            TAX
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDXH
-            STX ZP.IDXL
-            
-            // Should be a StringLit node
-            LDY #AST.iNodeType
-            LDA [ZP.IDX], Y
-            CMP #AST.NodeType.StringLit
-            if (NZ) 
-            {
-                LDA # Token.StringLiteral
-                Errors.Expected();
-                break;
-            }
-            
-            // Get string's offset (stored during emitStrings)
-            // TODO : should be an expression -> STR
-            LDY #AST.iOffset
-            LDA [ZP.IDX], Y
-            STA ZP.ACCL
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.ACCH
-            
-            addEntryPoint();
-            
-            // Generate: LDA #low(string)
-            LDA # OpCode.LDA_IMM
-            EmitByte(); if (NC) { break;}
-            LDA ZP.ACCL
-            EmitByte();if (NC) { break;}
-            
-            // Generate: STA ZP.STRL
-            LDA #OpCode.STA_ZP
-            EmitByte();if (NC) { break;}
-            LDA #ZP.STRL
-            EmitByte();if (NC) { break;}
-            
-            // Generate: LDA #high(string)
-            LDA #OpCode.LDA_IMM
-            EmitByte();if (NC) { break;}
-            LDA ZP.ACCH
-            EmitByte();if (NC) { break;}
-            
-            // Generate: STA ZP.STRH
-            LDA # OpCode.STA_ZP
-            EmitByte();if (NC) { break;}
-            LDA # ZP.STRH
-            EmitByte();if (NC) { break;}
-            
-            // Generate: LDX #SysCall.PrintString
-            LDA #OpCode.LDX_IMM
-            EmitByte();if (NC) { break;}
-            LDA #BIOSInterface.SysCall.PrintString
-            EmitByte();if (NC) { break;}
-            
-            emitDispatchCall();
-            break;
-        } // single exit
-    }
-    
+       
     // Generate code for a function call expression
     // Input: IDX = CallExpr node
     // Output: C set on success, clear on failure
@@ -707,14 +608,14 @@ unit CodeGen
             STA ZP.STRH
             
             // Check if it's a system function
-            isSystemFunction();  // -> A = syscall#, C = is system
+            IsSystemFunction();  // -> A = syscall#, C = is system
             if (C)
             {
                 switch (A)
                 {
                     case SysCall.PrintString:
                     {
-                        generatePrintfCall();
+                        Library.PrintfCall();
                     }
                     default:
                     {
@@ -1347,7 +1248,7 @@ Print.Hex(); LDA #'e' Print.Char();
             case NodeType.ExprStmt:
             {
                 // Get the expression (child)
-                LDY #AST.iChild
+                LDY # AST.iChild
                 LDA [ZP.IDX], Y
                 TAX
                 INY
@@ -1356,7 +1257,7 @@ Print.Hex(); LDA #'e' Print.Char();
                 STX ZP.IDXL
                 
                 // Check expression type
-                LDY #AST.iNodeType
+                LDY # AST.iNodeType
                 LDA [ZP.IDX], Y
                 switch (A)
                 {
@@ -1568,23 +1469,7 @@ Print.Hex(); LDA #'s' Print.Char();
         SEC
     }
     
-    // Emit a JSR to the BIOS dispatch function
-    // Output: C set on success, clear on failure
-    // Note: Assumes X register contains syscall number
-    emitDispatchCall()
-    {
-        LDA # OpCode.JSR
-        EmitByte(); if (NC) { return; }
         
-        // Add base to offset to get absolute address (4th byte into our code after the entrypoint JMP)
-        CLC
-        LDA # (BIOSInterface.EntryPoint % 256)
-        ADC # 3
-        EmitByte(); if (NC) { return; }
-        LDA # (BIOSInterface.EntryPoint / 256)
-        EmitByte(); 
-    }
-    
     // Patch the initial JMP instruction to point to main
     // Note: Called after main's address is known
     patchEntryJump()
@@ -1594,7 +1479,7 @@ Print.Hex(); LDA #'s' Print.Char();
         STA ZP.ACCL
         LDA codeOffsetH
         STA ZP.ACCH
-        addEntryPoint();
+        AddEntryPoint();
         
         // Write to offset 1-2
         LDY #1
@@ -1624,7 +1509,7 @@ Print.Hex(); LDA #'s' Print.Char();
         EmitByte(); if (NC) { return; }
         LDA # BIOSInterface.SysCall.MemAllocate
         EmitByte(); if (NC) { return; }
-        emitDispatchCall();
+        Library.EmitDispatchCall();
         
         // Assume since this is the first allocation, Memory.Allocate returns page-aligned for 1K allocation
         // After 2-byte header, base address will be xx00
