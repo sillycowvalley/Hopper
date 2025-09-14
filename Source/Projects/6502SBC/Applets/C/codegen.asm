@@ -1102,7 +1102,7 @@ Print.Hex(); LDA #'v' Print.Char();
 
     // Generate code for an integer literal
     // Input: IDX = IntLit or LongLit node
-    // Output: Value loaded into ZP.TOP0-3
+    // Output: Code emitted to load value into ZP.NEXT0-3 at runtime
     //         C set on success, clear on failure
     generateIntLiteral()  // Input: IDX = literal node
     {
@@ -1114,7 +1114,7 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA [ZP.IDX], Y
         STA ZP.IDYH
         
-        // Read the 4 bytes from heap into NEXT (temp storage)
+        // Read the 4 bytes from heap into temp storage
         LDY #0
         LDA [ZP.IDY], Y
         STA ZP.NEXT0
@@ -1128,11 +1128,96 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA [ZP.IDY], Y
         STA ZP.NEXT3
         
+        // Now emit code to load these values at runtime
+        
+        // Emit code for NEXT0
+        LDA ZP.NEXT0
+        if (Z)  // Optimize: use STZ for zero
+        {
+            LDA #OpCode.STZ_ZP  // 0x64
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM  // 0xA9
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT0
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP  // 0x85
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { return; }
+        }
+        
+        // Emit code for NEXT1
+        LDA ZP.NEXT1
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT1
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { return; }
+        }
+        
+        // Emit code for NEXT2
+        LDA ZP.NEXT2
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT2
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { return; }
+        }
+        
+        // Emit code for NEXT3
+        LDA ZP.NEXT3
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT3
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { return; }
+        }
+        
         pushNEXT();
-              
+        
         SEC
-    }
-    
+    }    
     // Generate code for an expression
     // Input: IDX = expression node
     // Output: Result in ZP.TOP0-3 or on stack
