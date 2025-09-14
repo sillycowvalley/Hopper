@@ -780,6 +780,62 @@ unit Parser
         LDA currentToken
         switch (A)
         {
+            case Token.CharLiteral:
+            {
+                // Create CharLit node
+                LDA #AST.NodeType.CharLit
+                AST.CreateNode(); // -> IDX
+                if (NC) { return; }
+                
+                // Save the node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Allocate 1 byte for the character value
+                LDA #1
+                STA ZP.ACCL
+                STZ ZP.ACCH
+                Memory.Allocate(); // -> IDX
+                if (NC)
+                {
+                    PLA
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    AST.FreeNode();
+                    Errors.OutOfMemory();
+                    return;
+                }
+                
+                // Copy the character from TokenBuffer to allocated memory
+                LDY #0
+                LDA [Lexer.TokenBuffer], Y
+                STA [ZP.IDX], Y
+                
+                // Store pointer in ACC for SetData
+                LDA ZP.IDXL
+                STA ZP.ACCL
+                LDA ZP.IDXH
+                STA ZP.ACCH
+                
+                // Restore node and set data pointer
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                AST.SetData(); // IDX[iData] = ACC (pointer to 1-byte value)
+                
+                // Move to IDY for return
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                consume();  // Move past the literal
+                SEC
+            }
             case Token.IntegerLiteral:
             {
                 // Create IntLit node
@@ -787,13 +843,54 @@ unit Parser
                 AST.CreateNode(); // -> IDX
                 if (NC) { return; }
                 
-                // Store the value
-                LDY #AST.iData
-                LDA Lexer.TokenValueL
+                // Save the node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Allocate 4 bytes for the 32-bit value
+                LDA # 4
+                STA ZP.ACCL
+                STZ ZP.ACCH
+                Memory.Allocate(); // -> IDX
+                if (NC)
+                {
+                    PLA
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    AST.FreeNode();
+                    Errors.OutOfMemory();
+                    return;
+                }
+                
+                // Copy the 32-bit value from TokenBuffer to allocated memory
+                LDY #0
+                LDA [Lexer.TokenBuffer], Y
                 STA [ZP.IDX], Y
                 INY
-                LDA Lexer.TokenValueH
+                LDA [Lexer.TokenBuffer], Y
                 STA [ZP.IDX], Y
+                INY
+                LDA [Lexer.TokenBuffer], Y
+                STA [ZP.IDX], Y
+                INY
+                LDA [Lexer.TokenBuffer], Y
+                STA [ZP.IDX], Y
+                
+                // Store pointer in ACC for SetData
+                LDA ZP.IDXL
+                STA ZP.ACCL
+                LDA ZP.IDXH
+                STA ZP.ACCH
+                
+                // Restore node and set data pointer
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                AST.SetData(); // IDX[iData] = ACC (pointer to 4-byte value)
                 
                 // Move to IDY for return
                 LDA ZP.IDXL

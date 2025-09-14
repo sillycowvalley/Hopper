@@ -198,11 +198,14 @@ unit AST
             }
         
         
-            // Free string data if applicable
+            // Free literal data if applicable
             switch (A)
             {
                 case NodeType.StringLit:
                 case NodeType.Identifier:
+                case NodeType.IntLit:
+                case NodeType.LongLit:
+                case NodeType.CharLit:
                 {
                     LDY #iData
                     LDA [astNode], Y
@@ -541,36 +544,98 @@ unit AST
                 Print.Char();
             }
             case NodeType.IntLit:
+            case NodeType.LongLit:  // Handle both the same way (both are 32-bit)
             {
-                LDA #(nodeInt % 256)
-                STA ZP.STRL
-                LDA #(nodeInt / 256)
-                STA ZP.STRH
+                // Print the type name
+                LDY #iNodeType
+                LDA [ZP.IDX], Y
+                CMP #NodeType.LongLit
+                if (Z)
+                {
+                    LDA #(nodeLong % 256)
+                    STA ZP.STRL
+                    LDA #(nodeLong / 256)
+                    STA ZP.STRH
+                }
+                else
+                {
+                    LDA #(nodeInt % 256)
+                    STA ZP.STRL
+                    LDA #(nodeInt / 256)
+                    STA ZP.STRH
+                }
                 Print.String();
                 
                 // Get pointer to 32-bit value
-                LDY # iData
+                LDY #iData
                 LDA [ZP.IDX], Y
                 STA ZP.IDYL
                 INY
                 LDA [ZP.IDX], Y
                 STA ZP.IDYH
                 
-                // Print the integer value
-                // Load 32-bit value from where IDY points
-                LDY #0
-                LDX #0
-                loop
+                // Check for null pointer
+                LDA ZP.IDYL
+                ORA ZP.IDYH
+                if (Z)
                 {
-                    LDA [ZP.IDY], Y
-                    STA ZP.TOP, X
-                    INX
-                    INY
-                    CPY #4
-                    if (Z) { break; }
+                    // Null pointer - print "null"
+                    LDA #'n'
+                    Print.Char();
+                    LDA #'u'
+                    Print.Char();
+                    LDA #'l'
+                    Print.Char();
+                    LDA #'l'
+                    Print.Char();
                 }
-                Long.Print();
+                else
+                {
+                    // Load 32-bit value from where IDY points into TOP
+                    LDY #0
+                    LDA [ZP.IDY], Y
+                    STA ZP.TOP0
+                    INY
+                    LDA [ZP.IDY], Y
+                    STA ZP.TOP1
+                    INY
+                    LDA [ZP.IDY], Y
+                    STA ZP.TOP2
+                    INY
+                    LDA [ZP.IDY], Y
+                    STA ZP.TOP3
+                    
+                    // Print the value
+                    Long.Print();
+                }
             }
+            
+            case NodeType.CharLit:
+            {
+                LDA #(nodeChar % 256)
+                STA ZP.STRL
+                LDA #(nodeChar / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                // Get pointer to character value
+                LDY #iData
+                LDA [ZP.IDX], Y
+                STA ZP.IDYL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDYH
+                
+                // Print the character value as hex
+                LDA #'0'
+                Print.Char();
+                LDA #'x'
+                Print.Char();
+                LDA [ZP.IDY]
+                Print.Hex();
+            }
+            
+            
             case NodeType.VarDecl:
             {
                 LDA #(nodeVarDecl % 256)

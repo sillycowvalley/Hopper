@@ -329,8 +329,10 @@ unit Lexer
     // Scan number
     scanNumber()
     {
-        STZ TokenValueL
-        STZ TokenValueH
+        // Initialize 32-bit accumulator in NEXT
+        LDA # 0
+        LDX # ZP.NEXT
+        Shared.LoadByte();
         
         loop
         {
@@ -338,28 +340,40 @@ unit Lexer
             Char.IsDigit();
             if (NC) { break; }
             
-            // value = value * 10 + digit
-            // Multiply current value by 10
-            LDA TokenValueL
-            STA ZP.ACCL
-            LDA TokenValueH
-            STA ZP.ACCH
+            // NEXT = NEXT * 10
+            LDA # 10
+            LDX # ZP.TOP
+            Shared.LoadByte();
             
-            // TODO: Multiply by 10
-            // For now, simple accumulation
+            Long.Mul();  // NEXT = NEXT * TOP
             
+            // Add current digit to NEXT
             LDA currentChar
             SEC
             SBC #'0'
-            CLC
-            ADC TokenValueL
-            STA TokenValueL
-            LDA #0
-            ADC TokenValueH
-            STA TokenValueH
+            LDX # ZP.TOP
+            Shared.LoadByte();
+            Long.Add();  // NEXT = NEXT + TOP
             
             advance();
         } // loop
+        
+        // Store the 32-bit value in TokenBuffer (first 4 bytes)
+        LDY #0
+        LDA ZP.NEXT0
+        STA [TokenBuffer], Y
+        INY
+        LDA ZP.NEXT1
+        STA [TokenBuffer], Y
+        INY
+        LDA ZP.NEXT2
+        STA [TokenBuffer], Y
+        INY
+        LDA ZP.NEXT3
+        STA [TokenBuffer], Y
+        INY
+        LDA #0
+        STA [TokenBuffer], Y
         
         LDA #Token.IntegerLiteral
         STA TokenType
@@ -376,12 +390,11 @@ unit Lexer
             LDA #Error.UnterminatedString  // Reuse this error
             Errors.Show();
             CLC
-            PLY
             return;
         }
         
         // Handle escape sequences
-        CMP #92  // Backslash ASCII
+        CMP # '\\'  // Backslash ASCII
         if (Z)
         {
             advance();
@@ -389,15 +402,21 @@ unit Lexer
             switch (A)
             {
                 case 'n':  { LDA # Char.EOL }
+                case 'r':  { LDA #Char.CR } 
                 case 't':  { LDA # Char.Tab }
+                case '0':  { LDA #0 }
                 case '\\':   { LDA '\\' }  // Backslash
                 case '\'':   { LDA '\'' }  // Single quote
                 default:   { } // Use as-is
             }
         }
         
-        STA TokenValueL  // Store character value
-        STZ TokenValueH
+        // Store character value in TokenBuffer (for consistency)
+        LDY #0
+        STA [TokenBuffer], Y
+        INY
+        LDA #0
+        STA [TokenBuffer], Y
         
         advance();
         LDA currentChar
