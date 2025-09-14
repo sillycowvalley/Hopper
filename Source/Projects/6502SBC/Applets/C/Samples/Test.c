@@ -1,8 +1,6 @@
 void main() {
-    int a = 1000;
-    printf("Before: %d\n", a);
-    a++;
-    printf("After:  %d\n", a);
-    a = a - 1;
-    printf("Final:  %d\n", a);
+    printf("1000 < 10: %d\n", 1000 < 10);
+    printf("10 < 1000: %d\n", 10 < 100);
+    printf("1000 <= 10: %d\n", 1000 <= 10);
+    printf("10   <= 10: %d\n", 10 <= 10);
 }

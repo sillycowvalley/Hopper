@@ -467,6 +467,13 @@ unit AST
     const string opDiv = "/";
     const string opMod = "%";
     
+    const string opEQ = "==";
+    const string opNE = "!=";
+    const string opLT = "<";
+    const string opGT = ">";
+    const string opLE = "<=";
+    const string opGE = ">=";
+    
     const string opIncrement = "++";
     const string opDecrement = "--";
     
@@ -566,7 +573,7 @@ unit AST
                 Print.String();
                 
                 // Print the operator
-                LDY #iBinOp
+                LDY # iPostfixOp
                 LDA [ZP.IDX], Y
                 switch (A)
                 {
@@ -634,6 +641,48 @@ unit AST
                         LDA #(opMod % 256)
                         STA ZP.STRL
                         LDA #(opMod / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.EQ:
+                    {
+                        LDA #(opEQ % 256)
+                        STA ZP.STRL
+                        LDA #(opEQ / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.NE:
+                    {
+                        LDA #(opNE % 256)
+                        STA ZP.STRL
+                        LDA #(opNE / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.LT:
+                    {
+                        LDA #(opLT % 256)
+                        STA ZP.STRL
+                        LDA #(opLT / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.GT:
+                    {
+                        LDA #(opGT % 256)
+                        STA ZP.STRL
+                        LDA #(opGT / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.LE:
+                    {
+                        LDA #(opLE % 256)
+                        STA ZP.STRL
+                        LDA #(opLE / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.GE:
+                    {
+                        LDA #(opGE % 256)
+                        STA ZP.STRL
+                        LDA #(opGE / 256)
                         STA ZP.STRH
                     }
                     default:

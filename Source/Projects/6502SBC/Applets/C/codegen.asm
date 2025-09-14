@@ -756,6 +756,77 @@ Print.Hex(); LDA #'v' Print.Char();
         }
     }
     
+    pushC()
+    {
+        // TSX - get current stack pointer
+        LDA #OpCode.TSX
+        EmitByte(); if (NC) { return; }
+        
+        // Transfer X to Y for indirect indexed addressing
+        LDA #OpCode.TXA
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        EmitByte(); if (NC) { return; }
+        
+        // Convert carry flag to 0 or 1
+        // LDA #0
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0 - adds carry flag to 0, giving 0 or 1
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // Store result (0 or 1) to stack via pointer
+        // STA [runtimeStack0],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        // STA [runtimeStack1],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack1
+        EmitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        // STA [runtimeStack2],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack2
+        EmitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        // STA [runtimeStack3],Y
+        LDA #OpCode.STA_IND_Y
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack3
+        EmitByte(); if (NC) { return; }
+        
+        
+        
+        // DEX - point to new top (the value we just pushed)
+        LDA #OpCode.DEX
+        EmitByte(); if (NC) { return; }
+        
+        // TXS - update stack pointer
+        LDA #OpCode.TXS
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
     // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
     pushNEXT()
     {
@@ -1638,7 +1709,6 @@ Print.Hex(); LDA #'v' Print.Char();
             {
                 case BinOpType.Add:
                 {
-                    // Emit: LDX #SysCall.LongAdd
                     LDA #OpCode.LDX_IMM
                     EmitByte(); if (NC) { break; }
                     LDA #BIOSInterface.SysCall.LongAdd
@@ -1646,10 +1716,73 @@ Print.Hex(); LDA #'v' Print.Char();
                 }
                 case BinOpType.Sub:
                 {
-                    // Emit: LDX #SysCall.LongSub
                     LDA #OpCode.LDX_IMM
                     EmitByte(); if (NC) { break; }
                     LDA # BIOSInterface.SysCall.LongSub
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.Mul:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongMul
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.Div:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongDiv
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.Mod:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongMod
+                    EmitByte(); if (NC) { break; }
+                }
+                
+                case BinOpType.EQ:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA #BIOSInterface.SysCall.LongEQ
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.NE:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongNE
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.LT:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA #BIOSInterface.SysCall.LongLT
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.GT:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongGT
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.LE:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA #BIOSInterface.SysCall.LongLE
+                    EmitByte(); if (NC) { break; }
+                }
+                case BinOpType.GE:
+                {
+                    LDA #OpCode.LDX_IMM
+                    EmitByte(); if (NC) { break; }
+                    LDA # BIOSInterface.SysCall.LongGE
                     EmitByte(); if (NC) { break; }
                 }
             }
@@ -1657,8 +1790,24 @@ Print.Hex(); LDA #'v' Print.Char();
             // Emit: JSR dispatch
             Library.EmitDispatchCall(); if (NC) { break; }
             
-            // Result is in NEXT, push it
-            CodeGen.pushNEXT();
+            LDA storeOp
+            switch (A)
+            {
+                case BinOpType.Add:
+                case BinOpType.Sub:
+                case BinOpType.Mul:
+                case BinOpType.Div:
+                case BinOpType.Mod:
+                {
+                    // Result is in NEXT, push it
+                    CodeGen.pushNEXT();
+                }
+                default:
+                {
+                    // result is C or NC
+                    CodeGen.pushC();
+                }
+            }
             SEC
             break;
         } // single exit

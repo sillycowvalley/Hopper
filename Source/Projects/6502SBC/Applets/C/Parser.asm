@@ -768,7 +768,7 @@ unit Parser
     parseAssignment() // -> IDY
     {
         // Parse left side
-        parseRelational(); // -> IDY
+        parseEquality(); // -> IDY
         if (NC) { return; }
         
         // Check for assignment operator
@@ -888,20 +888,223 @@ unit Parser
         PLA
         STA exprNodeH
     }
+    
+    
+    // Parse equality operators (==, !=)
+    parseEquality() // -> IDY
+    {
+        parseRelational(); // Parse left side -> IDY
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA currentToken
+            switch (A)
+            {
+                case Token.Equal:    // ==
+                {
+                    LDA #BinOpType.EQ
+                }
+                case Token.NotEqual: // !=
+                {
+                    LDA #BinOpType.NE
+                }
+                default:
+                {
+                    break;  // Not ==, !=, return what we have
+                }
+            }
+            
+            LDX binOp
+            PHX
+            
+            STA binOp
+            
+            LDA binNodeL
+            PHA
+            LDA binNodeH
+            PHA
+            
+            loop
+            {
+                consume();  // Consume the operator
+                if (NC) { break; }
+                
+                // Create BinOp node
+                LDA # AST.NodeType.BinOp
+                AST.CreateNode();  // -> IDX
+                if (NC) { break; }
+                LDA ZP.IDXH
+                STA binNodeH
+                LDA ZP.IDXL
+                STA binNodeL
+                
+                // Set operator type
+                LDA binOp
+                LDY #AST.iBinOp
+                STA [ZP.IDX], Y
+                
+                // Add left operand as first child
+                AST.AddChild();  // IDX = BinOp, IDY = left
+                
+                // Parse right operand
+                parseRelational();  // -> IDY
+                if (NC) { break; }
+                
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                
+                // Add right operand as second child
+                AST.AddChild();  // IDX = BinOp, IDY = right
+                
+                // Move BinOp to IDY for next iteration (left-associative)
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                STZ binNodeH
+                STZ binNodeL
+                
+                SEC
+                break;
+                
+            } // single exit
+            
+            LDA binNodeH
+            ORA binNodeL
+            if (NZ)
+            {
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                AST.FreeNode();
+            }
+            
+            PLA
+            STA binNodeH
+            PLA
+            STA binNodeL
+            PLA
+            STA binOp
+            if (NC) { break; }
+        } // loop
+    }
        
+    // Parse relational operators (<, >, <=, >=)
     // Parse relational operators (<, >, <=, >=)
     parseRelational() // -> IDY
     {
-        // For now, just pass through
-        parseAdditive(); // -> IDY
+        parseAdditive(); // Parse left side -> IDY
+        if (NC) { return; }
         
-        // TODO: Handle relational operators
-        // loop
-        // {
-        //     LDA currentToken
-        //     CMP #Token.Less / Greater / LessEqual / GreaterEqual
-        //     ...
-        // }
+        loop
+        {
+            LDA currentToken
+            switch (A)
+            {
+                case Token.Less:         // 
+                {
+                    LDA #BinOpType.LT
+                }
+                case Token.Greater:      // >
+                {
+                    LDA #BinOpType.GT
+                }
+                case Token.LessEqual:    // <=
+                {
+                    LDA #BinOpType.LE
+                }
+                case Token.GreaterEqual: // >=
+                {
+                    LDA #BinOpType.GE
+                }
+                default:
+                {
+                    break;  // Not a relational operator, return what we have
+                }
+            }
+            
+            LDX binOp
+            PHX
+            
+            STA binOp
+            
+            LDA binNodeL
+            PHA
+            LDA binNodeH
+            PHA
+            
+            loop
+            {
+                consume();  // Consume the operator
+                if (NC) { break; }
+                
+                // Create BinOp node
+                LDA # AST.NodeType.BinOp
+                AST.CreateNode();  // -> IDX
+                if (NC) { break; }
+                LDA ZP.IDXH
+                STA binNodeH
+                LDA ZP.IDXL
+                STA binNodeL
+                
+                // Set operator type
+                LDA binOp
+                LDY #AST.iBinOp
+                STA [ZP.IDX], Y
+                
+                // Add left operand as first child
+                AST.AddChild();  // IDX = BinOp, IDY = left
+                
+                // Parse right operand
+                parseAdditive();  // -> IDY
+                if (NC) { break; }
+                
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                
+                // Add right operand as second child
+                AST.AddChild();  // IDX = BinOp, IDY = right
+                
+                // Move BinOp to IDY for next iteration (left-associative)
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                STZ binNodeH
+                STZ binNodeL
+                
+                SEC
+                break;
+                
+            } // single exit
+            
+            LDA binNodeH
+            ORA binNodeL
+            if (NZ)
+            {
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                AST.FreeNode();
+            }
+            
+            PLA
+            STA binNodeH
+            PLA
+            STA binNodeL
+            PLA
+            STA binOp
+            if (NC) { break; }
+        } // loop
     }
     
     parseAdditive()  // -> IDY
