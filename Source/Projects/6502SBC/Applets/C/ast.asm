@@ -1,6 +1,6 @@
 unit AST
 {
-    friend Parser, CodeGen, CC;
+    friend Parser, CodeGen, CC, Errors;
     
     // AST zero page allocation
     const byte astSlots = 0x80;
@@ -34,14 +34,16 @@ unit AST
     
     // Common node structure:
     //     [0] = NodeType
-    //     [1-2] = First child pointer
-    //     [3-4] = Next sibling pointer
+    //     [1-2] = Source line number
+    //     [3-4] = First child pointer
+    //     [5-6] = Next sibling pointer
     
     const byte nodeSize = 14; // minimum allocation is 16 bytes - 2 for the allocator
     
-    const byte iNodeType = 0;
-    const byte iChild    = 1;
-    const byte iNext     = 3;
+    const byte iNodeType   = 0;
+    const byte iLineNumber = 1;
+    const byte iChild      = 3;
+    const byte iNext       = 5;
     
     // Program node (root):
     // ExprStmt node:
@@ -51,30 +53,30 @@ unit AST
     
     
     // Function node:
-    //     [5]    Return type
-    //     [6]    <unused>
-    //     [7-8]  Code offset (where function starts in buffer)
-    const byte iReturnType = 5;
-    const byte iOffset   = 7; // Code offset index (where code ends up in the codegen buffer)
+    //     [7]     Return type
+    //     [8]     <unused>
+    //     [9-10]  Code offset (where function starts in buffer)
+    const byte iReturnType = 7;
+    const byte iOffset     = 9; // Code offset index (where code ends up in the codegen buffer)
     
     // Identifier node:
-    //     [5-6]  Data pointer -> string
-    const byte iData     = 5; 
+    //     [7-8]  Data pointer -> string
+    const byte iData     = 7; 
     
     // StringLit node:
-    //     [5-6]  Data pointer -> string
-    //     [7-8]  Code offset index (where string ends up in the codegen buffer)
-    // const byte iData     = 5;
-    // const byte iOffset   = 7; 
+    //     [7-8]   Data pointer -> string
+    //     [9-10]  Code offset index (where string ends up in the codegen buffer)
+    // const byte iData     = 7;
+    // const byte iOffset   = 9; 
     
     // VarDecl node:
-    //     [5-6]  Initializer expression (optional)
-    //     [7]    offset on stack relative to BP (signed single byte offset)
-    //     [8]    <unused>
-    //     [9]    Variable type (Token.Long/Int/Char)
-    const byte iInitializer = 5;
-    // const byte iOffset   = 7;
-    const byte iVarType     = 9;
+    //     [7-8]  Initializer expression (optional)8
+    //     [9]    offset on stack relative to BP (signed single byte offset)
+    //     [10]   <unused>
+    //     [11]   Variable type (Token.Long/Int/Char)
+    const byte iInitializer = 7;
+    // const byte iOffset   = 9;
+    const byte iVarType     = 11;
     
     Initialize()
     {
@@ -142,6 +144,19 @@ unit AST
         // Set node type
         PLA
         STA [ZP.IDX]
+        
+        // Store current line number from lexer
+        PHY
+        
+        Lexer.GetLineNumber(); // -> ACC
+        
+        LDY # iLineNumber
+        LDA ZP.ACCL
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.ACCH
+        STA [ZP.IDX], Y
+        PLY
         
         SEC
     }
@@ -413,6 +428,21 @@ unit AST
                 if (Z) { break; }
             }
         }
+        
+        // Print line number in brackets
+        LDA #'['
+        Print.Char();
+        LDY #AST.iLineNumber
+        LDA [ZP.IDX], Y
+        STA ZP.ACCL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.ACCH
+        Shared.MoveAccToTop();
+        Long.Print();
+        LDA #']'
+        Print.Char();
+        Print.Space();
         
         // Print node type
         LDY # iNodeType

@@ -164,6 +164,13 @@ program CC
         
         // Parse the program
         Parser.Parse();
+        
+if (NC)
+{
+    LDA #'a' Print.Char();
+    CLC
+}        
+        
 #if defined(DEBUG)                
         PHP
         LDA AST.astRootL

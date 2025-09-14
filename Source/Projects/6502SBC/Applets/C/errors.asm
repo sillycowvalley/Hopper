@@ -36,7 +36,6 @@ unit Errors
         STA ZP.STRH
         Print.String();
         
-        Lexer.GetLineNumber(); // -> ACC
         Shared.MoveAccToTop();
         Long.Print();
         
@@ -51,6 +50,7 @@ unit Errors
     {
         PHA
         
+        Lexer.GetLineNumber(); // -> ACC
         printErrorLine();
         
         LDA #(msgError % 256)
@@ -63,6 +63,66 @@ unit Errors
         Print.Hex(); // error #
         Print.NewLine();
         CLC
+    }
+    
+    // Show error with specific line number
+    // Input: A = error code, line numberfrom AST node in IDX
+    ShowIDX()
+    {
+        PHY
+        PHA  // Save error code
+        
+        LDY #AST.iLineNumber
+        LDA [ZP.IDX], Y
+        STA ZP.ACCL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.ACCH
+        
+        printErrorLine();
+        
+        // Print error code
+        LDA #(msgError % 256)
+        STA ZP.STRL
+        LDA #(msgError / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        PLA
+        Print.Hex(); // error #
+        Print.NewLine();
+        CLC
+        PLY
+    }
+    
+    // Show error with specific line number
+    // Input: A = error code, line numberfrom AST node in IDY
+    ShowIDY()
+    {
+        PHY
+        PHA  // Save error code
+        
+        LDY #AST.iLineNumber
+        LDA [ZP.IDY], Y
+        STA ZP.ACCL
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.ACCH
+        
+        printErrorLine();
+        
+        // Print error code
+        LDA #(msgError % 256)
+        STA ZP.STRL
+        LDA #(msgError / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        PLA
+        Print.Hex(); // error #
+        Print.NewLine();
+        CLC
+        PLY
     }
     OutOfMemory()
     {

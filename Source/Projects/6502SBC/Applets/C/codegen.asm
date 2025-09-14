@@ -568,7 +568,7 @@ unit CodeGen
                     {
 LDA #'d' Print.Char();                        
                         LDA # Error.NotImplemented
-                        Errors.Show();
+                        Errors.ShowIDX();
                         break;
                     }
                 }
@@ -578,7 +578,7 @@ LDA #'d' Print.Char();
                 // generateUserFunctionCall();  // Future: JSR to user function
 LDA #'e' Print.Char();
                 LDA # Error.NotImplemented
-                Errors.Show();
+                Errors.ShowIDX();
                 break;
             }
             SEC
@@ -622,9 +622,11 @@ LDA #'e' Print.Char();
             {
                 // TODO: Generate code for initializer expression
                 // For now, just error
-LDA #'a' Print.Char();                
+#ifdef DEBUG
+                Print.Hex(); LDA 'v' Print.Char();
+#endif
                 LDA # Error.NotImplemented
-                Errors.Show();
+                Errors.ShowIDY();
                 break;
             }
                     
@@ -668,18 +670,22 @@ LDA #'a' Print.Char();
                     default:
                     {
                         // Future: BinOp, Assign, etc.
-LDA #'b' Print.Char();                        
+#ifdef DEBUG
+                        Print.Hex(); LDA 'e' Print.Char();
+#endif
                         LDA #Error.NotImplemented
-                        Errors.Show();
+                        Errors.ShowIDX();
                     }
                 }
             }
             default:
             {
                 // Future: case AST.NodeType.If, For, Return, etc.
-LDA #'c' Print.Char();                
+#ifdef DEBUG                
+                Print.Hex(); LDA 's' Print.Char();
+#endif                
                 LDA # Error.NotImplemented
-                Errors.Show();
+                Errors.ShowIDX();
             }
         }
     }
