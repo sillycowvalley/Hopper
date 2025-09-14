@@ -635,6 +635,169 @@ LDA #'e' Print.Char();
         }
     }
     
+    // Generate code for an integer literal
+    // Input: IDX = IntLit/LongLit node
+    // Output: Value in ZP.TOP0-3
+    generateIntLiteral()  // Input: IDX = literal node
+    {
+        // Get pointer to 32-bit value in heap
+        LDY #AST.iData
+        LDA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
+        
+        // Read the 4 bytes from heap into NEXT (temp storage)
+        LDY #0
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT0
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT1
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT2
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT3
+        
+        // Generate inline code to load these values
+        // LDA #byte0
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP0
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        
+        // LDA #byte1
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        
+        // LDA #byte2
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP2
+        EmitByte(); if (NC) { return; }
+        
+        // LDA #byte3
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        // STA ZP.TOP3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    generateExpression()
+    {
+        LDY #AST.iNodeType
+        LDA [ZP.IDX], Y
+        
+        switch (A)
+        {
+            case NodeType.IntLit:
+            case NodeType.LongLit:
+            {
+                generateIntLiteral();
+            }
+            default:
+            {
+#ifdef DEBUG
+                Print.Hex(); LDA 'e' Print.Char();
+#endif
+                LDA #Error.NotImplemented
+                Errors.ShowIDX();
+            }
+        }
+    }
+    
+    // Generate code for assignment
+    // Input: IDX = Assign node
+    generateAssignment()
+    {
+        // Save Assign node
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
+        // Get right-hand side (second child - the value)
+        // First get to first child
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Now get its sibling (second child)
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Generate code for RHS expression (puts value in ZP.TOP)
+        generateExpression();
+        if (NC) { PLA PLA return; }
+        
+        // Now we have value in ZP.TOP0-3
+        // Need to store it to the variable (first child of Assign)
+        
+        // Restore Assign node
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
+        // Get first child (the variable identifier)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // For now, assume it's the first local variable (BP-relative offset 0)
+        // Generate: store TOP to stack at BP offset
+        
+        // TODO: Look up variable's actual offset
+        // For now, 's' is first local, so X = 0
+        
+        // Store each byte to its stack page
+        // LDA ZP.TOP0
+        // TODO
+        
+        
+        SEC
+    }
+    
     // Generate code for a statement
     generateStatement()  // Input: IDX = statement node
     {
@@ -643,6 +806,10 @@ LDA #'e' Print.Char();
         LDA [ZP.IDX], Y
         switch (A)
         {
+            case NodeType.Assign:
+            {
+                generateAssignment();
+            }
             case NodeType.VarDecl:
             {
                 generateVarDecl();
@@ -671,7 +838,7 @@ LDA #'e' Print.Char();
                     {
                         // Future: BinOp, Assign, etc.
 #ifdef DEBUG
-                        Print.Hex(); LDA 'e' Print.Char();
+                        Print.Hex(); LDA 'e' Print.Char();LDA 's' Print.Char();
 #endif
                         LDA #Error.NotImplemented
                         Errors.ShowIDX();
