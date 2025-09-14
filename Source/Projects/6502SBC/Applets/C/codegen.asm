@@ -54,6 +54,7 @@ unit CodeGen
     // 6502 opcodes
     enum OpCode
     {
+        CLC     = 0x18,
         INC_A   = 0x1A,
         JSR     = 0x20,
         PHA     = 0x48,
@@ -61,10 +62,12 @@ unit CodeGen
         RTS     = 0x60,
         STZ_ZP  = 0x64,
         PLA     = 0x68,
+        ADC_IMM = 0x69,
         JMP_IND = 0x6C,
         STA_ZP  = 0x85,
         STX_ZP  = 0x86, 
         TXA     = 0x8A,
+        STA_IND_Y = 0x91,
         TXS     = 0x9A,
         LDX_IMM = 0xA2,
         LDA_ZP  = 0xA5, 
@@ -798,60 +801,58 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA #OpCode.TSX
         EmitByte(); if (NC) { return; }
         
-        // Store NEXT0 to stack page 0
+        // Transfer X to Y for indirect indexed addressing
+        LDA #OpCode.TXA
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        EmitByte(); if (NC) { return; }
+        
+        // Store NEXT0 to stack via pointer
         // LDA ZP.NEXT0
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT0
         EmitByte(); if (NC) { return; }
-        // STA runtimeStack0,X
-        LDA # OpCode.STA_ABS_X
+        // STA [runtimeStack0],Y
+        LDA #OpCode.STA_IND_Y
         EmitByte(); if (NC) { return; }
-        LDA #0x00  // Low byte (page-aligned)
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack0H  // High byte from runtime setup
+        LDA #runtimeStack0
         EmitByte(); if (NC) { return; }
         
-        // Store NEXT1 to stack page 1
+        // Store NEXT1 to stack via pointer
         // LDA ZP.NEXT1
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT1
         EmitByte(); if (NC) { return; }
-        // STA runtimeStack1,X
-        LDA # OpCode.STA_ABS_X
+        // STA [runtimeStack1],Y
+        LDA #OpCode.STA_IND_Y
         EmitByte(); if (NC) { return; }
-        LDA #0x00
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack1H
+        LDA #runtimeStack1
         EmitByte(); if (NC) { return; }
         
-        // Store NEXT2 to stack page 2
+        // Store NEXT2 to stack via pointer
         // LDA ZP.NEXT2
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT2
         EmitByte(); if (NC) { return; }
-        // STA runtimeStack2,X
-        LDA # OpCode.STA_ABS_X
+        // STA [runtimeStack2],Y
+        LDA #OpCode.STA_IND_Y
         EmitByte(); if (NC) { return; }
-        LDA #0x00
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack2H
+        LDA #runtimeStack2
         EmitByte(); if (NC) { return; }
         
-        // Store NEXT3 to stack page 3
+        // Store NEXT3 to stack via pointer
         // LDA ZP.NEXT3
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT3
         EmitByte(); if (NC) { return; }
-        // STA runtimeStack3,X
-        LDA # OpCode.STA_ABS_X
+        // STA [runtimeStack3],Y
+        LDA #OpCode.STA_IND_Y
         EmitByte(); if (NC) { return; }
-        LDA #0x00
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack3H
+        LDA #runtimeStack3
         EmitByte(); if (NC) { return; }
         
         // DEX - point to new top (the value we just pushed)
@@ -877,9 +878,9 @@ Print.Hex(); LDA #'v' Print.Char();
         EmitByte(); if (NC) { return; }
         
         // Transfer X to Y for indirect indexed addressing
-        LDA #OpCode.TXA         // 0x8A - Transfer X to A
+        LDA #OpCode.TXA
         EmitByte(); if (NC) { return; }
-        LDA #OpCode.TAY         // 0xA8 - Transfer A to Y  
+        LDA #OpCode.TAY
         EmitByte(); if (NC) { return; }
         
         // Load NEXT0 from stack via pointer
@@ -937,86 +938,160 @@ Print.Hex(); LDA #'v' Print.Char();
         SEC
     }
     
+    // Generate code to calculate effective Y offset from BP
+    // Input: A = logical offset (signed)
+    // Output: Generated code leaves effective offset in Y register
+    //    
+    //    Higher addresses (0x01FF)
+    //    ...
+    //    [Parameters]        ; BP+6, BP+7, etc (in caller's frame)
+    //    [Return Address Hi] ; BP+2
+    //    [Return Address Lo] ; BP+1
+    //    [Old BP]            ; BP+0 <- BP points here
+    //    [Local var 0-3]     ; BP-4 to BP-1 (first long)
+    //    [Local var 4-7]     ; BP-8 to BP-5 (second long)
+    //    ...
+    //    Lower addresses (grows down)
+    calculateBPOffset()
+    {
+        STA ZP.TEMP  // Save logical offset
+        
+        // Load BP into A
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeBP
+        EmitByte(); if (NC) { return; }
+        
+        // Add the offset
+        LDA #OpCode.CLC
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        
+        // Calculate and emit the adjusted offset value
+        LDA ZP.TEMP
+        if (PL)  // Positive offset (parameters)
+        {
+            // Calculate adjusted offset at compile time
+            CLC
+            ADC #3  // Add 3 to skip frame overhead
+        }
+        // Now A contains either the original negative offset OR the adjusted positive offset
+        EmitByte(); if (NC) { return; }
+        
+        // Transfer result to Y
+        LDA #OpCode.TAY
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
     
     // Generate code to store ZP.NEXT at BP+offset
     // Input: A = signed BP offset (e.g., 0xFF for -1)
     putNEXT()
     {
-        STA ZP.TEMP  // Save offset
-        
         loop
         {
-            // LDX runtimeBP
-            LDA #OpCode.LDX_ZP
-            EmitByte(); if (NC) { break; }
-            LDA #runtimeBP
-            EmitByte(); if (NC) { break; }
+            // Calculate effective offset into Y
+            calculateBPOffset(); if (NC) { break; }
             
-            // Add offset to X (offset is negative, so this moves backwards)
-            LDA ZP.TEMP
-            if (MI)  // Negative offset
-            {
-                // Need to DEX for each negative offset
-                EOR #0xFF  // Convert to positive
-                INC A      // Two's complement
-                TAY
-                loop
-                {
-                    if (Z) { break; }
-                    LDA #OpCode.DEX
-                    EmitByte(); if (NC) { break; }
-                    DEY
-                }
-            }
-            if (NC) { break; }
-            
-            // Now X points to the variable's location
-            // Store NEXT0
+            // Store NEXT0 through pointer
             LDA #OpCode.LDA_ZP
             EmitByte(); if (NC) { break; }
             LDA #ZP.NEXT0
             EmitByte(); if (NC) { break; }
-            LDA #OpCode.STA_ABS_X
+            LDA #OpCode.STA_IND_Y
             EmitByte(); if (NC) { break; }
-            LDA #0x00
-            EmitByte(); if (NC) { break; }
-            LDA #runtimeStack0H
+            LDA #runtimeStack0
             EmitByte(); if (NC) { break; }
             
-            // Store NEXT1
+            // Store NEXT1 through pointer
             LDA #OpCode.LDA_ZP
             EmitByte(); if (NC) { break; }
             LDA #ZP.NEXT1
             EmitByte(); if (NC) { break; }
-            LDA #OpCode.STA_ABS_X
+            LDA #OpCode.STA_IND_Y  // 0x91
             EmitByte(); if (NC) { break; }
-            LDA #0x00
-            EmitByte(); if (NC) { break; }
-            LDA #runtimeStack1H
+            LDA #runtimeStack1
             EmitByte(); if (NC) { break; }
             
-            // Store NEXT2
+            // Store NEXT2 through pointer
             LDA #OpCode.LDA_ZP
             EmitByte(); if (NC) { break; }
             LDA #ZP.NEXT2
             EmitByte(); if (NC) { break; }
-            LDA #OpCode.STA_ABS_X
+            LDA #OpCode.STA_IND_Y
             EmitByte(); if (NC) { break; }
-            LDA #0x00
-            EmitByte(); if (NC) { break; }
-            LDA #runtimeStack2H
+            LDA #runtimeStack2
             EmitByte(); if (NC) { break; }
             
-            // Store NEXT3
+            // Store NEXT3 through pointer
             LDA #OpCode.LDA_ZP
             EmitByte(); if (NC) { break; }
             LDA #ZP.NEXT3
             EmitByte(); if (NC) { break; }
-            LDA #OpCode.STA_ABS_X
+            LDA #OpCode.STA_IND_Y
             EmitByte(); if (NC) { break; }
-            LDA #0x00
+            LDA #runtimeStack3
             EmitByte(); if (NC) { break; }
-            LDA #runtimeStack3H
+            
+            SEC
+            break;
+        } // single exit
+    }
+    
+    // Generate code to load ZP.NEXT from BP+offset
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    getNEXT()
+    {
+        loop
+        {
+            // Calculate effective offset into Y
+            calculateBPOffset(); if (NC) { break; }
+                       
+            // Transfer A to Y
+            LDA #OpCode.TAY
+            EmitByte(); if (NC) { break; }
+            
+            // Load NEXT0 through pointer
+            LDA #OpCode.LDA_IND_Y
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack0
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { break; }
+            
+            // Load NEXT1 through pointer
+            LDA #OpCode.LDA_IND_Y
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack1
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { break; }
+            
+            // Load NEXT2 through pointer
+            LDA #OpCode.LDA_IND_Y
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack2
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { break; }
+            
+            // Load NEXT3 through pointer
+            LDA #OpCode.LDA_IND_Y
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeStack3
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT3
             EmitByte(); if (NC) { break; }
             
             SEC

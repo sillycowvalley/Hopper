@@ -283,6 +283,164 @@ builtin_seconds:
     RTS
 ```
 
+
+## Disassembly Analysis Guide
+
+### Understanding C Compiler Output
+
+When debugging the compiler's generated code, use these patterns to verify correct code generation.
+
+#### Runtime Stack Pointer Initialization
+The compiler initializes four zero-page pointer pairs that point to consecutive bytes in the hardware stack:
+```assembly
+; Expected pattern at function start:
+0814: A5 1B       LDA ZP.IDXH              ; Usually 0x01 for stack page
+0816: 85 62       STA runtimeStack0H       ; Set 0x62 = 0x01
+0818: 1A          INC A                    ; A = 0x02
+0819: 85 64       STA runtimeStack1H       ; Set 0x64 = 0x02
+081B: 1A          INC A                    ; A = 0x03
+081C: 85 66       STA runtimeStack2H       ; Set 0x66 = 0x03
+081E: 1A          INC A                    ; A = 0x04
+081F: 85 68       STA runtimeStack3H       ; Set 0x68 = 0x04
+```
+
+This creates pointers:
+- `[runtimeStack0]` → 0x0100,Y (LSB of 32-bit values)
+- `[runtimeStack1]` → 0x0200,Y (byte 1 of 32-bit values)
+- `[runtimeStack2]` → 0x0300,Y (byte 2 of 32-bit values)
+- `[runtimeStack3]` → 0x0400,Y (MSB of 32-bit values)
+
+#### Correct Addressing Mode Patterns
+
+**✓ CORRECT - Indirect Indexed (opcode 0x91 for STA, 0xB1 for LDA):**
+```assembly
+8A          TXA                      ; Transfer X to A
+A8          TAY                      ; Transfer to Y for indexing
+B1 62       LDA [runtimeStack0],Y    ; Load through pointer (CORRECT!)
+91 62       STA [runtimeStack0],Y    ; Store through pointer (CORRECT!)
+```
+
+**✗ WRONG - Absolute Indexed (opcode 0x9D for STA, 0xBD for LDA):**
+```assembly
+BD 00 62    LDA 0x6200,X    ; WRONG! Treats 0x62 as high byte of address
+9D 00 62    STA 0x6200,X    ; WRONG! Would access 0x6200+X, not stack
+```
+
+#### Function Prologue Pattern
+```assembly
+; Save old base pointer and establish new frame
+A5 60       LDA runtimeBP            ; Load old BP
+48          PHA                      ; Push to hardware stack
+BA          TSX                      ; Get stack pointer
+86 60       STX runtimeBP            ; New BP = current SP
+48          PHA                      ; Reserve space (optional)
+```
+
+#### Function Epilogue Pattern
+```assembly
+; Restore stack and base pointer
+A6 60       LDX runtimeBP            ; Load saved BP position
+9A          TXS                      ; Restore stack pointer
+68          PLA                      ; Pop old BP
+85 60       STA runtimeBP            ; Restore BP
+60          RTS                      ; Return
+```
+
+#### Local Variable Access Pattern
+For a local 32-bit variable at BP-4:
+```assembly
+; Calculate BP + offset in Y
+A5 60       LDA runtimeBP            ; Load base pointer
+18          CLC                      ; Clear carry
+69 FC       ADC #0xFC                ; Add -4 (0xFC = -4 in two's complement)
+A8          TAY                      ; Transfer to Y
+
+; Access all 4 bytes of the long
+B1 62       LDA [runtimeStack0],Y    ; Load byte 0
+B1 64       LDA [runtimeStack1],Y    ; Load byte 1
+B1 66       LDA [runtimeStack2],Y    ; Load byte 2
+B1 68       LDA [runtimeStack3],Y    ; Load byte 3
+```
+
+#### Parameter Access Pattern
+For a parameter at BP+4 (after return address and saved BP):
+```assembly
+; Parameters need +3 adjustment to skip frame overhead
+A5 60       LDA runtimeBP            ; Load base pointer
+18          CLC                      ; Clear carry
+69 07       ADC #0x07                ; Add 4+3 = 7 (skip overhead)
+A8          TAY                      ; Transfer to Y
+; Then use same indirect indexed access
+```
+
+#### Stack Push/Pop Patterns
+
+**Pushing 32-bit value:**
+```assembly
+BA          TSX                      ; Get stack pointer
+8A          TXA                      ; Transfer to A
+A8          TAY                      ; Transfer to Y
+A5 16       LDA ZP.NEXT0            ; Load value byte 0
+91 62       STA [runtimeStack0],Y    ; Store to stack
+A5 17       LDA ZP.NEXT1            ; Load value byte 1
+91 64       STA [runtimeStack1],Y    ; Store to stack
+; ... repeat for bytes 2 and 3
+CA          DEX                      ; Adjust stack pointer
+9A          TXS                      ; Update stack
+```
+
+**Popping 32-bit value:**
+```assembly
+BA          TSX                      ; Get stack pointer
+E8          INX                      ; Point to data
+8A          TXA                      ; Transfer to A
+A8          TAY                      ; Transfer to Y
+B1 62       LDA [runtimeStack0],Y    ; Load byte 0
+85 16       STA ZP.NEXT0            ; Store to NEXT
+B1 64       LDA [runtimeStack1],Y    ; Load byte 1
+85 17       STA ZP.NEXT1            ; Store to NEXT
+; ... repeat for bytes 2 and 3
+9A          TXS                      ; Update stack
+```
+
+### Common Issues to Watch For
+
+1. **Wrong Addressing Mode**: Look for opcodes 0xBD/0x9D (absolute,X) when you should see 0xB1/0x91 (indirect,Y)
+
+2. **Missing X→Y Transfer**: Indirect indexed uses Y register, not X. Watch for missing TXA/TAY sequence.
+
+3. **Incorrect Offset Calculation**: 
+   - Locals: BP + negative offset (no adjustment)
+   - Parameters: BP + positive offset + 3 (skip return address and saved BP)
+
+4. **Stack Pointer Confusion**: The hardware stack pointer (SP) in X vs. the base pointer (BP) in zero page
+
+5. **Uninitialized Runtime Stack Pointers**: The runtimeStack0H-3H bytes must be initialized to point to different stack pages (0x01, 0x02, 0x03, 0x04)
+
+### Debugging Checklist
+
+When analyzing disassembly:
+- [ ] Are runtimeStack pointers initialized correctly?
+- [ ] Is indirect indexed addressing (0x91/0xB1) used for stack access?
+- [ ] Is X transferred to Y before indirect indexed operations?
+- [ ] Are BP offsets calculated correctly (with +3 for parameters)?
+- [ ] Does function prologue save/restore BP properly?
+- [ ] Are 32-bit values accessed through all four pointer pairs?
+
+### Zero Page Map for Reference
+```
+0x16-0x19: ZP.NEXT0-3 (32-bit accumulator)
+0x22-0x23: ZP.BIOSDISPATCH (BIOS vector)
+0x60: runtimeBP (base pointer)
+0x61-0x62: runtimeStack0/runtimeStack0H (→ stack page 0x01)
+0x63-0x64: runtimeStack1/runtimeStack1H (→ stack page 0x02)
+0x65-0x66: runtimeStack2/runtimeStack2H (→ stack page 0x03)
+0x67-0x68: runtimeStack3/runtimeStack3H (→ stack page 0x04)
+```
+
+
+
+
 ## Command Line Interface
 ```
 CC BENCH
