@@ -25,6 +25,7 @@ unit CodeGen
     const byte stringOffsetH  = cgSlots+9;
     
     const byte functionLocals = cgSlots+10; // Count of locals in current function
+    const byte storeOp        = cgSlots+11;
     
     const byte runtimeZeroPageSlots = 0x60;
     const byte runtimeBP            = runtimeZeroPageSlots+0; // Base pointer for stack frame
@@ -58,6 +59,7 @@ unit CodeGen
         CLC     = 0x18,
         INC_A   = 0x1A,
         JSR     = 0x20,
+        SEC     = 0x38, 
         PHA     = 0x48,
         JMP_ABS = 0x4C,
         RTS     = 0x60,
@@ -85,6 +87,7 @@ unit CodeGen
         DEX     = 0xCA,
         INC_ZP  = 0xE6, 
         INX     = 0xE8,
+        SBC_IMM = 0xE9, 
         BEQ     = 0xF0,
     }    
     
@@ -1318,7 +1321,257 @@ Print.Hex(); LDA #'v' Print.Char();
         pushNEXT();
         
         SEC
-    }    
+    }  
+    
+    // Generate code to increment 32-bit value in NEXT0-3
+    generateIncNEXT()
+    {
+        // CLC (clear carry)
+        LDA #OpCode.CLC
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT0
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #1
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #1
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT0
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT1
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0 (adds carry if any)
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to decrement 32-bit value in NEXT0-3
+    generateDecNEXT()
+    {
+        // SEC (set carry for subtraction)
+        LDA # OpCode.SEC
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT0
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #1
+        LDA # OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #1
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT0
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT1
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #0 (subtracts borrow if any)
+        LDA #OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #0
+        LDA #OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #0
+        LDA #OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    generatePostfixOp()
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        LDA storeOp
+        PHA
+        
+        // Save the PostfixOp node pointer
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        
+        loop
+        {
+            // Get operator type (++ or --)
+            LDY #AST.iPostfixOp
+            LDA [AST.astNode], Y
+            STA storeOp  // Save operator type
+            
+            // Get the identifier (child)
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            // Get identifier's name
+            LDY #AST.iData
+            LDA [ZP.IDX], Y
+            STA ZP.STRL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.STRH
+            
+            // Find the VarDecl for this identifier
+            findVariable();  // -> IDX
+            if (NC) { break; }
+            
+            // Get the BP offset from VarDecl
+            LDY #AST.iOffset
+            LDA [ZP.IDX], Y  // This is the signed offset
+            
+            // Load current value from BP+offset into NEXT
+            getNEXT(); if (NC) { break; }
+            
+            // Save offset for store later
+            LDY #AST.iOffset
+            LDA [ZP.IDX], Y
+            PHA  // We need to save offset across the syscall
+            
+            // Perform increment or decrement based on operator
+            LDA storeOp  // Get operator type
+            switch (A)
+            {
+                case PostfixOpType.Increment:
+                {
+                    generateIncNEXT();
+                    if (NC) { PLA break; }
+                }
+                case PostfixOpType.Decrement:
+                {
+                    generateDecNEXT();
+                    if (NC) { PLA break; }
+                }
+            }
+            
+            // Result is in NEXT, store it back
+            PLA  // Get offset
+            putNEXT();  // A = offset
+            
+            SEC
+            break;
+        } // single exit
+        
+        PLA
+        STA storeOp
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    } 
     
     
     generateBinOp()
@@ -1326,6 +1579,8 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA AST.astNodeL
         PHA
         LDA AST.astNodeH
+        PHA
+        LDA storeOp
         PHA
         
         // Save the BinOp node pointer
@@ -1339,7 +1594,7 @@ Print.Hex(); LDA #'v' Print.Char();
             // Get operator type
             LDY #AST.iBinOp
             LDA [AST.astNode], Y
-            PHA  // Save operator
+            STA storeOp  // Save operator
             
             // Generate left operand
             LDY #AST.iChild
@@ -1349,7 +1604,7 @@ Print.Hex(); LDA #'v' Print.Char();
             LDA [AST.astNode], Y
             STA ZP.IDXH
             
-            generateExpression(); if (NC) { PLA break; }
+            generateExpression(); if (NC) { break; }
             
             // Left operand is now on stack
             
@@ -1369,7 +1624,7 @@ Print.Hex(); LDA #'v' Print.Char();
             STA ZP.IDXH
             STX ZP.IDXL
             
-            generateExpression(); if (NC) { PLA break; }
+            generateExpression(); if (NC) { break; }
             
             // Right operand is now on stack
             
@@ -1378,7 +1633,7 @@ Print.Hex(); LDA #'v' Print.Char();
             CodeGen.popNEXT();   // Left operand -> NEXT
             
             // Perform operation based on saved operator
-            PLA  // Get operator type
+            LDA storeOp  // Get operator type
             switch (A)
             {
                 case BinOpType.Add:
@@ -1408,6 +1663,8 @@ Print.Hex(); LDA #'v' Print.Char();
             break;
         } // single exit
         
+        PLA
+        STA storeOp
         PLA
         STA AST.astNodeH
         PLA
@@ -1583,6 +1840,10 @@ Print.Hex(); LDA #'e' Print.Char();
                     case NodeType.Assign:
                     {
                         generateAssignment();
+                    }
+                    case NodeType.PostfixOp:
+                    {
+                        generatePostfixOp();
                     }
                     default:
                     {
