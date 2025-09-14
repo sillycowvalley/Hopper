@@ -36,6 +36,7 @@ unit AST
         Assign       = 12,  // Assignment expression
         BinOp        = 13,  // Binary operation
         PostfixOp    = 14,  // Postfix operation
+        For          = 15,  // For loop 
         
         AfterLast           // see freeNode()
     }
@@ -114,6 +115,15 @@ unit AST
     // PostfixOp node:
     //     [7]    PostfixOpType
     const byte iPostfixOp = 7;
+    
+    // For node:
+    //     [7-8]   Init expression (optional)
+    //     [9-10]  Exit cndition expression (optional)
+    //     [11-12] Next/update expression (optional)
+    //     Child:  Body statement
+    const byte iForInit    = 7;
+    const byte iForExit    = 9;
+    const byte iForNext    = 11;
     
     Initialize()
     {
@@ -458,6 +468,7 @@ unit AST
     const string nodeAssign   = "ASSIGN";
     const string nodeBinOp    = "BINOP ";
     const string nodePostfixOp= "POSTFIX ";
+    const string nodeFor      = "FOR";   
     const string nodeUnknown  = "??";
     
     
@@ -523,6 +534,100 @@ unit AST
         LDA [ZP.IDX], Y
         switch (A)
         {
+            case NodeType.For:
+            {
+                LDA #(nodeFor % 256)
+                STA ZP.STRL
+                LDA #(nodeFor / 256)
+                STA ZP.STRH
+                Print.String();
+                Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();  // <-- REMOVE THIS
+                Print.NewLine();
+                
+                // Save current node for later
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Print init expression if present
+                LDY #AST.iForInit
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                LDA ZP.IDXL
+                ORA ZP.IDXH
+                if (NZ)
+                {
+                    INC ZP.TEMP  // Increase indent
+                    PrintNode();  // Recursive call for init
+                    DEC ZP.TEMP  // Restore indent
+                }
+                
+                // Restore node
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Print exit expression if present
+                LDY #AST.iForExit
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                LDA ZP.IDXL
+                ORA ZP.IDXH
+                if (NZ)
+                {
+                    INC ZP.TEMP  // Increase indent
+                    PrintNode();  // Recursive call for exit
+                    DEC ZP.TEMP  // Restore indent
+                }
+                
+                // Restore node
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Print next expression if present
+                LDY #AST.iForNext
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                LDA ZP.IDXL
+                ORA ZP.IDXH
+                if (NZ)
+                {
+                    INC ZP.TEMP  // Increase indent
+                    PrintNode();  // Recursive call for next
+                    DEC ZP.TEMP  // Restore indent
+                }
+                
+                // Restore node - don't pop this time, leave it for normal child processing
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+            }
             case NodeType.Program:
             {
                 LDA #(nodeProg % 256)
@@ -915,9 +1020,20 @@ unit AST
                 Print.String();
             }
         } // switch
-        Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
         
-        Print.NewLine();
+        LDY # iNodeType
+        LDA [ZP.IDX], Y
+        switch (A)
+        {
+            case NodeType.For:
+            {
+            }
+            default:
+            {
+                Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
+                Print.NewLine();
+            }
+        }
         
         // Save current node
         LDA ZP.IDXL

@@ -576,6 +576,151 @@ unit Parser
         STA stmtNodeH
     }
     
+    // Parse: for (init; condition; update) body
+    parseForStatement() // -> IDY
+    {
+        consume();  // Move past 'for'
+        if (NC) { return; }
+                        
+        // Expect '('
+        LDA #Token.LeftParen
+        expect();
+        if (NC) { return; }
+        
+        LDA stmtNodeH
+        PHA
+        LDA stmtNodeL
+        PHA
+        
+        STZ stmtNodeH
+        STZ stmtNodeL
+        
+        loop
+        {
+            // Create For node
+            LDA #AST.NodeType.For
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Save For node
+            LDA ZP.IDXL
+            STA stmtNodeL
+            LDA ZP.IDXH
+            STA stmtNodeH
+            
+            // Parse init expression (optional)
+            LDA currentToken
+            CMP # Token.Semicolon
+            if (NZ)  // Not empty init
+            {
+                parseExpression(); // -> IDY
+                if (NC)
+                {
+                    break;
+                }
+
+                // Store init expression in For node
+                LDY #AST.iForInit
+                LDA ZP.IDYL
+                STA [stmtNode], Y
+                INY
+                LDA ZP.IDYH
+                STA [stmtNode], Y
+            }
+            
+            // Expect ';'
+            LDA #Token.Semicolon
+            expect();
+            if (NC) { break; }
+
+            // Parse condition expression (optional)
+            LDA currentToken
+            CMP #Token.Semicolon
+            if (NZ)  // Not empty condition
+            {
+                parseExpression(); // -> IDY
+                if (NC) { break; }
+                
+                // Store condition expression in For node
+                LDY #AST.iForExit
+                LDA ZP.IDYL
+                STA [stmtNode], Y
+                INY
+                LDA ZP.IDYH
+                STA [stmtNode], Y
+            }
+            
+            // Expect ';'
+            LDA #Token.Semicolon
+            expect();
+            if (NC) { break; }
+            
+            // Parse update expression (optional)
+            LDA currentToken
+            CMP #Token.RightParen
+            if (NZ)  // Not empty update
+            {
+                parseExpression(); // -> IDY
+                if (NC) { break; }
+                
+                // Store update expression in For node
+                LDY #AST.iForNext
+                LDA ZP.IDYL
+                STA [stmtNode], Y
+                INY
+                LDA ZP.IDYH
+                STA [stmtNode], Y
+            }
+            
+            // Expect ')'
+            LDA #Token.RightParen
+            expect();
+            if (NC) { break; }
+            
+            // Parse body statement(requires braces)
+            parseCompoundStatement(); // -> IDY
+            if (NC) { break; }
+            
+            // Add body as child of For node
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            
+            AST.AddChild(); // IDX = For, IDY = body
+            
+            // Return For node in IDY
+            LDA stmtNodeL
+            STA ZP.IDYL
+            LDA stmtNodeH
+            STA ZP.IDYH
+            
+            STZ stmtNodeL
+            STZ stmtNodeH
+            
+            SEC
+            break;
+        } // single exit
+        
+        LDA stmtNodeL
+        ORA stmtNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
+        
+        PLA
+        STA stmtNodeL
+        PLA
+        STA stmtNodeH
+    }
+    
     // Parse: { ... }
     parseCompoundStatement() // -> IDY
     {
@@ -626,6 +771,11 @@ unit Parser
                     case Token.Char:
                     {
                         parseVariableDeclaration(); // -> IDY
+                        if (NC) { break; }
+                    }
+                    case Token.For:
+                    {
+                        parseForStatement(); // -> IDY
                         if (NC) { break; }
                     }
                     default:
@@ -770,7 +920,7 @@ unit Parser
         // Parse left side
         parseEquality(); // -> IDY
         if (NC) { return; }
-        
+       
         // Check for assignment operator
         LDA currentToken
         CMP #Token.Assign
@@ -911,6 +1061,7 @@ unit Parser
                 }
                 default:
                 {
+                    SEC
                     break;  // Not ==, !=, return what we have
                 }
             }
@@ -1024,6 +1175,7 @@ unit Parser
                 }
                 default:
                 {
+                    SEC
                     break;  // Not a relational operator, return what we have
                 }
             }
@@ -1110,7 +1262,7 @@ unit Parser
     parseAdditive()  // -> IDY
     {
         parseMultiplicative();  // Parse left side -> IDY
-        
+        if (NC) { return; }
         loop
         {
             LDA currentToken
@@ -1126,6 +1278,7 @@ unit Parser
                 }
                 default:
                 {
+                    SEC
                     break;  // Not +/-, return what we have
                 }
             }
@@ -1529,7 +1682,6 @@ unit Parser
                 STA ZP.IDYL
                 LDA ZP.IDXH
                 STA ZP.IDYH
-                
                 consume();  // Move past identifier
                 SEC
             }
