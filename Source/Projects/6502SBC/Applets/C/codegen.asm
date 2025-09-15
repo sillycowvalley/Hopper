@@ -425,7 +425,7 @@ unit CodeGen
         loop
         {
             // Get next sibling
-            LDY #AST.iNext
+            LDY # AST.iNext
             LDA [ZP.IDY], Y
             TAX
             INY
@@ -461,13 +461,13 @@ unit CodeGen
                 // Get identifier's name from iData
                 LDY #AST.iData
                 LDA [ZP.IDX], Y
-                STA ZP.IDXL
+                STA ZP.IDYL
                 INY
                 LDA [ZP.IDX], Y
-                STA ZP.IDXH
+                STA ZP.IDYH
                 
                 // Compare with target name
-                CodeGen.CompareStrings();  // STR vs IDX
+                CodeGen.CompareStrings();  // STR vs IDY
                 
                 PLA
                 STA ZP.IDYH
@@ -666,14 +666,29 @@ unit CodeGen
         LDA [ZP.IDX], Y
         STA ZP.STRH
         
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDXL
+        PHA
+        
         // Find the variable declaration
         findVariable();
         if (NC)
         {
+#ifdef DEBUG
+    Print.NewLine(); LDA #'a' Print.Char(); Print.String();
+#endif            
+            PLA
+            STA ZP.IDXL
+            PLA
+            STA ZP.IDXH
+            
             LDA # Error.UndefinedIdentifier
             Errors.ShowIDX();
             return;
         }
+        PLA
+        PLA
         
         // IDX now points to VarDecl node
         // Get the BP offset (stored during declaration processing)
@@ -780,14 +795,28 @@ unit CodeGen
             LDA [ZP.IDY], Y
             STA ZP.STRH
             
+            LDA ZP.IDYH
+            PHA
+            LDA ZP.IDYL
+            PHA
+            
             // Find the function in the AST
             findFunction(); // STR = name -> IDX = Function node, C = found
             if (NC)
             {
+#ifdef DEBUG
+    Print.NewLine(); LDA #'b' Print.Char(); Print.String();
+#endif            
+                PLA
+                STA ZP.IDYL
+                PLA
+                STA ZP.IDYH
                 LDA # Error.UndefinedIdentifier
-                Errors.Show();
+                Errors.ShowIDY();
                 break;
             }
+            PLA
+            PLA
             
             // Save function node
             LDA ZP.IDXL

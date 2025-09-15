@@ -76,6 +76,11 @@ unit Parser
     {
         PHY
         
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         loop
         {
             // Get string length
@@ -119,6 +124,12 @@ unit Parser
             SEC
             break;
         } // single exit
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        
         PLY
     }
     
@@ -216,18 +227,10 @@ unit Parser
                 break;
             }
             
-            // Save identifier node
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
-            
             // Copy function name from token buffer
             copyTokenString(); // -> STR
             if (NC) 
             {
-                PLA
-                PLA
                 break; 
             }
             
@@ -237,11 +240,6 @@ unit Parser
             LDA ZP.STRH
             STA ZP.ACCH
             
-            // Restore identifier node and set data
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
             AST.SetData(); // IDX[iData] = ACC
             
             // Move identifier to IDY
@@ -328,21 +326,57 @@ unit Parser
                         break;
                     }
                     
-                    // Copy parameter name to VarDecl
-                    copyTokenString(); // -> STR, munts IDX
+                    // Save VarDecl node on stack
+                    LDA ZP.IDYL
+                    PHA
+                    LDA ZP.IDYH
+                    PHA
+                    
+                    // Create Identifier node for parameter name
+                    LDA #AST.NodeType.Identifier
+                    AST.CreateNode(); // -> IDX
+                    if (NC) 
+                    { 
+                        PLA
+                        PLA
+                        break; 
+                    }
+                    
+                    // Copy parameter name to Identifier
+                    copyTokenString(); // -> STR
+                    if (NC)
+                    {
+                        AST.FreeNode(); // Free the Identifier
+                        PLA
+                        PLA
+                        break;
+                    }
+                    
                     LDA ZP.STRL
                     STA ZP.ACCL
                     LDA ZP.STRH
                     STA ZP.ACCH
-                    
-                    LDA ZP.IDYL
-                    STA ZP.IDXL
-                    LDA ZP.IDYH
-                    STA ZP.IDXH
-                    AST.SetData(); // Store name in VarDecl
+                    AST.SetData(); // Store name in Identifier's iData
                     
                     consume();  // Move past identifier
                     if (NC) { break; }
+                    
+                    // Add Identifier as child of VarDecl
+                    LDA ZP.IDXL
+                    STA ZP.IDYL
+                    LDA ZP.IDXH
+                    STA ZP.IDYH
+                    PLA
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    AST.AddChild(); // VarDecl gets Identifier child
+                    
+                    // Move VarDecl back to IDY for adding to function
+                    LDA ZP.IDXL
+                    STA ZP.IDYL
+                    LDA ZP.IDXH
+                    STA ZP.IDYH
                     
                     LDA functionNodeL
                     STA ZP.IDXL
@@ -461,20 +495,10 @@ unit Parser
             AST.CreateNode(); // -> IDX
             if (NC) { break; }
             
-            // Save identifier node
-            LDA ZP.IDXL
-            PHA
-            LDA ZP.IDXH
-            PHA
-            
             // Copy variable name
             copyTokenString(); // -> STR
             if (NC)
             {
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
                 AST.FreeNode();  // Free identifier
                 break;
             }
@@ -485,10 +509,6 @@ unit Parser
             LDA ZP.STRH
             STA ZP.ACCH
             
-            PLA
-            STA ZP.IDXH
-            PLA
-            STA ZP.IDXL
             AST.SetData(); // IDX[iData] = ACC
             
             // Move identifier to IDY
@@ -1704,18 +1724,10 @@ unit Parser
                 AST.CreateNode(); // -> IDX
                 if (NC) { return; }
                 
-                // Save string node
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                
                 // Copy string data
                 copyTokenString(); // -> STR
                 if (NC)
                 {
-                    PLA
-                    PLA
                     return;
                 }
                 
@@ -1725,11 +1737,6 @@ unit Parser
                 LDA ZP.STRH
                 STA ZP.ACCH
                 
-                // Restore string node and set data
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
                 AST.SetData(); // IDX[iData] = ACC
                 
                 // Move to IDY for return
@@ -1749,18 +1756,10 @@ unit Parser
                 AST.CreateNode(); // -> IDX
                 if (NC) { return; }
                 
-                // Save identifier node
-                LDA ZP.IDXL
-                PHA
-                LDA ZP.IDXH
-                PHA
-                
                 // Copy identifier name
                 copyTokenString(); // -> STR
                 if (NC)
                 {
-                    PLA
-                    PLA
                     return;
                 }
                 
@@ -1770,11 +1769,6 @@ unit Parser
                 LDA ZP.STRH
                 STA ZP.ACCH
                 
-                // Restore identifier node and set data
-                PLA
-                STA ZP.IDXH
-                PLA
-                STA ZP.IDXL
                 AST.SetData(); // IDX[iData] = ACC
                 
                 // Move to IDY for return

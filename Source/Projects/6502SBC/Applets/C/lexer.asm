@@ -166,6 +166,11 @@ unit Lexer
         
         // Get character from buffer
         
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        
         // Load FileDataBuffer address into zero page pointer
         LDA #(File.FileDataBuffer % 256)
         STA ZP.IDXL
@@ -178,6 +183,11 @@ unit Lexer
         LDA [ZP.IDX], Y
         STA peekChar
         PLY
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
         
         INC bufferIndexL
         if (Z) { INC bufferIndexH }
@@ -316,14 +326,16 @@ unit Lexer
         if (C)
         {
             // Check for keywords
-            checkKeyword();
+            LDA ZP.STRL
+            PHA
+            LDA ZP.STRH
+            PHA
+            Tokens.CheckKeywords();
+            PLA
+            STA ZP.STRH
+            PLA
+            STA ZP.STRL
         }
-    }
-    
-    // Check if identifier is a keyword
-    checkKeyword()
-    {
-         Tokens.CheckKeywords();
     }
     
     // Scan number
@@ -517,6 +529,7 @@ unit Lexer
         {
             return;
         }
+        
         loop
         {
             LDA currentChar
@@ -570,13 +583,13 @@ unit Lexer
                 case '*':
                 {
                     advance();
-                    LDA #Token.Star
+                    LDA # Token.Star
                     STA TokenType
                 }
                 case '/':
                 {
                     advance();
-                    LDA #Token.Slash
+                    LDA # Token.Slash
                     STA TokenType
                 }
                 case '%':
@@ -731,6 +744,7 @@ unit Lexer
             SEC
             break;
         } // loop
+              
         if (C)
         {
             LDA TokenType
