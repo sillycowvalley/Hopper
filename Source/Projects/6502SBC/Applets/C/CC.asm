@@ -234,8 +234,5 @@ if (NC)
         Long.Print();
         Print.NewLine();
 #endif        
-        
-        
-        Print.NewLine();
     }
 }

@@ -1485,12 +1485,6 @@ Print.Hex(); LDA #'v' Print.Char();
         
         // Calculate and emit the adjusted offset value
         LDA ZP.TEMP
-        if (PL)  // Positive offset (parameters)
-        {
-            // Calculate adjusted offset at compile time
-            CLC
-            ADC #3  // Add 3 to skip frame overhead
-        }
         // Now A contains either the original negative offset OR the adjusted positive offset
         EmitByte(); if (NC) { return; }
         
