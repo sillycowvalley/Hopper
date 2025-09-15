@@ -929,11 +929,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 loop
                 {
-                    LDA #OpCode.TSX
-                    EmitByte(); if (NC) { break; }
-                    LDA #OpCode.INX
-                    EmitByte(); if (NC) { break; }
-                    LDA #OpCode.TXS
+                    LDA #OpCode.PLA
                     EmitByte(); if (NC) { break; }
                     
                     DEC ZP.TEMP
@@ -1092,11 +1088,9 @@ Print.Hex(); LDA #'v' Print.Char();
     
     pushC()
     {
-        // TSX - get current stack pointer
-        LDA #OpCode.TSX
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
         EmitByte(); if (NC) { return; }
-        
-        // Transfer X to Y for indirect indexed addressing
         LDA #OpCode.TXA
         EmitByte(); if (NC) { return; }
         LDA #OpCode.TAY
@@ -1148,14 +1142,8 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA #runtimeStack3
         EmitByte(); if (NC) { return; }
         
-        
-        
-        // DEX - point to new top (the value we just pushed)
-        LDA #OpCode.DEX
-        EmitByte(); if (NC) { return; }
-        
-        // TXS - update stack pointer
-        LDA #OpCode.TXS
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
         EmitByte(); if (NC) { return; }
         
         SEC
@@ -1164,11 +1152,9 @@ Print.Hex(); LDA #'v' Print.Char();
     // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
     pushNEXT()
     {
-        // TSX - get current stack pointer
-        LDA #OpCode.TSX
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
         EmitByte(); if (NC) { return; }
-        
-        // Transfer X to Y for indirect indexed addressing
         LDA #OpCode.TXA
         EmitByte(); if (NC) { return; }
         LDA #OpCode.TAY
@@ -1222,12 +1208,8 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA #runtimeStack3
         EmitByte(); if (NC) { return; }
         
-        // DEX - point to new top (the value we just pushed)
-        LDA #OpCode.DEX
-        EmitByte(); if (NC) { return; }
-        
-        // TXS - update stack pointer
-        LDA #OpCode.TXS
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
         EmitByte(); if (NC) { return; }
         
         SEC
@@ -1236,11 +1218,9 @@ Print.Hex(); LDA #'v' Print.Char();
     // Generate code to push 32-bit value from ZP.TOP onto runtime stack
     pushTOP()
     {
-        // TSX - get current stack pointer
-        LDA #OpCode.TSX
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
         EmitByte(); if (NC) { return; }
-        
-        // Transfer X to Y for indirect indexed addressing
         LDA #OpCode.TXA
         EmitByte(); if (NC) { return; }
         LDA #OpCode.TAY
@@ -1294,12 +1274,8 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA #runtimeStack3
         EmitByte(); if (NC) { return; }
         
-        // DEX - point to new top (the value we just pushed)
-        LDA #OpCode.DEX
-        EmitByte(); if (NC) { return; }
-        
-        // TXS - update stack pointer
-        LDA #OpCode.TXS
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
         EmitByte(); if (NC) { return; }
         
         SEC
@@ -1308,15 +1284,14 @@ Print.Hex(); LDA #'v' Print.Char();
     // Generate code to pop 32-bit value from stack into ZP.NEXT
     popNEXT()
     {
-        // TSX - get current stack pointer
-        LDA #OpCode.TSX
+        LDA #OpCode.PLA
         EmitByte(); if (NC) { return; }
         
-        // INX - point to top value (SP points one past)
-        LDA #OpCode.INX  
-        EmitByte(); if (NC) { return; }
+        // SP points one past to the slot we are interested in
         
-        // Transfer X to Y for indirect indexed addressing
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
+        EmitByte(); if (NC) { return; }
         LDA #OpCode.TXA
         EmitByte(); if (NC) { return; }
         LDA #OpCode.TAY
@@ -1369,10 +1344,6 @@ Print.Hex(); LDA #'v' Print.Char();
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT3
         EmitByte(); if (NC) { return; }
-                                              
-        // TXS - update stack pointer (now points to next free)
-        LDA #OpCode.TXS
-        EmitByte(); if (NC) { return; }
         
         SEC
     }
@@ -1381,15 +1352,14 @@ Print.Hex(); LDA #'v' Print.Char();
     // Generate code to pop 32-bit value from stack into ZP.TOP
     popTOP()
     {
-        // TSX - get current stack pointer
-        LDA #OpCode.TSX
+        LDA #OpCode.PLA
         EmitByte(); if (NC) { return; }
         
-        // INX - point to top value (SP points one past)
-        LDA #OpCode.INX  
-        EmitByte(); if (NC) { return; }
+        // SP points one past to the slot we are interested in
         
-        // Transfer X to Y for indirect indexed addressing
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
+        EmitByte(); if (NC) { return; }
         LDA #OpCode.TXA
         EmitByte(); if (NC) { return; }
         LDA #OpCode.TAY
@@ -1441,10 +1411,6 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA #ZP.TOP3
-        EmitByte(); if (NC) { return; }
-                                              
-        // TXS - update stack pointer (now points to next free)
-        LDA #OpCode.TXS
         EmitByte(); if (NC) { return; }
         
         SEC
@@ -2349,11 +2315,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 generateExpression(); if (NC) { break; }
                 // Init result is not used, pop it
-                LDA #OpCode.TSX
-                EmitByte(); if (NC) { break; }
-                LDA #OpCode.INX
-                EmitByte(); if (NC) { break; }
-                LDA #OpCode.TXS
+                LDA #OpCode.PLA
                 EmitByte(); if (NC) { break; }
             }
             
@@ -2458,12 +2420,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 generateExpression(); if (NC) { break; }
                 // Next result is not used, pop it
-                LDA #OpCode.TSX
-                EmitByte(); if (NC) { break; }
-                LDA #OpCode.INX
-                EmitByte(); if (NC) { break; }
-                LDA #OpCode.TXS
-                EmitByte(); if (NC) { break; }
+                LDA #OpCode.PLA
             }
             
             // JMP back to loop start
