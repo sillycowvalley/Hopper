@@ -1105,8 +1105,44 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
             }
             else
             {
-                generateUserFunctionCall();  // Future: JSR to user function
-                if (NC) { break; }
+                IsFileFunction();
+                if (C)
+                {
+                    switch (A)
+                    {
+                        case FileFunction.FOpen:
+                        case FileFunction.FClose:
+                        case FileFunction.FGetC:
+                        case FileFunction.FPutC:
+                        case FileFunction.FGetS:
+                        case FileFunction.FPutS:
+                        case FileFunction.FEof:
+                        case FileFunction.FRead:
+                        case FileFunction.FWrite:
+                        {
+#ifdef DEBUG
+Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
+#endif     
+                            LDA # Error.NotImplemented
+                            Errors.ShowIDX();
+                            break;
+                        }
+                        default:
+                        {
+#ifdef DEBUG
+Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
+#endif     
+                            LDA # Error.NotImplemented
+                            Errors.ShowIDX();
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    generateUserFunctionCall();  // Future: JSR to user function
+                    if (NC) { break; }
+                }
             }
             SEC
             break;

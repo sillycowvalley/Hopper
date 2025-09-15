@@ -17,6 +17,35 @@ unit Library
     const string sysseconds = "seconds";
     const string sysputchar = "putchar";
     
+    // Memory management
+    const string sysmalloc  = "malloc";
+    const string sysfree    = "free";
+    
+    // File I/O
+    const string sysfopen   = "fopen";
+    const string sysfclose  = "fclose";
+    const string sysfgetc   = "fgetc";
+    const string sysfputc   = "fputc";
+    const string sysfgets   = "fgets";
+    const string sysfputs   = "fputs";
+    const string sysfeof    = "feof";
+    const string sysfread   = "fread";
+    const string sysfwrite  = "fwrite";
+    
+    enum FileFunction
+    {
+        // starting at 0xF0 so they don't collide with BIOS calls
+        FOpen   = 0xF0,
+        FClose  = 0xF1,
+        FGetC   = 0xF2,
+        FPutC   = 0xF3,
+        FGetS   = 0xF4,
+        FPutS   = 0xF5,
+        FEof    = 0xF6,
+        FRead   = 0xF7,
+        FWrite  = 0xF8,
+    }
+    
     // Emit a JSR to the BIOS dispatch function
     // Output: C set on success, clear on failure
     // Note: Assumes X register contains syscall number
@@ -103,6 +132,32 @@ unit Library
             LDA # BIOSInterface.SysCall.PrintChar
             SEC
             return;
+        } 
+        
+        // Check for "malloc"
+        LDA #(sysmalloc % 256)
+        STA ZP.IDYL
+        LDA #(sysmalloc / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.MemAllocate
+            SEC
+            return;
+        } 
+        
+         // Check for "free"
+        LDA #(sysfree % 256)
+        STA ZP.IDYL
+        LDA #(sysfree / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.MemFree
+            SEC
+            return;
         }  
         
         
@@ -110,6 +165,135 @@ unit Library
         
         CLC  // Not a system function
     }
+    
+    
+    // Check if a function name is a file function
+    // Input: ZP.STR = function name to check
+    // Output: A = FileFunction enum value if file function
+    //         C set if file function, clear if not
+    IsFileFunction()
+    {
+        // Check for "fopen"
+        LDA #(sysfopen % 256)
+        STA ZP.IDYL
+        LDA #(sysfopen / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA #FileFunction.FOpen
+            SEC
+            return;
+        }
+        
+        // Check for "fclose"
+        LDA #(sysfclose % 256)
+        STA ZP.IDYL
+        LDA #(sysfclose / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FClose
+            SEC
+            return;
+        }
+        
+        // Check for "fgetc"
+        LDA #(sysfgetc % 256)
+        STA ZP.IDYL
+        LDA #(sysfgetc / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FGetC
+            SEC
+            return;
+        }
+        
+        // Check for "fputc"
+        LDA #(sysfputc % 256)
+        STA ZP.IDYL
+        LDA #(sysfputc / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FPutC
+            SEC
+            return;
+        }
+        
+        // Check for "fgets"
+        LDA #(sysfgets % 256)
+        STA ZP.IDYL
+        LDA #(sysfgets / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FGetS
+            SEC
+            return;
+        }
+        
+        // Check for "fputs"
+        LDA #(sysfputs % 256)
+        STA ZP.IDYL
+        LDA #(sysfputs / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FPutS
+            SEC
+            return;
+        }
+        
+        // Check for "feof"
+        LDA #(sysfeof % 256)
+        STA ZP.IDYL
+        LDA #(sysfeof / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FEof
+            SEC
+            return;
+        }
+        
+        // Check for "fread"
+        LDA #(sysfread % 256)
+        STA ZP.IDYL
+        LDA #(sysfread / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FRead
+            SEC
+            return;
+        }
+        
+        // Check for "fwrite"
+        LDA #(sysfwrite % 256)
+        STA ZP.IDYL
+        LDA #(sysfwrite / 256)
+        STA ZP.IDYH
+        CodeGen.CompareStrings();
+        if (C)
+        {
+            LDA #FileFunction.FWrite
+            SEC
+            return;
+        }
+        
+        CLC  // Not a file function
+    }
+    
+    
     
     // Emit runtime loop to print literal characters until % or \0
     // Input:  Y = current position in format string

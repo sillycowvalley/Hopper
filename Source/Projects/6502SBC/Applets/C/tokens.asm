@@ -33,7 +33,7 @@ unit Tokens
         Assign       = 35,  // =
         Equal        = 36,  // ==
         NotEqual     = 37,  // !=
-        Less         = 38,  // 
+        Less         = 38,  // <
         Greater      = 39,  // >
         LessEqual    = 40,  // <=
         GreaterEqual = 41,  // >=
@@ -53,6 +53,13 @@ unit Tokens
         LeftBracket  = 56,  // [
         RightBracket = 57,  // ]
         Ampersand    = 58,  // & (for address-of)
+        
+        // Pointer types
+        CharPtr      = 59,    // char* type
+        FilePtr      = 60,    // FILE* type
+        
+        // New keyword
+        Null         = 61,    // NULL constant
     }
     
     // Keyword table for recognition
@@ -65,6 +72,7 @@ unit Tokens
     const string kwFor    = "for";
     const string kwWhile  = "while";
     const string kwReturn = "return";
+    const string kwNULL   = "NULL";
     
     
     
@@ -224,6 +232,19 @@ unit Tokens
         if (C)
         {
             LDA #Token.Return
+            STA Lexer.TokenType
+            return;
+        }
+        
+        // Check "NULL"
+        LDA #(kwNULL % 256)
+        STA ZP.STRL
+        LDA #(kwNULL / 256)
+        STA ZP.STRH
+        matchKeyword();
+        if (C)
+        {
+            LDA #Token.Null
             STA Lexer.TokenType
             return;
         }
