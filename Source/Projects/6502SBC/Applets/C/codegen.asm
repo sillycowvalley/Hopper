@@ -112,6 +112,7 @@ unit CodeGen
         INC_ZP  = 0xE6, 
         INX     = 0xE8,
         SBC_IMM = 0xE9, 
+        NOP     = 0xEA, 
         BEQ     = 0xF0,
         PLX     = 0xFA,
     }    
@@ -1129,11 +1130,14 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
             EmitByte(); if (NC) { return; }
         
             // Store the BP offset in the VarDecl node for later reference
-            // Locals are at negative offsets: first local at BP-1, second at BP-2, etc.
+            // Locals are at negative offsets: first local at BP+0, second at BP-1, etc.
             LDY # AST.iOffset  // Reuse the offset field for BP offset
             LDA functionLocals
-            EOR #0xFF         // Negate (two's complement without the +1)
-            STA [ZP.IDX], Y   // Store as BP-relative offset (-1, -2, etc.)
+            if (NZ)
+            {
+                EOR #0xFF      // Negate to get -1, -2, etc.
+            }
+            STA [ZP.IDX], Y   // Store as BP-relative offset (0, -1, -2, etc.)
             
             // Update the local count
             INC functionLocals
