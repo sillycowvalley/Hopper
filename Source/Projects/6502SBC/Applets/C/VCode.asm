@@ -12,8 +12,11 @@ unit VCode
     const byte vcodeSizeL      = vzSlots+4;
     const byte vcodeSizeH      = vzSlots+5;
     
+    const byte peep0           = vzSlots+6;
+    
     enum VOpCode
     {
+        None,
         PushNEXT,
         PushTOP,
         PopNEXT,
@@ -24,6 +27,8 @@ unit VCode
         DecNEXT,
         PushC,
         LongADD,
+        
+        GetPushNEXT, // GetNEXT + PushNEXT
     }
     
     Initialize()
@@ -45,6 +50,8 @@ unit VCode
         LDA #0x01
         STA vcodeSizeH
         STZ vcodeSizeL
+        
+        STZ peep0
     }
     Dispose()
     {
@@ -136,6 +143,15 @@ unit VCode
                     INY
                     PHY putNEXT(); PLY if (NC) { return; }
                 }
+                
+                
+                case VOpCode.GetPushNEXT:
+                {
+                    LDA [vcodeBuffer], Y // BP offset
+                    INY
+                    PHY getNEXT();  PLY if (NC) { return; }
+                    PHY pushNEXT(); PLY if (NC) { return; }
+                }
                 default:
                 {
 Print.Hex();                    
@@ -150,14 +166,15 @@ loop { }
             if (Z) { break; }
         }
         STZ vcodeOffset
+        STZ peep0
 //LDA #'>' Print.Char();
         SEC
     }
     
     addVCode()
     {
-        PHA
-        PHX
+        PHA // BP offset
+        PHX // VOpCode
         
         LDY vcodeOffset
         CPY #250
@@ -168,8 +185,31 @@ loop { }
         
         LDY vcodeOffset
         PLX
+        
+        LDA peep0
+        switch (A) // previous VOpCode
+        {
+            case VOpCode.GetNEXT:
+            {
+                switch (X) // this VOpCode
+                {
+                    case VOpCode.PushNEXT:
+                    {
+                        DEY // BP offset of GetNEXT
+                        DEY // GetNEXT
+                        LDA #VOpCode.GetPushNEXT
+                        STA [vcodeBuffer], Y
+                        PLA
+                        SEC
+                        return;
+                    }
+                }
+            }
+        }
+        
         TXA
         STA [vcodeBuffer], Y
+        STA peep0
         INC vcodeOffset
         
         PLA
