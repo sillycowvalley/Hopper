@@ -2694,6 +2694,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 generateExpression(); if (NC) { break; }
                 // Next result is not used, pop it
                 LDA #OpCode.PLA
+                EmitByte(); if (NC) { break; }
             }
             
             // JMP back to loop start
