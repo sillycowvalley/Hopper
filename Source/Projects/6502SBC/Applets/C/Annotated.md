@@ -1,4 +1,4 @@
-# Disassembly Analysis: Return Statement Bug
+# Disassembly Analysis: Return Statement Bug (Updated)
 
 ## Program Structure
 ```
@@ -13,7 +13,7 @@
 ### Function Prologue
 ```hopper
 080F: LDA 0x60           ; Load old BP
-0811: PHA                ; Save old BP
+0811: PHA                ; Push old BP
 0812: TSX                
 0813: STX 0x60           ; New BP = stack pointer
 ```
@@ -34,12 +34,12 @@
 0829: STA 0x19           ; Store in ZP.NEXT3
 ```
 
-### Push 'a' Back to Stack (Why?)
+### Push 'a' to Stack
 ```hopper
 082B: TSX
 082C: TXA
 082D: TAY
-082E: LDA 0x16           ; Push NEXT back to stack
+082E: LDA 0x16           ; Push NEXT to stack
 0830: STA [0x61],Y
 0832: LDA 0x17
 0834: STA [0x63],Y
@@ -142,13 +142,13 @@
 08AE: TXS
 ```
 
-### Unnecessary Pop Operation
+### Pop Result Back (Unnecessary)
 ```hopper
 08AF: TSX
 08B0: INX
 08B1: TXA
 08B2: TAY
-08B3: LDA [0x61],Y       ; Pop what we just pushed!
+08B3: LDA [0x61],Y       ; Pop what we just pushed
 08B5: STA 0x16
 08B7: LDA [0x63],Y
 08B9: STA 0x17
@@ -159,13 +159,13 @@
 08C3: TXS
 ```
 
-### 🐛 **BUG: Wrong Return Value Location!**
+### ✅ Store Result at BP+5 (FIXED from BP+3)
 ```hopper
 08C4: LDA 0x60           ; BP
 08C6: CLC
-08C7: ADC #0x03          ; BP+3 ← WRONG OFFSET!
+08C7: ADC #0x05          ; BP+5 (was BP+3 before)
 08C9: TAY
-08CA: LDA 0x16           ; Store result at BP+3
+08CA: LDA 0x16           ; Store result at BP+5
 08CC: STA [0x61],Y
 08CE: LDA 0x17
 08D0: STA [0x63],Y
@@ -218,12 +218,13 @@
 0906: STX 0x60           ; New BP
 ```
 
-### Reserve Space for 'sum' Local Variable
+### 🐛 **BUG #1: No Return Value Reservation!**
 ```hopper
-0908: PHA                ; Reserve slot (but wrong - should be 4x PHA for 32-bit)
+0908: PHA                ; Reserve for local 'sum' (only 1 byte!)
 0909: TSX
-090A: DEX
+090A: DEX                ; Adjust stack pointer
 090B: TXS
+; MISSING: Should reserve 4 bytes for return value HERE!
 ```
 
 ### Push First Argument (5)
@@ -272,27 +273,27 @@
 
 ### Call add(5, 3)
 ```hopper
-094A: JSR 0x080F
+094A: JSR 0x080F         ; Call add()
 ```
 
 ### Clean Up Arguments (Pop 2 args)
 ```hopper
 094D: TSX
-094E: INX
+094E: INX                ; Pop first arg
 094F: TXS
 0950: TSX
-0951: INX
+0951: INX                ; Pop second arg
 0952: TXS
 ```
 
-### Pop Return Value
+### 🐛 **BUG #2: Pop from Wrong Location!**
 ```hopper
 0953: TSX
 0954: INX
 0955: TXA
 0956: TAY
-0957: LDA [0x61],Y       ; Get return value
-0959: STA 0x16
+0957: LDA [0x61],Y       ; Trying to pop return value
+0959: STA 0x16           ; But there's nothing there!
 095B: LDA [0x63],Y
 095D: STA 0x17
 095F: LDA [0x65],Y
@@ -302,29 +303,181 @@
 0967: TXS
 ```
 
-## 🔴 **ROOT CAUSE IDENTIFIED**
-
-The bug is at address **0x08C7**: The return statement stores the result at `BP+3` instead of the correct location.
-
-### Stack Layout During add() Execution:
+### Store to Local Variable 'sum' at [BP-1]
+```hopper
+0968: LDA 0x60           ; BP
+096A: CLC
+096B: ADC #0xFF          ; BP-1 (255 = -1 in 8-bit)
+096D: TAY
+096E: LDA 0x16           ; Store "return value" to sum
+0970: STA [0x61],Y
+0972: LDA 0x17
+0974: STA [0x63],Y
+0976: LDA 0x18
+0978: STA [0x65],Y
+097A: LDA 0x19
+097C: STA [0x67],Y
 ```
-[saved BP]     ← BP points here
-[return addr L]
-[return addr H]
-[arg 'b' = 3]  ← BP+3 (WRONG target!)
-[arg 'a' = 5]  ← BP+4
-[return slot]  ← BP+5 (should be here? or elsewhere?)
+
+### printf() Call Setup
+```hopper
+097E: TSX                ; Push 'sum' again for printf
+097F: TXA
+0980: TAY
+0981: LDA 0x16
+0983: STA [0x61],Y
+0985: LDA 0x17
+0987: STA [0x63],Y
+0989: LDA 0x18
+098B: STA [0x65],Y
+098D: LDA 0x19
+098F: STA [0x67],Y
+0991: DEX
+0992: TXS
 ```
 
-### The Problem:
-1. The return value is being stored at **BP+3**, which overwrites the second argument 'b'
-2. The actual return slot that main() expects to read from is never written to
-3. When main() pops the "return value", it gets uninitialized data (likely 0)
+### More Stack Manipulation
+```hopper
+0993: TSX
+0994: INX
+0995: TXS
+0996: TSX
+0997: DEX
+0998: TXS
+```
 
-### Expected Behavior:
-The return value should be placed where the caller expects it - likely at a specific offset that the caller has reserved, not overwriting the arguments.
+### Setup String Pointer
+```hopper
+0999: LDA #0x07          ; String address low
+099B: STA 0x1E           ; ZP.STRL
+099D: LDA #0x08          ; String address high
+099F: STA 0x1F           ; ZP.STRH
+```
 
-### Additional Issues:
-1. **Duplicate epilogue** at 0x08DA and 0x08E1
-2. **Unnecessary push/pop cycles** that don't serve any purpose
-3. **Wrong stack reservation** in main - only 1 byte reserved for 32-bit 'sum'
+### printf() Format String Processing
+```hopper
+09A1: LDY #0x00
+09A3: LDA [0x1E],Y       ; Load char from format string
+09A5: CMP #0x04          ; Check for %d marker?
+09A7: BEQ 0x09B1         ; Branch if found
+09A9: LDX #0x12          ; SysCall.PrintChar
+09AB: JSR 0x0803
+09AE: INY
+09AF: BRA 0x09A3         ; Loop (using 0x80 as BRA opcode?)
+```
+
+### Load 'sum' from [BP-1] for printf
+```hopper
+09B1: LDA 0x60           ; BP
+09B3: CLC
+09B4: ADC #0xFF          ; BP-1
+09B6: TAY
+09B7: LDA [0x61],Y       ; Load sum
+09B9: STA 0x16
+09BB: LDA [0x63],Y
+09BD: STA 0x17
+09BF: LDA [0x65],Y
+09C1: STA 0x18
+09C3: LDA [0x67],Y
+09C5: STA 0x19
+```
+
+### Push for printf
+```hopper
+09C7: TSX
+09C8: TXA
+09C9: TAY
+09CA: LDA 0x16
+09CC: STA [0x61],Y
+09CE: LDA 0x17
+09D0: STA [0x63],Y
+09D2: LDA 0x18
+09D4: STA [0x65],Y
+09D6: LDA 0x19
+09D8: STA [0x67],Y
+09DA: DEX
+09DB: TXS
+```
+
+### Pop and Print Integer
+```hopper
+09DC: TSX
+09DD: INX
+09DE: TXA
+09DF: TAY
+09E0: LDA [0x61],Y       ; Pop value to ACC
+09E2: STA 0x12
+09E4: LDA [0x63],Y
+09E6: STA 0x13
+09E8: LDA [0x65],Y
+09EA: STA 0x14
+09EC: LDA [0x67],Y
+09EE: STA 0x15
+09F0: TXS
+09F1: LDX #0x1F          ; SysCall.PrintInt
+09F3: JSR 0x0803
+```
+
+### Continue printf Processing
+```hopper
+09F6: LDY #0x06          ; Continue after %d
+09F8: LDA [0x1E],Y
+09FA: CMP #0x07          ; Check for end?
+09FC: BEQ 0x0A06
+09FE: LDX #0x12          ; SysCall.PrintChar
+0A00: JSR 0x0803
+0A03: INY
+0A04: BRA 0x09F8         ; Loop
+```
+
+### Function Epilogue
+```hopper
+0A06: TSX
+0A07: INX
+0A08: TXS
+0A09: LDX 0x60
+0A0B: TXS
+0A0C: PLA
+0A0D: STA 0x60
+0A0F: RTS
+```
+
+## 🔴 **ROOT CAUSE: MISMATCHED CALLING CONVENTION**
+
+The problem is **NOT** just the BP+5 offset fix. There are **TWO critical bugs**:
+
+### Bug #1: Caller Doesn't Reserve Return Slot
+`main()` never reserves space for the return value before pushing arguments. The calling sequence should be:
+1. Reserve return slot (4 bytes)
+2. Push arguments
+3. JSR to function
+
+But `main()` skips step 1!
+
+### Bug #2: Stack Mismatch After Return
+After `add()` returns:
+- `add()` wrote the return value to BP+5 (a location in the caller's stack frame)
+- But `main()` tries to pop a return value from the current stack top
+- These are different locations!
+
+### Current Stack During add():
+```
+[??? garbage]   ← BP+5 (add() writes here)
+[arg 'a' = 5]   ← BP+4
+[arg 'b' = 3]   ← BP+3  
+[ret addr H]    ← BP+2
+[ret addr L]    ← BP+1
+[saved BP]      ← BP+0
+```
+
+After return and popping args, main() expects:
+```
+[return value]  ← Stack top (but nothing here!)
+```
+
+### The Fix Needed:
+Either:
+1. **Caller reserves space**: `main()` should push 4 dummy bytes before arguments, then `add()` can write to BP+5
+2. **Different convention**: `add()` should push the return value onto its stack before returning, not write to BP+offset
+
+The current code has `add()` writing to one place (BP+5) but `main()` reading from another (stack top after popping args).

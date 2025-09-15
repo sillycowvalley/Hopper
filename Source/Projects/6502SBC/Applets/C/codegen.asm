@@ -2702,12 +2702,33 @@ Print.Hex(); LDA #'s' Print.Char();
                 popNEXT();
                 if (NC) { break; }
                 
+                LDA AST.astNodeL
+                PHA 
+                LDA AST.astNodeH
+                PHA 
+                
+                LDA functionNodeL
+                STA AST.astNodeL
+                LDA functionNodeH
+                STA AST.astNodeH
+                
                 // Store result in return slot (BP + param_count + 3)
-                countFunctionParameters(); // -> A = param count
+                countFunctionParameters();  // [AST.astNode] -> A = count
+                
+PHA Print.NewLine(); PLA PHA Print.Hex(); PLA
+                
                 CLC
                 ADC #3  // Skip saved BP and return address
                 
+PHA Print.NewLine(); PLA PHA Print.Hex(); PLA                
+                
                 putNEXT(); // A = BP offset
+                
+                PLA
+                STA AST.astNodeH
+                PLA
+                STA AST.astNodeL
+                
                 if (NC) { break; }
             }
             
