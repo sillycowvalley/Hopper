@@ -20,6 +20,10 @@ unit VCode
         PopTOP,
         PutNEXT,
         GetNEXT,
+        IncNEXT,
+        DecNEXT,
+        PushC,
+        LongADD,
     }
     
     Initialize()
@@ -75,13 +79,13 @@ unit VCode
     
     Flush()
     {
-LDA #'<' Print.Char();
+//LDA #'<' Print.Char(); LDA vcodeOffset Print.Hex(); LDA #':' Print.Char(); Print.Space();
         LDY #0
         loop
         {
             LDA [vcodeBuffer], Y
             INY
-PHA PHY Print.Hex(); Print.Space(); PLY PLA           
+//PHA PHY Print.Hex(); Print.Space(); PLY PLA           
             
             switch (A)
             {
@@ -89,10 +93,37 @@ PHA PHY Print.Hex(); Print.Space(); PLY PLA
                 {
                     PHY pushNEXT(); PLY if (NC) { return; }
                 }
+                case VOpCode.PushTOP:
+                {
+                    PHY pushTOP(); PLY if (NC) { return; }
+                }
+                case VOpCode.PopNEXT:
+                {
+                    PHY popNEXT(); PLY if (NC) { return; }
+                }
                 case VOpCode.PopTOP:
                 {
                     PHY popTOP(); PLY if (NC) { return; }
                 }
+                case VOpCode.PushC:
+                {
+                    PHY pushC(); PLY if (NC) { return; }
+                }
+                
+                case VOpCode.IncNEXT:
+                {
+                    PHY incNEXT(); PLY if (NC) { return; }
+                }
+                case VOpCode.DecNEXT:
+                {
+                    PHY decNEXT(); PLY if (NC) { return; }
+                }
+                
+                case VOpCode.LongADD:
+                {
+                    PHY longADD(); PLY if (NC) { return; }
+                }
+                
                 case VOpCode.GetNEXT:
                 {
                     LDA [vcodeBuffer], Y // BP offset
@@ -119,7 +150,7 @@ loop { }
             if (Z) { break; }
         }
         STZ vcodeOffset
-LDA #'>' Print.Char();
+//LDA #'>' Print.Char();
         SEC
     }
     
@@ -162,9 +193,40 @@ LDA #'>' Print.Char();
         LDX # VOpCode.PushNEXT
         addVCode();
     }
+    PopNEXT()
+    {
+        LDX # VOpCode.PopNEXT
+        addVCode();
+    }
+    PushTOP()
+    {
+        LDX # VOpCode.PushTOP
+        addVCode();
+    }
     PopTOP()
     {
         LDX # VOpCode.PopTOP
+        addVCode();
+    }
+    PushC()
+    {
+        LDX # VOpCode.PushC
+        addVCode();
+    }
+    
+    IncNEXT()
+    {
+        LDX # VOpCode.IncNEXT
+        addVCode();
+    }
+    DecNEXT()
+    {
+        LDX # VOpCode.DecNEXT
+        addVCode();
+    }
+    LongADD()
+    {
+        LDX # VOpCode.LongADD
         addVCode();
     }
     
@@ -473,6 +535,380 @@ LDA #'>' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         SEC
+    }
+    
+    
+    // Generate code to push 32-bit value from ZP.TOP onto runtime stack
+    pushTOP()
+    {
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TXA
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store TOP0 to stack via pointer
+        // LDA ZP.TOP0
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.TOP0
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA [runtimeStack0],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store TOP1 to stack via pointer
+        // LDA ZP.TOP1
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.TOP1
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA [runtimeStack1],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store TOP2 to stack via pointer
+        // LDA ZP.TOP2
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.TOP2
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA [runtimeStack2],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store TOP3 to stack via pointer
+        // LDA ZP.TOP3
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.TOP3
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA [runtimeStack3],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to pop 32-bit value from stack into ZP.NEXT
+    popNEXT()
+    {
+        
+        LDA #OpCode.PLA
+        Gen6502.emitByte(); if (NC) { return; } 
+        
+        // SP points one past to the slot we are interested in
+        
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TXA
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Load NEXT0 from stack via pointer
+        // LDA [runtimeStack0],Y
+        LDA #OpCode.LDA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack0
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA ZP.NEXT0
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0 
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Load NEXT1 from stack via pointer
+        // LDA [runtimeStack1],Y
+        LDA #OpCode.LDA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack1
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        Gen6502.emitByte(); if (NC) { return; }
+                
+        // Load NEXT2 from stack via pointer
+        // LDA [runtimeStack2],Y
+        LDA #OpCode.LDA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack2
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Load NEXT3 from stack via pointer
+        // LDA [runtimeStack3],Y
+        LDA #OpCode.LDA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack3
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to increment 32-bit value in NEXT0-3
+    incNEXT()
+    {
+        // CLC (clear carry)
+        LDA #OpCode.CLC
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT0
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // ADC #1
+        LDA #OpCode.ADC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT0
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT1
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // ADC #0 (adds carry if any)
+        LDA #OpCode.ADC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // ADC #0
+        LDA #OpCode.ADC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // ADC #0
+        LDA #OpCode.ADC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to decrement 32-bit value in NEXT0-3
+    decNEXT()
+    {
+        // SEC (set carry for subtraction)
+        LDA # OpCode.SEC
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT0
+        LDA # OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // SBC #1
+        LDA # OpCode.SBC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT0
+        LDA # OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT1
+        LDA # OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // SBC #0 (subtracts borrow if any)
+        LDA #OpCode.SBC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // SBC #0
+        LDA #OpCode.SBC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // SBC #0
+        LDA #OpCode.SBC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    pushC()
+    {
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TXA
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Convert carry flag to 0 or 1
+        // LDA #0
+        LDA #OpCode.LDA_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // ADC #0 - adds carry flag to 0, giving 0 or 1
+        LDA #OpCode.ADC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store result (0 or 1) to stack via pointer
+        // STA [runtimeStack0],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.LDA_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        // STA [runtimeStack1],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        // STA [runtimeStack2],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        // STA [runtimeStack3],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    longADD()
+    {
+        loop
+        {
+            LDA #OpCode.LDX_IMM
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #BIOSInterface.SysCall.LongAdd
+            Gen6502.emitByte(); if (NC) { break; }
+            break;
+        }
     }
     
 }
