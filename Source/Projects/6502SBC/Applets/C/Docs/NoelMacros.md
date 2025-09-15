@@ -32,6 +32,8 @@ The following sequences are represented as macros for clarity:
 * **IncNEXT** - Increment NEXT registers by 1
 * **DecNEXT** - Decrement NEXT registers by 1
 * **LongADD** - Add TOP and NEXT, result in NEXT
+* **LongLE** - Less than or Equal comparison, sets flags
+* **LongSUB** - Subtract TOP from NEXT, result in NEXT
 
 ## Complete Disassembly
 
@@ -96,7 +98,7 @@ The following sequences are represented as macros for clarity:
 0899: PushNEXT             ; Push i=1 to runtime stack
 ```
 
-### Outer loop - get i and store locally
+### Outer loop condition: i <= 10
 ```hopper
 08AE: PopNEXT              ; Get current i value
 08C1: PutNEXT              ; Store i to local variable [BP-3]
@@ -107,15 +109,15 @@ The following sequences are represented as macros for clarity:
 091F: PushNEXT             ; Push 10
 0934: PopTOP               ; Pop 10 to TOP
 0948: PopNEXT              ; Pop i to NEXT
-095B: LongADD              ; Add i + 10
+095C: LongLE               ; Compare i <= 10 (sets carry if true)
 095F: PushC                ; Push comparison result
 0972: PopNEXT              ; Get result
 0985: LDA 0x16             ; A5 16 - Test all bytes of result
 0987: ORA 0x17             ; 05 17
 0989: ORA 0x18             ; 05 18
 098B: ORA 0x19             ; 05 19
-098D: BNE 0x0992           ; D0 03 - Branch if non-zero (i + 10 != 0)
-098F: JMP 0x0CD5           ; 4C D5 0C - Exit outer loop if zero
+098D: BNE 0x0992           ; D0 03 - Branch if non-zero (i <= 10)
+098F: JMP 0x0CD5           ; 4C D5 0C - Exit outer loop if zero (i > 10)
 ```
 
 ### Inner loop setup - s = 0, j = 1
@@ -129,7 +131,7 @@ The following sequences are represented as macros for clarity:
 09F7: PushNEXT             ; Push j=1 to runtime stack
 ```
 
-### Inner loop condition check: j <= 1000
+### Inner loop condition: j <= 1000
 ```hopper
 0A0C: PopNEXT              ; Get j
 0A1F: PutNEXT              ; Store j to local variable [BP-4]
@@ -140,15 +142,15 @@ The following sequences are represented as macros for clarity:
 0A7F: PushNEXT             ; Push 1000
 0A93: PopTOP               ; Pop 1000 to TOP
 0AA7: PopNEXT              ; Pop j to NEXT
-0ABA: LongADD              ; Add j + 1000
+0ABA: LongLE               ; Compare j <= 1000 (sets carry if true)
 0ABE: PushC                ; Push comparison result
 0AD1: PopNEXT              ; Get result
 0AE4: LDA 0x16             ; A5 16 - Test result
 0AE6: ORA 0x17             ; 05 17
 0AE8: ORA 0x18             ; 05 18
 0AEA: ORA 0x19             ; 05 19
-0AEC: BNE 0x0AF1           ; D0 03 - Branch if non-zero (j + 1000 != 0)
-0AEE: JMP 0x0C29           ; 4C 29 0C - Exit inner loop if zero
+0AEC: BNE 0x0AF1           ; D0 03 - Branch if non-zero (j <= 1000)
+0AEE: JMP 0x0C29           ; 4C 29 0C - Exit inner loop if zero (j > 1000)
 ```
 
 ### Inner loop body: s = s + j
@@ -159,8 +161,7 @@ The following sequences are represented as macros for clarity:
 0B31: PushNEXT             ; Push j
 0B46: PopTOP               ; Pop j to TOP
 0B5A: PopNEXT              ; Pop s to NEXT
-0B6D: LDX #0x1A            ; A2 1A - SysCall.LongCompare or subtract
-0B6F: JSR 0x0803           ; 20 03 08
+0B6D: LongADD              ; Perform s = s + j (addition operation)
 0B71: PushNEXT             ; Push result (s = s + j)
 0B86: PopNEXT              ; Get result
 0B99: PutNEXT              ; Store updated s to [BP+0]
@@ -171,7 +172,7 @@ The following sequences are represented as macros for clarity:
 ```hopper
 0BC4: GetNEXT              ; Load j from [BP-4]
 0BDA: PushNEXT             ; Push j
-0BEE: IncNEXT               ; Increment j by 1
+0BEE: IncNEXT               ; Increment j by 1 (inline 32-bit arithmetic)
 0C07: PutNEXT              ; Store j++ to [BP-4]
 0C1E: JMP 0x0A4E           ; 4C 4E 0A - Jump back to inner loop condition
 ```
@@ -183,7 +184,7 @@ The following sequences are represented as macros for clarity:
 0C2C: PushNEXT             ; Push '.'
 0C41: PopNEXT              ; Get character
 0C54: LDA 0x16             ; A5 16 - Load character
-0C56: LDX #0x12            ; A2 12 - SysCall.SerialWriteChar
+0C56: LDX #0x12            ; A2 12 - SysCall.PrintChar
 0C58: JSR 0x0803           ; 20 03 08
 0C5A: PushNEXT             ; Push result
 ```
@@ -192,7 +193,7 @@ The following sequences are represented as macros for clarity:
 ```hopper
 0C6F: GetNEXT              ; Get i from [BP-3]
 0C85: PushNEXT             ; Push i
-0C99: IncNEXT               ; Increment i by 1
+0C99: IncNEXT               ; Increment i by 1 (inline 32-bit arithmetic)
 0CB2: PutNEXT              ; Store i++ to [BP-3]
 0CC9: JMP 0x08EE           ; 4C EE 08 - Jump back to outer loop
 ```
@@ -209,7 +210,7 @@ The following sequences are represented as macros for clarity:
 0CD7: LDA [0x1E], Y        ; B1 1E
 0CD9: CMP #0x00            ; C0 00
 0CDB: BEQ 0x0CE3           ; F0 08
-0CDD: LDX #0x12            ; A2 12 - SysCall.SerialWriteChar
+0CDD: LDX #0x12            ; A2 12 - SysCall.PrintChar
 0CDF: JSR 0x0803           ; 20 03 08
 0CE1: INY                  ; C8
 0CE2: BRA 0x0CD7           ; 80 F2
@@ -217,14 +218,14 @@ The following sequences are represented as macros for clarity:
 0CE3: GetNEXT              ; Get final sum for printing from [BP+0]
 0CF9: PushNEXT             ; Push sum
 0D0E: PopTOP               ; Pop sum to TOP for printf
-0D21: LDX #0x1F            ; A2 1F - SysCall.Printf
+0D21: LDX #0x1F            ; A2 1F - SysCall.LongPrint
 0D23: JSR 0x0803           ; 20 03 08
 
 0D25: LDY #0x03            ; A0 03 - Print remaining part of string
 0D27: LDA [0x1E], Y        ; B1 1E
 0D29: CMP #0x04            ; C0 04
 0D2B: BEQ 0x0D33           ; F0 08
-0D2D: LDX #0x12            ; A2 12 - SysCall.SerialWriteChar
+0D2D: LDX #0x12            ; A2 12 - SysCall.PrintChar
 0D2F: JSR 0x0803           ; 20 03 08
 0D31: INY                  ; C8
 0D32: BRA 0x0D27           ; 80 F2
@@ -244,7 +245,7 @@ The following sequences are represented as macros for clarity:
 0D40: LDA [0x1E], Y        ; B1 1E
 0D42: CMP #0x00            ; C0 00
 0D44: BEQ 0x0D4C           ; F0 08
-0D46: LDX #0x12            ; A2 12 - SysCall.SerialWriteChar
+0D46: LDX #0x12            ; A2 12 - SysCall.PrintChar
 0D48: JSR 0x0803           ; 20 03 08
 0D4A: INY                  ; C8
 0D4B: BRA 0x0D40           ; 80 F2
@@ -258,18 +259,17 @@ The following sequences are represented as macros for clarity:
 0D7B: PushNEXT             ; Push start time
 0D90: PopTOP               ; Pop end time to TOP
 0DA4: PopNEXT              ; Pop start time to NEXT
-0DB7: LDX #0x1B            ; A2 1B - SysCall.LongSubtract
-0DB9: JSR 0x0803           ; 20 03 08
+0DB7: LongSUB              ; Calculate elapsed = end - start
 0DBB: PushNEXT             ; Push elapsed time
 0DD0: PopTOP               ; Pop elapsed time to TOP for printf
-0DE3: LDX #0x1F            ; A2 1F - SysCall.Printf
+0DE3: LDX #0x1F            ; A2 1F - SysCall.LongPrint
 0DE5: JSR 0x0803           ; 20 03 08
 
 0DE7: LDY #0x03            ; A0 03 - Print remaining string
 0DE9: LDA [0x1E], Y        ; B1 1E
 0DEB: CMP #0x07            ; C0 07
 0DED: BEQ 0x0DF5           ; F0 08
-0DEF: LDX #0x12            ; A2 12 - SysCall.SerialWriteChar
+0DEF: LDX #0x12            ; A2 12 - SysCall.PrintChar
 0DF1: JSR 0x0803           ; 20 03 08
 0DF3: INY                  ; C8
 0DF4: BRA 0x0DE9           ; 80 F2
@@ -289,29 +289,46 @@ The following sequences are represented as macros for clarity:
 ## Analysis
 
 ### Syscalls Identified:
-- **0x00**: Memory allocation
-- **0x12**: Serial character output (putchar)  
-- **0x18**: Get millisecond timer (millis)
-- **0x1A**: Long comparison/subtraction operation
-- **0x1B**: Long subtraction 
-- **0x1F**: Printf formatting
-- **0x24**: Long addition (LongADD)
+- **0x00**: MemAllocate
+- **0x12**: PrintChar (putchar)  
+- **0x18**: TimeMillis (millis)
+- **0x1A**: LongAdd (LongADD macro)
+- **0x1B**: LongSub (LongSUB macro) 
+- **0x1F**: LongPrint (printf)
+- **0x24**: LongLE (Less than or Equal comparison)
 
 ### Key Observations:
 
-1. **Efficient Increment Operations**: The compiler generates inline **IncNEXT** macros for simple increments instead of using expensive syscalls, showing good optimization.
+1. **Correct Comparison Logic**: The compiler properly generates **LongLE (0x24)** syscalls for `<=` comparisons at addresses 0x095C and 0x0ABD, not addition as initially suspected.
 
-2. **Mixed Comparison Strategy**: Loop conditions use **LongADD** (syscall 0x24) for comparisons, then test if the result is zero using OR operations.
+2. **Proper Operation Selection**: 
+   - **LongLE** for loop conditions (`i <= 10`, `j <= 1000`)
+   - **LongADD** for arithmetic operations (`s = s + j`)
+   - **LongSUB** for time calculation (`millis() - start`)
 
-3. **Sophisticated Runtime Stack**: Uses 4-page parallel stack system with indexed indirect addressing for 32-bit value management.
+3. **Efficient Optimization**: The compiler uses inline **IncNEXT** macros for simple increments instead of expensive syscalls, showing smart optimization decisions.
 
-4. **Manual 32-bit Arithmetic**: The **IncNEXT** macro shows the compiler can generate efficient inline arithmetic when appropriate.
+4. **Sophisticated Runtime Stack**: Uses 4-page parallel stack system with indexed indirect addressing for 32-bit value management.
 
-5. **String Handling**: Character-by-character output for printf strings with proper null termination checks.
+5. **Complete BIOS Integration**: All I/O, timing, and complex arithmetic operations are handled via syscalls while simple operations are inlined.
 
-6. **Loop Structure**: 
-   - Outer loop: `for (i = 1; i <= 10; i++)` uses `i + 10 == 0` test logic
-   - Inner loop: `for (j = 1; j <= 1000; j++)` uses `j + 1000 == 0` test logic
-   - Both loops use **IncNEXT** for efficient increment operations
+6. **Correct Loop Structure**: 
+   - Both loops use proper comparison syscalls and test the carry flag result
+   - Loop exit logic based on comparison results, not arithmetic overflow
+   - Manual increments avoid syscall overhead for simple operations
 
-The code demonstrates a working C-to-6502 compiler with good optimization for arithmetic operations and proper BIOS integration for system services.
+### Compiler Quality Assessment:
+
+**Strengths:**
+- Correct implementation of C comparison semantics
+- Smart optimization choices (inline vs syscall arithmetic)
+- Proper 32-bit arithmetic throughout
+- Successful BIOS integration
+- Working runtime stack system
+
+**Areas for Potential Optimization:**
+- Excessive runtime stack traffic for temporary values
+- Could reduce push/pop sequences in some cases
+- String printing could use BIOS string functions instead of character-by-character output
+
+The code demonstrates a sophisticated and correctly functioning C-to-6502 compiler with proper comparison operations, efficient arithmetic optimization, and comprehensive system integration.
