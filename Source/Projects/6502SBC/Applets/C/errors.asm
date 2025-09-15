@@ -20,6 +20,10 @@ unit Errors
         TooFewArguments,
         UndefinedIdentifier,
         
+        TypeExpected,
+        VoidFunction,
+        ExpressionExpected,
+        
         FilenameTooLong,
         FileSaveError,
     }

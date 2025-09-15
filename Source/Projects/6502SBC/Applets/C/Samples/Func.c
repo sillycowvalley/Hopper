@@ -1,8 +1,9 @@
-void func(int a)
-{
-    printf("a=%d\n", a+1);
+int add(int a, int b) {
+    return a + b;
 }
+
 void main() {
-    func(10);
-    printf("Success\n");
+    int sum;
+    sum = add(5, 3);
+    printf("Sum=%d\n", sum);
 }

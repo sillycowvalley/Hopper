@@ -407,11 +407,16 @@ unit CodeGen
     // Output: IDX = VarDecl node, C set if found
     findVariable()
     {
+
+        
         // Start from current function node
         LDA functionNodeL
         STA ZP.IDXL
         LDA functionNodeH
         STA ZP.IDXH
+        
+Print.NewLine(); Print.String(); Print.Space(); LDA #'<' Print.Char(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #'>' Print.Char();
+Print.NewLine();
         
         // Get first child (identifier)
         LDY #AST.iChild
@@ -670,23 +675,23 @@ unit CodeGen
         PHA
         LDA ZP.IDXL
         PHA
-        
+    
         // Find the variable declaration
         findVariable();
         if (NC)
         {
 #ifdef DEBUG
-    Print.NewLine(); LDA #'a' Print.Char(); Print.String();
-#endif            
+LDA #'x' Print.Char(); Print.Space(); Print.String();
+#endif
             PLA
             STA ZP.IDXL
             PLA
             STA ZP.IDXH
-            
             LDA # Error.UndefinedIdentifier
             Errors.ShowIDX();
             return;
         }
+
         PLA
         PLA
         
@@ -1720,7 +1725,6 @@ Print.Hex(); LDA #'v' Print.Char();
         }
         
         pushNEXT();
-        
         SEC
     }  
     
@@ -1928,7 +1932,19 @@ Print.Hex(); LDA #'v' Print.Char();
             
             // Find the VarDecl for this identifier
             findVariable();  // -> IDX
-            if (NC) { break; }
+            if (NC)
+            {
+#ifdef DEBUG
+LDA #'y' Print.Char(); Print.Space(); Print.String();
+#endif
+                LDA AST.astNodeH
+                STA ZP.IDXH
+                LDA AST.astNodeL
+                STA ZP.IDXL
+                LDA # Error.UndefinedIdentifier
+                Errors.ShowIDX();
+                break;
+            }
             
             // Get the BP offset from VarDecl
             LDY #AST.iOffset
@@ -2169,26 +2185,32 @@ Print.Hex(); LDA #'v' Print.Char();
             case NodeType.LongLit:
             {
                 generateIntLiteral();
+                if (NC) { return; }
             } 
             case NodeType.Identifier:
             {
                 generateLoadIdentifier();
+                if (NC) { return; }
             }
             case NodeType.CallExpr:
             {
                 generateCallExpr();
+                if (NC) { return; }
             }
             case NodeType.BinOp:
             {
                 generateBinOp();
+                if (NC) { return; }
             }            
             case NodeType.Assign:
             {
                 generateAssignment();
+                if (NC) { return; }
             }
             case NodeType.PostfixOp:
             {
                 generatePostfixOp();
+                if (NC) { return; }
             }
             
             default:
@@ -2198,8 +2220,10 @@ Print.Hex(); LDA #'e' Print.Char();
 #endif
                 LDA #Error.NotImplemented
                 Errors.ShowIDX();
+                if (NC) { return; }
             }
         }
+        SEC
     }
     
     // Generate code for an assignment expression
@@ -2266,7 +2290,19 @@ Print.Hex(); LDA #'e' Print.Char();
             
             // Find the VarDecl for this identifier
             findVariable();  // -> IDX
-            if (NC) { break; } // Variable not found!
+            if (NC)
+            {
+#ifdef DEBUG
+LDA #'z' Print.Char(); Print.Space(); Print.String();
+#endif
+                LDA AST.astNodeH
+                STA ZP.IDXH
+                LDA AST.astNodeL
+                STA ZP.IDXL
+                LDA # Error.UndefinedIdentifier
+                Errors.ShowIDX();
+                break; // Variable not found!
+            }
             
             // Get the BP offset from VarDecl
             LDY #AST.iOffset
@@ -2486,6 +2522,8 @@ Print.Hex(); LDA #'e' Print.Char();
         PLA
         STA AST.astNodeL
     }
+    
+    
             
     
     
@@ -2501,15 +2539,23 @@ Print.Hex(); LDA #'e' Print.Char();
         // Check statement type
         LDY #AST.iNodeType
         LDA [ZP.IDX], Y
+        
         switch (A)
         {
             case NodeType.VarDecl:
             {
                 generateVarDecl();
+                if (NC) { return; }
             }
             case NodeType.For:
             {
                 generateFor();
+                if (NC) { return; }
+            }
+            case NodeType.Return:
+            {
+                generateReturn();
+                if (NC) { return; }
             }
             case NodeType.ExprStmt:
             {
@@ -2524,6 +2570,7 @@ Print.Hex(); LDA #'e' Print.Char();
                 
                 // Generate the expression (any type)
                 generateExpression();
+                if (NC) { return; }
                 
                 // ALL expression statements discard the value
                 LDA # OpCode.TSX
@@ -2541,8 +2588,10 @@ Print.Hex(); LDA #'s' Print.Char();
 #endif                
                 LDA # Error.NotImplemented
                 Errors.ShowIDX();
+                return;
             }
         }
+        SEC
     }
     
     // Generate code for a compound statement (block)
@@ -2576,13 +2625,14 @@ Print.Hex(); LDA #'s' Print.Char();
         {
             LDA AST.astNodeH
             ORA AST.astNodeL
-            if (Z) { break; }  // No more statements
+            if (Z) { SEC break; }  // No more statements
             
             LDA AST.astNodeL
             STA ZP.IDXL
             LDA AST.astNodeH
             STA ZP.IDXH
             generateStatement();  // Uses IDX
+            if (NC) { break; }
             
             // Move to next statement
             LDY #AST.iNext
@@ -2598,6 +2648,101 @@ Print.Hex(); LDA #'s' Print.Char();
         STA AST.astNodeH
         PLA
         STA AST.astNodeL
+    }
+    
+    generateReturn() // Input: IDX = Return node
+    {
+        loop
+        {
+            // Check if Return node has an expression (child)
+            LDY #AST.iChild
+            LDA [ZP.IDX], Y
+            STA ZP.ACCL
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.ACCH
+            
+            // Get function's return type
+            LDY #AST.iReturnType
+            LDA [functionNode], Y
+            
+            // Check for type mismatch
+            CMP #Token.Void
+            if (Z)
+            {
+                // Function returns void
+                LDA ZP.ACCL
+                ORA ZP.ACCH
+                if (NZ)  // Has return expression but shouldn't
+                {
+                    LDA # Error.VoidFunction
+                    Errors.ShowIDX();
+                    break;
+                }
+            }
+            else
+            {
+                // Function returns non-void
+                LDA ZP.ACCL
+                ORA ZP.ACCH
+                if (Z)  // No return expression but needs one
+                {
+                    LDA # Error.ExpressionExpected
+                    Errors.ShowIDX();
+                    break;
+                }
+                
+                // Generate code for return expression
+                LDA ZP.ACCL
+                STA ZP.IDXL
+                LDA ZP.ACCH
+                STA ZP.IDXH
+                
+                generateExpression();
+                if (NC) { break; }
+                
+                // Pop result into NEXT
+                popNEXT();
+                if (NC) { break; }
+                
+                // Store result in return slot (BP + param_count + 3)
+                countFunctionParameters(); // -> A = param count
+                CLC
+                ADC #3  // Skip saved BP and return address
+                
+                putNEXT(); // A = BP offset
+                if (NC) { break; }
+            }
+            
+            // Generate function epilogue (same as in generateFunctionBody)
+            
+            // LDX runtimeBP
+            LDA #OpCode.LDX_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeBP
+            EmitByte(); if (NC) { break; }
+            
+            // TXS - restore stack pointer
+            LDA #OpCode.TXS
+            EmitByte(); if (NC) { break; }
+            
+            // PLA - pop saved BP
+            LDA #OpCode.PLA
+            EmitByte(); if (NC) { break; }
+            
+            // STA runtimeBP - restore old BP
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #runtimeBP
+            EmitByte(); if (NC) { break; }
+            
+            // RTS
+            LDA #OpCode.RTS
+            EmitByte(); if (NC) { break; }
+            
+            SEC
+            break;
+        } // single exit
     }
     
     // Generate code for a function body

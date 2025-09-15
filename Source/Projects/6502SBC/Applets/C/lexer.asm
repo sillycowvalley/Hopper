@@ -129,6 +129,15 @@ unit Lexer
         SEC
     }
     
+    PeekChar()
+    {
+        LDA peekChar
+    }
+    CurrentChar()
+    {
+        LDA currentChar
+    }
+    
     // Get next character
     advance()
     {

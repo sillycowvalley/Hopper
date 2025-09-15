@@ -40,8 +40,6 @@ unit Parser
     
     const byte bpOffset   = parserSlots+14;
     
-       
-    
     // Helper: consume current token and get next
     consume()
     {
@@ -186,13 +184,23 @@ unit Parser
     }
     
     
-    
     parseFunction() // -> IDY
     {
-        // Expect 'void'
-        LDA #Token.Void
-        expect();
-        if (NC) { return; }
+        PHA // store type
+        
+        //       
+        consume();
+        if (NC) { return; }     
+
+        // TODO : we need to be able to peek next token (not next char, which could be whitespace)        
+        Lexer.CurrentChar();
+        CMP #'('
+        if (NZ)
+        {
+            PLA
+            parseVariableDeclaration(); // A = type, -> IDY
+            return;
+        }
         
         loop
         {
@@ -202,13 +210,18 @@ unit Parser
             // Create function node
             LDA # AST.NodeType.Function
             AST.CreateNode(); // -> IDX
+            PLA
             if (NC) { break; }
             
             // Save function node
-            LDA ZP.IDXL
-            STA functionNodeL
-            LDA ZP.IDXH
-            STA functionNodeH
+            LDX ZP.IDXL
+            STX functionNodeL
+            LDX ZP.IDXH
+            STX functionNodeH
+            
+            // Store return type in Function node
+            LDY #AST.iReturnType  // You'll need to add this field to Function node
+            STA [functionNode], Y
             
             // Expect identifier (function name)
             LDA # Token.Identifier
@@ -841,6 +854,83 @@ unit Parser
         STA stmtNodeH
     }
     
+    parseReturnStatement() // -> IDY = Return node
+    {
+        consume();  // Consume 'return'
+        if (NC) { return; }
+        
+        // Create Return node
+        LDA #AST.NodeType.Return
+        AST.CreateNode(); // -> IDX
+        if (NC) { return; }
+        
+        LDA stmtNodeH
+        PHA
+        LDA stmtNodeL
+        PHA
+        
+        LDA ZP.IDXL
+        STA stmtNodeL
+        LDA ZP.IDXH
+        STA stmtNodeH
+        loop
+        {
+            // Check for expression or semicolon
+            LDA currentToken
+            CMP #Token.Semicolon
+            if (NZ)  // Has return value
+            {
+                parseExpression(); // -> IDY
+                if (NC) 
+                { 
+                    break; 
+                }
+                
+                // Restore Return node
+                LDA stmtNodeH
+                STA ZP.IDXH
+                LDA stmtNodeL
+                STA ZP.IDXL
+                AST.AddChild(); // Return gets expression
+            }
+            
+            // Expect semicolon
+            LDA #Token.Semicolon
+            expect();
+            if (NC) { break; }
+            
+            // Return Return node in IDY
+            LDA stmtNodeL
+            STA ZP.IDYL
+            LDA stmtNodeH
+            STA ZP.IDYH
+            
+            STZ stmtNodeL
+            STZ stmtNodeH
+            
+            SEC
+            
+            break;
+        }
+        LDA stmtNodeL
+        ORA stmtNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
+        
+        PLA
+        STA stmtNodeL
+        PLA
+        STA stmtNodeH
+    }
+    
     // Parse: { ... }
     parseCompoundStatement() // -> IDY
     {
@@ -896,6 +986,11 @@ unit Parser
                     case Token.For:
                     {
                         parseForStatement(); // -> IDY
+                        if (NC) { break; }
+                    }
+                    case Token.Return:
+                    {
+                        parseReturnStatement(); // -> IDY
                         if (NC) { break; }
                     }
                     default:
@@ -1946,27 +2041,17 @@ unit Parser
             LDA currentToken
             switch (A)
             {
+                case Token.Long:
+                case Token.Int:
+                case Token.Char:
                 case Token.Void:
                 {
                     parseFunction(); // -> IDY
                     if (NC) { break; }   
                     
-                    // Add function to AST root
+                    // Add function (or variable) to AST root
                     AST.GetRoot(); // -> IDX
                     AST.AddChild(); // IDX = root, IDY = function   
-                }
-                case Token.Long:
-                case Token.Int:
-                case Token.Char:
-                {
-                    // Could be variable declaration or function
-                    // TODO: for now, assume variable (since functions must be void)
-                    parseVariableDeclaration(); // A = type, -> IDY
-                    if (NC) { break; }
-                    
-                    // Add variable to AST root
-                    AST.GetRoot(); // -> IDX
-                    AST.AddChild(); // IDX = root, IDY = VarDecl
                 }
                 default:
                 {

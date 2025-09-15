@@ -37,6 +37,7 @@ unit AST
         BinOp        = 13,  // Binary operation
         PostfixOp    = 14,  // Postfix operation
         For          = 15,  // For loop 
+        Return       = 16,  // Return statement 
         
         AfterLast           // see freeNode()
     }
@@ -473,10 +474,16 @@ unit AST
     const string nodeChar     = "CHAR ";
     const string nodeVarDecl  = "VAR "; 
     const string nodeAssign   = "ASSIGN";
+    const string nodeReturn   = "RETURN";
     const string nodeBinOp    = "BINOP ";
     const string nodePostfixOp= "POSTFIX ";
     const string nodeFor      = "FOR";   
     const string nodeUnknown  = "??";
+    
+    const string typeVoid = "void ";
+    const string typeInt = "int ";
+    const string typeLong = "long ";
+    const string typeChar = "char ";
     
     
     const string opAdd = "+";
@@ -541,6 +548,14 @@ unit AST
         LDA [ZP.IDX], Y
         switch (A)
         {
+            case NodeType.Return:
+            {
+                LDA #(nodeReturn % 256)
+                STA ZP.STRL
+                LDA #(nodeReturn / 256)
+                STA ZP.STRH
+                Print.String();
+            }
             case NodeType.For:
             {
                 LDA #(nodeFor % 256)
@@ -548,7 +563,7 @@ unit AST
                 LDA #(nodeFor / 256)
                 STA ZP.STRH
                 Print.String();
-                Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();  // <-- REMOVE THIS
+                Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
                 Print.NewLine();
                 
                 // Save current node for later
@@ -645,6 +660,47 @@ unit AST
             }
             case NodeType.Function:
             {
+                // Print return type
+                LDY #AST.iReturnType
+                LDA [ZP.IDX], Y
+                
+                // Convert type token to string and print
+                switch (A)
+                {
+                    case Token.Void:
+                    {
+                        LDA #(typeVoid % 256)
+                        STA ZP.STRL
+                        LDA #(typeVoid / 256)
+                        STA ZP.STRH
+                        Print.String();
+                    }
+                    case Token.Int:
+                    {
+                        LDA #(typeInt % 256)
+                        STA ZP.STRL
+                        LDA #(typeInt / 256)
+                        STA ZP.STRH
+                        Print.String();
+                    }
+                    case Token.Long:
+                    {
+                        LDA #(typeLong % 256)
+                        STA ZP.STRL
+                        LDA #(typeLong / 256)
+                        STA ZP.STRH
+                        Print.String();
+                    }
+                    case Token.Char:
+                    {
+                        LDA #(typeChar % 256)
+                        STA ZP.STRL
+                        LDA #(typeChar / 256)
+                        STA ZP.STRH
+                        Print.String();
+                    }
+                }
+                
                 LDA #(nodeFunc % 256)
                 STA ZP.STRL
                 LDA #(nodeFunc / 256)
