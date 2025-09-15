@@ -220,6 +220,8 @@ unit Library
         
         // Generate argument and pop to NEXT
         CodeGen.generateExpression(); if (NC) { return; }
+        
+        LDX #'p'
         CodeGen.popNEXT(); if (NC) { return; }
         
         // Move character from NEXT0 to A and call PrintChar
@@ -236,6 +238,7 @@ unit Library
         EmitDispatchCall(); if (NC) { return; }
         
         // Push character back as return value (already in NEXT0, rest is zero)
+        LDX #'h'
         CodeGen.pushNEXT();
         
         SEC
@@ -250,6 +253,7 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
+        LDX #'n'
         CodeGen.pushTOP();
         
         SEC
@@ -264,6 +268,7 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
+        LDX #'o'
         CodeGen.pushTOP();
         
         SEC
@@ -294,6 +299,7 @@ unit Library
         CodeGen.generateExpression(); if (NC) { return; }
         
         // Pop from stack into ZP.TOP
+        LDX #'a'
         CodeGen.popTOP(); if (NC) { return; }
         
         // Call Long.Print

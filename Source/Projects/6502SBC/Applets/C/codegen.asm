@@ -74,16 +74,19 @@ unit CodeGen
         SEC     = 0x38, 
         PHA     = 0x48,
         JMP_ABS = 0x4C,
+        PHY     = 0x5A,
         RTS     = 0x60,
         STZ_ZP  = 0x64,
         PLA     = 0x68,
         ADC_IMM = 0x69,
         JMP_IND = 0x6C,
+        PLY     = 0x7A, 
         BRA     = 0x80,
         STA_ZP  = 0x85,
         STX_ZP  = 0x86, 
         TXA     = 0x8A,
         STA_IND_Y = 0x91,
+        TYA     = 0x98,
         TXS     = 0x9A,
         LDY_IMM = 0xA0,
         LDX_IMM = 0xA2,
@@ -97,12 +100,74 @@ unit CodeGen
         CMP_IMM = 0xC9,
         INY     = 0xC8,
         DEX     = 0xCA,
-        BNE     = 0xD0, 
+        BNE     = 0xD0,
+        PHX     = 0xDA, 
         INC_ZP  = 0xE6, 
         INX     = 0xE8,
         SBC_IMM = 0xE9, 
         BEQ     = 0xF0,
+        PLX     = 0xFA,
     }    
+    
+#ifdef DEBUGSTACK
+
+    debugPrintY() // Input: X = marker character to print first
+    {
+        PHX
+        
+        // Generates code to print Y register as hex
+        // Preserves A, X, and Y
+        
+        // Save registers
+        LDA # OpCode.PHX  
+        EmitByte();            // Save X
+        LDA # OpCode.PHY
+        EmitByte();            // Save Y
+        
+        // Print a space for readability
+        LDA # OpCode.LDA_IMM
+        EmitByte();
+        PLA
+        EmitByte();
+        LDA # OpCode.LDX_IMM
+        EmitByte();
+        LDA # SysCall.PrintChar
+        EmitByte();
+        // Emit: JSR dispatch
+        Library.EmitDispatchCall();
+        
+        
+        // Move Y to A for Print.Hex
+        LDA # OpCode.TYA
+        EmitByte();            // Y -> A
+        
+        // Call Print.Hex (assuming syscall 0x11 for PrintHex)
+        LDA # OpCode.LDX_IMM
+        EmitByte();
+        LDA # SysCall.PrintHex
+        EmitByte();
+        // Emit: JSR dispatch
+        Library.EmitDispatchCall();
+        
+        // Print a space for readability
+        LDA # OpCode.LDA_IMM
+        EmitByte();
+        LDA # ' '
+        EmitByte();
+        LDA # OpCode.LDX_IMM
+        EmitByte();
+        LDA # SysCall.PrintChar
+        EmitByte();
+        // Emit: JSR dispatch
+        Library.EmitDispatchCall();
+        
+        // Restore registers
+        LDA # OpCode.PLY
+        EmitByte();            // Restore Y
+        LDA # OpCode.PLX
+        EmitByte();            // Restore X
+    }
+#endif    
     
     
     
@@ -698,9 +763,11 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         LDA [ZP.IDX], Y
         
         // Generate code to load from BP+offset into ZP.NEXT
+        LDX #'f'
         getNEXT(); if (NC) { return; }
         
         // Generate code to push ZP.NEXT onto stack
+        LDX #'m'
         pushNEXT();
     }
     
@@ -1150,15 +1217,20 @@ Print.Hex(); LDA #'v' Print.Char();
     }
     
     // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
-    pushNEXT()
+    pushNEXT() // X -> marker
     {
+        PHX
+        
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         LDA #OpCode.TXA
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         LDA #OpCode.TAY
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
+        
+PLX      
+CodeGen.debugPrintY();         
         
         // Store NEXT0 to stack via pointer
         // LDA ZP.NEXT0
@@ -1216,15 +1288,20 @@ Print.Hex(); LDA #'v' Print.Char();
     }
     
     // Generate code to push 32-bit value from ZP.TOP onto runtime stack
-    pushTOP()
+    pushTOP() // X -> marker
     {
+        PHX
+        
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         LDA #OpCode.TXA
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         LDA #OpCode.TAY
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
+        
+PLX      
+CodeGen.debugPrintY();        
         
         // Store TOP0 to stack via pointer
         // LDA ZP.TOP0
@@ -1282,20 +1359,57 @@ Print.Hex(); LDA #'v' Print.Char();
     }
     
     // Generate code to pop 32-bit value from stack into ZP.NEXT
-    popNEXT()
+    popNEXT() // X -> marker
     {
+#ifdef DEBUGSTACK
+        PHX
+#endif
+        
         LDA #OpCode.PLA
-        EmitByte(); if (NC) { return; }
+        EmitByte(); 
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX 
+#endif
+            return; 
+        }
         
         // SP points one past to the slot we are interested in
         
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX 
+#endif
+            return; 
+        }
         LDA #OpCode.TXA
-        EmitByte(); if (NC) { return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX 
+#endif
+            return; 
+        }
         LDA #OpCode.TAY
-        EmitByte(); if (NC) { return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX 
+#endif
+            return; 
+        }
+        
+#ifdef DEBUGSTACK
+PLX      
+CodeGen.debugPrintY();         
+#endif
         
         // Load NEXT0 from stack via pointer
         // LDA [runtimeStack0],Y
@@ -1350,20 +1464,25 @@ Print.Hex(); LDA #'v' Print.Char();
     
     
     // Generate code to pop 32-bit value from stack into ZP.TOP
-    popTOP()
+    popTOP() // X -> marker
     {
+        PHX
+        
         LDA #OpCode.PLA
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         
         // SP points one past to the slot we are interested in
         
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         LDA #OpCode.TXA
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
         LDA #OpCode.TAY
-        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { PLX return; }
+        
+PLX      
+CodeGen.debugPrintY();        
         
         // Load TOP0 from stack via pointer
         // LDA [runtimeStack0],Y
@@ -1462,12 +1581,16 @@ Print.Hex(); LDA #'v' Print.Char();
     
     // Generate code to store ZP.NEXT at BP+offset
     // Input: A = signed BP offset (e.g., 0xFF for -1)
-    putNEXT()
+    putNEXT()  // X -> marker
     {
+        PHX
+        
         loop
         {
             // Calculate effective offset into Y
-            calculateBPOffset(); if (NC) { break; }
+            calculateBPOffset(); if (NC) { PLX break; }
+PLX            
+debugPrintY();            
             
             // Store NEXT0 through pointer
             LDA #OpCode.LDA_ZP
@@ -1516,12 +1639,17 @@ Print.Hex(); LDA #'v' Print.Char();
     
     // Generate code to load ZP.NEXT from BP+offset
     // Input: A = signed BP offset (e.g., 0xFF for -1)
-    getNEXT()
+    getNEXT() // X->marker
     {
+        PHX
+        
         loop
         {
             // Calculate effective offset into Y
-            calculateBPOffset(); if (NC) { break; }
+            calculateBPOffset(); if (NC) { PLX break; }
+            
+PLX            
+debugPrintY();         
                        
             // Load NEXT0 through pointer
             LDA #OpCode.LDA_IND_Y
@@ -1683,6 +1811,7 @@ Print.Hex(); LDA #'v' Print.Char();
             EmitByte(); if (NC) { return; }
         }
         
+        LDX #'l'
         pushNEXT();
         SEC
     }  
@@ -1910,9 +2039,11 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [ZP.IDX], Y  // This is the signed offset
             
             // Load current value from BP+offset into NEXT
+            LDX #'g'
             getNEXT(); if (NC) { break; }
             
             // Push the ORIGINAL value (this is what postfix returns)
+            LDX #'k'
             pushNEXT(); if (NC) { break; }
             
             // Save offset for store later
@@ -1938,6 +2069,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             
             // Result is in NEXT, store it back
             PLA  // Get offset
+            LDX #'e'
             putNEXT();  // A = offset
             
             SEC
@@ -2008,7 +2140,9 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             // Right operand is now on stack
             
             // Pop both operands
+            LDX #'b'
             CodeGen.popTOP();    // Right operand -> TOP
+            LDX #'t'
             CodeGen.popNEXT();   // Left operand -> NEXT
             
             // Perform operation based on saved operator
@@ -2108,6 +2242,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 case BinOpType.Mod:
                 {
                     // Result is in NEXT, push it
+                    LDX #'j'
                     CodeGen.pushNEXT();
                 }
                 default:
@@ -2228,6 +2363,7 @@ Print.Hex(); LDA #'e' Print.Char();
             generateExpression();
             if (C)
             {
+                LDX #'s'
                 popNEXT();
             }
             
@@ -2268,9 +2404,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [ZP.IDX], Y  // This is the signed offset
             
             // Store NEXT at BP+offset
+            LDX #'d'
             putNEXT();  // A = offset
             
             // Assignment expressions return the assigned value
+            LDX #'i'
             pushNEXT();
                 
             SEC
@@ -2345,6 +2483,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 generateExpression(); if (NC) { break; }
                 
                 // Pop result to check it
+                LDX #'r'
                 popNEXT(); if (NC) { break; }
                 
                 // Test if NEXT is zero (false)
@@ -2648,6 +2787,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 if (NC) { break; }
                 
                 // Pop result into NEXT
+                LDX #'q'
                 popNEXT();
                 if (NC) { break; }
                 
@@ -2667,6 +2807,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 CLC
                 ADC #3  // Skip saved BP and return address
                 
+                LDX #'c'
                 putNEXT(); // A = BP offset
                 
                 PLA
