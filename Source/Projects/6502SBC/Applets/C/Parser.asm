@@ -36,7 +36,9 @@ unit Parser
     const byte binNodeL  = parserSlots+11;
     const byte binNodeH  = parserSlots+12;
     
-    const byte binOp     = parserSlots+13;
+    const byte binOp      = parserSlots+13;
+    
+    const byte bpOffset   = parserSlots+14;
     
        
     
@@ -172,7 +174,8 @@ unit Parser
         PLY   
     }
     
-    // Parse: void main() { ... }
+    
+    
     parseFunction() // -> IDY
     {
         // Expect 'void'
@@ -263,6 +266,103 @@ unit Parser
             expect();
             if (NC) { break; }
             
+            LDA #4
+            STA bpOffset
+            
+            LDA currentToken
+            CMP #Token.RightParen
+            if (NZ)  // Has parameters
+            {
+                loop
+                {
+                    // Parse parameter type (int/char/long)
+                    LDA currentToken
+                    switch (A)
+                    {
+                        case Token.Int:
+                        case Token.Long:
+                        case Token.Char:
+                        {
+                            STA ZP.TEMP
+                            consume();
+                            if (NC) { break; }
+                        }
+                        default:
+                        {
+                            LDA # Token.Int  // For now, only support int
+                            Errors.Expected();
+                            break;
+                        }
+                    }
+                    
+                    // Create VarDecl node for parameter
+                    LDA #AST.NodeType.VarDecl
+                    AST.CreateNode(); // -> IDX
+                    if (NC) { break; }
+                    
+                    // parameter as child -> IDY
+                    LDA ZP.IDXL
+                    STA ZP.IDYL
+                    LDA ZP.IDXH
+                    STA ZP.IDYH
+                    
+                    // Store type in iVarType field
+                    LDY #AST.iVarType
+                    LDA ZP.TEMP
+                    STA [ZP.IDY], Y
+                    
+                    // Store parameter's BP offset
+                    // Parameters at BP+4, BP+5, etc.
+                    LDY #AST.iOffset
+                    LDA bpOffset  // Start at 4, increment each time
+                    STA [ZP.IDY], Y
+                    INC bpOffset
+                    
+                    // Parse parameter name
+                    LDA currentToken
+                    CMP #Token.Identifier
+                    if (NZ)
+                    {
+                        LDA # Token.Identifier
+                        Errors.Expected();
+                        break;
+                    }
+                    
+                    // Copy parameter name to VarDecl
+                    copyTokenString(); // -> STR, munts IDX
+                    LDA ZP.STRL
+                    STA ZP.ACCL
+                    LDA ZP.STRH
+                    STA ZP.ACCH
+                    
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    AST.SetData(); // Store name in VarDecl
+                    
+                    consume();  // Move past identifier
+                    if (NC) { break; }
+                    
+                    LDA functionNodeL
+                    STA ZP.IDXL
+                    LDA functionNodeH
+                    STA ZP.IDXH
+                    AST.AddChild(); // Function gets parameter as child
+                    
+                    // Check for comma (more parameters)
+                    LDA currentToken
+                    CMP #Token.Comma
+                    if (Z)
+                    {
+                        consume();
+                        if (NC) { break; }
+                        continue;
+                    }
+                    break;
+                } // loop
+            }
+        
             // Expect ')'
             LDA # Token.RightParen
             expect();
@@ -1829,14 +1929,23 @@ unit Parser
     // Main parse function
     Parse()
     {
+        // Get first token
+        consume();
+        if (NC) 
+        { 
+            LDA # Error.SyntaxError
+            Errors.ShowLine();
+            return; 
+        }
+        
         loop
         {
-            // Get first token
-            consume();
-            if (NC) 
+            // Check for end of file
+            LDA currentToken
+            CMP #Token.EndOfFile
+            if (Z) 
             { 
-                LDA # Error.SyntaxError
-                Errors.ShowLine();
+                SEC  // Success - parsed everything
                 break; 
             }
             
@@ -1851,16 +1960,6 @@ unit Parser
                     // Add function to AST root
                     AST.GetRoot(); // -> IDX
                     AST.AddChild(); // IDX = root, IDY = function   
-                    
-                    // Check if there's more after the function
-                    LDA currentToken
-                    CMP # Token.EndOfFile
-                    if (NZ)
-                    {
-                        LDA # Error.SyntaxError
-                        Errors.ShowLine();
-                        break;
-                    }  
                 }
                 case Token.Long:
                 case Token.Int:
@@ -1875,10 +1974,16 @@ unit Parser
                     AST.GetRoot(); // -> IDX
                     AST.AddChild(); // IDX = root, IDY = VarDecl
                 }
+                default:
+                {
+                    LDA currentToken
+                    Errors.Unexpected();
+                    break;
+                }
             }
+            if (NC) { break; }  // Error occurred
                         
-            SEC
-            break;
+            // Continue looping to parse next function
         } // single exit
     }
 }

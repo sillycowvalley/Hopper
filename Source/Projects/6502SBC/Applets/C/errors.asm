@@ -25,6 +25,7 @@ unit Errors
     }
     
     const string msgExpected  = "Expected ";
+    const string msgUnexpected  = "Unexpected ";
     const string msgError     = "Error: 0x";
     const string expectVoid   = "void";
     const string expectIdent  = "identifier";
@@ -137,6 +138,77 @@ unit Errors
         LDA #(msgExpected % 256)
         STA ZP.STRL
         LDA #(msgExpected / 256)
+        STA ZP.STRH
+        Print.String();
+        PLA
+        
+        // A contains the token that was expected
+        loop
+        {
+            switch (A)
+            {
+                case Token.Void:
+                {
+                    LDA #(expectVoid % 256)
+                    STA ZP.STRL
+                    LDA #(expectVoid / 256)
+                    STA ZP.STRH
+                    Print.String();
+                    break;
+                }
+                case Token.Identifier:
+                {
+                    LDA #(expectIdent % 256)
+                    STA ZP.STRL
+                    LDA #(expectIdent / 256)
+                    STA ZP.STRH
+                    Print.String();
+                    break;
+                }
+                case Token.LeftParen:
+                {
+                    LDA #'('
+                }
+                case Token.RightParen:
+                {
+                    LDA #')'
+                }
+                case Token.LeftBrace:
+                {
+                    LDA #'{'
+                }
+                case Token.RightBrace:
+                {
+                    LDA #'}'
+                }
+                case Token.Semicolon:
+                {
+                    LDA #';'
+                }
+                default:
+                {
+                    LDA #'?'
+                }
+            }
+            Print.Char();
+            break;
+        } // loop
+        Print.NewLine();
+        CLC
+    }
+    
+    // Helper: print "Unexpected X" error
+    // Input: A = token that was expected
+    Unexpected()
+    {
+        PHA
+        
+        Lexer.GetLineNumber(); // -> ACC
+        printErrorLine();
+               
+        LDA #(msgUnexpected % 256)
+        STA ZP.STRL
+        LDA #(msgUnexpected / 256)
         STA ZP.STRH
         Print.String();
         PLA

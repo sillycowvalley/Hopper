@@ -177,6 +177,9 @@ unit AST
     {
         PHA  // Save node type
         
+        LDA ZP.TEMP
+        PHA
+        
         LDA # nodeSize
         STA ZP.ACCL
         STZ ZP.ACCH
@@ -184,9 +187,13 @@ unit AST
         if (NC)
         {
             PLA
+            PLA
             Errors.OutOfMemory();
             return;
         }
+        
+        PLA
+        STA ZP.TEMP
         
         // Set node type
         PLA

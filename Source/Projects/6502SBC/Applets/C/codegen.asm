@@ -2,6 +2,7 @@ unit CodeGen
 {
     uses "AST"
     uses "Library"
+    uses "Errors"
     
     friend Library;
     
@@ -32,6 +33,10 @@ unit CodeGen
     
     const byte backwardPatchL  = cgSlots+14;
     const byte backwardPatchH  = cgSlots+15;
+    
+    const byte functionNode    = cgSlots+16;   // Current function being compiled
+    const byte functionNodeL   = cgSlots+16;   
+    const byte functionNodeH   = cgSlots+17;
     
     const byte runtimeZeroPageSlots = 0x60;
     const byte runtimeBP            = runtimeZeroPageSlots+0; // Base pointer for stack frame
@@ -159,8 +164,6 @@ unit CodeGen
         PHA
         LDA ZP.ACCH
         PHA
-        LDA ZP.TEMP
-        PHA
         
         loop
         {
@@ -202,8 +205,6 @@ unit CodeGen
         } // single exit
         
         PLA
-        STA ZP.TEMP
-        PLA
         STA ZP.ACCH
         PLA
         STA ZP.ACCL
@@ -218,6 +219,13 @@ unit CodeGen
     growBuffer()
     {
         PHY
+        
+        LDA ZP.TEMP
+        PHA
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
         
         // new size
         ASL codeSizeL
@@ -279,6 +287,14 @@ unit CodeGen
         PLA
         STA codeBufferL
         SEC
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        PLA
+        STA ZP.TEMP
+        
         PLY
     }
     
@@ -391,39 +407,100 @@ unit CodeGen
     // Output: IDX = VarDecl node, C set if found
     findVariable()
     {
-        // For now, search the compound statement for matching VarDecl
-        // This is simplified - real implementation would handle scoping
+        // Start from current function node
+        LDA functionNodeL
+        STA ZP.IDXL
+        LDA functionNodeH
+        STA ZP.IDXH
         
-        // Start from function's compound statement
-        AST.GetRoot();  // Get program root
-        
-        // Get first child (should be function)
+        // Get first child (identifier)
         LDY #AST.iChild
         LDA [ZP.IDX], Y
-        TAX
+        STA ZP.IDYL
         INY
         LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
+        STA ZP.IDYH
         
-        // Skip to compound statement (second child of function)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
+        // Walk siblings looking for parameters first
+        loop
+        {
+            // Get next sibling
+            LDY #AST.iNext
+            LDA [ZP.IDY], Y
+            TAX
+            INY
+            LDA [ZP.IDY], Y
+            if (Z)
+            {
+                TXA
+                if (Z) { break; }  // No more siblings
+            }
+            STA ZP.IDYH
+            STX ZP.IDYL
+            
+            // Check node type
+            LDY #AST.iNodeType
+            LDA [ZP.IDY], Y
+            CMP #AST.NodeType.VarDecl
+            if (Z)
+            {
+                // It's a parameter VarDecl - get its identifier child
+                LDA ZP.IDYL
+                PHA
+                LDA ZP.IDYH
+                PHA
+                
+                // Get VarDecl's child (Identifier node)
+                LDY #AST.iChild
+                LDA [ZP.IDY], Y
+                STA ZP.IDXL
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDXH
+                
+                // Get identifier's name from iData
+                LDY #AST.iData
+                LDA [ZP.IDX], Y
+                STA ZP.IDXL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                
+                // Compare with target name
+                CodeGen.CompareStrings();  // STR vs IDX
+                
+                PLA
+                STA ZP.IDYH
+                PLA
+                STA ZP.IDYL
+                
+                if (C)
+                {
+                    // Found it! Return the VarDecl node
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    SEC
+                    return;
+                }
+            }
+            else
+            {
+                CMP #AST.NodeType.CompoundStmt
+                if (Z)
+                {
+                    // Hit the compound statement - save it and stop parameter search
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    break;
+                }
+            }
+        }
         
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        // Now search children of compound for VarDecl nodes
+        // Now IDX = CompoundStmt, search its children for local VarDecls
         LDY #AST.iChild
         LDA [ZP.IDX], Y
         TAX
@@ -436,7 +513,7 @@ unit CodeGen
         {
             LDA ZP.IDXL
             ORA ZP.IDXH
-            if (Z) { CLC break; }  // Not found
+            if (Z) { CLC return; }  // Not found
             
             // Check if it's a VarDecl
             LDY #AST.iNodeType
@@ -444,46 +521,42 @@ unit CodeGen
             CMP #AST.NodeType.VarDecl
             if (Z)
             {
-                // Get its identifier child
+                // Save VarDecl node
                 LDA ZP.IDXL
                 PHA
                 LDA ZP.IDXH
                 PHA
                 
+                // Get VarDecl's child (Identifier node)
                 LDY #AST.iChild
                 LDA [ZP.IDX], Y
-                TAX
+                STA ZP.IDYL
                 INY
                 LDA [ZP.IDX], Y
                 STA ZP.IDYH
-                STX ZP.IDYL
                 
-                // Get identifier's name
+                // Get identifier's name from iData
                 LDY #AST.iData
                 LDA [ZP.IDY], Y
-                TAX
+                STA ZP.IDYL
                 INY
                 LDA [ZP.IDY], Y
                 STA ZP.IDYH
-                STX ZP.IDYL
                 
                 // Compare with target name
                 CodeGen.CompareStrings();  // STR vs IDY
-                if (C)
-                {
-                    // Found it!
-                    PLA
-                    STA ZP.IDXH
-                    PLA
-                    STA ZP.IDXL
-                    SEC
-                    break;
-                }
                 
                 PLA
                 STA ZP.IDXH
                 PLA
                 STA ZP.IDXL
+                
+                if (C)
+                {
+                    // Found it! IDX already has VarDecl
+                    SEC
+                    return;
+                }
             }
             
             // Move to next sibling
@@ -495,6 +568,8 @@ unit CodeGen
             STA ZP.IDXH
             STX ZP.IDXL
         }
+        
+        CLC  // Not found
     }
     
     // Find a function node in the AST by name
@@ -626,6 +701,231 @@ unit CodeGen
         STA ZP.ACCH
     }
     
+    countFunctionParameters() // Input: AST.astNode = Function node, Output: A = param count
+    {
+        LDX #0
+        
+        // First child is identifier
+        LDY #AST.iChild
+        LDA [AST.astNode], Y
+        STA ZP.IDYL
+        INY
+        LDA [AST.astNode], Y
+        STA ZP.IDYH
+        
+        // Move to first sibling (could be parameter or body)
+        loop
+        {
+            // Get next sibling
+            LDY #AST.iNext
+            LDA [ZP.IDY], Y
+            STA ZP.TEMP
+            INY
+            LDA [ZP.IDY], Y
+            if (Z)
+            {
+                LDA ZP.TEMP
+                if (Z) { break; }  // No more siblings
+            }
+            STA ZP.IDYH
+            LDA ZP.TEMP
+            STA ZP.IDYL
+            
+            // Check if it's CompoundStmt (the body)
+            LDY #AST.iNodeType
+            LDA [ZP.IDY], Y
+            CMP #AST.NodeType.CompoundStmt
+            if (Z) { break; }  // Found body, stop counting
+            
+            // It's a parameter
+            INX
+        }
+        
+        TXA
+    }
+    
+    
+    // Generate code for calling a user-defined function
+    generateUserFunctionCall() // Input: IDX = CallExpr node
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        LDA AST.astTempNodeL
+        PHA
+        LDA AST.astTempNodeH
+        PHA
+        
+        LDA ZP.IDXL
+        STA AST.astTempNodeL
+        LDA ZP.IDXH
+        STA AST.astTempNodeH
+        
+        loop
+        {
+            // Get function name from first child (identifier)
+            LDY #AST.iChild
+            LDA [AST.astTempNode], Y
+            STA ZP.IDYL
+            INY
+            LDA [AST.astTempNode], Y
+            STA ZP.IDYH
+            
+            // Get function name string
+            LDY #AST.iData
+            LDA [ZP.IDY], Y
+            STA ZP.STRL
+            INY
+            LDA [ZP.IDY], Y
+            STA ZP.STRH
+            
+            // Find the function in the AST
+            findFunction(); // STR = name -> IDX = Function node, C = found
+            if (NC)
+            {
+                LDA # Error.UndefinedIdentifier
+                Errors.Show();
+                break;
+            }
+            
+            // Save function node
+            LDA ZP.IDXL
+            STA AST.astNodeL
+            LDA ZP.IDXH
+            STA AST.astNodeH
+            
+            // Get function's code offset
+            LDY #AST.iOffset
+            LDA [AST.astNode], Y
+            STA ZP.ACCL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.ACCH
+            
+            // Count parameters
+            countFunctionParameters(); // [AST.astNode] -> A = count
+            STA ZP.TEMP
+            
+            // Get first argument (skip identifier, get its sibling)
+            LDY #AST.iChild
+            LDA [AST.astTempNode], Y
+            STA ZP.IDYL
+            INY
+            LDA [AST.astTempNode], Y
+            STA ZP.IDYH
+            
+            // Move to first argument (sibling of identifier)
+            LDY #AST.iNext
+            LDA [ZP.IDY], Y
+            STA ZP.IDXL
+            INY
+            LDA [ZP.IDY], Y
+            STA ZP.IDXH
+            
+            // Evaluate and push each argument
+            loop
+            {
+                LDA ZP.IDXL
+                ORA ZP.IDXH
+                if (Z) { break; }  // No more arguments
+                
+                LDA ZP.IDXH
+                PHA
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.TEMP
+                PHA
+                
+                // Generate code to evaluate this argument
+                
+                generateExpression(); // Result pushed on stack
+                
+                PLA
+                STA ZP.TEMP
+                PLA
+                STA ZP.IDXL
+                PLA
+                STA ZP.IDXH
+                
+                if (NC) { break; }
+                
+                DEC ZP.TEMP
+                
+                // Move to next argument
+                LDY #AST.iNext
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+            }
+            if (NC) { break; }
+            
+            // Check argument count matches (optional but good)
+            LDA ZP.TEMP
+            if (NZ)
+            {
+                LDA # Error.TooFewArguments
+                Errors.Show();
+                break;
+            }
+            
+            // Generate JSR to function
+            LDA #OpCode.JSR
+            EmitByte(); if (NC) { break; }
+            
+            // Get function offset again and convert to absolute
+            LDY #AST.iOffset
+            LDA [AST.astNode], Y
+            STA ZP.ACCL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.ACCH
+            
+            AddEntryPoint(); // Convert offset to absolute address
+            
+            LDA ZP.ACCL
+            EmitByte(); if (NC) { break; }
+            LDA ZP.ACCH
+            EmitByte(); if (NC) { break; }
+            
+            // Clean up arguments from stack
+            countFunctionParameters(); // [AST.astNode] -> A = count
+            STA ZP.TEMP
+            if (NZ)
+            {
+                loop
+                {
+                    LDA #OpCode.TSX
+                    EmitByte(); if (NC) { break; }
+                    LDA #OpCode.INX
+                    EmitByte(); if (NC) { break; }
+                    LDA #OpCode.TXS
+                    EmitByte(); if (NC) { break; }
+                    
+                    DEC ZP.TEMP
+                    if (Z) { break; }
+                }
+                if (NC) { break; }
+            }
+            
+            // Result (if any) is now at top of stack
+            SEC
+            break;
+        } // single exit
+        
+        PLA
+        STA AST.astTempNodeH
+        PLA
+        STA AST.astTempNodeL
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    }
+    
        
     // Generate code for a function call expression
     // Input: IDX = CallExpr node
@@ -673,18 +973,22 @@ unit CodeGen
                     case SysCall.PrintString:
                     {
                         Library.PrintfCall();
+                        if (NC) { break; }
                     }
                     case SysCall.TimeMillis:
                     {
                         Library.MillisCall();
+                        if (NC) { break; }
                     }
                     case SysCall.TimeSeconds:
                     {
                         Library.SecondsCall();
+                        if (NC) { break; }
                     }
                     case SysCall.PrintChar:
                     {
                         Library.PutcharCall();
+                        if (NC) { break; }
                     }
                     default:
                     {
@@ -699,13 +1003,8 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
             }
             else
             {
-                // generateUserFunctionCall();  // Future: JSR to user function
-#ifdef DEBUG
-Print.Hex(); LDA #'u' Print.Char();LDA #'f' Print.Char();
-#endif
-                LDA # Error.NotImplemented
-                Errors.ShowIDX();
-                break;
+                generateUserFunctionCall();  // Future: JSR to user function
+                if (NC) { break; }
             }
             SEC
             break;
@@ -1615,6 +1914,9 @@ Print.Hex(); LDA #'v' Print.Char();
             // Load current value from BP+offset into NEXT
             getNEXT(); if (NC) { break; }
             
+            // Push the ORIGINAL value (this is what postfix returns)
+            pushNEXT(); if (NC) { break; }
+            
             // Save offset for store later
             LDY #AST.iOffset
             LDA [ZP.IDX], Y
@@ -1949,6 +2251,9 @@ Print.Hex(); LDA #'e' Print.Char();
             
             // Store NEXT at BP+offset
             putNEXT();  // A = offset
+            
+            // Assignment expressions return the assigned value
+            pushNEXT();
                 
             SEC
             break;
@@ -2276,30 +2581,47 @@ Print.Hex(); LDA #'s' Print.Char();
     // Input: IDX = Function node
     // Output: C set on success, clear on failure
     // Note: Generates prologue, body statements, and epilogue
-    generateFunctionBody()  // Input: IDX = Function node
+    generateFunctionBody()  // Input: functionNode = Function node
     {
-        LDA ZP.IDXL
-        STA AST.astNodeL
-        LDA ZP.IDXH
-        STA AST.astNodeH
-        
-        // Function's children are: identifier, then block (as siblings)
+        // Function's children are: identifier, parameters (optional), then block (as siblings)
         // Skip to the block
         LDY #AST.iChild
-        LDA [AST.astNode], Y
+        LDA [functionNode], Y
         STA ZP.IDXL
         INY
-        LDA [AST.astNode], Y
+        LDA [functionNode], Y
         STA ZP.IDXH
         
-        // IDX = identifier, get its sibling (block)
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
+        // IDX = identifier, walk siblings to find CompoundStmt
+        loop
+        {
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            if (Z)
+            {
+                TXA
+                if (Z) 
+                { 
+                    // No CompoundStmt found - error!
+                    LDA # Error.UnexpectedFailure
+                    Errors.Show();
+                    return;
+                }
+            }
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            // Check if this sibling is CompoundStmt
+            LDY #AST.iNodeType
+            LDA [ZP.IDX], Y
+            CMP #AST.NodeType.CompoundStmt
+            if (Z) { break; }  // Found it!
+            
+            // Not CompoundStmt, keep looking (skip parameters)
+        }
         
         // Initialize local count
         STZ functionLocals
@@ -2329,6 +2651,7 @@ Print.Hex(); LDA #'s' Print.Char();
             
             // Now IDX = CompoundStmt
             generateBlock();  // Process all statements in block
+            if (NC) { break; }
             
             // Generate function epilogue
             // Restore stack pointer
@@ -2361,35 +2684,89 @@ Print.Hex(); LDA #'s' Print.Char();
         }
     }
     
-    
-    // Generate code for the main function
-    // Output: C set on success, clear on failure
-    // Note: Finds main in AST and generates its body
-    emitMain()
+    // New function to emit all functions
+    emitAllFunctions()
     {
-         // Find main function in AST
-        LDA # (msgMain % 256)
-        STA ZP.STRL
-        LDA # (msgMain / 256)
-        STA ZP.STRH
-        findFunction();      // -> IDX = main Function node
-        if (NC)
-        {
-            LDA # Error.NoEntryPoint
-            Errors.Show();
-            return; 
-        }
+        AST.GetRoot(); // -> IDX (Program node)
         
-        // Store code offset in Function node
-        LDY #AST.iOffset
-        LDA codeOffsetL
-        STA [ZP.IDX], Y
+        // Get first child
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
         INY
-        LDA codeOffsetH
-        STA [ZP.IDX], Y
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
         
-        // Generate code for function body
-        generateFunctionBody();  // Uses IDX = Function node
+        // Walk all children of Program
+        loop
+        {
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { break; }  // No more functions
+            
+            // Check if it's a Function node
+            LDY #AST.iNodeType
+            LDA [ZP.IDX], Y
+            CMP #AST.NodeType.Function
+            if (Z)
+            {
+                LDA ZP.IDXH
+                STA functionNodeH   
+                LDA ZP.IDXL
+                STA functionNodeL
+                
+                
+                // Check if this is main
+                LDY #AST.iChild
+                LDA [functionNode], Y
+                STA ZP.IDYL
+                INY
+                LDA [functionNode], Y
+                STA ZP.IDYH
+                
+                // Get function name
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                STA ZP.STRL
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.STRH
+                
+                // Compare with "main"
+                LDA #(msgMain % 256)
+                STA ZP.IDYL
+                LDA #(msgMain / 256)
+                STA ZP.IDYH
+                CompareStrings(); // Compare [STR] with [IDY]
+                if (C)
+                {
+                    // This is main - emit stack initialization first
+                    createStack();     // Emit stack init code
+                    if (NC) { return; }
+                }
+                
+                // Store current code offset in Function node
+                LDY #AST.iOffset
+                LDA codeOffsetL
+                STA [functionNode], Y
+                INY
+                LDA codeOffsetH
+                STA [functionNode], Y
+                
+                // Generate this function's body
+                generateFunctionBody();  // Uses IDX = Function node
+                if (NC) { return; }
+            }// function node
+            
+            // Move to next sibling
+            LDY #AST.iNext
+            LDA [functionNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [functionNode], Y
+            STA ZP.IDXH
+        } // loop
         
         SEC
     }
@@ -2514,15 +2891,9 @@ Print.Hex(); LDA #'s' Print.Char();
         emitStrings();
         if (NC) { return; }
         
-        // 4. create the runtime stack
-        createStack();
+        // 4. Generate ALL functions
+        emitAllFunctions();
         if (NC) { return; }
-        
-        // 5. Generate main function
-        emitMain();
-        if (NC) { return; }
-        
-        // TODO 
         
         SEC
     }
