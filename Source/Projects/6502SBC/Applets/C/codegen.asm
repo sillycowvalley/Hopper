@@ -763,11 +763,15 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         LDA [ZP.IDX], Y
         
         // Generate code to load from BP+offset into ZP.NEXT
+#ifdef DEBUGSTACK
         LDX #'f'
+#endif
         getNEXT(); if (NC) { return; }
         
         // Generate code to push ZP.NEXT onto stack
+#ifdef DEBUGSTACK
         LDX #'m'
+#endif
         pushNEXT();
     }
     
@@ -1219,18 +1223,43 @@ Print.Hex(); LDA #'v' Print.Char();
     // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
     pushNEXT() // X -> marker
     {
+#ifdef DEBUGSTACK        
         PHX
+#endif
         
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte(); 
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         LDA #OpCode.TXA
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         LDA #OpCode.TAY
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         
+#ifdef DEBUGSTACK  
 PLX      
 CodeGen.debugPrintY();         
+#endif
         
         // Store NEXT0 to stack via pointer
         // LDA ZP.NEXT0
@@ -1290,18 +1319,42 @@ CodeGen.debugPrintY();
     // Generate code to push 32-bit value from ZP.TOP onto runtime stack
     pushTOP() // X -> marker
     {
+#ifdef DEBUGSTACK
         PHX
-        
+#endif
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         LDA #OpCode.TXA
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         LDA #OpCode.TAY
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         
+#ifdef DEBUGSTACK 
 PLX      
 CodeGen.debugPrintY();        
+#endif
         
         // Store TOP0 to stack via pointer
         // LDA ZP.TOP0
@@ -1466,23 +1519,57 @@ CodeGen.debugPrintY();
     // Generate code to pop 32-bit value from stack into ZP.TOP
     popTOP() // X -> marker
     {
+#ifdef DEBUGSTACK
         PHX
-        
+#endif
         LDA #OpCode.PLA
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
+        
         
         // SP points one past to the slot we are interested in
         
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); if (NC) { PLX return; }
-        LDA #OpCode.TXA
-        EmitByte(); if (NC) { PLX return; }
-        LDA #OpCode.TAY
-        EmitByte(); if (NC) { PLX return; }
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
         
+        LDA #OpCode.TXA
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
+        
+        LDA #OpCode.TAY
+        EmitByte();
+        if (NC) 
+        {
+#ifdef DEBUGSTACK
+            PLX
+#endif
+            return;
+        }
+        
+#ifdef DEBUGSTACK
 PLX      
 CodeGen.debugPrintY();        
+#endif
         
         // Load TOP0 from stack via pointer
         // LDA [runtimeStack0],Y
@@ -1583,14 +1670,24 @@ CodeGen.debugPrintY();
     // Input: A = signed BP offset (e.g., 0xFF for -1)
     putNEXT()  // X -> marker
     {
+#ifdef DEBUGSTACK        
         PHX
-        
+#endif        
         loop
         {
             // Calculate effective offset into Y
-            calculateBPOffset(); if (NC) { PLX break; }
+            calculateBPOffset();
+            if (NC) 
+            {
+#ifdef DEBUGSTACK
+                PLX
+#endif
+                break;
+            }
+#ifdef DEBUGSTACK        
 PLX            
-debugPrintY();            
+debugPrintY(); 
+#endif           
             
             // Store NEXT0 through pointer
             LDA #OpCode.LDA_ZP
@@ -1641,15 +1738,24 @@ debugPrintY();
     // Input: A = signed BP offset (e.g., 0xFF for -1)
     getNEXT() // X->marker
     {
+#ifdef DEBUGSTACK
         PHX
-        
+#endif
         loop
         {
             // Calculate effective offset into Y
-            calculateBPOffset(); if (NC) { PLX break; }
-            
+            calculateBPOffset();
+            if (NC) 
+            {
+#ifdef DEBUGSTACK
+                PLX
+#endif
+                break;
+            }
+#ifdef DEBUGSTACK            
 PLX            
-debugPrintY();         
+debugPrintY(); 
+#endif        
                        
             // Load NEXT0 through pointer
             LDA #OpCode.LDA_IND_Y
@@ -1810,8 +1916,9 @@ debugPrintY();
             LDA #ZP.NEXT3
             EmitByte(); if (NC) { return; }
         }
-        
+#ifdef DEBUGSTACK        
         LDX #'l'
+#endif
         pushNEXT();
         SEC
     }  
@@ -2039,11 +2146,15 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [ZP.IDX], Y  // This is the signed offset
             
             // Load current value from BP+offset into NEXT
+#ifdef DEBUGSTACK
             LDX #'g'
+#endif
             getNEXT(); if (NC) { break; }
             
             // Push the ORIGINAL value (this is what postfix returns)
+#ifdef DEBUGSTACK
             LDX #'k'
+#endif
             pushNEXT(); if (NC) { break; }
             
             // Save offset for store later
@@ -2069,7 +2180,9 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             
             // Result is in NEXT, store it back
             PLA  // Get offset
+#ifdef DEBUGSTACK
             LDX #'e'
+#endif
             putNEXT();  // A = offset
             
             SEC
@@ -2140,9 +2253,13 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             // Right operand is now on stack
             
             // Pop both operands
-            LDX #'b'
+#ifdef DEBUGSTACK
+            LDX #'u'
+#endif
             CodeGen.popTOP();    // Right operand -> TOP
+#ifdef DEBUGSTACK
             LDX #'t'
+#endif
             CodeGen.popNEXT();   // Left operand -> NEXT
             
             // Perform operation based on saved operator
@@ -2242,7 +2359,9 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 case BinOpType.Mod:
                 {
                     // Result is in NEXT, push it
+#ifdef DEBUGSTACK
                     LDX #'j'
+#endif
                     CodeGen.pushNEXT();
                 }
                 default:
@@ -2363,7 +2482,9 @@ Print.Hex(); LDA #'e' Print.Char();
             generateExpression();
             if (C)
             {
+#ifdef DEBUGSTACK            
                 LDX #'s'
+#endif
                 popNEXT();
             }
             
@@ -2404,11 +2525,15 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [ZP.IDX], Y  // This is the signed offset
             
             // Store NEXT at BP+offset
+#ifdef DEBUGSTACK
             LDX #'d'
+#endif
             putNEXT();  // A = offset
             
             // Assignment expressions return the assigned value
+#ifdef DEBUGSTACK
             LDX #'i'
+#endif
             pushNEXT();
                 
             SEC
@@ -2483,7 +2608,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 generateExpression(); if (NC) { break; }
                 
                 // Pop result to check it
+#ifdef DEBUGSTACK
                 LDX #'r'
+#endif
                 popNEXT(); if (NC) { break; }
                 
                 // Test if NEXT is zero (false)
@@ -2787,7 +2914,9 @@ Print.Hex(); LDA #'s' Print.Char();
                 if (NC) { break; }
                 
                 // Pop result into NEXT
+#ifdef DEBUGSTACK
                 LDX #'q'
+#endif
                 popNEXT();
                 if (NC) { break; }
                 
@@ -2801,13 +2930,15 @@ Print.Hex(); LDA #'s' Print.Char();
                 LDA functionNodeH
                 STA AST.astNodeH
                 
-                // Store result in return slot (BP + param_count + 3)
+                // Store result in return slot (BP + param_count + 4)
                 countFunctionParameters();  // [AST.astNode] -> A = count
                 
                 CLC
-                ADC #3  // Skip saved BP and return address
+                ADC #4  // Skip saved BP and return address, and one more to get to actual return slot
                 
+#ifdef DEBUGSTACK
                 LDX #'c'
+#endif
                 putNEXT(); // A = BP offset
                 
                 PLA
@@ -2839,6 +2970,15 @@ Print.Hex(); LDA #'s' Print.Char();
             EmitByte(); if (NC) { break; }
             LDA #runtimeBP
             EmitByte(); if (NC) { break; }
+            
+#ifdef DEBUGSTACK
+    LDA # OpCode.TAY
+    EmitByte(); if (NC) { break; }
+            
+    LDX #'b'
+    debugPrintY();
+#endif            
+            
             
             // RTS
             LDA #OpCode.RTS
@@ -2921,6 +3061,16 @@ Print.Hex(); LDA #'s' Print.Char();
             LDA # runtimeBP
             EmitByte(); if (NC) { break; }
             
+#ifdef DEBUGSTACK
+    LDA # OpCode.TXA
+    EmitByte(); if (NC) { break; }
+    LDA # OpCode.TAY
+    EmitByte(); if (NC) { break; }
+            
+    LDX #'B'
+    debugPrintY();
+#endif
+            
             // Now IDX = CompoundStmt
             generateBlock();  // Process all statements in block
             if (NC) { break; }
@@ -2949,6 +3099,14 @@ Print.Hex(); LDA #'s' Print.Char();
             EmitByte(); if (NC) { break; }
             LDA # runtimeBP
             EmitByte(); if (NC) { break; }
+            
+#ifdef DEBUGSTACK
+    LDA # OpCode.TAY
+    EmitByte(); if (NC) { break; }
+            
+    LDX #'b'
+    debugPrintY();
+#endif                        
             
             LDA # OpCode.RTS
             EmitByte(); if (NC) { break; }
