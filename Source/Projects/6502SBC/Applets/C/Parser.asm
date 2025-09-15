@@ -187,10 +187,25 @@ unit Parser
     parseFunction() // -> IDY
     {
         PHA // store type
+        consume();  // Move past type token
+        if (NC) { return; }
         
-        //       
-        consume();
-        if (NC) { return; }     
+        // Check if it was char and next is *
+        PLA  // Get type back
+        PHA  // Save it again
+        CMP #Token.Char
+        if (Z)
+        {
+            LDA currentToken
+            CMP #Token.Star
+            if (Z)
+            {
+                consume();  // Move past *
+                PLA  // Remove Token.Char
+                LDA #Token.CharPtr
+                PHA  // Save Token.CharPtr instead
+            }
+        }
 
         // TODO : we need to be able to peek next token (not next char, which could be whitespace)        
         Lexer.CurrentChar();
@@ -290,9 +305,28 @@ unit Parser
                     LDA currentToken
                     switch (A)
                     {
+                        case Token.Char:
+                        {
+                            consume();  // Move past 'char'
+                            if (NC) { break; }
+                            // currentToken now has whatever follows
+                            LDA currentToken
+                            CMP #Token.Star
+                            if (Z)  // It's char*
+                            {
+                                consume();  // Move past '*'
+                                if (NC) { break; }
+                                LDA #Token.CharPtr
+                                STA ZP.TEMP  // Store type as CharPtr
+                            }
+                            else
+                            {
+                                LDA #Token.Char
+                                STA ZP.TEMP  // Just char
+                            }
+                        }
                         case Token.Int:
                         case Token.Long:
-                        case Token.Char:
                         {
                             STA ZP.TEMP
                             consume();
@@ -459,14 +493,10 @@ unit Parser
     
     
     // Parse variable declaration: long s;
-    parseVariableDeclaration() // -> IDY = VarDecl node
+    parseVariableDeclaration() // -> IDY = VarDecl node, A = type
     {
         // currentToken already has the type (Long/Int/Char)
-        LDA currentToken
         STA ZP.TEMP  // Save type in zero page instead of stack
-        
-        consume();  // Move past type token
-        if (NC) { return; }
         
         LDA stmtNodeH
         PHA
@@ -1067,11 +1097,30 @@ unit Parser
                 parseReturnStatement(); // -> IDY
                 if (NC) { return; }
             }
-            case Token.Long:
-            case Token.Int:
+            
             case Token.Char:
             {
-                parseVariableDeclaration(); // -> IDY
+               consume();  // Move past 'char'
+               LDA currentToken
+               CMP #Token.Star
+               if (Z)  // It's char*
+               {
+                   consume();
+                   LDA #Token.CharPtr
+               }
+               else
+               {
+                   LDA #Token.Char
+               }
+               parseVariableDeclaration(); // A = type
+            }
+            case Token.Long:
+            case Token.Int:
+            {
+                PHA
+                consume();
+                PLA
+                parseVariableDeclaration(); // -> IDY, A = type
                 if (NC) { return; }
             }
             default:
@@ -2169,9 +2218,9 @@ unit Parser
             LDA currentToken
             switch (A)
             {
+                case Token.Char:
                 case Token.Long:
                 case Token.Int:
-                case Token.Char:
                 case Token.Void:
                 {
                     parseFunction(); // -> IDY
