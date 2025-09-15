@@ -972,11 +972,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         loop
         {
             // ALWAYS reserve return slot for ANY function call
-            LDA # OpCode.TSX
-            EmitByte(); if (NC) { break; }
-            LDA # OpCode.DEX
-            EmitByte(); if (NC) { break; }
-            LDA # OpCode.TXS
+            LDA # OpCode.PHA
             EmitByte(); if (NC) { break; }
             
             // First child is function identifier, second child (sibling) is first argument
@@ -2570,11 +2566,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 if (NC) { return; }
                 
                 // ALL expression statements discard the value
-                LDA # OpCode.TSX
-                EmitByte();
-                LDA # OpCode.INX      // Pop the unused return value
-                EmitByte();
-                LDA # OpCode.TXS
+                LDA # OpCode.PLA
                 EmitByte();
             }
             default:
@@ -2715,12 +2707,8 @@ Print.Hex(); LDA #'s' Print.Char();
                 // Store result in return slot (BP + param_count + 3)
                 countFunctionParameters();  // [AST.astNode] -> A = count
                 
-PHA Print.NewLine(); PLA PHA Print.Hex(); PLA
-                
                 CLC
                 ADC #3  // Skip saved BP and return address
-                
-PHA Print.NewLine(); PLA PHA Print.Hex(); PLA                
                 
                 putNEXT(); // A = BP offset
                 

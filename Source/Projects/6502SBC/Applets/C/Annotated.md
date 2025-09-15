@@ -1,4 +1,4 @@
-# Disassembly Analysis: Return Statement Bug (Updated)
+# Disassembly Analysis: With PHA/PLA Changes
 
 ## Program Structure
 ```
@@ -125,7 +125,7 @@
                           ; Result is now in ZP.NEXT (0x16-0x19)
 ```
 
-### RETURN Statement - Marshal Result
+### RETURN Statement - Marshal Result to Stack
 ```hopper
 089A: TSX
 089B: TXA
@@ -159,11 +159,11 @@
 08C3: TXS
 ```
 
-### ✅ Store Result at BP+5 (FIXED from BP+3)
+### Store Result at BP+5 (Return Slot)
 ```hopper
 08C4: LDA 0x60           ; BP
 08C6: CLC
-08C7: ADC #0x05          ; BP+5 (was BP+3 before)
+08C7: ADC #0x05          ; BP+5 (param_count=2 + 3)
 08C9: TAY
 08CA: LDA 0x16           ; Store result at BP+5
 08CC: STA [0x61],Y
@@ -190,7 +190,7 @@
 08E7: RTS
 ```
 
-## main() Function (0x08E8 - 0x0A0F)
+## main() Function (0x08E8 - 0x0A08)
 
 ### Initialize Runtime Stack
 ```hopper
@@ -218,266 +218,254 @@
 0906: STX 0x60           ; New BP
 ```
 
-### 🐛 **BUG #1: No Return Value Reservation!**
+### ✅ FIXED: Reserve Local 'sum' AND Return Slot!
 ```hopper
-0908: PHA                ; Reserve for local 'sum' (only 1 byte!)
-0909: TSX
-090A: DEX                ; Adjust stack pointer
-090B: TXS
-; MISSING: Should reserve 4 bytes for return value HERE!
+0908: PHA                ; Reserve slot for local 'sum'
+0909: PHA                ; Reserve slot for return value! ✅
 ```
 
 ### Push First Argument (5)
 ```hopper
-090C: LDA #0x05
-090E: STA 0x16
-0910: STZ 0x17
-0912: STZ 0x18
-0914: STZ 0x19
-0916: TSX
-0917: TXA
-0918: TAY
-0919: LDA 0x16           ; Marshal to stack
-091B: STA [0x61],Y
-091D: LDA 0x17
-091F: STA [0x63],Y
-0921: LDA 0x18
-0923: STA [0x65],Y
-0925: LDA 0x19
-0927: STA [0x67],Y
-0929: DEX
-092A: TXS
+090A: LDA #0x05
+090C: STA 0x16
+090E: STZ 0x17
+0910: STZ 0x18
+0912: STZ 0x19
+0914: TSX
+0915: TXA
+0916: TAY
+0917: LDA 0x16           ; Marshal to stack
+0919: STA [0x61],Y
+091B: LDA 0x17
+091D: STA [0x63],Y
+091F: LDA 0x18
+0921: STA [0x65],Y
+0923: LDA 0x19
+0925: STA [0x67],Y
+0927: DEX
+0928: TXS
 ```
 
 ### Push Second Argument (3)
 ```hopper
-092B: LDA #0x03
-092D: STA 0x16
-092F: STZ 0x17
-0931: STZ 0x18
-0933: STZ 0x19
-0935: TSX
-0936: TXA
-0937: TAY
-0938: LDA 0x16           ; Marshal to stack
-093A: STA [0x61],Y
-093C: LDA 0x17
-093E: STA [0x63],Y
-0940: LDA 0x18
-0942: STA [0x65],Y
-0944: LDA 0x19
-0946: STA [0x67],Y
-0948: DEX
-0949: TXS
+0929: LDA #0x03
+092B: STA 0x16
+092D: STZ 0x17
+092F: STZ 0x18
+0931: STZ 0x19
+0933: TSX
+0934: TXA
+0935: TAY
+0936: LDA 0x16           ; Marshal to stack
+0938: STA [0x61],Y
+093A: LDA 0x17
+093C: STA [0x63],Y
+093E: LDA 0x18
+0940: STA [0x65],Y
+0942: LDA 0x19
+0944: STA [0x67],Y
+0946: DEX
+0947: TXS
 ```
 
 ### Call add(5, 3)
 ```hopper
-094A: JSR 0x080F         ; Call add()
+0948: JSR 0x080F         ; Call add()
 ```
 
 ### Clean Up Arguments (Pop 2 args)
 ```hopper
-094D: TSX
-094E: INX                ; Pop first arg
-094F: TXS
-0950: TSX
-0951: INX                ; Pop second arg
-0952: TXS
+094B: TSX
+094C: INX                ; Pop first arg
+094D: TXS
+094E: TSX
+094F: INX                ; Pop second arg
+0950: TXS
 ```
 
-### 🐛 **BUG #2: Pop from Wrong Location!**
+### 🔴 BUG: Still Trying to Pop Return Value!
 ```hopper
-0953: TSX
-0954: INX
-0955: TXA
-0956: TAY
-0957: LDA [0x61],Y       ; Trying to pop return value
-0959: STA 0x16           ; But there's nothing there!
-095B: LDA [0x63],Y
-095D: STA 0x17
-095F: LDA [0x65],Y
-0961: STA 0x18
-0963: LDA [0x67],Y
-0965: STA 0x19
-0967: TXS
+0951: TSX
+0952: INX                ; INX again - WRONG!
+0953: TXA
+0954: TAY
+0955: LDA [0x61],Y       ; Reading from wrong place
+0957: STA 0x16           
+0959: LDA [0x63],Y
+095B: STA 0x17
+095D: LDA [0x65],Y
+095F: STA 0x18
+0961: LDA [0x67],Y
+0963: STA 0x19
+0965: TXS
 ```
 
 ### Store to Local Variable 'sum' at [BP-1]
 ```hopper
-0968: LDA 0x60           ; BP
-096A: CLC
-096B: ADC #0xFF          ; BP-1 (255 = -1 in 8-bit)
-096D: TAY
-096E: LDA 0x16           ; Store "return value" to sum
-0970: STA [0x61],Y
-0972: LDA 0x17
-0974: STA [0x63],Y
-0976: LDA 0x18
-0978: STA [0x65],Y
-097A: LDA 0x19
-097C: STA [0x67],Y
+0966: LDA 0x60           ; BP
+0968: CLC
+0969: ADC #0xFF          ; BP-1 (255 = -1 in 8-bit)
+096B: TAY
+096C: LDA 0x16           ; Store to sum
+096E: STA [0x61],Y
+0970: LDA 0x17
+0972: STA [0x63],Y
+0974: LDA 0x18
+0976: STA [0x65],Y
+0978: LDA 0x19
+097A: STA [0x67],Y
 ```
 
-### printf() Call Setup
+### Marshal 'sum' for printf
 ```hopper
-097E: TSX                ; Push 'sum' again for printf
-097F: TXA
-0980: TAY
-0981: LDA 0x16
-0983: STA [0x61],Y
-0985: LDA 0x17
-0987: STA [0x63],Y
-0989: LDA 0x18
-098B: STA [0x65],Y
-098D: LDA 0x19
-098F: STA [0x67],Y
-0991: DEX
-0992: TXS
+097C: TSX
+097D: TXA
+097E: TAY
+097F: LDA 0x16
+0981: STA [0x61],Y
+0983: LDA 0x17
+0985: STA [0x63],Y
+0987: LDA 0x18
+0989: STA [0x65],Y
+098B: LDA 0x19
+098D: STA [0x67],Y
+098F: DEX
+0990: TXS
 ```
 
-### More Stack Manipulation
+### ✅ FIXED: Discard Unused printf Return Value
 ```hopper
-0993: TSX
-0994: INX
-0995: TXS
-0996: TSX
-0997: DEX
-0998: TXS
+0991: PLA                ; Pop unused return value ✅
+0992: PHA                ; Hmm, push it back? Odd...
 ```
 
 ### Setup String Pointer
 ```hopper
-0999: LDA #0x07          ; String address low
-099B: STA 0x1E           ; ZP.STRL
-099D: LDA #0x08          ; String address high
-099F: STA 0x1F           ; ZP.STRH
+0993: LDA #0x07          ; String address low
+0995: STA 0x1E           ; ZP.STRL
+0997: LDA #0x08          ; String address high
+0999: STA 0x1F           ; ZP.STRH
 ```
 
 ### printf() Format String Processing
 ```hopper
-09A1: LDY #0x00
-09A3: LDA [0x1E],Y       ; Load char from format string
-09A5: CMP #0x04          ; Check for %d marker?
-09A7: BEQ 0x09B1         ; Branch if found
-09A9: LDX #0x12          ; SysCall.PrintChar
-09AB: JSR 0x0803
-09AE: INY
-09AF: BRA 0x09A3         ; Loop (using 0x80 as BRA opcode?)
+099B: LDY #0x00
+099D: LDA [0x1E],Y       ; Load char from format string
+099F: CMP #0x04          ; Check for %d marker?
+09A1: BEQ 0x09AB         ; Branch if found
+09A3: LDX #0x12          ; SysCall.PrintChar
+09A5: JSR 0x0803
+09A8: INY
+09A9: BRA 0x099D         ; Loop (0x80 = BRA opcode)
 ```
 
 ### Load 'sum' from [BP-1] for printf
 ```hopper
-09B1: LDA 0x60           ; BP
-09B3: CLC
-09B4: ADC #0xFF          ; BP-1
-09B6: TAY
-09B7: LDA [0x61],Y       ; Load sum
-09B9: STA 0x16
-09BB: LDA [0x63],Y
-09BD: STA 0x17
-09BF: LDA [0x65],Y
-09C1: STA 0x18
-09C3: LDA [0x67],Y
-09C5: STA 0x19
+09AB: LDA 0x60           ; BP
+09AD: CLC
+09AE: ADC #0xFF          ; BP-1
+09B0: TAY
+09B1: LDA [0x61],Y       ; Load sum
+09B3: STA 0x16
+09B5: LDA [0x63],Y
+09B7: STA 0x17
+09B9: LDA [0x65],Y
+09BB: STA 0x18
+09BD: LDA [0x67],Y
+09BF: STA 0x19
 ```
 
 ### Push for printf
 ```hopper
-09C7: TSX
-09C8: TXA
-09C9: TAY
-09CA: LDA 0x16
-09CC: STA [0x61],Y
-09CE: LDA 0x17
-09D0: STA [0x63],Y
-09D2: LDA 0x18
-09D4: STA [0x65],Y
-09D6: LDA 0x19
-09D8: STA [0x67],Y
-09DA: DEX
-09DB: TXS
+09C1: TSX
+09C2: TXA
+09C3: TAY
+09C4: LDA 0x16
+09C6: STA [0x61],Y
+09C8: LDA 0x17
+09CA: STA [0x63],Y
+09CC: LDA 0x18
+09CE: STA [0x65],Y
+09D0: LDA 0x19
+09D2: STA [0x67],Y
+09D4: DEX
+09D5: TXS
 ```
 
 ### Pop and Print Integer
 ```hopper
-09DC: TSX
-09DD: INX
-09DE: TXA
-09DF: TAY
-09E0: LDA [0x61],Y       ; Pop value to ACC
-09E2: STA 0x12
-09E4: LDA [0x63],Y
-09E6: STA 0x13
-09E8: LDA [0x65],Y
-09EA: STA 0x14
-09EC: LDA [0x67],Y
-09EE: STA 0x15
-09F0: TXS
-09F1: LDX #0x1F          ; SysCall.PrintInt
-09F3: JSR 0x0803
+09D6: TSX
+09D7: INX
+09D8: TXA
+09D9: TAY
+09DA: LDA [0x61],Y       ; Pop value to ACC
+09DC: STA 0x12
+09DE: LDA [0x63],Y
+09E0: STA 0x13
+09E2: LDA [0x65],Y
+09E4: STA 0x14
+09E6: LDA [0x67],Y
+09E8: STA 0x15
+09EA: TXS
+09EB: LDX #0x1F          ; SysCall.PrintInt
+09ED: JSR 0x0803
 ```
 
 ### Continue printf Processing
 ```hopper
-09F6: LDY #0x06          ; Continue after %d
-09F8: LDA [0x1E],Y
-09FA: CMP #0x07          ; Check for end?
-09FC: BEQ 0x0A06
-09FE: LDX #0x12          ; SysCall.PrintChar
-0A00: JSR 0x0803
-0A03: INY
-0A04: BRA 0x09F8         ; Loop
+09F0: LDY #0x06          ; Continue after %d
+09F2: LDA [0x1E],Y
+09F4: CMP #0x07          ; Check for end?
+09F6: BEQ 0x0A00
+09F8: LDX #0x12          ; SysCall.PrintChar
+09FA: JSR 0x0803
+09FD: INY
+09FE: BRA 0x09F2         ; Loop
 ```
 
 ### Function Epilogue
 ```hopper
-0A06: TSX
-0A07: INX
-0A08: TXS
-0A09: LDX 0x60
-0A0B: TXS
-0A0C: PLA
-0A0D: STA 0x60
-0A0F: RTS
+0A00: PLA                ; Clean up extra stack slot
+0A01: LDX 0x60
+0A03: TXS
+0A04: PLA
+0A05: STA 0x60
+0A07: RTS
 ```
 
-## 🔴 **ROOT CAUSE: MISMATCHED CALLING CONVENTION**
+## 🔴 **CRITICAL BUG REMAINS**
 
-The problem is **NOT** just the BP+5 offset fix. There are **TWO critical bugs**:
+### Good News:
+1. ✅ Return slot is now reserved (PHA at 0x0909)
+2. ✅ Using PLA to discard unused values (0x0991)
 
-### Bug #1: Caller Doesn't Reserve Return Slot
-`main()` never reserves space for the return value before pushing arguments. The calling sequence should be:
-1. Reserve return slot (4 bytes)
-2. Push arguments
-3. JSR to function
+### Bad News - The Real Problem at 0x0951-0x0952:
+After popping the 2 arguments, the code does **ANOTHER INX** to try to get the return value!
 
-But `main()` skips step 1!
-
-### Bug #2: Stack Mismatch After Return
-After `add()` returns:
-- `add()` wrote the return value to BP+5 (a location in the caller's stack frame)
-- But `main()` tries to pop a return value from the current stack top
-- These are different locations!
-
-### Current Stack During add():
+### Stack After Popping Arguments:
 ```
-[??? garbage]   ← BP+5 (add() writes here)
-[arg 'a' = 5]   ← BP+4
-[arg 'b' = 3]   ← BP+3  
-[ret addr H]    ← BP+2
-[ret addr L]    ← BP+1
+[return value]  ← Stack pointer is HERE after 2 pops
+[local 'sum']   ← BP-1
 [saved BP]      ← BP+0
 ```
 
-After return and popping args, main() expects:
-```
-[return value]  ← Stack top (but nothing here!)
+The return value is **already at the stack top** after popping arguments. The extra INX at 0x0952 moves **past** the return value to garbage!
+
+### The Fix:
+**Remove the TSX/INX/TXS sequence at 0x0951-0x0952**. After popping arguments, the return value is already at the correct position.
+
+### Current Wrong Sequence:
+```hopper
+094B: TSX/INX/TXS       ; Pop arg 1
+094E: TSX/INX/TXS       ; Pop arg 2  
+0951: TSX/INX/TXS       ; WRONG - moves past return value!
+0955: Read value        ; Reading garbage
 ```
 
-### The Fix Needed:
-Either:
-1. **Caller reserves space**: `main()` should push 4 dummy bytes before arguments, then `add()` can write to BP+5
-2. **Different convention**: `add()` should push the return value onto its stack before returning, not write to BP+offset
-
-The current code has `add()` writing to one place (BP+5) but `main()` reading from another (stack top after popping args).
+### Should Be:
+```hopper
+094B: TSX/INX/TXS       ; Pop arg 1
+094E: TSX/INX/TXS       ; Pop arg 2
+0951: TSX/TXA/TAY       ; Just get current position
+0955: Read value        ; Return value is here!
+```
