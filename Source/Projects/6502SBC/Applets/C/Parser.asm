@@ -810,8 +810,8 @@ unit Parser
             expect();
             if (NC) { break; }
             
-            // Parse body statement(requires braces)
-            parseCompoundStatement(); // -> IDY
+            // Parse body statement
+            parseStatement(); // -> IDY
             if (NC) { break; }
             
             // Add body as child of For node
@@ -823,6 +823,117 @@ unit Parser
             AST.AddChild(); // IDX = For, IDY = body
             
             // Return For node in IDY
+            LDA stmtNodeL
+            STA ZP.IDYL
+            LDA stmtNodeH
+            STA ZP.IDYH
+            
+            STZ stmtNodeL
+            STZ stmtNodeH
+            
+            SEC
+            break;
+        } // single exit
+        
+        LDA stmtNodeL
+        ORA stmtNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
+        
+        PLA
+        STA stmtNodeL
+        PLA
+        STA stmtNodeH
+    }
+    
+    // Parse: if (condition) then-stmt [else else-stmt]
+    parseIfStatement() // -> IDY
+    {
+        consume();  // Move past 'if'
+        if (NC) { return; }
+        
+        // Expect '('
+        LDA #Token.LeftParen
+        expect();
+        if (NC) { return; }
+        
+        LDA stmtNodeH
+        PHA
+        LDA stmtNodeL
+        PHA
+        
+        STZ stmtNodeH
+        STZ stmtNodeL
+        
+        loop
+        {
+            // Create If node
+            LDA #AST.NodeType.If
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Save If node
+            LDA ZP.IDXL
+            STA stmtNodeL
+            LDA ZP.IDXH
+            STA stmtNodeH
+            
+            // Parse condition expression
+            parseExpression(); // -> IDY
+            if (NC) { break; }
+            
+            // Add condition as first child
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.AddChild(); // IDX = If, IDY = condition
+            
+            // Expect ')'
+            LDA #Token.RightParen
+            expect();
+            if (NC) { break; }
+            
+            // Parse then statement
+            parseStatement(); // -> IDY
+            if (NC) { break; }
+            
+            // Add then statement as second child (condition's sibling)
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.AddChild(); // IDX = If, IDY = then-stmt
+            
+            // Check for else clause
+            LDA currentToken
+            CMP #Token.Else
+            if (Z)
+            {
+                consume(); // Skip 'else'
+                if (NC) { break; }
+                
+                // Parse else statement
+                parseStatement(); // -> IDY
+                if (NC) { break; }
+                
+                // Add else statement as third child (then's sibling)
+                LDA stmtNodeL
+                STA ZP.IDXL
+                LDA stmtNodeH
+                STA ZP.IDXH
+                AST.AddChild(); // IDX = If, IDY = else-stmt
+            }
+            
+            // Return If node in IDY
             LDA stmtNodeL
             STA ZP.IDYL
             LDA stmtNodeH
@@ -931,6 +1042,47 @@ unit Parser
         STA stmtNodeH
     }
     
+    parseStatement() // -> IDY
+    {
+        LDA currentToken
+        switch(A)
+        {
+            case Token.LeftBrace:
+            {
+                parseCompoundStatement(); // -> IDY
+                if (NC) { return; }
+            }
+            case Token.For:
+            {
+                parseForStatement(); // -> IDY
+                if (NC) { return; }
+            }
+            case Token.If:
+            {
+                parseIfStatement(); // -> IDY
+                if (NC) { return; }
+            }
+            case Token.Return:
+            {
+                parseReturnStatement(); // -> IDY
+                if (NC) { return; }
+            }
+            case Token.Long:
+            case Token.Int:
+            case Token.Char:
+            {
+                parseVariableDeclaration(); // -> IDY
+                if (NC) { return; }
+            }
+            default:
+            {
+                parseExpressionStatement(); // -> IDY
+                if (NC) { return; }
+            }
+        }
+        SEC
+    }
+    
     // Parse: { ... }
     parseCompoundStatement() // -> IDY
     {
@@ -974,32 +1126,8 @@ unit Parser
                     Errors.Expected();
                     break;
                 }
-                switch(A)
-                {
-                    case Token.Long:
-                    case Token.Int:
-                    case Token.Char:
-                    {
-                        parseVariableDeclaration(); // -> IDY
-                        if (NC) { break; }
-                    }
-                    case Token.For:
-                    {
-                        parseForStatement(); // -> IDY
-                        if (NC) { break; }
-                    }
-                    case Token.Return:
-                    {
-                        parseReturnStatement(); // -> IDY
-                        if (NC) { break; }
-                    }
-                    default:
-                    {
-                        // Parse expression statement
-                        parseExpressionStatement(); // -> IDY
-                        if (NC) { break; }
-                    }
-                }
+                parseStatement(); // -> IDY
+                if (NC) { break; }
                 
                 // Add statement as child of compound
                 LDA compoundNodeL

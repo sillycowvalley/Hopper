@@ -38,6 +38,7 @@ unit AST
         PostfixOp    = 14,  // Postfix operation
         For          = 15,  // For loop 
         Return       = 16,  // Return statement 
+        If           = 17,  // If statement
         
         AfterLast           // see freeNode()
     }
@@ -119,12 +120,27 @@ unit AST
     
     // For node:
     //     [7-8]   Init expression (optional)
-    //     [9-10]  Exit cndition expression (optional)
+    //     [9-10]  Exit condition expression (optional)
     //     [11-12] Next/update expression (optional)
     //     Child:  Body statement
     const byte iForInit    = 7;
     const byte iForExit    = 9;
     const byte iForNext    = 11;
+    
+    // If node:
+    //     [0]     NodeType (NodeType.If)
+    //     [1-2]   Source line number
+    //     [3-4]   Child pointer -> condition expression
+    //     [5-6]   Next sibling pointer
+    //
+    // Child list structure:
+    //   1. Condition expression (child)
+    //   2. Then statement (condition->next)
+    //   3. Else statement (then->next) - optional, can be null
+    
+    // No additional fields needed!
+    
+    
     
     Initialize()
     {
@@ -478,6 +494,7 @@ unit AST
     const string nodeBinOp    = "BINOP ";
     const string nodePostfixOp= "POSTFIX ";
     const string nodeFor      = "FOR";   
+    const string nodeIf       = "IF";
     const string nodeUnknown  = "??";
     
     const string typeVoid = "void ";
@@ -548,6 +565,14 @@ unit AST
         LDA [ZP.IDX], Y
         switch (A)
         {
+            case NodeType.If:
+            {
+                LDA #(nodeIf % 256)
+                STA ZP.STRL
+                LDA #(nodeIf / 256)
+                STA ZP.STRH
+                Print.String();
+            }
             case NodeType.Return:
             {
                 LDA #(nodeReturn % 256)

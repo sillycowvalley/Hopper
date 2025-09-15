@@ -31,8 +31,15 @@ unit CodeGen
     const byte forwardPatchL  = cgSlots+12;
     const byte forwardPatchH  = cgSlots+13;
     
+    const byte elsePatchL     = forwardPatchL;
+    const byte elsePatchH     = forwardPatchH;
+    
     const byte backwardPatchL  = cgSlots+14;
     const byte backwardPatchH  = cgSlots+15;
+    
+    const byte endPatchL       = backwardPatchL;
+    const byte endPatchH       = backwardPatchH;
+    
     
     const byte functionNode    = cgSlots+16;   // Current function being compiled
     const byte functionNodeL   = cgSlots+16;   
@@ -2212,7 +2219,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA AST.astNodeH
         LDA ZP.IDXL
         STA AST.astNodeL
-
+        
         loop
         {
             // Get operator type
@@ -2344,7 +2351,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     LDA # BIOSInterface.SysCall.LongGE
                     EmitByte(); if (NC) { break; }
                 }
-            }
+            } // switch
             
             // Emit: JSR dispatch
             Library.EmitDispatchCall(); if (NC) { break; }
@@ -2758,6 +2765,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         
         switch (A)
         {
+            case NodeType.CompoundStmt:
+            {
+                generateBlock();
+                if (NC) { return; }
+            }
             case NodeType.VarDecl:
             {
                 generateVarDecl();
@@ -2771,6 +2783,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             case NodeType.Return:
             {
                 generateReturn();
+                if (NC) { return; }
+            }
+            case NodeType.If:
+            {
+                generateIf();
                 if (NC) { return; }
             }
             case NodeType.ExprStmt:
@@ -2861,6 +2878,289 @@ Print.Hex(); LDA #'s' Print.Char();
         PLA
         STA AST.astNodeL
     }
+    
+    // Generate code for if statement
+    // Input: IDX = If node
+    // Output: C set on success, clear on failure
+    generateIf()  // Input: IDX = If node
+    {
+        // Save AST.astNode for recursion
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        
+        // Save current node in AST.astNode
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        
+        // Save patch addresses for recursion
+        LDA elsePatchL
+        PHA
+        LDA elsePatchH
+        PHA
+        LDA endPatchL
+        PHA
+        LDA endPatchH
+        PHA
+        
+        loop
+        {
+            // Get condition (first child)
+            LDY # AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+
+            
+            // Generate condition expression
+            generateExpression(); if (NC) { break; }
+            
+            // Pop result to check it
+#ifdef DEBUGSTACK
+LDX #'v'
+#endif
+            popNEXT(); if (NC) { break; }
+
+            // Test if NEXT is zero (false)
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { break; }
+            
+            LDA #OpCode.ORA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { break; }
+            
+            LDA #OpCode.ORA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { break; }
+            
+            LDA #OpCode.ORA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { break; }
+            
+            // BNE to_then (if true, execute then clause)
+            LDA #OpCode.BNE
+            EmitByte(); if (NC) { break; }
+            LDA #3  // Skip over JMP instruction (3 bytes)
+            EmitByte(); if (NC) { break; }
+            
+            // JMP to else/end (will patch address later)
+            LDA #OpCode.JMP_ABS
+            EmitByte(); if (NC) { break; }
+            
+            // Save patch location for jump to else/end
+            LDA codeOffsetL
+            STA elsePatchL
+            LDA codeOffsetH
+            STA elsePatchH
+            
+            // Emit placeholder address
+            LDA #0
+            EmitByte(); if (NC) { break; }
+            EmitByte(); if (NC) { break; }
+            
+            // to_then: Generate then statement
+            // Get then statement (next sibling of condition)
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            generateStatement(); if (NC) { break; }
+            
+            // Check if there's an else clause
+            // Get else statement (next sibling of then)
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (NZ)
+            {
+                // There's an else clause - need to jump over it
+                // JMP to end (skip else)
+                LDA #OpCode.JMP_ABS
+                EmitByte(); if (NC) { break; }
+                
+                // Save patch location for jump to end
+                LDA codeOffsetL
+                STA endPatchL
+                LDA codeOffsetH
+                STA endPatchH
+                
+                // Emit placeholder address
+                LDA #0
+                EmitByte(); if (NC) { break; }
+                EmitByte(); if (NC) { break; }
+                
+                // Patch the elsePatch to jump here (start of else)
+                // Calculate current absolute position
+                LDA codeOffsetL
+                STA ZP.ACCL
+                LDA codeOffsetH
+                STA ZP.ACCH
+                AddEntryPoint(); // Convert to runtime address -> ACC
+                
+                // Calculate patch location (codeBuffer + elsePatch offset)
+                LDA codeBufferL
+                CLC
+                ADC elsePatchL
+                STA ZP.IDXL
+                LDA codeBufferH
+                ADC elsePatchH
+                STA ZP.IDXH
+                
+                // Write else address at patch location
+                LDY #0
+                LDA ZP.ACCL
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.ACCH
+                STA [ZP.IDX], Y
+                
+                // Generate else statement
+                // Restore the else node pointer
+                LDY #AST.iChild
+                LDA [AST.astNode], Y
+                STA ZP.IDXL
+                INY
+                LDA [AST.astNode], Y
+                STA ZP.IDXH
+                
+                LDY #AST.iNext
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                LDY #AST.iNext
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                generateStatement(); if (NC) { break; }
+                
+                // Patch the endPatch to jump here (after else)
+                // Calculate current absolute position
+                LDA codeOffsetL
+                STA ZP.ACCL
+                LDA codeOffsetH
+                STA ZP.ACCH
+                AddEntryPoint(); // Convert to runtime address -> ACC
+                
+                // Calculate patch location (codeBuffer + endPatch offset)
+                LDA codeBufferL
+                CLC
+                ADC endPatchL
+                STA ZP.IDXL
+                LDA codeBufferH
+                ADC endPatchH
+                STA ZP.IDXH
+                
+                // Write end address at patch location
+                LDY #0
+                LDA ZP.ACCL
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.ACCH
+                STA [ZP.IDX], Y
+            }
+            else
+            {
+                // No else clause - patch elsePatch to jump here
+                // Calculate current absolute position
+                LDA codeOffsetL
+                STA ZP.ACCL
+                LDA codeOffsetH
+                STA ZP.ACCH
+                AddEntryPoint(); // Convert to runtime address -> ACC
+                
+                // Calculate patch location (codeBuffer + elsePatch offset)
+                LDA codeBufferL
+                CLC
+                ADC elsePatchL
+                STA ZP.IDXL
+                LDA codeBufferH
+                ADC elsePatchH
+                STA ZP.IDXH
+                
+                // Write end address at patch location
+                LDY #0
+                LDA ZP.ACCL
+                STA [ZP.IDX], Y
+                INY
+                LDA ZP.ACCH
+                STA [ZP.IDX], Y
+            }
+            
+            SEC
+            break;
+        } // single exit
+        
+        // Restore patch addresses
+        PLA
+        STA endPatchH
+        PLA
+        STA endPatchL
+        PLA
+        STA elsePatchH
+        PLA
+        STA elsePatchL
+        
+        // Restore AST.astNode
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    }
+    
+    
+    
     
     generateReturn() // Input: IDX = Return node
     {
@@ -3453,8 +3753,8 @@ Print.Hex(); LDA #'s' Print.Char();
             Print.Char();
             Print.Space();
             
-            // Print up to 16 bytes on this row
-            LDX #16
+            // Print up to 32 bytes on this row
+            LDX #32
             loop
             {
                 // Check if we have bytes left
@@ -3505,7 +3805,7 @@ Print.Hex(); LDA #'s' Print.Char();
             // Advance virtual address by 16
             CLC
             LDA ZP.ACCL
-            ADC #16
+            ADC #32
             STA ZP.ACCL
             LDA ZP.ACCH
             ADC #0
