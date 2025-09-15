@@ -407,16 +407,11 @@ unit CodeGen
     // Output: IDX = VarDecl node, C set if found
     findVariable()
     {
-
-        
         // Start from current function node
         LDA functionNodeL
         STA ZP.IDXL
         LDA functionNodeH
         STA ZP.IDXH
-        
-Print.NewLine(); Print.String(); Print.Space(); LDA #'<' Print.Char(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); LDA #'>' Print.Char();
-Print.NewLine();
         
         // Get first child (identifier)
         LDY #AST.iChild
@@ -504,6 +499,7 @@ Print.NewLine();
                 }
             }
         }
+
         
         // Now IDX = CompoundStmt, search its children for local VarDecls
         LDY #AST.iChild
@@ -543,10 +539,11 @@ Print.NewLine();
                 // Get identifier's name from iData
                 LDY #AST.iData
                 LDA [ZP.IDY], Y
-                STA ZP.IDYL
+                TAX
                 INY
                 LDA [ZP.IDY], Y
                 STA ZP.IDYH
+                STX ZP.IDYL
                 
                 // Compare with target name
                 CodeGen.CompareStrings();  // STR vs IDY
@@ -681,7 +678,7 @@ Print.NewLine();
         if (NC)
         {
 #ifdef DEBUG
-LDA #'x' Print.Char(); Print.Space(); Print.String();
+LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
 #endif
             PLA
             STA ZP.IDXL
@@ -1935,7 +1932,7 @@ Print.Hex(); LDA #'v' Print.Char();
             if (NC)
             {
 #ifdef DEBUG
-LDA #'y' Print.Char(); Print.Space(); Print.String();
+LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
 #endif
                 LDA AST.astNodeH
                 STA ZP.IDXH
@@ -2293,7 +2290,7 @@ Print.Hex(); LDA #'e' Print.Char();
             if (NC)
             {
 #ifdef DEBUG
-LDA #'z' Print.Char(); Print.Space(); Print.String();
+LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
 #endif
                 LDA AST.astNodeH
                 STA ZP.IDXH
