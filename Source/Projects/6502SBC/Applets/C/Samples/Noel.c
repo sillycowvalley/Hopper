@@ -1,9 +1,8 @@
 // Noel's RetroLab Benchmark
 void main() {
     long s = 1000;
-    long st = seconds();
     long start = millis();
-    int i; j;
+    int i; int j;
     for (i = 1; i <= 10; i++) {
         s = 0;
         for (j = 1; j <= 1000; j++) {
@@ -14,5 +13,4 @@ void main() {
     
     printf("%ld\n", s);
     printf("%ld ms\n", millis() - start);
-    printf("%ld seconds\n", seconds() - st);
 }
