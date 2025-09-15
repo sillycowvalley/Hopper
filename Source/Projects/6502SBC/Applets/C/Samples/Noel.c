@@ -1,6 +1,6 @@
 // Noel's RetroLab Benchmark
 void main() {
-    long s = 1000;
+    long s;
     long start = millis();
     int i; int j;
     for (i = 1; i <= 10; i++) {

@@ -87,7 +87,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysprintf / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA # BIOSInterface.SysCall.PrintString
@@ -100,7 +100,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysmillis / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA # BIOSInterface.SysCall.TimeMillis
@@ -113,7 +113,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysseconds / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA # BIOSInterface.SysCall.TimeSeconds
@@ -126,7 +126,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysputchar / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA # BIOSInterface.SysCall.PrintChar
@@ -139,7 +139,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysmalloc / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA # BIOSInterface.SysCall.MemAllocate
@@ -152,7 +152,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfree / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA # BIOSInterface.SysCall.MemFree
@@ -178,7 +178,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfopen / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();  // Compare [STR] with [IDY]
+        CompareStrings();  // Compare [STR] with [IDY]
         if (C)
         {
             LDA #FileFunction.FOpen
@@ -191,7 +191,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfclose / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FClose
@@ -204,7 +204,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfgetc / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FGetC
@@ -217,7 +217,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfputc / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FPutC
@@ -230,7 +230,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfgets / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FGetS
@@ -243,7 +243,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfputs / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FPutS
@@ -256,7 +256,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfeof / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FEof
@@ -269,7 +269,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfread / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FRead
@@ -282,7 +282,7 @@ unit Library
         STA ZP.IDYL
         LDA #(sysfwrite / 256)
         STA ZP.IDYH
-        CodeGen.CompareStrings();
+        CompareStrings();
         if (C)
         {
             LDA #FileFunction.FWrite
@@ -405,10 +405,7 @@ unit Library
         // Generate argument and pop to NEXT
         CodeGen.generateExpression(); if (NC) { return; }
         
-#ifdef DEBUGSTACK        
-        LDX #'p'
-#endif
-        CodeGen.popNEXT(); if (NC) { return; }
+        PopNEXT(); if (NC) { return; }
         
         // Move character from NEXT0 to A and call PrintChar
         LDA #OpCode.LDA_ZP
@@ -424,10 +421,7 @@ unit Library
         EmitDispatchCall(); if (NC) { return; }
         
         // Push character back as return value (already in NEXT0, rest is zero)
-#ifdef DEBUGSTACK
-        LDX #'h'
-#endif
-        CodeGen.pushNEXT();
+        PushNEXT();
         
         SEC
     }
@@ -441,10 +435,7 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
-#ifdef DEBUGSTACK
-        LDX #'n'
-#endif
-        CodeGen.pushTOP();
+        PushTOP();
         
         SEC
     }
@@ -458,10 +449,7 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
-#ifdef DEBUGSTACK
-        LDX #'o'
-#endif
-        CodeGen.pushTOP();
+        PushTOP();
         
         SEC
     }
@@ -491,10 +479,7 @@ unit Library
         CodeGen.generateExpression(); if (NC) { return; }
         
         // Pop from stack into ZP.TOP
-#ifdef DEBUGSTACK
-        LDX #'a'
-#endif
-        CodeGen.popTOP(); if (NC) { return; }
+        PopTOP(); if (NC) { return; }
         
         // Call Long.Print
         LDA # OpCode.LDX_IMM

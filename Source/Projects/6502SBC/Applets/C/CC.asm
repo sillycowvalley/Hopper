@@ -2,7 +2,6 @@ program CC
 {
     #define CPU_65C02S
     #define DEBUG
-    //#define DEBUGSTACK
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -192,7 +191,7 @@ if (NC)
                 makeOutputName(); // -> STR
                 if (C)
                 {
-                    CodeGen.Save();
+                    Gen6502.Save();
                 }
             }
         

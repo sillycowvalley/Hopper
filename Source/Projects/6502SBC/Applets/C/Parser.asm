@@ -1867,6 +1867,67 @@ unit Parser
         LDA currentToken
         switch (A)
         {
+            case Token.Null:
+            {
+                // Create IntLit node with value 0
+                LDA #AST.NodeType.IntLit
+                AST.CreateNode(); // -> IDX
+                
+                // Save the node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Allocate 4 bytes for the 32-bit value
+                LDA # 4
+                STA ZP.ACCL
+                STZ ZP.ACCH
+                Memory.Allocate(); // -> IDX
+                if (NC)
+                {
+                    PLA
+                    STA ZP.IDXH
+                    PLA
+                    STA ZP.IDXL
+                    AST.FreeNode();
+                    Errors.OutOfMemory();
+                    return;
+                }
+                
+                // Copy the 32-bit value from TokenBuffer to allocated memory
+                LDY #0
+                LDA #0
+                STA [ZP.IDX], Y
+                INY
+                STA [ZP.IDX], Y
+                INY
+                STA [ZP.IDX], Y
+                INY
+                STA [ZP.IDX], Y
+                
+                // Store pointer in ACC for SetData
+                LDA ZP.IDXL
+                STA ZP.ACCL
+                LDA ZP.IDXH
+                STA ZP.ACCH
+                
+                // Restore node and set data pointer
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                AST.SetData(); // IDX[iData] = ACC (pointer to 4-byte value)
+                
+                // Move to IDY for return
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                consume();
+                SEC
+            }
             case Token.CharLiteral:
             {
                 // Create CharLit node

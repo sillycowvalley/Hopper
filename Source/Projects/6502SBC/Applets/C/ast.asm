@@ -2,7 +2,7 @@ unit AST
 {
     uses "../System/Shared"
     
-    friend Parser, CodeGen, Library, CC, Errors;
+    friend Parser, CodeGen, Gen6502, Library, CC, Errors;
     
     // AST zero page allocation
     const byte astSlots = 0x80;
@@ -472,6 +472,259 @@ unit AST
     {
         walkToLastSibling(); // -> IDX (last in chain)
         SetNextSibling();// IDX[iNext] = IDY
+    }
+    
+    
+    // Find VarDecl node for an identifier
+    // Input: ZP.STR = identifier name
+    // Output: IDX = VarDecl node, C set if found
+    FindVariable()
+    {
+        // Start from current function node
+        LDA CodeGen.functionNodeL
+        STA ZP.IDXL
+        LDA CodeGen.functionNodeH
+        STA ZP.IDXH
+        
+        // Get first child (identifier)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
+        
+        // Walk siblings looking for parameters first
+        loop
+        {
+            // Get next sibling
+            LDY # AST.iNext
+            LDA [ZP.IDY], Y
+            TAX
+            INY
+            LDA [ZP.IDY], Y
+            if (Z)
+            {
+                TXA
+                if (Z) { break; }  // No more siblings
+            }
+            STA ZP.IDYH
+            STX ZP.IDYL
+            
+            // Check node type
+            LDY #AST.iNodeType
+            LDA [ZP.IDY], Y
+            CMP #AST.NodeType.VarDecl
+            if (Z)
+            {
+                // It's a parameter VarDecl - get its identifier child
+                LDA ZP.IDYL
+                PHA
+                LDA ZP.IDYH
+                PHA
+                
+                // Get VarDecl's child (Identifier node)
+                LDY #AST.iChild
+                LDA [ZP.IDY], Y
+                STA ZP.IDXL
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDXH
+                
+                // Get identifier's name from iData
+                LDY #AST.iData
+                LDA [ZP.IDX], Y
+                STA ZP.IDYL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDYH
+                
+                // Compare with target name
+                CompareStrings();  // STR vs IDY
+                
+                PLA
+                STA ZP.IDYH
+                PLA
+                STA ZP.IDYL
+                
+                if (C)
+                {
+                    // Found it! Return the VarDecl node
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    SEC
+                    return;
+                }
+            }
+            else
+            {
+                CMP #AST.NodeType.CompoundStmt
+                if (Z)
+                {
+                    // Hit the compound statement - save it and stop parameter search
+                    LDA ZP.IDYL
+                    STA ZP.IDXL
+                    LDA ZP.IDYH
+                    STA ZP.IDXH
+                    break;
+                }
+            }
+        }
+
+        
+        // Now IDX = CompoundStmt, search its children for local VarDecls
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        loop
+        {
+            LDA ZP.IDXL
+            ORA ZP.IDXH
+            if (Z) { CLC return; }  // Not found
+            
+            // Check if it's a VarDecl
+            LDY #AST.iNodeType
+            LDA [ZP.IDX], Y
+            CMP #AST.NodeType.VarDecl
+            if (Z)
+            {
+                // Save VarDecl node
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Get VarDecl's child (Identifier node)
+                LDY #AST.iChild
+                LDA [ZP.IDX], Y
+                STA ZP.IDYL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDYH
+                
+                // Get identifier's name from iData
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                TAX
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Compare with target name
+                CompareStrings();  // STR vs IDY
+                
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                
+                if (C)
+                {
+                    // Found it! IDX already has VarDecl
+                    SEC
+                    return;
+                }
+            }
+            
+            // Move to next sibling
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+        }
+        
+        CLC  // Not found
+    }
+    
+    // Find a function node in the AST by name
+    // Input: ZP.STR = function name to find
+    // Output: IDX = Function node if found
+    //         C set on success, clear if not found
+    FindFunction()
+    {
+        // Get first child of Program
+        AST.GetRoot();  // -> IDX
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        
+        LDY #AST.iChild
+        LDA [AST.astNode], Y
+        TAX
+        INY
+        LDA [AST.astNode], Y
+        STA AST.astNodeH
+        STX AST.astNodeL
+        loop
+        {
+            // Check it's a Function
+            LDY #AST.iNodeType
+            LDA [AST.astNode], Y
+            CMP #AST.NodeType.Function
+            if (Z)
+            {
+                // compare STR to name
+                // Get function's identifier child (assume it is the first child)
+                LDY #AST.iChild
+                LDA [AST.astNode], Y
+                TAX
+                INY
+                LDA [AST.astNode], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Get identifier's string pointer
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                TAX
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Compare strings [STR] with [IDY]
+                CompareStrings();
+                if (C)
+                {
+                    // Found it! Return astNode as Function
+                    LDA AST.astNodeL
+                    STA ZP.IDXL
+                    LDA AST.astNodeH
+                    STA ZP.IDXH
+                    SEC
+                    break;
+                }
+            }
+            
+            // try next sibling
+            LDY #AST.iNext
+            LDA [AST.astNode], Y
+            TAX
+            INY
+            LDA [AST.astNode], Y
+            STA AST.astNodeH
+            STX AST.astNodeL
+            
+            LDA AST.astNodeH
+            ORA AST.astNodeL
+            if (Z)
+            {
+                CLC
+                break;
+            }
+        } // loop
     }
     
     
