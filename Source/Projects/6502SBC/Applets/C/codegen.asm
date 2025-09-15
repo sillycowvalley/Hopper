@@ -2567,6 +2567,15 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         LDA AST.astNodeH
         PHA
         
+        LDA backwardPatchL
+        PHA
+        LDA backwardPatchH
+        PHA
+        LDA forwardPatchL
+        PHA
+        LDA forwardPatchH
+        PHA
+        
         // Save the For node pointer
         LDA ZP.IDXH
         STA AST.astNodeH
@@ -2744,6 +2753,15 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             SEC
             break;
         } // single exit
+        
+        PLA
+        STA forwardPatchH
+        PLA
+        STA forwardPatchL
+        PLA
+        STA backwardPatchH
+        PLA
+        STA backwardPatchL
         
         PLA
         STA AST.astNodeH

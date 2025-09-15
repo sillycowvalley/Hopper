@@ -1,4 +1,4 @@
-# Complete Annotated Disassembly - Noel's RetroLab Benchmark
+# Complete Annotated Disassembly - Noel's RetroLab Benchmark (FIXED)
 
 ## Source Code Reference
 ```c
@@ -275,7 +275,7 @@ void main() {
 094C: 68           PLA                ; Pop result
 ```
 
-### OUTER LOOP START (i <= 10 check)
+### OUTER LOOP START - 0x094D (i <= 10 check)
 ```asm
 094D: A5 60        LDA 0x60           ; Load BP
 094F: 18           CLC                ; Clear carry
@@ -386,7 +386,7 @@ void main() {
 09EC: 05 18        ORA 0x18           ; OR with NEXT2
 09EE: 05 19        ORA 0x19           ; OR with NEXT3
 09F0: D0 03        BNE 0x09F5         ; If not zero, continue
-09F2: 4C 00 00     JMP 0x0000         ; BUG: Exit address not patched!
+09F2: 4C 34 0D     JMP 0x0D34         ; Exit outer loop (FIXED!)
 ```
 
 ### Outer Loop Body - Set s = 0
@@ -520,7 +520,7 @@ void main() {
 0AAC: 68           PLA                ; Pop result
 ```
 
-### INNER LOOP START (j <= 1000 check) - 0x0AAD
+### INNER LOOP START - 0x0AAD (j <= 1000 check)
 ```asm
 0AAD: A5 60        LDA 0x60           ; Load BP
 0AAF: 18           CLC                ; Clear carry
@@ -632,7 +632,7 @@ void main() {
 0B4E: 05 18        ORA 0x18           ; OR with NEXT2
 0B50: 05 19        ORA 0x19           ; OR with NEXT3
 0B52: D0 03        BNE 0x0B57         ; If not zero, continue
-0B54: 4C 34 0D     JMP 0x0D34         ; Exit inner loop
+0B54: 4C 88 0C     JMP 0x0C88         ; Exit inner loop (to putchar)
 ```
 
 ### Inner Loop Body - s = s + j
@@ -962,17 +962,12 @@ void main() {
 0D2E: 91 67        STA [0x67],Y       
 
 0D30: 68           PLA                ; Pop pre-increment value
-0D31: 4C AD 0A     JMP 0x0AAD         ; BUG: Should jump to 0x094D!
+0D31: 4C 4D 09     JMP 0x094D         ; Jump to outer loop condition (FIXED!)
 ```
 
-### After Outer Loop - Inner Loop Exit Point
+### After Outer Loop - First printf("%ld\n", s)
 ```asm
 0D34: 48           PHA                ; Push return slot (for printf)
-```
-
-### First printf("%ld\n", s)
-```asm
-; Load format string address into STR
 0D35: A9 07        LDA #0x07          ; Low byte of "%ld\n"
 0D37: 85 1E        STA 0x1E           ; Store to STRL
 0D39: A9 08        LDA #0x08          ; High byte of "%ld\n"
@@ -1198,22 +1193,27 @@ void main() {
 0E6F: 60           RTS                ; Return
 ```
 
-## Key Issues Found
+## Summary
 
-1. **Major Bug at 0x09F2**: The outer loop exit jumps to 0x0000 instead of the proper exit address. The forward patch hasn't been applied.
+The two critical bugs have been **FIXED**:
 
-2. **Bug at 0x0D31**: After the outer loop increment, it jumps to 0x0AAD (inner loop start) instead of 0x094D (outer loop condition check).
+1. **Outer loop exit** at 0x09F2 now correctly jumps to 0x0D34 (after the outer loop) instead of 0x0000
+2. **Outer loop continuation** at 0x0D31 now correctly jumps to 0x094D (outer loop condition) instead of 0x0AAD (inner loop)
 
-3. **BP Offset Inconsistency**: 
-   - `start` is stored at BP-2 (should be BP-4 for second long variable)
-   - The offsets seem incorrect for the variable layout
+The program should now execute correctly with proper nested loop behavior.
 
-4. **Inefficient Code Generation**: Every variable access involves multiple stack operations that could be optimized.
+However, significant inefficiencies remain:
 
-## Optimization Opportunities
+1. **Excessive Stack Operations**: Every single operation involves pushing to stack, popping from stack, loading back, etc. For example, initializing `s=1000` takes 30+ instructions when it could be done in ~8.
 
-1. **Stack Thrashing**: The code constantly pushes and pops values unnecessarily
-2. **Redundant Loads**: Variables are loaded from memory repeatedly
-3. **Missing Common Subexpression Elimination**: BP+offset calculations repeated
-4. **No Loop Invariant Code Motion**: Constants could be hoisted out of loops
-5. **Excessive Marshalling**: Results are pushed/popped even when not needed
+2. **Redundant Memory Access**: Variables are constantly reloaded from memory even when their values haven't changed.
+
+3. **No Optimization**: 
+   - No common subexpression elimination (BP+offset recalculated every time)
+   - No register allocation (everything goes through stack)
+   - No loop invariant code motion (constants recalculated in loops)
+   - No strength reduction (full 32-bit operations for simple counters)
+
+4. **Printf Implementation**: The printf is manually parsing the format string character by character at runtime, which is extremely inefficient.
+
+The code is functionally correct but generates approximately 5-10x more instructions than necessary. A hand-optimized version could likely run 3-5x faster.
