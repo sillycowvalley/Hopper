@@ -3,7 +3,9 @@ unit Gen6502
     uses "AST"
     uses "Library"
     
-    friend CodeGen, Library;
+    uses "VCode"
+    
+    friend CodeGen, Library, VCode;
     
     // Code generation state
     const byte g65Slots = 0x90;
@@ -116,6 +118,8 @@ unit Gen6502
         LDA #0x10
         STA codeSizeH     // 4KB size
         STZ codeSizeL
+        
+        VCode.Initialize();
     }
     
     // Clean up and free allocated code generation buffers
@@ -135,6 +139,7 @@ unit Gen6502
             STZ codeBufferL
             STZ codeBufferH
         }
+        VCode.Dispose();
     }
     
     // Emit a single byte to the code buffer
@@ -143,6 +148,19 @@ unit Gen6502
     // Note: Automatically grows buffer if needed
     EmitByte()  // A = byte to emit
     {
+        PHA
+        VCode.IsEmpty();
+        if (NC)
+        {
+            VCode.Flush();
+        }
+        PLA
+        emitByte();
+    }
+    
+    emitByte()
+    {    
+        
         PHA
         
         TAX
@@ -775,27 +793,13 @@ unit Gen6502
     // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
     PushNEXT()
     {
-        
         // SP -> X -> Y
         LDA #OpCode.TSX  
-        EmitByte(); 
-        if (NC) 
-        {
-            return;
-        }
+        EmitByte(); if (NC) { return; }
         LDA #OpCode.TXA
-        EmitByte();
-        if (NC) 
-        {
-            return;
-        }
+        EmitByte(); if (NC) { return; }
         LDA #OpCode.TAY
-        EmitByte();
-        if (NC) 
-        {
-            return;
-        }
-        
+        EmitByte(); if (NC) { return; }
         
         // Store NEXT0 to stack via pointer
         // LDA ZP.NEXT0
@@ -1262,6 +1266,297 @@ unit Gen6502
         } // single exit
     }
     
+    // Generate code for an integer literal
+    // Input: IDX = IntLit or LongLit node
+    // Output: Code emitted to load value into ZP.NEXT0-3 at runtime
+    //         C set on success, clear on failure
+    LongNEXT()  // Input: IDX = literal node
+    {
+        // Get pointer to 32-bit value in heap
+        LDY #AST.iData
+        LDA [ZP.IDX], Y
+        STA ZP.IDYL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDYH
+        
+        // Read the 4 bytes from heap into temp storage
+        LDY #0
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT0
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT1
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT2
+        INY
+        LDA [ZP.IDY], Y
+        STA ZP.NEXT3
+        
+        // Now emit code to load these values at runtime
+        
+        // Emit code for NEXT0
+        LDA ZP.NEXT0
+        if (Z)  // Optimize: use STZ for zero
+        {
+            LDA #OpCode.STZ_ZP  // 0x64
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM  // 0xA9
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT0
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP  // 0x85
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { return; }
+        }
+        
+        // Emit code for NEXT1
+        LDA ZP.NEXT1
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT1
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { return; }
+        }
+        
+        // Emit code for NEXT2
+        LDA ZP.NEXT2
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT2
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { return; }
+        }
+        
+        // Emit code for NEXT3
+        LDA ZP.NEXT3
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            EmitByte(); if (NC) { return; }
+            LDA ZP.NEXT3
+            EmitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { return; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { return; }
+        }
+        PushNEXT();
+        SEC
+    }  
     
+    // Generate code to increment 32-bit value in NEXT0-3
+    IncNEXT()
+    {
+        // CLC (clear carry)
+        LDA #OpCode.CLC
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT0
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #1
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #1
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT0
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT1
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0 (adds carry if any)
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code to decrement 32-bit value in NEXT0-3
+    DecNEXT()
+    {
+        // SEC (set carry for subtraction)
+        LDA # OpCode.SEC
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT0
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #1
+        LDA # OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #1
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT0
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT1
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #0 (subtracts borrow if any)
+        LDA #OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #0
+        LDA #OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT2
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // LDA ZP.NEXT3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // SBC #0
+        LDA #OpCode.SBC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA ZP.NEXT3
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    LongADD()
+    {
+        loop
+        {
+            LDA #OpCode.LDX_IMM
+            EmitByte(); if (NC) { break; }
+            LDA #BIOSInterface.SysCall.LongAdd
+            EmitByte(); if (NC) { break; }
+            break;
+        }
+    }
      
 }

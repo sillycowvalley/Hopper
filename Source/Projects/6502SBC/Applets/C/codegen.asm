@@ -522,286 +522,7 @@ Print.Hex(); LDA #'v' Print.Char();
     
 
 
-    // Generate code for an integer literal
-    // Input: IDX = IntLit or LongLit node
-    // Output: Code emitted to load value into ZP.NEXT0-3 at runtime
-    //         C set on success, clear on failure
-    generateIntLiteral()  // Input: IDX = literal node
-    {
-        // Get pointer to 32-bit value in heap
-        LDY #AST.iData
-        LDA [ZP.IDX], Y
-        STA ZP.IDYL
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDYH
-        
-        // Read the 4 bytes from heap into temp storage
-        LDY #0
-        LDA [ZP.IDY], Y
-        STA ZP.NEXT0
-        INY
-        LDA [ZP.IDY], Y
-        STA ZP.NEXT1
-        INY
-        LDA [ZP.IDY], Y
-        STA ZP.NEXT2
-        INY
-        LDA [ZP.IDY], Y
-        STA ZP.NEXT3
-        
-        // Now emit code to load these values at runtime
-        
-        // Emit code for NEXT0
-        LDA ZP.NEXT0
-        if (Z)  // Optimize: use STZ for zero
-        {
-            LDA #OpCode.STZ_ZP  // 0x64
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT0
-            EmitByte(); if (NC) { return; }
-        }
-        else
-        {
-            LDA #OpCode.LDA_IMM  // 0xA9
-            EmitByte(); if (NC) { return; }
-            LDA ZP.NEXT0
-            EmitByte(); if (NC) { return; }
-            LDA #OpCode.STA_ZP  // 0x85
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT0
-            EmitByte(); if (NC) { return; }
-        }
-        
-        // Emit code for NEXT1
-        LDA ZP.NEXT1
-        if (Z)
-        {
-            LDA #OpCode.STZ_ZP
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT1
-            EmitByte(); if (NC) { return; }
-        }
-        else
-        {
-            LDA #OpCode.LDA_IMM
-            EmitByte(); if (NC) { return; }
-            LDA ZP.NEXT1
-            EmitByte(); if (NC) { return; }
-            LDA #OpCode.STA_ZP
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT1
-            EmitByte(); if (NC) { return; }
-        }
-        
-        // Emit code for NEXT2
-        LDA ZP.NEXT2
-        if (Z)
-        {
-            LDA #OpCode.STZ_ZP
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT2
-            EmitByte(); if (NC) { return; }
-        }
-        else
-        {
-            LDA #OpCode.LDA_IMM
-            EmitByte(); if (NC) { return; }
-            LDA ZP.NEXT2
-            EmitByte(); if (NC) { return; }
-            LDA #OpCode.STA_ZP
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT2
-            EmitByte(); if (NC) { return; }
-        }
-        
-        // Emit code for NEXT3
-        LDA ZP.NEXT3
-        if (Z)
-        {
-            LDA #OpCode.STZ_ZP
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT3
-            EmitByte(); if (NC) { return; }
-        }
-        else
-        {
-            LDA #OpCode.LDA_IMM
-            EmitByte(); if (NC) { return; }
-            LDA ZP.NEXT3
-            EmitByte(); if (NC) { return; }
-            LDA #OpCode.STA_ZP
-            EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT3
-            EmitByte(); if (NC) { return; }
-        }
-        PushNEXT();
-        SEC
-    }  
     
-    // Generate code to increment 32-bit value in NEXT0-3
-    generateIncNEXT()
-    {
-        // CLC (clear carry)
-        LDA #OpCode.CLC
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT0
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
-        EmitByte(); if (NC) { return; }
-        
-        // ADC #1
-        LDA #OpCode.ADC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #1
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT0
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT1
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT1
-        EmitByte(); if (NC) { return; }
-        
-        // ADC #0 (adds carry if any)
-        LDA #OpCode.ADC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT1
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT1
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT2
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT2
-        EmitByte(); if (NC) { return; }
-        
-        // ADC #0
-        LDA #OpCode.ADC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT2
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT2
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT3
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT3
-        EmitByte(); if (NC) { return; }
-        
-        // ADC #0
-        LDA #OpCode.ADC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT3
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT3
-        EmitByte(); if (NC) { return; }
-        
-        SEC
-    }
-    
-    // Generate code to decrement 32-bit value in NEXT0-3
-    generateDecNEXT()
-    {
-        // SEC (set carry for subtraction)
-        LDA # OpCode.SEC
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT0
-        LDA # OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
-        EmitByte(); if (NC) { return; }
-        
-        // SBC #1
-        LDA # OpCode.SBC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #1
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT0
-        LDA # OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT1
-        LDA # OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT1
-        EmitByte(); if (NC) { return; }
-        
-        // SBC #0 (subtracts borrow if any)
-        LDA #OpCode.SBC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT1
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT1
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT2
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT2
-        EmitByte(); if (NC) { return; }
-        
-        // SBC #0
-        LDA #OpCode.SBC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT2
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT2
-        EmitByte(); if (NC) { return; }
-        
-        // LDA ZP.NEXT3
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT3
-        EmitByte(); if (NC) { return; }
-        
-        // SBC #0
-        LDA #OpCode.SBC_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // STA ZP.NEXT3
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT3
-        EmitByte(); if (NC) { return; }
-        
-        SEC
-    }
     
     generatePostfixOp()
     {
@@ -878,12 +599,12 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 case PostfixOpType.Increment:
                 {
-                    generateIncNEXT();
+                    IncNEXT();
                     if (NC) { PLA break; }
                 }
                 case PostfixOpType.Decrement:
                 {
-                    generateDecNEXT();
+                    DecNEXT();
                     if (NC) { PLA break; }
                 }
             }
@@ -969,10 +690,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 case BinOpType.Add:
                 {
-                    LDA #OpCode.LDX_IMM
-                    EmitByte(); if (NC) { break; }
-                    LDA #BIOSInterface.SysCall.LongAdd
-                    EmitByte(); if (NC) { break; }
+                    LongADD(); if (NC) { break; }
                 }
                 case BinOpType.Sub:
                 {
@@ -1095,7 +813,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             case NodeType.IntLit:
             case NodeType.LongLit:
             {
-                generateIntLiteral();
+                LongNEXT();
                 if (NC) { return; }
             } 
             case NodeType.Identifier:
