@@ -66,10 +66,7 @@ unit VCode
         STA vcodeSizeH
         STZ vcodeSizeL
         
-        STZ peep0
-        STZ peep1
-        STZ peep2
-        STZ peep3
+        clearPeeps();
     }
     Dispose()
     {
@@ -218,12 +215,16 @@ loop { }
             if (Z) { break; }
         }
         STZ vcodeOffset
+        clearPeeps();
+//LDA #'>' Print.Char();
+        SEC
+    }
+    clearPeeps()
+    {
         STZ peep0
         STZ peep1
         STZ peep2
         STZ peep3
-//LDA #'>' Print.Char();
-        SEC
     }
     
     pushPeep() // A
@@ -311,6 +312,53 @@ Print.Space(); LDA #'A' Print.Char();
 #endif                            
                             SEC
                             break;
+                        }
+                        case VOpCode.PutNEXT:
+                        {
+                            LDA peep1
+                            switch (A)
+                            {
+                                case VOpCode.IncNEXT:
+                                {
+                                    LDA peep2
+                                    switch (A)
+                                    {
+                                        case VOpCode.PushNEXT:
+                                        {
+                                            LDA peep3
+                                            switch (A)
+                                            {
+                                                case VOpCode.GetNEXT:
+                                                {
+                                                    // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
+                                                    //                      1 byte     1 byte    2 bytes                       = 4 bytes to remove
+                                                    //
+                                                    // decrement vcodeOffset by 4
+                                                    // then modify [vcodeOffset-2]
+                                                    
+                                                    clearPeeps();
+                                                    SEC
+                                                    LDA vcodeOffset
+                                                    SBC #4
+                                                    STA vcodeOffset
+                                                    LDY vcodeOffset
+                                                    DEY
+                                                    DEY
+                                                    LDA # VOpCode.Inc
+                                                    STA [vcodeBuffer], Y
+                                                    pushPeep();
+                                                    
+#ifdef DEBUG
+Print.Space(); LDA #'G' Print.Char();
+#endif                                               
+                                                    SEC
+                                                    break;      
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } // peep0
                 }
