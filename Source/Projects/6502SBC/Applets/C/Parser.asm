@@ -292,10 +292,6 @@ unit Parser
             expect();
             if (NC) { break; }
             
-            LDA #4
-            STA bpOffset
-            
-            LDA currentToken
             CMP #Token.RightParen
             if (NZ)  // Has parameters
             {
@@ -355,13 +351,6 @@ unit Parser
                     LDY #AST.iVarType
                     LDA ZP.TEMP
                     STA [ZP.IDY], Y
-                    
-                    // Store parameter's BP offset
-                    // Parameters at BP+4, BP+5, etc.
-                    LDY #AST.iOffset
-                    LDA bpOffset  // Start at 4, increment each time
-                    STA [ZP.IDY], Y
-                    INC bpOffset
                     
                     // Parse parameter name
                     LDA currentToken
@@ -442,6 +431,59 @@ unit Parser
                     }
                     break;
                 } // loop
+            
+                // number the parameters    
+                LDA functionNodeL
+                STA AST.astNodeL
+                LDA functionNodeH
+                STA AST.astNodeH
+            
+                AST.CountFunctionParameters();  // [AST.astNode] -> A = count
+                CLC
+                ADC #3
+                STA bpOffset
+            
+Print.NewLine(); LDA bpOffset Print.Hex();  
+
+                // Second pass: assign offsets
+                // Get back to first parameter
+                LDY #AST.iChild
+                LDA [functionNode], Y
+                STA ZP.IDYL
+                INY
+                LDA [functionNode], Y
+                STA ZP.IDYH
+                
+                LDY #AST.iNext
+                LDA [ZP.IDY], Y
+                STA ZP.IDXL
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDXH
+                
+                // Assign offsets to each parameter
+                loop
+                {
+                    LDA ZP.IDXL
+                    ORA ZP.IDXH
+                    if (Z) { break; }  // No more parameters
+                
+Print.NewLine(); LDA bpOffset Print.Hex();                                            
+                    // Store this parameter's BP offset
+                    LDY #AST.iOffset
+                    LDA bpOffset  // Start at 3 + count, decrement each time
+                    STA [ZP.IDX], Y
+                    DEC bpOffset
+                    
+                    // Move to next parameter
+                    LDY #AST.iNext
+                    LDA [ZP.IDX], Y
+                    TAX
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.IDXH
+                    STX ZP.IDXL
+                }
             }
         
             // Expect ')'

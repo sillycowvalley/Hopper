@@ -117,48 +117,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA ZP.ACCH
     }
     
-    countFunctionParameters() // Input: AST.astNode = Function node, Output: A = param count
-    {
-        LDX #0
-        
-        // First child is identifier
-        LDY #AST.iChild
-        LDA [AST.astNode], Y
-        STA ZP.IDYL
-        INY
-        LDA [AST.astNode], Y
-        STA ZP.IDYH
-        
-        // Move to first sibling (could be parameter or body)
-        loop
-        {
-            // Get next sibling
-            LDY #AST.iNext
-            LDA [ZP.IDY], Y
-            STA ZP.TEMP
-            INY
-            LDA [ZP.IDY], Y
-            if (Z)
-            {
-                LDA ZP.TEMP
-                if (Z) { break; }  // No more siblings
-            }
-            STA ZP.IDYH
-            LDA ZP.TEMP
-            STA ZP.IDYL
-            
-            // Check if it's CompoundStmt (the body)
-            LDY #AST.iNodeType
-            LDA [ZP.IDY], Y
-            CMP #AST.NodeType.CompoundStmt
-            if (Z) { break; }  // Found body, stop counting
-            
-            // It's a parameter
-            INX
-        }
-        
-        TXA
-    }
+    
     
     
     // Generate code for calling a user-defined function
@@ -234,7 +193,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
             STA ZP.ACCH
             
             // Count parameters
-            countFunctionParameters(); // [AST.astNode] -> A = count
+            AST.CountFunctionParameters(); // [AST.astNode] -> A = count
             STA ZP.TEMP
             
             // Get first argument (skip identifier, get its sibling)
@@ -322,7 +281,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
             EmitByte(); if (NC) { break; }
             
             // Clean up arguments from stack
-            countFunctionParameters(); // [AST.astNode] -> A = count
+            AST.CountFunctionParameters(); // [AST.astNode] -> A = count
             STA ZP.TEMP
             if (NZ)
             {
@@ -1608,7 +1567,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 STA AST.astNodeH
                 
                 // Store result in return slot (BP + param_count + 4)
-                countFunctionParameters();  // [AST.astNode] -> A = count
+                AST.CountFunctionParameters();  // [AST.astNode] -> A = count
                 
                 CLC
                 ADC #4  // Skip saved BP and return address, and one more to get to actual return slot
@@ -1758,7 +1717,7 @@ Print.Hex(); LDA #'s' Print.Char();
                     STA AST.astNodeH
                     LDA functionNodeL
                     STA AST.astNodeL
-                    countFunctionParameters();
+                    AST.CountFunctionParameters(); // [AST.astNode] -> A = count
                     if (NZ)
                     {
                         SMB1 functionFlags // Bit 1 - "main" has arguments
