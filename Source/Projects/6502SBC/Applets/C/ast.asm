@@ -741,6 +741,7 @@ unit AST
     const string nodeInt      = "INT ";
     const string nodeLong     = "LONG ";
     const string nodeChar     = "CHAR ";
+    const string nodeCharPtr  = "CHARPTR ";
     const string nodeVarDecl  = "VAR "; 
     const string nodeAssign   = "ASSIGN";
     const string nodeReturn   = "RETURN";
@@ -750,10 +751,11 @@ unit AST
     const string nodeIf       = "IF";
     const string nodeUnknown  = "??";
     
-    const string typeVoid = "void ";
-    const string typeInt = "int ";
-    const string typeLong = "long ";
-    const string typeChar = "char ";
+    const string typeVoid    = "void ";
+    const string typeInt     = "int ";
+    const string typeLong    = "long ";
+    const string typeChar    = "char ";
+    const string typeCharPtr = "char* ";
     
     
     const string opAdd = "+";
@@ -977,6 +979,15 @@ unit AST
                         STA ZP.STRH
                         Print.String();
                     }
+                    case Token.CharPtr:
+                    {
+                        LDA #(typeCharPtr % 256)
+                        STA ZP.STRL
+                        LDA #(typeCharPtr / 256)
+                        STA ZP.STRH
+                        Print.String();
+                    }
+                    
                 }
                 
                 LDA #(nodeFunc % 256)
@@ -1299,13 +1310,14 @@ unit AST
                 LDA [ZP.IDX], Y
                 switch (A)
                 {
-                    case Token.Long:  { LDA # (nodeLong % 256)    STA ZP.STRL LDA # (nodeLong / 256)    STA ZP.STRH }
-                    case Token.Int:   { LDA # (nodeInt % 256)     STA ZP.STRL LDA # (nodeInt / 256)     STA ZP.STRH }
-                    case Token.Char:  { LDA # (nodeChar % 256)    STA ZP.STRL LDA # (nodeChar / 256)    STA ZP.STRH }
-                    default:          { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
+                    case Token.Long:    { LDA # (nodeLong % 256)    STA ZP.STRL LDA # (nodeLong / 256)    STA ZP.STRH }
+                    case Token.Int:     { LDA # (nodeInt % 256)     STA ZP.STRL LDA # (nodeInt / 256)     STA ZP.STRH }
+                    case Token.Char:    { LDA # (nodeChar % 256)    STA ZP.STRL LDA # (nodeChar / 256)    STA ZP.STRH }
+                    case Token.CharPtr: { LDA # (nodeCharPtr % 256)    STA ZP.STRL LDA # (nodeCharPtr / 256)    STA ZP.STRH }
+                    default:            { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
                 }
                 Print.String();
-                
+                           
                 // Print the BP offset
                 LDA #(nodeBPOffset % 256)
                 STA ZP.STRL

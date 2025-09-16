@@ -6,7 +6,7 @@ unit CodeGen
     uses "Gen6502"
     uses "Utilities"
     
-    friend Library, AST;
+    friend Library, AST, Gen6502;
     
     // Code generation state
     const byte cgSlots = 0xA0;
@@ -29,6 +29,10 @@ unit CodeGen
     const byte functionNode    = cgSlots+6;   // Current function being compiled
     const byte functionNodeL   = cgSlots+6;   
     const byte functionNodeH   = cgSlots+7;
+    
+    const byte functionFlags   = cgSlots+8;
+    // Bit 0 - we're in "main"
+    // Bit 1 - "main" had arguments
     
     
     const string msgMain = "main";
@@ -1626,7 +1630,7 @@ Print.Hex(); LDA #'s' Print.Char();
     }
     
     // Generate code for a function body
-    // Input: IDX = Function node
+    // Input: functionNode = Function node
     // Output: C set on success, clear on failure
     // Note: Generates prologue, body statements, and epilogue
     generateFunctionBody()  // Input: functionNode = Function node
@@ -1677,11 +1681,9 @@ Print.Hex(); LDA #'s' Print.Char();
         loop
         {
             Gen6502.Prologue();
-                       
             // Now IDX = CompoundStmt
             generateBlock();  // Process all statements in block
             if (NC) { break; }
-            
             Gen6502.Epilogue();
             break;
         }
@@ -1690,6 +1692,8 @@ Print.Hex(); LDA #'s' Print.Char();
     // New function to emit all functions
     emitAllFunctions()
     {
+        STZ functionFlags
+        
         AST.GetRoot(); // -> IDX (Program node)
         
         // Get first child
@@ -1744,9 +1748,27 @@ Print.Hex(); LDA #'s' Print.Char();
                 CompareStrings(); // Compare [STR] with [IDY]
                 if (C)
                 {
+                    SMB0 functionFlags // Bit 0 - we're in "main"
+                    
                     // This is main - emit stack initialization first
                     Gen6502.CreateStack();     // Emit stack init code
                     if (NC) { return; }
+                    
+                    LDA functionNodeH
+                    STA AST.astNodeH
+                    LDA functionNodeL
+                    STA AST.astNodeL
+                    countFunctionParameters();
+                    if (NZ)
+                    {
+                        SMB1 functionFlags // Bit 1 - "main" has arguments
+                        Gen6502.CreateCLIArguments();
+                    }
+                    if (NC) { return; }
+                }
+                else
+                {
+                    STZ functionFlags // not in "main"
                 }
                 
                 // Store current code offset in Function node
@@ -1759,9 +1781,12 @@ Print.Hex(); LDA #'s' Print.Char();
                 
                 // Generate this function's body
                 generateFunctionBody();  // Uses IDX = Function node
+                
                 if (NC) { return; }
             }// function node
             
+
+           
             // Move to next sibling
             LDY #AST.iNext
             LDA [functionNode], Y
@@ -1784,6 +1809,7 @@ Print.Hex(); LDA #'s' Print.Char();
     // Note: Coordinates all code generation phases
     Compile()
     {
+        
         // 1. Reserve 3 bytes for JMP to main
         LDA # OpCode.JMP_ABS
         EmitByte(); if (NC) { return; } // JMP absolute

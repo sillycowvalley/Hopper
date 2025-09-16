@@ -51,6 +51,8 @@ unit VCode
         Reserve         = 0x14,
         NEXTZero        = 0x15,
         PushWORD        = 0x16,
+        CtoONE          = 0x17,
+        WORDtoTOP       = 0x18,
 
     }
     const string strNone = "Undefined";
@@ -76,11 +78,27 @@ unit VCode
     const string strPushWORD = "pshW";
     const string strCHARtoNEXT = "CHRtoN";
     const string strNEXTZero = "Nzer";
+    const string strCtoONE   = "Cto1";
+    const string strWORDtoTOP = "WtoT";
     
     printPeep()
     {
         switch (A)
         {
+            case VOpCode.WORDtoTOP:
+            {
+                LDA #(strWORDtoTOP % 256)
+                STA ZP.STRL
+                LDA #(strWORDtoTOP / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.CtoONE:
+            {
+                LDA #(strCtoONE % 256)
+                STA ZP.STRL
+                LDA #(strCtoONE / 256)
+                STA ZP.STRH
+            }
             case VOpCode.PushNEXT:
             {
                 LDA #(strPushNEXT % 256)
@@ -416,6 +434,18 @@ unit VCode
                     PLA
                     PHY pushWORD(); PLY if (NC) { return; }
                 }
+                case VOpCode.WORDtoTOP:
+                {
+                    LDA [vcodeBuffer], Y // word argument LSB -> A
+                    PHA
+                    INY
+                    LDA [vcodeBuffer], Y // word argument MSB -> X                 
+                    INY
+                    TAX
+                    PLA
+                    PHY WORDtoTOP(); PLY if (NC) { return; }
+                }
+                
                 
                 
                 case VOpCode.NEXTtoTOP:
@@ -429,6 +459,10 @@ unit VCode
                 case VOpCode.CtoNEXT:
                 {
                     PHY CtoNEXT(); PLY if (NC) { return; }
+                }
+                case VOpCode.CtoONE:
+                {
+                    PHY CtoONE(); PLY if (NC) { return; }
                 }
                 
                 default:
@@ -762,6 +796,50 @@ Print.Space(); LDA #'F' Print.Char();
                             SEC
                             break;
                         }
+                        case VOpCode.PushWORD:
+                        {
+                            // PushWORD, PopTOP -> WORDtoTOP
+                            popPeep();
+                            popPeep();
+                            DEC vcodeOffset // PopTOP
+                            LDY vcodeOffset
+                            DEY // MSB argument
+                            DEY // LSB argument
+                            DEY 
+                            LDA # VOpCode.WORDtoTOP
+                            STA [vcodeBuffer], Y
+                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'K' Print.Char();
+#endif                            
+                            SEC
+                            break;
+                        }
+                    }
+                    
+                }
+                case VOpCode.NEXTZero:
+                {
+                    LDA peep1
+                    switch (A)
+                    {
+                        case VOpCode.CtoNEXT:
+                        {
+                            // CtoNEXT, NEXTZero -> CtoONE
+                            popPeep();
+                            popPeep();
+                            DEC vcodeOffset
+                            LDY vcodeOffset
+                            DEY
+                            LDA # VOpCode.CtoONE
+                            STA [vcodeBuffer], Y
+                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'J' Print.Char();
+#endif                            
+                            SEC
+                            break;
+                        }
                     }
                 }
             }
@@ -932,6 +1010,21 @@ Print.Space(); LDA #'F' Print.Char();
         LDX # VOpCode.PushWORD
         addVCode(); // A = LSB, Y = MSB
     }
+    CtoONE()
+    {
+        // Convert carry flag to 0 or 1
+        // LDA #0
+        LDA #OpCode.LDA_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // ADC #0 - adds carry flag to 0, giving 0 or 1
+        LDA #OpCode.ADC_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #0
+        Gen6502.emitByte(); if (NC) { return; }
+    }
     CtoNEXT()
     {
         // Convert carry flag to 0 or 1
@@ -1079,6 +1172,58 @@ Print.Space(); LDA #'F' Print.Char();
         LDA #OpCode.STZ_ZP
         Gen6502.emitByte(); if (NC) { return; }
         LDA # ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+    }
+    
+    WORDtoTOP() // A = LSB, X = MSB
+    {
+        STA vzArgument
+        STX vzArgument1
+               
+        LDA vzArgument
+        if (Z)
+        {
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }    
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA vzArgument
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        LDA # ZP.TOP0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA vzArgument1
+        if (Z)
+        {
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }    
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA vzArgument1
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        LDA # ZP.TOP1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP3
         Gen6502.emitByte(); if (NC) { return; }
     }
     

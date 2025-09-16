@@ -80,6 +80,7 @@ unit Gen6502
         TAY     = 0xA8,
         LDA_IMM = 0xA9,
         LDA_IND_Y = 0xB1,
+        LDA_ABS_Y = 0xB9,
         TSX     = 0xBA,
         CPY_IMM = 0xC0,
         CMP_IMM = 0xC9,
@@ -393,6 +394,146 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack3H
         EmitByte(); if (NC) { return; }
+    }
+    CreateCLIArguments()
+    {
+        // Push exe pointer (always LineBuffer start)
+        LDA #(Address.LineBuffer % 256)
+        LDX #(Address.LineBuffer / 256)
+        VCode.PushWORD(); // A = LSB, X = MSB
+        
+        // Now find the argument by walking LineBuffer
+        // LDY #0
+        LDA #OpCode.LDY_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // loop: LDA LineBuffer,Y
+        LDA # OpCode.LDA_ABS_Y
+        EmitByte(); if (NC) { return; }
+        LDA #(Address.LineBuffer % 256)
+        EmitByte(); if (NC) { return; }
+        LDA #(Address.LineBuffer / 256)
+        EmitByte(); if (NC) { return; }
+        
+        // BEQ no_arg (if null terminator)
+        LDA #OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA #3  // Forward branch to no_arg section
+        EmitByte(); if (NC) { return; }
+        
+        // INY
+        LDA #OpCode.INY
+        EmitByte(); if (NC) { return; }
+        
+        // BNE loop
+        LDA #OpCode.BNE
+        EmitByte(); if (NC) { return; }
+        LDA #0xF8  // Backward branch to loop start
+        EmitByte(); if (NC) { return; }
+        
+// found_space: INY to skip the space
+        LDA #OpCode.INY
+        EmitByte(); if (NC) { return; }
+        
+        // LDA LineBuffer,Y - check if there's an arg
+        LDA #OpCode.LDA_ABS_Y
+        EmitByte(); if (NC) { return; }
+        LDA #(Address.LineBuffer % 256)
+        EmitByte(); if (NC) { return; }
+        LDA #(Address.LineBuffer / 256)
+        EmitByte(); if (NC) { return; }
+        
+        // BEQ no_arg - if null, no argument
+        LDA #OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA #18  // Forward branch to no_arg
+        EmitByte(); if (NC) { return; }
+        
+        // TYA
+        LDA #OpCode.TYA
+        EmitByte(); if (NC) { return; }
+        
+        // CLC
+        LDA #OpCode.CLC
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #low(LineBuffer)
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #(Address.LineBuffer % 256)
+        EmitByte(); if (NC) { return; }
+        
+        // STA NEXT0
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // LDA #high(LineBuffer)
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #(Address.LineBuffer / 256)
+        EmitByte(); if (NC) { return; }
+        
+        // ADC #0 (for carry)
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        
+        // STA NEXT1
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // STZ NEXT2, NEXT3
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // BRA done
+        LDA #OpCode.BRA
+        EmitByte(); if (NC) { return; }
+        LDA #8  // Skip no_arg section
+        EmitByte(); if (NC) { return; }
+        
+        // no_arg: push NULL
+        // STZ NEXT0-3
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // done: Push arg pointer (or NULL)
+        VCode.PushNEXT(); if (NC) { return; }
+        
+        // fake RTS slots
+        VCode.Reserve(); if (NC) { return; }
+        VCode.Reserve();
     }
     
     // Recursively walk AST and emit all string literals
@@ -719,6 +860,17 @@ unit Gen6502
             EmitByte(); if (NC) { break; }
             LDA # runtimeBP
             EmitByte(); if (NC) { break; }
+            
+            if (BBS0, CodeGen.functionFlags) // Bit 0 - we're in "main"
+            {
+                if (BBS1, CodeGen.functionFlags) // Bit 1 - "main" had arguments
+                {
+                    VCode.Discard(); if (NC) { break; } // fake return
+                    VCode.Discard(); if (NC) { break; } // fake return
+                    VCode.Discard(); if (NC) { break; } // arg*
+                    VCode.Discard(); if (NC) { break; } // exe*
+                }
+            }
             
             LDA # OpCode.RTS
             EmitByte(); if (NC) { break; }

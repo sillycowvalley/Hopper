@@ -476,6 +476,8 @@ unit Parser
             SEC
             break;
         } // single exit
+
+
         
         LDA functionNodeL
         ORA functionNodeH

@@ -179,7 +179,7 @@ if (NC)
         ORA AST.astRootH
         if (NZ)  // Have an AST?
         {
-            //AST.PrintTree(); 
+            AST.PrintTree(); 
         }
         PLP
 #endif        
