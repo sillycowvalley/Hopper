@@ -2462,6 +2462,7 @@ unit AsmPoints
             OpCode opCode0 = iCodes[iIndex];
             if (!IsTargetOfJumps(iIndex) )
             {
+                /*
                 if  ((opCode0 == OpCode.BCS_e) && (opCode1 == OpCode.CLC))
                 {
                     // CLC
@@ -2517,6 +2518,7 @@ unit AsmPoints
                     modified = true;
                     Print(" D");
                 }
+                */
             }
             iIndex++;
         } // loop

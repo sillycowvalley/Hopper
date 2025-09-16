@@ -16,9 +16,10 @@ unit VCode
     const byte peep1           = vzSlots+7;
     const byte peep2           = vzSlots+8;
     const byte peep3           = vzSlots+9;
+    const byte peep4           = vzSlots+10;
     
-    const byte vzOffset        = vzSlots+10;
-    const byte vzArgument      = vzSlots+10;
+    const byte vzOffset        = vzSlots+11;
+    const byte vzArgument      = vzOffset;
     
     enum VOpCode
     {
@@ -43,7 +44,159 @@ unit VCode
         CtoNEXT         = 0x0F,
         PushCHAR        = 0x10,
         CHARtoNEXT      = 0x11,
-        LongADDPushNEXT = 0x12,
+
+    }
+    const string strNone = "Undefined";
+    const string strPushNEXT = "pshN";
+    const string strPushTOP = "pshT";
+    const string strPopNEXT = "popN";
+    const string strPopTOP = "popT";
+    const string strPutNEXT = "putN";
+    const string strGetNEXT = "getN";
+    const string strIncNEXT = "incN";
+    const string strDecNEXT = "decN";
+    const string strPushC = "pshC";
+    const string strLongADD = "lAdd";
+    const string strDiscard = "Disc";
+    const string strInc = "Inc";
+    const string strNEXTtoTOP = "NtoT";
+    const string strTOPtoNEXT = "TtoN";
+    const string strCtoNEXT = "CtoN";
+    const string strPushCHAR = "pshCHR";
+    const string strCHARtoNEXT = "CHRtoN";
+    
+    printPeep()
+    {
+        switch (A)
+        {
+            case VOpCode.PushNEXT:
+            {
+                LDA #(strPushNEXT % 256)
+                STA ZP.STRL
+                LDA #(strPushNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PushTOP:
+            {
+                LDA #(strPushTOP % 256)
+                STA ZP.STRL
+                LDA #(strPushTOP / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PopNEXT:
+            {
+                LDA #(strPopNEXT % 256)
+                STA ZP.STRL
+                LDA #(strPopNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PopTOP:
+            {
+                LDA #(strPopTOP % 256)
+                STA ZP.STRL
+                LDA #(strPopTOP / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PutNEXT:
+            {
+                LDA #(strPutNEXT % 256)
+                STA ZP.STRL
+                LDA #(strPutNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.GetNEXT:
+            {
+                LDA #(strGetNEXT % 256)
+                STA ZP.STRL
+                LDA #(strGetNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.IncNEXT:
+            {
+                LDA #(strIncNEXT % 256)
+                STA ZP.STRL
+                LDA #(strIncNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.DecNEXT:
+            {
+                LDA #(strDecNEXT % 256)
+                STA ZP.STRL
+                LDA #(strDecNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PushC:
+            {
+                LDA #(strPushC % 256)
+                STA ZP.STRL
+                LDA #(strPushC / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.LongADD:
+            {
+                LDA #(strLongADD % 256)
+                STA ZP.STRL
+                LDA #(strLongADD / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.Discard:
+            {
+                LDA #(strDiscard % 256)
+                STA ZP.STRL
+                LDA #(strDiscard / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.Inc:
+            {
+                LDA #(strInc % 256)
+                STA ZP.STRL
+                LDA #(strInc / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.NEXTtoTOP:
+            {
+                LDA #(strNEXTtoTOP % 256)
+                STA ZP.STRL
+                LDA #(strNEXTtoTOP / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.TOPtoNEXT:
+            {
+                LDA #(strTOPtoNEXT % 256)
+                STA ZP.STRL
+                LDA #(strTOPtoNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.CtoNEXT:
+            {
+                LDA #(strCtoNEXT % 256)
+                STA ZP.STRL
+                LDA #(strCtoNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PushCHAR:
+            {
+                LDA #(strPushCHAR % 256)
+                STA ZP.STRL
+                LDA #(strPushCHAR / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.CHARtoNEXT:
+            {
+                LDA #(strCHARtoNEXT % 256)
+                STA ZP.STRL
+                LDA #(strCHARtoNEXT / 256)
+                STA ZP.STRH
+            }
+            default:
+            {
+                LDA #(strNone % 256)
+                STA ZP.STRL
+                LDA #(strNone / 256)
+                STA ZP.STRH
+            }
+        }
+        Print.String();
     }
     
     Initialize()
@@ -225,11 +378,14 @@ loop { }
         STZ peep1
         STZ peep2
         STZ peep3
+        STZ peep4
     }
     
     pushPeep() // A
     {
         PHA
+        LDA peep3
+        STA peep4
         LDA peep2
         STA peep3
         LDA peep1
@@ -248,97 +404,86 @@ loop { }
         STA peep1
         LDA peep3
         STA peep2
-        STZ peep3
+        LDA peep4
+        STA peep3
+        STZ peep4
     }
     
     
     dumpPeeps()
     {
-        PHX
+        CPX #0
+        if (NZ)
+        {
+            Print.Space(); LDA #'>' Print.Char(); Print.Space();
+        }
+        
         LDA peep0
         if (NZ)
         {
-            PHX
-            Print.NewLine();
-            
-            LDA peep3
-            if (NZ)
-            {
-                Print.Hex(); Print.Space();
-            }
-            
-            LDA peep2
-            if (NZ)
-            {
-                Print.Hex(); Print.Space();
-            }
-            
             LDA peep1
-            if (NZ)
+            if (NZ) // at least two
             {
-                Print.Hex(); Print.Space();
+                CPX #0
+                if (Z)
+                {
+                    Print.NewLine();
+                }
+                
+                LDA peep4
+                if (NZ)
+                {
+                    printPeep(); Print.Space();
+                }
+                
+                LDA peep3
+                if (NZ)
+                {
+                    printPeep(); Print.Space();
+                }
+                
+                LDA peep2
+                if (NZ)
+                {
+                    printPeep(); Print.Space();
+                }
+                
+                LDA peep1
+                if (NZ)
+                {
+                    printPeep(); Print.Space();
+                }
+                
+                LDA peep0
+                printPeep(); Print.Space();
             }
-            
-            LDA peep0 Print.Hex(); Print.Space();
-            PLX
-            TXA Print.Hex(); Print.Space();
         }
-        PLX
     }
     
-    dumpPeepsAfter()
-    {
-        PHX
-        LDA peep0
-        if (NZ)
-        {
-            Print.Space();
-            LDA #'>' Print.Char();
-            Print.Space();
-            
-            LDA peep3
-            if (NZ)
-            {
-                Print.Hex(); Print.Space();
-            }
-            
-            LDA peep2
-            if (NZ)
-            {
-                Print.Hex(); Print.Space();
-            }
-            
-            LDA peep1
-            if (NZ)
-            {
-                Print.Hex(); Print.Space();
-            }
-            
-            LDA peep0 Print.Hex(); Print.Space();
-        }
-        PLX
-    }
-    
-    // X = VOpCode, BP offset on stack
+    // X = number of laps
     tryPeeps()
     {
 #ifdef DEBUG
         dumpPeeps();
-#endif                            
-        PHX
+#endif  
         loop
         {
-            switch (X)
+            LDA peep0
+            switch (A)
+            //switch (X)
             {
                 case VOpCode.Discard:
                 {
-                    LDA peep0
+                    //LDA peep0
+                    LDA peep1
                     switch (A)
                     {
                         case VOpCode.PushNEXT:
                         {
                             // PushNEXT, Discard -> NOP
                             DEC vcodeOffset
+                            DEC vcodeOffset
+                            popPeep();
                             popPeep();
 #ifdef DEBUG
 Print.Space(); LDA #'A' Print.Char();
@@ -348,31 +493,34 @@ Print.Space(); LDA #'A' Print.Char();
                         }
                         case VOpCode.PutNEXT:
                         {
-                            LDA peep1
+                            //LDA peep1
+                            LDA peep2
                             switch (A)
                             {
                                 case VOpCode.IncNEXT:
                                 {
-                                    LDA peep2
+                                    //LDA peep2
+                                    LDA peep3
                                     switch (A)
                                     {
                                         case VOpCode.PushNEXT:
                                         {
-                                            LDA peep3
+                                            //LDA peep3
+                                            LDA peep4
                                             switch (A)
                                             {
                                                 case VOpCode.GetNEXT:
                                                 {
                                                     // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
-                                                    //                      1 byte     1 byte    2 bytes                       = 4 bytes to remove
+                                                    //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
                                                     //
-                                                    // decrement vcodeOffset by 4
+                                                    // decrement vcodeOffset by 5
                                                     // then modify [vcodeOffset-2]
                                                     
                                                     clearPeeps();
                                                     SEC
                                                     LDA vcodeOffset
-                                                    SBC #4
+                                                    SBC #5
                                                     STA vcodeOffset
                                                     LDY vcodeOffset
                                                     DEY
@@ -380,7 +528,6 @@ Print.Space(); LDA #'A' Print.Char();
                                                     LDA # VOpCode.Inc
                                                     STA [vcodeBuffer], Y
                                                     pushPeep();
-                                                    
 #ifdef DEBUG
 Print.Space(); LDA #'G' Print.Char();
 #endif                                               
@@ -393,17 +540,20 @@ Print.Space(); LDA #'G' Print.Char();
                                 }
                             }
                         }
-                    } // peep0
+                    }
                 }
                 case VOpCode.PopNEXT:
                 {
-                    LDA peep0
+                    //LDA peep0
+                    LDA peep1
                     switch (A)
                     {
                         case VOpCode.PushNEXT:
                         {
                             // PushNEXT, PopNEXT -> NOP
                             DEC vcodeOffset
+                            DEC vcodeOffset
+                            popPeep();
                             popPeep();
 #ifdef DEBUG
 Print.Space(); LDA #'B' Print.Char();
@@ -415,11 +565,14 @@ Print.Space(); LDA #'B' Print.Char();
                         {
                             // PushC, PopNEXT -> CtoNEXT
                             popPeep();
+                            popPeep();
+                            DEC vcodeOffset // PopNEXT
                             LDY vcodeOffset
                             DEY
                             LDA # VOpCode.CtoNEXT
                             STA [vcodeBuffer], Y
                             pushPeep();
+
 #ifdef DEBUG
 Print.Space(); LDA #'C' Print.Char();
 #endif                            
@@ -430,12 +583,15 @@ Print.Space(); LDA #'C' Print.Char();
                         {
                             // PushCHAR, PopNEXT -> CHARtoNEXT
                             popPeep();
+                            popPeep();
+                            DEC vcodeOffset // PopNEXT
                             LDY vcodeOffset
                             DEY // char argument
                             DEY 
                             LDA # VOpCode.CHARtoNEXT
                             STA [vcodeBuffer], Y
                             pushPeep();
+
 #ifdef DEBUG
 Print.Space(); LDA #'D' Print.Char();
 #endif                            
@@ -446,6 +602,8 @@ Print.Space(); LDA #'D' Print.Char();
                         {
                             // PushTOP, PopNEXT -> TOPtoNEXT
                             popPeep();
+                            popPeep();
+                            DEC vcodeOffset
                             LDY vcodeOffset
                             DEY
                             LDA # VOpCode.TOPtoNEXT
@@ -457,17 +615,20 @@ Print.Space(); LDA #'E' Print.Char();
                             SEC
                             break;
                         }
-                    } // peep0
+                    }
                 }
                 case VOpCode.PopTOP:
                 {
-                    LDA peep0
+                    //LDA peep0
+                    LDA peep1
                     switch (A)
                     {
                         case VOpCode.PushNEXT:
                         {
                             // PushNEXT, PopTOP -> NEXTtoTOP
                             popPeep();
+                            popPeep();
+                            DEC vcodeOffset
                             LDY vcodeOffset
                             DEY
                             LDA # VOpCode.NEXTtoTOP
@@ -479,23 +640,13 @@ Print.Space(); LDA #'F' Print.Char();
                             SEC
                             break;
                         }
-                    } // peep0
+                    }
                 }
-            } // current (X)
+            }
             
             CLC
             break;
         } // single exit
-        
-#ifdef DEBUG
-        if (C)
-        {
-            dumpPeepsAfter(); // another opportunity?
-            SEC
-        }
-#endif         
-        
-        PLX
     }
     
     addVCode()
@@ -513,18 +664,10 @@ Print.Space(); LDA #'F' Print.Char();
         LDY vcodeOffset
         PLX // VOpCode
         
-        tryPeeps();
-        if (C)
-        {
-            PLA // BP offset
-            return;
-        }
-        SEC
-        
         LDY vcodeOffset
         TXA
         STA [vcodeBuffer], Y
-        pushPeep();
+        pushPeep(); // A -> peep0
         INC vcodeOffset
         
         PLA // BP offset
@@ -546,7 +689,18 @@ Print.Space(); LDA #'F' Print.Char();
                 INC vcodeOffset
             }
         }
-        
+        LDX #0
+        loop
+        {  
+            PHX
+            tryPeeps();
+            PLX
+            if (NC)
+            {
+                break; // no more optimizations
+            }
+            INX
+        }
         SEC
     }
     
