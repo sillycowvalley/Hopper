@@ -1108,7 +1108,154 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
     }
     
     
+    // Generate code for a while loop
+    // Input: IDX = While node
+    // Output: C set on success, clear on failure
+    generateWhile()
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        
+        LDA backwardPatchL
+        PHA
+        LDA backwardPatchH
+        PHA
+        LDA forwardPatchL
+        PHA
+        LDA forwardPatchH
+        PHA
+        
+        // Save the While node pointer
+        LDA ZP.IDXH
+        STA AST.astNodeH
+        LDA ZP.IDXL
+        STA AST.astNodeL
+        
+        loop
+        {
+            VCode.Flush(); if (NC) { break; }
             
+            // Record loop start position (codeBuffer + codeOffset)
+            LDA Gen6502.codeOffsetL
+            STA ZP.ACCL
+            LDA Gen6502.codeOffsetH
+            STA ZP.ACCH
+            AddEntryPoint(); // Convert to runtime address -> ACC
+            LDA ZP.ACCL
+            STA backwardPatchL
+            LDA ZP.ACCH
+            STA backwardPatchH
+            
+            // Generate condition (first child of While node)
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            generateExpression(); if (NC) { break; }
+            
+            // Pop result to check it
+            PopNEXT(); if (NC) { break; }
+            // Test if NEXT is zero (false)
+            NEXTZero(); if (NC) { break; }
+            
+            // BNE skip_exit (if true, continue loop)
+            LDA #OpCode.BNE
+            EmitByte(); if (NC) { break; }
+            LDA #3  // Skip over JMP instruction (3 bytes)
+            EmitByte(); if (NC) { break; }
+            
+            // JMP to exit (will patch address later)
+            LDA #OpCode.JMP_ABS
+            EmitByte(); if (NC) { break; }
+            
+            // Save current offset for patching
+            LDA Gen6502.codeOffsetL
+            STA forwardPatchL
+            LDA Gen6502.codeOffsetH
+            STA forwardPatchH
+            
+            // Emit placeholder address
+            LDA #0
+            EmitByte(); if (NC) { break; }
+            EmitByte(); if (NC) { break; }
+            
+            // Get body (second child - sibling of condition)
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            // Move to sibling (body)
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            generateStatement(); if (NC) { break; }
+            
+            // JMP back to loop start
+            LDA #OpCode.JMP_ABS
+            EmitByte(); if (NC) { break; }
+            
+            // Emit the backward jump address
+            LDA backwardPatchL
+            EmitByte(); if (NC) { break; }
+            LDA backwardPatchH
+            EmitByte(); if (NC) { break; }
+            
+            // Patch forward jump
+            // Calculate current absolute position
+            LDA Gen6502.codeOffsetL
+            STA ZP.ACCL
+            LDA Gen6502.codeOffsetH
+            STA ZP.ACCH
+            AddEntryPoint(); // Convert to runtime address -> ACC
+            
+            // Calculate patch location (codeBuffer + forwardPatch offset)
+            CLC
+            LDA Gen6502.codeBufferL
+            ADC forwardPatchL
+            STA ZP.IDXL
+            LDA Gen6502.codeBufferH
+            ADC forwardPatchH
+            STA ZP.IDXH
+            
+            // Write exit address at patch location
+            LDY #0
+            LDA ZP.ACCL
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.ACCH
+            STA [ZP.IDX], Y
+            
+            SEC
+            break;
+        } // single exit
+        
+        PLA
+        STA forwardPatchH
+        PLA
+        STA forwardPatchL
+        PLA
+        STA backwardPatchH
+        PLA
+        STA backwardPatchL
+        
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    }       
     
     
     
@@ -1149,6 +1296,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             case NodeType.If:
             {
                 generateIf();
+                if (NC) { return; }
+            }
+            case NodeType.While:
+            {
+                generateWhile();
                 if (NC) { return; }
             }
             case NodeType.ExprStmt:

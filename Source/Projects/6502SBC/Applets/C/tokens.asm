@@ -59,7 +59,7 @@ unit Tokens
         FilePtr      = 60,    // FILE* type
         
         // New keyword
-        Null         = 61,    // NULL constant
+        Null         = 61,    // null constant
     }
     
     // Keyword table for recognition
@@ -72,7 +72,8 @@ unit Tokens
     const string kwFor    = "for";
     const string kwWhile  = "while";
     const string kwReturn = "return";
-    const string kwNULL   = "NULL";
+    const string kwNull   = "null";
+    const string kwFILE   = "FILE";
     
     
     
@@ -236,10 +237,10 @@ unit Tokens
             return;
         }
         
-        // Check "NULL"
-        LDA #(kwNULL % 256)
+        // Check "null"
+        LDA #(kwNull % 256)
         STA ZP.STRL
-        LDA #(kwNULL / 256)
+        LDA #(kwNull / 256)
         STA ZP.STRH
         matchKeyword();
         if (C)
@@ -247,6 +248,33 @@ unit Tokens
             LDA #Token.Null
             STA Lexer.TokenType
             return;
+        }
+        
+        // Check "FILE"
+        LDA #(kwFILE % 256)
+        STA ZP.STRL
+        LDA #(kwFILE / 256)
+        STA ZP.STRH
+        matchKeyword();
+        if (C)
+        {
+            // we're on a '*'?
+            Lexer.CurrentChar();
+            CMP #'*'
+            if (Z)
+            {
+                Lexer.advance();  // Consume the *
+                LDA #Token.FilePtr
+                STA Lexer.TokenType
+                SEC
+                return;
+            }
+            else
+            {
+                LDA #Token.Star
+                Errors.Expected();
+                return;
+            }
         }
         
         // Not a keyword, must be identifier
@@ -305,6 +333,10 @@ unit Tokens
     
     const string nameUnknown     = "?";
     
+    const string nameCharPtr     = "char*";
+    const string nameFilePtr     = "FILE*";
+    const string nameNull        = "null";
+    
     
     PrintToken()  // Input: A = token
     {
@@ -316,6 +348,10 @@ unit Tokens
             case Token.IntegerLiteral: { LDA #(nameInteger % 256)     STA ZP.STRL  LDA #(nameInteger / 256)     STA ZP.STRH }
             case Token.StringLiteral:  { LDA #(nameString % 256)      STA ZP.STRL  LDA #(nameString / 256)      STA ZP.STRH }
             case Token.CharLiteral:    { LDA #(nameCharLit % 256)     STA ZP.STRL  LDA #(nameCharLit / 256)     STA ZP.STRH }
+            
+            case Token.CharPtr:        { LDA #(nameCharPtr % 256)     STA ZP.STRL  LDA #(nameCharPtr / 256)     STA ZP.STRH }
+            case Token.FilePtr:        { LDA #(nameFilePtr % 256)     STA ZP.STRL  LDA #(nameFilePtr / 256)     STA ZP.STRH }
+            case Token.Null:           { LDA #(nameNull % 256)        STA ZP.STRL  LDA #(nameNull / 256)        STA ZP.STRH }
             
             // Keywords
             case Token.Void:           { LDA #(nameVoid % 256)        STA ZP.STRL  LDA #(nameVoid / 256)        STA ZP.STRH }

@@ -1,5 +1,7 @@
 unit Lexer
 {
+    friend Tokens;
+      
     uses "../System/Definitions"
     uses "../System/File"
     uses "../System/Memory"

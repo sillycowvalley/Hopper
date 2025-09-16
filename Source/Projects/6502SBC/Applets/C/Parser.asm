@@ -321,6 +321,8 @@ unit Parser
                                 STA ZP.TEMP  // Just char
                             }
                         }
+                        
+                        case Token.FilePtr:
                         case Token.Int:
                         case Token.Long:
                         {
@@ -926,6 +928,99 @@ unit Parser
         STA stmtNodeH
     }
     
+    // Parse: while (condition) body
+    parseWhileStatement() // -> IDY
+    {
+        consume();  // Move past 'while'
+        if (NC) { return; }
+        
+        // Expect '('
+        LDA #Token.LeftParen
+        expect();
+        if (NC) { return; }
+        
+        LDA stmtNodeH
+        PHA
+        LDA stmtNodeL
+        PHA
+        
+        STZ stmtNodeH
+        STZ stmtNodeL
+        
+        loop
+        {
+            // Create While node
+            LDA # AST.NodeType.While
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Save While node
+            LDA ZP.IDXL
+            STA stmtNodeL
+            LDA ZP.IDXH
+            STA stmtNodeH
+            
+            // Parse condition expression
+            parseExpression(); // -> IDY
+            if (NC) { break; }
+            
+            // Add condition as first child
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            
+            AST.AddChild(); // IDX = While, IDY = condition
+            
+            // Expect ')'
+            LDA #Token.RightParen
+            expect();
+            if (NC) { break; }
+            
+            // Parse body statement
+            parseStatement(); // -> IDY
+            if (NC) { break; }
+            
+            // Add body as second child
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            
+            AST.AddChild(); // IDX = While, IDY = body
+            
+            // Return While node in IDY
+            LDA stmtNodeL
+            STA ZP.IDYL
+            LDA stmtNodeH
+            STA ZP.IDYH
+            
+            STZ stmtNodeL
+            STZ stmtNodeH
+            
+            SEC
+            break;
+        } // single exit
+        
+        LDA stmtNodeL
+        ORA stmtNodeH
+        if (NZ)
+        {
+            // not an ideal exit
+            LDA stmtNodeL
+            STA ZP.IDXL
+            LDA stmtNodeH
+            STA ZP.IDXH
+            AST.FreeNode();
+            CLC
+        }
+        
+        PLA
+        STA stmtNodeL
+        PLA
+        STA stmtNodeH
+    }
+    
     // Parse: if (condition) then-stmt [else else-stmt]
     parseIfStatement() // -> IDY
     {
@@ -1129,6 +1224,11 @@ unit Parser
                 parseForStatement(); // -> IDY
                 if (NC) { return; }
             }
+            case Token.While:
+            {
+                parseWhileStatement(); // -> IDY
+                if (NC) { return; }
+            }
             case Token.If:
             {
                 parseIfStatement(); // -> IDY
@@ -1157,6 +1257,7 @@ unit Parser
                parseVariableDeclaration(); // A = type
             }
             case Token.Long:
+            case Token.FilePtr:
             case Token.Int:
             {
                 PHA
@@ -2170,6 +2271,9 @@ unit Parser
             
             default:
             {
+#ifdef DEBUG
+LDA #'p' Print.Char();
+#endif            
                 // Unexpected token
                 LDA #Error.SyntaxError
                 Errors.ShowLine();
@@ -2302,6 +2406,9 @@ unit Parser
         consume();
         if (NC) 
         { 
+#ifdef DEBUG
+LDA #'x' Print.Char();
+#endif
             LDA # Error.SyntaxError
             Errors.ShowLine();
             return; 
@@ -2323,6 +2430,7 @@ unit Parser
             {
                 case Token.Char:
                 case Token.Long:
+                case Token.FilePtr:
                 case Token.Int:
                 case Token.Void:
                 {

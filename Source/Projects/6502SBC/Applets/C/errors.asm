@@ -12,7 +12,7 @@ unit Errors
         TokenTooLong,
         StringTooLong,
         SyntaxError,
-        UnexpectedFailure, // consume() failed?
+        UnexpectedFailure, // 0x0A consume() failed?
         
         NoEntryPoint,
         NotImplemented,    // 0x0C
@@ -188,6 +188,10 @@ unit Errors
                 case Token.Semicolon:
                 {
                     LDA #';'
+                }
+                case Token.Star:
+                {
+                    LDA #'*'
                 }
                 default:
                 {

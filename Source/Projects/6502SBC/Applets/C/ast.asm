@@ -39,6 +39,7 @@ unit AST
         For          = 15,  // For loop 
         Return       = 16,  // Return statement 
         If           = 17,  // If statement
+        While        = 18,  // While statement
         
         AfterLast           // see freeNode()
     }
@@ -138,9 +139,15 @@ unit AST
     //   2. Then statement (condition->next)
     //   3. Else statement (then->next) - optional, can be null
     
-    // No additional fields needed!
-    
-    
+    // While node:
+    //     [0]     NodeType (NodeType.While)
+    //     [1-2]   Source line number
+    //     [3-4]   Child pointer -> condition expression
+    //     [5-6]   Next sibling pointer
+    //
+    // Child list structure:
+    //   1. Condition expression (child)
+    //   2. Body statement
     
     Initialize()
     {
@@ -785,12 +792,14 @@ unit AST
     const string nodeLong     = "LONG ";
     const string nodeChar     = "CHAR ";
     const string nodeCharPtr  = "CHARPTR ";
+    const string nodeFilePtr  = "FILEPTR ";
     const string nodeVarDecl  = "VAR "; 
     const string nodeAssign   = "ASSIGN";
     const string nodeReturn   = "RETURN";
     const string nodeBinOp    = "BINOP ";
     const string nodePostfixOp= "POSTFIX ";
-    const string nodeFor      = "FOR";   
+    const string nodeFor      = "FOR";
+    const string nodeWhile    = "WHILE";
     const string nodeIf       = "IF";
     const string nodeUnknown  = "??";
     
@@ -799,6 +808,7 @@ unit AST
     const string typeLong    = "long ";
     const string typeChar    = "char ";
     const string typeCharPtr = "char* ";
+    const string typeFilePtr = "FILE* ";
     
     
     const string opAdd = "+";
@@ -868,6 +878,14 @@ unit AST
                 LDA #(nodeIf % 256)
                 STA ZP.STRL
                 LDA #(nodeIf / 256)
+                STA ZP.STRH
+                Print.String();
+            }
+            case NodeType.While:
+            {
+                LDA #(nodeWhile % 256)
+                STA ZP.STRL
+                LDA #(nodeWhile / 256)
                 STA ZP.STRH
                 Print.String();
             }
@@ -1027,6 +1045,14 @@ unit AST
                         LDA #(typeCharPtr % 256)
                         STA ZP.STRL
                         LDA #(typeCharPtr / 256)
+                        STA ZP.STRH
+                        Print.String();
+                    }
+                    case Token.FilePtr:
+                    {
+                        LDA #(typeFilePtr % 256)
+                        STA ZP.STRL
+                        LDA #(typeFilePtr / 256)
                         STA ZP.STRH
                         Print.String();
                     }
@@ -1356,7 +1382,8 @@ unit AST
                     case Token.Long:    { LDA # (nodeLong % 256)    STA ZP.STRL LDA # (nodeLong / 256)    STA ZP.STRH }
                     case Token.Int:     { LDA # (nodeInt % 256)     STA ZP.STRL LDA # (nodeInt / 256)     STA ZP.STRH }
                     case Token.Char:    { LDA # (nodeChar % 256)    STA ZP.STRL LDA # (nodeChar / 256)    STA ZP.STRH }
-                    case Token.CharPtr: { LDA # (nodeCharPtr % 256)    STA ZP.STRL LDA # (nodeCharPtr / 256)    STA ZP.STRH }
+                    case Token.CharPtr: { LDA # (nodeCharPtr % 256) STA ZP.STRL LDA # (nodeCharPtr / 256) STA ZP.STRH }
+                    case Token.FilePtr: { LDA # (nodeFilePtr % 256) STA ZP.STRL LDA # (nodeFilePtr / 256) STA ZP.STRH }
                     default:            { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
                 }
                 Print.String();

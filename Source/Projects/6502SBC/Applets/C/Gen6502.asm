@@ -506,7 +506,7 @@ unit Gen6502
         LDA #8  // Skip no_arg section
         EmitByte(); if (NC) { return; }
         
-        // no_arg: push NULL
+        // no_arg: push null
         // STZ NEXT0-3
         LDA #OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
@@ -528,7 +528,7 @@ unit Gen6502
         LDA #ZP.NEXT3
         EmitByte(); if (NC) { return; }
         
-        // done: Push arg pointer (or NULL)
+        // done: Push arg pointer (or null)
         VCode.PushNEXT(); if (NC) { return; }
         
         // fake RTS slots
