@@ -454,53 +454,6 @@ unit Library
         SEC
     }
     
-    // Generate code to print int/long argument
-    // Uses current argument node in ZP.NEXT
-    // Output: C set on success, clear on failure
-    emitIntFormatter()
-    {
-        // Check we have an argument
-        LDA libArgL
-        ORA libArgH
-        if (Z)
-        {
-            LDA # Error.TooFewArguments
-            Errors.ShowIDX();
-            CLC
-            return;
-        }
-        
-        // Generate code to evaluate the expression
-        // This will push result onto runtime stack
-        LDA libArgL
-        STA ZP.IDXL
-        LDA libArgH
-        STA ZP.IDXH
-        CodeGen.generateExpression(); if (NC) { return; }
-        
-        // Pop from stack into ZP.TOP
-        PopTOP(); if (NC) { return; }
-        
-        // Call Long.Print
-        LDA # OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA # BIOSInterface.SysCall.LongPrint
-        EmitByte(); if (NC) { return; }
-        
-        EmitDispatchCall(); if (NC) { return; }
-        
-        // Move to next argument
-        LDY #AST.iNext
-        LDA [libArg], Y
-        TAX
-        INY
-        LDA [libArg], Y
-        STA libArgH
-        STX libArgL
-        
-        SEC
-    }
-    
     // Generate code to print character argument
     // Uses current argument node in libArgL/H
     // Output: C set on success, clear on failure
@@ -555,6 +508,55 @@ unit Library
         SEC
     }
     
+    // Generate code to print int/long argument
+    // Uses current argument node in ZP.NEXT
+    // Output: C set on success, clear on failure
+    emitIntFormatter()
+    {
+        // Check we have an argument
+        LDA libArgL
+        ORA libArgH
+        if (Z)
+        {
+            LDA # Error.TooFewArguments
+            Errors.ShowIDX();
+            CLC
+            return;
+        }
+        
+        // Generate code to evaluate the expression
+        // This will push result onto runtime stack
+        LDA libArgL
+        STA ZP.IDXL
+        LDA libArgH
+        STA ZP.IDXH
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop from stack into ZP.TOP
+        PopTOP(); if (NC) { return; }
+        
+        // Call Long.Print
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.LongPrint
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        // Move to next argument
+        LDY #AST.iNext
+        LDA [libArg], Y
+        TAX
+        INY
+        LDA [libArg], Y
+        STA libArgH
+        STX libArgL
+        
+        SEC
+    }
+    
+    
+    
     // Generate code to print string argument (char* pointer)
     // Uses current argument node in libArgL/H
     // Output: C set on success, clear on failure
@@ -582,7 +584,22 @@ unit Library
         PopNEXT(); if (NC) { return; }
         
         // Generate call to a runtime string print function
-        // Much simpler - just call Print.String() which expects ZP.STR
+        
+        // Generate: LDA ZP.STRL PHA
+        LDA #OpCode.LDA_ZP
+        EmitByte();if (NC) { return;}
+        LDA #ZP.STRL
+        EmitByte();if (NC) { return;}
+        LDA #OpCode.PHA
+        EmitByte();if (NC) { return;}
+        
+        // Generate: LDA ZP.STRH PHA
+        LDA #OpCode.LDA_ZP
+        EmitByte();if (NC) { return;}
+        LDA #ZP.STRH
+        EmitByte();if (NC) { return;}
+        LDA #OpCode.PHA
+        EmitByte();if (NC) { return;}
         
         // TODO : VCode.NEXTtoSTR()
         
@@ -595,7 +612,7 @@ unit Library
         // Generate: STA STRL
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.STRL
+        LDA # ZP.STRL
         EmitByte(); if (NC) { return; }
         
         // Generate: LDA NEXT1  
@@ -603,7 +620,7 @@ unit Library
         EmitByte(); if (NC) { return; }
         LDA #ZP.NEXT1
         EmitByte(); if (NC) { return; }
-        
+    
         // Generate: STA STRH
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -618,6 +635,22 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
+        // Generate: PLA STA ZP.STRH
+        LDA #OpCode.PLA
+        EmitByte();if(NC) { return;}
+        LDA #OpCode.STA_ZP
+        EmitByte();if (NC) { return;}
+        LDA #ZP.STRH
+        EmitByte();if (NC) { return;}
+        
+        // Generate: PLA STA ZP.STRL
+        LDA #OpCode.PLA
+        EmitByte();if (NC) { return;}
+        LDA #OpCode.STA_ZP
+        EmitByte();if (NC) { return;}
+        LDA #ZP.STRL
+        EmitByte();if (NC) { return;}
+    
         // Move to next argument
         LDY #AST.iNext
         LDA [libArg], Y
@@ -626,7 +659,6 @@ unit Library
         LDA [libArg], Y
         STA libArgH
         STX libArgL
-        
         SEC
     }
     
@@ -747,7 +779,7 @@ unit Library
                     INY
                     continue;
                 }
-                CMP #'s'  // %s - int
+                CMP #'s'  // %s - char*
                 if (Z)
                 {
                     PHY

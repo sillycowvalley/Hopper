@@ -431,8 +431,10 @@ unit Parser
                     }
                     break;
                 } // loop
+                
+                // Second pass: assign offsets
             
-                // number the parameters    
+                // Number the parameters:
                 LDA functionNodeL
                 STA AST.astNodeL
                 LDA functionNodeH
@@ -442,10 +444,7 @@ unit Parser
                 CLC
                 ADC #3
                 STA bpOffset
-            
-Print.NewLine(); LDA bpOffset Print.Hex();  
-
-                // Second pass: assign offsets
+                
                 // Get back to first parameter
                 LDY #AST.iChild
                 LDA [functionNode], Y
@@ -468,7 +467,6 @@ Print.NewLine(); LDA bpOffset Print.Hex();
                     ORA ZP.IDXH
                     if (Z) { break; }  // No more parameters
                 
-Print.NewLine(); LDA bpOffset Print.Hex();                                            
                     // Store this parameter's BP offset
                     LDY #AST.iOffset
                     LDA bpOffset  // Start at 3 + count, decrement each time
