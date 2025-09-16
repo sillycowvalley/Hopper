@@ -767,6 +767,17 @@ unit Gen6502
             return;
         }
         
+        LDA ZP.NEXT2
+        ORA ZP.NEXT3
+        if (Z)
+        {
+            LDA ZP.NEXT0
+            LDX ZP.NEXT1
+            VCode.PushWORD();
+            SEC
+            return;
+        }
+        
         // Now emit code to load these values at runtime
         
         // Emit code for NEXT0

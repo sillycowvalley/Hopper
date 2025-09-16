@@ -20,6 +20,7 @@ unit VCode
     
     const byte vzOffset        = vzSlots+11;
     const byte vzArgument      = vzOffset;
+    const byte vzArgument1     = vzSlots+12;
     
     enum VOpCode
     {
@@ -47,6 +48,9 @@ unit VCode
         
         GetTOP          = 0x12,
         PutTOP          = 0x13,
+        Reserve         = 0x14,
+        NEXTZero        = 0x15,
+        PushWORD        = 0x16,
 
     }
     const string strNone = "Undefined";
@@ -63,12 +67,15 @@ unit VCode
     const string strPushC = "pshC";
     const string strLongADD = "lAdd";
     const string strDiscard = "Disc";
+    const string strReserve = "Rsrv";
     const string strInc = "Inc";
     const string strNEXTtoTOP = "NtoT";
     const string strTOPtoNEXT = "TtoN";
     const string strCtoNEXT = "CtoN";
     const string strPushCHAR = "pshCHR";
+    const string strPushWORD = "pshW";
     const string strCHARtoNEXT = "CHRtoN";
+    const string strNEXTZero = "Nzer";
     
     printPeep()
     {
@@ -165,6 +172,20 @@ unit VCode
                 LDA #(strDiscard / 256)
                 STA ZP.STRH
             }
+            case VOpCode.Reserve:
+            {
+                LDA #(strReserve % 256)
+                STA ZP.STRL
+                LDA #(strReserve / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.NEXTZero:
+            {
+                LDA #(strNEXTZero % 256)
+                STA ZP.STRL
+                LDA #(strNEXTZero / 256)
+                STA ZP.STRH
+            }
             case VOpCode.Inc:
             {
                 LDA #(strInc % 256)
@@ -191,6 +212,13 @@ unit VCode
                 LDA #(strCtoNEXT % 256)
                 STA ZP.STRL
                 LDA #(strCtoNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PushWORD:
+            {
+                LDA #(strPushWORD % 256)
+                STA ZP.STRL
+                LDA #(strPushWORD / 256)
                 STA ZP.STRH
             }
             case VOpCode.PushCHAR:
@@ -278,13 +306,11 @@ unit VCode
         IsEmpty();
         if (C) { return; }
         
-//LDA #'<' Print.Char(); LDA vcodeOffset Print.Hex(); LDA #':' Print.Char(); Print.Space();
         LDY #0
         loop
         {
             LDA [vcodeBuffer], Y
             INY
-//PHA PHY Print.Hex(); Print.Space(); PLY PLA           
             
             switch (A)
             {
@@ -311,6 +337,14 @@ unit VCode
                 case VOpCode.Discard:
                 {
                     PHY discard(); PLY if (NC) { return; }
+                }
+                case VOpCode.Reserve:
+                {
+                    PHY reserveSlot(); PLY if (NC) { return; }
+                }
+                case VOpCode.NEXTZero:
+                {
+                    PHY nextZero(); PLY if (NC) { return; }
                 }
                 
                 case VOpCode.IncNEXT:
@@ -364,13 +398,25 @@ unit VCode
                     INY
                     PHY CHARtoNEXT(); PLY if (NC) { return; }
                 }
-                
                 case VOpCode.Inc:
                 {
                     LDA [vcodeBuffer], Y // BP offset
                     INY
                     PHY inc(); PLY if (NC) { return; }
                 }
+                
+                case VOpCode.PushWORD:
+                {
+                    LDA [vcodeBuffer], Y // word argument LSB -> A
+                    PHA
+                    INY
+                    LDA [vcodeBuffer], Y // word argument MSB -> X                 
+                    INY
+                    TAX
+                    PLA
+                    PHY pushWORD(); PLY if (NC) { return; }
+                }
+                
                 
                 case VOpCode.NEXTtoTOP:
                 {
@@ -400,7 +446,6 @@ loop { }
         }
         STZ vcodeOffset
         clearPeeps();
-//LDA #'>' Print.Char();
         SEC
     }
     clearPeeps()
@@ -728,14 +773,15 @@ Print.Space(); LDA #'F' Print.Char();
     
     addVCode()
     {
-        PHA // BP offset
+        PHY // possible MSB
+        PHA // BP offset or LSB
         PHX // VOpCode
         
         LDY vcodeOffset
         CPY #250
         if (C) // >= 250
         {
-            Flush(); if (NC) { PLX PLA return; }
+            Flush(); if (NC) { PLX PLA PLY return; }
         }
         
         LDY vcodeOffset
@@ -747,7 +793,8 @@ Print.Space(); LDA #'F' Print.Char();
         pushPeep(); // A -> peep0
         INC vcodeOffset
         
-        PLA // BP offset
+        PLA // BP offset or LSB
+        PLY // possible MSB
         switch (X)
         {
             case VOpCode.GetNEXT:
@@ -765,6 +812,18 @@ Print.Space(); LDA #'F' Print.Char();
                 // char argument
                 LDY vcodeOffset
                 STA [vcodeBuffer], Y
+                INC vcodeOffset
+            }
+            case VOpCode.PushWORD:
+            {
+                // word argument
+                PHY // MSB
+                LDY vcodeOffset
+                STA [vcodeBuffer], Y // LSB
+                INC vcodeOffset
+                PLA // MSB
+                LDY vcodeOffset
+                STA [vcodeBuffer], Y // MSB
                 INC vcodeOffset
             }
         }
@@ -813,6 +872,16 @@ Print.Space(); LDA #'F' Print.Char();
         LDX # VOpCode.Discard
         addVCode();
     }
+    Reserve()
+    {
+        LDX # VOpCode.Reserve
+        addVCode();
+    }
+    NEXTZero()
+    {
+        LDX # VOpCode.NEXTZero
+        addVCode();
+    }
     
     IncNEXT()
     {
@@ -854,6 +923,14 @@ Print.Space(); LDA #'F' Print.Char();
     {
         LDX # VOpCode.PushCHAR
         addVCode();
+    }
+    PushWORD() // A = LSB, X = MSB
+    {
+        PHX
+        PLY
+
+        LDX # VOpCode.PushWORD
+        addVCode(); // A = LSB, Y = MSB
     }
     CtoNEXT()
     {
@@ -1003,6 +1080,74 @@ Print.Space(); LDA #'F' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA # ZP.NEXT3
         Gen6502.emitByte(); if (NC) { return; }
+    }
+    
+    pushWORD() // A = LSB, X = MSB
+    {
+        STA vzArgument
+        STX vzArgument1
+        
+        // SP -> X -> Y
+        LDA #OpCode.TSX  
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TXA
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.TAY
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        
+        LDA #OpCode.LDA_IMM
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA vzArgument
+        Gen6502.emitByte(); if (NC) { return; }
+        // STA [runtimeStack0],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA vzArgument
+        CMP vzArgument1
+        if (NZ)
+        {
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA vzArgument1
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        
+        // STA [runtimeStack1],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA vzArgument1
+        if (NZ)
+        {
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA #0
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        
+        // STZ [runtimeStack2],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // STZ [runtimeStack3],Y
+        LDA #OpCode.STA_IND_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeStack3
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
     }
     
     pushCHAR() // A = char argument
@@ -1777,7 +1922,14 @@ Print.Space(); LDA #'F' Print.Char();
     discard()
     {
         LDA #OpCode.PLA  
-        Gen6502.emitByte();
+        Gen6502.emitByte(); if (NC) { return; }
+        SEC
+    }
+    reserveSlot()
+    {
+        // Allocate stack space for the variable - just push a dummy value
+        LDA #OpCode.PHA  
+        Gen6502.emitByte(); if (NC) { return; }
         SEC
     }
     
@@ -1967,5 +2119,36 @@ Print.Space(); LDA #'F' Print.Char();
             SEC
             break;
         } // single exit
+    }
+    
+    // Test if NEXT is zero (false)
+    nextZero()
+    {
+        loop
+        {
+            // Test if NEXT is zero (false)
+            LDA #OpCode.LDA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.NEXT0
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.ORA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.NEXT1
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.ORA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.NEXT2
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.ORA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.NEXT3
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            SEC
+            break;
+        }
     }
 }

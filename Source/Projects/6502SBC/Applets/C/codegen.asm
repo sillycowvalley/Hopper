@@ -363,8 +363,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         loop
         {
             // ALWAYS reserve return slot for ANY function call
-            LDA # OpCode.PHA
-            EmitByte(); if (NC) { break; }
+            Reserve(); if (NC) { break; }
             
             // First child is function identifier, second child (sibling) is first argument
             LDY #AST.iChild
@@ -478,8 +477,7 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
         loop
         {
             // Allocate stack space for the variable - just push a dummy value
-            LDA #OpCode.PHA
-            EmitByte(); if (NC) { return; }
+            Reserve(); if (NC) { return; }
         
             // Store the BP offset in the VarDecl node for later reference
             // Locals are at negative offsets: first local at BP+0, second at BP-1, etc.
@@ -1027,28 +1025,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 generateExpression(); if (NC) { break; }
                 
                 // Pop result to check it
-                PopNEXT(); if (NC) { break; }
-                
+                PopNEXT();  if (NC) { break; }
                 // Test if NEXT is zero (false)
-                LDA #OpCode.LDA_ZP
-                EmitByte(); if (NC) { break; }
-                LDA #ZP.NEXT0
-                EmitByte(); if (NC) { break; }
-                
-                LDA # OpCode.ORA_ZP
-                EmitByte(); if (NC) { break; }
-                LDA #ZP.NEXT1
-                EmitByte(); if (NC) { break; }
-                
-                LDA # OpCode.ORA_ZP
-                EmitByte(); if (NC) { break; }
-                LDA #ZP.NEXT2
-                EmitByte(); if (NC) { break; }
-                
-                LDA # OpCode.ORA_ZP
-                EmitByte(); if (NC) { break; }
-                LDA #ZP.NEXT3
-                EmitByte(); if (NC) { break; }
+                NEXTZero(); if (NC) { break; }
                 
                 // BNE skip_exit (if true, continue loop)
                 LDA # OpCode.BNE
@@ -1340,29 +1319,11 @@ Print.Hex(); LDA #'s' Print.Char();
             generateExpression(); if (NC) { break; }
             
             // Pop result to check it
-            PopNEXT(); if (NC) { break; }
-
+            PopNEXT();  if (NC) { break; }
+            
             // Test if NEXT is zero (false)
-            LDA #OpCode.LDA_ZP
-            EmitByte(); if (NC) { break; }
-            LDA #ZP.NEXT0
-            EmitByte(); if (NC) { break; }
-            
-            LDA #OpCode.ORA_ZP
-            EmitByte(); if (NC) { break; }
-            LDA #ZP.NEXT1
-            EmitByte(); if (NC) { break; }
-            
-            LDA #OpCode.ORA_ZP
-            EmitByte(); if (NC) { break; }
-            LDA #ZP.NEXT2
-            EmitByte(); if (NC) { break; }
-            
-            LDA #OpCode.ORA_ZP
-            EmitByte(); if (NC) { break; }
-            LDA #ZP.NEXT3
-            EmitByte(); if (NC) { break; }
-            
+            NEXTZero(); if (NC) { break; }
+
             // BNE to_then (if true, execute then clause)
             LDA #OpCode.BNE
             EmitByte(); if (NC) { break; }
