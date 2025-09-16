@@ -148,13 +148,13 @@ unit Gen6502
     // Note: Automatically grows buffer if needed
     EmitByte()  // A = byte to emit
     {
-        PHA
         VCode.IsEmpty();
         if (NC)
         {
+            PHA
             VCode.Flush();
+            PLA
         }
-        PLA
         emitByte();
     }
     

@@ -1,7 +1,12 @@
 void main() {
     int i;
-    for (i=0; i < 10; i++)
+    int j;
+    for (i=0; i < 3; i++)
     {
-        putchar('.');
+        for (j=0; j < 3; j++)
+        {
+            putchar('.');
+        }
+        printf(' ');
     }
 }

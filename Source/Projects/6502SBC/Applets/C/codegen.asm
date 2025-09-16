@@ -994,9 +994,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 generateExpression(); if (NC) { break; }
                 // Init result is not used, pop it
-                LDA #OpCode.PLA
-                EmitByte(); if (NC) { break; }
+                VCode.Discard();  if (NC) { break; }
             }
+            VCode.Flush();
             
             // Record loop start position (codeBuffer + codeOffset)
             LDA Gen6502.codeOffsetL
@@ -1099,9 +1099,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 generateExpression(); if (NC) { break; }
                 // Next result is not used, pop it
-                LDA #OpCode.PLA
-                EmitByte(); if (NC) { break; }
+                VCode.Discard();  if (NC) { break; }
             }
+            VCode.Flush();
             
             // JMP back to loop start
             LDA #OpCode.JMP_ABS
@@ -1126,8 +1126,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 AddEntryPoint(); // Convert to runtime address -> ACC
                 
                 // Calculate patch location (codeBuffer + forwardPatch offset)
-                LDA Gen6502.codeBufferL
                 CLC
+                LDA Gen6502.codeBufferL
                 ADC forwardPatchL
                 STA ZP.IDXL
                 LDA Gen6502.codeBufferH
@@ -1222,8 +1222,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 if (NC) { return; }
                 
                 // ALL expression statements discard the value
-                LDA # OpCode.PLA
-                EmitByte();
+                VCode.Discard();  if (NC) { return; }
             }
             default:
             {
