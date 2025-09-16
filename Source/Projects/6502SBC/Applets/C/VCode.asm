@@ -44,6 +44,9 @@ unit VCode
         CtoNEXT         = 0x0F,
         PushCHAR        = 0x10,
         CHARtoNEXT      = 0x11,
+        
+        GetTOP          = 0x12,
+        PutTOP          = 0x13,
 
     }
     const string strNone = "Undefined";
@@ -52,7 +55,9 @@ unit VCode
     const string strPopNEXT = "popN";
     const string strPopTOP = "popT";
     const string strPutNEXT = "putN";
+    const string strPutTOP = "putT";
     const string strGetNEXT = "getN";
+    const string strGetTOP = "getT";
     const string strIncNEXT = "incN";
     const string strDecNEXT = "decN";
     const string strPushC = "pshC";
@@ -104,11 +109,25 @@ unit VCode
                 LDA #(strPutNEXT / 256)
                 STA ZP.STRH
             }
+            case VOpCode.PutTOP:
+            {
+                LDA #(strPutTOP % 256)
+                STA ZP.STRL
+                LDA #(strPutTOP / 256)
+                STA ZP.STRH
+            }
             case VOpCode.GetNEXT:
             {
                 LDA #(strGetNEXT % 256)
                 STA ZP.STRL
                 LDA #(strGetNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.GetTOP:
+            {
+                LDA #(strGetTOP % 256)
+                STA ZP.STRL
+                LDA #(strGetTOP / 256)
                 STA ZP.STRH
             }
             case VOpCode.IncNEXT:
@@ -314,11 +333,23 @@ unit VCode
                     INY
                     PHY getNEXT(); PLY if (NC) { return; }
                 }
+                case VOpCode.GetTOP:
+                {
+                    LDA [vcodeBuffer], Y // BP offset
+                    INY
+                    PHY getTOP(); PLY if (NC) { return; }
+                }
                 case VOpCode.PutNEXT:
                 {
                     LDA [vcodeBuffer], Y // BP offset
                     INY
                     PHY putNEXT(); PLY if (NC) { return; }
+                }
+                case VOpCode.PutTOP:
+                {
+                    LDA [vcodeBuffer], Y // BP offset
+                    INY
+                    PHY putTOP(); PLY if (NC) { return; }
                 }
                 
                 case VOpCode.PushCHAR:
@@ -470,11 +501,9 @@ loop { }
         {
             LDA peep0
             switch (A)
-            //switch (X)
             {
                 case VOpCode.Discard:
                 {
-                    //LDA peep0
                     LDA peep1
                     switch (A)
                     {
@@ -493,19 +522,16 @@ Print.Space(); LDA #'A' Print.Char();
                         }
                         case VOpCode.PutNEXT:
                         {
-                            //LDA peep1
                             LDA peep2
                             switch (A)
                             {
                                 case VOpCode.IncNEXT:
                                 {
-                                    //LDA peep2
                                     LDA peep3
                                     switch (A)
                                     {
                                         case VOpCode.PushNEXT:
                                         {
-                                            //LDA peep3
                                             LDA peep4
                                             switch (A)
                                             {
@@ -617,9 +643,60 @@ Print.Space(); LDA #'E' Print.Char();
                         }
                     }
                 }
+                case VOpCode.NEXTtoTOP:
+                {
+                    LDA peep1
+                    switch (A)
+                    {
+                        case VOpCode.GetNEXT:
+                        {
+                            // GetNEXT, NEXTtoTOP -> GetTOP
+                            popPeep();
+                            popPeep();
+                            DEC vcodeOffset
+                            LDY vcodeOffset
+                            DEY // BP argument
+                            DEY
+                            LDA # VOpCode.GetTOP
+                            STA [vcodeBuffer], Y
+                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'H' Print.Char();
+#endif                            
+                            SEC
+                            break;
+                        }
+                    }
+                }
+                case VOpCode.PutNEXT:
+                {
+                    LDA peep1
+                    switch (A)
+                    {
+                        case VOpCode.TOPtoNEXT:
+                        {
+                            // TOPtoNEXT, PutNEXT -> PutTOP
+                            popPeep();
+                            popPeep();
+                            DEC vcodeOffset
+                            LDY vcodeOffset
+                            LDA [vcodeBuffer], Y // BP argument 
+                            DEY 
+                            STA [vcodeBuffer], Y // BP argument 
+                            DEY
+                            LDA # VOpCode.PutTOP
+                            STA [vcodeBuffer], Y
+                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'I' Print.Char();
+#endif                            
+                            SEC
+                            break;
+                        }
+                    }
+                }
                 case VOpCode.PopTOP:
                 {
-                    //LDA peep0
                     LDA peep1
                     switch (A)
                     {
@@ -674,7 +751,9 @@ Print.Space(); LDA #'F' Print.Char();
         switch (X)
         {
             case VOpCode.GetNEXT:
+            case VOpCode.GetTOP:
             case VOpCode.PutNEXT:
+            case VOpCode.PutTOP:
             {
                 // BP offset argument
                 LDY vcodeOffset
@@ -756,9 +835,19 @@ Print.Space(); LDA #'F' Print.Char();
         LDX # VOpCode.GetNEXT
         addVCode();
     }
+    GetTOP() // A = BP offset
+    {
+        LDX # VOpCode.GetTOP
+        addVCode();
+    }
     PutNEXT() // A = BP offset
     {
         LDX # VOpCode.PutNEXT
+        addVCode();
+    }
+    PutTOP() // A = BP offset
+    {
+        LDX # VOpCode.PutTOP
         addVCode();
     }
     PushCHAR() // A = char
@@ -1141,6 +1230,64 @@ Print.Space(); LDA #'F' Print.Char();
         } // single exit
     }
     
+    // Generate code to load ZP.TOP from BP+offset
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    getTOP()
+    {
+        loop
+        {
+            // Calculate effective offset into Y
+            calculateBPOffset();
+            if (NC) 
+            {
+                break;
+            }
+                       
+            // Load TOP0 through pointer
+            LDA #OpCode.LDA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP0
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            // Load TOP1 through pointer
+            LDA #OpCode.LDA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack1
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP1
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            // Load TOP2 through pointer
+            LDA #OpCode.LDA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack2
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP2
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            // Load TOP3 through pointer
+            LDA #OpCode.LDA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack3
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP3
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            SEC
+            break;
+        } // single exit
+    }
+    
     
     
     
@@ -1191,6 +1338,64 @@ Print.Space(); LDA #'F' Print.Char();
             LDA #OpCode.LDA_ZP
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.NEXT3
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack3
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            SEC
+            break;
+        } // single exit
+    }
+    
+    // Generate code to store ZP.TOP at BP+offset
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    putTOP()
+    {
+        loop
+        {
+            // Calculate effective offset into Y
+            calculateBPOffset();
+            if (NC) 
+            {
+                break;
+            }
+            
+            // Store TOP0 through pointer
+            LDA #OpCode.LDA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack0
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            // Store TOP1 through pointer
+            LDA #OpCode.LDA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP1
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_IND_Y  // 0x91
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack1
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            // Store TOP2 through pointer
+            LDA #OpCode.LDA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP2
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #OpCode.STA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack2
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            // Store TOP3 through pointer
+            LDA #OpCode.LDA_ZP
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA #ZP.TOP3
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_IND_Y
             Gen6502.emitByte(); if (NC) { break; }
