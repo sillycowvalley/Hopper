@@ -286,6 +286,39 @@ loop { }
         PLX
     }
     
+    dumpPeepsAfter()
+    {
+        PHX
+        LDA peep0
+        if (NZ)
+        {
+            Print.Space();
+            LDA #'>' Print.Char();
+            Print.Space();
+            
+            LDA peep3
+            if (NZ)
+            {
+                Print.Hex(); Print.Space();
+            }
+            
+            LDA peep2
+            if (NZ)
+            {
+                Print.Hex(); Print.Space();
+            }
+            
+            LDA peep1
+            if (NZ)
+            {
+                Print.Hex(); Print.Space();
+            }
+            
+            LDA peep0 Print.Hex(); Print.Space();
+        }
+        PLX
+    }
+    
     // X = VOpCode, BP offset on stack
     tryPeeps()
     {
@@ -453,6 +486,14 @@ Print.Space(); LDA #'F' Print.Char();
             CLC
             break;
         } // single exit
+        
+#ifdef DEBUG
+        if (C)
+        {
+            dumpPeepsAfter(); // another opportunity?
+            SEC
+        }
+#endif         
         
         PLX
     }
@@ -687,12 +728,21 @@ Print.Space(); LDA #'F' Print.Char();
     {
         STA vzArgument
         
-        LDA #OpCode.LDA_IMM
-        Gen6502.emitByte(); if (NC) { return; }
         LDA vzArgument
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.STA_ZP
-        Gen6502.emitByte(); if (NC) { return; }
+        if (Z)
+        {
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }    
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA vzArgument
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }
+        }
         LDA # ZP.NEXT0
         Gen6502.emitByte(); if (NC) { return; }
         

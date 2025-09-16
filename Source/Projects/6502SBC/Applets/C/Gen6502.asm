@@ -773,18 +773,18 @@ unit Gen6502
         LDA ZP.NEXT0
         if (Z)  // Optimize: use STZ for zero
         {
-            LDA #OpCode.STZ_ZP  // 0x64
+            LDA #OpCode.STZ_ZP
             EmitByte(); if (NC) { return; }
             LDA #ZP.NEXT0
             EmitByte(); if (NC) { return; }
         }
         else
         {
-            LDA #OpCode.LDA_IMM  // 0xA9
+            LDA #OpCode.LDA_IMM
             EmitByte(); if (NC) { return; }
             LDA ZP.NEXT0
             EmitByte(); if (NC) { return; }
-            LDA #OpCode.STA_ZP  // 0x85
+            LDA #OpCode.STA_ZP
             EmitByte(); if (NC) { return; }
             LDA #ZP.NEXT0
             EmitByte(); if (NC) { return; }
