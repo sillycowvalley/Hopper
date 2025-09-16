@@ -61,6 +61,7 @@ unit Gen6502
         PHY     = 0x5A,
         RTS     = 0x60,
         STZ_ZP  = 0x64,
+        ADC_ZP  = 0x65,
         PLA     = 0x68,
         ADC_IMM = 0x69,
         JMP_IND = 0x6C,
@@ -754,6 +755,17 @@ unit Gen6502
         INY
         LDA [ZP.IDY], Y
         STA ZP.NEXT3
+        
+        LDA ZP.NEXT1
+        ORA ZP.NEXT2
+        ORA ZP.NEXT3
+        if (Z)
+        {
+            LDA ZP.NEXT0
+            VCode.PushCHAR();
+            SEC
+            return;
+        }
         
         // Now emit code to load these values at runtime
         

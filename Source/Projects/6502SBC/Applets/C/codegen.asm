@@ -690,7 +690,10 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 case BinOpType.Add:
                 {
-                    LongADD(); if (NC) { break; }
+                    LongADD();  if (NC) { break; }
+                    PushNEXT(); if (NC) { break; }
+                    SEC
+                    break;
                 }
                 case BinOpType.Sub:
                 {
