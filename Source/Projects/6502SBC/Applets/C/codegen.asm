@@ -106,9 +106,6 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
             Errors.ShowIDX();
             return;
         }
-#ifdef DEBUG
-LDA #'!' Print.Char(); Print.Space(); Print.String(); Print.Space();
-#endif
         PLA
         PLA
         
@@ -116,8 +113,6 @@ LDA #'!' Print.Char(); Print.Space(); Print.String(); Print.Space();
         // Get the BP offset (stored during declaration processing)
         LDY #AST.iOffset
         LDA [ZP.IDX], Y
-        
-PHA Print.Hex(); PLA        
         
         // Generate code to load from BP+offset into ZP.NEXT
         GetNEXT(); if (NC) { return; }
@@ -553,8 +548,6 @@ Print.Hex(); LDA #'v' Print.Char();
         LDA [ZP.IDX], Y
         STA storeOp  // Save operator type
        
-Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
-
         // Get child pointer (the operand)
         LDY #AST.iChild
         LDA [ZP.IDX], Y
@@ -563,8 +556,6 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
         LDA [ZP.IDX], Y
         STA ZP.IDXH
         STX ZP.IDXL
-
-Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
 
         loop
         {

@@ -3,6 +3,7 @@ program CC
     #define CPU_65C02S
     #define DEBUG
     #define PEEPHOLE
+    #define PROBLEMPEEPS // include peephole optimizations that have potentially harmful sideffects (NEXT-setting)
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -16,9 +17,13 @@ program CC
     uses "Lexer"
     uses "AST"
     uses "Parser"
-    uses "CodeGen"
+    
+    uses "VCode"
     uses "Gen6502"
     uses "Library"
+    uses "CodeGen"
+    
+    
     
     const string messageCompiling = "Compiling ";
     

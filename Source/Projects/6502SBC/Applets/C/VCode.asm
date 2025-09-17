@@ -625,6 +625,8 @@ Print.Space(); LDA #'A' Print.Char();
                                             {
                                                 case VOpCode.GetNEXT:
                                                 {
+#ifdef PROBLEMPEEPS
+                                                    // TODO: GetNEXT side effect lost (NEXT no longer has value from original GetNEXT)
                                                     // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
                                                     //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
                                                     //
@@ -646,7 +648,8 @@ Print.Space(); LDA #'A' Print.Char();
 Print.Space(); LDA #'G' Print.Char();
 #endif                                               
                                                     SEC
-                                                    break;      
+                                                    break;   
+#endif                                                       
                                                 }
                                             }
                                         }
@@ -738,6 +741,8 @@ Print.Space(); LDA #'E' Print.Char();
                     {
                         case VOpCode.GetNEXT:
                         {
+#ifdef PROBLEMPEEPS
+                            // TODO: GetNEXT side effect lost (NEXT no longer has value from GetNEXT)
                             // GetNEXT, NEXTtoTOP -> GetTOP
                             popPeep();
                             popPeep();
@@ -753,6 +758,7 @@ Print.Space(); LDA #'H' Print.Char();
 #endif                            
                             SEC
                             break;
+#endif                  
                         }
                     }
                 }
@@ -763,6 +769,9 @@ Print.Space(); LDA #'H' Print.Char();
                     {
                         case VOpCode.TOPtoNEXT:
                         {
+/*                            
+                            // TODO : TOPtoNEXT side effect lost (NEXT no longer has value from TOP)
+                            // DEFECT: see (c = fgetc(fp)) != -1
                             // TOPtoNEXT, PutNEXT -> PutTOP
                             popPeep();
                             popPeep();
@@ -780,6 +789,7 @@ Print.Space(); LDA #'I' Print.Char();
 #endif                            
                             SEC
                             break;
+*/                            
                         }
                     }
                 }
@@ -834,6 +844,8 @@ Print.Space(); LDA #'K' Print.Char();
                     {
                         case VOpCode.CtoNEXT:
                         {
+#ifdef PROBLEMPEEPS
+                            // TODO: CtoNEXT side effect lost (NEXT no longer has value from CtoNEXT)
                             // CtoNEXT, NEXTZero -> CtoONE
                             popPeep();
                             popPeep();
@@ -848,6 +860,7 @@ Print.Space(); LDA #'J' Print.Char();
 #endif                            
                             SEC
                             break;
+#endif                            
                         }
                     }
                 }

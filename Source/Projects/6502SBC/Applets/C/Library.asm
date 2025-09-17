@@ -422,8 +422,11 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
+        
+        // drop the PLA reserved for the return slot
+        VCode.Discard();  
         // Push character back as return value (already in NEXT0, rest is zero)
-        PushNEXT();
+        VCode.PushNEXT(); 
         
         SEC
     }
