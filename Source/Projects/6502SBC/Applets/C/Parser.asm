@@ -1900,7 +1900,7 @@ unit Parser
     parseMultiplicative() // -> IDY
     {
         // For now, just pass through
-        parsePostfix(); // -> IDY
+        parseUnary(); // -> IDY
         
         // TODO: Handle *, /, %
         // loop
@@ -1909,6 +1909,92 @@ unit Parser
         //     CMP #Token.Star / Slash / Percent
         //     ...
         // }
+    }
+    
+    
+    // Parse unary expression: ("-" | "+")* <postfix>
+    // Output: IDY = expression node, C = success
+    parseUnary() // -> IDY
+    {
+        // Check for unary operators
+        LDA currentToken
+        switch (A)
+        {
+            case Token.Minus:
+            {
+                LDA #AST.UnaryOpType.Minus
+                PHA
+                consume(); // Move past minus
+                
+                // Recursively parse the operand
+                parseUnary();
+                if (NC) 
+                { 
+                    PLA  // Clean up stack
+                    return; 
+                }
+            }
+            case Token.Plus:
+            {
+                consume(); // Move past plus
+                // Just parse the operand - unary plus is a no-op
+                parseUnary();
+                return;
+            }
+            default:
+            {
+                // Not a unary operator, parse postfix
+                parsePostfix();
+                return;
+            }
+        }
+        
+        // We have a unary minus - create the node
+        // Operand already in IDY, operator type on stack
+        
+        // Save the operand expression
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        loop
+        {
+            // Create UnaryOp node
+            LDA #AST.NodeType.UnaryOp
+            AST.CreateNode(); // -> IDX
+            if (NC) 
+            { 
+                PLA
+                PLA
+                PLA
+                break; 
+            }
+            
+            // Restore operand to IDY
+            PLA
+            STA ZP.IDYH
+            PLA
+            STA ZP.IDYL
+            
+            // Set the operator type
+            PLA
+            LDY #AST.iUnaryOp
+            STA [ZP.IDX], Y
+            
+            // Add operand as child
+            AST.AddChild(); // IDX = UnaryOp, IDY = operand
+            if (NC) { break; }
+            
+            // Move UnaryOp to IDY for return
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            SEC
+            break;
+        }
     }
     
     // Input: A = PostfixOpType, IDY = expression to apply postfix to

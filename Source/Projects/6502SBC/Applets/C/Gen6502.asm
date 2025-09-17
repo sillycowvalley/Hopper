@@ -48,13 +48,31 @@ unit Gen6502
     const byte runtimeStack3L       = runtimeZeroPageSlots+7;
     const byte runtimeStack3H       = runtimeZeroPageSlots+8;
     
+    // our one and only FILE struct:
+    
+    const byte runtimeFileFlags     = runtimeZeroPageSlots+9;
+    // Bit 0 - open state 
+    // Bit 1 - read "r" (0) or write "w" (1) 1 byte
+    // Bit 2 - eof indicator
+    
+    // position in FileDataBuffer (TransferLengthL/H tells us how much valid data is in the current FileDataBufferL/H)
+    const byte runtimeFileBufPos    = runtimeZeroPageSlots+10;
+    const byte runtimeFileBufPosL   = runtimeZeroPageSlots+10;
+    const byte runtimeFileBufPosH   = runtimeZeroPageSlots+11;
+    
     // 65C02S opcodes
     enum OpCode
     {
         ORA_ZP  = 0x05,
+        RMB0_ZP = 0x07,
+        BBR0_ZP = 0x0F,
+        RMB1_ZP = 0x17,
         CLC     = 0x18,
         INC_A   = 0x1A,
+        BBR1_XP = 0x1F,
         JSR     = 0x20,
+        RMB2_ZP = 0x27,
+        BBR2_XP = 0x2F,
         SEC     = 0x38, 
         PHA     = 0x48,
         JMP_ABS = 0x4C,
@@ -69,16 +87,22 @@ unit Gen6502
         BRA     = 0x80,
         STA_ZP  = 0x85,
         STX_ZP  = 0x86, 
+        SMB0_ZP = 0x87,
         TXA     = 0x8A,
+        BBS0_ZP = 0x8F,
         STA_IND_Y = 0x91,
+        SMB1_ZP = 0x97,
         TYA     = 0x98,
         TXS     = 0x9A,
+        BBS1_ZP = 0x9F,
         LDY_IMM = 0xA0,
         LDX_IMM = 0xA2,
         LDA_ZP  = 0xA5, 
         LDX_ZP  = 0xA6,
+        SMB2_ZP = 0xA7,
         TAY     = 0xA8,
         LDA_IMM = 0xA9,
+        BBS2_ZP = 0xAF,
         LDA_IND_Y = 0xB1,
         LDA_ABS_Y = 0xB9,
         TSX     = 0xBA,
@@ -882,9 +906,9 @@ unit Gen6502
     
     // Generate code for an integer literal
     // Input: IDX = IntLit or LongLit node
-    // Output: Code emitted to load value into ZP.NEXT0-3 at runtime
+    // Output: Code emitted to load value into ZP.NEXT0-3 at runtime and then pushed to stack
     //         C set on success, clear on failure
-    LongNEXT()  // Input: IDX = literal node
+    LongPushNEXT()  // Input: IDX = literal node
     {
         // Get pointer to 32-bit value in heap
         LDY #AST.iData

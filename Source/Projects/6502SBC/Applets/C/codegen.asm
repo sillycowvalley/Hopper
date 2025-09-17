@@ -389,8 +389,20 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                     switch (A)
                     {
                         case FileFunction.FOpen:
-                        case FileFunction.FClose:
+                        {
+                            Library.FOpenCall();
+                            if (NC) { break; }
+                        }
                         case FileFunction.FGetC:
+                        {
+                            Library.FOpenCall();
+                            if (NC) { break; }
+                        }
+                        case FileFunction.FClose:
+                        {
+                            Library.FClose();
+                            if (NC) { break; }
+                        }
                         case FileFunction.FPutC:
                         case FileFunction.FGetS:
                         case FileFunction.FPutS:
@@ -481,9 +493,89 @@ Print.Hex(); LDA #'v' Print.Char();
         }
     }
     
-
-
+    generateNegateLong()
+    {
+        LDA #0
+        VCode.PushCHAR(); if (NC) { return; } 
+        VCode.PopNEXT();  if (NC) { return; } 
+        
+        // Original value -> TOP
+        VCode.PopTOP();  if (NC) { return; }    
+        
+        // NEXT = NEXT - TOP (0 - value)
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #BIOSInterface.SysCall.LongSub
+        EmitByte(); if (NC) { return; }
+        Library.EmitDispatchCall(); if (NC) { return; }
+        
+        PushNEXT(); if (NC) { return; }
+        
+        SEC
+    }
     
+
+    // Generate code for unary operators
+    generateUnaryOp()
+    {
+        LDA AST.astNodeL
+        PHA
+        LDA AST.astNodeH
+        PHA
+        LDA storeOp
+        PHA
+        
+        // Get operator type
+        LDY #AST.iUnaryOp
+        LDA [ZP.IDX], Y
+        STA storeOp  // Save operator type
+       
+Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
+
+        // Get child pointer (the operand)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+
+Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
+
+        loop
+        {
+            // Generate code for the operand
+            generateExpression();
+            if (NC) { break; }
+
+            // Check operator type
+            LDA storeOp
+            switch (A)
+            {
+                case UnaryOpType.Minus:
+                {
+                    generateNegateLong();
+                    if (NC) { break; }
+                }
+                default:
+                {
+                    // Could add other unary operators here (!, ~, etc.)
+                    LDA #Error.NotImplemented
+                    Errors.ShowIDX();
+                    break;
+                }
+            }
+            SEC
+            break;
+        }
+        PLA
+        STA storeOp
+        PLA
+        STA AST.astNodeH
+        PLA
+        STA AST.astNodeL
+    }
     
     generatePostfixOp()
     {
@@ -777,7 +869,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             case NodeType.IntLit:
             case NodeType.LongLit:
             {
-                LongNEXT();
+                LongPushNEXT();
                 if (NC) { return; }
             } 
             case NodeType.Identifier:
@@ -805,11 +897,18 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 generatePostfixOp();
                 if (NC) { return; }
             }
+            case NodeType.UnaryOp:
+            {
+                generateUnaryOp();
+                if (NC) { return; }
+            }
             
             default:
             {
 #ifdef DEBUG
 Print.Hex(); LDA #'e' Print.Char();
+Print.Space(); LDA ZP.IDXH Print.Hex();LDA ZP.IDXL Print.Hex();
+Print.Space();
 #endif
                 LDA #Error.NotImplemented
                 Errors.ShowIDX();

@@ -40,6 +40,7 @@ unit AST
         Return       = 16,  // Return statement 
         If           = 17,  // If statement
         While        = 18,  // While statement
+        UnaryOp      = 19,  
         
         AfterLast           // see freeNode()
     }
@@ -58,6 +59,14 @@ unit AST
         GE = 9,    // >=
         EQ = 10,   // ==
         NE = 11,   // !=
+    }
+    
+    enum UnaryOpType
+    {
+        Minus  = 0x00,
+        Plus   = 0x01,
+        Not    = 0x02,  // For future ! operator
+        BitNot = 0x03, // For future ~ operator
     }
     enum PostfixOpType
     {
@@ -118,6 +127,11 @@ unit AST
     // PostfixOp node:
     //     [7]    PostfixOpType
     const byte iPostfixOp = 7;
+    
+    // UnaryOp node:
+    //     [7]    UnaryOpType
+    const byte iUnaryOp = 7;
+    
     
     // For node:
     //     [7-8]   Init expression (optional)
@@ -800,6 +814,7 @@ unit AST
     const string nodePostfixOp= "POSTFIX ";
     const string nodeFor      = "FOR";
     const string nodeWhile    = "WHILE";
+    const string nodeUnary    = "UNARY";
     const string nodeIf       = "IF";
     const string nodeUnknown  = "??";
     
@@ -886,6 +901,14 @@ unit AST
                 LDA #(nodeWhile % 256)
                 STA ZP.STRL
                 LDA #(nodeWhile / 256)
+                STA ZP.STRH
+                Print.String();
+            }
+            case NodeType.UnaryOp:
+            {
+                LDA #(nodeUnary % 256)
+                STA ZP.STRL
+                LDA #(nodeUnary / 256)
                 STA ZP.STRH
                 Print.String();
             }
