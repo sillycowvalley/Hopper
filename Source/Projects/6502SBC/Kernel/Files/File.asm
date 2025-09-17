@@ -179,6 +179,13 @@ unit File
     const byte lastOccupiedEntry      = ZP.FS15;              
     const byte lastOccupiedSector     = ZP.FS7;               // alias of filePositionL (see above)
     const byte previousSector         = ZP.FS8;               // alias of filePositionH (see above)
+    
+#if defined(CFILES)
+    const byte cfilesFILE             = ZP.FS16;               // single FILE record for CFILES APIS
+    // Bit 0 - open state 
+    // Bit 1 - read "r" (0) or write "w" (1) 1 byte
+    // Bit 2 - eof indicator
+#endif    
 
     
     // Validate filename format (alphanumeric + period, 1-13 chars)
@@ -2763,4 +2770,177 @@ unit File
     }
     
 #endif
+
+#if defined(CFILES)
+    // Open file with C-style mode
+    // Input:  ZP.STR = filename, ZP.NEXT = "w" or "r" string pointer
+    // Output: ZP.TOP = FILE* (0x01) on success, NULL (0x00) on failure
+    FOpen()
+    {
+        loop // single exit
+        {
+            // Check if file already open
+            if (BBS0, cfilesFILE) { CLC break; }  // Bit 0 set = already open
+            
+            // Parse mode string
+            LDY #0
+            LDA [ZP.NEXT], Y
+            CMP #'r'
+            if (Z)
+            {
+                // Open for reading
+                LDA # DirWalkAction.FindFile
+                File.StartLoad();           // preserves X and Y
+                if (NC) { break; }          // StartLoad failed
+                File.NextStream();  // preserves X and Y
+                if (NC) { break; }
+                STZ sectorPositionL
+                STZ sectorPositionH
+                
+                LDA #0b00000001             // Set open bit, clear write bit
+                STA cfilesFILE
+                SEC
+                break;
+            }
+            
+            CMP #'w'
+            if (Z)
+            {
+                // Delete it if it exists
+                LDA # DirWalkAction.FindFile // all files
+                File.Exists();
+                if (C)
+                {
+                    File.Delete();
+                    if (NC) { break; }          // Delete failed
+                }
+                
+                // Open for writing
+                File.StartSave();           // preserves X and Y
+                if (NC) { break; }          // StartSave failed
+                
+                LDA #0b00000011             // Set open bit and write bit
+                STA cfilesFILE
+                SEC
+                break;
+            }
+            
+            CLC  // Invalid mode
+            break;
+        } // single exit
+        
+        if (C)
+        {
+            LDA #0x01                       // Return FILE* = 1
+            Shared.LoadTopByte();
+            SEC
+        }
+        else
+        {
+            Shared.ZeroTop();               // Return NULL
+        }
+    }
+    
+    // Close file
+    // Input:  ZP.NEXT = FILE* 
+    // Output: ZP.TOP  = 0 (success) or -1 (failure)
+    FClose()
+    {
+        loop // single exit pattern
+        {
+            // Check if valid FILE*
+            LDA ZP.NEXT0 // let's assume it will be 0x00 or 0x01
+            if (Z)  { CLC break; }   // NULL pointer
+            
+            // Check if file is open
+            if (BBR0, cfilesFILE) { CLC break; } // Bit 0 clear = not open
+            
+            // If opened for write, finalize the file
+            if (BBS1, cfilesFILE)  // Bit 1 set = write mode
+            {
+                LDA #0x00            // Data file (not executable)
+                File.EndSave();      // preserves X and Y
+                if (NC) { break; }          // EndSave failed?
+            }
+            
+            // Clear file state
+            STZ cfilesFILE
+            
+            // Return 0 for success
+            Shared.ZeroTop();
+            SEC
+            break;
+        } // single exit
+        
+        if (NC)
+        {
+            LDA #0xFF    // Return -1
+            STA ZP.TOP0
+            STA ZP.TOP1
+            STA ZP.TOP2
+            STA ZP.TOP3
+        }
+    }
+    
+    // Get character from file
+    // Input:  ZP.NEXT = FILE*
+    // Output: ZP.TOP  = character (0-255) or -1 for EOF/error
+    FGetC()
+    {
+        loop // single exit
+        {
+            // Check if valid FILE*
+            LDA ZP.NEXT0  // assume 0x00 or 0x01
+            if (Z) { CLC break; }  // NULL pointer
+            
+            // Check if file is open for reading
+            if (BBR0, cfilesFILE) { CLC break; }  // Not open
+            if (BBS1, cfilesFILE) { CLC break; }  // Write mode - can't read
+            if (BBS2, cfilesFILE) { CLC break; }  // EOF already reached
+            
+            // Check if we've consumed TransferLength bytes
+            LDA sectorPositionH
+            CMP TransferLengthH
+            if (Z)
+            {
+                LDA sectorPositionL
+                CMP TransferLengthL
+                if (Z)  // Reached end of this buffer
+                {
+                    File.NextStream();  // preserves X and Y
+                    if (NC)  // No more data
+                    {
+                        SMB2 cfilesFILE  // Set EOF bit
+                        CLC
+                        break;
+                    }
+                    STZ sectorPositionL
+                    STZ sectorPositionH
+                }
+            }
+            
+            // Get character from buffer
+            LDY sectorPositionL
+            LDA FileDataBuffer, Y
+            Shared.LoadTopByte();  // Character in ZP.TOP0, rest zeroed
+            
+            // Advance position
+            INC sectorPositionL
+            if (Z){ INC sectorPositionH }
+            
+            SEC  // Success
+            break;
+        } // single exit
+        
+        if (NC)
+        {
+            LDA #0xFF  // Return -1
+            STA ZP.TOP0
+            STA ZP.TOP1
+            STA ZP.TOP2
+            STA ZP.TOP3
+        }
+    }
+#endif
+
 }

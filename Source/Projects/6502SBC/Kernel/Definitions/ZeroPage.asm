@@ -166,17 +166,18 @@ unit ZP // ZeroPage.asm
     const byte FS13                 = 0x4F;
     const byte FS14                 = 0x50;
     const byte FS15                 = 0x51;
+    const byte FS16                 = 0x52;
    
     // used in File unit
-    const byte FSOURCEADDRESS       = 0x52;  // Source address parameter
-    const byte FSOURCEADDRESSL      = 0x52;  // Source low (alias)
-    const byte FSOURCEADDRESSH      = 0x53;  // Source high
-    const byte FDESTINATIONADDRESS  = 0x54;  // Destination address parameter
-    const byte FDESTINATIONADDRESSL = 0x54;  // Destination low (alias)
-    const byte FDESTINATIONADDRESSH = 0x55;  // Destination high
-    const byte FLENGTH              = 0x56;  // Length parameter
-    const byte FLENGTHL             = 0x56;  // Length low (alias)
-    const byte FLENGTHH             = 0x57;  // Length high
+    const byte FSOURCEADDRESS       = 0x53;  // Source address parameter
+    const byte FSOURCEADDRESSL      = 0x53;  // Source low (alias)
+    const byte FSOURCEADDRESSH      = 0x54;  // Source high
+    const byte FDESTINATIONADDRESS  = 0x55;  // Destination address parameter
+    const byte FDESTINATIONADDRESSL = 0x55;  // Destination low (alias)
+    const byte FDESTINATIONADDRESSH = 0x56;  // Destination high
+    const byte FLENGTH              = 0x57;  // Length parameter
+    const byte FLENGTHL             = 0x57;  // Length low (alias)
+    const byte FLENGTHH             = 0x58;  // Length high
     
     
     

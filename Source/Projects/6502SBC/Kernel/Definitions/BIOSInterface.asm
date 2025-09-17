@@ -75,6 +75,11 @@ unit BIOSInterface
         PinMode,          // In: A = pin (0-15), Y = mode (0=INPUT, 1=OUTPUT) | Out: None | Configure pin direction
         PinRead,          // In: A = pin (0-15) | Out: A = value (0/1), Z = LOW | Read digital pin state
         PinWrite,         // In: A = pin (0-15), Y = value (0/1) | Out: None | Write digital pin state
+
+        FOpen,            // In: ZP.STR  = filename, ZP.NEXT = "w" or "r" | Out: ZP.TOP = FILE* on success, NULL on failure
+        FClose,           // In: ZP.NEXT = FILE* | Out: ZP.TOP = 0 (success) or -1 (failure)
+        FGetC,            // In: ZP.NEXT = FILE* | Out: ZP.TOP = c if positive, -1 if EOF
+        
         
         // TODO:
         // - I2C

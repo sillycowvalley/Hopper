@@ -833,149 +833,180 @@ unit Library
     {
         // FILE* fopen(char* filename, char* mode)
         // Stack on entry: [return slots] [filename] [mode]
-        // We need to pop mode and filename, call File.Open/Create, return FILE*
+        // BIOS expects: ZP.STR = filename, ZP.NEXT = mode
         
-        // Pop mode pointer into TOP
+        // Get first argument node (skip identifier, get its sibling)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+Print.NewLine(); LDA ZP.IDXH Print.Hex();  LDA ZP.IDXL Print.Hex();     
+        
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDXL
+        PHA
+        
+        CodeGen.generateExpression(); if (NC) { PLA PLA return; }
+        
+        // Pop filename into NEXT  
+        VCode.PopNEXT();
+        if (NC) { PLA PLA return; }
+        
+        PLA
+        STA ZP.IDXL
+        PLA
+        STA ZP.IDXH
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+Print.NewLine(); LDA ZP.IDXH Print.Hex();  LDA ZP.IDXL Print.Hex();
+        
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop mode into TOP
         VCode.PopTOP();
         if (NC) { return; }
         
-        // Pop filename pointer into NEXT  
-        VCode.PopNEXT();
-        if (NC) { return; }
-        
-        LDA #OpCode.LDA_ZP
+        LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.NEXT0
         EmitByte(); if (NC) { return; }
         
-        LDA #OpCode.STA_ZP
+        LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.STRL
         EmitByte(); if (NC) { return; }
         
-        LDA #OpCode.LDA_ZP
+        LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.NEXT1
         EmitByte(); if (NC) { return; }
         
-        LDA #OpCode.STA_ZP
+        LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.STRH
         EmitByte(); if (NC) { return; }
         
-        // Initialize FILE struct - clear all fields
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeFileFlags
-        EmitByte(); if (NC) { return; }
+        // Move mode from TOP to NEXT
+        VCode.TOPtoNEXT();
+        if (NC) { return; }
         
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeFileBufPosL
-        EmitByte(); if (NC) { return; }
-        
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeFileBufPosH
-        EmitByte(); if (NC) { return; }
-        
-        // Check first character of mode string
-        // LDY #0
-        LDA #OpCode.LDY_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0
-        EmitByte(); if (NC) { return; }
-        
-        // LDA [TOP], Y
-        LDA #OpCode.LDA_IND_Y
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP
-        EmitByte(); if (NC) { return; }
-        
-        // CMP #'w'
-        LDA # OpCode.CMP_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #'w'
-        EmitByte(); if (NC) { return; }
-        
-        // BNE read_mode
-        LDA # OpCode.BNE
-        EmitByte(); if (NC) { return; }
-        LDA # 6  // Offset to read_mode code
-        EmitByte(); if (NC) { return; }
-        
-        // Write mode: set bit 1 in flags
-        LDA # OpCode.SMB1_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeFileFlags
-        EmitByte(); if (NC) { return; }
-        
-        // LDX #SysCall.FileCreate
+        // LDX #SysCall.FOpen
         LDA # OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
-        LDA # SysCall.FileStartSave
+        LDA # SysCall.FOpen
         EmitByte(); if (NC) { return; }
         
-        // BRA do_open
-        LDA # OpCode.BRA
-        EmitByte(); if (NC) { return; }
-        LDA #2  // Skip read_mode LDX
-        EmitByte(); if (NC) { return; }
-        
-// read_mode:
-        // LDX #SysCall.FileOpen
-        LDA # OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA # SysCall.FileStartLoad
-        EmitByte(); if (NC) { return; }
-        
-// do_open:
         EmitDispatchCall();
-          
-        // Check carry (success/failure)
-        // BCS success
-        LDA # OpCode.BCS
-        EmitByte(); if (NC) { return; }
-        LDA # 16  // Skip to success
-        EmitByte(); if (NC) { return; }
+        if (NC) { return; }
         
-        // Failed - push NULL and return
-        LDA #0
-        VCode.PushCHAR(); if (NC) { return; }
-        
-        // BRA done
-        LDA # OpCode.BRA
-        EmitByte(); if (NC) { return; }
-        LDA # 35
-        EmitByte(); if (NC) { return; }
-        
-// success: Set open bit in flags
-        // LDA runtimeFileFlags
-        LDA # OpCode.SMB0_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeFileFlags
-        EmitByte(); if (NC) { return; }
-        
-        // Return pointer to FILE struct (always same address)
-        // Push runtimeFileFlags as 32-bit pointer
-        LDA # Gen6502.runtimeFileFlags
-        VCode.PushCHAR(); if (NC) { return; }
-// done:        
-        
+        // Result is in TOP, push it
+        VCode.PushTOP();
+        if (NC) { return; }
     }
     
-    FGet()
+    FGetCCall()
     {
-        //LDA # Error.NotImplemented
-        //Errors.ShowIDX();
-        SEC
+        // int fgetc(FILE* fp)
+        // Stack on entry: [return slots] [FILE*]
+        // BIOS expects: ZP.NEXT = FILE*
+        
+        // Get first argument node (skip identifier, get its sibling)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop FILE* into NEXT
+        VCode.PopNEXT();
+        if (NC) { return; }
+        
+        // LDX #SysCall.FGetC
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #SysCall.FGetC
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // Result is in TOP, push it
+        VCode.PushTOP();
+        if (NC) { return; }
     }
     
-    FClose()
+    FCloseCall()
     {
-        //LDA # Error.NotImplemented
-        //Errors.ShowIDX();
-        SEC
-    }
-    
+        // int fclose(FILE* fp)
+        // Stack on entry: [return slots] [FILE*]
+        // BIOS expects: ZP.NEXT = FILE*
+        
+        // Get first argument node (skip identifier, get its sibling)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop FILE* into NEXT
+        VCode.PopNEXT();
+        if (NC) { return; }
+        
+        // LDX #SysCall.FClose
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #SysCall.FClose
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // Result is in TOP, push it
+        VCode.PushTOP();
+        if (NC) { return; }
+    }  
 }

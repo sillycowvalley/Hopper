@@ -17,8 +17,9 @@ program BIOS
     
     
     // Optional components
-    #define HASFLOAT  // currently ~1250 bytes
+    //#define HASFLOAT  // currently ~1250 bytes
     #define HASEEPROM
+    #define CFILES
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"

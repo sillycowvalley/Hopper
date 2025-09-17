@@ -9,26 +9,26 @@ program NRLBenchmark
     uses "System/Serial"
     uses "System/Shared"
     
-    // Zero Page Variable Allocation (using free slots 0x58-0x6F)
+    // Zero Page Variable Allocation (using free slots 0x59-0x6F)
     // Document our zero page usage clearly
-    const byte iCounter        = 0x58;  // Outer loop counter (1-10)
-    const byte jCounterL       = 0x59;  // Inner loop counter low byte
-    const byte jCounterH       = 0x5A;  // Inner loop counter high byte (1-1000)
+    const byte iCounter        = 0x59;  // Outer loop counter (1-10)
+    const byte jCounterL       = 0x5A;  // Inner loop counter low byte
+    const byte jCounterH       = 0x5B;  // Inner loop counter high byte (1-1000)
     
-    const byte sumL            = 0x5B;  // Running sum low byte
-    const byte sumH            = 0x5C;  // Running sum high byte
-    const byte sumU            = 0x5D;  // Running sum upper byte
-    const byte sumT            = 0x5E;  // Running sum top byte (32-bit)
+    const byte sumL            = 0x5C;  // Running sum low byte
+    const byte sumH            = 0x5D;  // Running sum high byte
+    const byte sumU            = 0x5E;  // Running sum upper byte
+    const byte sumT            = 0x5F;  // Running sum top byte (32-bit)
     
-    const byte startMillis0    = 0x5F;  // Start time in milliseconds
-    const byte startMillis1    = 0x60;
-    const byte startMillis2    = 0x61;
-    const byte startMillis3    = 0x62;
+    const byte startMillis0    = 0x60;  // Start time in milliseconds
+    const byte startMillis1    = 0x61;
+    const byte startMillis2    = 0x62;
+    const byte startMillis3    = 0x63;
     
-    const byte startSeconds0   = 0x63;  // Start time in seconds
-    const byte startSeconds1   = 0x64;
-    const byte startSeconds2   = 0x65;
-    const byte startSeconds3   = 0x66;
+    const byte startSeconds0   = 0x64;  // Start time in seconds
+    const byte startSeconds1   = 0x65;
+    const byte startSeconds2   = 0x66;
+    const byte startSeconds3   = 0x67;
     
     // String constants
     const string titleString = "Noel's RetroLab Benchmark\n";

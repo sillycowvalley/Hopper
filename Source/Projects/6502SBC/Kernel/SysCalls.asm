@@ -292,6 +292,30 @@ unit SysCalls
             {
                 GPIO.PinWrite();
             }
+            case SysCall.FOpen:
+            {
+#if defined(CFILES)
+                File.FOpen();
+#else
+                Error.InvalidSystemCall();
+#endif
+            }
+            case SysCall.FGetC:
+            {
+#if defined(CFILES)
+                File.FGetC();
+#else
+                Error.InvalidSystemCall();
+#endif
+            }
+            case SysCall.FClose:
+            {
+#if defined(CFILES)
+                File.FClose();
+#else
+                Error.InvalidSystemCall();
+#endif
+            }
             default:
             {
                 Error.InvalidSystemCall();

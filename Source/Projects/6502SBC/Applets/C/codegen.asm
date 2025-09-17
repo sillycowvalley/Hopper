@@ -49,7 +49,26 @@ unit CodeGen
         Gen6502.Dispose();
     }
     
+       
+    // Input: IDX = StringLit node
+    // Output: C set on success, clear on failure
+    //         Generated code pushes value to stack
+    generateLoadString()
+    {
+        // Get string's offset (stored during emitStrings)
+        LDY #AST.iOffset
+        LDA [ZP.IDX], Y
+        STA ZP.ACCL
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.ACCH
+        CodeGen.AddEntryPoint();
         
+        // A = LSB, X = MSB
+        LDA ZP.ACCL
+        LDX ZP.ACCH
+        VCode.PushWORD();
+    } 
       
     
     
@@ -87,7 +106,9 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
             Errors.ShowIDX();
             return;
         }
-
+#ifdef DEBUG
+LDA #'!' Print.Char(); Print.Space(); Print.String(); Print.Space();
+#endif
         PLA
         PLA
         
@@ -95,6 +116,8 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         // Get the BP offset (stored during declaration processing)
         LDY #AST.iOffset
         LDA [ZP.IDX], Y
+        
+PHA Print.Hex(); PLA        
         
         // Generate code to load from BP+offset into ZP.NEXT
         GetNEXT(); if (NC) { return; }
@@ -326,7 +349,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         loop
         {
             // ALWAYS reserve return slot for ANY function call
-            Reserve(); if (NC) { break; }
+            VCode.Reserve(); if (NC) { break; }
             
             // First child is function identifier, second child (sibling) is first argument
             LDY #AST.iChild
@@ -395,12 +418,12 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                         }
                         case FileFunction.FGetC:
                         {
-                            Library.FOpenCall();
+                            Library.FGetCCall();
                             if (NC) { break; }
                         }
                         case FileFunction.FClose:
                         {
-                            Library.FClose();
+                            Library.FCloseCall();
                             if (NC) { break; }
                         }
                         case FileFunction.FPutC:
@@ -452,7 +475,7 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
         loop
         {
             // Allocate stack space for the variable - just push a dummy value
-            Reserve(); if (NC) { return; }
+            VCode.Reserve(); if (NC) { return; }
         
             // Store the BP offset in the VarDecl node for later reference
             // Locals are at negative offsets: first local at BP+0, second at BP-1, etc.
@@ -872,6 +895,11 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 LongPushNEXT();
                 if (NC) { return; }
             } 
+            case NodeType.StringLit:
+            {
+                generateLoadString();
+                if (NC) { return; }
+            }
             case NodeType.Identifier:
             {
                 generateLoadIdentifier();

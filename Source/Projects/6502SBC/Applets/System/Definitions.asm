@@ -54,7 +54,7 @@ unit Definitions
     //
     // APPLICATION MODULE ALLOCATIONS:
     // -------------------------------------------------------
-    // 0x58-0x5F: Available (8 bytes)
+    // 0x59-0x5F: Available (8 bytes)
     //   - Free for application use
     //
     // 0x60-0x65: Debug (6 bytes)

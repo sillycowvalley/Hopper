@@ -327,6 +327,11 @@ unit VCode
         LDY #0
         loop
         {
+            
+PHY
+LDA # OpCode.NOP  
+Gen6502.emitByte(); SEC PLY
+            
             LDA [vcodeBuffer], Y
             INY
             
@@ -474,6 +479,10 @@ loop { }
                     if (NC) { return; }
                 }
             }
+            
+PHY
+LDA #OpCode.NOP  
+Gen6502.emitByte(); SEC PLY
 
             CPY vcodeOffset
             if (Z) { break; }
@@ -905,6 +914,7 @@ Print.Space(); LDA #'J' Print.Char();
                 INC vcodeOffset
             }
         }
+#ifdef PEEPHOLE        
         LDX #0
         loop
         {  
@@ -917,6 +927,7 @@ Print.Space(); LDA #'J' Print.Char();
             }
             INX
         }
+#endif        
         SEC
     }
     
