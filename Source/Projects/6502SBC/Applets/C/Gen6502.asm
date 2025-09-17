@@ -103,6 +103,7 @@ unit Gen6502
         TAY     = 0xA8,
         LDA_IMM = 0xA9,
         BBS2_ZP = 0xAF,
+        BCS     = 0xB0,  
         LDA_IND_Y = 0xB1,
         LDA_ABS_Y = 0xB9,
         TSX     = 0xBA,

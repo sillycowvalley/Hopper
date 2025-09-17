@@ -843,6 +843,26 @@ unit Library
         VCode.PopNEXT();
         if (NC) { return; }
         
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.STRL
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.STRH
+        EmitByte(); if (NC) { return; }
+        
         // Initialize FILE struct - clear all fields
         LDA #OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
@@ -867,13 +887,13 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         // LDA [TOP], Y
-        LDA #OpCode.LDA_IZP_Y
+        LDA #OpCode.LDA_IND_Y
         EmitByte(); if (NC) { return; }
         LDA #ZP.TOP
         EmitByte(); if (NC) { return; }
         
         // CMP #'w'
-        LDA #OpCode.CMP_IMM
+        LDA # OpCode.CMP_IMM
         EmitByte(); if (NC) { return; }
         LDA #'w'
         EmitByte(); if (NC) { return; }
@@ -885,111 +905,77 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         // Write mode: set bit 1 in flags
-        LDA # OpCode.SMB1
+        LDA # OpCode.SMB1_ZP
         EmitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeFileFlags
         EmitByte(); if (NC) { return; }
         
         // LDX #SysCall.FileCreate
-        LDA #OpCode.LDX_IMM
+        LDA # OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
-        LDA #SysCall.FileCreate
+        LDA # SysCall.FileStartSave
         EmitByte(); if (NC) { return; }
         
         // BRA do_open
-        LDA #OpCode.BRA
+        LDA # OpCode.BRA
         EmitByte(); if (NC) { return; }
-        LDA #3  // Skip read_mode LDX
+        LDA #2  // Skip read_mode LDX
         EmitByte(); if (NC) { return; }
         
 // read_mode:
         // LDX #SysCall.FileOpen
-        LDA #OpCode.LDX_IMM
+        LDA # OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
-        LDA #SysCall.FileOpen
+        LDA # SysCall.FileStartLoad
         EmitByte(); if (NC) { return; }
         
 // do_open:
-        // JSR [BIOSDISPATCH]
-        LDA #OpCode.JSR_IND
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.BIOSDISPATCH
-        EmitByte(); if (NC) { return; }
-        
+        EmitDispatchCall();
+          
         // Check carry (success/failure)
         // BCS success
-        LDA #OpCode.BCS
+        LDA # OpCode.BCS
         EmitByte(); if (NC) { return; }
-        LDA #6  // Skip to success
+        LDA # 16  // Skip to success
         EmitByte(); if (NC) { return; }
         
         // Failed - push NULL and return
-        VCode.PushNull();
-        if (NC) { return; }
+        LDA #0
+        VCode.PushCHAR(); if (NC) { return; }
         
-        LDA #OpCode.RTS
+        // BRA done
+        LDA # OpCode.BRA
+        EmitByte(); if (NC) { return; }
+        LDA # 35
         EmitByte(); if (NC) { return; }
         
-        // success: Set open bit in flags
+// success: Set open bit in flags
         // LDA runtimeFileFlags
-        LDA #OpCode.LDA_ZP
+        LDA # OpCode.SMB0_ZP
         EmitByte(); if (NC) { return; }
-        LDA #runtimeFileFlags
-        EmitByte(); if (NC) { return; }
-        
-        // ORA #0b00000001
-        LDA #OpCode.ORA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #0b00000001
-        EmitByte(); if (NC) { return; }
-        
-        // STA runtimeFileFlags
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeFileFlags
+        LDA # Gen6502.runtimeFileFlags
         EmitByte(); if (NC) { return; }
         
         // Return pointer to FILE struct (always same address)
         // Push runtimeFileFlags as 32-bit pointer
-        LDA #OpCode.LDA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeFileFlags
-        EmitByte(); if (NC) { return; }
+        LDA # Gen6502.runtimeFileFlags
+        VCode.PushCHAR(); if (NC) { return; }
+// done:        
         
-        LDA #OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
-        EmitByte(); if (NC) { return; }
-        
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT1
-        EmitByte(); if (NC) { return; }
-        
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT2
-        EmitByte(); if (NC) { return; }
-        
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT3
-        EmitByte(); if (NC) { return; }
-        
-        VCode.PushNEXT();
-        if (NC) { return; }
     }
     
     FGet()
     {
-        LDA # Error.NotImplemented
-        Errors.ShowIDX();
+        //LDA # Error.NotImplemented
+        //Errors.ShowIDX();
+        SEC
     }
     
     FClose()
     {
-        LDA # Error.NotImplemented
-        Errors.ShowIDX();
+        //LDA # Error.NotImplemented
+        //Errors.ShowIDX();
+        SEC
     }
     
 }
