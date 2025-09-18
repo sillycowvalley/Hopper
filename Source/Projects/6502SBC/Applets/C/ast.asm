@@ -48,6 +48,7 @@ unit AST
     
     enum BinOpType
     {
+        None = 0,
         Add = 1,   // +
         Sub = 2,   // -
         Mul = 3,   // *
@@ -749,6 +750,86 @@ unit AST
             }
         } // loop
     }
+    
+    // Clone a node (only supports Identifier for compound assignments)
+    // Input: IDY = node to clone
+    // Output: IDY = cloned node, C set on success, clear on failure
+    CloneNode()
+    {
+        loop
+        {
+            // Get node type
+            LDY #AST.iNodeType
+            LDA [ZP.IDY], Y
+            
+             
+            CMP #NodeType.Identifier
+            if (NZ)
+            {
+                // Not an identifier - unsupported for cloning
+                
+        #ifdef DEBUG
+                Print.NewLine();
+                LDA #'C' 
+                Print.Char();
+                LDA #'?' 
+                Print.Char();
+                LDY #AST.iNodeType
+                LDA [ZP.IDY], Y
+                Print.Hex();
+        #endif
+                
+                LDA # Error.UnsupportedLValue
+                Errors.ShowIDY();
+                break;
+            }
+        
+            // Create new Identifier node
+            LDA #AST.NodeType.Identifier
+            AST.CreateNode(); // -> IDX
+            if (NC) 
+            { 
+                break; 
+            }
+        
+            // Get original identifier's string pointer
+            
+            LDY #AST.iData
+            LDA [ZP.IDY], Y
+            STA ZP.STRL
+            INY
+            LDA [ZP.IDY], Y
+            STA ZP.STRH
+            
+            // Duplicate the string
+            Utilities.DuplicateString(); // STR -> STR
+            if (NC)
+            {
+                // Failed to clone string, free the node
+                AST.FreeNode(); // IDX
+                break;
+            }
+            
+            // Store the new string pointer in ACC for SetData
+            LDA ZP.STRL
+            STA ZP.ACCL
+            LDA ZP.STRH
+            STA ZP.ACCH
+        
+            // Set the cloned string in new node
+            AST.SetData(); // IDX[iData] = ACC
+            
+            // Return cloned node in IDY
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+        
+            SEC
+            break;
+        } // single exit
+    }
+    
     
     CountFunctionParameters() // Input: AST.astNode = Function node, Output: A = param count
     {

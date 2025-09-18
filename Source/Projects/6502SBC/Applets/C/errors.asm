@@ -24,6 +24,7 @@ unit Errors
         VoidFunction,
         ExpressionExpected,
         UnsupportedFormatter,
+        UnsupportedLValue,
         
         FilenameTooLong,
         FileSaveError,

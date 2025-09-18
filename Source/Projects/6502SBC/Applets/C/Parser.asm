@@ -131,58 +131,6 @@ unit Parser
         PLY
     }
     
-    duplicateString() // STR -> STR
-    {
-        PHY
-        
-        LDA ZP.IDXL
-        PHA
-        LDA ZP.IDXH
-        PHA
-        
-        loop
-        {
-            // Get string length
-            LDY #0
-            loop
-            {
-                LDA [STR], Y
-                if (Z) { break; }
-                INY
-            }
-            INY  // Include null terminator
-            
-            STY ZP.ACCL
-            STZ ZP.ACCH
-            Memory.Allocate();
-            if (NC) { Errors.OutOfMemory(); break; }
-            
-            // copy string
-            LDY #0
-            loop
-            {
-                LDA [STR], Y
-                STA [IDX], Y
-                if (Z) { break; }
-                INY
-            }
-            
-            LDA ZP.IDXL
-            STA ZP.STRL
-            LDA ZP.IDXH
-            STA ZP.STRH
-        
-            SEC
-            break;    
-        } // single exit
-        
-        PLA
-        STA ZP.IDXH
-        PLA
-        STA ZP.IDXL
-        PLY   
-    }
-    
     
     parseFunction() // -> IDY
     {
@@ -664,7 +612,7 @@ unit Parser
                 // Duplicate the string (to avoid double-free)
                 if (C)
                 {
-                    duplicateString(); // STR -> STR
+                    Utilities.DuplicateString(); // STR -> STR
                 }
                 
                 // Create new identifier node for the ASSIGN
@@ -1474,47 +1422,11 @@ unit Parser
         parseAssignment(); // ->IDY
     }
     
-    // Parse assignment expressions (right-associative)
-    parseAssignment() // -> IDY
+    parseAssignmentOperator() // binOp = BinOpType.None | BinOpType.Add | BinOpType.Sub
     {
-        // Parse left side
-        parseEquality(); // -> IDY
-        if (NC) { return; }
-       
-        // Check for assignment operator
-        LDA currentToken
-        CMP #Token.Assign
-        if (NZ)
-        {
-            // No assignment - return what we have
-            SEC
-            return;
-        }
-        
-        // Save current exprNode state
-        LDA exprNodeH
-        PHA
-        LDA exprNodeL
-        PHA
-        LDA rhsExprNodeH
-        PHA
-        LDA rhsExprNodeL
-        PHA
-        
-        STZ exprNodeL
-        STZ exprNodeH
-        STZ rhsExprNodeL
-        STZ rhsExprNodeH
-        
         loop
         {
-            // Save left side
-            LDA ZP.IDYL
-            STA exprNodeL
-            LDA ZP.IDYH
-            STA exprNodeH
-            
-            consume();  // Skip '='
+            consume();  // Skip '=', '+=', '-='
             if (NC) { break; }
             
             // Parse right side (recursive for right-associativity)
@@ -1526,6 +1438,60 @@ unit Parser
             STA rhsExprNodeL
             LDA ZP.IDYH
             STA rhsExprNodeH
+            
+            // Check if compound assignment (binOp != None)
+            LDA binOp
+            if (NZ)  // Compound assignment - need to create BinOp
+            {
+                // Create BinOp node
+                LDA #AST.NodeType.BinOp
+                AST.CreateNode(); // -> IDX
+                if (NC) { break; }
+                
+                // Set operator type
+                LDY # AST.iBinOp
+                LDA binOp
+                STA [ZP.IDX], Y
+                
+                // Save BinOp node (CloneNode will change IDX!)
+                LDA ZP.IDXL
+                PHA
+                LDA ZP.IDXH
+                PHA
+                
+                // Add left operand (duplicate of original left)
+                LDA exprNodeL
+                STA ZP.IDYL
+                LDA exprNodeH
+                STA ZP.IDYH
+                AST.CloneNode(); // IDY = node to clone, returns IDY = cloned node
+                if (NC) 
+                { 
+                    PLA
+                    PLA
+                    break; 
+                }
+                // Restore BinOp node to IDX
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                
+                AST.AddChild();  // IDX = BinOp, IDY = left
+                
+                // Add right operand
+                LDA rhsExprNodeL
+                STA ZP.IDYL
+                LDA rhsExprNodeH
+                STA ZP.IDYH
+                AST.AddChild(); // IDX = BinOp, IDY = right
+                
+                // BinOp becomes the new right side
+                LDA ZP.IDXL
+                STA rhsExprNodeL
+                LDA ZP.IDXH
+                STA rhsExprNodeH
+            }
             
             // Create Assign node
             LDA #AST.NodeType.Assign
@@ -1540,7 +1506,7 @@ unit Parser
             
             AST.AddChild(); // IDX = Assign, IDY = left side
             
-            // Add right side as second child
+            // Add right side (or BinOp) as second child
             LDA rhsExprNodeL
             STA ZP.IDYL
             LDA rhsExprNodeH
@@ -1554,28 +1520,73 @@ unit Parser
             LDA ZP.IDXH
             STA ZP.IDYH
             
-            // Clear our work nodes
-            STZ exprNodeL
-            STZ exprNodeH
+            // Clear our work nodes (so they don't get dispose)
             STZ rhsExprNodeL
             STZ rhsExprNodeH
             
             SEC
             break;
         } // single exit
+    }
+    
+    // Parse assignment expressions (right-associative)
+    parseAssignment() // -> IDY
+    {
+        // Parse left side
+        parseEquality(); // -> IDY
+        if (NC) { return; }
         
-        // Clean up on error
+        // Save current exprNode state
+        LDA exprNodeH
+        PHA
         LDA exprNodeL
-        ORA exprNodeH
-        if (NZ)
+        PHA
+        LDA rhsExprNodeH
+        PHA
+        LDA rhsExprNodeL
+        PHA
+        LDA binOp
+        PHA
+        
+        STZ rhsExprNodeL
+        STZ rhsExprNodeH
+        
+        // Save left side
+        LDA ZP.IDYL
+        STA exprNodeL
+        LDA ZP.IDYH
+        STA exprNodeH
+       
+        // Check for assignment operator
+        LDA currentToken
+        switch (A)
         {
-            LDA exprNodeL
-            STA ZP.IDXL
-            LDA exprNodeH
-            STA ZP.IDXH
-            AST.FreeNode();
+            case Token.Assign:
+            {
+                LDA # BinOpType.None
+                STA binOp
+                parseAssignmentOperator();    
+            }
+            case Token.PlusAssign:
+            {
+                LDA # BinOpType.Add
+                STA binOp
+                parseAssignmentOperator();    
+            }
+            case Token.MinusAssign:
+            {
+                LDA # BinOpType.Sub
+                STA binOp
+                parseAssignmentOperator();    
+            }
+            default:
+            {
+                // No assignment - return what we have
+                SEC
+            }
         }
         
+        // Clean up on error
         LDA rhsExprNodeL
         ORA rhsExprNodeH
         if (NZ)
@@ -1589,6 +1600,8 @@ unit Parser
         }
         
         // Restore state
+        PLA
+        STA binOp
         PLA
         STA rhsExprNodeL
         PLA
