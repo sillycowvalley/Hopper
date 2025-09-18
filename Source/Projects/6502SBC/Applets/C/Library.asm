@@ -458,8 +458,8 @@ unit Library
         EmitDispatchCall(); if (NC) { return; }
         
         
-        // drop the PLA reserved for the return slot
-        VCode.Discard();  
+        // replace the slot reserved for "return"
+        VCode.Discard();
         // Push character back as return value (already in NEXT0, rest is zero)
         VCode.PushNEXT(); 
         
@@ -563,6 +563,8 @@ unit Library
         LDA # ZP.NEXT3
         EmitByte(); if (NC) { return; }
         
+        // replace the slot reserved for "return"
+        VCode.Discard();
         // Push result back on stack
         VCode.PushNEXT();
         if (NC) { return; }
@@ -627,8 +629,9 @@ unit Library
         EmitDispatchCall();
         if (NC) { return; }
         
-        // skip_free:
+// skip_free:
         // No return value for void function
+        // "return" slot exists but is not set
         SEC
     }
     
@@ -644,7 +647,9 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
-        PushTOP();
+        // replace the slot reserved for "return"
+        VCode.Discard();
+        VCode.PushTOP();
         
         SEC
     }
@@ -658,7 +663,9 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
-        PushTOP();
+        // replace the slot reserved for "return"
+        VCode.Discard();
+        VCode.PushTOP();
         
         SEC
     }
@@ -1031,6 +1038,7 @@ unit Library
                 DEY  // Back to '%'
             }
             
+            // TODO: "return" slot exists but is not set
             SEC  // Success
             break;
         } // single exit
@@ -1081,6 +1089,8 @@ unit Library
         EmitDispatchCall();
         if (NC) { return; }
         
+        // replace the slot reserved for "return"
+        VCode.Discard();
         // Result is in TOP, push it
         VCode.PushTOP();
         if (NC) { return; }
@@ -1104,6 +1114,8 @@ unit Library
         EmitDispatchCall();
         if (NC) { return; }
         
+        // replace the slot reserved for "return"
+        VCode.Discard();
         // Result is in TOP, push it
         VCode.PushTOP();
         if (NC) { return; }
@@ -1127,6 +1139,8 @@ unit Library
         EmitDispatchCall();
         if (NC) { return; }
         
+        // replace the slot reserved for "return"
+        VCode.Discard();
         // Result is in TOP, push it
         VCode.PushTOP();
         if (NC) { return; }
