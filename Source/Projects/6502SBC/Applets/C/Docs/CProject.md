@@ -81,6 +81,8 @@ A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C 
 ```c
 void putchar(char c);        // Maps to Serial.WriteChar
 void printf(char* fmt, ...); // Supports %d, %ld, %x, %s, %c formatters
+int kbhit(void);            // Maps to Serial.IsAvailable (non-blocking key check)
+int getch(void);            // Maps to Serial.WaitForChar (blocking key read)
 ```
 
 ### Time Functions
@@ -288,6 +290,13 @@ FRead:  0xF4
 FWrite: 0xF5
 ```
 
+#### Keyboard Input Functions
+Keyboard operations map to BIOS serial I/O:
+```
+kbhit:  SysCall.SerialIsAvailable (0x87)
+getch:  SysCall.SerialWaitForChar (0x86)
+```
+
 ## Example Programs
 
 ### Memory and String Manipulation
@@ -332,6 +341,38 @@ void process_file(char* filename) {
 
 void main() {
     process_file("README.TXT");
+}
+```
+
+### Interactive Console Program
+```c
+void echo_until_escape() {
+    int c;
+    int done;
+    
+    printf("Type characters (ESC to quit):\n");
+    
+    done = 0;
+    while (!done) {
+        if (kbhit()) {           // Check if key available
+            c = getch();          // Get key without echo
+            if (c == 27) {        // ESC key
+                done = 1;
+            }
+            else {
+                putchar(c);       // Echo the character
+                if (c == '\r') {  // Add newline after CR
+                    putchar('\n');
+                }
+            }
+        }
+    }
+    
+    printf("\nGoodbye!\n");
+}
+
+void main() {
+    echo_until_escape();
 }
 ```
 
@@ -431,15 +472,51 @@ void main() {
     int c;
     
     printf("Enter text: ");
-    while ((c = getchar()) != '\n' && i < 49) {
+    while ((c = getch()) != '\n' && i < 49) {
+        putchar(c);  // Echo character
         text[i++] = c;
     }
     text[i] = 0;
+    putchar('\n');
     
     reverse_string(text);
     printf("Reversed: %s\n", text);
     
     free(text);
+}
+```
+
+### File Copy Utility
+```c
+void copy_file(char* src, char* dst) {
+    FILE* in;
+    FILE* out;
+    int c;
+    
+    in = fopen(src, "r");
+    if (!in) {
+        printf("Cannot open source: %s\n", src);
+        return;
+    }
+    
+    out = fopen(dst, "w");
+    if (!out) {
+        printf("Cannot create destination: %s\n", dst);
+        fclose(in);
+        return;
+    }
+    
+    while ((c = fgetc(in)) != -1) {
+        fputc(c, out);
+    }
+    
+    fclose(out);
+    fclose(in);
+    printf("Copied %s to %s\n", src, dst);
+}
+
+void main() {
+    copy_file("SOURCE.TXT", "DEST.TXT");
 }
 ```
 
@@ -475,7 +552,8 @@ Examples:
 - ✅ Pointer dereference (read/write)
 - ✅ Array indexing via pointer arithmetic
 - ✅ Memory management (malloc/free)
-- ✅ File I/O operations
+- ✅ File I/O operations (fopen/fclose/fgetc/fputc/fread/fwrite)
+- ✅ Keyboard input functions (kbhit/getch)
 - ✅ Extended printf formatters
 - ✅ File extension handling (.C/.EXE)
 
