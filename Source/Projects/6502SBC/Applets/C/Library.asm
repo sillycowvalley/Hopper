@@ -21,6 +21,9 @@ unit Library
     const string sysseconds = "seconds";
     const string sysputchar = "putchar";
     
+    const string sysgetch   = "getch";
+    const string syskbhit   = "kbhit";
+    
     // Memory management
     const string sysmalloc  = "malloc";
     const string sysfree    = "free";
@@ -119,7 +122,7 @@ unit Library
             return;
         }   
         
-        // Check for "seconds"
+        // Check for "putchar"
         LDA #(sysputchar % 256)
         STA ZP.IDYL
         LDA #(sysputchar / 256)
@@ -128,6 +131,32 @@ unit Library
         if (C)
         {
             LDA # BIOSInterface.SysCall.PrintChar
+            SEC
+            return;
+        } 
+        
+        // Check for "getch"
+        LDA #(sysgetch % 256)
+        STA ZP.IDYL
+        LDA #(sysgetch / 256)
+        STA ZP.IDYH
+        CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.SerialWaitForChar
+            SEC
+            return;
+        } 
+        
+        // Check for "kbhit"
+        LDA #(syskbhit % 256)
+        STA ZP.IDYL
+        LDA #(syskbhit / 256)
+        STA ZP.IDYH
+        CompareStrings();  // Compare [STR] with [IDY]
+        if (C)
+        {
+            LDA # BIOSInterface.SysCall.SerialIsAvailable
             SEC
             return;
         } 
@@ -411,11 +440,90 @@ unit Library
         
         EmitDispatchCall(); if (NC) { return; }
         
+        // replace the slot reserved for "return"
+        VCode.Discard();  if (NC) { return; }
+        // Push character back as return value (already in NEXT0, rest is zero)
+        VCode.PushNEXT(); if (NC) { return; }
+        
+        SEC
+    }
+    GetChCall()
+    {
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #BIOSInterface.SysCall.SerialWaitForChar
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT3
+        EmitByte(); if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
-        // Push character back as return value (already in NEXT0, rest is zero)
-        VCode.PushNEXT(); 
+        VCode.Discard();  if (NC) { return; }
+        VCode.PushNEXT(); if (NC) { return; }
+        
+        SEC
+    }
+    KbHitCall()
+    {
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #BIOSInterface.SysCall.SerialIsAvailable
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        LDA #OpCode.LDA_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # 0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.ADC_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # 0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // replace the slot reserved for "return"
+        VCode.Discard();  if (NC) { return; }
+        VCode.PushNEXT(); if (NC) { return; }
         
         SEC
     }

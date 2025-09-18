@@ -389,6 +389,16 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
                         Library.PutcharCall();
                         if (NC) { break; }
                     }
+                    case SysCall.SerialWaitForChar:
+                    {
+                        Library.GetChCall();
+                        if (NC) { break; }
+                    }
+                    case SysCall.SerialIsAvailable:
+                    {
+                        Library.KbHitCall();
+                        if (NC) { break; }
+                    }
                     case SysCall.MemAllocate:
                     {
                         Library.AllocCall();
@@ -1472,6 +1482,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             STX ZP.IDXL
             
             generateStatement(); if (NC) { break; }
+            VCode.Flush(); if (NC) { break; }
             
             // JMP back to loop start
             LDA #OpCode.JMP_ABS
@@ -1648,6 +1659,7 @@ Print.Hex(); LDA #'s' Print.Char();
             STA ZP.IDXH
             generateStatement();  // Uses IDX
             if (NC) { break; }
+            VCode.Flush(); if (NC) { break; }
             
             // Move to next statement
             LDY #AST.iNext
@@ -1750,6 +1762,7 @@ Print.Hex(); LDA #'s' Print.Char();
             STX ZP.IDXL
             
             generateStatement(); if (NC) { break; }
+            VCode.Flush(); if (NC) { break; }
             
             // Check if there's an else clause
             // Get else statement (next sibling of then)
@@ -1847,6 +1860,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 STX ZP.IDXL
                 
                 generateStatement(); if (NC) { break; }
+                VCode.Flush(); if (NC) { break; }
                 
                 // Patch the endPatch to jump here (after else)
                 // Calculate current absolute position
