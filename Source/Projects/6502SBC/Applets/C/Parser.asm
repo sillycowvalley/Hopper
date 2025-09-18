@@ -1947,7 +1947,7 @@ unit Parser
         {
             case Token.Minus:
             {
-                LDA #AST.UnaryOpType.Minus
+                LDA # AST.UnaryOpType.Minus
                 PHA
                 consume(); // Move past minus
                 
@@ -1965,6 +1965,20 @@ unit Parser
                 // Just parse the operand - unary plus is a no-op
                 parseUnary();
                 return;
+            }
+            case Token.Star:  // Dereference operator
+            {
+                LDA # AST.UnaryOpType.Dereference
+                PHA
+                consume(); // Move past *
+                
+                // Recursively parse the operand (allows *(*ptr) etc.)
+                parseUnary();
+                if (NC) 
+                { 
+                    PLA  // Clean up stack
+                    return; 
+                }
             }
             default:
             {

@@ -18,7 +18,7 @@ unit Errors
         NotImplemented,    // 0x0C
         
         TooFewArguments,
-        UndefinedIdentifier,
+        UndefinedIdentifier, // 0x0E
         
         TypeExpected,
         VoidFunction,

@@ -472,7 +472,9 @@ Gen6502.emitByte(); SEC PLY
                 
                 default:
                 {
-Print.Hex();                    
+#ifdef DEBUG
+Print.Hex(); LDA #'v' Print.Char();LDA #'c' Print.Char();
+#endif
                     LDA #Error.NotImplemented
                     Errors.ShowIDX();
 loop { }                    

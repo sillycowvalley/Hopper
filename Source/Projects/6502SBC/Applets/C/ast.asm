@@ -64,10 +64,11 @@ unit AST
     
     enum UnaryOpType
     {
-        Minus  = 0x00,
-        Plus   = 0x01,
-        Not    = 0x02,  // For future ! operator
-        BitNot = 0x03, // For future ~ operator
+        Minus       = 0x00,
+        Plus        = 0x01,
+        Not         = 0x02,  // For future ! operator
+        BitNot      = 0x03,  // For future ~ operator
+        Dereference = 0x04,  // *(pointer reference)
     }
     enum PostfixOpType
     {

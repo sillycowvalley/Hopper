@@ -402,7 +402,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     {
 #ifdef DEBUG
 Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
-#endif     
+#endif
                         LDA # Error.NotImplemented
                         Errors.ShowIDX();
                         break;
@@ -542,6 +542,71 @@ Print.Hex(); LDA #'v' Print.Char();
         SEC
     }
     
+    // Generate code for reading through a pointer: value = *ptr
+    // Stack IN:  pointer address (32-bit)
+    // Stack OUT: value that was at that address (32-bit)
+    // Example: x = *ptr  (we're reading FROM memory)
+    generateDereferenceRead()
+    {
+        // Pop pointer from stack into TOP
+        VCode.PopTOP();
+        if (NC) { return; }
+        
+        // Read byte FROM memory at [TOP]
+        LDA #OpCode.LDA_IND
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP
+        EmitByte(); if (NC) { return; }
+        
+        // Put value in NEXT and zero-extend
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // Push value onto stack
+        VCode.PushNEXT();
+    }
+    
+    // Generate code for writing through a pointer: *ptr = value
+    // Stack IN:  pointer address (32-bit)
+    // NEXT IN:   value to write
+    // Stack OUT: nothing
+    // Example: *ptr = 5  (we're writing TO memory)
+    generateDereferenceWrite()
+    {
+        // Pop pointer from stack into TOP
+        VCode.PopTOP();
+        if (NC) { return; }
+        
+        // Write byte TO memory at [IDY]
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_IND
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
 
     // Generate code for unary operators
     generateUnaryOp()
@@ -582,8 +647,16 @@ Print.Hex(); LDA #'v' Print.Char();
                     generateNegateLong();
                     if (NC) { break; }
                 }
+                case UnaryOpType.Dereference:
+                {
+                    generateDereferenceRead();
+                    if (NC) { break; }
+                }
                 default:
                 {
+#ifdef DEBUG
+Print.Hex(); LDA #'u' Print.Char();
+#endif
                     // Could add other unary operators here (!, ~, etc.)
                     LDA #Error.NotImplemented
                     Errors.ShowIDX();
@@ -964,9 +1037,12 @@ Print.Space();
         LDA ZP.IDXH
         STA AST.astNodeH
         
+        LDA storeOp
+        PHA
+        
         loop
         {
-            // First get to first child (identifier) and push it
+            // Get first child (left side)
             LDY #AST.iChild
             LDA [ZP.IDX], Y
             PHA
@@ -976,6 +1052,11 @@ Print.Space();
             PHA
             STA ZP.IDXH
             STX ZP.IDXL
+            
+            // Save left side type
+            LDY #AST.iNodeType
+            LDA [ZP.IDX], Y
+            STA storeOp
             
             // Now get its sibling (second child -> RHS expression)
             LDY #AST.iNext
@@ -1001,37 +1082,97 @@ Print.Space();
             
             if (NC) { break; }
             
-            // Get identifier's name
-            LDY #AST.iData
-            LDA [ZP.IDX], Y
-            STA ZP.STRL
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.STRH
-            
-            // Find the VarDecl for this identifier
-            FindVariable();  // -> IDX
-            if (NC)
+Print.NewLine(); LDA storeOp Print.Hex();
+
+            LDA storeOp
+            CMP #AST.NodeType.UnaryOp
+            if (Z)
             {
+LDA #'1' Print.Char(); 
+               
+                // Check if it's a dereference
+                LDY #AST.iUnaryOp
+                LDA [ZP.IDX], Y
+                CMP #AST.UnaryOpType.Dereference
+                if (NZ)
+                {
+                    // Not dereference - invalid lvalue
+                    LDA AST.astNodeH
+                    STA ZP.IDXH
+                    LDA AST.astNodeL
+                    STA ZP.IDXL
+                    LDA # Error.SyntaxError
+                    Errors.ShowIDX();
+                    break;
+                }
+                
+                // Get pointer expression (child of UnaryOp)
+                LDY #AST.iChild
+                LDA [ZP.IDX], Y
+                TAX
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.IDXH
+                STX ZP.IDXL
+                
+                
+                // Generate code to get pointer
+                generateExpression();
+                if (NC) { break; }
+                
+                generateDereferenceWrite();
+                if (NC) { break; }
+            }
+            else 
+            {
+
+                CMP # AST.NodeType.Identifier
+                if (NZ)
+                {
+                    // Not identifier - invalid lvalue
+                    LDA AST.astNodeH
+                    STA ZP.IDXH
+                    LDA AST.astNodeL
+                    STA ZP.IDXL
+                    LDA # Error.UnexpectedFailure
+                    Errors.ShowIDX();
+                    break;
+                }
+            
+                // Get identifier's name
+                LDY #AST.iData
+                LDA [ZP.IDX], Y
+                STA ZP.STRL
+                INY
+                LDA [ZP.IDX], Y
+                STA ZP.STRH
+                
+LDA #'2' Print.Char();                 
+                
+                // Find the VarDecl for this identifier
+                FindVariable();  // -> IDX
+                if (NC)
+                {
 #ifdef DEBUG
 LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
 #endif
-                LDA AST.astNodeH
-                STA ZP.IDXH
-                LDA AST.astNodeL
-                STA ZP.IDXL
-                LDA # Error.UndefinedIdentifier
-                Errors.ShowIDX();
-                break; // Variable not found!
+                    LDA AST.astNodeH
+                    STA ZP.IDXH
+                    LDA AST.astNodeL
+                    STA ZP.IDXL
+                    LDA # Error.UndefinedIdentifier
+                    Errors.ShowIDX();
+                    break; // Variable not found!
+                }
+            
+                // Get the BP offset from VarDecl
+                LDY #AST.iOffset
+                LDA [ZP.IDX], Y  // This is the signed offset
+                
+                // Store NEXT at BP+offset
+                PutNEXT();  // A = offset
             }
-            
-            // Get the BP offset from VarDecl
-            LDY #AST.iOffset
-            LDA [ZP.IDX], Y  // This is the signed offset
-            
-            // Store NEXT at BP+offset
-            PutNEXT();  // A = offset
-            
+                
             // Assignment expressions return the assigned value
             PushNEXT();
                 
@@ -1039,6 +1180,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             break;
         } // single exit
         
+        PLA
+        STA storeOp
         PLA
         STA AST.astNodeH
         PLA
