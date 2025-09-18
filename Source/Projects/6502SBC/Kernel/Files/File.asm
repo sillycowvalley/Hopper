@@ -2980,6 +2980,133 @@ unit File
             STA ZP.TOP3
         }
     }
+    
+    // Aliases tp split ZP.TOP and ZP.NEXT
+    const byte bytesReadL = ZP.TOP0;
+    const byte bytesReadH = ZP.TOP1;
+    const byte writePtr   = ZP.NEXT2;
+    const byte writePtrL  = ZP.NEXT2;
+    const byte writePtrH  = ZP.NEXT3;
+    
+    
+    // Read bytes from file
+    // In:  ZP.NEXT = FILE* (using NEXT0..1)
+    //      ZP.IDX = buffer pointer (IDXL/IDXH)
+    //      ZP.IDY = index in buffer (IDYL/IDYH)
+    //      ZP.ACC = count (ACCL/ACCH)
+    // Out: ZP.TOP = bytes read, -1 if EOF (using TOP0..3)
+    FRead()
+    {
+        loop // single exit
+        {
+            // Check if valid FILE*
+            LDA ZP.NEXT0
+            if (Z) { CLC break; }  // NULL pointer
+            
+            // Check if file is open for reading
+            if (BBR0, cfilesFILE) { CLC break; }  // Not open
+            if (BBS1, cfilesFILE) { CLC break; }  // Write mode - can't read
+            
+            // initialize location in the buffer to write to            
+            CLC
+            LDA ZP.IDXL
+            ADC ZP.IDYL
+            STA writePtrL
+            LDA ZP.IDXH
+            ADC ZP.IDYH
+            STA writePtrH
+            
+            // Initialize bytes read counter
+            STZ bytesReadL
+            STZ bytesReadH
+            
+            // Read loop
+            loop
+            {
+                // Check if we've read requested count
+                LDA bytesReadL
+                CMP ZP.ACCL
+                if (Z)
+                {
+                    LDA bytesReadH
+                    CMP ZP.ACCH
+                    if (Z) { SEC break; }  // Read complete
+                }
+                
+                // Check EOF flag
+                if (BBS2, cfilesFILE) { SEC break; }  // EOF reached
+                
+                // Check if we've consumed TransferLength bytes
+                LDA sectorPositionH
+                CMP TransferLengthH
+                if (Z)
+                {
+                    LDA sectorPositionL
+                    CMP TransferLengthL
+                    if (Z)  // Reached end of this buffer
+                    {
+                        File.NextStream();  // preserves X and Y but munts IDX/IDY
+                        if (NC)  // No more data
+                        {
+                            SMB2 cfilesFILE  // Set EOF bit
+                            SEC
+                            break;
+                        }
+                        STZ sectorPositionL
+                        STZ sectorPositionH
+                    }
+                }
+                
+                // Copy byte from file buffer to destination
+                LDY sectorPositionL
+                LDA FileDataBuffer, Y
+                STA [writePtr]
+                
+                // Advance write buffer position
+                INC writePtrL if (Z) { INC writePtrH }
+                
+                // Advance file position
+                INC sectorPositionL if (Z) { INC sectorPositionH }
+                
+                // Increment bytes read
+                INC bytesReadL if (Z) { INC bytesReadH }
+            }
+            
+            // bytesReadL == ZP.TOP0
+            // bytesReadH == ZP.TOP1
+            STZ ZP.TOP2
+            STZ ZP.TOP3
+            
+            SEC  // Success (even if partial read)
+            break;
+            
+        } // single exit
+        
+        if (C)
+        {
+            // success
+            LDA bytesReadL
+            ORA bytesReadH
+            if (NZ)
+            {
+                return; // read more than zero bytes
+            }
+            // If we read 0 bytes and not EOF, return 0
+            if (BBR2, cfilesFILE)  // EOF flag set
+            {
+                return;
+            }
+        }
+        // Error or EOF after 0 bytes
+        // -> return -1
+        LDA #0xFF
+        STA ZP.TOP0
+        STA ZP.TOP1
+        STA ZP.TOP2
+        STA ZP.TOP3
+    }
+    
+    
 #endif
 
 }

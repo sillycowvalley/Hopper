@@ -407,44 +407,41 @@ unit Library
         PHA
         STA ZP.IDXH
         STX ZP.IDXL
-        
-        loop
-        {
-            // Generate argument and pop to NEXT
-            CodeGen.generateExpression(); if (NC) { break; }
-        
-            VCode.PopNEXT();
-            break;
-        }
+
+        CodeGen.generateExpression();
+
         PLA
         STA ZP.IDXH
         PLA
         STA ZP.IDXL
     }
     
-    generateSecondArgExpression()
+    generateNextArgExpression()
     {
         LDY #AST.iNext
         LDA [ZP.IDX], Y
+        PHA
         TAX
         INY
         LDA [ZP.IDX], Y
+        PHA
         STA ZP.IDXH
         STX ZP.IDXL
         
-        loop
-        {
-            // Generate argument and pop to TOP
-            CodeGen.generateExpression(); if (NC) { break; }
-            VCode.PopTOP();
-            break;
-        }
+        CodeGen.generateExpression();
+        
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
     }
-    
+       
     PutcharCall()
     {
-        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression();
         if (NC) { return; }
+        
+        VCode.PopNEXT();if (NC) { return; }
         
         // Move character from NEXT0 to A and call PrintChar
         LDA #OpCode.LDA_ZP
@@ -474,8 +471,10 @@ unit Library
     // Stack out: pointer (32-bit, 0x0000 if failed)
     AllocCall()
     {
-        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression();
         if (NC) { return; }
+        
+        VCode.PopNEXT(); if (NC) { return; }
         
         // Move low 16 bits to ZP.ACC for BIOS call
         // malloc takes size_t which is 16-bit on 6502
@@ -579,8 +578,10 @@ unit Library
     // Stack out: nothing (void function)
     FreeCall()
     {
-        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression();
         if (NC) { return; }
+        
+        VCode.PopNEXT(); if (NC) { return; }
         
         // Check for NULL pointer (free(NULL) is a no-op in C)
         // LDA ZP.NEXT0 | ORA ZP.NEXT1
@@ -1231,15 +1232,19 @@ unit Library
         // Stack on entry: [return slots] [filename] [mode]
         // BIOS expects: ZP.STR = filename, ZP.NEXT = mode
         
-        generateFirstArgExpression();  // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression(); // filename
         if (NC) { return; }
         
-        generateSecondArgExpression(); // expression -> TOP
+        generateNextArgExpression(); // mode
+        if (NC) { return; }
+        
+        VCode.PopNEXT(); if (NC) { return; } // mode
+        VCode.PopTOP();  if (NC) { return; } // filename
         if (NC) { return; }
         
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.TOP0
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STA_ZP
@@ -1249,17 +1254,13 @@ unit Library
         
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT1
+        LDA # ZP.TOP1
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.STRH
         EmitByte(); if (NC) { return; }
-        
-        // Move mode from TOP to NEXT
-        VCode.TOPtoNEXT();
-        if (NC) { return; }
         
         // LDX #SysCall.FOpen
         LDA # OpCode.LDX_IMM
@@ -1283,13 +1284,105 @@ unit Library
         // Stack on entry: [return slots] [FILE*]
         // BIOS expects: ZP.NEXT = FILE*
         
-        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression();
         if (NC) { return; }
+        
+        VCode.PopNEXT(); if (NC) { return; }
         
         // LDX #SysCall.FGetC
         LDA #OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
         LDA #SysCall.FGetC
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // replace the slot reserved for "return"
+        VCode.Discard();
+        // Result is in TOP, push it
+        VCode.PushTOP();
+        if (NC) { return; }
+    }
+    
+    FReadCall()
+    {
+        generateFirstArgExpression();
+        if (NC) { return; }
+        
+        generateNextArgExpression();
+        if (NC) { return; }
+        
+        generateNextArgExpression();
+        if (NC) { return; }
+        
+        generateNextArgExpression();
+        if (NC) { return; }
+        
+        // Count -> ACC
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCH
+        EmitByte(); if (NC) { return; }
+        
+        // offset -> IDY
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDYL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDYH
+        EmitByte(); if (NC) { return; }
+        
+        // buffer -> IDX
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXH
+        EmitByte(); if (NC) { return; }
+        
+        // FILE* -> NEXT
+        VCode.PopNEXT(); if (NC) { return; }
+        
+        // LDX #SysCall.FRead
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #SysCall.FRead
         EmitByte(); if (NC) { return; }
         
         EmitDispatchCall();
@@ -1308,8 +1401,10 @@ unit Library
         // Stack on entry: [return slots] [FILE*]
         // BIOS expects: ZP.NEXT = FILE*
         
-        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression();
         if (NC) { return; }
+        
+        VCode.PopNEXT(); if (NC) { return; }
         
         // LDX #SysCall.FClose
         LDA #OpCode.LDX_IMM

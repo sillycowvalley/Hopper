@@ -76,9 +76,10 @@ unit BIOSInterface
         PinRead,          // In: A = pin (0-15) | Out: A = value (0/1), Z = LOW | Read digital pin state
         PinWrite,         // In: A = pin (0-15), Y = value (0/1) | Out: None | Write digital pin state
 
-        FOpen,            // In: ZP.STR  = filename, ZP.NEXT = "w" or "r" | Out: ZP.TOP = FILE* on success, NULL on failure
-        FClose,           // In: ZP.NEXT = FILE* | Out: ZP.TOP = 0 (success) or -1 (failure)
-        FGetC,            // In: ZP.NEXT = FILE* | Out: ZP.TOP = c if positive, -1 if EOF
+        FOpen,            // In: STR=filename, NEXT=mode("w"/"r") | Out: TOP=FILE*/NULL
+        FClose,           // In: NEXT=FILE* | Out: TOP=0/-1
+        FGetC,            // In: NEXT=FILE* | Out: TOP=char(0-255)/-1
+        FRead,            // In: NEXT=FILE*, IDX=buffer, IDY=offset, ACC=count | Out: TOP=bytes read/-1
         
         
         // TODO:

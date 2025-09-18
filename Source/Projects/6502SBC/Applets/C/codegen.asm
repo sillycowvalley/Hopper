@@ -427,6 +427,11 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                             Library.FGetCCall();
                             if (NC) { break; }
                         }
+                        case FileFunction.FRead:
+                        {
+                            Library.FReadCall();
+                            if (NC) { break; }
+                        }
                         case FileFunction.FClose:
                         {
                             Library.FCloseCall();
@@ -436,7 +441,6 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                         case FileFunction.FGetS:
                         case FileFunction.FPutS:
                         case FileFunction.FEof:
-                        case FileFunction.FRead:
                         case FileFunction.FWrite:
                         {
 #ifdef DEBUG
