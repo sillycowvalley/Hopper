@@ -78,8 +78,17 @@ program CC
             }
         }
         
-        // Append 'X'
+        // Append ".EXE"
+        LDA #'.'
+        STA [ZP.IDX], Y
+        INY
+        LDA #'E'
+        STA [ZP.IDX], Y
+        INY
         LDA #'X'
+        STA [ZP.IDX], Y
+        INY
+        LDA #'E'
         STA [ZP.IDX], Y
         INY
         

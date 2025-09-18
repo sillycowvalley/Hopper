@@ -184,7 +184,11 @@ unit Prompt
                         Char.IsAlphaNumeric();
                         if (NC) 
                         {
-                            continue;
+                            CMP #'.'
+                            if (NZ)
+                            {
+                                continue;
+                            }
                         }
                         Char.ToUpper();
                         STA promptLastChar

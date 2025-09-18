@@ -128,7 +128,7 @@ unit Char
         AND # (CharClass.Alpha|CharClass.Digit)
         if (NZ)
         {
-            SEC // 'a'..'z' | 'A'..'Z'
+            SEC // 'a'..'z' | 'A'..'Z' | '0'..'9'
         }
         else
         {
@@ -136,6 +136,7 @@ unit Char
         }
         PLA
     }
+    
     
     // Input: A = character
     // Output: C = lower alpha, NC = not lower alpha

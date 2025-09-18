@@ -254,6 +254,20 @@ program BIOS
             return;
         }
         
+        // parseFilename() left ZP.STR pointing to filename in LineBuffer
+        // We need to copy it to start of LineBuffer first
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            STA Address.LineBuffer, Y
+            if (Z) { break; }
+            INY
+        }
+        
+        // Address.LineBuffer + ".EXE" -> STR
+        buildExecutableName();
+        
         // Check if file exists
         LDA # DirWalkAction.FindFile
         File.Exists();
@@ -402,6 +416,87 @@ program BIOS
         SEC              // Continue processing
     }
     
+    // Build executable filename from first word of LineBuffer
+    // Extracts the command name (up to first space) and conditionally appends .EXE
+    // 
+    // Input:  LineBuffer contains the full command line (e.g., "TYPE SOURCE.C")
+    // Output: GeneralBuffer contains executable filename
+    //         - If command has no extension (no dot): appends ".EXE"
+    //         - If command already has extension: keeps as-is
+    //
+    // Examples:
+    //   "TYPE SOURCE.C"  -> "TYPE.EXE"     (command "TYPE" gets .EXE)
+    //   "EDIT.TXT FILE"  -> "EDIT.TXT"     (already has extension)
+    //   "PROG"           -> "PROG.EXE"     (no extension, adds .EXE)
+    //   "TEST.COM"       -> "TEST.COM"     (keeps original extension)
+    //
+    // Preserves: LineBuffer unchanged (arguments remain available to program)
+    // Munts: A, GeneralBuffer, ZP.TEMP (temporary)
+    // Returns: STR pointing to GeneralBuffer with null-terminated filename (empty string if error)
+    buildExecutableName()
+    {
+        PHY
+        PHX
+        
+        LDY #0  // Source index (LineBuffer)
+        LDX #0  // Dest index (GeneralBuffer)
+        STZ ZP.TEMP  // ZP.TEMP = 1 if we found a dot (temp use)
+        
+        // Copy command name until null
+        loop
+        {
+            LDA Address.LineBuffer, Y
+            if (Z) { break; }      // End of line
+            
+            // Check for dot
+            CMP #'.'
+            if (Z) 
+            { 
+                INC ZP.TEMP     // Mark that we found a dot
+            }
+            
+            // Store character in GeneralBuffer
+            STA Address.GeneralBuffer, X
+            
+            INY
+            INX
+            CPX #60  // Leave room for .EXE and null (64 - 4 - 1 = 59, round to 60)
+            if (Z) { break; }  // Prevent buffer overrun
+        }
+        
+        // Only append .EXE if no dot was found
+        LDA ZP.TEMP
+        if (Z)  // No dot found
+        {
+            // Append .EXE (we have room since we stopped at 60)
+            LDA #'.'
+            STA Address.GeneralBuffer, X
+            INX
+            LDA #'E'
+            STA Address.GeneralBuffer, X
+            INX
+            LDA #'X'
+            STA Address.GeneralBuffer, X
+            INX
+            LDA #'E'
+            STA Address.GeneralBuffer, X
+            INX
+        }
+        
+        // Null terminator
+        LDA #0
+        STA Address.GeneralBuffer, X
+        
+        // Point ZP.STR to the result in GeneralBuffer
+        LDA # (Address.GeneralBuffer % 256)
+        STA ZP.STRL
+        LDA # (Address.GeneralBuffer / 256)
+        STA ZP.STRH
+        
+        PLX
+        PLY
+    }
+    
     parseAndExecute()
     {
         Error.FindKeyword(); // -> token in A
@@ -424,12 +519,8 @@ program BIOS
             }
         }
         
-        
-        // ZP.STR already points to LineBuffer from parseFilename logic
-        LDA # ( Address.LineBuffer % 256)
-        STA ZP.STRL
-        LDA # ( Address.LineBuffer / 256)
-        STA ZP.STRH
+        // Build filename with .EXE in STR-> GeneralBuffer (not modifying LineBuffer)
+        buildExecutableName();  // Creates "COMMAND.EXE" in STR-> GeneralBuffer
         
         // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
         //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile

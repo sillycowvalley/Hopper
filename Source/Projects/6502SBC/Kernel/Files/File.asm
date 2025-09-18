@@ -196,17 +196,18 @@ unit File
     ValidateFilename()
     {
         PHY
+        PHX
         
         loop // single exit block
         {
             LDY #0
+            LDX #0
             
             // Check if filename is empty
             LDA [ZP.STR], Y
             if (Z)
             {
-                Error.FilenameExpected();
-                CLC  // Empty filename invalid
+                Error.FilenameExpected(); // Empty filename invalid
                 break;
             }
             
@@ -214,34 +215,72 @@ unit File
             loop
             {
                 LDA [ZP.STR], Y
-                if (Z) { break; }  // End of string
+                if (Z) { SEC break; }  // End of string
                 
                 // Check if character is valid
                 Char.IsAlphaNumeric();
                 if (NC)
                 {
-                    Error.IllegalFilename();
-                    CLC  // Invalid character found
-                    break;
+                    CMP #'.'
+                    if (NZ)
+                    {
+                        Error.IllegalFilename(); // Invalid character found
+                        break;
+                    }
+                    else
+                    {
+                        INX // count the .
+                    }
                 }
                 
                 INY
                 CPY #14  // Max 13 characters + null terminator
                 if (Z)
                 {
-                    Error.FilenameTooLong();
-                    CLC  // Filename too long
+                    Error.FilenameTooLong(); // Filename too long
                     break;
                 }
-                SEC
             }
             if (NC) { break; }
             
+            switch (X)
+            {
+                case 0:
+                {
+                    SEC // no dots is valid
+                }
+                case 1:
+                {
+                    // one dot
+                    DEY // Y -> last character
+                    LDA [ZP.STR], Y
+                    CMP #'.'
+                    if (Z)
+                    {
+                        Error.IllegalFilename(); // last character is dot
+                        break;
+                    }
+                    LDA [ZP.STR] // first character
+                    CMP #'.'
+                    if (Z)
+                    {
+                        Error.IllegalFilename(); // first character is dot
+                        break;
+                    }
+                    SEC
+                }
+                default:
+                {
+                    Error.IllegalFilename(); // more than one dot
+                    break;
+                }
+            }
+            
             // Filename is valid (1-13 chars, valid characters)
-            SEC
             break;
         } // single exit
         
+        PLX
         PLY
     }
     
