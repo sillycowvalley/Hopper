@@ -134,8 +134,6 @@ program CC
         LDA ZP.STRH
         STA sourceNameH
         
-Print.NewLine(); LDA #'"' Print.Char(); Print.String(); LDA #'"' Print.Char();        
-        
         LDA # FileType.Any
         File.StartLoad();
         if (NC)

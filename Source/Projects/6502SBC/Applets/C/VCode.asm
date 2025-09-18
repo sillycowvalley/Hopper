@@ -1168,7 +1168,7 @@ Print.Space(); LDA #'J' Print.Char();
         LDA vzArgument
         if (Z)
         {
-            LDA #OpCode.STA_ZP
+            LDA #OpCode.STZ_ZP
             Gen6502.emitByte(); if (NC) { return; }    
         }
         else
@@ -1207,7 +1207,7 @@ Print.Space(); LDA #'J' Print.Char();
         LDA vzArgument
         if (Z)
         {
-            LDA #OpCode.STA_ZP
+            LDA #OpCode.STZ_ZP
             Gen6502.emitByte(); if (NC) { return; }    
         }
         else
@@ -1225,7 +1225,7 @@ Print.Space(); LDA #'J' Print.Char();
         LDA vzArgument1
         if (Z)
         {
-            LDA #OpCode.STA_ZP
+            LDA #OpCode.STZ_ZP
             Gen6502.emitByte(); if (NC) { return; }    
         }
         else
