@@ -79,7 +79,7 @@ unit BIOSInterface
         FOpen,            // In: STR=filename, NEXT=mode("w"/"r") | Out: TOP=FILE*/NULL
         FClose,           // In: NEXT=FILE* | Out: TOP=0/-1
         FGetC,            // In: NEXT=FILE* | Out: TOP=char(0-255)/-1
-        Read,             // In: NEXT=FILE*, IDX=buffer, ACC=count | Out: TOP=bytes read/-1
+        FRead,            // In: IDX=buffer, IDY = element size, ACC= element count, NEXT=FILE* | Out: TOP=bytes read/-1
         
         
         // TODO:

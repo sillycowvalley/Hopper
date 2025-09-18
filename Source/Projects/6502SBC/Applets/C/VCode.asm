@@ -327,10 +327,12 @@ unit VCode
         LDY #0
         loop
         {
-            
+   
+#ifdef DEBUG
 PHY
 LDA # OpCode.NOP  
 Gen6502.emitByte(); SEC PLY
+#endif
             
             LDA [vcodeBuffer], Y
             INY
@@ -481,10 +483,11 @@ loop { }
                     if (NC) { return; }
                 }
             }
-            
+#ifdef DEBUG
 PHY
 LDA #OpCode.NOP  
 Gen6502.emitByte(); SEC PLY
+#endif
 
             CPY vcodeOffset
             if (Z) { break; }

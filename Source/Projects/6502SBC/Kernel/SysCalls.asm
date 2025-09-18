@@ -308,10 +308,10 @@ unit SysCalls
                 Error.InvalidSystemCall();
 #endif
             }
-            case SysCall.Read:
+            case SysCall.FRead:
             {
 #if defined(CFILES)
-                File.Read();
+                File.FRead();
 #else
                 Error.InvalidSystemCall();
 #endif

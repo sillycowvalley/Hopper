@@ -33,7 +33,7 @@ unit Library
     const string sysfgets   = "fgets";
     const string sysfputs   = "fputs";
     const string sysfeof    = "feof";
-    const string sysread    = "read";
+    const string sysfread   = "fread";
     const string sysfwrite  = "fwrite";
     
     enum FileFunction
@@ -46,7 +46,7 @@ unit Library
         FGetS   = 0xF4,
         FPutS   = 0xF5,
         FEof    = 0xF6,
-        Read    = 0xF7,
+        FRead   = 0xF7,
         FWrite  = 0xF8,
     }
     
@@ -268,15 +268,15 @@ unit Library
             return;
         }
         
-        // Check for "read"
-        LDA #(sysread % 256)
+        // Check for "fread"
+        LDA #(sysfread % 256)
         STA ZP.IDYL
-        LDA #(sysread / 256)
+        LDA #(sysfread / 256)
         STA ZP.IDYH
         CompareStrings();
         if (C)
         {
-            LDA #FileFunction.Read
+            LDA #FileFunction.FRead
             SEC
             return;
         }
@@ -1305,19 +1305,25 @@ unit Library
         if (NC) { return; }
     }
     
-    ReadCall()
+    FReadCall()
     {
         
-        generateFirstArgExpression();  // FILE*
+        generateFirstArgExpression(); // buffer
         if (NC) { return; }
         
-        generateNextArgExpression(); // buffer
+        generateNextArgExpression();  // size of each element
         if (NC) { return; }
         
-        generateNextArgExpression();  // count
+        generateNextArgExpression();  // number of elements
         if (NC) { return; }
         
-        // Count -> ACC
+        generateNextArgExpression();  // FILE*
+        if (NC) { return; }
+        
+        // FILE* -> NEXT
+        VCode.PopNEXT(); if (NC) { return; }
+        
+        // number of elements -> ACC
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
@@ -1334,6 +1340,25 @@ unit Library
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.ACCH
+        EmitByte(); if (NC) { return; }
+        
+        // size of each element -> IDY
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDYL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDYH
         EmitByte(); if (NC) { return; }
              
         // buffer -> IDX
@@ -1355,13 +1380,11 @@ unit Library
         LDA # ZP.IDXH
         EmitByte(); if (NC) { return; }
         
-        // FILE* -> NEXT
-        VCode.PopNEXT(); if (NC) { return; }
-        
-        // LDX #SysCall.Read
+                
+        // LDX #SysCall.FRead
         LDA #OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
-        LDA # SysCall.Read
+        LDA # SysCall.FRead
         EmitByte(); if (NC) { return; }
         
         EmitDispatchCall();

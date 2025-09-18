@@ -427,9 +427,9 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                             Library.FGetCCall();
                             if (NC) { break; }
                         }
-                        case FileFunction.Read:
+                        case FileFunction.FRead:
                         {
-                            Library.ReadCall();
+                            Library.FReadCall();
                             if (NC) { break; }
                         }
                         case FileFunction.FClose:

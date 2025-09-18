@@ -2982,19 +2982,22 @@ unit File
     }
     
     // Aliases tp split ZP.TOP and ZP.NEXT
-    const byte bytesReadL = ZP.TOP0;
-    const byte bytesReadH = ZP.TOP1;
-    const byte writePtr   = ZP.NEXT2;
-    const byte writePtrL  = ZP.NEXT2;
-    const byte writePtrH  = ZP.NEXT3;
+    const byte bytesReadL = ZP.NEXT2;
+    const byte bytesReadH = ZP.NEXT3;
+    const byte writePtr   = ZP.ACCL;
+    const byte writePtrL  = ZP.ACCL;
+    const byte writePtrH  = ZP.ACCH;
+    const byte bytesRequiredL = ZP.NEXT0;
+    const byte bytesRequiredH = ZP.NEXT1;
     
     
     // Read bytes from file
-    // In:  ZP.NEXT = FILE* (using NEXT0..1)
-    //      ZP.IDX = buffer pointer (IDXL/IDXH)
-    //      ZP.ACC = count (ACCL/ACCH)
+    // In:  ZP.IDX = buffer pointer (IDXL/IDXH)
+    //      ZP.IDY = element size   (IDYL/IDYH)
+    //      ZP.ACC = element count  (ACCL/ACCH)
+    //      ZP.NEXT = FILE* (using NEXT0..1)
     // Out: ZP.TOP = bytes read, -1 if EOF (using TOP0..3)
-    Read()
+    FRead()
     {
         loop // single exit
         {
@@ -3006,6 +3009,32 @@ unit File
             if (BBR0, cfilesFILE) { CLC break; }  // Not open
             if (BBS1, cfilesFILE) { CLC break; }  // Write mode - can't read
             
+            loop
+            {
+                LDA ZP.IDYL
+                STA ZP.NEXT0
+                LDA ZP.IDYH
+                STA ZP.NEXT1
+                STZ ZP.NEXT2
+                STZ ZP.NEXT3
+                
+                LDA ZP.ACCH
+                if (Z)
+                {
+                    LDA ZP.ACCL
+                    CMP #1
+                    if (Z)
+                    {
+                        // trivial case: 1 element
+                        break;
+                    }
+                }
+                Shared.MoveAccToTop();
+                Long.Mul(); // NEXT = NEXT * TOP
+                
+                break;
+            }
+            
             // initialize location in the buffer to write to            
             LDA ZP.IDXL
             STA writePtrL
@@ -3016,16 +3045,19 @@ unit File
             STZ bytesReadL
             STZ bytesReadH
             
+            // bytesRequiredL == NEXT0
+            // bytesRequiredH == NEXT1
+            
             // Read loop
             loop
             {
                 // Check if we've read requested count
                 LDA bytesReadL
-                CMP ZP.ACCL
+                CMP bytesRequiredL
                 if (Z)
                 {
                     LDA bytesReadH
-                    CMP ZP.ACCH
+                    CMP bytesRequiredH
                     if (Z) { SEC break; }  // Read complete
                 }
                 
@@ -3041,7 +3073,7 @@ unit File
                     CMP TransferLengthL
                     if (Z)  // Reached end of this buffer
                     {
-                        File.NextStream();  // preserves X and Y but munts IDX/IDY
+                        File.NextStream();  // preserves X and Y but munts IDX, IDY, TOP
                         if (NC)  // No more data
                         {
                             SMB2 cfilesFILE  // Set EOF bit
@@ -3066,12 +3098,14 @@ unit File
                 
                 // Increment bytes read
                 INC bytesReadL if (Z) { INC bytesReadH }
-            }// read loop
+            }// read loop
             
             if (NC) { break; } // never happens (see exits above)
             
-            // bytesReadL == ZP.TOP0
-            // bytesReadH == ZP.TOP1
+            LDA bytesReadL
+            STA ZP.TOP0
+            LDA bytesReadH
+            STA ZP.TOP1
             STZ ZP.TOP2
             STZ ZP.TOP3
             
