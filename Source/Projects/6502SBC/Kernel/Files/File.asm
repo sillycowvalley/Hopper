@@ -2992,10 +2992,9 @@ unit File
     // Read bytes from file
     // In:  ZP.NEXT = FILE* (using NEXT0..1)
     //      ZP.IDX = buffer pointer (IDXL/IDXH)
-    //      ZP.IDY = index in buffer (IDYL/IDYH)
     //      ZP.ACC = count (ACCL/ACCH)
     // Out: ZP.TOP = bytes read, -1 if EOF (using TOP0..3)
-    FRead()
+    Read()
     {
         loop // single exit
         {
@@ -3008,12 +3007,9 @@ unit File
             if (BBS1, cfilesFILE) { CLC break; }  // Write mode - can't read
             
             // initialize location in the buffer to write to            
-            CLC
             LDA ZP.IDXL
-            ADC ZP.IDYL
             STA writePtrL
             LDA ZP.IDXH
-            ADC ZP.IDYH
             STA writePtrH
             
             // Initialize bytes read counter
@@ -3070,7 +3066,9 @@ unit File
                 
                 // Increment bytes read
                 INC bytesReadL if (Z) { INC bytesReadH }
-            }
+            }// read loop
+            
+            if (NC) { break; } // never happens (see exits above)
             
             // bytesReadL == ZP.TOP0
             // bytesReadH == ZP.TOP1
