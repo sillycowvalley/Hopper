@@ -44,8 +44,8 @@ program CC
     // Create output filename: "HELLO" -> "HELLOX"
     makeOutputName()
     {
-        // Allocate buffer for output name (14 bytes max + X + null)
-        LDA #16
+        // Allocate buffer for output name (14 bytes max + ".EXE" + null)
+        LDA #20
         STA ZP.ACCL
         STZ ZP.ACCH
         Memory.Allocate();
@@ -66,6 +66,9 @@ program CC
         {
             LDA [sourceName], Y
             if (Z) { break; }  // Found null
+            CMP #'.'
+            if (Z) { break; }  // Found "." (like ".C")
+            
             STA [ZP.IDX], Y
             INY
             CPY #13  // Max filename length
@@ -130,6 +133,8 @@ program CC
         STA sourceNameL
         LDA ZP.STRH
         STA sourceNameH
+        
+Print.NewLine(); LDA #'"' Print.Char(); Print.String(); LDA #'"' Print.Char();        
         
         LDA # FileType.Any
         File.StartLoad();
@@ -203,7 +208,7 @@ if (NC)
             CodeGen.Compile();
             if (C)
             {
-                // Create output filename by appending 'X'
+                // Create output filename by adding ".EXE"
                 makeOutputName(); // -> STR
                 if (C)
                 {

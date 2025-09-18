@@ -12,14 +12,38 @@ unit Args
         PHY
         PHX
         
-        getArgument();
+        getArgument(); // filename length -> A, X != 0 means "." seen
+        
+        // append ".C" if there is no "."
+        CPX #0
+        if (Z)
+        {
+            // getArgument gives us a STR that is pointing into Address.LineBuffer so we can extend the filename safely
+            LDY #0
+            loop
+            {
+                LDA [ZP.STR], Y
+                if (Z) { break; } 
+                INY
+            }
+            LDA #'.'
+            STA [ZP.STR], Y
+            INY
+            LDA #'C'
+            STA [ZP.STR], Y
+            INY
+            LDA #0
+            STA [ZP.STR], Y
+            TYA // length -> A
+        }
+        
         
         PLX
         PLY
     }
     
     // Private helper: Check for command line argument
-    // Output: C set if argument exists, STR points to argument, A = length
+    // Output: C set if argument exists, STR points to argument, A = length, X != 0 - there was a dot
     //         NC if no argument
     getArgument()
     {
@@ -63,19 +87,26 @@ unit Args
         ADC #0
         STA ZP.STRH
         
-        // Measure argument length
+        // Measure argument length and look for "."
+        STZ ZP.TEMP
         LDX #0  // Length counter
         loop
         {
             LDA Address.LineBuffer, Y
             if (Z) { break; }  // Found end of argument
+            CMP #'.'
+            if (Z)
+            {
+                INC ZP.TEMP // "." found
+            }
             INX
             INY
             CPY #64
             if (Z) { break; }  // Hit end of buffer
         }
-        
         TXA  // Return length in A
+        
+        LDX ZP.TEMP // non-zero -> dot exists
         
         SEC  // Argument exists
     }
