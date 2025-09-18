@@ -806,7 +806,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [AST.astNode], Y
             STA ZP.IDXH
             
-            generateExpression(); if (NC) { break; }
+            generateExpression(); if (NC) { break; } // AST.astNode first child
             
             // Left operand is now on stack
             
@@ -1427,7 +1427,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [AST.astNode], Y
             STA ZP.IDXH
             
-            generateExpression(); if (NC) { break; }
+            generateExpression(); if (NC) { break; } // AST.astNode first child
             
             // Pop result to check it
             PopNEXT(); if (NC) { break; }
@@ -1703,10 +1703,8 @@ Print.Hex(); LDA #'s' Print.Char();
             LDA [AST.astNode], Y
             STA ZP.IDXH
             
-
-            
             // Generate condition expression
-            generateExpression(); if (NC) { break; }
+            generateExpression(); if (NC) { break; } // AST.astNode first child
             
             // Pop result to check it
             PopNEXT();  if (NC) { break; }

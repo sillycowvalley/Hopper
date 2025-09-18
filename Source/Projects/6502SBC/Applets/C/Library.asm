@@ -385,7 +385,7 @@ unit Library
         SEC
     }
     
-    PutcharCall()
+    generateFirstArgExpression()
     {
         // Get first argument node (skip identifier, get its sibling)
         LDY #AST.iChild
@@ -398,16 +398,32 @@ unit Library
         
         LDY #AST.iNext
         LDA [ZP.IDX], Y
+        PHA
         TAX
         INY
         LDA [ZP.IDX], Y
+        PHA
         STA ZP.IDXH
         STX ZP.IDXL
         
-        // Generate argument and pop to NEXT
-        CodeGen.generateExpression(); if (NC) { return; }
+        loop
+        {
+            // Generate argument and pop to NEXT
+            CodeGen.generateExpression(); if (NC) { break; }
         
-        VCode.PopNEXT(); if (NC) { return; }
+            VCode.PopNEXT();
+            break;
+        }
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+    }
+    
+    PutcharCall()
+    {
+        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        if (NC) { return; }
         
         // Move character from NEXT0 to A and call PrintChar
         LDA #OpCode.LDA_ZP
@@ -437,28 +453,7 @@ unit Library
     // Stack out: pointer (32-bit, 0x0000 if failed)
     AllocCall()
     {
-        // Get first argument node (skip identifier, get its sibling)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        // Generate argument and pop to NEXT
-        CodeGen.generateExpression(); if (NC) { return; }
-        
-        // Pop size argument into ZP.NEXT (32-bit value)
-        VCode.PopNEXT();
+        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
         if (NC) { return; }
         
         // Move low 16 bits to ZP.ACC for BIOS call
@@ -561,28 +556,7 @@ unit Library
     // Stack out: nothing (void function)
     FreeCall()
     {
-        // Get first argument node (skip identifier, get its sibling)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        // Generate argument and pop to NEXT
-        CodeGen.generateExpression(); if (NC) { return; }
-        
-        // Pop pointer argument into ZP.NEXT (32-bit value)
-        VCode.PopNEXT();
+        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
         if (NC) { return; }
         
         // Check for NULL pointer (free(NULL) is a no-op in C)
@@ -691,7 +665,7 @@ unit Library
         STA ZP.IDXL
         LDA libArgH
         STA ZP.IDXH
-        CodeGen.generateExpression(); if (NC) { return; }
+        CodeGen.generateExpression(); if (NC) { return; } // emit arg
         
         // Pop value from stack into NEXT
         PopNEXT(); if (NC) { return; }
@@ -746,7 +720,7 @@ unit Library
         STA ZP.IDXL
         LDA libArgH
         STA ZP.IDXH
-        CodeGen.generateExpression(); if (NC) { return; }
+        CodeGen.generateExpression(); if (NC) { return; } // emit arg
         
         // Pop from stack into ZP.TOP
         PopTOP(); if (NC) { return; }
@@ -794,7 +768,7 @@ unit Library
         STA ZP.IDXL
         LDA libArgH
         STA ZP.IDXH
-        CodeGen.generateExpression(); if (NC) { return; }
+        CodeGen.generateExpression(); if (NC) { return; } // emit arg
         
         // Pop pointer from stack into NEXT (32-bit value)
         PopNEXT(); if (NC) { return; }
@@ -1049,15 +1023,9 @@ unit Library
         // Stack on entry: [return slots] [filename] [mode]
         // BIOS expects: ZP.STR = filename, ZP.NEXT = mode
         
-        // Get first argument node (skip identifier, get its sibling)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
+        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        if (NC) { return; }
+               
         LDY #AST.iNext
         LDA [ZP.IDX], Y
         TAX
@@ -1065,34 +1033,6 @@ unit Library
         LDA [ZP.IDX], Y
         STA ZP.IDXH
         STX ZP.IDXL
-        
-Print.NewLine(); LDA ZP.IDXH Print.Hex();  LDA ZP.IDXL Print.Hex();     
-        
-        LDA ZP.IDXH
-        PHA
-        LDA ZP.IDXL
-        PHA
-        
-        CodeGen.generateExpression(); if (NC) { PLA PLA return; }
-        
-        // Pop filename into NEXT  
-        VCode.PopNEXT();
-        if (NC) { PLA PLA return; }
-        
-        PLA
-        STA ZP.IDXL
-        PLA
-        STA ZP.IDXH
-        
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-Print.NewLine(); LDA ZP.IDXH Print.Hex();  LDA ZP.IDXL Print.Hex();
         
         CodeGen.generateExpression(); if (NC) { return; }
         
@@ -1144,27 +1084,7 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex();  LDA ZP.IDXL Print.Hex();
         // Stack on entry: [return slots] [FILE*]
         // BIOS expects: ZP.NEXT = FILE*
         
-        // Get first argument node (skip identifier, get its sibling)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        CodeGen.generateExpression(); if (NC) { return; }
-        
-        // Pop FILE* into NEXT
-        VCode.PopNEXT();
+        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
         if (NC) { return; }
         
         // LDX #SysCall.FGetC
@@ -1187,27 +1107,7 @@ Print.NewLine(); LDA ZP.IDXH Print.Hex();  LDA ZP.IDXL Print.Hex();
         // Stack on entry: [return slots] [FILE*]
         // BIOS expects: ZP.NEXT = FILE*
         
-        // Get first argument node (skip identifier, get its sibling)
-        LDY #AST.iChild
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
-        
-        CodeGen.generateExpression(); if (NC) { return; }
-        
-        // Pop FILE* into NEXT
-        VCode.PopNEXT();
+        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
         if (NC) { return; }
         
         // LDX #SysCall.FClose
