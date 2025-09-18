@@ -316,6 +316,22 @@ unit SysCalls
                 Error.InvalidSystemCall();
 #endif
             }
+            case SysCall.FPutC:
+            {
+#if defined(CFILES)
+                File.FPutC();
+#else
+                Error.InvalidSystemCall();
+#endif
+            }
+            case SysCall.FWrite:
+            {
+#if defined(CFILES)
+                File.FWrite();
+#else
+                Error.InvalidSystemCall();
+#endif
+            }
             case SysCall.FClose:
             {
 #if defined(CFILES)

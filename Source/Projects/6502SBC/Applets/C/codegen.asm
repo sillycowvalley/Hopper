@@ -438,9 +438,6 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                             if (NC) { break; }
                         }
                         case FileFunction.FPutC:
-                        case FileFunction.FGetS:
-                        case FileFunction.FPutS:
-                        case FileFunction.FEof:
                         case FileFunction.FWrite:
                         {
 #ifdef DEBUG

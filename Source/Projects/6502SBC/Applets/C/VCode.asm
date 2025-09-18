@@ -775,7 +775,7 @@ Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
                         case VOpCode.TOPtoNEXT:
                         {
 /*                            
-                            // TODO : TOPtoNEXT side effect lost (NEXT no longer has value from TOP)
+                            // TODO: TOPtoNEXT side effect lost (NEXT no longer has value from TOP)
                             // DEFECT: see (c = fgetc(fp)) != -1
                             // TOPtoNEXT, PutNEXT -> PutTOP
                             popPeep();

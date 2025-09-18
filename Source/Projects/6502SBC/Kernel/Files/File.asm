@@ -185,6 +185,7 @@ unit File
     // Bit 0 - open state 
     // Bit 1 - read "r" (0) or write "w" (1) 1 byte
     // Bit 2 - eof indicator
+    // Bit 3 - fopen filename was ".EXE"
 #endif    
 
     
@@ -2860,6 +2861,50 @@ unit File
                 
                 LDA #0b00000011             // Set open bit and write bit
                 STA cfilesFILE
+                
+                // If filename for fopen had ".EXE" extension then SMB3 cfilesFILE
+                LDY #0
+                loop
+                {
+                    LDA [STR], Y
+                    if (Z) { break; }
+                    CMP #'.'
+                    if (Z) { break; }
+                    INY
+                }
+                loop
+                {
+                    CMP #'.'
+                    if (Z)
+                    {
+                        INY
+                        LDA [STR], Y 
+                        CMP #'E'
+                        if (Z)
+                        {
+                            INY
+                            LDA [STR], Y 
+                            CMP #'X'
+                            if (Z)
+                            {
+                                INY
+                                LDA [STR], Y 
+                                CMP #'E'
+                                if (Z)
+                                {
+                                    INY
+                                    LDA [STR], Y 
+                                    if (Z)
+                                    {
+                                        SMB3 cfilesFILE
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                } // extension loop
+                
                 SEC
                 break;
             }
@@ -2897,7 +2942,14 @@ unit File
             // If opened for write, finalize the file
             if (BBS1, cfilesFILE)  // Bit 1 set = write mode
             {
-                LDA #0x00            // Data file (not executable)
+                if (BBS3, cfilesFILE)  // Bit 3 set = EXE
+                {
+                    LDA #0x80  // Executable flag
+                }
+                else
+                {
+                    LDA #0x00            // Data file (not executable)
+                }
                 File.EndSave();      // preserves X and Y
                 if (NC) { break; }          // EndSave failed?
             }
@@ -2981,7 +3033,7 @@ unit File
         }
     }
     
-    // Aliases tp split ZP.TOP and ZP.NEXT
+    // Aliases to split ZP.NEXT
     const byte bytesReadL = ZP.NEXT2;
     const byte bytesReadH = ZP.NEXT3;
     const byte writePtr   = ZP.ACCL;
@@ -3136,6 +3188,134 @@ unit File
         STA ZP.TOP1
         STA ZP.TOP2
         STA ZP.TOP3
+    }
+    
+    // Put character to file
+    // Input:  ZP.ACC = character (0-255), ZP.NEXT = FILE*
+    // Output: ZP.TOP = character written (0-255) or -1 for error
+    FPutC()
+    {
+        loop // single exit
+        {
+            // Check if valid FILE*
+            LDA ZP.NEXT0  // assume 0x00 or 0x01
+            if (Z) { CLC break; }  // NULL pointer
+            
+            // Check if file is open for writing
+            if (BBR0, cfilesFILE) { CLC break; }  // Not open
+            if (BBR1, cfilesFILE) { CLC break; }  // Read mode - can't write
+            
+            // Set up for AppendStream
+            LDA # ZP.ACCL
+            STA SectorSourceL
+            LDA # 0
+            STA SectorSourceH
+            
+            LDA #1
+            STA TransferLengthL
+            STZ TransferLengthH
+            
+            // Write the byte
+            File.AppendStream();  // preserves X and Y
+            if (NC) { break; }    // Write failed
+            
+            // Return the character written
+            LDA ZP.ACCL
+            Shared.LoadTopByte();  // Character in ZP.TOP0, rest zeroed
+            
+            SEC  // Success
+            break;
+        } // single exit
+        
+        if (NC)
+        {
+            LDA #0xFF  // Return -1
+            STA ZP.TOP0
+            STA ZP.TOP1
+            STA ZP.TOP2
+            STA ZP.TOP3
+        }
+    }
+    
+    // Write bytes to file
+    // In:  ZP.IDX = buffer pointer (IDXL/IDXH)
+    //      ZP.IDY = element size   (IDYL/IDYH)
+    //      ZP.ACC = element count  (ACCL/ACCH)
+    //      ZP.NEXT = FILE* (using NEXT0..1)
+    // Output: ZP.TOP = bytes written or -1 for error
+    FWrite()
+    {
+        loop // single exit
+        {
+            // Check if valid FILE*
+            LDA ZP.NEXT0  // assume 0x00 or 0x01
+            if (Z) { CLC break; }  // NULL pointer
+            
+            // Check if file is open for writing
+            if (BBR0, cfilesFILE) { CLC break; }  // Not open
+            if (BBR1, cfilesFILE) { CLC break; }  // Read mode - can't write
+            
+            LDA ZP.IDXL
+            STA SectorSourceL
+            LDA ZP.IDXH
+            STA SectorSourceH
+            
+            loop
+            {
+                LDA ZP.IDYL
+                STA ZP.NEXT0
+                LDA ZP.IDYH
+                STA ZP.NEXT1
+                STZ ZP.NEXT2
+                STZ ZP.NEXT3
+                
+                LDA ZP.ACCH
+                if (Z)
+                {
+                    LDA ZP.ACCL
+                    CMP #1
+                    if (Z)
+                    {
+                        // trivial case: 1 element
+                        break;
+                    }
+                }
+                Shared.MoveAccToTop();
+                Long.Mul(); // NEXT = NEXT * TOP
+                
+                break;
+            }
+            
+            // Set transfer length
+            LDA ZP.NEXT0
+            STA TransferLengthL
+            LDA ZP.NEXT1
+            STA TransferLengthH
+            
+            // Write the bytes
+            File.AppendStream();  // preserves X and Y
+            if (NC) { break; }    // Write failed
+            
+            // Return count of bytes written
+            LDA TransferLengthL
+            STA ZP.TOP0
+            LDA TransferLengthH
+            STA ZP.TOP1
+            STZ ZP.TOP2
+            STZ ZP.TOP3
+            
+            SEC  // Success
+            break;
+        } // single exit
+        
+        if (NC)
+        {
+            LDA #0xFF  // Return -1
+            STA ZP.TOP0
+            STA ZP.TOP1
+            STA ZP.TOP2
+            STA ZP.TOP3
+        }
     }
     
     

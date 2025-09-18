@@ -160,7 +160,7 @@ unit Parser
             }
         }
 
-        // TODO : we need to be able to peek next token (not next char, which could be whitespace)        
+        // TODO: we need to be able to peek next token (not next char, which could be whitespace)        
         Lexer.CurrentChar();
         CMP #'('
         if (NZ)
@@ -2258,7 +2258,6 @@ unit Parser
                     if (NC) { return; }
                 }
             }
-            // TODO: Add array indexing with '['
             SEC
             break;  // No more postfix operators
         }

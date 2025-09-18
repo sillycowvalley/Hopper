@@ -30,9 +30,6 @@ unit Library
     const string sysfclose  = "fclose";
     const string sysfgetc   = "fgetc";
     const string sysfputc   = "fputc";
-    const string sysfgets   = "fgets";
-    const string sysfputs   = "fputs";
-    const string sysfeof    = "feof";
     const string sysfread   = "fread";
     const string sysfwrite  = "fwrite";
     
@@ -43,11 +40,8 @@ unit Library
         FClose  = 0xF1,
         FGetC   = 0xF2,
         FPutC   = 0xF3,
-        FGetS   = 0xF4,
-        FPutS   = 0xF5,
-        FEof    = 0xF6,
-        FRead   = 0xF7,
-        FWrite  = 0xF8,
+        FRead   = 0xF4,
+        FWrite  = 0xF5,
     }
     
     // Emit a JSR to the BIOS dispatch function
@@ -165,7 +159,7 @@ unit Library
         }  
         
         
-        // TODO : add more system functions here...
+        // TODO: add more system functions here...
         
         CLC  // Not a system function
     }
@@ -225,45 +219,6 @@ unit Library
         if (C)
         {
             LDA #FileFunction.FPutC
-            SEC
-            return;
-        }
-        
-        // Check for "fgets"
-        LDA #(sysfgets % 256)
-        STA ZP.IDYL
-        LDA #(sysfgets / 256)
-        STA ZP.IDYH
-        CompareStrings();
-        if (C)
-        {
-            LDA #FileFunction.FGetS
-            SEC
-            return;
-        }
-        
-        // Check for "fputs"
-        LDA #(sysfputs % 256)
-        STA ZP.IDYL
-        LDA #(sysfputs / 256)
-        STA ZP.IDYH
-        CompareStrings();
-        if (C)
-        {
-            LDA #FileFunction.FPutS
-            SEC
-            return;
-        }
-        
-        // Check for "feof"
-        LDA #(sysfeof % 256)
-        STA ZP.IDYL
-        LDA #(sysfeof / 256)
-        STA ZP.IDYH
-        CompareStrings();
-        if (C)
-        {
-            LDA #FileFunction.FEof
             SEC
             return;
         }
@@ -699,7 +654,7 @@ unit Library
         // Pop value from stack into NEXT
         PopNEXT(); if (NC) { return; }
         
-        // TODO : VCode.PopCHAR()
+        // TODO: VCode.PopCHAR()
         
         // Generate: LDA NEXT0 (character is in low byte)
         LDA #OpCode.LDA_ZP
@@ -947,7 +902,7 @@ unit Library
         LDA #OpCode.PHA
         EmitByte();if (NC) { return;}
         
-        // TODO : VCode.NEXTtoSTR()
+        // TODO: VCode.NEXTtoSTR()
         
         // Generate: LDA NEXT0
         LDA #OpCode.LDA_ZP

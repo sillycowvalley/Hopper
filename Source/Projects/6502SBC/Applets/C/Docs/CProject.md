@@ -1,77 +1,16 @@
-# C Compiler for Hopper BIOS - Project Specification v1.0
+# C Compiler for Hopper BIOS - Project Specification v2.0
 
 ## Overview
-A minimal C compiler that runs natively on 6502 under Hopper BIOS, capable of compiling simple C programs to executable binaries.
-
-## Target Programs
-The compiler must successfully compile these two benchmark programs:
-
-### Program 1: BENCH.C
-```c
-// Noel's RetroLab Benchmark
-void main() {
-    long s;
-    long st = seconds();
-    long start = millis();
-    
-    int i, j;
-    for (i = 1; i <= 10; i++) {
-        s = 0;
-        for (j = 1; j <= 1000; j++) {
-            s = s + j;
-        }
-        putchar('.');
-    }
-    
-    printf("%ld\n", s);
-    printf("%ld ms\n", millis() - start);
-    printf("%ld seconds\n", seconds() - st);
-}
-```
-
-### Program 2: FIBO.C
-```c
-// Recursive Fibonacci benchmark
-int fibo(int n) {
-    if (n <= 1) {
-        return n;
-    }
-    return fibo(n-1) + fibo(n-2);
-}
-
-void benchmark(char* name, int arg, int loops) {
-    long start;
-    int result;
-    int count;
-    long elapsed;
-    long avgS;
-    
-    start = seconds();
-    
-    for (count = 0; count < loops; count++) {
-        result = fibo(arg);
-    }
-    
-    elapsed = seconds() - start;
-    avgS = elapsed / loops;
-    
-    printf("%s(%d) = %d in %ld seconds average\n", 
-           name, arg, result, avgS);
-}
-
-void main() {
-    benchmark("Fibo", 10, 5);
-}
-```
+A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C programs with pointer operations, file I/O, and dynamic memory management to executable binaries.
 
 ## Language Specification
 
 ### Supported Types
 - `void` - No value
-- `char` - 8-bit value
-- `int` - 16-bit signed integer  
+- `char` - 8-bit value  
+- `int` - 16-bit signed integer
 - `long` - 32-bit signed integer
-- `char*` - 16-bit pointer to char (strings only)
+- `char*` - 16-bit pointer to char (strings and buffers)
 
 ### Type Conversion Rules
 - **Implicit promotion**: Narrower types promote to wider in binary operations
@@ -79,7 +18,34 @@ void main() {
 - **Function arguments**: Promote to match parameter type
 - **Return values**: Convert to declared return type
 
-### Grammar (Minimal Subset)
+### Operators
+
+#### Arithmetic Operators
+- Binary: `+`, `-`, `*`, `/`, `%`
+- Unary: `-` (negation)
+
+#### Comparison Operators
+- `<`, `>`, `<=`, `>=`, `==`, `!=`
+
+#### Assignment Operators
+- Simple assignment: `=`
+- Compound assignment: `+=`, `-=`
+
+#### Increment/Decrement Operators
+- Postfix: `++`, `--` (e.g., `i++`, `count--`)
+
+#### Pointer Operators
+- Dereference: `*ptr` (read value at pointer)
+- Address-of: `&var` (get address of variable) [planned]
+- Array indexing: `buffer[n]` (equivalent to `*(buffer + n)`)
+
+### Control Structures
+- `if` / `else` statements
+- `for` loops
+- `while` loops
+- `return` statements
+
+### Grammar (Extended)
 ```
 <program> ::= <function>+
 
@@ -88,31 +54,58 @@ void main() {
 <statement> ::= <var-decl>
               | <expr-stmt>
               | <if-stmt>
+              | <while-stmt>
               | <for-stmt>
               | <return-stmt>
               | <compound-stmt>
 
-<if-stmt> ::= "if" "(" <expression> ")" <statement>
+<if-stmt> ::= "if" "(" <expression> ")" <statement> ("else" <statement>)?
+
+<while-stmt> ::= "while" "(" <expression> ")" <statement>
 
 <for-stmt> ::= "for" "(" <expr-stmt> <expression> ";" <expression>? ")" <statement>
 
 <expression> ::= <assignment>
-<assignment> ::= <relational> ("=" <assignment>)?
-<relational> ::= <additive> (("<" | ">" | "<=" | ">=") <additive>)*
+<assignment> ::= <relational> (("=" | "+=" | "-=") <assignment>)?
+<relational> ::= <additive> (("<" | ">" | "<=" | ">=" | "==" | "!=") <additive>)*
 <additive> ::= <multiplicative> (("+" | "-") <multiplicative>)*
-<multiplicative> ::= <postfix> (("*" | "/" | "%") <postfix>)*
-<postfix> ::= <primary> ("(" <arg-list>? ")")*
+<multiplicative> ::= <unary> (("*" | "/" | "%") <unary>)*
+<unary> ::= ("*" | "-")? <postfix>
+<postfix> ::= <primary> ("++" | "--" | "[" <expression> "]" | "(" <arg-list>? ")")*
 <primary> ::= <identifier> | <integer> | <string> | "(" <expression> ")"
-            
 ```
 
-### Built-in Functions
+## Built-in Functions
+
+### Console I/O
 ```c
-void putchar(char c);      // Maps to Serial.WriteChar
-long millis(void);         // Maps to Time.Millis  
-long seconds(void);        // Maps to Time.Seconds
-void printf(char* fmt, ...); // Special handling, supports %d, %ld, %s
+void putchar(char c);        // Maps to Serial.WriteChar
+void printf(char* fmt, ...); // Supports %d, %ld, %x, %s, %c formatters
 ```
+
+### Time Functions
+```c
+long millis(void);    // Maps to Time.Millis (milliseconds since boot)
+long seconds(void);   // Maps to Time.Seconds (seconds since boot)
+```
+
+### Memory Management
+```c
+void* malloc(int size);  // Maps to SysCall.MemAllocate
+void free(void* ptr);    // Maps to SysCall.MemFree
+```
+
+### File I/O
+```c
+FILE* fopen(char* filename, char* mode);     // Maps to SysCall.FOpen
+int fclose(FILE* fp);                        // Maps to SysCall.FClose
+int fgetc(FILE* fp);                         // Maps to SysCall.FGetC
+int fputc(int c, FILE* fp);                  // Maps to SysCall.FPutC
+int fread(void* ptr, int size, int n, FILE* fp);  // Maps to SysCall.FRead
+int fwrite(void* ptr, int size, int n, FILE* fp); // Maps to SysCall.FWrite
+```
+
+**Note**: Only one file can be open at a time in the Hopper BIOS file system.
 
 ## Runtime Architecture
 
@@ -122,12 +115,16 @@ void printf(char* fmt, ...); // Special handling, supports %d, %ld, %s
 0x0300-0x03FF: Stack page 1 (byte 1 of 32-bit values)
 0x0400-0x04FF: Stack page 2 (byte 2 of 32-bit values)  
 0x0500-0x05FF: Stack page 3 (MSB of 32-bit values)
-0x0058-0x005F: C runtime zero page
+0x0058-0x005F: C runtime zero page (see below)
+0x0060-0x0068: Runtime stack pointers
+0x00C0-0x00C3: Library work space
 0x0800:        Program entry point & code start
 After code:    String literals
 ```
 
-### Zero Page Allocation (C Runtime)
+### Zero Page Allocation
+
+#### C Runtime (0x58-0x5F)
 ```
 0x58: cBP      - Base pointer (frame pointer)
 0x59: cTemp1   - Expression evaluation temp
@@ -137,6 +134,21 @@ After code:    String literals
 0x5D: (reserved)
 0x5E: cReturnL - Return value low
 0x5F: cReturnH - Return value high
+```
+
+#### Runtime Stack Pointers (0x60-0x68)
+```
+0x60: runtimeBP         - Runtime base pointer
+0x61-0x62: runtimeStack0L/H - Pointer to stack page 0x01
+0x63-0x64: runtimeStack1L/H - Pointer to stack page 0x02
+0x65-0x66: runtimeStack2L/H - Pointer to stack page 0x03
+0x67-0x68: runtimeStack3L/H - Pointer to stack page 0x04
+```
+
+#### Library Work Space (0xC0-0xC3)
+```
+0xC0-0xC1: libArgL/H   - Library argument passing
+0xC2-0xC3: libStrL/H   - String pointer for library functions
 ```
 
 ### Calling Convention
@@ -197,9 +209,14 @@ RTS
 
 ### Components
 1. **Lexer** - Streams tokens from source file using File.NextStream
-2. **Parser** - Builds AST using heap allocation
-3. **Type Checker** - Walks AST, validates types
-4. **Code Generator** - Emits to code buffer
+2. **Parser** - Builds AST using heap allocation, supports all new operators
+3. **Type Checker** - Walks AST, validates types and pointer operations
+4. **Code Generator** - Emits to code buffer with support for:
+   - Compound assignments
+   - Increment/decrement operations
+   - Pointer dereference (read/write)
+   - Array indexing
+   - While loops
 5. **Linker** - Patches addresses, appends literals, writes executable
 
 ### Data Structures
@@ -214,315 +231,331 @@ Per symbol:
 - Next pointer (linked list)
 ```
 
-#### AST Nodes (Heap Allocated)
+#### AST Nodes (Extended)
 ```
 Node types:
-- FunctionDef, VarDecl, If, For, Return, Block
+- FunctionDef, VarDecl, If, While, For, Return, Block
 - BinOp, UnaryOp, Call, Assign, Ident, IntLit, StringLit
+- PostfixOp (for ++ and --)
 
-Node structure varies by type:
-BinOp:  [type][op][left_ptr:2][right_ptr:2]
-IntLit: [type][value:4]
-Ident:  [type][symbol_ptr:2]
+Node structure examples:
+BinOp:     [type][op][left_ptr:2][right_ptr:2]
+UnaryOp:   [type][op][child_ptr:2]
+PostfixOp: [type][op][child_ptr:2]
+IntLit:    [type][value:4]
+Ident:     [type][symbol_ptr:2]
 ```
 
-### Code Generation
+### Code Generation Features
 
-#### Code Buffer
-- Initially allocate 8KB via Memory.Allocate()
-- Can grow if needed
-- Tracks current position for emission
-
-#### String Literal Buffer
-- Separate buffer for collecting literals
-- Appended to code at end
-- References patched from relative to absolute
-
-#### Printf Handling
-Parse format string at compile time and generate specific calls:
-```hopper
-// printf("%d %ld", intval, longval) becomes:
-LDA #(format % 256)
-STA ZP.STRL
-LDA #(format / 256)
-STA ZP.STRH
-JSR printf_start
-
-// Push int argument
-LDA intval_low
-LDX intval_high
-JSR printf_int
-
-// Push long argument  
-// (load 4 bytes to ZP.TOP)
-JSR printf_long
-
-JSR printf_end
+#### Compound Assignments
+The compiler transforms compound assignments during parsing:
+```c
+x += 5;  // Becomes: x = x + 5
+y -= 3;  // Becomes: y = y - 3
 ```
 
-### Built-in Function Marshalling
-Example for `seconds()`:
-```hopper
-builtin_seconds:
-    TSX
-    DEX             // Reserve return slot
-    TXS
+#### Increment/Decrement
+Postfix operators are handled specially:
+```c
+i++;  // Load i, increment, store back, original value on stack
+j--;  // Load j, decrement, store back, original value on stack
+```
+
+#### Array Indexing
+Arrays are implemented via pointer arithmetic:
+```c
+buffer[i]     // Becomes: *(buffer + i)
+buffer[i] = x // Becomes: *(buffer + i) = x
+```
+
+#### Pointer Operations
+Direct pointer manipulation:
+```c
+char* ptr = malloc(100);  // Allocate buffer
+*ptr = 'A';               // Write through pointer
+char c = *ptr;            // Read through pointer
+```
+
+#### File Function Marshalling
+File operations use specific system calls starting at 0xF0:
+```
+FOpen:  0xF0
+FClose: 0xF1
+FGetC:  0xF2
+FPutC:  0xF3
+FRead:  0xF4
+FWrite: 0xF5
+```
+
+## Example Programs
+
+### Memory and String Manipulation
+```c
+void strcpy(char* dst, char* src) {
+    while (*src) {
+        *dst++ = *src++;
+    }
+    *dst = 0;
+}
+
+void main() {
+    char* buffer = malloc(100);
+    char* msg = "Hello, World!";
+    strcpy(buffer, msg);
+    printf("%s\n", buffer);
+    free(buffer);
+}
+```
+
+### File Processing Example
+```c
+void process_file(char* filename) {
+    FILE* fp = fopen(filename, "r");
+    int c;
+    int count = 0;
     
-    LDX #SysCall.TimeSeconds
-    JSR [ZP.BIOSDISPATCH]  // Returns in ZP.TOP0-3
+    if (!fp) {
+        printf("Cannot open file %s\n", filename);
+        return;
+    }
     
-    TSX
-    LDA ZP.TOP0     // Copy to stack return slot
-    STA 0x0200,X
-    LDA ZP.TOP1
-    STA 0x0300,X
-    LDA ZP.TOP2
-    STA 0x0400,X
-    LDA ZP.TOP3
-    STA 0x0500,X
-    RTS
+    while ((c = fgetc(fp)) != -1) {
+        if (c == '\n') {
+            count++;
+        }
+    }
+    
+    printf("File has %d lines\n", count);
+    fclose(fp);
+}
+
+void main() {
+    process_file("README.TXT");
+}
 ```
 
+### Array Processing
+```c
+void bubble_sort(int* arr, int n) {
+    int i, j, temp;
+    for (i = 0; i < n-1; i++) {
+        for (j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
+                temp = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
+            }
+        }
+    }
+}
 
-## Disassembly Analysis Guide
-
-### Understanding C Compiler Output
-
-When debugging the compiler's generated code, use these patterns to verify correct code generation.
-
-#### Runtime Stack Pointer Initialization
-The compiler initializes four zero-page pointer pairs that point to consecutive bytes in the hardware stack:
-```assembly
-; Expected pattern at function start:
-0814: A5 1B       LDA ZP.IDXH              ; Usually 0x01 for stack page
-0816: 85 62       STA runtimeStack0H       ; Set 0x62 = 0x01
-0818: 1A          INC A                    ; A = 0x02
-0819: 85 64       STA runtimeStack1H       ; Set 0x64 = 0x02
-081B: 1A          INC A                    ; A = 0x03
-081C: 85 66       STA runtimeStack2H       ; Set 0x66 = 0x03
-081E: 1A          INC A                    ; A = 0x04
-081F: 85 68       STA runtimeStack3H       ; Set 0x68 = 0x04
+void main() {
+    int* numbers = malloc(10 * sizeof(int));
+    int i;
+    
+    // Initialize array
+    for (i = 0; i < 10; i++) {
+        numbers[i] = 10 - i;
+    }
+    
+    bubble_sort(numbers, 10);
+    
+    // Print sorted array
+    for (i = 0; i < 10; i++) {
+        printf("%d ", numbers[i]);
+    }
+    printf("\n");
+    
+    free(numbers);
+}
 ```
 
-This creates pointers:
-- `[runtimeStack0]` → 0x0100,Y (LSB of 32-bit values)
-- `[runtimeStack1]` → 0x0200,Y (byte 1 of 32-bit values)
-- `[runtimeStack2]` → 0x0300,Y (byte 2 of 32-bit values)
-- `[runtimeStack3]` → 0x0400,Y (MSB of 32-bit values)
+### Recursive Fibonacci with Timing
+```c
+int fibo(int n) {
+    if (n <= 1) {
+        return n;
+    }
+    return fibo(n-1) + fibo(n-2);
+}
 
-#### Correct Addressing Mode Patterns
+void benchmark(char* name, int arg, int loops) {
+    long start;
+    int result;
+    int count;
+    long elapsed;
+    long avgS;
+    
+    start = seconds();
+    
+    for (count = 0; count < loops; count++) {
+        result = fibo(arg);
+    }
+    
+    elapsed = seconds() - start;
+    avgS = elapsed / loops;
+    
+    printf("%s(%d) = %d in %ld seconds average\n", 
+           name, arg, result, avgS);
+}
 
-**✓ CORRECT - Indirect Indexed (opcode 0x91 for STA, 0xB1 for LDA):**
-```assembly
-8A          TXA                      ; Transfer X to A
-A8          TAY                      ; Transfer to Y for indexing
-B1 62       LDA [runtimeStack0],Y    ; Load through pointer (CORRECT!)
-91 62       STA [runtimeStack0],Y    ; Store through pointer (CORRECT!)
+void main() {
+    benchmark("Fibo", 10, 5);
+}
 ```
 
-**✗ WRONG - Absolute Indexed (opcode 0x9D for STA, 0xBD for LDA):**
-```assembly
-BD 00 62    LDA 0x6200,X    ; WRONG! Treats 0x62 as high byte of address
-9D 00 62    STA 0x6200,X    ; WRONG! Would access 0x6200+X, not stack
+### Text Processing with Dynamic Memory
+```c
+void reverse_string(char* str) {
+    int len = 0;
+    int i;
+    char temp;
+    
+    // Find length
+    while (str[len]) {
+        len++;
+    }
+    
+    // Reverse in place
+    for (i = 0; i < len/2; i++) {
+        temp = str[i];
+        str[i] = str[len-1-i];
+        str[len-1-i] = temp;
+    }
+}
+
+void main() {
+    char* text = malloc(50);
+    int i = 0;
+    int c;
+    
+    printf("Enter text: ");
+    while ((c = getchar()) != '\n' && i < 49) {
+        text[i++] = c;
+    }
+    text[i] = 0;
+    
+    reverse_string(text);
+    printf("Reversed: %s\n", text);
+    
+    free(text);
+}
 ```
-
-#### Function Prologue Pattern
-```assembly
-; Save old base pointer and establish new frame
-A5 60       LDA runtimeBP            ; Load old BP
-48          PHA                      ; Push to hardware stack
-BA          TSX                      ; Get stack pointer
-86 60       STX runtimeBP            ; New BP = current SP
-48          PHA                      ; Reserve space (optional)
-```
-
-#### Function Epilogue Pattern
-```assembly
-; Restore stack and base pointer
-A6 60       LDX runtimeBP            ; Load saved BP position
-9A          TXS                      ; Restore stack pointer
-68          PLA                      ; Pop old BP
-85 60       STA runtimeBP            ; Restore BP
-60          RTS                      ; Return
-```
-
-#### Local Variable Access Pattern
-For a local 32-bit variable at BP-4:
-```assembly
-; Calculate BP + offset in Y
-A5 60       LDA runtimeBP            ; Load base pointer
-18          CLC                      ; Clear carry
-69 FC       ADC #0xFC                ; Add -4 (0xFC = -4 in two's complement)
-A8          TAY                      ; Transfer to Y
-
-; Access all 4 bytes of the long
-B1 62       LDA [runtimeStack0],Y    ; Load byte 0
-B1 64       LDA [runtimeStack1],Y    ; Load byte 1
-B1 66       LDA [runtimeStack2],Y    ; Load byte 2
-B1 68       LDA [runtimeStack3],Y    ; Load byte 3
-```
-
-#### Parameter Access Pattern
-For a parameter at BP+4 (after return address and saved BP):
-```assembly
-; Parameters need +3 adjustment to skip frame overhead
-A5 60       LDA runtimeBP            ; Load base pointer
-18          CLC                      ; Clear carry
-69 07       ADC #0x07                ; Add 4+3 = 7 (skip overhead)
-A8          TAY                      ; Transfer to Y
-; Then use same indirect indexed access
-```
-
-#### Stack Push/Pop Patterns
-
-**Pushing 32-bit value:**
-```assembly
-BA          TSX                      ; Get stack pointer
-8A          TXA                      ; Transfer to A
-A8          TAY                      ; Transfer to Y
-A5 16       LDA ZP.NEXT0            ; Load value byte 0
-91 62       STA [runtimeStack0],Y    ; Store to stack
-A5 17       LDA ZP.NEXT1            ; Load value byte 1
-91 64       STA [runtimeStack1],Y    ; Store to stack
-; ... repeat for bytes 2 and 3
-CA          DEX                      ; Adjust stack pointer
-9A          TXS                      ; Update stack
-```
-
-**Popping 32-bit value:**
-```assembly
-BA          TSX                      ; Get stack pointer
-E8          INX                      ; Point to data
-8A          TXA                      ; Transfer to A
-A8          TAY                      ; Transfer to Y
-B1 62       LDA [runtimeStack0],Y    ; Load byte 0
-85 16       STA ZP.NEXT0            ; Store to NEXT
-B1 64       LDA [runtimeStack1],Y    ; Load byte 1
-85 17       STA ZP.NEXT1            ; Store to NEXT
-; ... repeat for bytes 2 and 3
-9A          TXS                      ; Update stack
-```
-
-
-# Disassembly Task Description
-
-## Definition
-**Disassemble**: Convert raw hexadecimal machine code bytes back into human-readable 6502 assembly language instructions with addresses and mnemonics.
-
-## Purpose
-Disassembly is essential for debugging the CC compiler's code generation by allowing inspection of the actual machine code produced to identify bugs in the emitted instruction sequences.
-
-## Format Requirements
-
-### Input
-Raw hex dump with addresses, typically from `dumpCodeBuffer()`:
-```
-0800: 4C 18 08 6C 22 00 60 25 6C 64 0A 00 25 6C 64 20
-0810: 73 65 63 6F 6E 64 73 00 A2 00 20 03 08 64 61 64
-```
-
-### Output
-Formatted assembly listing using Hopper syntax conventions:
-```hopper
-0800: JMP 0x0818           ; Jump to main
-0803: JMP [0x0022]         ; BIOS dispatcher (indirect)
-0806: RTS
-0818: LDX #0x00            ; SysCall.MemAllocate  
-081A: JSR 0x0803           ; Call BIOS
-081D: STZ 0x61             ; runtimeStack0L = 0
-```
-
-## Conventions
-- Use Hopper hex notation: `0x` prefix, not `$`
-- Show addresses on the left as `XXXX:`
-- Include meaningful comments for:
-  - Jump/call targets
-  - Zero page variable names when known
-  - System call numbers
-  - String literal contents
-- Group related instruction sequences
-- Identify bugs with "BUG:" annotations
-
-## Common Patterns to Recognize
-- Stack operations (TSX/TXS sequences)
-- BIOS calls (LDX #syscall, JSR dispatcher)
-- BP-relative addressing (LDA BP, CLC, ADC #offset, TAY)
-- Parallel stack access (STA [0x61],Y through [0x67],Y)
-
-## Example Annotations
-- `; Reserve return slot` for TSX/DEX/TXS
-- `; Marshal result to stack` for TOP→stack transfers
-- `; BUG: Should be #0xFF` for incorrect values
-- `; Function prologue/epilogue` for standard sequences
-
-
-
-### Common Issues to Watch For
-
-1. **Wrong Addressing Mode**: Look for opcodes 0xBD/0x9D (absolute,X) when you should see 0xB1/0x91 (indirect,Y)
-
-2. **Missing X→Y Transfer**: Indirect indexed uses Y register, not X. Watch for missing TXA/TAY sequence.
-
-3. **Incorrect Offset Calculation**: 
-   - Locals: BP + negative offset (no adjustment)
-   - Parameters: BP + positive offset + 3 (skip return address and saved BP)
-
-4. **Stack Pointer Confusion**: The hardware stack pointer (SP) in X vs. the base pointer (BP) in zero page
-
-5. **Uninitialized Runtime Stack Pointers**: The runtimeStack0H-3H bytes must be initialized to point to different stack pages (0x01, 0x02, 0x03, 0x04)
-
-### Debugging Checklist
-
-When analyzing disassembly:
-- [ ] Are runtimeStack pointers initialized correctly?
-- [ ] Is indirect indexed addressing (0x91/0xB1) used for stack access?
-- [ ] Is X transferred to Y before indirect indexed operations?
-- [ ] Are BP offsets calculated correctly (with +3 for parameters)?
-- [ ] Does function prologue save/restore BP properly?
-- [ ] Are 32-bit values accessed through all four pointer pairs?
-
-### Zero Page Map for Reference
-```
-0x16-0x19: ZP.NEXT0-3 (32-bit accumulator)
-0x22-0x23: ZP.BIOSDISPATCH (BIOS vector)
-0x60: runtimeBP (base pointer)
-0x61-0x62: runtimeStack0/runtimeStack0H (→ stack page 0x01)
-0x63-0x64: runtimeStack1/runtimeStack1H (→ stack page 0x02)
-0x65-0x66: runtimeStack2/runtimeStack2H (→ stack page 0x03)
-0x67-0x68: runtimeStack3/runtimeStack3H (→ stack page 0x04)
-```
-
-
-
 
 ## Command Line Interface
 ```
-CC BENCH
+CC PROGRAM[.C]
 ```
-- Reads: BENCH (source file, assumes .C extension conceptually)
-- Writes: BENCHX (executable, marked as such in filesystem)
+- **Input**: Source file name. If no extension is provided, `.C` is appended
+- **Output**: Executable file with `.EXE` extension
+
+Examples:
+- `CC HELLO` - Compiles `HELLO.C` to `HELLO.EXE`
+- `CC HELLO.C` - Compiles `HELLO.C` to `HELLO.EXE`
+- `CC TEST` - Compiles `TEST.C` to `TEST.EXE`
 
 ## Error Handling
 - Stop on first error
 - Report line number (counted during streaming parse)
-- Display error message with context if possible
+- Display error message with context when possible
+- Support for error types:
+  - Syntax errors
+  - Type mismatches
+  - Undefined identifiers
+  - Invalid pointer operations
+  - Unsupported formatters in printf
+  - File I/O errors
 
-## Implementation Priority
-1. Lexer with File.NextStream integration
-2. Symbol table management
-3. Parser building minimal AST
-4. Code generator for expressions
-5. Code generator for statements
-6. Built-in function marshalling
-7. String literal handling
-8. Final linking and output
+## Implementation Status
+- ✅ Basic language features (v1.0)
+- ✅ While loops
+- ✅ Compound assignment operators (`+=`, `-=`)
+- ✅ Increment/decrement operators (`++`, `--`)
+- ✅ Pointer dereference (read/write)
+- ✅ Array indexing via pointer arithmetic
+- ✅ Memory management (malloc/free)
+- ✅ File I/O operations
+- ✅ Extended printf formatters
+- ✅ File extension handling (.C/.EXE)
 
-## Future Enhancements (Not in v1)
+## Future Enhancements
 - Global variables
-- Arrays
-- While/do-while loops
+- Multi-dimensional arrays
+- Do-while loops
 - Switch statements
-- Pointer arithmetic
+- Advanced pointer arithmetic
+- Struct support
+- Typedef
+- Preprocessor directives
 - Optimization passes
 - Better error recovery
 - Debugging information
+- Multiple assignment operators (`*=`, `/=`, `%=`)
+
+## Limitations
+- Only one file can be open at a time
+- No floating-point support
+- Stack-based architecture limits recursion depth
+- Maximum 65535 bytes per file
+- Filenames limited to 13 characters (uppercase)
+
+## Target Benchmark Programs
+
+### BENCH.C - Performance Test
+```c
+// Noel's RetroLab Benchmark
+void main() {
+    long s;
+    long st = seconds();
+    long start = millis();
+    
+    int i, j;
+    for (i = 1; i <= 10; i++) {
+        s = 0;
+        for (j = 1; j <= 1000; j++) {
+            s = s + j;
+        }
+        putchar('.');
+    }
+    
+    printf("%ld\n", s);
+    printf("%ld ms\n", millis() - start);
+    printf("%ld seconds\n", seconds() - st);
+}
+```
+
+### FIBO.C - Recursion Test
+```c
+// Recursive Fibonacci benchmark
+int fibo(int n) {
+    if (n <= 1) {
+        return n;
+    }
+    return fibo(n-1) + fibo(n-2);
+}
+
+void benchmark(char* name, int arg, int loops) {
+    long start;
+    int result;
+    int count;
+    long elapsed;
+    long avgS;
+    
+    start = seconds();
+    
+    for (count = 0; count < loops; count++) {
+        result = fibo(arg);
+    }
+    
+    elapsed = seconds() - start;
+    avgS = elapsed / loops;
+    
+    printf("%s(%d) = %d in %ld seconds average\n", 
+           name, arg, result, avgS);
+}
+
+void main() {
+    benchmark("Fibo", 10, 5);
+}
+```

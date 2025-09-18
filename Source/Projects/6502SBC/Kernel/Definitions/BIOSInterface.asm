@@ -80,6 +80,8 @@ unit BIOSInterface
         FClose,           // In: NEXT=FILE* | Out: TOP=0/-1
         FGetC,            // In: NEXT=FILE* | Out: TOP=char(0-255)/-1
         FRead,            // In: IDX=buffer, IDY = element size, ACC= element count, NEXT=FILE* | Out: TOP=bytes read/-1
+        FPutC,            // In: ACC=char(0-255), NEXT=FILE* | Out: TOP=char written/-1
+        FWrite,           // In: IDX=buffer, IDY=element size, ACC=element count, NEXT=FILE* | Out: TOP=elements written/-1
         
         
         // TODO:

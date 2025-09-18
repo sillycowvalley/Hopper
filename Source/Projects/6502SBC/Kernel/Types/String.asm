@@ -10,13 +10,13 @@ unit String
         PHY
         
         // Use stack to preserve caller's ZP.TOP instead of corrupting it
-        LDA ZP.TOPL
+        LDA ZP.TOP0
         PHA
-        LDA ZP.TOPH  
+        LDA ZP.TOP1
         PHA
         
-        STX ZP.TOPL
-        STY ZP.TOPH
+        STX ZP.TOP0
+        STY ZP.TOP1
         
         LDY #0
         loop
@@ -34,9 +34,9 @@ unit String
         
         // Restore caller's ZP.TOP
         PLA
-        STA ZP.TOPH
+        STA ZP.TOP0
         PLA
-        STA ZP.TOPL
+        STA ZP.TOP1
         
         TYA  // Length in A
         
