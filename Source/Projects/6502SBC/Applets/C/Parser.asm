@@ -1138,7 +1138,7 @@ unit Parser
         if (NC) { return; }
         
         // Create Return node
-        LDA #AST.NodeType.Return
+        LDA # AST.NodeType.Return
         AST.CreateNode(); // -> IDX
         if (NC) { return; }
         
@@ -1173,7 +1173,7 @@ unit Parser
             }
             
             // Expect semicolon
-            LDA #Token.Semicolon
+            LDA # Token.Semicolon
             expect();
             if (NC) { break; }
             
@@ -1207,6 +1207,25 @@ unit Parser
         STA stmtNodeL
         PLA
         STA stmtNodeH
+    }
+    
+    parseEmptyStatement() // -> IDY = Empty node
+    {
+        consume();  // Consume ';'
+        if (NC) { return; }
+        
+        // Create Empty node
+        LDA # AST.NodeType.Empty
+        AST.CreateNode(); // -> IDX
+        if (NC) { return; }
+        
+        // Return Empty node in IDY
+        LDA ZP.IDXL
+        STA ZP.IDYL
+        LDA ZP.IDXH
+        STA ZP.IDYH        
+        
+        SEC
     }
     
     parseStatement() // -> IDY
@@ -1264,6 +1283,12 @@ unit Parser
                 consume();
                 PLA
                 parseVariableDeclaration(); // -> IDY, A = type
+                if (NC) { return; }
+            }
+            
+            case Token.Semicolon:
+            {
+                parseEmptyStatement(); // ->IDY
                 if (NC) { return; }
             }
             default:

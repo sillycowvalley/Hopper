@@ -645,7 +645,7 @@ Print.Space(); LDA #'A' Print.Char();
                                                     STA [vcodeBuffer], Y
                                                     pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'G' Print.Char();
+Print.Space(); LDA #'G' Print.Char(); LDA #'!' Print.Char();
 #endif                                               
                                                     SEC
                                                     break;   
@@ -754,7 +754,7 @@ Print.Space(); LDA #'E' Print.Char();
                             STA [vcodeBuffer], Y
                             pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'H' Print.Char();
+Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
 #endif                            
                             SEC
                             break;
@@ -784,9 +784,11 @@ Print.Space(); LDA #'H' Print.Char();
                             LDA # VOpCode.PutTOP
                             STA [vcodeBuffer], Y
                             pushPeep();
+*/                            
 #ifdef DEBUG
-Print.Space(); LDA #'I' Print.Char();
+Print.Space(); LDA #'I' Print.Char();LDA #'x' Print.Char(); // missed opportunity?
 #endif                            
+/*
                             SEC
                             break;
 */                            
@@ -856,7 +858,7 @@ Print.Space(); LDA #'K' Print.Char();
                             STA [vcodeBuffer], Y
                             pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'J' Print.Char();
+Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
 #endif                            
                             SEC
                             break;

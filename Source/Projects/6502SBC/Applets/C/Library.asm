@@ -407,7 +407,7 @@ unit Library
         // Generate argument and pop to NEXT
         CodeGen.generateExpression(); if (NC) { return; }
         
-        PopNEXT(); if (NC) { return; }
+        VCode.PopNEXT(); if (NC) { return; }
         
         // Move character from NEXT0 to A and call PrintChar
         LDA #OpCode.LDA_ZP
@@ -430,6 +430,217 @@ unit Library
         
         SEC
     }
+    
+    
+    // Generate code for malloc() call
+    // Stack in: size (32-bit, but only low 16 bits used)
+    // Stack out: pointer (32-bit, 0x0000 if failed)
+    AllocCall()
+    {
+        // Get first argument node (skip identifier, get its sibling)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Generate argument and pop to NEXT
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop size argument into ZP.NEXT (32-bit value)
+        VCode.PopNEXT();
+        if (NC) { return; }
+        
+        // Move low 16 bits to ZP.ACC for BIOS call
+        // malloc takes size_t which is 16-bit on 6502
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCL
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCH
+        EmitByte(); if (NC) { return; }
+        
+        // LDX #SysCall.MemAllocate
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.MemAllocate
+        EmitByte(); if (NC) { return; }
+        
+        // JSR [ZP.BIOSDISPATCH]
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // Check success and handle result
+        // BCC failed (jump to return null)
+        LDA # OpCode.BCC
+        EmitByte(); if (NC) { return; }
+        LDA # 10  // Skip ahead to null return
+        EmitByte(); if (NC) { return; }
+        
+        // Success: Move result from ZP.IDX to ZP.NEXT
+        // Result is 16-bit pointer, extend to 32-bit
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXL
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXH
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // BRA skip_null (skip the null return)
+        LDA # OpCode.BRA
+        EmitByte(); if (NC) { return; }
+        LDA # 4  // Skip null assignment
+        EmitByte(); if (NC) { return; }
+        
+        // Failed: Return NULL (0x0000)
+        LDA # OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STZ_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        // Push result back on stack
+        VCode.PushNEXT();
+        if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Generate code for free() call
+    // Stack in: pointer (32-bit, but only low 16 bits used)
+    // Stack out: nothing (void function)
+    FreeCall()
+    {
+        // Get first argument node (skip identifier, get its sibling)
+        LDY #AST.iChild
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        // Generate argument and pop to NEXT
+        CodeGen.generateExpression(); if (NC) { return; }
+        
+        // Pop pointer argument into ZP.NEXT (32-bit value)
+        VCode.PopNEXT();
+        if (NC) { return; }
+        
+        // Check for NULL pointer (free(NULL) is a no-op in C)
+        // LDA ZP.NEXT0 | ORA ZP.NEXT1
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.ORA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // BEQ skip_free (if NULL, skip the free call)
+        LDA # OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA # 13  // Skip the free call
+        EmitByte(); if (NC) { return; }
+        
+        // Move pointer to ZP.IDX for BIOS call
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXL
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXH
+        EmitByte(); if (NC) { return; }
+        
+        // LDX #SysCall.MemFree
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.MemFree
+        EmitByte(); if (NC) { return; }
+        
+        // JSR [ZP.BIOSDISPATCH]
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // skip_free:
+        // No return value for void function
+        SEC
+    }
+    
+    
+    
     
     MillisCall()
     {

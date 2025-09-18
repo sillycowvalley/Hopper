@@ -388,6 +388,16 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
                         Library.PutcharCall();
                         if (NC) { break; }
                     }
+                    case SysCall.MemAllocate:
+                    {
+                        Library.AllocCall();
+                        if (NC) { break; }
+                    }
+                    case SysCall.MemFree:
+                    {
+                        Library.FreeCall();
+                        if (NC) { break; }
+                    }
                     default:
                     {
 #ifdef DEBUG
@@ -1438,6 +1448,10 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 
                 // ALL expression statements discard the value
                 VCode.Discard();  if (NC) { return; }
+            }
+            case NodeType.Empty:
+            {
+                // Empty statement - generate nothing (fall through to SEC)
             }
             default:
             {

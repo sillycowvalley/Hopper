@@ -41,6 +41,7 @@ unit AST
         If           = 17,  // If statement
         While        = 18,  // While statement
         UnaryOp      = 19,  
+        Empty        = 20,  // like ";"
         
         AfterLast           // see freeNode()
     }
@@ -816,6 +817,7 @@ unit AST
     const string nodeWhile    = "WHILE";
     const string nodeUnary    = "UNARY";
     const string nodeIf       = "IF";
+    const string nodeEmpty    = "EMPTY";
     const string nodeUnknown  = "??";
     
     const string typeVoid    = "void ";
@@ -888,6 +890,14 @@ unit AST
         LDA [ZP.IDX], Y
         switch (A)
         {
+            case NodeType.Empty:
+            {
+                LDA #(nodeEmpty % 256)
+                STA ZP.STRL
+                LDA #(nodeEmpty / 256)
+                STA ZP.STRH
+                Print.String();
+            }
             case NodeType.If:
             {
                 LDA #(nodeIf % 256)

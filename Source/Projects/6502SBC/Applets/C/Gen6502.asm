@@ -90,6 +90,7 @@ unit Gen6502
         SMB0_ZP = 0x87,
         TXA     = 0x8A,
         BBS0_ZP = 0x8F,
+        BCC     = 0x90,
         STA_IND_Y = 0x91,
         SMB1_ZP = 0x97,
         TYA     = 0x98,
