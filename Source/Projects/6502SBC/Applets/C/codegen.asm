@@ -345,6 +345,7 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         {
             // ALWAYS reserve return slot for ANY function call
             VCode.Reserve(); if (NC) { break; }
+            VCode.Flush();   if (NC) { break; }
             
             // First child is function identifier, second child (sibling) is first argument
             LDY #AST.iChild
@@ -481,6 +482,7 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
         {
             // Allocate stack space for the variable - just push a dummy value
             VCode.Reserve(); if (NC) { return; }
+            VCode.Flush();   if (NC) { return; }
         
             // Store the BP offset in the VarDecl node for later reference
             // Locals are at negative offsets: first local at BP+0, second at BP-1, etc.
@@ -489,11 +491,15 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
             if (NZ)
             {
                 EOR #0xFF      // Negate to get -1, -2, etc.
+                CLC
+                ADC #1
             }
             STA [ZP.IDX], Y   // Store as BP-relative offset (0, -1, -2, etc.)
             
             // Update the local count
             INC functionLocals
+            
+
             
             LDY # AST.iInitializer
             LDA [ZP.IDX], Y
@@ -1082,14 +1088,10 @@ Print.Space();
             
             if (NC) { break; }
             
-Print.NewLine(); LDA storeOp Print.Hex();
-
             LDA storeOp
             CMP #AST.NodeType.UnaryOp
             if (Z)
             {
-LDA #'1' Print.Char(); 
-               
                 // Check if it's a dereference
                 LDY #AST.iUnaryOp
                 LDA [ZP.IDX], Y
@@ -1146,8 +1148,6 @@ LDA #'1' Print.Char();
                 INY
                 LDA [ZP.IDX], Y
                 STA ZP.STRH
-                
-LDA #'2' Print.Char();                 
                 
                 // Find the VarDecl for this identifier
                 FindVariable();  // -> IDX
@@ -1992,7 +1992,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 STA AST.astNodeH
                 
                 // Store result in return slot (BP + param_count + 4)
-                AST.CountFunctionParameters();  // [AST.astNode] -> A = count
+                AST.CountFunctionParameters();  // [AST.astNode] -> A = count (generateReturn)
                 
                 CLC
                 ADC #4  // Skip saved BP and return address, and one more to get to actual return slot

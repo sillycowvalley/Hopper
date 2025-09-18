@@ -60,6 +60,9 @@ unit Tokens
         
         // New keyword
         Null         = 61,    // null constant
+        
+        PlusAssign   = 62,  // +=
+        MinusAssign  = 63,  // -=
     }
     
     // Keyword table for recognition

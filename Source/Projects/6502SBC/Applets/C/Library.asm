@@ -3,14 +3,16 @@ unit Library
     uses "AST"
     uses "Errors"
     
-    const byte libSlots = 0xC0;
-    const byte libArg  = libSlots+0;
-    const byte libArgL = libSlots+0;
-    const byte libArgH = libSlots+1;
+    const byte libSlots    = 0xC0;
+    const byte libArg     = libSlots+0;
+    const byte libArgL    = libSlots+0;
+    const byte libArgH    = libSlots+1;
     
-    const byte libStr  = libSlots+2;
-    const byte libStrL = libSlots+2;
-    const byte libStrH = libSlots+3;
+    const byte libStr     = libSlots+2;
+    const byte libStrL    = libSlots+2;
+    const byte libStrH    = libSlots+3;
+    
+    const byte libPadding = libSlots+4;
     
     
     
@@ -724,6 +726,113 @@ unit Library
         SEC
     }
     
+    
+    // Emit code to format and print a hex value
+    // Input: libArgL/H = current argument node
+    // Output: C set on success, clear on failure
+    emitHexFormatter()
+    {
+        // Check we have an argument
+        LDA libArgL
+        ORA libArgH
+        if (Z)
+        {
+            LDA # Error.TooFewArguments
+            Errors.ShowIDX();
+            CLC
+            return;
+        }
+        
+        // Generate code to evaluate the expression
+        // This will push result onto runtime stack
+        LDA libArgL
+        STA ZP.IDXL
+        LDA libArgH
+        STA ZP.IDXH
+        CodeGen.generateExpression(); if (NC) { return; } // emit arg
+        
+        // Pop from stack into ZP.TOP
+        PopTOP(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP3
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA # 5
+        EmitByte(); if (NC) { return; }
+        
+        // Call Print.Hex
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.PrintHex
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP2
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA # 5
+        EmitByte(); if (NC) { return; }
+        
+        // Call Print.Hex
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.PrintHex
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.BEQ
+        EmitByte(); if (NC) { return; }
+        LDA # 5
+        EmitByte(); if (NC) { return; }
+        
+        // Call Print.Hex
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.PrintHex
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        
+        // Call Print.Hex
+        LDA # OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # BIOSInterface.SysCall.PrintHex
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall(); if (NC) { return; }
+        
+        // Move to next argument
+        LDY #AST.iNext
+        LDA [libArg], Y
+        TAX
+        INY
+        LDA [libArg], Y
+        STA libArgH
+        STX libArgL
+        
+        SEC
+    }
+    
     // Generate code to print int/long argument
     // Uses current argument node in ZP.NEXT
     // Output: C set on success, clear on failure
@@ -770,6 +879,9 @@ unit Library
         
         SEC
     }
+    
+    
+    
     
     
     
@@ -979,17 +1091,57 @@ unit Library
                 
                 // Check what stopped the run
                 LDA [ZP.STR], Y
-                if (Z) { break; }  // End of string
+                if (Z) { SEC break; }  // End of string
                 
                 // Must be a % formatter
                 INY  // Skip '%'
                 LDA [ZP.STR], Y
+                /*
+                // Check for zero-padding prefix
+                STZ libPadding  // Default: no padding
                 
+                LDA [ZP.STR], Y
+                CMP #'0'
+                if (Z)
+                {
+                    INY
+                    LDA [ZP.STR], Y
+                    
+                    // Check if next char is a digit
+                    Char.IsDigit();
+                    if (C)
+                    {
+                        // Store padding width
+                        SEC
+                        SBC #'0'  // Convert ASCII to numeric
+                        STA libPadding
+                        INY  // Move to format character
+                        LDA [ZP.STR], Y
+                    }
+                    else
+                    {
+                        // Just '0' without digit, back up
+                        DEY
+                        LDA [ZP.STR], Y
+                    }
+                }
+                */
+                               
                 CMP #'d'  // %d - int
                 if (Z)
                 {
                     PHY
                     emitIntFormatter();
+                    PLY
+                    if (NC) { break; }
+                    INY
+                    continue;
+                }
+                CMP #'x'  // %x - int
+                if (Z)
+                {
+                    PHY
+                    emitHexFormatter();
                     PLY
                     if (NC) { break; }
                     INY
@@ -1031,12 +1183,25 @@ unit Library
                         INY
                         continue;
                     }
+                    CMP #'x'  // %x - long
+                    if (Z)
+                    {
+                        PHY
+                        emitHexFormatter(); // same as %x
+                        PLY
+                        if (NC) { break; }
+                        INY
+                        continue;
+                    }
                     DEY  // Not %ld
                 }
                 
-                // Unknown formatter - treat % as literal
-                DEY  // Back to '%'
-            }
+                // Unknown formatter - treat % as error
+                LDA # Error.UnsupportedFormatter
+                Errors.ShowIDX();
+                break;
+            } // run loop
+            if (NC) { break; }
             
             // TODO: "return" slot exists but is not set
             SEC  // Success

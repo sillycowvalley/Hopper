@@ -561,7 +561,8 @@ unit Gen6502
         
         // fake RTS slots
         VCode.Reserve(); if (NC) { return; }
-        VCode.Reserve();
+        VCode.Reserve(); if (NC) { return; }
+        VCode.Flush();
     }
     
     // Recursively walk AST and emit all string literals

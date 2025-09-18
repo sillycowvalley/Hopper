@@ -657,7 +657,16 @@ unit Lexer
                     }
                     else
                     {
-                        LDA #Token.Plus
+                        CMP #'='
+                        if (Z)
+                        {
+                            advance();
+                            LDA #Token.PlusAssign
+                        }
+                        else
+                        {
+                            LDA #Token.Plus
+                        }
                     }
                     STA TokenType
                 }
@@ -673,7 +682,16 @@ unit Lexer
                     }
                     else
                     {
-                        LDA #Token.Minus
+                        CMP #'='
+                        if (Z)
+                        {
+                            advance();
+                            LDA #Token.MinusAssign
+                        }
+                        else
+                        {
+                            LDA #Token.Minus
+                        }
                     }
                     STA TokenType
                 }
