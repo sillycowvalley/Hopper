@@ -759,11 +759,28 @@ unit Library
         LDA # ZP.TOP3
         EmitByte(); if (NC) { return; }
         
-        LDA # OpCode.BEQ
+        LDA # OpCode.BNE // -> TOP3 != 0
+        EmitByte(); if (NC) { return; }
+        LDA # 3
+        EmitByte(); if (NC) { return; }
+        LDA libPadding
+        CMP #8
+        if (C) // >= 8
+        {
+            LDA # OpCode.SEC 
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA # OpCode.CLC
+            EmitByte(); if (NC) { return; }    
+        }
+        LDA # OpCode.BCC // -> no padding for TOP3
         EmitByte(); if (NC) { return; }
         LDA # 5
         EmitByte(); if (NC) { return; }
         
+// TOP3 != 0:        
         // Call Print.Hex
         LDA # OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
@@ -771,17 +788,35 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         EmitDispatchCall(); if (NC) { return; }
+// no padding for TOP3        
         
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.TOP2
         EmitByte(); if (NC) { return; }
         
-        LDA # OpCode.BEQ
+        LDA # OpCode.BNE // -> TOP2 != 0
+        EmitByte(); if (NC) { return; }
+        LDA # 3
+        EmitByte(); if (NC) { return; }
+        LDA libPadding
+        CMP #6
+        if (C) // >= 6
+        {
+            LDA # OpCode.SEC 
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA # OpCode.CLC
+            EmitByte(); if (NC) { return; }    
+        }
+        LDA # OpCode.BCC // -> no padding for TOP2
         EmitByte(); if (NC) { return; }
         LDA # 5
         EmitByte(); if (NC) { return; }
         
+// TOP2 != 0:        
         // Call Print.Hex
         LDA # OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
@@ -789,17 +824,36 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         EmitDispatchCall(); if (NC) { return; }
-        
+// no padding for TOP2        
+      
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.TOP1
         EmitByte(); if (NC) { return; }
         
-        LDA # OpCode.BEQ
+        LDA # OpCode.BNE // -> TOP1 != 0
+        EmitByte(); if (NC) { return; }
+        LDA # 3
+        EmitByte(); if (NC) { return; }
+
+        LDA libPadding
+        CMP #4
+        if (C) // >= 4
+        {
+            LDA # OpCode.SEC 
+            EmitByte(); if (NC) { return; }
+        }
+        else
+        {
+            LDA # OpCode.CLC
+            EmitByte(); if (NC) { return; }    
+        }
+        LDA # OpCode.BCC // -> no padding for TOP1
         EmitByte(); if (NC) { return; }
         LDA # 5
         EmitByte(); if (NC) { return; }
         
+// TOP1 != 0:               
         // Call Print.Hex
         LDA # OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
@@ -807,7 +861,9 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         EmitDispatchCall(); if (NC) { return; }
-        
+// no padding for TOP1
+
+                    
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.TOP0
@@ -1096,7 +1152,7 @@ unit Library
                 // Must be a % formatter
                 INY  // Skip '%'
                 LDA [ZP.STR], Y
-                /*
+                
                 // Check for zero-padding prefix
                 STZ libPadding  // Default: no padding
                 
@@ -1125,7 +1181,6 @@ unit Library
                         LDA [ZP.STR], Y
                     }
                 }
-                */
                                
                 CMP #'d'  // %d - int
                 if (Z)

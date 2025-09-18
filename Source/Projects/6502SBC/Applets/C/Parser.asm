@@ -32,6 +32,11 @@ unit Parser
     const byte rhsExprNodeL  = parserSlots+9;
     const byte rhsExprNodeH  = parserSlots+10;
     
+    const uint indexExprNode   = rhsExprNode; 
+    const byte indexExprNodeL  = rhsExprNodeL;
+    const byte indexExprNodeH  = rhsExprNodeH;
+    
+    
     const uint binNode   = parserSlots+11;
     const byte binNodeL  = parserSlots+11;
     const byte binNodeH  = parserSlots+12;
@@ -2102,6 +2107,118 @@ unit Parser
         }
     }
     
+    // Parse array subscript: buffer[index] -> *(buffer + index)
+    // Input: IDY = array/pointer expression
+    // Output: IDY = dereferenced subscript expression, C set on success
+    parseArraySubscript() // -> IDY
+    {
+        LDA exprNodeL
+        PHA
+        LDA exprNodeH
+        PHA
+        LDA indexExprNodeL
+        PHA
+        LDA indexExprNodeH
+        PHA
+        
+        // Save array/pointer expression
+        LDA ZP.IDYL
+        STA exprNodeL
+        LDA ZP.IDYH
+        STA exprNodeH
+        
+        loop
+        {
+            consume();  // Skip '['
+            if (NC) { break; }
+            
+            // Parse index expression
+            parseExpression(); // -> IDY (index)
+            if (NC) { break; }
+            
+            // Save index expression
+            LDA ZP.IDYL
+            STA indexExprNodeL
+            LDA ZP.IDYH
+            STA indexExprNodeH  // Fixed typo - was indexExprNodeL
+            
+            // Expect ']'
+            LDA #Token.RightBracket
+            expect();
+            if (NC) 
+            { 
+                break; 
+            }
+            
+            // Create BinOp(Add) for (buffer + index)
+            LDA #AST.NodeType.BinOp
+            AST.CreateNode(); // -> IDX
+            if (NC) 
+            { 
+                break; 
+            }
+            
+            // Set operator to Add
+            LDY #AST.iBinOp
+            LDA #AST.BinOpType.Add
+            STA [ZP.IDX], Y
+            
+            // Add array/pointer as left operand
+            LDA exprNodeL  // Use saved value instead of stack-relative
+            STA ZP.IDYL
+            LDA exprNodeH
+            STA ZP.IDYH
+            AST.AddChild(); // IDX = BinOp, IDY = buffer
+            
+            // Add index as right operand
+            LDA indexExprNodeL
+            STA ZP.IDYL
+            LDA indexExprNodeH
+            STA ZP.IDYH
+            AST.AddChild(); // IDX = BinOp, IDY = index
+            
+            // Save BinOp
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            // Create UnaryOp(Dereference)
+            LDA #AST.NodeType.UnaryOp
+            AST.CreateNode(); // -> IDX
+            if (NC) 
+            { 
+                break; 
+            }
+            
+            // Set operator to Dereference
+            LDY #AST.iUnaryOp
+            LDA #UnaryOpType.Dereference
+            STA [ZP.IDX], Y
+            
+            // Add BinOp as child
+            AST.AddChild(); // IDX = UnaryOp, IDY = BinOp
+            
+            // Move result to IDY
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            SEC
+            break;
+        } // single exit
+        
+        PLA
+        STA indexExprNodeH
+        PLA
+        STA indexExprNodeL
+        PLA
+        STA exprNodeH
+        PLA
+        STA exprNodeL
+    }
+    
     // Parse postfix expressions (function calls, array indexing, etc.)
     parsePostfix() // -> IDY
     {
@@ -2134,6 +2251,11 @@ unit Parser
                     LDA #PostfixOpType.Decrement
                     parsePostfixOperator(); // -> IDY
                     if (NC) { break; }
+                }
+                case Token.LeftBracket:  // Array subscript
+                {
+                    parseArraySubscript(); // IDY = array -> IDY = *(array + index)
+                    if (NC) { return; }
                 }
             }
             // TODO: Add array indexing with '['

@@ -599,6 +599,8 @@ Print.Hex(); LDA #'v' Print.Char();
         // Pop pointer from stack into TOP
         VCode.PopTOP();
         if (NC) { return; }
+        VCode.PopNEXT(); // RHS
+        if (NC) { return; }
         
         // Write byte TO memory at [IDY]
         LDA #OpCode.LDA_ZP
@@ -1075,17 +1077,12 @@ Print.Space();
             
             // Generate code for RHS expression (puts value in ZP.TOP)
             generateExpression();
-            if (C)
-            {
-                PopNEXT();
-            }
             
-            // restore the identifer node
+            // restore the LHS node
             PLA
             STA ZP.IDXH
             PLA
             STA ZP.IDXL
-            
             if (NC) { break; }
             
             LDA storeOp
@@ -1116,7 +1113,6 @@ Print.Space();
                 LDA [ZP.IDX], Y
                 STA ZP.IDXH
                 STX ZP.IDXL
-                
                 
                 // Generate code to get pointer
                 generateExpression();
@@ -1164,17 +1160,19 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     Errors.ShowIDX();
                     break; // Variable not found!
                 }
+                
+                VCode.PopNEXT(); // RHS
             
                 // Get the BP offset from VarDecl
                 LDY #AST.iOffset
                 LDA [ZP.IDX], Y  // This is the signed offset
                 
                 // Store NEXT at BP+offset
-                PutNEXT();  // A = offset
+                VCode.PutNEXT();  // A = offset
             }
                 
             // Assignment expressions return the assigned value
-            PushNEXT();
+            VCode.PushNEXT();
                 
             SEC
             break;

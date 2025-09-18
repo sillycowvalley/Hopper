@@ -621,6 +621,18 @@ unit Lexer
                     LDA #Token.RightParen
                     STA TokenType
                 }
+                case '[':
+                {
+                    advance();
+                    LDA #Token.LeftBracket
+                    STA TokenType
+                }
+                case ']':
+                {
+                    advance();
+                    LDA #Token.RightBracket
+                    STA TokenType
+                }
                 case '{':
                 {
                     advance();
