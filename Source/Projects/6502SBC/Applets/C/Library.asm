@@ -1368,6 +1368,43 @@ unit Library
         if (NC) { return; }
     }
     
+    FPutCCall()
+    {
+        // int fputc(char c, FILE* fp)
+        
+        generateFirstArgExpression(); // char
+        if (NC) { return; }
+        
+        generateNextArgExpression();  // FILE*
+        if (NC) { return; }
+        
+        VCode.PopNEXT(); if (NC) { return; } // FILE*
+        VCode.PopTOP();  if (NC) { return; } // char
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCL
+        EmitByte(); if (NC) { return; }
+        
+        // LDX #SysCall.FPutC
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA #SysCall.FPutC
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // replace the slot reserved for "return"
+        VCode.Discard();
+        // Result is in TOP, push it
+        VCode.PushTOP();
+        if (NC) { return; }
+    }
+    
     FReadCall()
     {
         
@@ -1448,6 +1485,97 @@ unit Library
         LDA #OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
         LDA # SysCall.FRead
+        EmitByte(); if (NC) { return; }
+        
+        EmitDispatchCall();
+        if (NC) { return; }
+        
+        // replace the slot reserved for "return"
+        VCode.Discard();
+        // Result is in TOP, push it
+        VCode.PushTOP();
+    }
+    
+    FWriteCall()
+    {
+        
+        generateFirstArgExpression(); // buffer
+        if (NC) { return; }
+        
+        generateNextArgExpression();  // size of each element
+        if (NC) { return; }
+        
+        generateNextArgExpression();  // number of elements
+        if (NC) { return; }
+        
+        generateNextArgExpression();  // FILE*
+        if (NC) { return; }
+        
+        // FILE* -> NEXT
+        VCode.PopNEXT(); if (NC) { return; }
+        
+        // number of elements -> ACC
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.ACCH
+        EmitByte(); if (NC) { return; }
+        
+        // size of each element -> IDY
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDYL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDYH
+        EmitByte(); if (NC) { return; }
+             
+        // buffer -> IDX
+        VCode.PopTOP(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXL
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # ZP.IDXH
+        EmitByte(); if (NC) { return; }
+        
+                
+        // LDX #SysCall.FWrite
+        LDA #OpCode.LDX_IMM
+        EmitByte(); if (NC) { return; }
+        LDA # SysCall.FWrite
         EmitByte(); if (NC) { return; }
         
         EmitDispatchCall();

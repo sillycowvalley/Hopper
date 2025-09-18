@@ -437,25 +437,25 @@ Print.Hex(); LDA #'s' Print.Char();LDA #'f' Print.Char();
                             Library.FGetCCall();
                             if (NC) { break; }
                         }
+                        case FileFunction.FPutC:
+                        {
+                            Library.FPutCCall();
+                            if (NC) { break; }
+                        }
                         case FileFunction.FRead:
                         {
                             Library.FReadCall();
+                            if (NC) { break; }
+                        }
+                        case FileFunction.FWrite:
+                        {
+                            Library.FWriteCall();
                             if (NC) { break; }
                         }
                         case FileFunction.FClose:
                         {
                             Library.FCloseCall();
                             if (NC) { break; }
-                        }
-                        case FileFunction.FPutC:
-                        case FileFunction.FWrite:
-                        {
-#ifdef DEBUG
-Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
-#endif     
-                            LDA # Error.NotImplemented
-                            Errors.ShowIDX();
-                            break;
                         }
                         default:
                         {
