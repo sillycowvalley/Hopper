@@ -420,6 +420,25 @@ unit Library
         STA ZP.IDXL
     }
     
+    generateSecondArgExpression()
+    {
+        LDY #AST.iNext
+        LDA [ZP.IDX], Y
+        TAX
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.IDXH
+        STX ZP.IDXL
+        
+        loop
+        {
+            // Generate argument and pop to TOP
+            CodeGen.generateExpression(); if (NC) { break; }
+            VCode.PopTOP();
+            break;
+        }
+    }
+    
     PutcharCall()
     {
         generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
@@ -1023,21 +1042,10 @@ unit Library
         // Stack on entry: [return slots] [filename] [mode]
         // BIOS expects: ZP.STR = filename, ZP.NEXT = mode
         
-        generateFirstArgExpression(); // expression -> NEXT, argument -> preserved in IDX
+        generateFirstArgExpression();  // expression -> NEXT, argument -> preserved in IDX
         if (NC) { return; }
-               
-        LDY #AST.iNext
-        LDA [ZP.IDX], Y
-        TAX
-        INY
-        LDA [ZP.IDX], Y
-        STA ZP.IDXH
-        STX ZP.IDXL
         
-        CodeGen.generateExpression(); if (NC) { return; }
-        
-        // Pop mode into TOP
-        VCode.PopTOP();
+        generateSecondArgExpression(); // expression -> TOP
         if (NC) { return; }
         
         LDA # OpCode.LDA_ZP
