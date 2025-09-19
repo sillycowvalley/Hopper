@@ -153,6 +153,11 @@ unit CodeGen
                 PLA
                 PLA
                 
+                // get the variable type for peephole
+                LDY #AST.iVarType
+                LDA [ZP.IDX], Y
+                VCode.SetVarType();
+                
                 // Check if global
                 LDY #AST.iVarScope
                 LDA [ZP.IDX], Y
@@ -180,6 +185,10 @@ unit CodeGen
                 }
                 // Generate code to push ZP.NEXT onto stack
                 VCode.PushNEXT();
+                
+                // clear peephole type
+                VCode.ClearVarType();
+            
                 SEC
                 break;
             }
@@ -1648,6 +1657,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 
                 VCode.PopNEXT(); // RHS
                 
+                // get the variable type for peephole
+                LDY #AST.iVarType
+                LDA [ZP.IDX], Y
+                VCode.SetVarType();
+                
                 // Check if global
                 LDY #AST.iVarScope
                 LDA [ZP.IDX], Y  
@@ -1670,6 +1684,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     // Store NEXT at BP+offset
                     VCode.PutNEXT(); if (NC) { break; }
                 }
+                
+                // clear peephole type
+                VCode.ClearVarType();
             }
                 
             // Assignment expressions return the assigned value
@@ -2617,7 +2634,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 if (NC) { break; }
                 
                 // Pop result into NEXT
-                PopNEXT();
+                VCode.PopNEXT();
                 if (NC) { break; }
                 
                 LDA AST.astNodeL
@@ -2636,7 +2653,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 CLC
                 ADC #4  // Skip saved BP and return address, and one more to get to actual return slot
                 
-                VCode.PutNEXT(); // A = BP offset (function parameter)
+                VCode.PutNEXT(); // A = BP offset (function return slot)
                 
                 PLA
                 STA AST.astNodeH
