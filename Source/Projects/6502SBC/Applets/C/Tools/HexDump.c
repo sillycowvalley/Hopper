@@ -12,7 +12,6 @@ void main(char* exe, char* arg) {
         printf("\n");
         addr += 16;
     }
-
     free(buffer);
     fclose(fp);
 }
