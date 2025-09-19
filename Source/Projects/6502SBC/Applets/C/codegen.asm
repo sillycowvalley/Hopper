@@ -59,6 +59,10 @@ unit CodeGen
     Initialize()
     {
         Gen6502.Initialize();
+        
+        // Initialize globalOffset to safe user ZP area
+        LDA # (Gen6502.runtimeZeroPageSlots + 0x10)
+        STA CodeGen.globalOffset
     }
     
     // Clean up and free allocated code generation buffers

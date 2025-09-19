@@ -429,9 +429,6 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack3H
         EmitByte(); if (NC) { return; }
-        
-        LDA # (runtimeZeroPageSlots + 0x10)
-        STA CodeGen.globalOffset
     }
     
     CreateCLIArguments()
