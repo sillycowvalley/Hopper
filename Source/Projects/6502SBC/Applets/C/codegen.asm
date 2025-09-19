@@ -21,23 +21,26 @@ unit CodeGen
     const byte backwardPatchL  = cgSlots+4;
     const byte backwardPatchH  = cgSlots+5;
     
-    const byte functionNode    = cgSlots+6;   // Current function being compiled
-    const byte functionNodeL   = cgSlots+6;   
-    const byte functionNodeH   = cgSlots+7;
+    const byte continuePatchL  = cgSlots+6;
+    const byte continuePatchH  = cgSlots+7;
     
-    const byte functionFlags   = cgSlots+8;
+    const byte functionNode    = cgSlots+8;   // Current function being compiled
+    const byte functionNodeL   = cgSlots+8;   
+    const byte functionNodeH   = cgSlots+9;
+    
+    const byte functionFlags   = cgSlots+10;
     // Bit 0 - we're in "main"
     // Bit 1 - "main" had arguments
     // Bit 2 - no more local variables allowed
     
-    const byte globalOffset    = cgSlots+9;
+    const byte globalOffset    = cgSlots+11;
     
     const byte elsePatchL      = backwardPatchL;
     const byte elsePatchH      = backwardPatchH;
-    const byte endPatchL       = cgSlots+10;
-    const byte endPatchH       = cgSlots+11;
+    const byte endPatchL       = cgSlots+12;
+    const byte endPatchH       = cgSlots+13;
     
-    const byte forwardPatchCount  = cgSlots+12;
+    const byte forwardPatchCount  = cgSlots+14;
     
     
     const byte patchListSize = 16; // maximum number of 'break' or 'continue' patches per loop
@@ -1358,8 +1361,49 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         PLY
     }
     
+    // Record loop start position 
+    recordLoopConditionPosition()
+    {
+        // Peephole optimization boundary
+        VCode.Flush(); if (NC) { return; }
+        
+        // (codeBuffer + codeOffset)
+        LDA Gen6502.codeOffsetL
+        STA ZP.ACCL
+        LDA Gen6502.codeOffsetH
+        STA ZP.ACCH
+        AddEntryPoint(); // Convert to runtime address -> ACC
+        LDA ZP.ACCL
+        STA backwardPatchL
+        LDA ZP.ACCH
+        STA backwardPatchH
+        SEC
+    }
+    
+    // Record loop continue position 
+    recordLoopContinuePosition()
+    {
+        // Peephole optimization boundary
+        VCode.Flush(); if (NC) { return; }
+        
+        // (codeBuffer + codeOffset)
+        LDA Gen6502.codeOffsetL
+        STA ZP.ACCL
+        LDA Gen6502.codeOffsetH
+        STA ZP.ACCH
+        AddEntryPoint(); // Convert to runtime address -> ACC
+        LDA ZP.ACCL
+        STA continuePatchL
+        LDA ZP.ACCH
+        STA continuePatchH
+        SEC
+    }
+    
     makeForwardPatches()
     {
+        // Peephole optimization boundary
+        VCode.Flush(); if (NC) { return; }
+        
         PHY
         
         LDY #0
@@ -1398,7 +1442,80 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             PLY
         }
         PLY
+        SEC
     }
+    
+    generateBreak()
+    {
+        // Check if we're in a loop by checking if patch list exists
+        LDA forwardPatchListL
+        ORA forwardPatchListH
+        if (Z)
+        {
+            LDA # Error.BreakOutsideLoop
+            Errors.Show();
+            return;
+        }
+        VCode.Flush(); if (NC) { return; }
+        
+        // Just emit JMP and add to forward patch list
+        LDA #OpCode.JMP_ABS
+        EmitByte(); if (NC) { return; }
+        
+        appendForwardPatch();
+        
+        // Emit placeholder
+        LDA #0
+        EmitByte(); if (NC) { return; }
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    generateContinue()
+    {
+        // Check if we're in a loop by checking if continuePatch exists
+        LDA continuePatchL
+        ORA continuePatchH
+        if (Z)
+        {
+            LDA # Error.ContinueOutsideLoop
+            Errors.Show();
+            return;
+        }
+        
+        // Peephole optimization boundary
+        VCode.Flush(); if (NC) { return; }
+        
+        // Simple JMP to known backward address
+        LDA #OpCode.JMP_ABS
+        EmitByte(); if (NC) { return; }
+        
+        LDA continuePatchL
+        EmitByte(); if (NC) { return; }
+        LDA continuePatchH
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    generateNextIteration()
+    {
+        // Peephole optimization boundary
+        VCode.Flush(); if (NC) { return; }
+        
+        // Simple JMP to known backward address
+        LDA #OpCode.JMP_ABS
+        EmitByte(); if (NC) { return; }
+        
+        LDA backwardPatchL
+        EmitByte(); if (NC) { return; }
+        LDA backwardPatchH
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
     
     // Generate code for a for loop
     // Input: IDX = For node
@@ -1413,6 +1530,10 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         LDA backwardPatchL
         PHA
         LDA backwardPatchH
+        PHA
+        LDA continuePatchL
+        PHA
+        LDA continuePatchH
         PHA
         LDA forwardPatchListL
         PHA
@@ -1447,18 +1568,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 // Init result is not used, pop it
                 VCode.Discard();  if (NC) { break; }
             }
-            VCode.Flush();
             
-            // Record loop start position (codeBuffer + codeOffset)
-            LDA Gen6502.codeOffsetL
-            STA ZP.ACCL
-            LDA Gen6502.codeOffsetH
-            STA ZP.ACCH
-            AddEntryPoint(); // Convert to runtime address -> ACC
-            LDA ZP.ACCL
-            STA backwardPatchL
-            LDA ZP.ACCH
-            STA backwardPatchH
+            // Record loop start position
+            recordLoopConditionPosition();
             
             // Generate exit condition if present
             LDY #AST.iForExit
@@ -1485,18 +1597,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 LDA #3  // Skip over JMP instruction (3 bytes)
                 EmitByte(); if (NC) { break; }
                 
-                // JMP to exit (will patch address later)
-                LDA #OpCode.JMP_ABS
-                EmitByte(); if (NC) { break; }
-                
-                // Save current offset for patching
-                VCode.Flush(); if (NC) { break; }
-                appendForwardPatch();
-                
-                // Emit placeholder address
-                LDA #0
-                EmitByte(); if (NC) { break; }
-                EmitByte(); if (NC) { break; }
+                // JMP to exit
+                generateBreak(); if (NC) { break; }
             }
             else
             {
@@ -1511,8 +1613,10 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA [AST.astNode], Y
             STA ZP.IDXH
             
-            generateBlock(); if (NC) { break; }
+            generateBlock(); if (NC) { break; }  
             
+            recordLoopContinuePosition(); if (NC) { break; } 
+                      
             // Generate next expression if present
             LDY #AST.iForNext
             LDA [AST.astNode], Y
@@ -1529,20 +1633,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 // Next result is not used, pop it
                 VCode.Discard();  if (NC) { break; }
             }
-            VCode.Flush();
             
             // JMP back to loop start
-            LDA #OpCode.JMP_ABS
-            EmitByte(); if (NC) { break; }
-            
-            // Emit the backward jump address
-            LDA backwardPatchL
-            EmitByte(); if (NC) { break; }
-            LDA backwardPatchH
-            EmitByte(); if (NC) { break; }
-            
+            generateNextIteration(); if (NC) { break; }
+                        
             // Patch forward jumps if needed
-            VCode.Flush(); if (NC) { break; }
             makeForwardPatches();
                       
             SEC
@@ -1557,6 +1652,10 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA forwardPatchListH
         PLA
         STA forwardPatchListL
+        PLA 
+        STA continuePatchH
+        PLA
+        STA continuePatchL
         PLA 
         STA backwardPatchH
         PLA
@@ -1583,6 +1682,10 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         PHA
         LDA backwardPatchH
         PHA
+        LDA continuePatchL
+        PHA
+        LDA continuePatchH
+        PHA
         LDA forwardPatchListL
         PHA
         LDA forwardPatchListH
@@ -1600,18 +1703,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         
         loop
         {
-            VCode.Flush(); if (NC) { break; }
-            
-            // Record loop start position (codeBuffer + codeOffset)
-            LDA Gen6502.codeOffsetL
-            STA ZP.ACCL
-            LDA Gen6502.codeOffsetH
-            STA ZP.ACCH
-            AddEntryPoint(); // Convert to runtime address -> ACC
-            LDA ZP.ACCL
-            STA backwardPatchL
-            LDA ZP.ACCH
-            STA backwardPatchH
+            // Record loop start position
+            recordLoopConditionPosition();
+            recordLoopContinuePosition();
             
             // Generate condition (first child of While node)
             LDY #AST.iChild
@@ -1634,18 +1728,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA #3  // Skip over JMP instruction (3 bytes)
             EmitByte(); if (NC) { break; }
             
-            // JMP to exit (will patch address later)
-            LDA #OpCode.JMP_ABS
-            EmitByte(); if (NC) { break; }
-            
-            // Save current offset for patching
-            VCode.Flush(); if (NC) { break; }
-            appendForwardPatch();
-            
-            // Emit placeholder address
-            LDA #0
-            EmitByte(); if (NC) { break; }
-            EmitByte(); if (NC) { break; }
+            // JMP to exit
+            generateBreak(); if (NC) { break; }
             
             // Get body (second child - sibling of condition)
             LDY #AST.iChild
@@ -1665,20 +1749,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             STX ZP.IDXL
             
             generateStatement(); if (NC) { break; }
-            VCode.Flush(); if (NC) { break; }
-            
+                        
             // JMP back to loop start
-            LDA #OpCode.JMP_ABS
-            EmitByte(); if (NC) { break; }
-            
-            // Emit the backward jump address
-            LDA backwardPatchL
-            EmitByte(); if (NC) { break; }
-            LDA backwardPatchH
-            EmitByte(); if (NC) { break; }
+            generateNextIteration(); if (NC) { break; }
             
             // Patch forward jumps
-            VCode.Flush(); if (NC) { break; }
             makeForwardPatches();
             
             SEC
@@ -1693,6 +1768,10 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA forwardPatchListH
         PLA
         STA forwardPatchListL
+        PLA 
+        STA continuePatchH
+        PLA
+        STA continuePatchL
         PLA 
         STA backwardPatchH
         PLA
@@ -2244,6 +2323,14 @@ Print.Hex(); LDA #'s' Print.Char();
         
         // Initialize local count
         STZ functionLocals
+        
+        STZ backwardPatchL
+        STZ backwardPatchH
+        STZ continuePatchL
+        STZ continuePatchH
+        STZ forwardPatchListL
+        STZ forwardPatchListH
+        STZ forwardPatchCount
         
         loop
         {

@@ -64,22 +64,27 @@ unit Tokens
         PlusAssign   = 62,  // +=
         MinusAssign  = 63,  // -=
         
-        Const        = 64, // "const"
+        Const        = 64,
+        Continue     = 65,
+        Break        = 66,
+        Ternary      = 67, // ?
     }
     
     // Keyword table for recognition
-    const string kwVoid   = "void";
-    const string kwChar   = "char";
-    const string kwInt    = "int";
-    const string kwLong   = "long";
-    const string kwIf     = "if";
-    const string kwElse   = "else";
-    const string kwFor    = "for";
-    const string kwWhile  = "while";
-    const string kwReturn = "return";
-    const string kwNull   = "null";
-    const string kwFILE   = "FILE";
-    const string kwConst  = "const";
+    const string kwVoid     = "void";
+    const string kwChar     = "char";
+    const string kwInt      = "int";
+    const string kwLong     = "long";
+    const string kwIf       = "if";
+    const string kwElse     = "else";
+    const string kwFor      = "for";
+    const string kwWhile    = "while";
+    const string kwReturn   = "return";
+    const string kwNull     = "null";
+    const string kwFILE     = "FILE";
+    const string kwConst    = "const";
+    const string kwBreak    = "continue";
+    const string kwContinue = "break";
     
     
     

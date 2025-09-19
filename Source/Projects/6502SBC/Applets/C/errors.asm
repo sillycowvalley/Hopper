@@ -26,6 +26,8 @@ unit Errors
         UnsupportedFormatter,
         UnsupportedLValue,
         UnsupportedLocalScope,
+        BreakOutsideLoop,
+        ContinueOutsideLoop,
         
         FilenameTooLong,
         FileSaveError,
