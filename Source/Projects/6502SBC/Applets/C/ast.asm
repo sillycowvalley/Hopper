@@ -42,6 +42,7 @@ unit AST
         While        = 18,  // While statement
         UnaryOp      = 19,  
         Empty        = 20,  // like ";"
+        ConstDecl    = 21,  // Const declaration
         
         AfterLast           // see freeNode()
     }
@@ -115,13 +116,20 @@ unit AST
     // const byte iOffset   = 9; 
     
     // VarDecl node:
-    //     [7-8]  Initializer expression (optional)
+    //     [7-8]  <unused>
     //     [9]    offset on stack relative to BP (signed single byte offset)
     //     [10]   <unused>
     //     [11]   Variable type (Token.Long/Int/Char)
-    const byte iInitializer = 7;
     // const byte iOffset   = 9;
     const byte iVarType     = 11;
+    
+    // ConstDecl node:
+    //     [7-8]  <unused>
+    //     [9]    <unused>
+    //     [10]   <unused>
+    //     [11]   Constant type (Token.Long/Int/Char)
+    // const byte iOffset   = 9;
+    const byte iConstType   = 11;
     
     // BinOp node:
     //     [7]    BinOpType
@@ -496,6 +504,65 @@ unit AST
     {
         walkToLastSibling(); // -> IDX (last in chain)
         SetNextSibling();// IDX[iNext] = IDY
+    }
+    
+    // Input:  STR = name
+    // Output: IDX = ConstDecl node
+    //         C set if found
+    FindConstant()  
+    {
+        // Search program level for ConstDecl nodes
+        LDA AST.astRootL
+        STA ZP.IDXL
+        LDA AST.astRootH
+        STA ZP.IDXH
+        
+        AST.GetFirstChild(); // -> IDY
+        
+        loop
+        {
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z) { CLC return; }  // Not found
+            
+            // Check if ConstDecl
+            LDY #AST.iNodeType
+            LDA [ZP.IDY], Y
+            CMP #AST.NodeType.ConstDecl
+            if (Z)
+            {
+                // Get identifier child and compare name
+                LDA ZP.IDYL
+                STA ZP.IDXL
+                LDA ZP.IDYH
+                STA ZP.IDXH
+                AST.GetFirstChild(); // -> IDY (identifier)
+                
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                TAX
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                CompareStrings(); // STR vs IDY
+                if (C)
+                {
+                    // Found it! Return ConstDecl in IDX
+                    SEC
+                    return;
+                }
+            }
+            // Try next sibling
+            LDY #AST.iNext
+            LDA [ZP.IDY], Y
+            TAX
+            INY
+            LDA [ZP.IDY], Y
+            STA ZP.IDYH
+            STX ZP.IDYL
+        }
     }
     
     
@@ -891,6 +958,7 @@ unit AST
     const string nodeCharPtr  = "CHARPTR ";
     const string nodeFilePtr  = "FILEPTR ";
     const string nodeVarDecl  = "VAR "; 
+    const string nodeConstDecl= "CONST "; 
     const string nodeAssign   = "ASSIGN";
     const string nodeReturn   = "RETURN";
     const string nodeBinOp    = "BINOP ";
@@ -1480,7 +1548,27 @@ unit AST
                 Print.Hex();
             }
             
-            
+            case NodeType.ConstDecl:
+            {
+                LDA #(nodeConstDecl % 256)
+                STA ZP.STRL
+                LDA #(nodeConstDecl / 256)
+                STA ZP.STRH
+                Print.String();
+                
+                // Print the type
+                LDY #iConstType
+                LDA [ZP.IDX], Y
+                switch (A)
+                {
+                    case Token.Long:    { LDA # (nodeLong % 256)    STA ZP.STRL LDA # (nodeLong / 256)    STA ZP.STRH }
+                    case Token.Int:     { LDA # (nodeInt % 256)     STA ZP.STRL LDA # (nodeInt / 256)     STA ZP.STRH }
+                    case Token.Char:    { LDA # (nodeChar % 256)    STA ZP.STRL LDA # (nodeChar / 256)    STA ZP.STRH }
+                    case Token.CharPtr: { LDA # (nodeCharPtr % 256) STA ZP.STRL LDA # (nodeCharPtr / 256) STA ZP.STRH }
+                    default:            { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
+                }
+                Print.String();
+            }
             case NodeType.VarDecl:
             {
                 LDA #(nodeVarDecl % 256)

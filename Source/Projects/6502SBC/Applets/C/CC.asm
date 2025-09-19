@@ -27,11 +27,11 @@ program CC
     
     const string messageCompiling = "Compiling ";
     
-#if defined(DEBUG)    
-    const string msgStart = "Start: ";
-    const string msgCompiled = "After compile: ";
-    const string msgCleaned = "After cleanup: ";
-#endif    
+//#if defined(DEBUG)    
+    const string msgStart = "Memory: ";
+    const string msgCompiled = "Memory after compile: ";
+    const string msgCleaned = "Memory after cleanup: ";
+//#endif    
     
     const byte ccSlots = 0x60;
     const byte sourceName  = ccSlots+0;
@@ -110,7 +110,7 @@ program CC
     
     Hopper()
     {
-#if defined(DEBUG) 
+//#if defined(DEBUG) 
         LDA #(msgStart % 256)
         STA ZP.STRL
         LDA #(msgStart / 256)
@@ -120,7 +120,7 @@ program CC
         Shared.MoveAccToTop();
         Long.Print();
         Print.NewLine();
-#endif        
+//#endif        
         Args.HasFilename();
         if (NC)
         {
@@ -184,14 +184,15 @@ program CC
         
         // Parse the program
         Parser.Parse();
-        
+
+#if defined(DEBUG)                
 if (NC)
 {
     LDA #'a' Print.Char();
     CLC
 }        
         
-#if defined(DEBUG)                
+
         PHP
         LDA AST.astRootL
         ORA AST.astRootH
@@ -214,7 +215,7 @@ if (NC)
                 }
             }
         
-#if defined(DEBUG) 
+//#if defined(DEBUG) 
             LDA #(msgCompiled % 256)
             STA ZP.STRL
             LDA #(msgCompiled / 256)
@@ -224,7 +225,7 @@ if (NC)
             Shared.MoveAccToTop();
             Long.Print();
             Print.NewLine();
-#endif      
+//#endif      
         }  
         
         LDA outputNameL
@@ -242,7 +243,7 @@ if (NC)
         Lexer.Dispose();
         AST.Dispose();
         
-#if defined(DEBUG) 
+//#if defined(DEBUG) 
         LDA #(msgCleaned % 256)
         STA ZP.STRL
         LDA #(msgCleaned / 256)
@@ -252,6 +253,6 @@ if (NC)
         Shared.MoveAccToTop();
         Long.Print();
         Print.NewLine();
-#endif        
+//#endif        
     }
 }

@@ -63,6 +63,8 @@ unit Tokens
         
         PlusAssign   = 62,  // +=
         MinusAssign  = 63,  // -=
+        
+        Const        = 64, // "const"
     }
     
     // Keyword table for recognition
@@ -77,6 +79,7 @@ unit Tokens
     const string kwReturn = "return";
     const string kwNull   = "null";
     const string kwFILE   = "FILE";
+    const string kwConst  = "const";
     
     
     
@@ -171,6 +174,19 @@ unit Tokens
         if (C)
         {
             LDA #Token.Long
+            STA Lexer.TokenType
+            return;
+        }
+        
+        // Check "const"
+        LDA #(kwConst % 256)
+        STA ZP.STRL
+        LDA #(kwConst / 256)
+        STA ZP.STRH
+        matchKeyword();
+        if (C)
+        {
+            LDA #Token.Const
             STA Lexer.TokenType
             return;
         }
@@ -305,6 +321,7 @@ unit Tokens
     const string nameReturn      = "return";
     const string nameBreak       = "break";
     const string nameContinue    = "continue";
+    const string nameConst       = "const";
     
     const string namePlus        = "+";
     const string nameMinus       = "-";
@@ -368,6 +385,7 @@ unit Tokens
             case Token.Return:         { LDA #(nameReturn % 256)      STA ZP.STRL  LDA #(nameReturn / 256)      STA ZP.STRH }
             case Token.Break:          { LDA #(nameBreak % 256)       STA ZP.STRL  LDA #(nameBreak / 256)       STA ZP.STRH }
             case Token.Continue:       { LDA #(nameContinue % 256)    STA ZP.STRL  LDA #(nameContinue / 256)    STA ZP.STRH }
+            case Token.Const:          { LDA #(nameConst % 256)       STA ZP.STRL  LDA #(nameConst / 256)       STA ZP.STRH }
             
             // Operators
             case Token.Plus:           { LDA #(namePlus % 256)        STA ZP.STRL  LDA #(namePlus / 256)        STA ZP.STRH }

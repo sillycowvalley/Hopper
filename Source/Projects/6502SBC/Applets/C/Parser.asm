@@ -16,6 +16,10 @@ unit Parser
     const byte functionNodeL = parserSlots+1;
     const byte functionNodeH = parserSlots+2;
     
+    const uint constantNode  = functionNode;    // only global so share parseFunction's node
+    const byte constantNodeL = functionNodeL;
+    const byte constantNodeH = functionNodeH;
+    
     const uint compoundNode  = parserSlots+3;   // parseCompoundStatement's node
     const byte compoundNodeL = parserSlots+3;
     const byte compoundNodeH = parserSlots+4;
@@ -136,6 +140,135 @@ unit Parser
         PLY
     }
     
+        
+    // Parse a type token (char, int, long) and handle char*
+    // Output: A = type token (Token.Char/Int/Long/CharPtr), C set on success
+    parseType()
+    {
+        loop
+        {
+            LDA currentToken
+            switch (A)
+            {
+                case Token.Char:
+                {
+                    consume();
+                    if (NC) { break; }
+                    
+                    // Check for char*
+                    LDA currentToken
+                    CMP #Token.Star
+                    if (Z)
+                    {
+                        consume();
+                        LDA #Token.CharPtr
+                    }
+                    else
+                    {
+                        LDA #Token.Char
+                    }
+                }
+                case Token.Int:
+                {
+                    consume();
+                    LDA #Token.Int
+                }
+                case Token.Long:
+                {
+                    consume();
+                    LDA #Token.Long
+                }
+                default:
+                {
+                    // Not a type
+                    LDA # Error.SyntaxError
+                    Errors.ShowLine();
+                    break;
+                }
+            }
+            SEC
+            break;
+        } // single exit
+    }
+    
+    
+    parseConstDeclaration() // Input: A = type, -> IDY
+    {
+        PHA  // Save type
+
+        // Create ConstDecl node
+        LDA #AST.NodeType.ConstDecl
+        AST.CreateNode(); // -> IDX
+        PLA
+        if (NC) { return; }
+        
+        // Store type
+        LDY #AST.iConstType
+        STA [ZP.IDX], Y
+        
+        // Save ConstDecl for return
+        LDA ZP.IDXL
+        STA constantNodeL
+        LDA ZP.IDXH
+        STA constantNodeH
+        
+        loop
+        {
+            // Reuse parseVariableDeclaration's pattern for identifier
+            LDA #Token.Identifier
+            expect();
+            if (NC) { break; }
+            
+            LDA #AST.NodeType.Identifier
+            AST.CreateNode();  // -> IDX
+            copyTokenString(); // preserves IDX
+            if (NC) { break; }
+            
+            LDA ZP.STRL
+            STA ZP.ACCL
+            LDA ZP.STRH
+            STA ZP.ACCH
+            AST.SetData();
+            
+            // Add to ConstDecl
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            LDA constantNodeH
+            STA ZP.IDXH
+            LDA constantNodeL
+            STA ZP.IDXL
+            AST.AddChild();
+            
+            // Parse '= expression;'
+            LDA #Token.Assign
+            expect();
+            if (NC) { break; }
+                                    
+            parseExpression(); // -> IDY, munts IDX
+            if (NC) { break; }
+            
+            LDA constantNodeH
+            STA ZP.IDXH
+            LDA constantNodeL
+            STA ZP.IDXL
+            AST.AddChild(); // Input: ZP.IDX = node, ZP.IDY = new child
+            
+            LDA #Token.Semicolon
+            expect();
+            if (NC) { break; }
+            
+            // Return ConstDecl in IDY
+            LDA constantNodeL
+            STA ZP.IDYL
+            LDA constantNodeH
+            STA ZP.IDYH
+            SEC
+            break;
+        } // single exit
+    }
     
     parseFunction() // -> IDY
     {
@@ -159,7 +292,7 @@ unit Parser
                 PHA  // Save Token.CharPtr instead
             }
         }
-
+        
         // TODO: we need to be able to peek next token (not next char, which could be whitespace)        
         Lexer.CurrentChar();
         CMP #'('
@@ -663,7 +796,6 @@ unit Parser
                 
                 // Add initializer as second child of ASSIGN (right side)
                 AST.AddChild();  // IDX = ASSIGN, IDY = initializer
-                if (NC) { break; }
                 
                 // ASSIGN is now complete with both children
                 // Move it to IDY to wrap in ExprStmt
@@ -679,7 +811,6 @@ unit Parser
                 
                 // Add complete ASSIGN as child of ExprStmt
                 AST.AddChild();  // IDX = ExprStmt, IDY = ASSIGN
-                if (NC) { break; }
                 
                 // Move ExprStmt to IDY for adding as sibling
                 LDA ZP.IDXL
@@ -696,7 +827,6 @@ unit Parser
                 // Add ExprStmt as sibling to VarDecl
                 // (Both will be added to block by parseCompoundStatement)
                 AST.AddSibling();  // IDX = VarDecl, IDY = ExprStmt
-                if (NC) { break; }
             }
             
                         
@@ -2185,7 +2315,6 @@ unit Parser
             
             // Add expression as child of PostfixOp
             AST.AddChild(); // IDX = PostfixOp, IDY = expression
-            if (NC) { break; }
             
             // Move PostfixOp to IDY for return
             LDA ZP.IDXL
@@ -2779,6 +2908,19 @@ LDA #'x' Print.Char();
             LDA currentToken
             switch (A)
             {
+                case Token.Const:
+                {
+                    consume();  // Move past 'const'
+                    if (NC) { break; }
+                    parseType();  // Get type in A
+                    if (NC) { break; } 
+                    parseConstDeclaration();  // A = type, -> IDY
+                    if (NC) { break; } 
+                    
+                    // Add constant to AST root
+                    AST.GetRoot(); // -> IDX
+                    AST.AddChild(); // IDX = root, IDY = constant
+                }
                 case Token.Char:
                 case Token.Long:
                 case Token.FilePtr:
@@ -2790,7 +2932,7 @@ LDA #'x' Print.Char();
                     
                     // Add function (or variable) to AST root
                     AST.GetRoot(); // -> IDX
-                    AST.AddChild(); // IDX = root, IDY = function   
+                    AST.AddChild(); // IDX = root, IDY = function/variable  
                 }
                 default:
                 {

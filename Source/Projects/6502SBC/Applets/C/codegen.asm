@@ -33,6 +33,7 @@ unit CodeGen
     const byte functionFlags   = cgSlots+8;
     // Bit 0 - we're in "main"
     // Bit 1 - "main" had arguments
+    // Bit 2 - no more local variables allowed
     
     
     const string msgMain = "main";
@@ -91,10 +92,54 @@ unit CodeGen
         LDA ZP.IDXL
         PHA
     
-        // Find the variable declaration
-        FindVariable();
-        if (NC)
+        loop
         {
+            // Find the variable declaration
+            FindVariable();
+            if (C)
+            {
+                PLA
+                PLA
+                
+                // IDX now points to VarDecl node
+                // Get the BP offset (stored during declaration processing)
+                LDY #AST.iOffset
+                LDA [ZP.IDX], Y
+                
+                // Generate code to load from BP+offset into ZP.NEXT
+                GetNEXT(); if (NC) { break; }
+                
+                // Generate code to push ZP.NEXT onto stack
+                PushNEXT();
+                SEC
+                break;
+                
+            }
+            
+            // Not a variable, try constant
+            FindConstant();  // -> IDX  
+            if (C)
+            {
+                PLA
+                PLA
+                
+                // Load constant value directly
+                // Get the literal value (sibling of identifier in ConstDecl)
+                AST.GetFirstChild();  // -> IDY (identifier)
+                
+                // get next sibling
+                LDY #AST.iNext
+                LDA [ZP.IDY], Y
+                STA ZP.IDXL
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDXH
+                
+                // Generate code for the literal
+                generateExpression();  // The literal node
+                break;
+            }
+        
 #ifdef DEBUG
 LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
 #endif
@@ -104,21 +149,9 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
             STA ZP.IDXH
             LDA # Error.UndefinedIdentifier
             Errors.ShowIDX();
-            return;
-        }
-        PLA
-        PLA
+            break;
+        } // single exit
         
-        // IDX now points to VarDecl node
-        // Get the BP offset (stored during declaration processing)
-        LDY #AST.iOffset
-        LDA [ZP.IDX], Y
-        
-        // Generate code to load from BP+offset into ZP.NEXT
-        GetNEXT(); if (NC) { return; }
-        
-        // Generate code to push ZP.NEXT onto stack
-        PushNEXT();
     }
     
     // Add the BIOS entry point address (0x0800) to value in ACC
@@ -491,6 +524,12 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
     {
         loop
         {
+            if (BBS2, functionFlags)
+            {
+                LDA # Error.UnsupportedLocalScope
+                Errors.ShowIDX();
+                break;
+            }
             // Allocate stack space for the variable - just push a dummy value
             VCode.Reserve(); if (NC) { return; }
             VCode.Flush();   if (NC) { return; }
@@ -509,29 +548,6 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
             
             // Update the local count
             INC functionLocals
-            
-
-            
-            LDY # AST.iInitializer
-            LDA [ZP.IDX], Y
-            STA ZP.IDYL
-            INY
-            LDA [ZP.IDX], Y
-            STA ZP.IDYH
-            
-            LDA ZP.IDYL
-            ORA ZP.IDYH
-            if (NZ)  // Has initializer
-            {
-                // TODO: Generate code for initializer expression
-                // For now, just error
-#ifdef DEBUG
-Print.Hex(); LDA #'v' Print.Char();
-#endif
-                LDA # Error.NotImplemented
-                Errors.ShowIDY();
-                break;
-            }
                     
             SEC
             break;
@@ -1556,6 +1572,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         {
             case NodeType.CompoundStmt:
             {
+                SMB2 functionFlags // no more local variable declarations
                 generateBlock();
                 if (NC) { return; }
             }
@@ -1566,6 +1583,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             }
             case NodeType.For:
             {
+                SMB2 functionFlags // no more local variable declarations
                 generateFor();
                 if (NC) { return; }
             }
@@ -1576,11 +1594,13 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             }
             case NodeType.If:
             {
+                SMB2 functionFlags // no more local variable declarations
                 generateIf();
                 if (NC) { return; }
             }
             case NodeType.While:
             {
+                SMB2 functionFlags // no more local variable declarations
                 generateWhile();
                 if (NC) { return; }
             }
@@ -2109,18 +2129,18 @@ Print.Hex(); LDA #'s' Print.Char();
             ORA ZP.IDXH
             if (Z) { break; }  // No more functions
             
+            LDA ZP.IDXH
+            STA functionNodeH   
+            LDA ZP.IDXL
+            STA functionNodeL
+            
             // Check if it's a Function node
             LDY #AST.iNodeType
+                        
             LDA [ZP.IDX], Y
             CMP #AST.NodeType.Function
             if (Z)
             {
-                LDA ZP.IDXH
-                STA functionNodeH   
-                LDA ZP.IDXL
-                STA functionNodeL
-                
-                
                 // Check if this is main
                 LDY #AST.iChild
                 LDA [functionNode], Y
@@ -2222,8 +2242,6 @@ Print.Hex(); LDA #'s' Print.Char();
         EmitByte(); if (NC) { return; }
         LDA #0x00
         EmitByte(); if (NC) { return; }
-        LDA # OpCode.RTS
-        EmitByte(); if (NC) { return; } // JMP absolute
         
         // 3. Walk AST and emit all string literals
         AST.GetRoot();  // -> IDX

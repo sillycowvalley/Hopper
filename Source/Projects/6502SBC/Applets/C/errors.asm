@@ -25,6 +25,7 @@ unit Errors
         ExpressionExpected,
         UnsupportedFormatter,
         UnsupportedLValue,
+        UnsupportedLocalScope,
         
         FilenameTooLong,
         FileSaveError,
