@@ -831,6 +831,12 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 break;
             }
             
+            // get the variable type for peephole
+            LDY #AST.iVarType
+            LDA [ZP.IDX], Y
+            VCode.SetVarType();
+            
+            
             // Check if global
             LDY #AST.iVarScope
             LDA [ZP.IDX], Y
@@ -880,12 +886,12 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 case PostfixOpType.Increment:
                 {
-                    IncNEXT();
+                    VCode.IncNEXT();
                     if (NC) { PLA PLA break; }
                 }
                 case PostfixOpType.Decrement:
                 {
-                    DecNEXT();
+                    VCode.DecNEXT();
                     if (NC) { PLA PLA break; }
                 }
             }
@@ -902,6 +908,9 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 PLA  // Get offset
                 VCode.PutNEXT();  // A = offset
             }
+            
+            // clear peephole type
+            VCode.ClearVarType();
             
             SEC
             break;
@@ -1415,12 +1424,12 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 case BinOpType.Mod:
                 {
                     // Result is in NEXT, push it
-                    PushNEXT();
+                    VCode.PushNEXT();
                 }
                 default:
                 {
                     // result is C or NC
-                    PushC();
+                    VCode.PushC();
                 }
             }
             SEC
@@ -1945,9 +1954,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 generateExpression(); if (NC) { break; } // "i<10;"
                 
                 // Pop result to check it
-                PopNEXT();  if (NC) { break; }
+                VCode.PopNEXT();  if (NC) { break; }
                 // Test if NEXT is zero (false)
-                NEXTZero(); if (NC) { break; }
+                VCode.NEXTZero(); if (NC) { break; }
                 
                 // BNE skip_exit (if true, continue loop)
                 LDA # OpCode.BNE
@@ -2076,9 +2085,9 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             generateExpression(); if (NC) { break; } // AST.astNode first child
             
             // Pop result to check it
-            PopNEXT(); if (NC) { break; }
+            VCode.PopNEXT(); if (NC) { break; }
             // Test if NEXT is zero (false)
-            NEXTZero(); if (NC) { break; }
+            VCode.NEXTZero(); if (NC) { break; }
             
             // BNE skip_exit (if true, continue loop)
             LDA #OpCode.BNE
@@ -2335,10 +2344,10 @@ Print.Hex(); LDA #'s' Print.Char();
             generateExpression(); if (NC) { break; } // AST.astNode first child
             
             // Pop result to check it
-            PopNEXT();  if (NC) { break; }
+            VCode.PopNEXT();  if (NC) { break; }
             
             // Test if NEXT is zero (false)
-            NEXTZero(); if (NC) { break; }
+            VCode.NEXTZero(); if (NC) { break; }
 
             // BNE to_then (if true, execute then clause)
             LDA #OpCode.BNE

@@ -25,6 +25,8 @@ unit VCode
     const byte vOpCode         = vzSlots+13;
     const byte vOpBits         = vzSlots+14;
     
+    const byte VarType         = vzSlots+15;
+    
     enum VOpCode
     {
         None            = 0x00,
@@ -95,6 +97,34 @@ unit VCode
     const string strWORDtoTOP = "WtoT";
     const string strLoadNEXT = "ldN";
     const string strStoreNEXT = "stN";
+    
+    ClearVarType()
+    {
+        LDA # VOpCode.Long // default to long
+        STA VCode.VarType
+    }
+    SetVarType()
+    {
+        switch (A)
+        {
+            case Token.Long:
+            {
+                LDA # VOpCode.Long
+            }
+            case Token.Int:
+            case Token.CharPtr:
+            case Token.FilePtr:
+            {
+                LDA # VOpCode.Int
+            }
+            case Token.Char:
+            {
+                LDA # VOpCode.Char
+            }
+        }
+        STA VCode.VarType
+    }
+            
     
     printPeep()
     {
@@ -350,6 +380,8 @@ unit VCode
         LDA #0x01
         STA vcodeSizeH
         STZ vcodeSizeL
+        
+        ClearVarType(); // default to Long
         
         clearPeeps();
     }
@@ -697,6 +729,58 @@ Print.Space(); LDA #'A' Print.Char();
                             SEC
                             break;
                         }
+                        
+                        case (VOpCode.PutNEXT | VOpCode.Int):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.IncNEXT | VOpCode.Int):
+                                {
+                                    LDA peep3
+                                    switch (A)
+                                    {
+                                        case (VOpCode.PushNEXT | VOpCode.Int):
+                                        {
+                                            LDA peep4
+                                            switch (A)
+                                            {
+                                                case (VOpCode.GetNEXT | VOpCode.Int):
+                                                {
+#ifdef PROBLEMPEEPS
+                                                    // TODO: GetNEXT side effect lost (NEXT no longer has value from original GetNEXT)
+                                                    // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
+                                                    //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
+                                                    //
+                                                    // decrement vcodeOffset by 5
+                                                    // then modify [vcodeOffset-2]
+                                                    
+                                                    clearPeeps();
+                                                    SEC
+                                                    LDA vcodeOffset
+                                                    SBC #5
+                                                    STA vcodeOffset
+                                                    LDY vcodeOffset
+                                                    DEY
+                                                    DEY
+                                                    LDA # (VOpCode.Inc | VOpCode.Int)
+                                                    STA [vcodeBuffer], Y
+                                                    pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'M' Print.Char(); LDA #'!' Print.Char();
+#endif                                               
+                                                    SEC
+                                                    break;   
+#endif                                                       
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    
+                        
                         case (VOpCode.PutNEXT | VOpCode.Long):
                         {
                             LDA peep2
@@ -1075,27 +1159,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         SEC
     }
     
-    PushNEXT()
-    {
-        LDX # (VOpCode.PushNEXT | VOpCode.Long)
-        addVCode();
-    }
-    PopNEXT()
-    {
-        LDX # (VOpCode.PopNEXT | VOpCode.Long)
-        addVCode();
-    }
-    PushTOP()
-    {
-        LDX # (VOpCode.PushTOP | VOpCode.Long)
-        addVCode();
-    }
-    PopTOP()
-    {
-        LDX # (VOpCode.PopTOP | VOpCode.Long)
-        addVCode();
-    }
-    PushC()
+        PushC()
     {
         LDX # (VOpCode.PushC | VOpCode.Long)
         addVCode();
@@ -1116,57 +1180,102 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         addVCode();
     }
     
-    IncNEXT()
-    {
-        LDX # (VOpCode.IncNEXT | VOpCode.Long)
-        addVCode();
-    }
-    DecNEXT()
-    {
-        LDX # (VOpCode.DecNEXT | VOpCode.Long)
-        addVCode();
-    }
+    
     LongADD()
     {
         LDX # (VOpCode.LongADD | VOpCode.Long)
         addVCode();
     }
     
+    buildTypeX()
+    {
+        PHA
+        TXA
+        ORA VCode.VarType
+        TAX
+        PLA
+    }
+    PushNEXT()
+    {
+        LDX # VOpCode.PushNEXT
+        buildTypeX();
+        addVCode();
+    }
+    PopNEXT()
+    {
+        LDX # VOpCode.PopNEXT
+        buildTypeX();
+        addVCode();
+    }
+    PushTOP()
+    {
+        LDX # VOpCode.PushTOP
+        buildTypeX();
+        addVCode();
+    }
+    PopTOP()
+    {
+        LDX # VOpCode.PopTOP
+        buildTypeX();
+        addVCode();
+    }
     GetNEXT() // A = BP offset
     {
-        LDX # (VOpCode.GetNEXT | VOpCode.Long)
+        LDX # VOpCode.GetNEXT
+        buildTypeX();
         addVCode();
     }
     GetTOP() // A = BP offset
     {
-        LDX # (VOpCode.GetTOP | VOpCode.Long)
+        LDX # VOpCode.GetTOP
+        buildTypeX();
         addVCode();
     }
     PutNEXT() // A = BP offset
     {
-        LDX # (VOpCode.PutNEXT | VOpCode.Long)
+        LDX # VOpCode.PutNEXT
+        buildTypeX();
         addVCode();
     }
     PutTOP() // A = BP offset
     {
-        LDX # (VOpCode.PutTOP | VOpCode.Long)
+        LDX # VOpCode.PutTOP
+        buildTypeX();
         addVCode();
     }
+    LoadNEXT() // A = offset
+    {
+        LDX # VOpCode.LoadNEXT
+        buildTypeX();
+        addVCode();
+    }
+    StoreNEXT() // A = offset
+    {
+        LDX # VOpCode.StoreNEXT
+        buildTypeX();
+        addVCode();
+    }
+    IncNEXT()
+    {
+        LDX # VOpCode.IncNEXT
+        buildTypeX();
+        addVCode();
+    }
+    DecNEXT()
+    {
+        LDX # VOpCode.DecNEXT
+        buildTypeX();
+        addVCode();
+    }
+    
+    
     PushCHAR() // A = char
     {
         LDX # (VOpCode.PushCHAR | VOpCode.Long)
         addVCode();
     }
-    LoadNEXT() // A = offset
-    {
-        LDX # (VOpCode.LoadNEXT | VOpCode.Long)
-        addVCode();
-    }
-    StoreNEXT() // A = offset
-    {
-        LDX # (VOpCode.StoreNEXT | VOpCode.Long)
-        addVCode();
-    }
+    
+    
     
     
     PushWORD() // A = LSB, X = MSB
@@ -2402,31 +2511,36 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA # Gen6502.runtimeStack1
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.LDA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack2
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.ADC_IMM
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA #0
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack2
-            Gen6502.emitByte(); if (NC) { break; }
-            
-            LDA #OpCode.LDA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack3
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.ADC_IMM
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA #0
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack3
-            Gen6502.emitByte(); if (NC) { break; }
+            LDA vOpBits
+            CMP # VOpCode.Long
+            if (Z)
+            {
+                LDA #OpCode.LDA_IND_Y
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # Gen6502.runtimeStack2
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA #OpCode.ADC_IMM
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA #0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA #OpCode.STA_IND_Y
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # Gen6502.runtimeStack2
+                Gen6502.emitByte(); if (NC) { break; }
+                
+                LDA #OpCode.LDA_IND_Y
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # Gen6502.runtimeStack3
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA #OpCode.ADC_IMM
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA #0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA #OpCode.STA_IND_Y
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # Gen6502.runtimeStack3
+                Gen6502.emitByte(); if (NC) { break; }
+            }
                      
             SEC
             break;
