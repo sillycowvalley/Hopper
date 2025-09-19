@@ -2327,4 +2327,103 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             break;
         }
     }
+    
+    // Generate code to load from zero page into ZP.NEXT
+    LoadNEXT()
+    {
+        STA ZP.TEMP
+        loop
+        {
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { break; }
+            
+            INC ZP.TEMP
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { break; }
+            
+            INC ZP.TEMP
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { break; }
+            
+            INC ZP.TEMP
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { break; }
+            
+            break;
+        } // single exit
+    }
+    
+    // Generate code to store from ZP.NEXT to zero page
+    StoreNEXT()  // Input: A = ZP base address
+    {
+        STA ZP.TEMP
+        
+        loop
+        {
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT0
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            
+            INC ZP.TEMP
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT1
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            
+            INC ZP.TEMP
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT2
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            
+            INC ZP.TEMP
+            LDA #OpCode.LDA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA #ZP.NEXT3
+            EmitByte(); if (NC) { break; }
+            LDA #OpCode.STA_ZP
+            EmitByte(); if (NC) { break; }
+            LDA ZP.TEMP
+            EmitByte(); if (NC) { break; }
+            
+            break;
+        } // single exit
+    }
 }

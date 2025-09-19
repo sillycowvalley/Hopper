@@ -77,6 +77,11 @@ unit AST
         Increment,
         Decrement
     }
+    enum VarScope
+    {
+        Local  = 0,
+        Global = 1
+    }
     
     // Common node structure:
     //     [0] = NodeType
@@ -118,9 +123,10 @@ unit AST
     // VarDecl node:
     //     [7-8]  <unused>
     //     [9]    offset on stack relative to BP (signed single byte offset)
-    //     [10]   <unused>
+    //     [10]   varFlags: VarScope.Local or VarScope.Global
     //     [11]   Variable type (Token.Long/Int/Char)
     // const byte iOffset   = 9;
+    const byte iVarScope    = 10;
     const byte iVarType     = 11;
     
     // ConstDecl node:
@@ -678,7 +684,7 @@ unit AST
         {
             LDA ZP.IDXL
             ORA ZP.IDXH
-            if (Z) { CLC return; }  // Not found
+            if (Z) { break; }  // Not found
             
             // Check if it's a VarDecl
             LDY #AST.iNodeType
@@ -733,6 +739,80 @@ unit AST
             LDA [ZP.IDX], Y
             STA ZP.IDXH
             STX ZP.IDXL
+        }
+        
+        // Not found in locals, now search globals at root
+        LDA AST.astRootL
+        STA ZP.IDXL
+        LDA AST.astRootH
+        STA ZP.IDXH
+        
+        AST.GetFirstChild(); // -> IDY
+        
+        loop
+        {
+            LDA ZP.IDYL
+            ORA ZP.IDYH
+            if (Z) { CLC return; }  // Not found anywhere
+            
+            LDY #AST.iNodeType
+            LDA [ZP.IDY], Y
+            CMP #AST.NodeType.VarDecl
+            if (Z)
+            {
+                // Save VarDecl node
+                LDA ZP.IDYL
+                PHA
+                LDA ZP.IDYH
+                PHA
+                
+                // Get identifier child
+                LDA ZP.IDYL
+                STA ZP.IDXL
+                LDA ZP.IDYH
+                STA ZP.IDXH
+                AST.GetFirstChild(); // -> IDY (identifier)
+                
+                // Get name from identifier
+                LDY #AST.iData
+                LDA [ZP.IDY], Y
+                TAX
+                INY
+                LDA [ZP.IDY], Y
+                STA ZP.IDYH
+                STX ZP.IDYL
+                
+                // Compare with target name
+                CompareStrings(); // STR vs IDY
+                
+                // Restore VarDecl
+                PLA
+                STA ZP.IDXH
+                PLA
+                STA ZP.IDXL
+                
+                if (C)
+                {
+                    // Found global!
+                    SEC
+                    return;
+                }
+                
+                // Restore IDY for next iteration
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+            }
+            
+            // Next sibling at root level
+            LDY #AST.iNext
+            LDA [ZP.IDY], Y
+            TAX
+            INY
+            LDA [ZP.IDY], Y
+            STA ZP.IDYH
+            STX ZP.IDYL
         }
         
         CLC  // Not found
@@ -1590,45 +1670,61 @@ unit AST
                     default:            { LDA # (nodeUnknown % 256) STA ZP.STRL LDA # (nodeUnknown / 256) STA ZP.STRH }
                 }
                 Print.String();
-                           
-                // Print the BP offset
-                LDA #(nodeBPOffset % 256)
-                STA ZP.STRL
-                LDA #(nodeBPOffset / 256)
-                STA ZP.STRH
-                Print.String();
                 
-                // Get and print the signed offset
-                LDY #iOffset
+                LDY #iVarScope
                 LDA [ZP.IDX], Y
                 
-                // Check if negative (bit 7 set)
-                if (MI)
-                {
-                    // It's negative, print minus sign
-                    PHA
-                    LDA #'-'
-                    Print.Char();
-                    PLA
+                CMP # VarScope.Local
+                if (Z)
+                {     
+                    // Print the BP offset
+                    LDA #(nodeBPOffset % 256)
+                    STA ZP.STRL
+                    LDA #(nodeBPOffset / 256)
+                    STA ZP.STRH
+                    Print.String();
                     
-                    // Negate to get absolute value
-                    EOR #0xFF
-                    CLC
-                    ADC #1
+                    // Get and print the signed offset
+                    LDY #iOffset
+                    LDA [ZP.IDX], Y
+                    
+                    // Check if negative (bit 7 set)
+                    if (MI)
+                    {
+                        // It's negative, print minus sign
+                        PHA
+                        LDA #'-'
+                        Print.Char();
+                        PLA
+                        
+                        // Negate to get absolute value
+                        EOR #0xFF
+                        CLC
+                        ADC #1
+                    }
+                    else
+                    {
+                        PHA
+                        LDA #'+'
+                        Print.Char();
+                        PLA
+                    }
+                    LDX # ZP.TOP
+                    Shared.LoadByte();
+                    Long.Print();
+                    
+                    LDA #']'
+                    Print.Char();
                 }
                 else
                 {
-                    PHA
-                    LDA #'+'
-                    Print.Char();
-                    PLA
+                    // Get and print the address
+                    LDY #iOffset
+                    LDA [ZP.IDX], Y
+                    LDX # ZP.TOP
+                    Shared.LoadByte();
+                    Long.Print();
                 }
-                LDX # ZP.TOP
-                Shared.LoadByte();
-                Long.Print();
-                
-                LDA #']'
-                Print.Char();
             }
             case NodeType.Assign:
             {

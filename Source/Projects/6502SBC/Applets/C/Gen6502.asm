@@ -60,6 +60,8 @@ unit Gen6502
     const byte runtimeFileBufPosL   = runtimeZeroPageSlots+10;
     const byte runtimeFileBufPosH   = runtimeZeroPageSlots+11;
     
+    // WARNING: global variable slots start at 0x70 (runtimeZeroPageSlots + 0x10)
+    
     // 65C02S opcodes
     enum OpCode
     {
@@ -422,7 +424,11 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack3H
         EmitByte(); if (NC) { return; }
+        
+        LDA # (runtimeZeroPageSlots + 0x10)
+        STA CodeGen.globalOffset
     }
+    
     CreateCLIArguments()
     {
         // Push exe pointer (always LineBuffer start)

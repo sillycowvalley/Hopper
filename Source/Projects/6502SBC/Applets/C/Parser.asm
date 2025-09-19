@@ -300,6 +300,14 @@ unit Parser
         {
             PLA
             parseVariableDeclaration(); // A = type, -> IDY
+            
+            if (NC) { return; }
+        
+            // Set scope to Global since we're at program level
+            LDY #AST.iVarScope
+            LDA #VarScope.Global
+            STA [ZP.IDY], Y
+            
             return;
         }
         
@@ -653,6 +661,11 @@ unit Parser
             LDY #AST.iVarType
             LDA ZP.TEMP
             STA [ZP.IDX], Y
+            
+            // Set scope to Local by default
+            LDY #AST.iVarScope
+            LDA #VarScope.Local
+            STA [ZP.IDY], Y
             
             // Expect identifier
             LDA #Token.Identifier

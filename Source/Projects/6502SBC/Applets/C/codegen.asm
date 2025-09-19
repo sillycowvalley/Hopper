@@ -35,6 +35,8 @@ unit CodeGen
     // Bit 1 - "main" had arguments
     // Bit 2 - no more local variables allowed
     
+    const byte globalOffset    = cgSlots+9;
+    
     
     const string msgMain = "main";
     
@@ -50,6 +52,37 @@ unit CodeGen
         Gen6502.Dispose();
     }
     
+    // Allocates zero page space for the local if it has not yet been initialized
+    // Input:  IDX = VarDecl, modifies A
+    // Output: C on success, NC on failure
+    verifyGlobalAllocation()  
+    {
+        loop
+        {
+            LDY #AST.iOffset
+            LDA [ZP.IDX], Y
+            if (Z)
+            {
+                LDA globalOffset
+                LDY #AST.iOffset
+                STA [ZP.IDX], Y
+                
+                CLC
+                ADC #4
+                STA globalOffset
+                
+                CMP #0xE0
+                if (C)// >= 0xE0
+                {
+                    LDA #Error.OutOfMemory
+                    Errors.ShowLine();
+                    break;
+                }
+            }
+            SEC
+            break;
+        }
+    }
        
     // Input: IDX = StringLit node
     // Output: C set on success, clear on failure
@@ -101,19 +134,35 @@ unit CodeGen
                 PLA
                 PLA
                 
-                // IDX now points to VarDecl node
-                // Get the BP offset (stored during declaration processing)
-                LDY #AST.iOffset
+                // Check if global
+                LDY #AST.iVarScope
                 LDA [ZP.IDX], Y
-                
-                // Generate code to load from BP+offset into ZP.NEXT
-                GetNEXT(); if (NC) { break; }
-                
+                CMP #VarScope.Global
+                if (Z)
+                {
+                    verifyGlobalAllocation();
+                    if (NC) { break; }
+                    
+                    LDY #AST.iOffset
+                    LDA [ZP.IDX], Y
+                    
+                    // Generate code to load from zero page into ZP.NEXT
+                    VCode.LoadNEXT(); if (NC) { break; }
+                }
+                else
+                {
+                    // IDX now points to VarDecl node
+                    // Get the BP offset (stored during declaration processing)
+                    LDY #AST.iOffset
+                    LDA [ZP.IDX], Y
+                    
+                    // Generate code to load from BP+offset into ZP.NEXT
+                    VCode.GetNEXT(); if (NC) { break; }
+                }
                 // Generate code to push ZP.NEXT onto stack
-                PushNEXT();
+                VCode.PushNEXT();
                 SEC
                 break;
-                
             }
             
             // Not a variable, try constant
@@ -763,20 +812,48 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 break;
             }
             
-            // Get the BP offset from VarDecl
-            LDY #AST.iOffset
-            LDA [ZP.IDX], Y  // This is the signed offset
-            
-            // Load current value from BP+offset into NEXT
-            GetNEXT(); if (NC) { break; }
-            
+            // Check if global
+            LDY #AST.iVarScope
+            LDA [ZP.IDX], Y
+            CMP #VarScope.Global
+            if (Z)
+            {
+                verifyGlobalAllocation();
+                if (NC) { break; }
+                
+                LDY #AST.iOffset
+                LDA [ZP.IDX], Y
+                
+                // Generate code to load from zero page into ZP.NEXT
+                VCode.LoadNEXT(); if (NC) { break; }
+            }
+            else
+            {
+                // Get the BP offset from VarDecl
+                LDY #AST.iOffset
+                LDA [ZP.IDX], Y  // This is the signed offset
+                
+                // Load current value from BP+offset into NEXT
+                VCode.GetNEXT(); if (NC) { break; }
+            }
             // Push the ORIGINAL value (this is what postfix returns)
-            PushNEXT(); if (NC) { break; }
+            VCode.PushNEXT(); if (NC) { break; }
             
             // Save offset for store later
             LDY #AST.iOffset
             LDA [ZP.IDX], Y
             PHA  // We need to save offset across the syscall
+            // Check if global
+            LDY #AST.iVarScope
+            LDA [ZP.IDX], Y
+            PHA // We need to save scope across the syscall
+            CMP #VarScope.Global
+            if (Z)
+            {
+                verifyGlobalAllocation();
+                if (NC) { PLA PLA break; }
+            }
+            
             
             // Perform increment or decrement based on operator
             LDA storeOp  // Get operator type
@@ -785,18 +862,27 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 case PostfixOpType.Increment:
                 {
                     IncNEXT();
-                    if (NC) { PLA break; }
+                    if (NC) { PLA PLA break; }
                 }
                 case PostfixOpType.Decrement:
                 {
                     DecNEXT();
-                    if (NC) { PLA break; }
+                    if (NC) { PLA PLA break; }
                 }
             }
-            
-            // Result is in NEXT, store it back
-            PLA  // Get offset
-            PutNEXT();  // A = offset
+            PLA // Get scope
+            CMP #VarScope.Global
+            if (Z)
+            {
+                PLA // Get offset
+                VCode.StoreNEXT();
+            }
+            else
+            {
+                // Result is in NEXT, store it back
+                PLA  // Get offset
+                VCode.PutNEXT();  // A = offset
+            }
             
             SEC
             break;
@@ -1189,13 +1275,29 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 }
                 
                 VCode.PopNEXT(); // RHS
-            
-                // Get the BP offset from VarDecl
-                LDY #AST.iOffset
-                LDA [ZP.IDX], Y  // This is the signed offset
                 
-                // Store NEXT at BP+offset
-                VCode.PutNEXT();  // A = offset
+                // Check if global
+                LDY #AST.iVarScope
+                LDA [ZP.IDX], Y  
+                CMP # VarScope.Global
+                if (Z)
+                {
+                    verifyGlobalAllocation();
+                    if (NC) { break; }
+                    
+                    LDY #AST.iOffset
+                    LDA [ZP.IDX], Y
+                    VCode.StoreNEXT(); if (NC) { break; }
+                }
+                else
+                {
+                    // Get the BP offset from VarDecl
+                    LDY #AST.iOffset
+                    LDA [ZP.IDX], Y  // This is the signed offset
+                    
+                    // Store NEXT at BP+offset
+                    VCode.PutNEXT(); if (NC) { break; }
+                }
             }
                 
             // Assignment expressions return the assigned value
@@ -2030,7 +2132,7 @@ Print.Hex(); LDA #'s' Print.Char();
                 CLC
                 ADC #4  // Skip saved BP and return address, and one more to get to actual return slot
                 
-                PutNEXT(); // A = BP offset
+                VCode.PutNEXT(); // A = BP offset (function parameter)
                 
                 PLA
                 STA AST.astNodeH
