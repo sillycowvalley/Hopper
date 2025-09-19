@@ -1091,7 +1091,148 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
         PLA
         STA shortCircuitPatchL
     }
+     
+    generateBitwiseAnd()
+    {
+        // NEXT = NEXT & TOP
+        
+        // Byte 0
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA # OpCode.AND_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // Byte 1
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.AND_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // Byte 2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.AND_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // Byte 3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.AND_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP3
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    }
     
+    generateBitwiseOr()
+    {
+        // NEXT = NEXT | TOP
+        
+        // Byte 0
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.ORA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP0
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0
+        EmitByte(); if (NC) { return; }
+        
+        // Byte 1
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.ORA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP1
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT1
+        EmitByte(); if (NC) { return; }
+        
+        // Byte 2
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.ORA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP2
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT2
+        EmitByte(); if (NC) { return; }
+        
+        // Byte 3
+        LDA #OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.ORA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.TOP3
+        EmitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #ZP.NEXT3
+        EmitByte(); if (NC) { return; }
+        
+        SEC
+    } 
     
         
     generateBinOp()
@@ -1158,8 +1299,8 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             // Right operand is now on stack
             
             // Pop both operands
-            PopTOP();    // Right operand -> TOP
-            PopNEXT();   // Left operand -> NEXT
+            VCode.PopTOP();    // Right operand -> TOP
+            VCode.PopNEXT();   // Left operand -> NEXT
             
             // Perform operation based on saved operator
             LDA storeOp  // Get operator type
@@ -1167,8 +1308,22 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 case BinOpType.Add:
                 {
-                    LongADD();  if (NC) { break; }
-                    PushNEXT(); if (NC) { break; }
+                    VCode.LongADD();  if (NC) { break; }
+                    VCode.PushNEXT(); if (NC) { break; }
+                    SEC
+                    break;
+                }
+                case BinOpType.BitwiseAnd:
+                {
+                    generateBitwiseAnd(); if (NC) { break; }
+                    VCode.PushNEXT();  if (NC) { break; }
+                    SEC
+                    break;
+                }
+                case BinOpType.BitwiseOr:
+                {
+                    generateBitwiseOr(); if (NC) { break; }
+                    VCode.PushNEXT();  if (NC) { break; }
                     SEC
                     break;
                 }
@@ -1200,6 +1355,8 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     LDA # BIOSInterface.SysCall.LongMod
                     EmitByte(); if (NC) { break; }
                 }
+                
+                
                 
                 case BinOpType.EQ:
                 {

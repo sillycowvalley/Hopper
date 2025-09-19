@@ -78,6 +78,7 @@ unit Gen6502
         INC_A   = 0x1A,
         BBR1_XP = 0x1F,
         JSR     = 0x20,
+        AND_ZP  = 0x25,
         RMB2_ZP = 0x27,
         BBR2_XP = 0x2F,
         SEC     = 0x38, 
