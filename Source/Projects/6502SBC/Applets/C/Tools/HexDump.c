@@ -1,4 +1,3 @@
-
 const int bytesPerRow = 16;
 void main(char* exe, char* arg) {
     FILE* fp = fopen(arg, "r");
@@ -27,16 +26,13 @@ void main(char* exe, char* arg) {
             {
                 putchar(' ');
             }
-            if (buffer[i] < 32)
+            if ((buffer[i] > 31) && (buffer[i] < 128))
             {
-                putchar('.');
-            } else if (buffer[i] > 127)
-            {
-                putchar('.');
+                printf("%c", buffer[i]);
             }
             else
             {
-                printf("%c", buffer[i]);
+                putchar('.');
             }
         }
         printf("\n");
