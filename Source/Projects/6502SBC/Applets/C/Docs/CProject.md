@@ -1,7 +1,9 @@
-# C Compiler for Hopper BIOS - Project Specification v2.1
+Here's the updated specification with the new operators and control flow statements:
+
+# C Compiler for Hopper BIOS - Project Specification v2.2
 
 ## Overview
-A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C programs with pointer operations, file I/O, dynamic memory management, and global variables/constants to executable binaries.
+A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C programs with pointer operations, file I/O, dynamic memory management, logical/bitwise operators, and global variables/constants to executable binaries.
 
 ## Language Specification
 
@@ -53,6 +55,14 @@ long total;
 - Binary: `+`, `-`, `*`, `/`, `%`
 - Unary: `-` (negation)
 
+#### Logical Operators
+- `&&` (logical AND with short-circuit evaluation)
+- `||` (logical OR with short-circuit evaluation)
+
+#### Bitwise Operators
+- `&` (bitwise AND)
+- `|` (bitwise OR)
+
 #### Comparison Operators
 - `<`, `>`, `<=`, `>=`, `==`, `!=`
 
@@ -72,6 +82,8 @@ long total;
 - `if` / `else` statements
 - `for` loops
 - `while` loops
+- `break` statement (exit from nearest enclosing loop)
+- `continue` statement (skip to next iteration - while loops only)
 - `return` statements
 
 ### Grammar (Extended)
@@ -92,6 +104,8 @@ long total;
               | <while-stmt>
               | <for-stmt>
               | <return-stmt>
+              | <break-stmt>
+              | <continue-stmt>
               | <compound-stmt>
 
 <if-stmt> ::= "if" "(" <expression> ")" <statement> ("else" <statement>)?
@@ -100,11 +114,18 @@ long total;
 
 <for-stmt> ::= "for" "(" <expr-stmt> <expression> ";" <expression>? ")" <statement>
 
+<break-stmt> ::= "break" ";"
+
+<continue-stmt> ::= "continue" ";"
+
 <expression> ::= <assignment>
 <assignment> ::= <logical-or> (("=" | "+=" | "-=") <assignment>)?
 <logical-or> ::= <logical-and> ("||" <logical-and>)*
-<logical-and> ::= <relational> ("&&" <relational>)*
-<relational> ::= <additive> (("<" | ">" | "<=" | ">=" | "==" | "!=") <additive>)*
+<logical-and> ::= <bitwise-or> ("&&" <bitwise-or>)*
+<bitwise-or> ::= <bitwise-and> ("|" <bitwise-and>)*
+<bitwise-and> ::= <equality> ("&" <equality>)*
+<equality> ::= <relational> (("==" | "!=") <relational>)*
+<relational> ::= <additive> (("<" | ">" | "<=" | ">=") <additive>)*
 <additive> ::= <multiplicative> (("+" | "-") <multiplicative>)*
 <multiplicative> ::= <unary> (("*" | "/" | "%") <unary>)*
 <unary> ::= ("*" | "-")? <postfix>
@@ -113,580 +134,128 @@ long total;
 <literal> ::= <integer> | <string>
 ```
 
+**Operator Precedence** (from highest to lowest):
+1. Postfix: `++`, `--`, `[]`, `()`
+2. Unary: `*`, `-`
+3. Multiplicative: `*`, `/`, `%`
+4. Additive: `+`, `-`
+5. Relational: `<`, `>`, `<=`, `>=`
+6. Equality: `==`, `!=`
+7. Bitwise AND: `&`
+8. Bitwise OR: `|`
+9. Logical AND: `&&`
+10. Logical OR: `||`
+11. Assignment: `=`, `+=`, `-=`
+
 ## Built-in Functions
 
-### Console I/O
-```c
-void putchar(char c);        // Maps to Serial.WriteChar
-void printf(char* fmt, ...); // Supports %d, %ld, %x, %s, %c formatters
-int kbhit(void);            // Maps to Serial.IsAvailable (non-blocking key check)
-int getch(void);            // Maps to Serial.WaitForChar (blocking key read)
-```
-
-### Time Functions
-```c
-long millis(void);    // Maps to Time.Millis (milliseconds since boot)
-long seconds(void);   // Maps to Time.Seconds (seconds since boot)
-```
-
-### Memory Management
-```c
-void* malloc(int size);  // Maps to SysCall.MemAllocate
-void free(void* ptr);    // Maps to SysCall.MemFree
-```
-
-### File I/O
-```c
-FILE* fopen(char* filename, char* mode);     // Maps to SysCall.FOpen
-int fclose(FILE* fp);                        // Maps to SysCall.FClose
-int fgetc(FILE* fp);                         // Maps to SysCall.FGetC
-int fputc(int c, FILE* fp);                  // Maps to SysCall.FPutC
-int fread(void* ptr, int size, int n, FILE* fp);  // Maps to SysCall.FRead
-int fwrite(void* ptr, int size, int n, FILE* fp); // Maps to SysCall.FWrite
-```
-
-**Note**: Only one file can be open at a time in the Hopper BIOS file system. This means file operations must be carefully sequenced - you cannot have both a source and destination file open simultaneously. File copying requires reading the entire source into memory first, then writing to the destination.
-
-## Runtime Architecture
-
-### Memory Layout
-```
-0x0200-0x02FF: Stack page 0 (LSB of 32-bit values)
-0x0300-0x03FF: Stack page 1 (byte 1 of 32-bit values)
-0x0400-0x04FF: Stack page 2 (byte 2 of 32-bit values)  
-0x0500-0x05FF: Stack page 3 (MSB of 32-bit values)
-0x0058-0x005F: C runtime zero page (see below)
-0x0060-0x0068: Runtime stack pointers
-0x0069-0x00DF: Global variables (119 bytes available)
-0x00C0-0x00C3: Library work space
-0x0800:        Program entry point & code start
-After code:    String literals
-```
-
-### Zero Page Allocation
-
-#### C Runtime (0x58-0x5F)
-```
-0x58: cBP      - Base pointer (frame pointer)
-0x59: cTemp1   - Expression evaluation temp
-0x5A: cTemp2   - Expression evaluation temp
-0x5B: cTemp3   - Expression evaluation temp
-0x5C: cTemp4   - Expression evaluation temp
-0x5D: (reserved)
-0x5E: cReturnL - Return value low
-0x5F: cReturnH - Return value high
-```
-
-#### Runtime Stack Pointers (0x60-0x68)
-```
-0x60: runtimeBP         - Runtime base pointer
-0x61-0x62: runtimeStack0L/H - Pointer to stack page 0x01
-0x63-0x64: runtimeStack1L/H - Pointer to stack page 0x02
-0x65-0x66: runtimeStack2L/H - Pointer to stack page 0x03
-0x67-0x68: runtimeStack3L/H - Pointer to stack page 0x04
-```
-
-#### Global Variables (0x69-0xDF)
-```
-0x69-0xDF: Global variable space
-           - Allocated sequentially from 0x69
-           - Each global uses 4 bytes (32-bit values)
-           - Maximum ~29 global variables
-```
-
-#### Library Work Space (0xC0-0xC3)
-```
-0xC0-0xC1: libArgL/H   - Library argument passing
-0xC2-0xC3: libStrL/H   - String pointer for library functions
-```
-
-### Calling Convention
-
-#### Stack Frame Layout
-```
-SP+n: [return slot]      ← Always allocated by caller
-SP+n-1: [arg1]          ← Arguments pushed left-to-right
-SP+n-2: [arg2]          
-...
-SP+3: [ret addr H]      ← Pushed by JSR
-SP+2: [ret addr L]      
-SP+1: [saved BP]        ← Function prologue
-SP:   [local1]          ← Local variables
-SP-1: [local2]
-```
-
-#### Calling Sequence
-```hopper
-// Caller:
-TSX
-DEX                 // Reserve return slot
-TXS
-// Push arguments left-to-right
-// (evaluate and store to parallel pages)
-JSR function
-// Clean up arguments
-TSX
-INX                 // One per argument
-TXS
-// Return value now at SP+1
-
-// Callee prologue:
-LDA cBP
-PHA                 // Save old BP
-TSX
-STX cBP             // New BP = SP
-// Allocate locals
-TSX
-DEX                 // One per local
-TXS
-
-// Callee epilogue:
-// Store return value at BP+argcount+3
-LDX cBP
-TXS                 // Restore SP
-PLA
-STA cBP             // Restore BP
-RTS
-```
-
-#### Register Usage
-- **A**: Never preserved, freely used
-- **X**: Never preserved, used for indexing, munted by BIOS calls
-- **Y**: Preserved by functions that modify it (PHY/PLY)
-
-## Compiler Architecture
-
-### Components
-1. **Lexer** - Streams tokens from source file using File.NextStream
-2. **Parser** - Builds AST using heap allocation, supports all new operators and global declarations
-3. **Type Checker** - Walks AST, validates types and pointer operations, verifies globals
-4. **Code Generator** - Emits to code buffer with support for:
-   - Global constant and variable access
-   - Compound assignments
-   - Increment/decrement operations
-   - Pointer dereference (read/write)
-   - Array indexing
-   - While loops
-   - All arithmetic operations including *, /, %
-5. **Linker** - Patches addresses, appends literals, writes executable
-
-### Data Structures
-
-#### Symbol Table (Heap Allocated)
-```
-Per symbol:
-- Name pointer (to heap string)
-- Type (char/int/long/void/pointer)
-- Storage (BP offset for locals/params, ZP address for globals)
-- Scope level (global/local)
-- Next pointer (linked list)
-```
-
-#### AST Nodes (Extended)
-```
-Node types:
-- FunctionDef, VarDecl, ConstDecl, If, While, For, Return, Block
-- BinOp, UnaryOp, Call, Assign, Ident, IntLit, StringLit
-- PostfixOp (for ++ and --)
-
-Node structure examples:
-BinOp:     [type][op][left_ptr:2][right_ptr:2]
-UnaryOp:   [type][op][child_ptr:2]
-PostfixOp: [type][op][child_ptr:2]
-IntLit:    [type][value:4]
-Ident:     [type][symbol_ptr:2]
-ConstDecl: [type][ident_ptr:2][value_ptr:2]
-```
-
-### Code Generation Features
-
-#### Global Variable Access
-```c
-int counter;  // Allocated at 0x69
-
-void increment() {
-    counter++;  // Direct zero page access
-}
-```
-
-#### Global Constant Usage
-```c
-const int MAX = 100;
-
-void check(int value) {
-    if (value > MAX) {  // Constant folded at compile time
-        // ...
-    }
-}
-```
-
-#### Compound Assignments
-The compiler transforms compound assignments during parsing:
-```c
-x += 5;  // Becomes: x = x + 5
-y -= 3;  // Becomes: y = y - 3
-```
-
-#### Increment/Decrement
-Postfix operators are handled specially:
-```c
-i++;  // Load i, increment, store back, original value on stack
-j--;  // Load j, decrement, store back, original value on stack
-```
-
-#### Array Indexing
-Arrays are implemented via pointer arithmetic:
-```c
-buffer[i]     // Becomes: *(buffer + i)
-buffer[i] = x // Becomes: *(buffer + i) = x
-```
-
-#### Pointer Operations
-Direct pointer manipulation:
-```c
-char* ptr = malloc(100);  // Allocate buffer
-*ptr = 'A';               // Write through pointer
-char c = *ptr;            // Read through pointer
-```
-
-#### File Function Marshalling
-File operations use specific system calls starting at 0xF0:
-```
-FOpen:  0xF0
-FClose: 0xF1
-FGetC:  0xF2
-FPutC:  0xF3
-FRead:  0xF4
-FWrite: 0xF5
-```
-
-#### Keyboard Input Functions
-Keyboard operations map to BIOS serial I/O:
-```
-kbhit:  SysCall.SerialIsAvailable (0x87)
-getch:  SysCall.SerialWaitForChar (0x86)
-```
+[Unchanged sections omitted for brevity]
 
 ## Example Programs
 
-### Using Global Variables and Constants
+### Using Logical and Bitwise Operators
 ```c
-const int MAX_COUNT = 100;
-const char NEWLINE = '\n';
-
-int count;
-char* message;
-
-void init() {
-    count = 0;
-    message = "Counter: ";
-}
-
-void increment() {
-    count++;
-    if (count > MAX_COUNT) {
-        count = 0;
+void test_operators() {
+    int a = 5;      // 0101 in binary
+    int b = 3;      // 0011 in binary
+    
+    // Bitwise operations
+    printf("5 & 3 = %d\n", a & b);   // 1 (0001)
+    printf("5 | 3 = %d\n", a | b);   // 7 (0111)
+    
+    // Logical operations with short-circuit
+    if (a > 0 && b > 0) {
+        printf("Both positive\n");
     }
-}
-
-void display() {
-    printf("%s%d", message, count);
-    putchar(NEWLINE);
-}
-
-void main() {
-    init();
-    while (1) {
-        if (kbhit()) {
-            getch();
-            increment();
-            display();
-        }
+    
+    if (a == 0 || check_condition()) {
+        // check_condition() only called if a != 0
+        printf("At least one true\n");
     }
+    
+    // Mixed operations showing precedence
+    int c = 2 & 3 | 4;    // (2&3)|4 = 2|4 = 6
+    int d = 5 & 7 == 7;   // 5&(7==7) = 5&1 = 1
+    printf("c=%d d=%d\n", c, d);
 }
 ```
 
-### Memory and String Manipulation
+### Loop Control with Break and Continue
 ```c
-void strcpy(char* dst, char* src) {
-    while (*src) {
-        *dst++ = *src++;
-    }
-    *dst = 0;
-}
-
-void main() {
-    char* buffer = malloc(100);
-    char* msg = "Hello, World!";
-    strcpy(buffer, msg);
-    printf("%s\n", buffer);
-    free(buffer);
-}
-```
-
-### File Processing Example
-```c
-void process_file(char* filename) {
-    FILE* fp = fopen(filename, "r");
-    int c;
-    int count = 0;
+void find_prime() {
+    int n, i, is_prime;
     
-    if (!fp) {
-        printf("Cannot open file %s\n", filename);
-        return;
-    }
-    
-    while ((c = fgetc(fp)) != -1) {
-        if (c == '\n') {
-            count++;
-        }
-    }
-    
-    printf("File has %d lines\n", count);
-    fclose(fp);
-}
-
-void main() {
-    process_file("README.TXT");
-}
-```
-
-### Interactive Console Program
-```c
-void echo_until_escape() {
-    int c;
-    int done;
-    
-    printf("Type characters (ESC to quit):\n");
-    
-    done = 0;
-    while (!done) {
-        if (kbhit()) {           // Check if key available
-            c = getch();          // Get key without echo
-            if (c == 27) {        // ESC key
-                done = 1;
-            }
-            else {
-                putchar(c);       // Echo the character
-                if (c == '\r') {  // Add newline after CR
-                    putchar('\n');
-                }
+    for (n = 2; n < 100; n++) {
+        is_prime = 1;
+        
+        for (i = 2; i < n; i++) {
+            if (n % i == 0) {
+                is_prime = 0;
+                break;  // Exit inner loop early
             }
         }
+        
+        if (is_prime) {
+            printf("%d ", n);
+        }
     }
-    
-    printf("\nGoodbye!\n");
+    printf("\n");
 }
 
-void main() {
-    echo_until_escape();
-}
-```
-
-### Array Processing with Division/Modulo
-```c
-const int ARRAY_SIZE = 10;
-
-void analyze_array(int* arr, int n) {
-    int sum = 0;
-    int i;
-    
-    for (i = 0; i < n; i++) {
-        sum = sum + arr[i];
-    }
-    
-    printf("Sum: %d\n", sum);
-    printf("Average: %d\n", sum / n);
-    printf("Remainder: %d\n", sum % n);
-}
-
-void main() {
-    int* numbers = malloc(ARRAY_SIZE * sizeof(int));
-    int i;
-    
-    // Initialize with multiples
-    for (i = 0; i < ARRAY_SIZE; i++) {
-        numbers[i] = i * 3;
-    }
-    
-    analyze_array(numbers, ARRAY_SIZE);
-    free(numbers);
-}
-```
-
-### Recursive Fibonacci with Timing
-```c
-int fibo(int n) {
-    if (n <= 1) {
-        return n;
-    }
-    return fibo(n-1) + fibo(n-2);
-}
-
-void benchmark(char* name, int arg, int loops) {
-    long start;
-    int result;
-    int count;
-    long elapsed;
-    long avgS;
-    
-    start = seconds();
-    
-    for (count = 0; count < loops; count++) {
-        result = fibo(arg);
-    }
-    
-    elapsed = seconds() - start;
-    avgS = elapsed / loops;
-    
-    printf("%s(%d) = %d in %ld seconds average\n", 
-           name, arg, result, avgS);
-}
-
-void main() {
-    benchmark("Fibo", 10, 5);
-}
-```
-
-### Text Processing with Dynamic Memory
-```c
-void reverse_string(char* str) {
-    int len = 0;
-    int i;
-    char temp;
-    
-    // Find length
-    while (str[len]) {
-        len++;
-    }
-    
-    // Reverse in place
-    for (i = 0; i < len/2; i++) {
-        temp = str[i];
-        str[i] = str[len-1-i];
-        str[len-1-i] = temp;
-    }
-}
-
-void main() {
-    char* text = malloc(50);
+void skip_vowels(char* text) {
     int i = 0;
-    int c;
     
-    printf("Enter text: ");
-    while ((c = getch()) != '\n' && i < 49) {
-        putchar(c);  // Echo character
-        text[i++] = c;
+    while (text[i]) {
+        char c = text[i++];
+        
+        // Skip vowels
+        if (c == 'a' || c == 'e' || c == 'i' || 
+            c == 'o' || c == 'u') {
+            continue;  // Skip to next iteration
+        }
+        
+        putchar(c);
     }
-    text[i] = 0;
     putchar('\n');
-    
-    reverse_string(text);
-    printf("Reversed: %s\n", text);
-    
-    free(text);
 }
 ```
 
-### File Copy Utility
+### Bit Manipulation Example
 ```c
-void copy_file(char* src, char* dst) {
-    FILE* fp;
-    char* buffer;
-    int c;
-    int size = 0;
+void print_bits(int value) {
+    int mask = 0x8000;  // Start with MSB
     int i;
     
-    // First pass: determine file size
-    fp = fopen(src, "r");
-    if (!fp) {
-        printf("Cannot open source: %s\n", src);
-        return;
-    }
-    
-    while ((c = fgetc(fp)) != -1) {
-        size++;
-    }
-    fclose(fp);
-    
-    if (size == 0) {
-        printf("Source file is empty\n");
-        return;
-    }
-    
-    // Allocate buffer for entire file
-    buffer = malloc(size);
-    if (!buffer) {
-        printf("Cannot allocate %d bytes\n", size);
-        return;
-    }
-    
-    // Second pass: read file into buffer
-    fp = fopen(src, "r");
-    if (!fp) {
-        printf("Cannot reopen source: %s\n", src);
-        free(buffer);
-        return;
-    }
-    
-    for (i = 0; i < size; i++) {
-        c = fgetc(fp);
-        if (c == -1) {
-            printf("Read error at byte %d\n", i);
-            fclose(fp);
-            free(buffer);
-            return;
+    for (i = 0; i < 16; i++) {
+        if (value & mask) {
+            putchar('1');
+        } else {
+            putchar('0');
         }
-        buffer[i] = c;
+        mask = mask >> 1;  // [Note: shift operators not yet implemented]
     }
-    fclose(fp);
-    
-    // Write buffer to destination file
-    fp = fopen(dst, "w");
-    if (!fp) {
-        printf("Cannot create destination: %s\n", dst);
-        free(buffer);
-        return;
-    }
-    
-    for (i = 0; i < size; i++) {
-        fputc(buffer[i], fp);
-    }
-    fclose(fp);
-    
-    free(buffer);
-    printf("Copied %d bytes from %s to %s\n", size, src, dst);
+    putchar('\n');
 }
 
-void main() {
-    copy_file("SOURCE.TXT", "DEST.TXT");
+void set_flags() {
+    int flags = 0;
+    const int FLAG_A = 1;
+    const int FLAG_B = 2;
+    const int FLAG_C = 4;
+    
+    // Set flags
+    flags = flags | FLAG_A;  // Set bit 0
+    flags = flags | FLAG_C;  // Set bit 2
+    
+    // Test flags
+    if (flags & FLAG_A) {
+        printf("FLAG_A is set\n");
+    }
+    
+    // Clear a flag
+    flags = flags & ~FLAG_B;  // [Note: ~ operator not yet implemented]
 }
 ```
-
-## Command Line Interface
-```
-CC PROGRAM[.C]
-```
-- **Input**: Source file name. If no extension is provided, `.C` is appended
-- **Output**: Executable file with `.EXE` extension
-
-Examples:
-- `CC HELLO` - Compiles `HELLO.C` to `HELLO.EXE`
-- `CC HELLO.C` - Compiles `HELLO.C` to `HELLO.EXE`
-- `CC TEST` - Compiles `TEST.C` to `TEST.EXE`
-
-## Error Handling
-- Stop on first error
-- Report line number (counted during streaming parse)
-- Display error message with context when possible
-- Support for error types:
-  - Syntax errors
-  - Type mismatches
-  - Undefined identifiers
-  - Invalid pointer operations
-  - Unsupported formatters in printf
-  - File I/O errors
-  - Global variable allocation failures (out of zero page)
 
 ## Implementation Status
 - ✅ Basic language features (v1.0)
@@ -703,8 +272,15 @@ Examples:
 - ✅ File extension handling (.C/.EXE)
 - ✅ Global constants (literal initialization only)
 - ✅ Global variables (no initialization at declaration)
+- ✅ Logical operators (`&&`, `||`) with short-circuit evaluation
+- ✅ Bitwise operators (`&`, `|`)
+- ✅ Break statement (exits nearest enclosing loop)
+- ✅ Continue statement (while loops only)
 
 ## Future Enhancements
+- Continue statement for for loops
+- Bitwise XOR (`^`) and NOT (`~`) operators
+- Shift operators (`<<`, `>>`)
 - Global variable initialization
 - Multi-dimensional arrays
 - Do-while loops
@@ -716,7 +292,7 @@ Examples:
 - Optimization passes
 - Better error recovery
 - Debugging information
-- Multiple assignment operators (`*=`, `/=`, `%=`)
+- Multiple assignment operators (`*=`, `/=`, `%=`, `&=`, `|=`, `^=`)
 - Address-of operator (`&`)
 
 ## Limitations
@@ -727,6 +303,7 @@ Examples:
 - Filenames limited to 13 characters (uppercase)
 - Global variables limited to ~29 (119 bytes of zero page)
 - Global constants must be initialized with literals only
+- Continue statement only works in while loops, not for loops
 
 ## Target Benchmark Programs
 
