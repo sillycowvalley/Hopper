@@ -26,6 +26,11 @@ unit Gen6502
     const byte stringOffsetL  = g65Slots+8;
     const byte stringOffsetH  = g65Slots+9;
     
+    // 0x90 + 14..15 used by CodeGen:
+    const byte usedSlot14  = g65Slots+14;
+    const byte usedSlot15  = g65Slots+15;
+    
+    
     const string msgSaved = "Saved ";
     const string msgBytes = " bytes\n";
     

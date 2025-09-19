@@ -3,34 +3,34 @@ unit Errors
     enum Error
     {
         None = 0,
-        SourceNotFound,
-        SourceLoadingError,
-        OutOfMemory,
-        UnexpectedCharacter, // 4
-        UnterminatedComment,
-        UnterminatedString,
-        TokenTooLong,
-        StringTooLong,
-        SyntaxError,
-        UnexpectedFailure, // 0x0A consume() failed?
+        SourceNotFound = 0x01,
+        SourceLoadingError = 0x02,
+        OutOfMemory = 0x03,
+        UnexpectedCharacter = 0x04,
+        UnterminatedComment = 0x05,
+        UnterminatedString = 0x06,
+        TokenTooLong = 0x07,
+        StringTooLong = 0x08,
+        SyntaxError = 0x09,
+        UnexpectedFailure = 0x0A,
         
-        NoEntryPoint,
-        NotImplemented,    // 0x0C
+        NoEntryPoint = 0x0B,
+        NotImplemented = 0x0C,
         
-        TooFewArguments,
-        UndefinedIdentifier, // 0x0E
+        TooFewArguments = 0x0D,
+        UndefinedIdentifier = 0x0E,
         
-        TypeExpected,
-        VoidFunction,
-        ExpressionExpected,
-        UnsupportedFormatter,
-        UnsupportedLValue,
-        UnsupportedLocalScope,
-        BreakOutsideLoop,
-        ContinueOutsideLoop,
+        TypeExpected =0x0F,
+        VoidFunction = 0x10,
+        ExpressionExpected = 0x11,
+        UnsupportedFormatter = 0x12,
+        UnsupportedLValue = 0x13,
+        UnsupportedLocalScope = 0x14,
+        BreakOutsideLoop = 0x15,
+        ContinueOutsideForLoop = 0x16, // only works in While for now
         
-        FilenameTooLong,
-        FileSaveError,
+        FilenameTooLong = 0x17,
+        FileSaveError = 0x18,
     }
     
     const string msgExpected  = "Expected ";

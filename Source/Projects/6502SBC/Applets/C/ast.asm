@@ -43,6 +43,8 @@ unit AST
         UnaryOp      = 19,  
         Empty        = 20,  // like ";"
         ConstDecl    = 21,  // Const declaration
+        Break        = 22,
+        Continue     = 23,
         
         AfterLast           // see freeNode()
     }
@@ -62,6 +64,11 @@ unit AST
         GE = 9,    // >=
         EQ = 10,   // ==
         NE = 11,   // !=
+        
+        LogicalOr  = 12,
+        LogicalAnd = 13,
+        BitwiseOr  = 14,
+        BitwiseAnd = 15,
     }
     
     enum UnaryOpType
@@ -1041,6 +1048,8 @@ unit AST
     const string nodeConstDecl= "CONST "; 
     const string nodeAssign   = "ASSIGN";
     const string nodeReturn   = "RETURN";
+    const string nodeBreak    = "BREAK";
+    const string nodeContinue = "CONTINUE";
     const string nodeBinOp    = "BINOP ";
     const string nodePostfixOp= "POSTFIX ";
     const string nodeFor      = "FOR";
@@ -1063,6 +1072,11 @@ unit AST
     const string opMul = "*";
     const string opDiv = "/";
     const string opMod = "%";
+    
+    const string opAnd = "&&";
+    const string opOr  = "||";
+    const string opBitAnd = "&";
+    const string opBitOr  = "|";
     
     const string opEQ = "==";
     const string opNE = "!=";
@@ -1432,6 +1446,34 @@ unit AST
                         LDA #(opMod / 256)
                         STA ZP.STRH
                     }
+                    case BinOpType.LogicalAnd:
+                    {
+                        LDA #(opAnd % 256)
+                        STA ZP.STRL
+                        LDA #(opAnd / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.LogicalOr:
+                    {
+                        LDA #(opOr % 256)
+                        STA ZP.STRL
+                        LDA #(opOr / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.BitwiseAnd:
+                    {
+                        LDA #(opBitAnd % 256)
+                        STA ZP.STRL
+                        LDA #(opBitAnd / 256)
+                        STA ZP.STRH
+                    }
+                    case BinOpType.BitwiseOr:
+                    {
+                        LDA #(opBitOr % 256)
+                        STA ZP.STRL
+                        LDA #(opBitOr / 256)
+                        STA ZP.STRH
+                    }
                     case BinOpType.EQ:
                     {
                         LDA #(opEQ % 256)
@@ -1731,6 +1773,22 @@ unit AST
                 LDA #(nodeAssign % 256)
                 STA ZP.STRL
                 LDA #(nodeAssign / 256)
+                STA ZP.STRH
+                Print.String();
+            }
+            case NodeType.Break:
+            {
+                LDA #(nodeBreak % 256)
+                STA ZP.STRL
+                LDA #(nodeBreak / 256)
+                STA ZP.STRH
+                Print.String();
+            }
+            case NodeType.Continue:
+            {
+                LDA #(nodeContinue % 256)
+                STA ZP.STRL
+                LDA #(nodeContinue / 256)
                 STA ZP.STRH
                 Print.String();
             }

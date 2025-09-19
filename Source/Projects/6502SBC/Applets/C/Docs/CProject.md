@@ -101,7 +101,9 @@ long total;
 <for-stmt> ::= "for" "(" <expr-stmt> <expression> ";" <expression>? ")" <statement>
 
 <expression> ::= <assignment>
-<assignment> ::= <relational> (("=" | "+=" | "-=") <assignment>)?
+<assignment> ::= <logical-or> (("=" | "+=" | "-=") <assignment>)?
+<logical-or> ::= <logical-and> ("||" <logical-and>)*
+<logical-and> ::= <relational> ("&&" <relational>)*
 <relational> ::= <additive> (("<" | ">" | "<=" | ">=" | "==" | "!=") <additive>)*
 <additive> ::= <multiplicative> (("+" | "-") <multiplicative>)*
 <multiplicative> ::= <unary> (("*" | "/" | "%") <unary>)*

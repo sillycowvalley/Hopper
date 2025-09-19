@@ -6,68 +6,73 @@ unit Tokens
         EndOfFile    = 0,   // Makes if (Z) work for EOF check
         
         // Literals and identifiers
-        Identifier   = 1,
-        IntegerLiteral = 2,
-        StringLiteral = 3,
-        CharLiteral  = 4,
+        Identifier      = 1,
+        IntegerLiteral  = 2,
+        StringLiteral   = 3,
+        CharLiteral     = 4,
         
-        // Keywords (10-29)
+        // Type keywords (10-19)
         Void         = 10,
         Char         = 11,
         Int          = 12,
         Long         = 13,
-        If           = 14,
-        Else         = 15,
-        For          = 16,
-        While        = 17,
-        Return       = 18,
-        Break        = 19,
-        Continue     = 20,
+        Const        = 14,
+        CharPtr      = 15,  // char* type
+        FilePtr      = 16,  // FILE* type
         
-        // Operators (30-49)
-        Plus         = 30,  // +
-        Minus        = 31,  // -
-        Star         = 32,  // *
-        Slash        = 33,  // /
-        Percent      = 34,  // %
-        Assign       = 35,  // =
-        Equal        = 36,  // ==
-        NotEqual     = 37,  // !=
-        Less         = 38,  // <
-        Greater      = 39,  // >
-        LessEqual    = 40,  // <=
-        GreaterEqual = 41,  // >=
-        LogicalAnd   = 42,  // &&
-        LogicalOr    = 43,  // ||
-        Not          = 44,  // !
+        // Control flow keywords (20-29)
+        If           = 20,
+        Else         = 21,
+        For          = 22,
+        While        = 23,
+        Return       = 24,
+        Break        = 25,
+        Continue     = 26,
+        
+        // Other keywords (30-39)
+        Null         = 30,  // null constant
+        
+        // Arithmetic operators (40-49)
+        Plus         = 40,  // +
+        Minus        = 41,  // -
+        Star         = 42,  // *
+        Slash        = 43,  // /
+        Percent      = 44,  // %
         Increment    = 45,  // ++
         Decrement    = 46,  // --
+        BitwiseAnd   = 47,  // &
+        BitwiseOr    = 48,  // |
         
-        // Punctuation (50-59)
-        Semicolon    = 50,  // ;
-        Comma        = 51,  // ,
-        LeftParen    = 52,  // (
-        RightParen   = 53,  // )
-        LeftBrace    = 54,  // {
-        RightBrace   = 55,  // }
-        LeftBracket  = 56,  // [
-        RightBracket = 57,  // ]
-        Ampersand    = 58,  // & (for address-of)
         
-        // Pointer types
-        CharPtr      = 59,    // char* type
-        FilePtr      = 60,    // FILE* type
+        // Assignment operators (50-59)
+        Assign       = 50,  // =
+        PlusAssign   = 51,  // +=
+        MinusAssign  = 52,  // -=
         
-        // New keyword
-        Null         = 61,    // null constant
+        // Comparison operators (60-69)
+        Equal        = 60,  // ==
+        NotEqual     = 61,  // !=
+        Less         = 62,  // 
+        Greater      = 63,  // >
+        LessEqual    = 64,  // <=
+        GreaterEqual = 65,  // >=
         
-        PlusAssign   = 62,  // +=
-        MinusAssign  = 63,  // -=
+        // Logical operators (70-79)
+        LogicalAnd   = 70,  // &&
+        LogicalOr    = 71,  // ||
+        Not          = 72,  // !
         
-        Const        = 64,
-        Continue     = 65,
-        Break        = 66,
-        Ternary      = 67, // ?
+        // Punctuation (80-89)
+        Semicolon    = 80,  // ;
+        Comma        = 81,  // ,
+        LeftParen    = 82,  // (
+        RightParen   = 83,  // )
+        LeftBrace    = 84,  // {
+        RightBrace   = 85,  // }
+        LeftBracket  = 86,  // [
+        RightBracket = 87,  // ]
+        Ampersand    = 88,  // & (for address-of)
+        Ternary      = 89,  // ?
     }
     
     // Keyword table for recognition
@@ -83,8 +88,8 @@ unit Tokens
     const string kwNull     = "null";
     const string kwFILE     = "FILE";
     const string kwConst    = "const";
-    const string kwBreak    = "continue";
-    const string kwContinue = "break";
+    const string kwBreak    = "break";
+    const string kwContinue = "continue";
     
     
     
@@ -192,6 +197,32 @@ unit Tokens
         if (C)
         {
             LDA #Token.Const
+            STA Lexer.TokenType
+            return;
+        }
+        
+        // Check "continue"
+        LDA #(kwContinue % 256)
+        STA ZP.STRL
+        LDA #(kwContinue / 256)
+        STA ZP.STRH
+        matchKeyword();
+        if (C)
+        {
+            LDA #Token.Continue
+            STA Lexer.TokenType
+            return;
+        }
+        
+        // Check "break"
+        LDA #(kwBreak % 256)
+        STA ZP.STRL
+        LDA #(kwBreak / 256)
+        STA ZP.STRH
+        matchKeyword();
+        if (C)
+        {
+            LDA #Token.Break
             STA Lexer.TokenType
             return;
         }

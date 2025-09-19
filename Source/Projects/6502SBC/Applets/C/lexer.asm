@@ -723,6 +723,38 @@ unit Lexer
                     }
                     STA TokenType
                 }
+                case '|':
+                {
+                    advance();
+                    LDA currentChar
+                    CMP #'|'
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.LogicalOr
+                    }
+                    else
+                    {
+                        LDA #Token.BitwiseOr
+                    }
+                    STA TokenType
+                }
+                case '&':
+                {
+                    advance();
+                    LDA currentChar
+                    CMP #'&'
+                    if (Z)
+                    {
+                        advance();
+                        LDA #Token.LogicalAnd
+                    }
+                    else
+                    {
+                        LDA #Token.BitwiseAnd
+                    }
+                    STA TokenType
+                }
                 case '<':
                 {
                     advance();

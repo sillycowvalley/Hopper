@@ -46,6 +46,7 @@ unit Parser
     const byte binNodeH  = parserSlots+12;
     
     const byte binOp      = parserSlots+13;
+    const byte simpleOp   = binOp;
     
     const byte bpOffset   = parserSlots+14;
     
@@ -1305,23 +1306,42 @@ unit Parser
         STA stmtNodeH
     }
     
-    parseEmptyStatement() // -> IDY = Empty node
+    // A = NodeType
+    parseSimpleStatement() // -> IDY = new node
     {
-        consume();  // Consume ';'
-        if (NC) { return; }
+        LDX simpleOp
+        PHX
+        STA simpleOp // NodeType
         
-        // Create Empty node
-        LDA # AST.NodeType.Empty
-        AST.CreateNode(); // -> IDX
-        if (NC) { return; }
-        
-        // Return Empty node in IDY
-        LDA ZP.IDXL
-        STA ZP.IDYL
-        LDA ZP.IDXH
-        STA ZP.IDYH        
-        
-        SEC
+        loop
+        {
+            consume();
+            if (NC) { break; }
+            
+            // Create simple node
+            LDA simpleOp
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            // Return new node in IDY
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH  
+            
+            LDA simpleOp
+            CMP #NodeType.Empty
+            if (NZ)
+            {
+                // Expect semicolon
+                LDA #Token.Semicolon
+                consume(); // Sets carry appropriately      
+            }
+            SEC
+            break;
+        } // single exit
+        PLA
+        STA simpleOp
     }
     
     parseStatement() // -> IDY
@@ -1354,7 +1374,7 @@ unit Parser
                 parseReturnStatement(); // -> IDY
                 if (NC) { return; }
             }
-            
+                       
             case Token.Char:
             {
                consume();  // Move past 'char'
@@ -1381,10 +1401,22 @@ unit Parser
                 parseVariableDeclaration(); // -> IDY, A = type
                 if (NC) { return; }
             }
-            
+            case Token.Break:
+            {
+                LDA #NodeType.Break
+                parseSimpleStatement(); // -> IDY
+                if (NC) { return; }
+            }
+            case Token.Continue:
+            {
+                LDA #NodeType.Continue
+                parseSimpleStatement(); // -> IDY
+                if (NC) { return; }
+            }
             case Token.Semicolon:
             {
-                parseEmptyStatement(); // ->IDY
+                LDA # NodeType.Empty
+                parseSimpleStatement(); // ->IDY
                 if (NC) { return; }
             }
             default:
@@ -1677,11 +1709,203 @@ unit Parser
         } // single exit
     }
     
+    // Parse logical OR expressions (||)
+    parseLogicalOr() // -> IDY
+    {
+        parseLogicalAnd(); // Parse left side -> IDY
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA currentToken
+            CMP #Token.LogicalOr
+            if (NZ) 
+            { 
+                SEC
+                break;  // Not ||, return what we have
+            }
+            
+            LDX binOp
+            PHX
+            
+            LDA # BinOpType.LogicalOr
+            STA binOp
+            
+            LDA binNodeL
+            PHA
+            LDA binNodeH
+            PHA
+            
+            loop
+            {
+                consume();  // Consume ||
+                if (NC) { break; }
+                
+                // Create BinOp node
+                LDA #AST.NodeType.BinOp
+                AST.CreateNode();  // -> IDX
+                if (NC) { break; }
+                LDA ZP.IDXH
+                STA binNodeH
+                LDA ZP.IDXL
+                STA binNodeL
+                
+                // Set operator type
+                LDA binOp
+                LDY #AST.iBinOp
+                STA [ZP.IDX], Y
+                
+                // Add left operand as first child
+                AST.AddChild();  // IDX = BinOp, IDY = left
+                
+                // Parse right operand
+                parseLogicalAnd();  // -> IDY
+                if (NC) { break; }
+                
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                
+                // Add right operand as second child
+                AST.AddChild();  // IDX = BinOp, IDY = right
+                
+                // Move BinOp to IDY for next iteration (left-associative)
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                STZ binNodeH
+                STZ binNodeL
+                
+                SEC
+                break;
+                
+            } // single exit
+            
+            LDA binNodeH
+            ORA binNodeL
+            if (NZ)
+            {
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                AST.FreeNode();
+            }
+            
+            PLA
+            STA binNodeH
+            PLA
+            STA binNodeL
+            PLA
+            STA binOp
+            if (NC) { break; }
+        } // loop
+    }
+    
+    // Parse logical AND expressions (&&)
+    parseLogicalAnd() // -> IDY
+    {
+        parseEquality(); // Parse left side -> IDY
+        if (NC) { return; }
+        
+        loop
+        {
+            LDA currentToken
+            CMP #Token.LogicalAnd
+            if (NZ) 
+            { 
+                SEC
+                break;  // Not &&, return what we have
+            }
+            
+            LDX binOp
+            PHX
+            
+            LDA #BinOpType.LogicalAnd
+            STA binOp
+            
+            LDA binNodeL
+            PHA
+            LDA binNodeH
+            PHA
+            
+            loop
+            {
+                consume();  // Consume &&
+                if (NC) { break; }
+                
+                // Create BinOp node
+                LDA #AST.NodeType.BinOp
+                AST.CreateNode();  // -> IDX
+                if (NC) { break; }
+                LDA ZP.IDXH
+                STA binNodeH
+                LDA ZP.IDXL
+                STA binNodeL
+                
+                // Set operator type
+                LDA binOp
+                LDY #AST.iBinOp
+                STA [ZP.IDX], Y
+                
+                // Add left operand as first child
+                AST.AddChild();  // IDX = BinOp, IDY = left
+                
+                // Parse right operand
+                parseEquality();  // -> IDY
+                if (NC) { break; }
+                
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                
+                // Add right operand as second child
+                AST.AddChild();  // IDX = BinOp, IDY = right
+                
+                // Move BinOp to IDY for next iteration (left-associative)
+                LDA ZP.IDXL
+                STA ZP.IDYL
+                LDA ZP.IDXH
+                STA ZP.IDYH
+                
+                STZ binNodeH
+                STZ binNodeL
+                
+                SEC
+                break;
+                
+            } // single exit
+            
+            LDA binNodeH
+            ORA binNodeL
+            if (NZ)
+            {
+                LDA binNodeH
+                STA ZP.IDXH
+                LDA binNodeL
+                STA ZP.IDXL
+                AST.FreeNode();
+            }
+            
+            PLA
+            STA binNodeH
+            PLA
+            STA binNodeL
+            PLA
+            STA binOp
+            if (NC) { break; }
+        } // loop
+    }
+    
     // Parse assignment expressions (right-associative)
     parseAssignment() // -> IDY
     {
         // Parse left side
-        parseEquality(); // -> IDY
+        parseLogicalOr(); // -> IDY
         if (NC) { return; }
         
         // Save current exprNode state

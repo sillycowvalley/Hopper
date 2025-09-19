@@ -35,12 +35,20 @@ unit CodeGen
     
     const byte globalOffset    = cgSlots+11;
     
-    const byte elsePatchL      = backwardPatchL;
-    const byte elsePatchH      = backwardPatchH;
-    const byte endPatchL       = cgSlots+12;
-    const byte endPatchH       = cgSlots+13;
+    const byte forwardPatchCount  = cgSlots+12;
     
-    const byte forwardPatchCount  = cgSlots+14;
+    const byte endPatchL       = cgSlots+13;
+    const byte endPatchH       = cgSlots+14;
+    
+    const byte elsePatchL      = Gen6502.g65Slots+14;
+    const byte elsePatchH      = Gen6502.g65Slots+15;
+    
+    const byte shortCircuitPatchL    = endPatchL;
+    const byte shortCircuitPatchH    = endPatchH;
+    
+    const byte endLogicalPatchL      = elsePatchL;
+    const byte endLogicalPatchH      = elsePatchH;
+    
     
     
     const byte patchListSize = 16; // maximum number of 'break' or 'continue' patches per loop
@@ -903,7 +911,185 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA AST.astNodeL
     } 
     
+    generateShortCircuitBinOp()
+    {
+        // Save patch addresses (for recursion)
+        LDA shortCircuitPatchL
+        PHA
+        LDA shortCircuitPatchH
+        PHA
+        LDA endLogicalPatchL
+        PHA
+        LDA endLogicalPatchH
+        PHA
+        
+        loop
+        {
+            // Generate left operand
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            generateExpression(); if (NC) { break; }
+            
+            // Pop and test left result
+            VCode.PopNEXT(); if (NC) { break; }
+            VCode.NEXTZero(); if (NC) { break; }
+            
+            LDA storeOp
+            CMP #BinOpType.LogicalAnd
+            if (Z)
+            {
+                // && - if left is false (Z set), short-circuit
+                LDA # OpCode.BNE
+                EmitByte(); if (NC) { break; }
+                LDA #3  // Skip the JMP
+                EmitByte(); if (NC) { break; }
+            }
+            else  // LogicalOr
+            {
+                // || - if left is true (Z clear), short-circuit
+                LDA # OpCode.BEQ
+                EmitByte(); if (NC) { break; }
+                LDA #3  // Skip the JMP
+                EmitByte(); if (NC) { break; }
+            }
+            
+            // JMP to short-circuit (will patch address later)
+            LDA #OpCode.JMP_ABS
+            EmitByte(); if (NC) { break; }
+            
+            // Save offset for short-circuit patch
+            LDA Gen6502.codeOffsetL
+            STA shortCircuitPatchL
+            LDA Gen6502.codeOffsetH
+            STA shortCircuitPatchH
+            
+            // Emit placeholder address
+            LDA #0
+            EmitByte(); if (NC) { break; }
+            EmitByte(); if (NC) { break; }
+            
+            // Evaluate right operand
+            LDY #AST.iChild
+            LDA [AST.astNode], Y
+            STA ZP.IDXL
+            INY
+            LDA [AST.astNode], Y
+            STA ZP.IDXH
+            
+            LDY #AST.iNext
+            LDA [ZP.IDX], Y
+            TAX
+            INY
+            LDA [ZP.IDX], Y
+            STA ZP.IDXH
+            STX ZP.IDXL
+            
+            generateExpression(); if (NC) { break; }
+            
+            // Result of right is on stack, jump over short-circuit value
+            LDA #OpCode.JMP_ABS
+            EmitByte(); if (NC) { break; }
+            
+            // Save offset for end patch
+            LDA Gen6502.codeOffsetL
+            STA endLogicalPatchL
+            LDA Gen6502.codeOffsetH
+            STA endLogicalPatchH
+            
+            // Emit placeholder address
+            LDA #0
+            EmitByte(); if (NC) { break; }
+            EmitByte(); if (NC) { break; }
+            
+            // Patch short-circuit jump to here
+            VCode.Flush(); if (NC) { break; }
+            
+            // Calculate current absolute position
+            LDA Gen6502.codeOffsetL
+            STA ZP.ACCL
+            LDA Gen6502.codeOffsetH
+            STA ZP.ACCH
+            AddEntryPoint();
+            
+            // Calculate patch location (codeBuffer + shortCircuitPatch offset)
+            LDA Gen6502.codeBufferL
+            CLC
+            ADC shortCircuitPatchL
+            STA ZP.IDXL
+            LDA Gen6502.codeBufferH
+            ADC shortCircuitPatchH
+            STA ZP.IDXH
+            
+            // Write address at patch location
+            LDA ZP.ACCL
+            STA [ZP.IDX]
+            LDY #1
+            LDA ZP.ACCH
+            STA [ZP.IDX], Y
+            
+            // Push the short-circuit result
+            LDA storeOp
+            CMP #BinOpType.LogicalAnd
+            if (Z)
+            {
+                // && short-circuited, push false (0)
+                LDA #0
+            }
+            else
+            {
+                // || short-circuited, push true (1)
+                LDA #1
+            }
+            VCode.PushCHAR(); if (NC) { break; }
+            
+            // Patch end jump to here
+            VCode.Flush(); if (NC) { break; }
+            
+            // Calculate current absolute position
+            LDA Gen6502.codeOffsetL
+            STA ZP.ACCL
+            LDA Gen6502.codeOffsetH
+            STA ZP.ACCH
+            AddEntryPoint();
+            
+            // Calculate patch location (codeBuffer + endLogicalPatch offset)
+            LDA Gen6502.codeBufferL
+            CLC
+            ADC endLogicalPatchL
+            STA ZP.IDXL
+            LDA Gen6502.codeBufferH
+            ADC endLogicalPatchH
+            STA ZP.IDXH
+            
+            // Write address at patch location
+            LDA ZP.ACCL
+            STA [ZP.IDX]
+            LDY #1
+            LDA ZP.ACCH
+            STA [ZP.IDX], Y
+            
+            SEC
+            break;
+        } // single exit
+        
+        // Restore patch addresses
+        PLA
+        STA endLogicalPatchH
+        PLA
+        STA endLogicalPatchL
+        PLA
+        STA shortCircuitPatchH
+        PLA
+        STA shortCircuitPatchL
+    }
     
+    
+        
     generateBinOp()
     {
         LDA AST.astNodeL
@@ -925,6 +1111,15 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDY #AST.iBinOp
             LDA [AST.astNode], Y
             STA storeOp  // Save operator
+            switch (A)
+            {
+                case BinOpType.LogicalOr:
+                case BinOpType.LogicalAnd:
+                {
+                    generateShortCircuitBinOp();
+                    break;
+                }
+            }
             
             // Generate left operand
             LDY #AST.iChild
@@ -1324,11 +1519,13 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
     
     freePatchList()
     {
+        PHP
         LDA forwardPatchListL
         STA ZP.IDXL
         LDA forwardPatchListH
         STA ZP.IDXH
         Memory.Free();
+        PLP
     }
     allocatePatchList()
     {
@@ -1479,7 +1676,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         ORA continuePatchH
         if (Z)
         {
-            LDA # Error.ContinueOutsideLoop
+            LDA # Error.ContinueOutsideForLoop // only works in While for now
             Errors.Show();
             return;
         }
@@ -1564,7 +1761,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             ORA ZP.IDXH
             if (NZ)
             {
-                generateExpression(); if (NC) { break; }
+                generateExpression(); if (NC) { break; }   // "i=0;"
                 // Init result is not used, pop it
                 VCode.Discard();  if (NC) { break; }
             }
@@ -1584,7 +1781,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             ORA ZP.IDXH
             if (NZ)
             {
-                generateExpression(); if (NC) { break; }
+                generateExpression(); if (NC) { break; } // "i<10;"
                 
                 // Pop result to check it
                 PopNEXT();  if (NC) { break; }
@@ -1629,7 +1826,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             ORA ZP.IDXH
             if (NZ)
             {
-                generateExpression(); if (NC) { break; }
+                generateExpression(); if (NC) { break; } // "i++"
                 // Next result is not used, pop it
                 VCode.Discard();  if (NC) { break; }
             }
@@ -1831,6 +2028,16 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             {
                 SMB2 functionFlags // no more local variable declarations
                 generateWhile();
+                if (NC) { return; }
+            }
+            case NodeType.Break:
+            {
+                generateBreak();
+                if (NC) { return; }
+            }
+            case NodeType.Continue:
+            {
+                generateContinue();
                 if (NC) { return; }
             }
             case NodeType.ExprStmt:
