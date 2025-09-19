@@ -1395,49 +1395,49 @@ unit File
     printFileSizeFromDirectory()
     {
         LDA directoryBuffer + 0, Y  // Length LSB
-        STA ZP.TOP0
+        STA ZP.NEXT0
+        PHA
         LDA directoryBuffer + 1, Y  // Length MSB
         AND #0x7F                   // strip file type bit from size
-        STA ZP.TOP1
+        STA ZP.NEXT1
+        PHA
         
-        // right aligment of numbers in the 10..9999 range
+        // right aligment of numbers in the 10..99999 range
         PHY
-        LDY #0                       // assume 0 spaces of padding
-        LDA ZP.TOP1
-        CMP #4                       // Check for 1024+
-        if (NC)                      // < 1024, need more analysis
+        PHX
+        
+        STZ ZP.NEXT2
+        STZ ZP.NEXT3
+        
+        // Count digits by dividing by 10
+        LDY #5                      // padding counter
+        loop
         {
-            CMP #3                   // Check if TOPH = 3 (768-1023)
-            if (Z)                   // TOPH = 3
-            {
-                LDA ZP.TOP0
-                CMP #232             // 1000 = 3*256 + 232
-                if (NC)              // < 1000 (768-999 range)
-                {        INY }       //     3-digit numbers get 1 space
-                // else >= 1000 (1000-1023), keep X=0 for 4-digit alignment
-            }
-            else                     // TOPH = 0, 1, or 2
-            {
-                CMP #0
-                if (NZ)              // TOPH = 1 or 2 (256-767)
-                {        INY }       //     3-digit numbers get 1 space
-                else                 // TOPH = 0 (0-255)
-                {
-                    LDA ZP.TOP0
-                    CMP #100
-                    if (NC)          // < 100 (10-99 range)
-                    { LDY #2 }       //     2-digit numbers get 2 spaces
-                    else             // >= 100 (100-255 range)
-                    {    INY }       //     3-digit numbers get 1 space
-                }
-            }
+            DEY                     // count this digit
+            
+            // Set up divisor (10) in TOP (never modified in the optimized / 10 path
+            LDA #10
+            Shared.LoadTopByte();
+            
+            PHY
+            Long.Div();              // NEXT = NEXT / TOP
+            PLY
+            
+            // Check if quotient is zero
+            LDA ZP.NEXT0
+            ORA ZP.NEXT1
+            if (Z) { break; }
         }
-        // else >= 1024, keep Y=0 (no padding for 4+ digits)
-        Print.Spaces();              // print X spaces (zero is ok)
+        Print.Spaces();              // print Y spaces (zero is ok)
+        
+        PLX
         PLY
         
-        STZ ZP.TOP2
-        STZ ZP.TOP3
+        // Restore original value for printing
+        PLA
+        STA ZP.TOP1
+        PLA
+        STA ZP.TOP0
         Long.Print();
     }
     
@@ -3297,9 +3297,9 @@ unit File
             if (NC) { break; }    // Write failed
             
             // Return count of bytes written
-            LDA TransferLengthL
+            LDA TransferLengthL
             STA ZP.TOP0
-            LDA TransferLengthH
+            LDA TransferLengthH
             STA ZP.TOP1
             STZ ZP.TOP2
             STZ ZP.TOP3
