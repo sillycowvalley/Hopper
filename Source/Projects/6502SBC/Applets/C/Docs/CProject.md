@@ -1,7 +1,7 @@
-# C Compiler for Hopper BIOS - Project Specification v2.0
+# C Compiler for Hopper BIOS - Project Specification v2.1
 
 ## Overview
-A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C programs with pointer operations, file I/O, and dynamic memory management to executable binaries.
+A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C programs with pointer operations, file I/O, dynamic memory management, and global variables/constants to executable binaries.
 
 ## Language Specification
 
@@ -17,6 +17,35 @@ A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C 
 - **Assignment truncation**: Wide to narrow assignments truncate without warning
 - **Function arguments**: Promote to match parameter type
 - **Return values**: Convert to declared return type
+
+### Global Declarations
+
+#### Global Constants
+Global constants must be initialized with literal values only:
+```c
+const int MAX_SIZE = 100;
+const char DELIMITER = ',';
+const long BIG_NUMBER = 1000000;
+```
+
+**Restrictions:**
+- Must be initialized at declaration
+- Initializer must be a literal value (no expressions)
+- Stored in program memory as compile-time constants
+
+#### Global Variables
+Global variables are declared without initialization:
+```c
+int counter;
+char* buffer;
+long total;
+```
+
+**Restrictions:**
+- Cannot be initialized at declaration
+- Must be explicitly initialized in code before use
+- Allocated in zero page (0x69-0xDF range)
+- Maximum space for globals limited by zero page availability
 
 ### Operators
 
@@ -47,7 +76,13 @@ A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C 
 
 ### Grammar (Extended)
 ```
-<program> ::= <function>+
+<program> ::= <global-decl>* <function>+
+
+<global-decl> ::= <const-decl> | <var-decl>
+
+<const-decl> ::= "const" <type> <identifier> "=" <literal> ";"
+
+<var-decl> ::= <type> <identifier> ";"
 
 <function> ::= <type> <identifier> "(" <param-list>? ")" <compound-stmt>
 
@@ -72,7 +107,8 @@ A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C 
 <multiplicative> ::= <unary> (("*" | "/" | "%") <unary>)*
 <unary> ::= ("*" | "-")? <postfix>
 <postfix> ::= <primary> ("++" | "--" | "[" <expression> "]" | "(" <arg-list>? ")")*
-<primary> ::= <identifier> | <integer> | <string> | "(" <expression> ")"
+<primary> ::= <identifier> | <literal> | "(" <expression> ")"
+<literal> ::= <integer> | <string>
 ```
 
 ## Built-in Functions
@@ -107,7 +143,7 @@ int fread(void* ptr, int size, int n, FILE* fp);  // Maps to SysCall.FRead
 int fwrite(void* ptr, int size, int n, FILE* fp); // Maps to SysCall.FWrite
 ```
 
-**Note**: Only one file can be open at a time in the Hopper BIOS file system.
+**Note**: Only one file can be open at a time in the Hopper BIOS file system. This means file operations must be carefully sequenced - you cannot have both a source and destination file open simultaneously. File copying requires reading the entire source into memory first, then writing to the destination.
 
 ## Runtime Architecture
 
@@ -119,6 +155,7 @@ int fwrite(void* ptr, int size, int n, FILE* fp); // Maps to SysCall.FWrite
 0x0500-0x05FF: Stack page 3 (MSB of 32-bit values)
 0x0058-0x005F: C runtime zero page (see below)
 0x0060-0x0068: Runtime stack pointers
+0x0069-0x00DF: Global variables (119 bytes available)
 0x00C0-0x00C3: Library work space
 0x0800:        Program entry point & code start
 After code:    String literals
@@ -145,6 +182,14 @@ After code:    String literals
 0x63-0x64: runtimeStack1L/H - Pointer to stack page 0x02
 0x65-0x66: runtimeStack2L/H - Pointer to stack page 0x03
 0x67-0x68: runtimeStack3L/H - Pointer to stack page 0x04
+```
+
+#### Global Variables (0x69-0xDF)
+```
+0x69-0xDF: Global variable space
+           - Allocated sequentially from 0x69
+           - Each global uses 4 bytes (32-bit values)
+           - Maximum ~29 global variables
 ```
 
 #### Library Work Space (0xC0-0xC3)
@@ -211,14 +256,16 @@ RTS
 
 ### Components
 1. **Lexer** - Streams tokens from source file using File.NextStream
-2. **Parser** - Builds AST using heap allocation, supports all new operators
-3. **Type Checker** - Walks AST, validates types and pointer operations
+2. **Parser** - Builds AST using heap allocation, supports all new operators and global declarations
+3. **Type Checker** - Walks AST, validates types and pointer operations, verifies globals
 4. **Code Generator** - Emits to code buffer with support for:
+   - Global constant and variable access
    - Compound assignments
    - Increment/decrement operations
    - Pointer dereference (read/write)
    - Array indexing
    - While loops
+   - All arithmetic operations including *, /, %
 5. **Linker** - Patches addresses, appends literals, writes executable
 
 ### Data Structures
@@ -228,15 +275,15 @@ RTS
 Per symbol:
 - Name pointer (to heap string)
 - Type (char/int/long/void/pointer)
-- Storage (BP offset for locals/params)
-- Scope level
+- Storage (BP offset for locals/params, ZP address for globals)
+- Scope level (global/local)
 - Next pointer (linked list)
 ```
 
 #### AST Nodes (Extended)
 ```
 Node types:
-- FunctionDef, VarDecl, If, While, For, Return, Block
+- FunctionDef, VarDecl, ConstDecl, If, While, For, Return, Block
 - BinOp, UnaryOp, Call, Assign, Ident, IntLit, StringLit
 - PostfixOp (for ++ and --)
 
@@ -246,9 +293,30 @@ UnaryOp:   [type][op][child_ptr:2]
 PostfixOp: [type][op][child_ptr:2]
 IntLit:    [type][value:4]
 Ident:     [type][symbol_ptr:2]
+ConstDecl: [type][ident_ptr:2][value_ptr:2]
 ```
 
 ### Code Generation Features
+
+#### Global Variable Access
+```c
+int counter;  // Allocated at 0x69
+
+void increment() {
+    counter++;  // Direct zero page access
+}
+```
+
+#### Global Constant Usage
+```c
+const int MAX = 100;
+
+void check(int value) {
+    if (value > MAX) {  // Constant folded at compile time
+        // ...
+    }
+}
+```
 
 #### Compound Assignments
 The compiler transforms compound assignments during parsing:
@@ -298,6 +366,43 @@ getch:  SysCall.SerialWaitForChar (0x86)
 ```
 
 ## Example Programs
+
+### Using Global Variables and Constants
+```c
+const int MAX_COUNT = 100;
+const char NEWLINE = '\n';
+
+int count;
+char* message;
+
+void init() {
+    count = 0;
+    message = "Counter: ";
+}
+
+void increment() {
+    count++;
+    if (count > MAX_COUNT) {
+        count = 0;
+    }
+}
+
+void display() {
+    printf("%s%d", message, count);
+    putchar(NEWLINE);
+}
+
+void main() {
+    init();
+    while (1) {
+        if (kbhit()) {
+            getch();
+            increment();
+            display();
+        }
+    }
+}
+```
 
 ### Memory and String Manipulation
 ```c
@@ -376,38 +481,33 @@ void main() {
 }
 ```
 
-### Array Processing
+### Array Processing with Division/Modulo
 ```c
-void bubble_sort(int* arr, int n) {
-    int i, j, temp;
-    for (i = 0; i < n-1; i++) {
-        for (j = 0; j < n-i-1; j++) {
-            if (arr[j] > arr[j+1]) {
-                temp = arr[j];
-                arr[j] = arr[j+1];
-                arr[j+1] = temp;
-            }
-        }
+const int ARRAY_SIZE = 10;
+
+void analyze_array(int* arr, int n) {
+    int sum = 0;
+    int i;
+    
+    for (i = 0; i < n; i++) {
+        sum = sum + arr[i];
     }
+    
+    printf("Sum: %d\n", sum);
+    printf("Average: %d\n", sum / n);
+    printf("Remainder: %d\n", sum % n);
 }
 
 void main() {
-    int* numbers = malloc(10 * sizeof(int));
+    int* numbers = malloc(ARRAY_SIZE * sizeof(int));
     int i;
     
-    // Initialize array
-    for (i = 0; i < 10; i++) {
-        numbers[i] = 10 - i;
+    // Initialize with multiples
+    for (i = 0; i < ARRAY_SIZE; i++) {
+        numbers[i] = i * 3;
     }
     
-    bubble_sort(numbers, 10);
-    
-    // Print sorted array
-    for (i = 0; i < 10; i++) {
-        printf("%d ", numbers[i]);
-    }
-    printf("\n");
-    
+    analyze_array(numbers, ARRAY_SIZE);
     free(numbers);
 }
 ```
@@ -489,30 +589,71 @@ void main() {
 ### File Copy Utility
 ```c
 void copy_file(char* src, char* dst) {
-    FILE* in;
-    FILE* out;
+    FILE* fp;
+    char* buffer;
     int c;
+    int size = 0;
+    int i;
     
-    in = fopen(src, "r");
-    if (!in) {
+    // First pass: determine file size
+    fp = fopen(src, "r");
+    if (!fp) {
         printf("Cannot open source: %s\n", src);
         return;
     }
     
-    out = fopen(dst, "w");
-    if (!out) {
-        printf("Cannot create destination: %s\n", dst);
-        fclose(in);
+    while ((c = fgetc(fp)) != -1) {
+        size++;
+    }
+    fclose(fp);
+    
+    if (size == 0) {
+        printf("Source file is empty\n");
         return;
     }
     
-    while ((c = fgetc(in)) != -1) {
-        fputc(c, out);
+    // Allocate buffer for entire file
+    buffer = malloc(size);
+    if (!buffer) {
+        printf("Cannot allocate %d bytes\n", size);
+        return;
     }
     
-    fclose(out);
-    fclose(in);
-    printf("Copied %s to %s\n", src, dst);
+    // Second pass: read file into buffer
+    fp = fopen(src, "r");
+    if (!fp) {
+        printf("Cannot reopen source: %s\n", src);
+        free(buffer);
+        return;
+    }
+    
+    for (i = 0; i < size; i++) {
+        c = fgetc(fp);
+        if (c == -1) {
+            printf("Read error at byte %d\n", i);
+            fclose(fp);
+            free(buffer);
+            return;
+        }
+        buffer[i] = c;
+    }
+    fclose(fp);
+    
+    // Write buffer to destination file
+    fp = fopen(dst, "w");
+    if (!fp) {
+        printf("Cannot create destination: %s\n", dst);
+        free(buffer);
+        return;
+    }
+    
+    for (i = 0; i < size; i++) {
+        fputc(buffer[i], fp);
+    }
+    fclose(fp);
+    
+    free(buffer);
+    printf("Copied %d bytes from %s to %s\n", size, src, dst);
 }
 
 void main() {
@@ -543,12 +684,14 @@ Examples:
   - Invalid pointer operations
   - Unsupported formatters in printf
   - File I/O errors
+  - Global variable allocation failures (out of zero page)
 
 ## Implementation Status
 - ✅ Basic language features (v1.0)
 - ✅ While loops
 - ✅ Compound assignment operators (`+=`, `-=`)
 - ✅ Increment/decrement operators (`++`, `--`)
+- ✅ Multiplication, division, modulo operators (`*`, `/`, `%`)
 - ✅ Pointer dereference (read/write)
 - ✅ Array indexing via pointer arithmetic
 - ✅ Memory management (malloc/free)
@@ -556,9 +699,11 @@ Examples:
 - ✅ Keyboard input functions (kbhit/getch)
 - ✅ Extended printf formatters
 - ✅ File extension handling (.C/.EXE)
+- ✅ Global constants (literal initialization only)
+- ✅ Global variables (no initialization at declaration)
 
 ## Future Enhancements
-- Global variables
+- Global variable initialization
 - Multi-dimensional arrays
 - Do-while loops
 - Switch statements
@@ -570,13 +715,16 @@ Examples:
 - Better error recovery
 - Debugging information
 - Multiple assignment operators (`*=`, `/=`, `%=`)
+- Address-of operator (`&`)
 
 ## Limitations
-- Only one file can be open at a time
+- Only one file can be open at a time (requires buffering for file operations)
 - No floating-point support
 - Stack-based architecture limits recursion depth
-- Maximum 65535 bytes per file
+- Maximum 65535 bytes per file (also limits file copy size due to buffer allocation)
 - Filenames limited to 13 characters (uppercase)
+- Global variables limited to ~29 (119 bytes of zero page)
+- Global constants must be initialized with literals only
 
 ## Target Benchmark Programs
 

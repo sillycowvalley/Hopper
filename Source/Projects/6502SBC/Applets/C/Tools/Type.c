@@ -1,4 +1,5 @@
 void main(char* exe, char* arg) {
+    printf("\n");
     int c = 0;
     FILE* fp = fopen(arg, "r");
     while ((c = fgetc(fp)) != -1)
