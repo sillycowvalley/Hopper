@@ -14,17 +14,12 @@ unit CodeGen
     const byte functionLocals = cgSlots+0; // Count of locals in current function
     const byte storeOp        = cgSlots+1;
     
-    const byte forwardPatchL  = cgSlots+2;
-    const byte forwardPatchH  = cgSlots+3;
-    
-    const byte elsePatchL     = forwardPatchL;
-    const byte elsePatchH     = forwardPatchH;
+    const byte forwardPatchList   = cgSlots+2;
+    const byte forwardPatchListL  = cgSlots+2;
+    const byte forwardPatchListH  = cgSlots+3;
     
     const byte backwardPatchL  = cgSlots+4;
     const byte backwardPatchH  = cgSlots+5;
-    
-    const byte endPatchL       = backwardPatchL;
-    const byte endPatchH       = backwardPatchH;
     
     const byte functionNode    = cgSlots+6;   // Current function being compiled
     const byte functionNodeL   = cgSlots+6;   
@@ -37,6 +32,15 @@ unit CodeGen
     
     const byte globalOffset    = cgSlots+9;
     
+    const byte elsePatchL      = backwardPatchL;
+    const byte elsePatchH      = backwardPatchH;
+    const byte endPatchL       = cgSlots+10;
+    const byte endPatchH       = cgSlots+11;
+    
+    const byte forwardPatchCount  = cgSlots+12;
+    
+    
+    const byte patchListSize = 16; // maximum number of 'break' or 'continue' patches per loop
     
     const string msgMain = "main";
     
@@ -1315,6 +1319,87 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA AST.astNodeL
     }
     
+    freePatchList()
+    {
+        LDA forwardPatchListL
+        STA ZP.IDXL
+        LDA forwardPatchListH
+        STA ZP.IDXH
+        Memory.Free();
+    }
+    allocatePatchList()
+    {
+        LDA (patchListSize*2)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();
+        LDA ZP.IDXL
+        STA forwardPatchListL
+        LDA ZP.IDXH
+        STA forwardPatchListH
+        
+        STZ forwardPatchCount
+    }
+    
+    appendForwardPatch()
+    {
+        PHY
+        LDY forwardPatchCount
+        
+        // Save current offset for patching
+        LDA Gen6502.codeOffsetL
+        STA [forwardPatchList], Y
+        INY
+        LDA Gen6502.codeOffsetH
+        STA [forwardPatchList], Y
+        INY
+        
+        STY forwardPatchCount
+        PLY
+    }
+    
+    makeForwardPatches()
+    {
+        PHY
+        
+        LDY #0
+        loop
+        {
+            CPY forwardPatchCount
+            if (Z) { break; }
+                 
+            // Calculate current absolute position
+            LDA Gen6502.codeOffsetL
+            STA ZP.ACCL
+            LDA Gen6502.codeOffsetH
+            STA ZP.ACCH
+            AddEntryPoint(); // Convert to runtime address -> ACC
+            
+            // Calculate patch location (codeBuffer + forwardPatch offset)
+            
+            CLC
+            LDA [forwardPatchList], Y
+            INY
+            ADC Gen6502.codeBufferL
+            STA ZP.IDXL
+            LDA [forwardPatchList], Y
+            INY
+            ADC Gen6502.codeBufferH
+            STA ZP.IDXH
+            
+            // Write exit address at patch location
+            PHY
+            LDY #0
+            LDA ZP.ACCL
+            STA [ZP.IDX], Y
+            INY
+            LDA ZP.ACCH
+            STA [ZP.IDX], Y   
+            PLY
+        }
+        PLY
+    }
+    
     // Generate code for a for loop
     // Input: IDX = For node
     // Output: C set on success, clear on failure
@@ -1329,17 +1414,21 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         PHA
         LDA backwardPatchH
         PHA
-        LDA forwardPatchL
+        LDA forwardPatchListL
         PHA
-        LDA forwardPatchH
+        LDA forwardPatchListH
         PHA
-        
+        LDA forwardPatchCount
+        PHA
+              
         // Save the For node pointer
         LDA ZP.IDXH
         STA AST.astNodeH
         LDA ZP.IDXL
         STA AST.astNodeL
         
+        allocatePatchList();
+               
         loop
         {
             // Generate init expression if present
@@ -1401,10 +1490,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 EmitByte(); if (NC) { break; }
                 
                 // Save current offset for patching
-                LDA Gen6502.codeOffsetL
-                STA forwardPatchL
-                LDA Gen6502.codeOffsetH
-                STA forwardPatchH
+                VCode.Flush(); if (NC) { break; }
+                appendForwardPatch();
                 
                 // Emit placeholder address
                 LDA #0
@@ -1414,8 +1501,6 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             else
             {
                 // No exit condition - mark as no patch needed
-                STZ forwardPatchL
-                STZ forwardPatchH
             }
             
             // Generate body (child of For node)
@@ -1456,45 +1541,23 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA backwardPatchH
             EmitByte(); if (NC) { break; }
             
-            // Patch forward jump if needed
-            LDA forwardPatchL
-            ORA forwardPatchH
-            if (NZ)
-            {
-                // Calculate current absolute position
-                LDA Gen6502.codeOffsetL
-                STA ZP.ACCL
-                LDA Gen6502.codeOffsetH
-                STA ZP.ACCH
-                AddEntryPoint(); // Convert to runtime address -> ACC
-                
-                // Calculate patch location (codeBuffer + forwardPatch offset)
-                CLC
-                LDA Gen6502.codeBufferL
-                ADC forwardPatchL
-                STA ZP.IDXL
-                LDA Gen6502.codeBufferH
-                ADC forwardPatchH
-                STA ZP.IDXH
-                
-                // Write exit address at patch location
-                LDY #0
-                LDA ZP.ACCL
-                STA [ZP.IDX], Y
-                INY
-                LDA ZP.ACCH
-                STA [ZP.IDX], Y
-            }
-            
+            // Patch forward jumps if needed
+            VCode.Flush(); if (NC) { break; }
+            makeForwardPatches();
+                      
             SEC
             break;
         } // single exit
         
+        freePatchList();
+        
         PLA
-        STA forwardPatchH
+        STA forwardPatchCount
         PLA
-        STA forwardPatchL
+        STA forwardPatchListH
         PLA
+        STA forwardPatchListL
+        PLA 
         STA backwardPatchH
         PLA
         STA backwardPatchL
@@ -1520,9 +1583,11 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         PHA
         LDA backwardPatchH
         PHA
-        LDA forwardPatchL
+        LDA forwardPatchListL
         PHA
-        LDA forwardPatchH
+        LDA forwardPatchListH
+        PHA
+        LDA forwardPatchCount
         PHA
         
         // Save the While node pointer
@@ -1530,6 +1595,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         STA AST.astNodeH
         LDA ZP.IDXL
         STA AST.astNodeL
+        
+        allocatePatchList();
         
         loop
         {
@@ -1572,10 +1639,8 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             EmitByte(); if (NC) { break; }
             
             // Save current offset for patching
-            LDA Gen6502.codeOffsetL
-            STA forwardPatchL
-            LDA Gen6502.codeOffsetH
-            STA forwardPatchH
+            VCode.Flush(); if (NC) { break; }
+            appendForwardPatch();
             
             // Emit placeholder address
             LDA #0
@@ -1612,40 +1677,23 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             LDA backwardPatchH
             EmitByte(); if (NC) { break; }
             
-            // Patch forward jump
-            // Calculate current absolute position
-            LDA Gen6502.codeOffsetL
-            STA ZP.ACCL
-            LDA Gen6502.codeOffsetH
-            STA ZP.ACCH
-            AddEntryPoint(); // Convert to runtime address -> ACC
-            
-            // Calculate patch location (codeBuffer + forwardPatch offset)
-            CLC
-            LDA Gen6502.codeBufferL
-            ADC forwardPatchL
-            STA ZP.IDXL
-            LDA Gen6502.codeBufferH
-            ADC forwardPatchH
-            STA ZP.IDXH
-            
-            // Write exit address at patch location
-            LDY #0
-            LDA ZP.ACCL
-            STA [ZP.IDX], Y
-            INY
-            LDA ZP.ACCH
-            STA [ZP.IDX], Y
+            // Patch forward jumps
+            VCode.Flush(); if (NC) { break; }
+            makeForwardPatches();
             
             SEC
             break;
         } // single exit
         
+        freePatchList();
+        
         PLA
-        STA forwardPatchH
+        STA forwardPatchCount
         PLA
-        STA forwardPatchL
+        STA forwardPatchListH
         PLA
+        STA forwardPatchListL
+        PLA 
         STA backwardPatchH
         PLA
         STA backwardPatchL
