@@ -62,7 +62,8 @@ unit VCode
         StoreNEXT       = 0x1A,
         
         PutZERO         = 0x1B,
-        BYTEtoTOP       = 0x1C,               // 8 bits non-zero, 24 bits zero
+        PutONE          = 0x1C,
+        BYTEtoTOP       = 0x1D,               // 8 bits non-zero, 24 bits zero
         
         Void            = 0b00000000,
         Char            = 0b01000000,
@@ -80,6 +81,7 @@ unit VCode
     const string strPopTOP = "popT";
     const string strPutNEXT = "putN";
     const string strPutZERO = "putZ";
+    const string strPutONE  = "put1";
     const string strPutTOP = "putT";
     const string strGetNEXT = "getN";
     const string strGetTOP = "getT";
@@ -210,6 +212,13 @@ unit VCode
                 LDA #(strPutZERO % 256)
                 STA ZP.STRL
                 LDA #(strPutZERO / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.PutONE:
+            {
+                LDA #(strPutONE % 256)
+                STA ZP.STRL
+                LDA #(strPutONE / 256)
                 STA ZP.STRH
             }
             case VOpCode.PutTOP:
@@ -532,6 +541,12 @@ Gen6502.emitByte(); SEC PLY
                     LDA [vcodeBuffer], Y // BP offset
                     INY
                     PHY putZERO(); PLY if (NC) { return; }
+                }
+                case VOpCode.PutONE:
+                {
+                    LDA [vcodeBuffer], Y // BP offset
+                    INY
+                    PHY putONE(); PLY if (NC) { return; }
                 }
                 case VOpCode.PutTOP:
                 {
@@ -902,7 +917,7 @@ Print.Space(); LDA #'G' Print.Char(); LDA #'!' Print.Char();
                                             STA [vcodeBuffer], Y
                                             pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'R' Print.Char();LDA #'1' Print.Char();
+Print.Space(); LDA #'R' Print.Char();LDA #'1' Print.Char();
 #endif    
                                         }
                                     }
@@ -936,7 +951,7 @@ Print.Space(); LDA #'R' Print.Char();LDA #'1' Print.Char();
                                             STA [vcodeBuffer], Y
                                             pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'R' Print.Char();LDA #'2' Print.Char();
+Print.Space(); LDA #'R' Print.Char();LDA #'2' Print.Char();
 #endif    
                                         }
                                     }
@@ -1109,7 +1124,7 @@ Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
                     {
                         case (VOpCode.BYTEtoNEXT | VOpCode.Long):
                         {
-                            // BYTEtoNEXT, PutNEXT -> PutZERO
+                            // BYTEtoNEXT, PutNEXT -> PutZERO | PutONE
                             LDY vcodeOffset
                             DEY
                             LDA [vcodeBuffer], Y // PutNEXT argument
@@ -1132,7 +1147,25 @@ Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
 #ifdef DEBUG
 Print.Space(); LDA #'Q' Print.Char(); LDA #'1' Print.Char(); LDA #'!' Print.Char();
 #endif      
-                            }                      
+                            } 
+                            CMP #1
+                            if (Z)
+                            {
+                                popPeep();
+                                popPeep();
+                                TXA
+                                STA  [vcodeBuffer], Y // PutNEXT argument  
+                                DEY
+                                LDA #(VOpCode.PutONE | VOpCode.Int)
+                                STA  [vcodeBuffer], Y
+                                pushPeep();
+                                DEC vcodeOffset
+                                DEC vcodeOffset
+#ifdef DEBUG
+Print.Space(); LDA #'Q' Print.Char(); LDA #'3' Print.Char(); LDA #'!' Print.Char();
+#endif      
+                            }
+                                                 
                         }
                     }
                 }
@@ -1167,6 +1200,23 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'1' Print.Char(); LDA #'!' Print.Char
 Print.Space(); LDA #'Q' Print.Char();  LDA #'2' Print.Char(); LDA #'!' Print.Char();
 #endif                         
                             }   
+                            CMP #1
+                            if (Z)
+                            {
+                                popPeep();
+                                popPeep();
+                                TXA
+                                STA  [vcodeBuffer], Y // PutNEXT argument  
+                                DEY
+                                LDA #(VOpCode.PutONE | VOpCode.Long)
+                                STA  [vcodeBuffer], Y
+                                pushPeep();
+                                DEC vcodeOffset
+                                DEC vcodeOffset
+#ifdef DEBUG
+Print.Space(); LDA #'Q' Print.Char();  LDA #'4' Print.Char(); LDA #'!' Print.Char();
+#endif                         
+                            } 
                         }
                         case (VOpCode.TOPtoNEXT | VOpCode.Long):
                         {
@@ -1373,6 +1423,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             case VOpCode.GetTOP:
             case VOpCode.PutNEXT:
             case VOpCode.PutZERO:
+            case VOpCode.PutONE:
             case VOpCode.PutTOP:
             case VOpCode.LoadNEXT:
             case VOpCode.StoreNEXT:
@@ -1500,6 +1551,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     PutZERO() // A = BP offset
     {
         LDX # VOpCode.PutZERO
+        buildTypeX();
+        addVCode();
+    }
+    PutONE() // A = BP offset
+    {
+        LDX # VOpCode.PutONE
         buildTypeX();
         addVCode();
     }
@@ -2280,6 +2337,54 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             LDA #OpCode.STA_IND_Y  // 0x91
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack1
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.STA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack2
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.STA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack3
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            SEC
+            break;
+        } // single exit
+    }
+    
+    // Generate code to store 1 at BP+offset
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    putONE()
+    {
+        loop
+        {
+            // Calculate effective offset into Y
+            calculateBPOffset();
+            if (NC) 
+            {
+                break;
+            }
+            
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # 1
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.STA_IND_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # Gen6502.runtimeStack0
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.STA_IND_Y
             Gen6502.emitByte(); if (NC) { break; }
             LDA # Gen6502.runtimeStack1
             Gen6502.emitByte(); if (NC) { break; }
