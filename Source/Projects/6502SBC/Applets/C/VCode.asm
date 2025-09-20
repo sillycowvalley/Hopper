@@ -902,7 +902,41 @@ Print.Space(); LDA #'G' Print.Char(); LDA #'!' Print.Char();
                                             STA [vcodeBuffer], Y
                                             pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'R' Print.Char();
+Print.Space(); LDA #'R' Print.Char();LDA #'1' Print.Char();
+#endif    
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        case (VOpCode.BYTEtoTOP | VOpCode.Long):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.PushNEXT | VOpCode.Int):
+                                {
+                                    LDA peep3
+                                    switch (A)
+                                    {   
+                                        case (VOpCode.GetNEXT | VOpCode.Int):
+                                        {    
+                                            // GetNEXT, PushNEXT, BYTEtoTOP, PopNEXT -> GetNEXT, WORDtoTOP
+                                            popPeep();
+                                            popPeep();
+                                            popPeep();
+                                            DEC vcodeOffset
+                                            DEC vcodeOffset
+                                            LDY vcodeOffset
+                                            LDA [vcodeBuffer], Y // Word LSB
+                                            DEY
+                                            STA [vcodeBuffer], Y // Word LSB
+                                            DEY
+                                            LDA # VOpCode.BYTEtoTOP
+                                            STA [vcodeBuffer], Y
+                                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'R' Print.Char();LDA #'2' Print.Char();
 #endif    
                                         }
                                     }
