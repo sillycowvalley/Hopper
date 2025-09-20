@@ -564,6 +564,12 @@ Gen6502.emitByte(); SEC PLY
                     INY
                     PHY BYTEtoNEXT(); PLY if (NC) { return; }
                 }
+                case VOpCode.BYTEtoTOP:
+                {
+                    LDA [vcodeBuffer], Y // LSB argument
+                    INY
+                    PHY BYTEtoTOP(); PLY if (NC) { return; }
+                }
                 case VOpCode.Inc:
                 {
                     LDA [vcodeBuffer], Y // BP offset
@@ -982,7 +988,7 @@ Print.Space(); LDA #'C' Print.Char();
                             pushPeep();
 
 #ifdef DEBUG
-Print.Space(); LDA #'D' Print.Char();
+Print.Space(); LDA #'D' Print.Char();LDA #'1' Print.Char();
 #endif                            
                             SEC
                             break;
@@ -1215,6 +1221,24 @@ Print.Space(); LDA #'P' Print.Char();
                             pushPeep();
 #ifdef DEBUG
 Print.Space(); LDA #'F' Print.Char();
+#endif                            
+                            SEC
+                            break;
+                        }
+                        case (VOpCode.PushBYTE | VOpCode.Long):
+                        {
+                            // PushBYTE, PopTOP -> BYTEtoTOP
+                            popPeep();
+                            popPeep();
+                            DEC vcodeOffset // PopTOP
+                            LDY vcodeOffset
+                            DEY // char argument
+                            DEY 
+                            LDA # (VOpCode.BYTEtoTOP | VOpCode.Long)
+                            STA [vcodeBuffer], Y
+                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'D' Print.Char();LDA #'2' Print.Char();
 #endif                            
                             SEC
                             break;
@@ -1672,6 +1696,44 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #OpCode.STZ_ZP
         Gen6502.emitByte(); if (NC) { return; }
         LDA # ZP.NEXT3
+        Gen6502.emitByte(); if (NC) { return; }
+    }
+    
+    BYTEtoTOP() // A = char argument, top 24 bits are zero
+    {
+        STA vzArgument
+        
+        LDA vzArgument
+        if (Z)
+        {
+            LDA #OpCode.STZ_ZP
+            Gen6502.emitByte(); if (NC) { return; }    
+        }
+        else
+        {
+            LDA #OpCode.LDA_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA vzArgument
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA #OpCode.STA_ZP
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        LDA # ZP.TOP0
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP1
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP2
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STZ_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP3
         Gen6502.emitByte(); if (NC) { return; }
     }
     
