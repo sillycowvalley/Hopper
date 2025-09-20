@@ -107,6 +107,7 @@ unit Gen6502
         BBS1_ZP = 0x9F,
         LDY_IMM = 0xA0,
         LDX_IMM = 0xA2,
+        LDY_ZP  = 0xA4,
         LDA_ZP  = 0xA5, 
         LDX_ZP  = 0xA6,
         SMB2_ZP = 0xA7,
@@ -957,7 +958,7 @@ unit Gen6502
         if (Z)
         {
             LDA ZP.NEXT0
-            VCode.PushCHAR();
+            VCode.PushBYTE();
             SEC
             return;
         }

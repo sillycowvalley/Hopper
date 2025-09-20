@@ -634,7 +634,7 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
     generateNegateLong()
     {
         LDA #0
-        VCode.PushCHAR(); if (NC) { return; } 
+        VCode.PushBYTE(); if (NC) { return; } 
         VCode.PopNEXT();  if (NC) { return; } 
         
         // Original value -> TOP
@@ -1067,7 +1067,7 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                 // || short-circuited, push true (1)
                 LDA #1
             }
-            VCode.PushCHAR(); if (NC) { break; }
+            VCode.PushBYTE(); if (NC) { break; }
             
             // Patch end jump to here
             VCode.Flush(); if (NC) { break; }
