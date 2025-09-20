@@ -62,6 +62,7 @@ unit VCode
         StoreNEXT       = 0x1A,
         
         PutZERO         = 0x1B,
+        BYTEtoTOP       = 0x1C,               // 8 bits non-zero, 24 bits zero
         
         Void            = 0b00000000,
         Char            = 0b01000000,
@@ -95,6 +96,7 @@ unit VCode
     const string strPushBYTE = "pshBYT";
     const string strPushWORD = "pshW";
     const string strBYTEtoNEXT = "BYTtoN";
+    const string strBYTEtoTOP  = "BYTtoT";
     const string strNEXTZero = "Nzer";
     const string strCtoONE   = "Cto1";
     const string strWORDtoTOP = "WtoT";
@@ -327,6 +329,13 @@ unit VCode
                 LDA #(strBYTEtoNEXT % 256)
                 STA ZP.STRL
                 LDA #(strBYTEtoNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.BYTEtoTOP:
+            {
+                LDA #(strBYTEtoTOP % 256)
+                STA ZP.STRL
+                LDA #(strBYTEtoTOP / 256)
                 STA ZP.STRH
             }
             default:
@@ -853,6 +862,47 @@ Print.Space(); LDA #'G' Print.Char(); LDA #'!' Print.Char();
                     LDA peep1
                     switch (A)
                     {
+                        case (VOpCode.WORDtoTOP | VOpCode.Long):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.PushNEXT | VOpCode.Int):
+                                {
+                                    LDA peep3
+                                    switch (A)
+                                    {   
+                                        case (VOpCode.GetNEXT | VOpCode.Int):
+                                        {    
+                                            // GetNEXT, PushNEXT, WORDtoTOP, PopNEXT -> GetNEXT, WORDtoTOP
+                                            popPeep();
+                                            popPeep();
+                                            popPeep();
+                                            DEC vcodeOffset
+                                            DEC vcodeOffset
+                                            LDY vcodeOffset
+                                            LDA [vcodeBuffer], Y // Word MSB
+                                            STA ZP.ACCH
+                                            DEY
+                                            LDA [vcodeBuffer], Y // Word LSB
+                                            STA ZP.ACCL
+                                            LDA ZP.ACCH
+                                            STA [vcodeBuffer], Y // Word MSB
+                                            DEY
+                                            LDA ZP.ACCL
+                                            STA [vcodeBuffer], Y // Word LSB
+                                            DEY
+                                            LDA # VOpCode.WORDtoTOP
+                                            STA [vcodeBuffer], Y
+                                            pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'R' Print.Char();
+#endif    
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         case (VOpCode.GetTOP | VOpCode.Long):
                         case (VOpCode.GetTOP | VOpCode.Int):
                         {
