@@ -406,7 +406,6 @@ unit Gen6502
         
         // now the MSB's
         
-#ifdef NEWZERO
         LDA # OpCode.LDA_IMM
         EmitByte(); if (NC) { return; }
         LDA # 0x01 // hardware stack
@@ -415,20 +414,11 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack0H
         EmitByte(); if (NC) { return; }
-#endif                
         
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.IDXH
         EmitByte(); if (NC) { return; }
-#ifndef NEWZERO        
-        LDA # OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack0H
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.INC_A
-        EmitByte(); if (NC) { return; }
-#endif        
         LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack1H
@@ -445,8 +435,6 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack3H
         EmitByte(); if (NC) { return; }
-        
-        
     }
     
     CreateCLIArguments()
