@@ -4,7 +4,7 @@ program CC
     #define DEBUG
     #define PEEPHOLE
     #define PROBLEMPEEPS // include peephole optimizations that have potentially harmful sideffects (NEXT-setting)
-    //#define NEWZERO
+    #define NEWZERO
     
     uses "../System/Definitions"
     uses "../System/Args"

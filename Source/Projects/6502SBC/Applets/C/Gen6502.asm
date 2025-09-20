@@ -407,7 +407,7 @@ unit Gen6502
         // now the MSB's
         
 #ifdef NEWZERO
-        LDA # OpCode.LDA_ZP
+        LDA # OpCode.LDA_IMM
         EmitByte(); if (NC) { return; }
         LDA # 0x01 // hardware stack
         EmitByte(); if (NC) { return; }
