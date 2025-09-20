@@ -370,9 +370,10 @@ unit Gen6502
         patchEntryJump();
     
         // Allocate 1022 bytes (0x0400) for the parallel stack (1022 + 2 allocator size bytes = 1024)
+        // Allocate  766 bytes (0x0300) for the parallel stack (766 + 2 allocator size bytes = 768
         LDA #0xFE
         STA ZP.ACCL
-        LDA #0x03
+        LDA #0x02
         STA ZP.ACCH
         
         // Call Memory.Allocate via BIOS dispatch
@@ -404,16 +405,30 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         
         // now the MSB's
+        
+#ifdef NEWZERO
+        LDA # OpCode.LDA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA # 0x01 // hardware stack
+        EmitByte(); if (NC) { return; }
+        LDA # OpCode.STA_ZP
+        EmitByte(); if (NC) { return; }
+        LDA #runtimeStack0H
+        EmitByte(); if (NC) { return; }
+#endif                
+        
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
         LDA # ZP.IDXH
         EmitByte(); if (NC) { return; }
+#ifndef NEWZERO        
         LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack0H
         EmitByte(); if (NC) { return; }
         LDA # OpCode.INC_A
         EmitByte(); if (NC) { return; }
+#endif        
         LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack1H
@@ -430,6 +445,8 @@ unit Gen6502
         EmitByte(); if (NC) { return; }
         LDA #runtimeStack3H
         EmitByte(); if (NC) { return; }
+        
+        
     }
     
     CreateCLIArguments()

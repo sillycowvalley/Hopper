@@ -1606,16 +1606,19 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
-        
         LDA #OpCode.LDA_IMM
         Gen6502.emitByte(); if (NC) { return; }
         LDA vzArgument
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack0],Y
+#ifndef NEWZERO
         LDA #OpCode.STA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
         Gen6502.emitByte(); if (NC) { return; }
+#else
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+#endif        
         
         LDA vzArgument
         CMP vzArgument1
@@ -1654,9 +1657,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA # Gen6502.runtimeStack3
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO
         // PHA - update stack pointer
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
+#endif
         
         SEC
     }
@@ -1673,17 +1678,19 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
-        
         LDA #OpCode.LDA_IMM
         Gen6502.emitByte(); if (NC) { return; }
         LDA vzArgument
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack0],Y
+#ifndef NEWZERO
         LDA #OpCode.STA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
         Gen6502.emitByte(); if (NC) { return; }
-        
+#else
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+#endif        
         LDA vzArgument
         if (NZ)
         {
@@ -1712,10 +1719,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA # Gen6502.runtimeStack3
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO
         // PHA - update stack pointer
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
-        
+#endif
+
         SEC
     }
     
@@ -1737,12 +1746,16 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.NEXT0
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack0],Y
+#ifndef NEWZERO
         LDA #OpCode.STA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
         Gen6502.emitByte(); if (NC) { return; }
-        
+#else
+        // PHA - update stack pointer
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+#endif   
         // Store NEXT1 to stack via pointer
         // LDA ZP.NEXT1
         LDA #OpCode.LDA_ZP
@@ -1779,10 +1792,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA # Gen6502.runtimeStack3
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO
         // PHA - update stack pointer
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
-        
+#endif
         SEC
     }
     
@@ -2113,14 +2127,21 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         // SP -> X -> Y
         LDA #OpCode.TSX  
         Gen6502.emitByte(); if (NC) { return; }
+        
+#ifdef NEWZERO
+        // STA ZP.TOP0
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.TOP0 
+        Gen6502.emitByte(); if (NC) { return; }       
+#endif
         LDA #OpCode.TXA
         Gen6502.emitByte(); if (NC) { return; }
         LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
-        
+#ifndef NEWZERO        
         // Load TOP0 from stack via pointer
-        // LDA [runtimeStack0],Y
         LDA #OpCode.LDA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
@@ -2130,7 +2151,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.TOP0 
         Gen6502.emitByte(); if (NC) { return; }
-        
+#endif        
         // Load TOP1 from stack via pointer
         // LDA [runtimeStack1],Y
         LDA #OpCode.LDA_IND_Y
@@ -2188,12 +2209,15 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.TOP0
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack0],Y
+#ifndef NEWZERO        
         LDA #OpCode.STA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
         Gen6502.emitByte(); if (NC) { return; }
-        
+#else
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+#endif
         // Store TOP1 to stack via pointer
         // LDA ZP.TOP1
         LDA #OpCode.LDA_ZP
@@ -2230,10 +2254,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA # Gen6502.runtimeStack3
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO        
         // PHA - update stack pointer
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
-        
+#endif
         SEC
     }
     
@@ -2249,13 +2274,20 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         // SP -> X -> Y
         LDA #OpCode.TSX  
         Gen6502.emitByte(); if (NC) { return; }
+#ifdef NEWZERO
+        // STA ZP.NEXT0
+        LDA #OpCode.STA_ZP
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA #ZP.NEXT0 
+        Gen6502.emitByte(); if (NC) { return; }
+#endif        
         LDA #OpCode.TXA
         Gen6502.emitByte(); if (NC) { return; }
         LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO
         // Load NEXT0 from stack via pointer
-        // LDA [runtimeStack0],Y
         LDA #OpCode.LDA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
@@ -2265,6 +2297,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.NEXT0 
         Gen6502.emitByte(); if (NC) { return; }
+#endif
         
         // Load NEXT1 from stack via pointer
         // LDA [runtimeStack1],Y
@@ -2506,12 +2539,16 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #0
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO        
         // Store result (0 or 1) to stack via pointer
-        // STA [runtimeStack0],Y
         LDA #OpCode.STA_IND_Y
         Gen6502.emitByte(); if (NC) { return; }
         LDA # Gen6502.runtimeStack0
         Gen6502.emitByte(); if (NC) { return; }
+#else
+        LDA #OpCode.PHA
+        Gen6502.emitByte(); if (NC) { return; }
+#endif        
         
         LDA #OpCode.LDA_IMM
         Gen6502.emitByte(); if (NC) { return; }
@@ -2539,10 +2576,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA # Gen6502.runtimeStack3
         Gen6502.emitByte(); if (NC) { return; }
         
+#ifndef NEWZERO        
         // PHA - update stack pointer
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
-        
+#endif
         SEC
     }
     
