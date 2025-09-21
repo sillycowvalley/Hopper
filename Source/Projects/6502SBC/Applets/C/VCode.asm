@@ -1887,12 +1887,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         STA vzArgument
         STX vzArgument1
         
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
         LDA #OpCode.LDA_IMM
@@ -1912,30 +1908,21 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { return; }
         }
         
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
         LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA vzArgument1
-        if (NZ)
-        {
-            LDA #OpCode.LDA_IMM
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA #0
-            Gen6502.emitByte(); if (NC) { return; }
-        }
-        
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STZ_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
         LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STZ_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -1949,12 +1936,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         STA vzArgument
         
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
         LDA #OpCode.LDA_IMM
@@ -1964,31 +1947,21 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
 
-        LDA vzArgument
-        if (NZ)
-        {
-            LDA #OpCode.LDA_IMM
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA #0
-            Gen6502.emitByte(); if (NC) { return; }
-        }
-        
-        
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STZ_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
         LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STZ_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
         LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STZ_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2002,12 +1975,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     // Generate code to push 32-bit value from ZP.NEXT onto runtime stack
     pushNEXT()
     {
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
         LDA #OpCode.LDA_ZP
@@ -2023,7 +1992,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #ZP.NEXT1
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA # OpCode.STA_ABS_Y
+        LDA # OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2036,7 +2005,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #ZP.NEXT2
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA # OpCode.STA_ABS_Y
+        LDA # OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2049,7 +2018,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #ZP.NEXT3
         Gen6502.emitByte(); if (NC) { return; }
         
-        LDA # OpCode.STA_ABS_Y
+        LDA # OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2059,9 +2028,9 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         SEC
     }
     
-    // Generate code to calculate effective Y offset from BP
+    // Generate code to calculate effective X offset from BP
     // Input: A = logical offset (signed)
-    // Output: Generated code leaves effective offset in Y register
+    // Output: Generated code leaves effective offset in X register
     //    
     //    Higher addresses (0x01FF)
     //    ...
@@ -2074,43 +2043,6 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     //    ...
     //    Lower addresses (grows down)
     calculateBPOffset()
-    {
-        STA vzOffset  // Save logical offset
-        CMP #0
-        if (Z)
-        {
-            LDA #OpCode.LDY_ZP
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA # Gen6502.runtimeBP
-            Gen6502.emitByte(); if (NC) { return; }
-        }
-        else
-        {
-            // Load BP into A
-            LDA # OpCode.LDA_ZP
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA # Gen6502.runtimeBP
-            Gen6502.emitByte(); if (NC) { return; }
-            
-            // Add the offset
-            LDA #OpCode.CLC
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA #OpCode.ADC_IMM
-            Gen6502.emitByte(); if (NC) { return; }
-            
-            // Calculate and emit the adjusted offset value
-            LDA vzOffset
-            // Now A contains either the original negative offset OR the adjusted positive offset
-            Gen6502.emitByte(); if (NC) { return; }
-            
-            // Transfer result to Y
-            LDA # OpCode.TAY
-            Gen6502.emitByte(); if (NC) { return; }
-        }
-        
-        SEC
-    }
-    calculateBPOffsetX()
     {
         STA vzOffset  // Save logical offset
         CMP #0
@@ -2154,7 +2086,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
+            // Calculate effective offset into X
             calculateBPOffset();
             if (NC) 
             {
@@ -2162,7 +2094,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             }
                        
             // Load NEXT0 through pointer
-            LDA #OpCode.LDA_ABS_Y
+            LDA #OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2174,7 +2106,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load NEXT1 through pointer
-            LDA #OpCode.LDA_ABS_Y
+            LDA #OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2191,7 +2123,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             {
                 
                 // Load NEXT2 through pointer
-                LDA #OpCode.LDA_ABS_Y
+                LDA #OpCode.LDA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2203,7 +2135,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 Gen6502.emitByte(); if (NC) { break; }
                 
                 // Load NEXT3 through pointer
-                LDA #OpCode.LDA_ABS_Y
+                LDA #OpCode.LDA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2237,7 +2169,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
+            // Calculate effective offset into X
             calculateBPOffset();
             if (NC) 
             {
@@ -2245,7 +2177,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             }
                        
             // Load TOP0 through pointer
-            LDA #OpCode.LDA_ABS_Y
+            LDA #OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2257,7 +2189,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load TOP1 through pointer
-            LDA #OpCode.LDA_ABS_Y
+            LDA #OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2269,7 +2201,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load TOP2 through pointer
-            LDA #OpCode.LDA_ABS_Y
+            LDA #OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2281,7 +2213,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load TOP3 through pointer
-            LDA #OpCode.LDA_ABS_Y
+            LDA #OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2306,7 +2238,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
+            // Calculate effective offset into X
             calculateBPOffset();
             if (NC) 
             {
@@ -2319,7 +2251,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #ZP.NEXT0
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2332,7 +2264,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #ZP.NEXT1
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2350,7 +2282,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 LDA #ZP.NEXT2
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA #OpCode.STA_ABS_Y
+                LDA #OpCode.STA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2363,7 +2295,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 LDA #ZP.NEXT3
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA #OpCode.STA_ABS_Y
+                LDA #OpCode.STA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2372,19 +2304,14 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             }
             else
             {
-                LDA #OpCode.LDA_IMM
-                Gen6502.emitByte(); if (NC) { break; }
-                LDA # 0
-                Gen6502.emitByte(); if (NC) { break; }
-                
-                LDA # OpCode.STA_ABS_Y
+                LDA # OpCode.STZ_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # (StackPage2 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA #OpCode.STA_ABS_Y
+                LDA #OpCode.STZ_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2404,7 +2331,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         loop
         {
             // Calculate effective offset into X
-            calculateBPOffsetX();
+            calculateBPOffset();
             if (NC) 
             {
                 break;
@@ -2449,7 +2376,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
+            // Calculate effective offset into X
             calculateBPOffset();
             if (NC) 
             {
@@ -2461,33 +2388,28 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA # 1
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
             LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.LDA_IMM
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # 0
-            Gen6502.emitByte(); if (NC) { break; }
-            
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STZ_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
             LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STZ_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
             LDA # (StackPage2 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STZ_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2505,7 +2427,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
+            // Calculate effective offset into X
             calculateBPOffset();
             if (NC) 
             {
@@ -2518,7 +2440,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #ZP.TOP0
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2531,7 +2453,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #ZP.TOP1
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2544,7 +2466,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #ZP.TOP2
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA # OpCode.STA_ABS_Y
+            LDA # OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2557,7 +2479,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #ZP.TOP3
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_ABS_Y
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -2577,7 +2499,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         
         // SP points one past to the slot we are interested in
         
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
         Gen6502.emitByte(); if (NC) { return; }
         
@@ -2587,13 +2509,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #ZP.TOP0 
         Gen6502.emitByte(); if (NC) { return; }       
 
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
-        Gen6502.emitByte(); if (NC) { return; }
-        
         // Load TOP1 from stack via pointer
-        LDA #OpCode.LDA_ABS_Y
+        LDA #OpCode.LDA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2606,7 +2523,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
                 
         // Load TOP2 from stack via pointer
-        LDA #OpCode.LDA_ABS_Y
+        LDA #OpCode.LDA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2619,7 +2536,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Load TOP3 from stack via pointer
-        LDA #OpCode.LDA_ABS_Y
+        LDA #OpCode.LDA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2931,12 +2848,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     
     pushC()
     {
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
         // Convert carry flag to 0 or 1
@@ -2961,7 +2874,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store 0 to stack via pointer
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2969,7 +2882,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store 0 to stack via pointer
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -2977,7 +2890,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store 0 to stack via pointer
-        LDA #OpCode.STA_ABS_Y
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
         LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
@@ -3048,14 +2961,14 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
+            // Calculate effective offset into X
             calculateBPOffset(); if (NC) { break; }
             
             // CLC (clear carry)
             LDA #OpCode.CLC
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA # OpCode.LDA_ABS_Y
+            LDA # OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -3066,14 +2979,14 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #1
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA # OpCode.STA_ABS_Y
+            LDA # OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
             LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA # OpCode.LDA_ABS_Y
+            LDA # OpCode.LDA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -3084,7 +2997,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #0
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA # OpCode.STA_ABS_Y
+            LDA # OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
@@ -3095,7 +3008,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             CMP # VOpCode.Long
             if (Z)
             {
-                LDA # OpCode.LDA_ABS_Y
+                LDA # OpCode.LDA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -3106,14 +3019,14 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 LDA #0
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA # OpCode.STA_ABS_Y
+                LDA # OpCode.STA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # (StackPage2 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA # OpCode.LDA_ABS_Y
+                LDA # OpCode.LDA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
@@ -3124,7 +3037,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 LDA #0
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA # OpCode.STA_ABS_Y
+                LDA # OpCode.STA_ABS_X
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
