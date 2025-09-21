@@ -349,6 +349,81 @@ unit Lexer
         }
     }
     
+    // Helper to store the 32-bit value and set token type
+    storeLongValue()
+    {
+        // Store the 32-bit value in TokenBuffer (first 4 bytes)
+        LDY #0
+        LDA ZP.NEXT0
+        STA [TokenBuffer], Y
+        INY
+        LDA ZP.NEXT1
+        STA [TokenBuffer], Y
+        INY
+        LDA ZP.NEXT2
+        STA [TokenBuffer], Y
+        INY
+        LDA ZP.NEXT3
+        STA [TokenBuffer], Y
+        INY
+        LDA #0
+        STA [TokenBuffer], Y
+        
+        LDA #Token.IntegerLiteral
+        STA TokenType
+        SEC
+    }
+    
+    // Helper to scan hex digits and build value
+    scanHexValue()
+    {
+        // NEXT already initialized to 0
+        
+        loop
+        {
+            LDA currentChar
+            Char.IsHex();
+            if (NC) { break; }  // Not a hex digit
+            
+            // NEXT = NEXT * 16 (shift left 4 bits)
+            LDA # 16
+            LDX # ZP.TOP
+            Shared.LoadByte();
+            Long.Mul();  // NEXT = NEXT * 16
+            
+            // Convert hex digit to value and add
+            LDA currentChar
+            CMP #'A'
+            if (C)  // >= 'A'
+            {
+                CMP #'a'
+                if (C)  // >= 'a' (lowercase)
+                {
+                    SEC
+                    SBC #'a'-10
+                }
+                else  // uppercase A-F
+                {
+                    SEC
+                    SBC #'A'-10
+                }
+            }
+            else  // 0-9
+            {
+                SEC
+                SBC #'0'
+            }
+            
+            LDX # ZP.TOP
+            Shared.LoadByte();
+            Long.Add();  // NEXT = NEXT + digit_value
+            
+            advance();
+        }
+        
+        storeLongValue();
+    }
+    
     // Scan number
     scanNumber()
     {
@@ -356,6 +431,34 @@ unit Lexer
         LDA # 0
         LDX # ZP.NEXT
         Shared.LoadByte();
+        
+        // Check for hex prefix
+        LDA currentChar
+        CMP #'0'
+        if (Z)
+        {
+            advance();
+            LDA currentChar
+            CMP #'x'
+            if (Z)
+            {
+                advance();  // Skip 'x'
+                scanHexValue();
+                return;
+            }
+            CMP #'X'
+            if (Z)
+            {
+                advance();  // Skip 'X'
+                scanHexValue();
+                return;
+            }
+            
+            // Not hex, just a number starting with 0
+            // We already consumed the '0', so add it to accumulator
+            // NEXT is already 0, so nothing to add
+            // Continue scanning for more digits
+        }
         
         loop
         {
@@ -381,26 +484,7 @@ unit Lexer
             advance();
         } // loop
         
-        // Store the 32-bit value in TokenBuffer (first 4 bytes)
-        LDY #0
-        LDA ZP.NEXT0
-        STA [TokenBuffer], Y
-        INY
-        LDA ZP.NEXT1
-        STA [TokenBuffer], Y
-        INY
-        LDA ZP.NEXT2
-        STA [TokenBuffer], Y
-        INY
-        LDA ZP.NEXT3
-        STA [TokenBuffer], Y
-        INY
-        LDA #0
-        STA [TokenBuffer], Y
-        
-        LDA #Token.IntegerLiteral
-        STA TokenType
-        SEC
+        storeLongValue();
     }
     
     scanCharLiteral()

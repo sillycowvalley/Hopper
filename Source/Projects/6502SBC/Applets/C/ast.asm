@@ -89,6 +89,11 @@ unit AST
         Local  = 0,
         Global = 1
     }
+    enum StringType
+    {
+        Normal,
+        Hex,
+    }
     
     // Common node structure:
     //     [0] = NodeType
@@ -124,8 +129,10 @@ unit AST
     // StringLit node:
     //     [7-8]   Data pointer -> string
     //     [9-10]  Code offset index (where string ends up in the codegen buffer)
+    //     [11]    StringFlags: StringType.Normal for regular string, StringType.Hex for created from bytes
     // const byte iData     = 7;
     // const byte iOffset   = 9; 
+    const byte iStrFlags    = 11;
     
     // VarDecl node:
     //     [7-8]  <unused>
@@ -1090,6 +1097,8 @@ unit AST
     
     const string nodeBPOffset = "[BP";
     
+    const string hexData = "<hex data>";
+    
     // Print the AST tree with indentation
     // Input: ZP.IDX = node pointer, ZP.TEMP = indent level
     PrintNode()
@@ -1557,25 +1566,39 @@ unit AST
                 STA ZP.STRH
                 Print.String();
                 
-                LDA #'"'
-                Print.Char();
-                
-                // Print the string literal
-                LDY # iData
+                LDY # iStrFlags
                 LDA [ZP.IDX], Y
-                STA ZP.STRL
-                INY
-                LDA [ZP.IDX], Y
-                STA ZP.STRH
-                
-                LDA ZP.STRL
-                ORA ZP.STRH
-                if (NZ)
+                CMP # StringType.Hex
+                if (Z)
                 {
+                    LDA #(hexData % 256)
+                    STA ZP.STRL
+                    LDA #(hexData / 256)
+                    STA ZP.STRH
                     Print.String();
                 }
-                LDA #'"'
-                Print.Char();
+                else
+                {
+                    LDA #'"'
+                    Print.Char();
+                    
+                    // Print the string literal
+                    LDY # iData
+                    LDA [ZP.IDX], Y
+                    STA ZP.STRL
+                    INY
+                    LDA [ZP.IDX], Y
+                    STA ZP.STRH
+                    
+                    LDA ZP.STRL
+                    ORA ZP.STRH
+                    if (NZ)
+                    {
+                        Print.String();
+                    }
+                    LDA #'"'
+                    Print.Char();
+                }
                 Print.Space(); LDA ZP.STRH Print.Hex();LDA ZP.STRL Print.Hex();
             }
             case NodeType.IntLit:

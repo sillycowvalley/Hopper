@@ -29,8 +29,9 @@ unit Errors
         BreakOutsideLoop = 0x15,
         ContinueOutsideForLoop = 0x16, // only works in While for now
         
-        FilenameTooLong = 0x17,
-        FileSaveError = 0x18,
+        ByteExpected = 0x17,
+        FilenameTooLong = 0x18,
+        FileSaveError = 0x19,
     }
     
     const string msgExpected  = "Expected ";

@@ -192,6 +192,155 @@ unit Parser
         } // single exit
     }
     
+    // TODO: const char array
+    // - IntegerLiteral needs to support hex (0xXX)
+    // - growString
+    // - test range checking (ByteExpected)
+    
+    
+    // Parse array initializer and convert to string: { 'H', 'e', 32, 0x00 } -> StringLit
+    // Output: IDY = StringLit node, C set on success
+    parseArrayInitializer()
+    {
+        loop
+        {
+            // Expect '{'
+            LDA #Token.LeftBrace
+            expect();
+            if (NC) { break; }
+            
+            // Allocate initial buffer (say, 256 bytes max for const string)
+            LDA #0  // 256 bytes
+            STA ZP.ACCL
+            LDA #1
+            STA ZP.ACCH
+            Memory.Allocate(); // -> IDX
+            if (NC) 
+            { 
+                Errors.OutOfMemory();
+                break; 
+            }
+            
+            // Save string buffer pointer
+            LDA ZP.IDXL
+            STA ZP.STRL
+            LDA ZP.IDXH
+            STA ZP.STRH
+            
+            STZ ZP.IDYL
+            STZ ZP.IDYH
+            loop
+            {
+                // Check for closing brace
+                LDA currentToken
+                CMP #Token.RightBrace
+                if (Z) { SEC break; }  // Done
+                
+                // Parse and store value
+                LDA currentToken
+                CMP #Token.CharLiteral
+                if (Z)
+                {
+                    // Character literal - get its value from TokenBuffer
+                    LDA [Lexer.TokenBuffer]  // The actual character
+                    STA [ZP.IDX]
+                }
+                else
+                {
+                    CMP #Token.IntegerLiteral
+                    if (Z)
+                    {
+                        // Integer literal - get its value from TokenBuffer
+                        LDA [Lexer.TokenBuffer] // LSB of IntegerLiteral
+                        STA [ZP.IDX]
+                        LDY #1
+                        LDA [Lexer.TokenBuffer], Y
+                        if (NZ)
+                        {
+                            LDA # Error.ByteExpected
+                            Errors.ShowLine();
+                            break;
+                        }
+                        INY
+                        LDA [Lexer.TokenBuffer], Y
+                        if (NZ)
+                        {
+                            LDA # Error.ByteExpected
+                            Errors.ShowLine();
+                            break;
+                        }
+                        INY
+                        LDA [Lexer.TokenBuffer], Y
+                        if (NZ)
+                        {
+                            LDA # Error.ByteExpected
+                            Errors.ShowLine();
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        LDA # Error.SyntaxError
+                        Errors.ShowLine();
+                        break;
+                    }
+                }
+                
+                Shared.IncIDX();
+                Shared.IncIDY();
+                LDA ZP.IDYH
+                
+                // Check buffer overflow
+                if (NZ) 
+                { 
+                    LDA # Error.StringTooLong
+                    Errors.ShowLine();
+                    break; 
+                }
+                consume();
+                if (NC) { break; }
+                
+                // Check for comma
+                LDA currentToken
+                CMP #Token.Comma
+                if (NZ) { SEC break; } // Done?
+                consume(); // ,
+                if (NC) { break; }
+            } // char loop
+            
+            if (NC) { break; }
+            
+            // Expect '}'
+            LDA #Token.RightBrace
+            expect();
+            if (NC) { break; }
+            
+            // Create StringLit node
+            LDA #AST.NodeType.StringLit
+            AST.CreateNode(); // -> IDX
+            if (NC) { break; }
+            
+            LDY # AST.iStrFlags
+            LDA # StringType.Hex
+            STA [ZP.IDX], Y
+            
+            // Set string pointer as data
+            LDA ZP.STRL
+            STA ZP.ACCL
+            LDA ZP.STRH
+            STA ZP.ACCH
+            AST.SetData();
+            
+            // Return StringLit in IDY
+            LDA ZP.IDXL
+            STA ZP.IDYL
+            LDA ZP.IDXH
+            STA ZP.IDYH
+            
+            SEC
+            break;
+        } // single exit
+    }
     
     parseConstDeclaration() // Input: A = type, -> IDY
     {
@@ -247,8 +396,19 @@ unit Parser
             LDA #Token.Assign
             expect();
             if (NC) { break; }
-                                    
-            parseExpression(); // -> IDY, munts IDX
+            
+            LDA currentToken
+            CMP #Token.LeftBrace
+            if (Z)
+            {
+                // Parse array initializer
+                parseArrayInitializer(); // -> IDY
+            }
+            else
+            {
+                // Parse regular expression (existing code)
+                parseExpression(); // -> IDY, munts IDX
+            }
             if (NC) { break; }
             
             LDA constantNodeH
@@ -3103,6 +3263,10 @@ unit Parser
                 LDA #AST.NodeType.StringLit
                 AST.CreateNode(); // -> IDX
                 if (NC) { return; }
+                
+                LDY # AST.iStrFlags
+                LDA # StringType.Normal
+                STA [ZP.IDX], Y
                 
                 // Copy string data
                 copyTokenString(); // -> STR
