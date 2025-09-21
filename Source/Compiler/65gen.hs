@@ -492,7 +492,7 @@ program Generate
                 <byte> constantData = Code.GetConstantData();
                 
                 // Insert 3 placeholder bytes for JMP instruction if using custom load address
-                bool needsBIOSJump = DefineExists("HOPPER_BIOS_APPLET");
+                bool isHopperBIOSApplet = DefineExists("HOPPER_BIOS_APPLET");
                 foreach (var b in constantData)
                 {
                     output.Append(b);
@@ -511,7 +511,7 @@ program Generate
                 <byte> methodCode = Code.GetMethodCode(entryIndex);
                 writeMethod(entryIndex, methodCode, romAddress);
                 // Patch JMP instruction if needed
-                if (needsBIOSJump)
+                if (isHopperBIOSApplet)
                 {
                     uint jumpTarget = methods[entryIndex];
                     output.SetItem(0, byte(OpCode.JMP_nn));
@@ -587,7 +587,7 @@ program Generate
                                 
                 // 6502 vectors
                 <byte>vectors;
-                if (!needsBIOSJump)
+                if (!isHopperBIOSApplet)
                 {
                     vectors.Append(byte(nmiVector & 0xFF));
                     vectors.Append(byte(nmiVector >> 8));

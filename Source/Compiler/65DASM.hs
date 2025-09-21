@@ -313,7 +313,7 @@ program DASM
                 Symbols.New();
                 string description;
                 uint romSize = 0x8000;
-                bool biosApplet = false;
+                bool isHopperBIOSApplet = false;
                 if (Symbols.Import(jsonPath))
                 {
                     if (DefineExists("CPU_6502"))
@@ -361,7 +361,7 @@ program DASM
                     }
                     if (DefineExists("HOPPER_BIOS_APPLET"))
                     {
-                        biosApplet = true;
+                        isHopperBIOSApplet = true;
                     }
                 }
                 if (includeHits)
@@ -397,7 +397,7 @@ program DASM
                 
                 uint resetVector;
                 uint constantSize;
-                if (!biosApplet)
+                if (!isHopperBIOSApplet)
                 {
                     resetVector = code[code.Count-4] + (code[code.Count-3] << 8);
                     address = resetVector;
@@ -511,7 +511,7 @@ program DASM
                     commentColumn = 36;
                 }
                 uint vectorsSize = 6;
-                if (biosApplet)
+                if (isHopperBIOSApplet)
                 {
                     vectorsSize = 0;
                 }
@@ -664,7 +664,7 @@ program DASM
                         //RenderJumpTableRaw(hasmFile, code, ref index, ref address, ref codeSize, tableSizeInWords);
                     }
                 }
-                if (!biosApplet)
+                if (!isHopperBIOSApplet)
                 {
                     hasmFile.Append("" +  Char.EOL);
                     uint vector = code[index] + code[index+1] << 8;

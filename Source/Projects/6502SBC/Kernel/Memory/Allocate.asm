@@ -196,7 +196,8 @@ unit Allocate
         LDA maBESTH
         STA ZP.IDXH
         // IDX += 2
-        IncIDXx2();
+        IncIDX();
+        IncIDX();
 
         // maSCRATCH = size+6
         CLC

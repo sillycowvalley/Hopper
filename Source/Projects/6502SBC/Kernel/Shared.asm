@@ -8,11 +8,6 @@ unit Shared
             INC ZP.IDXH
         }
     }
-    IncIDXx2()
-    {
-        IncIDX();
-        IncIDX();
-    }
     IncIDY()
     {
         INC ZP.IDYL
