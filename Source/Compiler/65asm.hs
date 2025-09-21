@@ -1904,7 +1904,7 @@ program Assemble
                 
                 if (Symbols.DefineExists("HOPPER_BIOS_APPLET"))
                 {
-                    Asm6502.SetOrg(0x0800);
+                    Asm6502.SetOrg(0x0B00); // BIOS ORG
                     isHopperBIOSApplet = true;
                 }
                 

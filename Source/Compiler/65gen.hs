@@ -472,7 +472,7 @@ program Generate
                 uint romAddress = uint(startAddress);
                 if (DefineExists("HOPPER_BIOS_APPLET"))
                 {
-                    romAddress = 0x0800;
+                    romAddress = 0x0B00; // BIOS ORG
                 }
                 
                 file ihexFile = File.Create(ihexPath);
