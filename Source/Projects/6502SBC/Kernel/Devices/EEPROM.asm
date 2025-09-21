@@ -57,8 +57,7 @@ unit EEPROM
         {
             LDA Address.I2CInBuffer, X
             STA [IDX]
-            IncIDY();
-            IncIDX();
+            IncIDXx2();
             INX
             CPX # serialPageSize
             if (Z) { break; }

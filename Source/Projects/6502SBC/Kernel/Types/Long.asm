@@ -760,6 +760,7 @@ unit Long
             CLC  // Return NC for error
             return;
         }
+        // A + TOP --> TOP
         CLC
         ADC ZP.TOP0
         STA ZP.TOP0
