@@ -2058,36 +2058,107 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     calculateBPOffset()
     {
         STA vzOffset  // Save logical offset
-        CMP #0
-        if (Z)
+        switch (A)
         {
-            LDA #OpCode.LDX_ZP
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA # Gen6502.runtimeBP
-            Gen6502.emitByte(); if (NC) { return; }
-        }
-        else
-        {
-            // Load BP into A
-            LDA # OpCode.LDA_ZP
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA # Gen6502.runtimeBP
-            Gen6502.emitByte(); if (NC) { return; }
-            
-            // Add the offset
-            LDA #OpCode.CLC
-            Gen6502.emitByte(); if (NC) { return; }
-            LDA #OpCode.ADC_IMM
-            Gen6502.emitByte(); if (NC) { return; }
-            
-            // Calculate and emit the adjusted offset value
-            LDA vzOffset
-            // Now A contains either the original negative offset OR the adjusted positive offset
-            Gen6502.emitByte(); if (NC) { return; }
-            
-            // Transfer result to X
-            LDA # OpCode.TAX
-            Gen6502.emitByte(); if (NC) { return; }
+            case 0x00:
+            {
+                // 2 bytes, 3 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            case 0x01:
+            {
+                // 3 bytes, 5 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.INX
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            case 0x02:
+            {
+                // 4 bytes, 7 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.INX
+                Gen6502.emitByte(); if (NC) { return; }
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            case 0x03:
+            {
+                // 5 bytes, 9 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.INX
+                Gen6502.emitByte(); if (NC) { return; }
+                Gen6502.emitByte(); if (NC) { return; }
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            case 0xFF:
+            {
+                // 3 bytes, 5 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.DEX
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            case 0xFE:
+            {
+                // 4 bytes, 7 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.DEX
+                Gen6502.emitByte(); if (NC) { return; }
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            case 0xFD:
+            {
+                // 5 bytes, 9 cycles
+                LDA #OpCode.LDX_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.DEX
+                Gen6502.emitByte(); if (NC) { return; }
+                Gen6502.emitByte(); if (NC) { return; }
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            default:
+            {
+                // 6 bytes, 9 cycles
+                
+                // Load BP into A
+                LDA # OpCode.LDA_ZP
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA # Gen6502.runtimeBP
+                Gen6502.emitByte(); if (NC) { return; }
+                
+                // Add the offset
+                LDA #OpCode.CLC
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA #OpCode.ADC_IMM
+                Gen6502.emitByte(); if (NC) { return; }
+                
+                // Calculate and emit the adjusted offset value
+                LDA vzOffset
+                // Now A contains either the original negative offset OR the adjusted positive offset
+                Gen6502.emitByte(); if (NC) { return; }
+                
+                // Transfer result to X
+                LDA # OpCode.TAX
+                Gen6502.emitByte(); if (NC) { return; }
+            }
         }
         
         SEC
