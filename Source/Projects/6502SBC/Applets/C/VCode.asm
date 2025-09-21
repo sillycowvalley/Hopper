@@ -1897,23 +1897,36 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #OpCode.PHA
         Gen6502.emitByte(); if (NC) { return; }
-        
-        LDA vzArgument
-        CMP vzArgument1
+
+        LDA vzArgument1
         if (NZ)
-        {
-            LDA #OpCode.LDA_IMM
+        {        
+            LDA vzArgument
+            CMP vzArgument1
+            if (NZ)
+            {
+                LDA #OpCode.LDA_IMM
+                Gen6502.emitByte(); if (NC) { return; }
+                LDA vzArgument1
+                Gen6502.emitByte(); if (NC) { return; }
+            }
+            
+            LDA #OpCode.STA_ABS_X
             Gen6502.emitByte(); if (NC) { return; }
-            LDA vzArgument1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { return; }
         }
-        
-        LDA #OpCode.STA_ABS_X
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA # 0
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA # (StackPage1 / 256)
-        Gen6502.emitByte(); if (NC) { return; }
+        else
+        {
+            LDA #OpCode.STZ_ABS_X
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA # (StackPage1 / 256)
+            Gen6502.emitByte(); if (NC) { return; }
+        }
         
         LDA #OpCode.STZ_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
