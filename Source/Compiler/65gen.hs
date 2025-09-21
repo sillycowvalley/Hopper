@@ -94,11 +94,7 @@ program Generate
             }
             else if ((instruction == OpCode.CPY_n) || (instruction == OpCode.CPX_n))
             {
-#ifdef UNDOCLAUDEFIX                
                 tableEntries = code[index+1] + 1;
-#else
-                tableEntries = code[index+1];
-#endif
             }
             if (instruction == callInstruction)
             {
@@ -472,7 +468,7 @@ program Generate
                 uint romAddress = uint(startAddress);
                 if (DefineExists("HOPPER_BIOS_APPLET"))
                 {
-                    romAddress = 0x0B00; // BIOS ORG
+                    romAddress = BIOSEntryPoint;
                 }
                 
                 file ihexFile = File.Create(ihexPath);

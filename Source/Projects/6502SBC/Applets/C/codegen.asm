@@ -231,9 +231,9 @@ LDA #'x' Print.Char(); Print.Space(); Print.String(); Print.Space();
         
     }
     
-    // Add the BIOS entry point address (0x0800) to value in ACC
+    // Add the BIOS entry point address (0x0B00) to value in ACC
     // Input: ZP.ACC = relative offset
-    // Output: ZP.ACC = absolute address (offset + 0x0800)
+    // Output: ZP.ACC = absolute address (offset + 0x0B00)
     AddEntryPoint()
     {
         CLC

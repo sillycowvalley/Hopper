@@ -406,7 +406,7 @@ program DASM
                 else
                 {
                     address = code[1] + code[2] << 8;
-                    constantSize = address - 0x800;
+                    constantSize = address - BIOSEntryPoint;
                 }
                 
                 uint index = constantSize;

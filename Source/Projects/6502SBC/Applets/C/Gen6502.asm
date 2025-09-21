@@ -755,10 +755,10 @@ unit Gen6502
         LDA codeBufferH
         STA ZP.IDYH
         
-        // Track virtual address (starts at 0x0800)
+        // Track virtual address (starts at 0x0B00)
         LDA #0x00
         STA ZP.ACCL
-        LDA #0x08
+        LDA #0x0B
         STA ZP.ACCH
         
         // Track bytes remaining

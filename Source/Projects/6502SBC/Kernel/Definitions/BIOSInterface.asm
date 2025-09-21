@@ -1,9 +1,9 @@
 unit BIOSInterface
 {
-    const uint SerialInBuffer       = 0x0200;  // 256-byte buffer 0x0200-0x02FF
-    const uint WorkSpace            = 0x0400;  // 256 byte general workspace
+    const uint SerialInBuffer       = 0x0500;  // 256-byte buffer 0x0200-0x02FF
+    const uint WorkSpace            = 0x0700;  // 256 byte general workspace
     const uint LineBuffer           = WorkSpace; // first 64 bytes (of the 256) for the command line parser
-    const uint EntryPoint           = 0x0800;
+    const uint EntryPoint           = 0x0B00;
     
     // System Call IDs - shared enum for client compilation
     // Calling convention: X = SysCall ID, additional params vary by call

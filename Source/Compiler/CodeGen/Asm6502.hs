@@ -3,10 +3,10 @@ unit Asm6502
     // Undocumented: 
     // https://www.nesdev.org/undocumented_opcodes.txt
     
-    #define UNDOCLAUDEFIX
-    
     uint SwitchJumpAddress   { get { return 0x0020; } } // on Zero page used by switch statements
     uint DispatchJumpAddress { get { return 0x0022; } } // on Zero page used by BIOS dispatch
+    
+    uint BIOSEntryPoint      { get { return 0x0B00; } } // "Hopper()" for BIOS applets
     
     <string,string> debugInfo;
     <string,string> labelInfo;
