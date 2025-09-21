@@ -531,6 +531,7 @@ unit AST
     //         C set if found
     FindConstant()  
     {
+
         // Search program level for ConstDecl nodes
         LDA AST.astRootL
         STA ZP.IDXL
@@ -539,22 +540,32 @@ unit AST
         
         AST.GetFirstChild(); // -> IDY
         
+        LDA astNodeL
+        PHA
+        LDA astNodeH
+        PHA
+        
+        LDA ZP.IDYL
+        STA astNodeL
+        LDA ZP.IDYH
+        STA astNodeH
+             
         loop
         {
-            LDA ZP.IDYL
-            ORA ZP.IDYH
-            if (Z) { CLC return; }  // Not found
+            LDA astNodeL
+            ORA astNodeH
+            if (Z) { CLC break; }  // Not found
             
             // Check if ConstDecl
-            LDY #AST.iNodeType
-            LDA [ZP.IDY], Y
+            LDY # AST.iNodeType
+            LDA [astNode], Y
             CMP #AST.NodeType.ConstDecl
             if (Z)
             {
                 // Get identifier child and compare name
-                LDA ZP.IDYL
+                LDA astNodeL
                 STA ZP.IDXL
-                LDA ZP.IDYH
+                LDA astNodeH
                 STA ZP.IDXH
                 AST.GetFirstChild(); // -> IDY (identifier)
                 
@@ -570,19 +581,23 @@ unit AST
                 if (C)
                 {
                     // Found it! Return ConstDecl in IDX
-                    SEC
-                    return;
+                    SEC break;
                 }
             }
             // Try next sibling
             LDY #AST.iNext
-            LDA [ZP.IDY], Y
+            LDA [astNode], Y
             TAX
             INY
-            LDA [ZP.IDY], Y
-            STA ZP.IDYH
-            STX ZP.IDYL
-        }
+            LDA [astNodeL], Y
+            STA astNodeH
+            STX astNodeL
+        } // single exit
+        
+        PLA
+        STA astNodeH
+        PLA
+        LDA astNodeL
     }
     
     

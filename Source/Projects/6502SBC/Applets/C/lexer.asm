@@ -509,8 +509,9 @@ unit Lexer
             switch (A)
             {
                 case 'n':  { LDA # Char.EOL }
-                case 'r':  { LDA #Char.CR } 
+                case 'r':  { LDA # Char.CR } 
                 case 't':  { LDA # Char.Tab }
+                case 'b':  { LDA # Char.Backspace }
                 case '0':  { LDA #0 }
                 case '\\':   { LDA '\\' }  // Backslash
                 case '\'':   { LDA '\'' }  // Single quote
@@ -581,6 +582,7 @@ unit Lexer
                 {
                     case 'n':  { LDA #Char.EOL }
                     case 't':  { LDA #Char.Tab }
+                    case 'b':  { LDA # Char.Backspace }
                     case '\\': { LDA #'\\' }
                     case '"':  { LDA #'"' }
                     default:   { } // Use as-is

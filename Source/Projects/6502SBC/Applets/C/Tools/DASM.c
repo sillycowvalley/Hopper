@@ -1,4 +1,4 @@
-// Tiny 6502 Disassembler for Hopper BIOS applets
+// Tiny 6502 Disassembler - Table Driven
 
 // Opcode constants
 const int ORA_ZP = 0x05;
@@ -62,389 +62,262 @@ const int NOP = 0xEA;
 const int BEQ = 0xF0;
 const int PLX = 0xFA;
 
-void decode_instruction(char* buffer, int pc, int* size) {
+// Fixed-width mnemonic table (5 bytes per entry: 4 chars + null)
+// Index by: opcode * 5
+const char* mnemonics = {
+    '?','?','?',0,0,  '?','?','?',0,0,  // 00-01
+    '?','?','?',0,0,  '?','?','?',0,0,  // 02-03
+    '?','?','?',0,0,  'O','R','A',0,0,  // 04-05
+    '?','?','?',0,0,  'R','M','B','0',0, // 06-07
+    '?','?','?',0,0,  '?','?','?',0,0,  // 08-09
+    '?','?','?',0,0,  '?','?','?',0,0,  // 0A-0B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 0C-0D
+    '?','?','?',0,0,  'B','B','R','0',0, // 0E-0F
+    '?','?','?',0,0,  '?','?','?',0,0,  // 10-11
+    '?','?','?',0,0,  '?','?','?',0,0,  // 12-13
+    '?','?','?',0,0,  '?','?','?',0,0,  // 14-15
+    '?','?','?',0,0,  'R','M','B','1',0, // 16-17
+    'C','L','C',0,0,  '?','?','?',0,0,  // 18-19
+    'I','N','C',0,0,  '?','?','?',0,0,  // 1A-1B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 1C-1D
+    '?','?','?',0,0,  'B','B','R','1',0, // 1E-1F
+    'J','S','R',0,0,  '?','?','?',0,0,  // 20-21
+    '?','?','?',0,0,  '?','?','?',0,0,  // 22-23
+    '?','?','?',0,0,  'A','N','D',0,0,  // 24-25
+    '?','?','?',0,0,  'R','M','B','2',0, // 26-27
+    '?','?','?',0,0,  '?','?','?',0,0,  // 28-29
+    '?','?','?',0,0,  '?','?','?',0,0,  // 2A-2B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 2C-2D
+    '?','?','?',0,0,  'B','B','R','2',0, // 2E-2F
+    '?','?','?',0,0,  '?','?','?',0,0,  // 30-31
+    '?','?','?',0,0,  '?','?','?',0,0,  // 32-33
+    '?','?','?',0,0,  '?','?','?',0,0,  // 34-35
+    '?','?','?',0,0,  '?','?','?',0,0,  // 36-37
+    'S','E','C',0,0,  '?','?','?',0,0,  // 38-39
+    '?','?','?',0,0,  '?','?','?',0,0,  // 3A-3B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 3C-3D
+    '?','?','?',0,0,  '?','?','?',0,0,  // 3E-3F
+    '?','?','?',0,0,  '?','?','?',0,0,  // 40-41
+    '?','?','?',0,0,  '?','?','?',0,0,  // 42-43
+    '?','?','?',0,0,  '?','?','?',0,0,  // 44-45
+    '?','?','?',0,0,  '?','?','?',0,0,  // 46-47
+    'P','H','A',0,0,  '?','?','?',0,0,  // 48-49
+    '?','?','?',0,0,  '?','?','?',0,0,  // 4A-4B
+    'J','M','P',0,0,  '?','?','?',0,0,  // 4C-4D
+    '?','?','?',0,0,  '?','?','?',0,0,  // 4E-4F
+    '?','?','?',0,0,  '?','?','?',0,0,  // 50-51
+    '?','?','?',0,0,  '?','?','?',0,0,  // 52-53
+    '?','?','?',0,0,  '?','?','?',0,0,  // 54-55
+    '?','?','?',0,0,  '?','?','?',0,0,  // 56-57
+    '?','?','?',0,0,  '?','?','?',0,0,  // 58-59
+    'P','H','Y',0,0,  '?','?','?',0,0,  // 5A-5B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 5C-5D
+    '?','?','?',0,0,  '?','?','?',0,0,  // 5E-5F
+    'R','T','S',0,0,  '?','?','?',0,0,  // 60-61
+    '?','?','?',0,0,  '?','?','?',0,0,  // 62-63
+    'S','T','Z',0,0,  'A','D','C',0,0,  // 64-65
+    '?','?','?',0,0,  '?','?','?',0,0,  // 66-67
+    'P','L','A',0,0,  'A','D','C',0,0,  // 68-69
+    '?','?','?',0,0,  '?','?','?',0,0,  // 6A-6B
+    'J','M','P',0,0,  '?','?','?',0,0,  // 6C-6D
+    '?','?','?',0,0,  '?','?','?',0,0,  // 6E-6F
+    '?','?','?',0,0,  '?','?','?',0,0,  // 70-71
+    '?','?','?',0,0,  '?','?','?',0,0,  // 72-73
+    '?','?','?',0,0,  '?','?','?',0,0,  // 74-75
+    '?','?','?',0,0,  '?','?','?',0,0,  // 76-77
+    '?','?','?',0,0,  '?','?','?',0,0,  // 78-79
+    'P','L','Y',0,0,  '?','?','?',0,0,  // 7A-7B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 7C-7D
+    '?','?','?',0,0,  '?','?','?',0,0,  // 7E-7F
+    'B','R','A',0,0,  '?','?','?',0,0,  // 80-81
+    '?','?','?',0,0,  '?','?','?',0,0,  // 82-83
+    '?','?','?',0,0,  'S','T','A',0,0,  // 84-85
+    'S','T','X',0,0,  'S','M','B','0',0, // 86-87
+    '?','?','?',0,0,  '?','?','?',0,0,  // 88-89
+    'T','X','A',0,0,  '?','?','?',0,0,  // 8A-8B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 8C-8D
+    '?','?','?',0,0,  'B','B','S','0',0, // 8E-8F
+    'B','C','C',0,0,  'S','T','A',0,0,  // 90-91
+    'S','T','A',0,0,  '?','?','?',0,0,  // 92-93
+    '?','?','?',0,0,  '?','?','?',0,0,  // 94-95
+    '?','?','?',0,0,  'S','M','B','1',0, // 96-97
+    'T','Y','A',0,0,  '?','?','?',0,0,  // 98-99
+    'T','X','S',0,0,  '?','?','?',0,0,  // 9A-9B
+    '?','?','?',0,0,  '?','?','?',0,0,  // 9C-9D
+    '?','?','?',0,0,  'B','B','S','1',0, // 9E-9F
+    'L','D','Y',0,0,  '?','?','?',0,0,  // A0-A1
+    'L','D','X',0,0,  '?','?','?',0,0,  // A2-A3
+    '?','?','?',0,0,  'L','D','A',0,0,  // A4-A5
+    'L','D','X',0,0,  'S','M','B','2',0, // A6-A7
+    'T','A','Y',0,0,  'L','D','A',0,0,  // A8-A9
+    '?','?','?',0,0,  '?','?','?',0,0,  // AA-AB
+    '?','?','?',0,0,  '?','?','?',0,0,  // AC-AD
+    '?','?','?',0,0,  'B','B','S','2',0, // AE-AF
+    'B','C','S',0,0,  'L','D','A',0,0,  // B0-B1
+    'L','D','A',0,0,  '?','?','?',0,0,  // B2-B3
+    '?','?','?',0,0,  '?','?','?',0,0,  // B4-B5
+    '?','?','?',0,0,  '?','?','?',0,0,  // B6-B7
+    '?','?','?',0,0,  'L','D','A',0,0,  // B8-B9
+    'T','S','X',0,0,  '?','?','?',0,0,  // BA-BB
+    '?','?','?',0,0,  '?','?','?',0,0,  // BC-BD
+    '?','?','?',0,0,  '?','?','?',0,0,  // BE-BF
+    'C','P','Y',0,0,  '?','?','?',0,0,  // C0-C1
+    '?','?','?',0,0,  '?','?','?',0,0,  // C2-C3
+    '?','?','?',0,0,  '?','?','?',0,0,  // C4-C5
+    '?','?','?',0,0,  '?','?','?',0,0,  // C6-C7
+    'I','N','Y',0,0,  'C','M','P',0,0,  // C8-C9
+    'D','E','X',0,0,  '?','?','?',0,0,  // CA-CB
+    '?','?','?',0,0,  '?','?','?',0,0,  // CC-CD
+    '?','?','?',0,0,  '?','?','?',0,0,  // CE-CF
+    'B','N','E',0,0,  '?','?','?',0,0,  // D0-D1
+    '?','?','?',0,0,  '?','?','?',0,0,  // D2-D3
+    '?','?','?',0,0,  '?','?','?',0,0,  // D4-D5
+    '?','?','?',0,0,  '?','?','?',0,0,  // D6-D7
+    '?','?','?',0,0,  '?','?','?',0,0,  // D8-D9
+    'P','H','X',0,0,  '?','?','?',0,0,  // DA-DB
+    '?','?','?',0,0,  '?','?','?',0,0,  // DC-DD
+    '?','?','?',0,0,  '?','?','?',0,0,  // DE-DF
+    '?','?','?',0,0,  '?','?','?',0,0,  // E0-E1
+    '?','?','?',0,0,  '?','?','?',0,0,  // E2-E3
+    '?','?','?',0,0,  '?','?','?',0,0,  // E4-E5
+    'I','N','C',0,0,  '?','?','?',0,0,  // E6-E7
+    'I','N','X',0,0,  'S','B','C',0,0,  // E8-E9
+    'N','O','P',0,0,  '?','?','?',0,0,  // EA-EB
+    '?','?','?',0,0,  '?','?','?',0,0,  // EC-ED
+    '?','?','?',0,0,  '?','?','?',0,0,  // EE-EF
+    'B','E','Q',0,0,  '?','?','?',0,0,  // F0-F1
+    '?','?','?',0,0,  '?','?','?',0,0,  // F2-F3
+    '?','?','?',0,0,  '?','?','?',0,0,  // F4-F5
+    '?','?','?',0,0,  '?','?','?',0,0,  // F6-F7
+    '?','?','?',0,0,  '?','?','?',0,0,  // F8-F9
+    'P','L','X',0,0,  '?','?','?',0,0,  // FA-FB
+    '?','?','?',0,0,  '?','?','?',0,0,  // FC-FD
+    '?','?','?',0,0,  '?','?','?',0,0   // FE-FF
+};
+
+// Instruction length table - indexed by opcode
+const char* inst_len = {
+//  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+    0, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3,  // 00-0F
+    0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 1, 0, 0, 0, 0, 3,  // 10-1F
+    3, 0, 0, 0, 0, 2, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3,  // 20-2F
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0,  // 30-3F
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 0, 0, 0,  // 40-4F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,  // 50-5F
+    1, 0, 0, 0, 2, 2, 0, 0, 1, 2, 0, 0, 3, 0, 0, 0,  // 60-6F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,  // 70-7F
+    2, 0, 0, 0, 0, 2, 2, 2, 0, 0, 1, 0, 0, 0, 0, 3,  // 80-8F
+    2, 2, 2, 0, 0, 0, 0, 2, 1, 0, 1, 0, 0, 0, 0, 3,  // 90-9F
+    2, 0, 2, 0, 0, 2, 2, 2, 1, 2, 0, 0, 0, 0, 0, 3,  // A0-AF
+    2, 2, 2, 0, 0, 0, 0, 0, 0, 3, 1, 0, 0, 0, 0, 0,  // B0-BF
+    2, 0, 0, 0, 0, 0, 0, 0, 1, 2, 1, 0, 0, 0, 0, 0,  // C0-CF
+    2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,  // D0-DF
+    0, 0, 0, 0, 0, 0, 2, 0, 1, 2, 1, 0, 0, 0, 0, 0,  // E0-EF
+    2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0   // F0-FF
+};
+
+// Addressing mode table
+const char* addr_mode = {
+//  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F
+    0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 9,  // 00-0F
+    0, 0, 0, 0, 0, 0, 0, 1, 0, 0,10, 0, 0, 0, 0, 9,  // 10-1F
+    7, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 9,  // 20-2F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 30-3F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0,  // 40-4F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 50-5F
+    0, 0, 0, 0, 1, 1, 0, 0, 0, 2, 0, 0, 8, 0, 0, 0,  // 60-6F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // 70-7F
+    6, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 9,  // 80-8F
+    6, 4, 3, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 9,  // 90-9F
+    2, 0, 2, 0, 0, 1, 1, 1, 0, 2, 0, 0, 0, 0, 0, 9,  // A0-AF
+    6, 4, 3, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0,  // B0-BF
+    2, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0,  // C0-CF
+    6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  // D0-DF
+    0, 0, 0, 0, 0, 0, 1, 0, 0, 2, 0, 0, 0, 0, 0, 0,  // E0-EF
+    6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0   // F0-FF
+};
+
+// Mode 10 = special for INC A
+/*
+void decode_instruction(char* buffer, int pc) {
     char opcode = buffer[0];
+    int len = inst_len[opcode];
+    int mode = addr_mode[opcode];
     
-    // Default to 1 byte
-    *size = 1;
-    
+    // Print address and hex bytes
     printf("%04x: ", pc);
+    if (len == 1) {
+        printf("%02x        ", opcode);
+    } else if (len == 2) {
+        printf("%02x %02x     ", opcode, buffer[1]);
+    } else if (len == 3) {
+        printf("%02x %02x %02x  ", 
+               opcode, buffer[1], buffer[2]);
+    } else {
+        printf("%02x        ???\n", opcode);
+        return;
+    }
     
-    // Decode based on opcode
-    while (1)
-    {
-        if (opcode == ORA_ZP) {
-            printf("%02x %02x     ORA $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == RMB0_ZP) {
-            printf("%02x %02x     RMB0 $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == BBR0_ZP) {
-            printf("%02x %02x %02x  BBR0 $%02x,$%04x", 
-                   opcode, buffer[1], buffer[2], buffer[1], 
-                   pc + 3 + (char)buffer[2]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == RMB1_ZP) {
-            printf("%02x %02x     RMB1 $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == CLC) {
-            printf("%02x        CLC", opcode);
-            break;
-        }
-        if (opcode == INC_A) {
-            printf("%02x        INC A", opcode);
-            break;
-        }
-        if (opcode == BBR1_ZP) {
-            printf("%02x %02x %02x  BBR1 $%02x,$%04x", 
-                   opcode, buffer[1], buffer[2], buffer[1], 
-                   pc + 3 + (char)buffer[2]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == JSR) {
-            printf("%02x %02x %02x  JSR $%02x%02x", 
-                   opcode, buffer[1], buffer[2], 
-                   buffer[2], buffer[1]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == AND_ZP) {
-            printf("%02x %02x     AND $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == RMB2_ZP) {
-            printf("%02x %02x     RMB2 $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == BBR2_ZP) {
-            printf("%02x %02x %02x  BBR2 $%02x,$%04x", 
-                   opcode, buffer[1], buffer[2], buffer[1], 
-                   pc + 3 + (char)buffer[2]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == SEC) {
-            printf("%02x        SEC", opcode);
-            break;
-        }
-        if (opcode == PHA) {
-            printf("%02x        PHA", opcode);
-            break;
-        }
-        if (opcode == JMP_ABS) {
-            printf("%02x %02x %02x  JMP $%02x%02x", 
-                   opcode, buffer[1], buffer[2], 
-                   buffer[2], buffer[1]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == PHY) {
-            printf("%02x        PHY", opcode);
-            break;
-        }
-        if (opcode == RTS) {
-            printf("%02x        RTS", opcode);
-            break;
-        }
-        if (opcode == STZ_ZP) {
-            printf("%02x %02x     STZ $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == ADC_ZP) {
-            printf("%02x %02x     ADC $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == PLA) {
-            printf("%02x        PLA", opcode);
-            break;
-        }
-        if (opcode == ADC_IMM) {
-            printf("%02x %02x     ADC #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == JMP_IND) {
-            printf("%02x %02x %02x  JMP ($%02x%02x)", 
-                   opcode, buffer[1], buffer[2], 
-                   buffer[2], buffer[1]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == PLY) {
-            printf("%02x        PLY", opcode);
-            break;
-        }
-        if (opcode == BRA) {
-            printf("%02x %02x     BRA $%04x", 
-                   opcode, buffer[1], 
-                   pc + 2 + (char)buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == STA_ZP) {
-            printf("%02x %02x     STA $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == STX_ZP) {
-            printf("%02x %02x     STX $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == SMB0_ZP) {
-            printf("%02x %02x     SMB0 $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == TXA) {
-            printf("%02x        TXA", opcode);
-            break;
-        }
-        if (opcode == BBS0_ZP) {
-            printf("%02x %02x %02x  BBS0 $%02x,$%04x", 
-                   opcode, buffer[1], buffer[2], buffer[1], 
-                   pc + 3 + (char)buffer[2]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == BCC) {
-            printf("%02x %02x     BCC $%04x", 
-                   opcode, buffer[1], 
-                   pc + 2 + (char)buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == STA_IND_Y) {
-            printf("%02x %02x     STA ($%02x),Y", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == STA_IND) {
-            printf("%02x %02x     STA ($%02x)", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == SMB1_ZP) {
-            printf("%02x %02x     SMB1 $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == TYA) {
-            printf("%02x        TYA", opcode);
-            break;
-        }
-        if (opcode == TXS) {
-            printf("%02x        TXS", opcode);
-            break;
-        }
-        if (opcode == BBS1_ZP) {
-            printf("%02x %02x %02x  BBS1 $%02x,$%04x", 
-                   opcode, buffer[1], buffer[2], buffer[1], 
-                   pc + 3 + (char)buffer[2]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == LDY_IMM) {
-            printf("%02x %02x     LDY #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == LDX_IMM) {
-            printf("%02x %02x     LDX #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == LDA_ZP) {
-            printf("%02x %02x     LDA $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == LDX_ZP) {
-            printf("%02x %02x     LDX $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == SMB2_ZP) {
-            printf("%02x %02x     SMB2 $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == TAY) {
-            printf("%02x        TAY", opcode);
-            break;
-        }
-        if (opcode == LDA_IMM) {
-            printf("%02x %02x     LDA #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == BBS2_ZP) {
-            printf("%02x %02x %02x  BBS2 $%02x,$%04x", 
-                   opcode, buffer[1], buffer[2], buffer[1], 
-                   pc + 3 + (char)buffer[2]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == BCS) {
-            printf("%02x %02x     BCS $%04x", 
-                   opcode, buffer[1], 
-                   pc + 2 + (char)buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == LDA_IND_Y) {
-            printf("%02x %02x     LDA ($%02x),Y", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == LDA_IND) {
-            printf("%02x %02x     LDA ($%02x)", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == LDA_ABS_Y) {
-            printf("%02x %02x %02x  LDA $%02x%02x,Y", 
-                   opcode, buffer[1], buffer[2], 
-                   buffer[2], buffer[1]); 
-            *size = 3;
-            break;
-        }
-        if (opcode == TSX) {
-            printf("%02x        TSX", opcode);
-            break;
-        }
-        if (opcode == CPY_IMM) {
-            printf("%02x %02x     CPY #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == CMP_IMM) {
-            printf("%02x %02x     CMP #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == INY) {
-            printf("%02x        INY", opcode);
-            break;
-        }
-        if (opcode == DEX) {
-            printf("%02x        DEX", opcode);
-            break;
-        }
-        if (opcode == BNE) {
-            printf("%02x %02x     BNE $%04x", 
-                   opcode, buffer[1], 
-                   pc + 2 + (char)buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == PHX) {
-            printf("%02x        PHX", opcode);
-            break;
-        }
-        if (opcode == INC_ZP) {
-            printf("%02x %02x     INC $%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == INX) {
-            printf("%02x        INX", opcode);
-            break;
-        }
-        if (opcode == SBC_IMM) {
-            printf("%02x %02x     SBC #$%02x", 
-                   opcode, buffer[1], buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == NOP) {
-            printf("%02x        NOP", opcode);
-            break;
-        }
-        if (opcode == BEQ) {
-            printf("%02x %02x     BEQ $%04x", 
-                   opcode, buffer[1], 
-                   pc + 2 + (char)buffer[1]); 
-            *size = 2;
-            break;
-        }
-        if (opcode == PLX) {
-            printf("%02x        PLX", opcode);
-            break;
-        }
+    // Print mnemonic from table
+    printf("%s", mnemonics + (opcode * 5));
     
-        printf("%02x        ???", opcode);
-        break;
-    } 
+    // Print operand based on addressing mode
+    if (mode == 1) {  // Zero page
+        printf(" $%02x", buffer[1]);
+    } else if (mode == 2) {  // Immediate
+        printf(" #$%02x", buffer[1]);
+    } else if (mode == 3) {  // Zero page indirect
+        printf(" ($%02x)", buffer[1]);
+    } else if (mode == 4) {  // Zero page indirect,Y
+        printf(" ($%02x),Y", buffer[1]);
+    } else if (mode == 5) {  // Absolute,Y
+        printf(" $%02x%02x,Y", buffer[2], buffer[1]);
+    } else if (mode == 6) {  // Relative branch
+        printf(" $%04x", pc + 2 + (char)buffer[1]);
+    } else if (mode == 7) {  // Absolute
+        printf(" $%02x%02x", buffer[2], buffer[1]);
+    } else if (mode == 8) {  // Absolute indirect
+        printf(" ($%02x%02x)", buffer[2], buffer[1]);
+    } else if (mode == 9) {  // Bit branch
+        printf(" $%02x,$%04x", buffer[1], 
+               pc + 3 + (char)buffer[2]);
+    } else if (mode == 10) {  // INC A special case
+        printf(" A");
+    }
     
     printf("\n");
 }
-
+*/
 void main(char* exe, char* filename) {
     FILE* fp = fopen(filename, "r");
-    if (!fp) {
+    int size;
+    int c;
+    char* buffer;
+    if (fp == null) {
         printf("Cannot open %s\n", filename);
         return;
     }
     
     // Get file size
-    int size = 0;
-    int c;
+    size = 0;
     while ((c = fgetc(fp)) >= 0) {
         size++;
     }
     fclose(fp);
     
-    // Reopen and read entire file
+    // Read entire file
     fp = fopen(filename, "r");
-    char* buffer = malloc(size);
+    buffer = malloc(size);
     fread(buffer, 1, size, fp);
     fclose(fp);
     
     // Parse header
     int entry_point = 0x0800;
     if (buffer[0] == JMP_ABS) {
-        // JMP absolute - get entry point
-        entry_point = 0x0800 + buffer[1] + (buffer[2] << 8) - 0x0800;
-        printf("Entry: JMP $%04x\n", entry_point + 0x0800);
+        entry_point = 0x0800 + buffer[1] + 
+                     (buffer[2] << 8) - 0x0800;
+        printf("Entry: JMP $%04x\n", 
+               entry_point + 0x0800);
     }
     
     // Show BIOS dispatcher
@@ -462,24 +335,26 @@ void main(char* exe, char* filename) {
                 printf("%04x: ", i + 0x0800);
             }
             printf("%02x ", buffer[i]);
-            if ((i - 6) % 16 == 15 || i == entry_point - 1) {
+            if ((i - 6) % 16 == 15 || 
+                i == entry_point - 1) {
                 printf("\n");
             }
         }
         printf("\n");
     }
     
-    // Disassemble code section
+    // Disassemble code
     printf("=== CODE SECTION ===\n");
     int pc = entry_point + 0x0800;
     int i = entry_point;
-    int inst_size;
     
     while (i < size) {
-        decode_instruction(buffer + i, pc, &inst_size);
-        i += inst_size;
-        pc += inst_size;
+        decode_instruction(buffer + i, pc);
+        int len = inst_len[buffer[i]];
+        if (len == 0) len = 1;  // Skip unknown
+        i += len;
+        pc += len;
     }
-    
+m    
     free(buffer);
 }
