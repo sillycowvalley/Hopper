@@ -1,6 +1,4 @@
-Here's the updated specification with the new operators and control flow statements:
-
-# C Compiler for Hopper BIOS - Project Specification v2.2
+# C Compiler for Hopper BIOS - Project Specification v2.3
 
 ## Overview
 A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C programs with pointer operations, file I/O, dynamic memory management, logical/bitwise operators, and global variables/constants to executable binaries.
@@ -20,6 +18,19 @@ A native C compiler that runs on 6502 under Hopper BIOS, capable of compiling C 
 - **Function arguments**: Promote to match parameter type
 - **Return values**: Convert to declared return type
 
+### Literals
+
+#### Integer Literals
+Integer literals can be specified in decimal or hexadecimal format:
+- **Decimal**: `42`, `100`, `65535`
+- **Hexadecimal**: `0x2A`, `0xFF`, `0x1000` (case-insensitive: `0X2a` also valid)
+
+#### Character Literals
+Single characters in single quotes: `'A'`, `'\n'`, `'\0'`
+
+#### String Literals
+Null-terminated strings in double quotes: `"Hello World\n"`
+
 ### Global Declarations
 
 #### Global Constants
@@ -28,11 +39,32 @@ Global constants must be initialized with literal values only:
 const int MAX_SIZE = 100;
 const char DELIMITER = ',';
 const long BIG_NUMBER = 1000000;
+const int HEX_VALUE = 0xFF;
+```
+
+**Special Case: const char* Initialization**
+
+Constant string pointers can be initialized using either traditional string literals or byte array syntax:
+
+```c
+// Traditional string literal
+const char* message = "Hello World!";
+
+// Byte array initializer (new)
+const char* data = { 'H', 'e', 'l', 'l', 'o', 
+                     0x20,  // space character
+                     'W', 'o', 'r', 'l', 'd', '!',
+                     0x00   // null terminator
+                   };
+
+// Mixing character literals and hex values
+const char* buffer = { 0x01, 0x02, 'A', 'B', 0x00 };
 ```
 
 **Restrictions:**
 - Must be initialized at declaration
 - Initializer must be a literal value (no expressions)
+- Array initializers for const char* can mix character literals and integer literals (decimal or hex)
 - Stored in program memory as compile-time constants
 
 #### Global Variables
@@ -92,7 +124,13 @@ long total;
 
 <global-decl> ::= <const-decl> | <var-decl>
 
-<const-decl> ::= "const" <type> <identifier> "=" <literal> ";"
+<const-decl> ::= "const" <type> <identifier> "=" <initializer> ";"
+
+<initializer> ::= <literal> | <array-initializer>
+
+<array-initializer> ::= "{" <array-element> ("," <array-element>)* ","? "}"
+
+<array-element> ::= <char-literal> | <integer>
 
 <var-decl> ::= <type> <identifier> ";"
 
@@ -131,7 +169,12 @@ long total;
 <unary> ::= ("*" | "-")? <postfix>
 <postfix> ::= <primary> ("++" | "--" | "[" <expression> "]" | "(" <arg-list>? ")")*
 <primary> ::= <identifier> | <literal> | "(" <expression> ")"
-<literal> ::= <integer> | <string>
+<literal> ::= <integer> | <string> | <char-literal>
+<integer> ::= <decimal-integer> | <hex-integer>
+<decimal-integer> ::= [0-9]+
+<hex-integer> ::= "0" ("x" | "X") [0-9A-Fa-f]+
+<char-literal> ::= "'" <character> "'"
+<string> ::= '"' <character>* '"'
 ```
 
 **Operator Precedence** (from highest to lowest):
@@ -152,6 +195,55 @@ long total;
 [Unchanged sections omitted for brevity]
 
 ## Example Programs
+
+### Using Hex Literals and Array Initializers
+```c
+// Hex literals in various contexts
+const int MASK = 0xFF;
+const long ADDRESS = 0x8000;
+
+// Array initializer for const char*
+const char* protocol = { 0x01, 0x02, 0x03, 0x04, 0x00 };
+const char* mixed = { 'C', 'M', 'D', ':', 0x20, 0x00 };
+
+void test_hex() {
+    int value = 0xABCD;
+    char byte = 0xFF;
+    
+    printf("Value: 0x%04X\n", value);
+    printf("Byte: 0x%02X\n", byte);
+    
+    // Using hex in comparisons
+    if (byte == 0xFF) {
+        printf("Byte is all ones\n");
+    }
+    
+    // Hex in expressions
+    int masked = value & 0xFF00;
+    printf("Masked: 0x%04X\n", masked);
+}
+
+void test_array_init() {
+    // Traditional string
+    const char* str1 = "Hello";
+    
+    // Array initializer - equivalent
+    const char* str2 = { 'H', 'e', 'l', 'l', 'o', 0x00 };
+    
+    // Binary protocol data
+    const char* header = { 
+        0xAA, 0x55,      // Magic number
+        0x01, 0x00,      // Version 1.0
+        0x10, 0x00,      // Length = 16
+        'D', 'A', 'T', 'A',  // Tag
+        0x00
+    };
+    
+    printf("str1: %s\n", str1);
+    printf("str2: %s\n", str2);
+    printf("Header magic: 0x%02X%02X\n", header[0], header[1]);
+}
+```
 
 ### Using Logical and Bitwise Operators
 ```c
@@ -239,11 +331,12 @@ void print_bits(int value) {
 
 void set_flags() {
     int flags = 0;
-    const int FLAG_A = 1;
-    const int FLAG_B = 2;
-    const int FLAG_C = 4;
+    const int FLAG_A = 0x01;
+    const int FLAG_B = 0x02;
+    const int FLAG_C = 0x04;
+    const int FLAG_D = 0x08;
     
-    // Set flags
+    // Set flags using hex values
     flags = flags | FLAG_A;  // Set bit 0
     flags = flags | FLAG_C;  // Set bit 2
     
@@ -276,6 +369,8 @@ void set_flags() {
 - ✅ Bitwise operators (`&`, `|`)
 - ✅ Break statement (exits nearest enclosing loop)
 - ✅ Continue statement (while loops only)
+- ✅ Hexadecimal integer literals (`0x` prefix)
+- ✅ Array initializer syntax for const char* declarations
 
 ## Future Enhancements
 - Continue statement for for loops
@@ -294,6 +389,7 @@ void set_flags() {
 - Debugging information
 - Multiple assignment operators (`*=`, `/=`, `%=`, `&=`, `|=`, `^=`)
 - Address-of operator (`&`)
+- Octal literals (`0` prefix)
 
 ## Limitations
 - Only one file can be open at a time (requires buffering for file operations)
@@ -304,6 +400,7 @@ void set_flags() {
 - Global variables limited to ~29 (119 bytes of zero page)
 - Global constants must be initialized with literals only
 - Continue statement only works in while loops, not for loops
+- Array initializers for const char* are converted to string literals at parse time
 
 ## Target Benchmark Programs
 
