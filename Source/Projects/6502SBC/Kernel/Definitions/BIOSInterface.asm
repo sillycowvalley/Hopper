@@ -62,6 +62,13 @@ unit BIOSInterface
         LongLE,           // In: ZP.NEXT, ZP.TOP | Out: C = (NEXT <= TOP) | Less or equal comparison
         LongGE,           // In: ZP.NEXT, ZP.TOP | Out: C = (NEXT >= TOP) | Greater or equal comparison
         
+        // GPIO (uses VIA 65C22 ports A and B)
+        PinMode,          // In: A = pin (0-15), Y = mode (0=INPUT, 1=OUTPUT) | Out: None | Configure pin direction
+        PinRead,          // In: A = pin (0-15) | Out: A = value (0/1), Z = LOW | Read digital pin state
+        PinWrite,         // In: A = pin (0-15), Y = value (0/1) | Out: None | Write digital pin state
+        
+        // Optionals last:
+        
         // Float Math (IEEE 754 single precision, requires HASFLOAT)
         FloatAdd,         // In: ZP.NEXT, ZP.TOP (IEEE floats) | Out: ZP.NEXT = NEXT + TOP | Float addition
         FloatSub,         // In: ZP.NEXT, ZP.TOP (IEEE floats) | Out: ZP.NEXT = NEXT - TOP | Float subtraction
@@ -71,18 +78,12 @@ unit BIOSInterface
         FloatLT,          // In: ZP.NEXT, ZP.TOP (IEEE floats) | Out: C = (NEXT < TOP) | Float less than
         FloatEQ,          // In: ZP.NEXT, ZP.TOP (IEEE floats) | Out: C = (NEXT == TOP) | Float equality
         
-        // GPIO (uses VIA 65C22 ports A and B)
-        PinMode,          // In: A = pin (0-15), Y = mode (0=INPUT, 1=OUTPUT) | Out: None | Configure pin direction
-        PinRead,          // In: A = pin (0-15) | Out: A = value (0/1), Z = LOW | Read digital pin state
-        PinWrite,         // In: A = pin (0-15), Y = value (0/1) | Out: None | Write digital pin state
-
-        FOpen,            // In: STR=filename, NEXT=mode("w"/"r") | Out: TOP=FILE*/NULL
+         FOpen,            // In: STR=filename, NEXT=mode("w"/"r") | Out: TOP=FILE*/NULL
         FClose,           // In: NEXT=FILE* | Out: TOP=0/-1
         FGetC,            // In: NEXT=FILE* | Out: TOP=char(0-255)/-1
         FRead,            // In: IDX=buffer, IDY = element size, ACC= element count, NEXT=FILE* | Out: TOP=bytes read/-1 (not elements read)
         FPutC,            // In: ACC=char(0-255), NEXT=FILE* | Out: TOP=char written/-1
         FWrite,           // In: IDX=buffer, IDY=element size, ACC=element count, NEXT=FILE* | Out: TOP=bytes written/-1 (not elements written)
-        
         
         // TODO:
         // - I2C

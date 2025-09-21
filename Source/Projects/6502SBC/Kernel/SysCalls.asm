@@ -172,6 +172,18 @@ unit SysCalls
             {
                 Time.Seconds();
             }
+            case SysCall.PinMode:
+            {
+                GPIO.PinMode();
+            }
+            case SysCall.PinRead:
+            {
+                GPIO.PinRead();
+            }
+            case SysCall.PinWrite:
+            {
+                GPIO.PinWrite();
+            }
             
             // Long Math
             case SysCall.LongAdd:
@@ -279,18 +291,6 @@ unit SysCalls
 #else
                 Error.InvalidSystemCall();
 #endif
-            }
-            case SysCall.PinMode:
-            {
-                GPIO.PinMode();
-            }
-            case SysCall.PinRead:
-            {
-                GPIO.PinRead();
-            }
-            case SysCall.PinWrite:
-            {
-                GPIO.PinWrite();
             }
             case SysCall.FOpen:
             {

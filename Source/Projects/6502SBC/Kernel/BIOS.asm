@@ -11,15 +11,15 @@ program BIOS
 #ifdef DEBUG    
     #define ROM_32K
 #else
-    //#define ROM_16K
-    #define ROM_8K
+    #define ROM_16K
+    //#define ROM_8K
 #endif
     
     
     // Optional components
-    //#define HASFLOAT  // currently ~1250 bytes
+    #define HASFLOAT  // currently ~1250 bytes
     #define HASEEPROM
-    #define CFILES
+    //#define CFILES
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
@@ -57,7 +57,7 @@ program BIOS
     //uses "TestSuite/TestTime"
     //uses "TestSuite/TestHeap"
     //uses "TestSuite/TestLong"
-    uses "TestSuite/TestFloat"
+    //uses "TestSuite/TestFloat"
     
     Run()
     {
