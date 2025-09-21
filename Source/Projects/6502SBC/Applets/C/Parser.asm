@@ -40,10 +40,15 @@ unit Parser
     const byte indexExprNodeL  = rhsExprNodeL;
     const byte indexExprNodeH  = rhsExprNodeH;
     
+    const byte bufferSizeL     = rhsExprNodeL;
+    const byte bufferSizeH     = rhsExprNodeH;
     
     const uint binNode   = parserSlots+11;
     const byte binNodeL  = parserSlots+11;
     const byte binNodeH  = parserSlots+12;
+    
+    const byte countL     = binNodeL;
+    const byte countH     = binNodeH;
     
     const byte binOp      = parserSlots+13;
     const byte simpleOp   = binOp;
@@ -108,7 +113,8 @@ unit Parser
             Memory.Allocate(); // -> IDX
             if (NC) 
             { 
-                Errors.OutOfMemory();
+                LDA # Error.OutOfMemory
+                Errors.ShowLine();
                 break; 
             }
             
@@ -192,16 +198,122 @@ unit Parser
         } // single exit
     }
     
-    // TODO: const char array
-    // - IntegerLiteral needs to support hex (0xXX)
-    // - growString
-    // - test range checking (ByteExpected)
+    // Double the size of the string buffer when it fills up
+    // Called from parseArrayInitializer when buffer is full
+    // Output: C set on success, clear on failure
+    growStringBuffer()
+    {
+        LDA countL
+        PHA
+        LDA countH
+        PHA
+        
+        loop
+        {
+            // Allocate new buffer (double size)
+            LDA bufferSizeL
+            STA ZP.ACCL
+            LDA bufferSizeH
+            STA ZP.ACCH
+            ASL ZP.ACCL
+            ROL ZP.ACCH
+            Memory.Allocate();  // New buffer in IDX, preserves ZP.ACCL as new size
+            if (NC) { break; } // catastrophic failure of Memory.Allocate()
+            
+            // Save new buffer pointer
+            LDA ZP.IDXL
+            PHA
+            LDA ZP.IDXH
+            PHA
+            
+            // Copy old to new (bufferSize = bytes to copy)
+            // Setup: source = IDY (old), dest = IDX (new)
+            LDA ZP.STRL
+            STA ZP.IDYL
+            LDA ZP.STRH
+            STA ZP.IDYH
+            
+            STZ countL
+            STZ countH
+            loop 
+            {
+                // More to copy - handle page boundary
+                LDA [ZP.IDY]
+                STA [ZP.IDX]
+                IncIDY();
+                IncIDX();
+                
+                INC countL if (Z) { INC countH }
+                
+                LDA countH
+                CMP bufferSizeH
+                if (Z)
+                {
+                    LDA countL
+                    CMP bufferSizeL
+                }
+                if (C) // count >= bufferSize
+                {
+                    break;
+                }
+            } // copy loop
+            
+            // Free old buffer
+            LDA ZP.STRL
+            STA ZP.IDXL
+            LDA ZP.STRH
+            STA ZP.IDXH
+            Memory.Free();
+            
+            // Update STR to point to new buffer
+            PLA
+            STA ZP.STRH
+            PLA
+            STA ZP.STRL
+            
+            if (NC) { break; } // catastrophic failure of Memory.Free()
+            
+            // Restore IDY (current position in string)
+            LDA bufferSizeH
+            STA ZP.IDYH
+            LDA bufferSizeL
+            STA ZP.IDYL
+            
+            // new buffer size
+            LDA ZP.ACCL
+            STA bufferSizeL
+            LDA ZP.ACCH
+            STA bufferSizeH
+            
+            // Calculate new IDX position (STR + IDY)
+            LDA ZP.STRL
+            CLC
+            ADC ZP.IDYL
+            STA ZP.IDXL
+            LDA ZP.STRH
+            ADC ZP.IDYH
+            STA ZP.IDXH
+            SEC
+            break;
+            
+        } // single exit
+        
+        PLA
+        STA countH
+        PLA
+        STA countL
+    }
     
     
     // Parse array initializer and convert to string: { 'H', 'e', 32, 0x00 } -> StringLit
     // Output: IDY = StringLit node, C set on success
     parseArrayInitializer()
     {
+        LDA bufferSizeL
+        PHA
+        LDA bufferSizeH
+        PHA
+        
         loop
         {
             // Expect '{'
@@ -209,15 +321,18 @@ unit Parser
             expect();
             if (NC) { break; }
             
-            // Allocate initial buffer (say, 256 bytes max for const string)
-            LDA #0  // 256 bytes
+            // Allocate initial buffer (say, 16 bytes max for const string)
+            LDA #16
             STA ZP.ACCL
-            LDA #1
+            STA bufferSizeL
+            LDA #0
             STA ZP.ACCH
+            STA bufferSizeH
             Memory.Allocate(); // -> IDX
             if (NC) 
             { 
-                Errors.OutOfMemory();
+                LDA # Error.OutOfMemory
+                Errors.ShowLine();
                 break; 
             }
             
@@ -289,14 +404,23 @@ unit Parser
                 Shared.IncIDX();
                 Shared.IncIDY();
                 LDA ZP.IDYH
-                
-                // Check buffer overflow
-                if (NZ) 
-                { 
-                    LDA # Error.StringTooLong
-                    Errors.ShowLine();
-                    break; 
+                CMP bufferSizeH
+                if (Z)
+                {
+                    LDA ZP.IDYL
+                    CMP bufferSizeL
                 }
+                if (C) // ZP.IDY >= bufferSize
+                { 
+                    growStringBuffer();
+                    if (NC)
+                    {
+                        LDA # Error.OutOfMemory
+                        Errors.ShowLine();
+                        break; 
+                    }
+                }
+                
                 consume();
                 if (NC) { break; }
                 
@@ -340,6 +464,11 @@ unit Parser
             SEC
             break;
         } // single exit
+        
+        PLA
+        STA bufferSizeH
+        PLA
+        STA bufferSizeL
     }
     
     parseConstDeclaration() // Input: A = type, -> IDY
@@ -3098,7 +3227,8 @@ unit Parser
                     PLA
                     STA ZP.IDXL
                     AST.FreeNode();
-                    Errors.OutOfMemory();
+                    LDA # Error.OutOfMemory
+                    Errors.ShowLine();
                     return;
                 }
                 
@@ -3160,7 +3290,8 @@ unit Parser
                     PLA
                     STA ZP.IDXL
                     AST.FreeNode();
-                    Errors.OutOfMemory();
+                    LDA # Error.OutOfMemory
+                    Errors.ShowLine();
                     return;
                 }
                 
@@ -3216,7 +3347,8 @@ unit Parser
                     PLA
                     STA ZP.IDXL
                     AST.FreeNode();
-                    Errors.OutOfMemory();
+                    LDA # Error.OutOfMemory
+                    Errors.ShowLine();
                     return;
                 }
                 
