@@ -1,5 +1,10 @@
 unit BIOSInterface
 {
+    const uint StackPage0           = 0x0100;
+    const uint StackPage1           = 0x0200;
+    const uint StackPage2           = 0x0300;
+    const uint StackPage3           = 0x0400;
+    
     const uint SerialInBuffer       = 0x0500;  // 256-byte buffer 0x0200-0x02FF
     const uint WorkSpace            = 0x0700;  // 256 byte general workspace
     const uint LineBuffer           = WorkSpace; // first 64 bytes (of the 256) for the command line parser

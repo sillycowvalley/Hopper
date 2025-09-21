@@ -1707,6 +1707,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { return; }
             LDA #ZP.TOP2
             Gen6502.emitByte(); if (NC) { return; }
+            
             LDA #OpCode.STZ_ZP
             Gen6502.emitByte(); if (NC) { return; }
             LDA #ZP.TOP3
@@ -1737,6 +1738,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.TOP2
         Gen6502.emitByte(); if (NC) { return; }
+        
         LDA #OpCode.STA_ZP
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.NEXT2
@@ -1910,10 +1912,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { return; }
         }
         
-        // STA [runtimeStack1],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         LDA vzArgument1
@@ -1925,16 +1928,18 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { return; }
         }
         
-        // STZ [runtimeStack2],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
-        // STZ [runtimeStack3],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         SEC
@@ -1969,22 +1974,25 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         }
         
         
-        // STZ [runtimeStack1],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
-        
-        // STZ [runtimeStack2],Y
-        LDA #OpCode.STA_IND_Y
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
-        // STZ [runtimeStack3],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.STA_ABS_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
 
         SEC
@@ -2014,10 +2022,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.NEXT1
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack1],Y
-        LDA #OpCode.STA_IND_Y
+        
+        LDA # OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store NEXT2 to stack via pointer
@@ -2025,10 +2035,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.NEXT2
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack2],Y
-        LDA #OpCode.STA_IND_Y
+        
+        LDA # OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store NEXT3 to stack via pointer
@@ -2036,10 +2048,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.NEXT3
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack3],Y
-        LDA #OpCode.STA_IND_Y
+        
+        LDA # OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         SEC
@@ -2090,7 +2104,44 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { return; }
             
             // Transfer result to Y
-            LDA #OpCode.TAY
+            LDA # OpCode.TAY
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        
+        SEC
+    }
+    calculateBPOffsetX()
+    {
+        STA vzOffset  // Save logical offset
+        CMP #0
+        if (Z)
+        {
+            LDA #OpCode.LDX_ZP
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA # Gen6502.runtimeBP
+            Gen6502.emitByte(); if (NC) { return; }
+        }
+        else
+        {
+            // Load BP into A
+            LDA # OpCode.LDA_ZP
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA # Gen6502.runtimeBP
+            Gen6502.emitByte(); if (NC) { return; }
+            
+            // Add the offset
+            LDA #OpCode.CLC
+            Gen6502.emitByte(); if (NC) { return; }
+            LDA #OpCode.ADC_IMM
+            Gen6502.emitByte(); if (NC) { return; }
+            
+            // Calculate and emit the adjusted offset value
+            LDA vzOffset
+            // Now A contains either the original negative offset OR the adjusted positive offset
+            Gen6502.emitByte(); if (NC) { return; }
+            
+            // Transfer result to X
+            LDA # OpCode.TAX
             Gen6502.emitByte(); if (NC) { return; }
         }
         
@@ -2111,9 +2162,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             }
                        
             // Load NEXT0 through pointer
-            LDA #OpCode.LDA_IND_Y
+            LDA #OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_ZP
             Gen6502.emitByte(); if (NC) { break; }
@@ -2121,9 +2174,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load NEXT1 through pointer
-            LDA #OpCode.LDA_IND_Y
+            LDA #OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_ZP
             Gen6502.emitByte(); if (NC) { break; }
@@ -2136,9 +2191,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             {
                 
                 // Load NEXT2 through pointer
-                LDA #OpCode.LDA_IND_Y
+                LDA #OpCode.LDA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack2
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage2 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #OpCode.STA_ZP
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2146,9 +2203,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 Gen6502.emitByte(); if (NC) { break; }
                 
                 // Load NEXT3 through pointer
-                LDA #OpCode.LDA_IND_Y
+                LDA #OpCode.LDA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack3
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage3 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #OpCode.STA_ZP
                 Gen6502.emitByte(); if (NC) { break; }
@@ -2186,9 +2245,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             }
                        
             // Load TOP0 through pointer
-            LDA #OpCode.LDA_IND_Y
+            LDA #OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_ZP
             Gen6502.emitByte(); if (NC) { break; }
@@ -2196,9 +2257,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load TOP1 through pointer
-            LDA #OpCode.LDA_IND_Y
+            LDA #OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_ZP
             Gen6502.emitByte(); if (NC) { break; }
@@ -2206,9 +2269,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load TOP2 through pointer
-            LDA #OpCode.LDA_IND_Y
+            LDA #OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack2
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage2 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_ZP
             Gen6502.emitByte(); if (NC) { break; }
@@ -2216,9 +2281,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             
             // Load TOP3 through pointer
-            LDA #OpCode.LDA_IND_Y
+            LDA #OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack3
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage3 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.STA_ZP
             Gen6502.emitByte(); if (NC) { break; }
@@ -2251,9 +2318,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.NEXT0
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
+            
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             // Store NEXT1 through pointer
@@ -2261,9 +2331,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.NEXT1
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y  // 0x91
+            
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage1/ 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             LDA vOpBits
@@ -2276,9 +2349,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #ZP.NEXT2
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA #OpCode.STA_IND_Y
+                
+                LDA #OpCode.STA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack2
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage2 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 
                 // Store NEXT3 through pointer
@@ -2286,9 +2362,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #ZP.NEXT3
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA #OpCode.STA_IND_Y
+                
+                LDA #OpCode.STA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack3
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage3 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
             }
             else
@@ -2297,14 +2376,19 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA # 0
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA #OpCode.STA_IND_Y
+                
+                LDA # OpCode.STA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack2
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage2 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA #OpCode.STA_IND_Y
+                LDA #OpCode.STA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack3
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage3 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
             }
             
@@ -2319,36 +2403,39 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     {
         loop
         {
-            // Calculate effective offset into Y
-            calculateBPOffset();
+            // Calculate effective offset into X
+            calculateBPOffsetX();
             if (NC) 
             {
                 break;
             }
             
-            LDA #OpCode.LDA_IMM
+            LDA #OpCode.STZ_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
-            
-            LDA #OpCode.STA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_IND_Y  // 0x91
+            LDA #OpCode.STZ_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
-            
-            LDA #OpCode.STA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack2
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_IND_Y
+            LDA #OpCode.STZ_ABS_X
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack3
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage2 / 256)
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.STZ_ABS_X
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage3 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             SEC
@@ -2374,9 +2461,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA # 1
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_IND_Y
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             LDA #OpCode.LDA_IMM
@@ -2384,19 +2473,25 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_IND_Y
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
             Gen6502.emitByte(); if (NC) { break; }
-            
-            LDA #OpCode.STA_IND_Y
-            Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack2
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.STA_IND_Y
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack3
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage2 / 256)
+            Gen6502.emitByte(); if (NC) { break; }
+            
+            LDA #OpCode.STA_ABS_Y
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage3 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             SEC
@@ -2422,9 +2517,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.TOP0
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
+            
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             // Store TOP1 through pointer
@@ -2432,9 +2530,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.TOP1
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y  // 0x91
+            
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             // Store TOP2 through pointer
@@ -2442,9 +2543,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.TOP2
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
+            
+            LDA # OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack2
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage2 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             // Store TOP3 through pointer
@@ -2452,9 +2556,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             Gen6502.emitByte(); if (NC) { break; }
             LDA #ZP.TOP3
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
+            
+            LDA #OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack3
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage3 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             SEC
@@ -2486,10 +2593,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Load TOP1 from stack via pointer
-        // LDA [runtimeStack1],Y
-        LDA #OpCode.LDA_IND_Y
+        LDA #OpCode.LDA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         // STA ZP.TOP1
         LDA #OpCode.STA_ZP
@@ -2498,10 +2606,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
                 
         // Load TOP2 from stack via pointer
-        // LDA [runtimeStack2],Y
-        LDA #OpCode.LDA_IND_Y
+        LDA #OpCode.LDA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         // STA ZP.TOP2
         LDA #OpCode.STA_ZP
@@ -2510,10 +2619,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Load TOP3 from stack via pointer
-        // LDA [runtimeStack3],Y
-        LDA #OpCode.LDA_IND_Y
+        LDA #OpCode.LDA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         // STA ZP.TOP3
         LDA #OpCode.STA_ZP
@@ -2528,12 +2638,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     // Generate code to push 32-bit value from ZP.TOP onto runtime stack
     pushTOP()
     {
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store TOP0 to stack via pointer
@@ -2548,10 +2654,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.TOP1
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack1],Y
-        LDA #OpCode.STA_IND_Y
+        
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store TOP2 to stack via pointer
@@ -2559,10 +2667,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.TOP2
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack2],Y
-        LDA #OpCode.STA_IND_Y
+        
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store TOP3 to stack via pointer
@@ -2570,10 +2680,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         LDA #ZP.TOP3
         Gen6502.emitByte(); if (NC) { return; }
-        // STA [runtimeStack3],Y
-        LDA #OpCode.STA_IND_Y
+        
+        LDA #OpCode.STA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         SEC
@@ -2588,7 +2700,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         
         // SP points one past to the slot we are interested in
         
-        // SP -> X -> Y
+        // SP -> X
         LDA #OpCode.TSX  
         Gen6502.emitByte(); if (NC) { return; }
 
@@ -2597,16 +2709,12 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         LDA #ZP.NEXT0 
         Gen6502.emitByte(); if (NC) { return; }
 
-        LDA #OpCode.TXA
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA #OpCode.TAY
-        Gen6502.emitByte(); if (NC) { return; }
-        
         // Load NEXT1 from stack via pointer
-        // LDA [runtimeStack1],Y
-        LDA #OpCode.LDA_IND_Y
+        LDA #OpCode.LDA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         // STA ZP.NEXT1
         LDA #OpCode.STA_ZP
@@ -2615,10 +2723,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
                 
         // Load NEXT2 from stack via pointer
-        // LDA [runtimeStack2],Y
-        LDA #OpCode.LDA_IND_Y
+        LDA #OpCode.LDA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         // STA ZP.NEXT2
         LDA #OpCode.STA_ZP
@@ -2627,10 +2736,11 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Load NEXT3 from stack via pointer
-        // LDA [runtimeStack3],Y
-        LDA #OpCode.LDA_IND_Y
+        LDA #OpCode.LDA_ABS_X
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         // STA ZP.NEXT3
         LDA #OpCode.STA_ZP
@@ -2851,24 +2961,27 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store 0 to stack via pointer
-        // STA [runtimeStack1],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack1
+        LDA # 0
         Gen6502.emitByte(); if (NC) { return; }
-        
-        // Store 0 to stack via pointer
-        // STA [runtimeStack2],Y
-        LDA #OpCode.STA_IND_Y
-        Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack2
+        LDA # (StackPage1 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         // Store 0 to stack via pointer
-        // STA [runtimeStack3],Y
-        LDA #OpCode.STA_IND_Y
+        LDA #OpCode.STA_ABS_Y
         Gen6502.emitByte(); if (NC) { return; }
-        LDA # Gen6502.runtimeStack3
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        // Store 0 to stack via pointer
+        LDA #OpCode.STA_ABS_Y
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
         Gen6502.emitByte(); if (NC) { return; }
         
         SEC
@@ -2942,60 +3055,80 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
             LDA #OpCode.CLC
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA # OpCode.LDA_IND_Y
+            LDA # OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.ADC_IMM
             Gen6502.emitByte(); if (NC) { break; }
             LDA #1
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
+            
+            LDA # OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack0
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
-            LDA #OpCode.LDA_IND_Y
+            LDA # OpCode.LDA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             LDA #OpCode.ADC_IMM
             Gen6502.emitByte(); if (NC) { break; }
             LDA #0
             Gen6502.emitByte(); if (NC) { break; }
-            LDA #OpCode.STA_IND_Y
+            
+            LDA # OpCode.STA_ABS_Y
             Gen6502.emitByte(); if (NC) { break; }
-            LDA # Gen6502.runtimeStack1
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage1 / 256)
             Gen6502.emitByte(); if (NC) { break; }
             
             LDA vOpBits
             CMP # VOpCode.Long
             if (Z)
             {
-                LDA #OpCode.LDA_IND_Y
+                LDA # OpCode.LDA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack2
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage2 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #OpCode.ADC_IMM
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #0
-                Gen6502.emitByte(); if (NC) { break; }
-                LDA #OpCode.STA_IND_Y
-                Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack2
                 Gen6502.emitByte(); if (NC) { break; }
                 
-                LDA #OpCode.LDA_IND_Y
+                LDA # OpCode.STA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack3
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage2 / 256)
+                Gen6502.emitByte(); if (NC) { break; }
+                
+                LDA # OpCode.LDA_ABS_Y
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage3 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #OpCode.ADC_IMM
                 Gen6502.emitByte(); if (NC) { break; }
                 LDA #0
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA #OpCode.STA_IND_Y
+                
+                LDA # OpCode.STA_ABS_Y
                 Gen6502.emitByte(); if (NC) { break; }
-                LDA # Gen6502.runtimeStack3
+                LDA # 0
+                Gen6502.emitByte(); if (NC) { break; }
+                LDA # (StackPage3 / 256)
                 Gen6502.emitByte(); if (NC) { break; }
             }
                      

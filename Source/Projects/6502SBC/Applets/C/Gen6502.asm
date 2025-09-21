@@ -37,33 +37,17 @@ unit Gen6502
     const byte runtimeZeroPageSlots = 0x60;
     const byte runtimeBP            = runtimeZeroPageSlots+0; // Base pointer for stack frame
     
-    const byte runtimeStack0        = runtimeZeroPageSlots+1;
-    const byte runtimeStack0L       = runtimeZeroPageSlots+1;
-    const byte runtimeStack0H       = runtimeZeroPageSlots+2;
-    
-    const byte runtimeStack1        = runtimeZeroPageSlots+3;
-    const byte runtimeStack1L       = runtimeZeroPageSlots+3;
-    const byte runtimeStack1H       = runtimeZeroPageSlots+4;
-    
-    const byte runtimeStack2        = runtimeZeroPageSlots+5;
-    const byte runtimeStack2L       = runtimeZeroPageSlots+5;
-    const byte runtimeStack2H       = runtimeZeroPageSlots+6;
-    
-    const byte runtimeStack3        = runtimeZeroPageSlots+7;
-    const byte runtimeStack3L       = runtimeZeroPageSlots+7;
-    const byte runtimeStack3H       = runtimeZeroPageSlots+8;
-    
     // our one and only FILE struct:
     
-    const byte runtimeFileFlags     = runtimeZeroPageSlots+9;
+    const byte runtimeFileFlags     = runtimeZeroPageSlots+1;
     // Bit 0 - open state 
     // Bit 1 - read "r" (0) or write "w" (1) 1 byte
     // Bit 2 - eof indicator
     
     // position in FileDataBuffer (TransferLengthL/H tells us how much valid data is in the current FileDataBufferL/H)
-    const byte runtimeFileBufPos    = runtimeZeroPageSlots+10;
-    const byte runtimeFileBufPosL   = runtimeZeroPageSlots+10;
-    const byte runtimeFileBufPosH   = runtimeZeroPageSlots+11;
+    const byte runtimeFileBufPos    = runtimeZeroPageSlots+2;
+    const byte runtimeFileBufPosL   = runtimeZeroPageSlots+3;
+    const byte runtimeFileBufPosH   = runtimeZeroPageSlots+4;
     
     // WARNING: global variable slots start at 0x70 (runtimeZeroPageSlots + 0x10)
     
@@ -103,7 +87,10 @@ unit Gen6502
         STA_IND = 0x92,
         SMB1_ZP = 0x97,
         TYA     = 0x98,
+        STA_ABS_Y = 0x99,
         TXS     = 0x9A,
+        STA_ABS_X = 0x9D,
+        STZ_ABS_X = 0x9E,
         BBS1_ZP = 0x9F,
         LDY_IMM = 0xA0,
         LDX_IMM = 0xA2,
@@ -113,12 +100,14 @@ unit Gen6502
         SMB2_ZP = 0xA7,
         TAY     = 0xA8,
         LDA_IMM = 0xA9,
+        TAX     = 0xAA,
         BBS2_ZP = 0xAF,
         BCS     = 0xB0,  
         LDA_IND_Y = 0xB1,
         LDA_IND  = 0xB2,
         LDA_ABS_Y = 0xB9,
         TSX     = 0xBA,
+        LDA_ABS_X = 0xBD,
         CPY_IMM = 0xC0,
         CMP_IMM = 0xC9,
         INY     = 0xC8,
@@ -344,7 +333,7 @@ unit Gen6502
     
     // Patch the initial JMP instruction to point to main
     // Note: Called after main's address is known
-    patchEntryJump()
+    PatchEntryJump()
     {
         // Calculate absolute address
         LDA codeOffsetL
@@ -360,82 +349,7 @@ unit Gen6502
         INY
         LDA ZP.ACCH
         STA [codeBuffer], Y
-    }
-    
-    // Generate code to allocate the runtime stack
-    // Output: C set on success, clear on failure
-    // Note: Allocates 1K parallel stack, sets up stack pointers
-    CreateStack()
-    {
-        // Patch JMP to main
-        patchEntryJump();
-    
-        // Allocate 1022 bytes (0x0400) for the parallel stack (1022 + 2 allocator size bytes = 1024)
-        // Allocate  766 bytes (0x0300) for the parallel stack (766 + 2 allocator size bytes = 768
-        LDA #0xFE
-        STA ZP.ACCL
-        LDA #0x02
-        STA ZP.ACCH
-        
-        // Call Memory.Allocate via BIOS dispatch
-        LDA # OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA # BIOSInterface.SysCall.MemAllocate
-        EmitByte(); if (NC) { return; }
-        Library.EmitDispatchCall();
-        
-        // Assume since this is the first allocation, Memory.Allocate returns page-aligned for 1K allocation
-        // After 2-byte header, base address will be xx00
-        
-        // zero the LSB's since we are page aligned
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack0L
-        EmitByte(); if (NC) { return; }
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack1L
-        EmitByte(); if (NC) { return; }
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack2L
-        EmitByte(); if (NC) { return; }
-        LDA #OpCode.STZ_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack3L
-        EmitByte(); if (NC) { return; }
-        
-        // now the MSB's
-        
-        LDA # OpCode.LDA_IMM
-        EmitByte(); if (NC) { return; }
-        LDA # 0x01 // hardware stack
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack0H
-        EmitByte(); if (NC) { return; }
-        
-        LDA # OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # ZP.IDXH
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack1H
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.INC_A
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack2H
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.INC_A
-        EmitByte(); if (NC) { return; }
-        LDA # OpCode.STA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA #runtimeStack3H
-        EmitByte(); if (NC) { return; }
+        SEC
     }
     
     CreateCLIArguments()

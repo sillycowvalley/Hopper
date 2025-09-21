@@ -2683,7 +2683,7 @@ Print.Hex(); LDA #'s' Print.Char();
         INY
         LDA [functionNode], Y
         STA ZP.IDXH
-        
+
         // IDX = identifier, walk siblings to find CompoundStmt
         loop
         {
@@ -2798,8 +2798,8 @@ Print.Hex(); LDA #'s' Print.Char();
                 {
                     SMB0 functionFlags // Bit 0 - we're in "main"
                     
-                    // This is main - emit stack initialization first
-                    Gen6502.CreateStack();     // Emit stack init code
+                    // Patch the initial JMP instruction to point to main
+                    Gen6502.PatchEntryJump();
                     if (NC) { return; }
                     
                     LDA functionNodeH
@@ -2826,14 +2826,11 @@ Print.Hex(); LDA #'s' Print.Char();
                 INY
                 LDA Gen6502.codeOffsetH
                 STA [functionNode], Y
-                
+
                 // Generate this function's body
                 generateFunctionBody();  // Uses IDX = Function node
-                
                 if (NC) { return; }
             }// function node
-            
-
            
             // Move to next sibling
             LDY #AST.iNext
@@ -2857,7 +2854,7 @@ Print.Hex(); LDA #'s' Print.Char();
     // Note: Coordinates all code generation phases
     Compile()
     {
-        
+
         // 1. Reserve 3 bytes for JMP to main
         LDA # OpCode.JMP_ABS
         EmitByte(); if (NC) { return; } // JMP absolute
@@ -2878,11 +2875,11 @@ Print.Hex(); LDA #'s' Print.Char();
         AST.GetRoot();  // -> IDX
         Gen6502.EmitStrings();
         if (NC) { return; }
-        
+
         // 4. Generate ALL functions
         emitAllFunctions();
         if (NC) { return; }
-        
+
         SEC
     }
 
