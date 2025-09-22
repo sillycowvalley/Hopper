@@ -658,6 +658,8 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
     // Example: x = *ptr  (we're reading FROM memory)
     generateDereferenceRead()
     {
+        // TODO: VOp - generateDereferenceRead()
+        
         // Pop pointer from stack into TOP
         VCode.PopTOP();
         if (NC) { return; }
@@ -671,22 +673,22 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
         // Put value in NEXT and zero-extend
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // generateDereferenceRead()
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT1
+        LDA # ZP.NEXT1
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT2
+        LDA # ZP.NEXT2
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT3
+        LDA # ZP.NEXT3
         EmitByte(); if (NC) { return; }
         
         // Push value onto stack
@@ -700,6 +702,8 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
     // Example: *ptr = 5  (we're writing TO memory)
     generateDereferenceWrite()
     {
+        // TODO: VOp - generateDereferenceWrite()
+    
         // Pop pointer from stack into TOP
         VCode.PopTOP();
         if (NC) { return; }
@@ -709,7 +713,7 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
         // Write byte TO memory at [IDY]
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // generateDereferenceWrite()
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STA_IND
@@ -1112,22 +1116,24 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
      
     generateBitwiseAnd()
     {
+        // TODO: VOp - generateBitwiseAnd()
+    
         // NEXT = NEXT & TOP
         
         // Byte 0
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // generateBitwiseAnd()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.AND_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP0
+        LDA # ZP.TOP0
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // generateBitwiseAnd()
         EmitByte(); if (NC) { return; }
         
         // Byte 1
@@ -1183,22 +1189,24 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
     
     generateBitwiseOr()
     {
+        // TODO: VOp - generateBitwiseOr()
+    
         // NEXT = NEXT | TOP
         
         // Byte 0
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // generateBitwiseOr()
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.ORA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.TOP0
+        LDA # ZP.TOP0
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // generateBitwiseOr()
         EmitByte(); if (NC) { return; }
         
         // Byte 1

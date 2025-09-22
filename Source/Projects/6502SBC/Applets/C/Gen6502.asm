@@ -354,6 +354,8 @@ unit Gen6502
     
     CreateCLIArguments()
     {
+        // TODO: VOp - CreateCLIArguments()
+        
         // Push exe pointer (always LineBuffer start)
         LDA #(Address.LineBuffer % 256)
         LDX #(Address.LineBuffer / 256)
@@ -425,7 +427,7 @@ unit Gen6502
         // STA NEXT0
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0
         EmitByte(); if (NC) { return; }
         
         // LDA #high(LineBuffer)
@@ -467,7 +469,7 @@ unit Gen6502
         // STZ NEXT0-3
         LDA #OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STZ_ZP
@@ -889,6 +891,7 @@ unit Gen6502
         }
         
         // Now emit code to load these values at runtime
+        // TODO: VOp - LongPushNEXT()
         
         // Emit code for NEXT0
         LDA ZP.NEXT0
@@ -896,7 +899,7 @@ unit Gen6502
         {
             LDA #OpCode.STZ_ZP
             EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT0
+            LDA # ZP.NEXT0 // LongPushNEXT()
             EmitByte(); if (NC) { return; }
         }
         else
@@ -907,7 +910,7 @@ unit Gen6502
             EmitByte(); if (NC) { return; }
             LDA #OpCode.STA_ZP
             EmitByte(); if (NC) { return; }
-            LDA #ZP.NEXT0
+            LDA # ZP.NEXT0 // LongPushNEXT()
             EmitByte(); if (NC) { return; }
         }
         

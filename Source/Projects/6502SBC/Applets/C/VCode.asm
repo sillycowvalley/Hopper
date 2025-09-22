@@ -1,6 +1,7 @@
 unit VCode
 {
-    const byte vzSlots = 0xD0;
+    const byte vzSlots  = 0xD0;
+    const byte vzESlots = 0xE0;
     
     const byte vcodeBuffer     = vzSlots+0;
     const byte vcodeBufferL    = vzSlots+0;
@@ -12,20 +13,25 @@ unit VCode
     const byte vcodeSizeL      = vzSlots+4;
     const byte vcodeSizeH      = vzSlots+5;
     
-    const byte peep0           = vzSlots+6;
-    const byte peep1           = vzSlots+7;
-    const byte peep2           = vzSlots+8;
-    const byte peep3           = vzSlots+9;
-    const byte peep4           = vzSlots+10;
+    const byte vzOffset        = vzSlots+6;
+    const byte vzArgument      = vzSlots+7;
+    const byte vzArgument1     = vzSlots+8;
     
-    const byte vzOffset        = vzSlots+11;
-    const byte vzArgument      = vzOffset;
-    const byte vzArgument1     = vzSlots+12;
+    const byte vOpCode         = vzSlots+9;
+    const byte vOpBits         = vzSlots+10;
     
-    const byte vOpCode         = vzSlots+13;
-    const byte vOpBits         = vzSlots+14;
+    const byte VarType         = vzSlots+11;
+    const byte vFlags          = vzSlots+12;
+    // Bit 0 - set means currently flushing, not set means adding a VCode
+    // Bit 1 - peeps were printed (in DEBUG)
     
-    const byte VarType         = vzSlots+15;
+    const byte peep0           = vzESlots+0;
+    const byte peep1           = vzESlots+1;
+    const byte peep2           = vzESlots+2;
+    const byte peep3           = vzESlots+3;
+    const byte peep4           = vzESlots+4;
+    const byte peep5           = vzESlots+5;
+    
     
     enum VOpCode
     {
@@ -445,8 +451,32 @@ unit VCode
         }
         PLA
     }
-    
     Flush()
+    {
+        STZ vFlags
+#ifdef PEEPHOLE  
+        SMB0 vFlags // flushing
+        LDX #0
+        loop
+        {  
+            PHX
+            tryPeeps();
+            PLX
+            if (NC)
+            {
+                break; // no more optimizations
+            }
+            INX
+        }
+        if (BBS1, vFlags)
+        {
+            Print.NewLine();
+        }
+#endif         
+        
+        flush();
+    }
+    flush()
     {
         IsEmpty();
         if (C) { return; }
@@ -665,11 +695,14 @@ Gen6502.emitByte(); SEC PLY
         STZ peep2
         STZ peep3
         STZ peep4
+        STZ peep5
     }
     
     pushPeep() // A
     {
         PHA
+        LDA peep4
+        STA peep5
         LDA peep3
         STA peep4
         LDA peep2
@@ -692,7 +725,9 @@ Gen6502.emitByte(); SEC PLY
         STA peep2
         LDA peep4
         STA peep3
-        STZ peep4
+        LDA peep5
+        STA peep4
+        STZ peep5
     }
     
     
@@ -707,13 +742,20 @@ Gen6502.emitByte(); SEC PLY
         LDA peep0
         if (NZ)
         {
-            LDA peep1
-            if (NZ) // at least two
+            TXA
+            ORA peep1
+            if (NZ) // at least two (or X != 0)
             {
                 CPX #0
                 if (Z)
                 {
                     Print.NewLine();
+                }
+                
+                LDA peep5
+                if (NZ)
+                {
+                    printPeep(); Print.Space();
                 }
                 
                 LDA peep4
@@ -742,6 +784,8 @@ Gen6502.emitByte(); SEC PLY
                 
                 LDA peep0
                 printPeep(); Print.Space();
+                
+                SMB1 vFlags
             }
         }
     }
@@ -793,31 +837,31 @@ Print.Space(); LDA #'A' Print.Char();
                                             {
                                                 case (VOpCode.GetNEXT | VOpCode.Int):
                                                 {
-#ifdef PROBLEMPEEPS
-                                                    // TODO: GetNEXT side effect lost (NEXT no longer has value from original GetNEXT)
-                                                    // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
-                                                    //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
-                                                    //
-                                                    // decrement vcodeOffset by 5
-                                                    // then modify [vcodeOffset-2]
-                                                    
-                                                    clearPeeps();
-                                                    SEC
-                                                    LDA vcodeOffset
-                                                    SBC #5
-                                                    STA vcodeOffset
-                                                    LDY vcodeOffset
-                                                    DEY
-                                                    DEY
-                                                    LDA # (VOpCode.Inc | VOpCode.Int)
-                                                    STA [vcodeBuffer], Y
-                                                    pushPeep();
+                                                    if (BBS0, vFlags) // Flushing
+                                                    {
+                                                        // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
+                                                        //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
+                                                        //
+                                                        // decrement vcodeOffset by 5
+                                                        // then modify [vcodeOffset-2]
+                                                        
+                                                        clearPeeps();
+                                                        SEC
+                                                        LDA vcodeOffset
+                                                        SBC #5
+                                                        STA vcodeOffset
+                                                        LDY vcodeOffset
+                                                        DEY
+                                                        DEY
+                                                        LDA # (VOpCode.Inc | VOpCode.Int)
+                                                        STA [vcodeBuffer], Y
+                                                        pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'M' Print.Char(); LDA #'!' Print.Char();
+Print.Space(); LDA #'M' Print.Char();
 #endif                                               
-                                                    SEC
-                                                    break;   
-#endif                                                       
+                                                        SEC
+                                                        break;   
+                                                    }
                                                 }
                                             }
                                         }
@@ -844,31 +888,31 @@ Print.Space(); LDA #'M' Print.Char(); LDA #'!' Print.Char();
                                             {
                                                 case (VOpCode.GetNEXT | VOpCode.Long):
                                                 {
-#ifdef PROBLEMPEEPS
-                                                    // TODO: GetNEXT side effect lost (NEXT no longer has value from original GetNEXT)
-                                                    // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
-                                                    //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
-                                                    //
-                                                    // decrement vcodeOffset by 5
-                                                    // then modify [vcodeOffset-2]
-                                                    
-                                                    clearPeeps();
-                                                    SEC
-                                                    LDA vcodeOffset
-                                                    SBC #5
-                                                    STA vcodeOffset
-                                                    LDY vcodeOffset
-                                                    DEY
-                                                    DEY
-                                                    LDA # (VOpCode.Inc | VOpCode.Long)
-                                                    STA [vcodeBuffer], Y
-                                                    pushPeep();
+                                                    if (BBS0, vFlags) // Flushing
+                                                    {
+                                                        // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
+                                                        //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
+                                                        //
+                                                        // decrement vcodeOffset by 5
+                                                        // then modify [vcodeOffset-2]
+                                                        
+                                                        clearPeeps();
+                                                        SEC
+                                                        LDA vcodeOffset
+                                                        SBC #5
+                                                        STA vcodeOffset
+                                                        LDY vcodeOffset
+                                                        DEY
+                                                        DEY
+                                                        LDA # (VOpCode.Inc | VOpCode.Long)
+                                                        STA [vcodeBuffer], Y
+                                                        pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'G' Print.Char(); LDA #'!' Print.Char();
+Print.Space(); LDA #'G' Print.Char();
 #endif                                               
-                                                    SEC
-                                                    break;   
-#endif                                                       
+                                                        SEC
+                                                        break; 
+                                                    }  
                                                 }
                                             }
                                         }
@@ -919,6 +963,8 @@ Print.Space(); LDA #'G' Print.Char(); LDA #'!' Print.Char();
 #ifdef DEBUG
 Print.Space(); LDA #'R' Print.Char();LDA #'1' Print.Char();
 #endif    
+                                            SEC
+                                            break;
                                         }
                                     }
                                 }
@@ -953,6 +999,8 @@ Print.Space(); LDA #'R' Print.Char();LDA #'1' Print.Char();
 #ifdef DEBUG
 Print.Space(); LDA #'R' Print.Char();LDA #'2' Print.Char();
 #endif    
+                                            SEC
+                                            break;
                                         }
                                     }
                                 }
@@ -1068,24 +1116,24 @@ Print.Space(); LDA #'E' Print.Char();
                     {
                         case (VOpCode.GetNEXT | VOpCode.Int):
                         {
-#ifdef PROBLEMPEEPS
-                            // TODO: GetNEXT side effect lost (NEXT no longer has value from GetNEXT)
-                            // GetNEXT, NEXTtoTOP -> GetTOP
-                            popPeep();
-                            popPeep();
-                            DEC vcodeOffset
-                            LDY vcodeOffset
-                            DEY // BP argument
-                            DEY
-                            LDA # (VOpCode.GetTOP | VOpCode.Int)
-                            STA [vcodeBuffer], Y
-                            pushPeep();
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // GetNEXT, NEXTtoTOP -> GetTOP
+                                popPeep();
+                                popPeep();
+                                DEC vcodeOffset
+                                LDY vcodeOffset
+                                DEY // BP argument
+                                DEY
+                                LDA # (VOpCode.GetTOP | VOpCode.Int)
+                                STA [vcodeBuffer], Y
+                                pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'O' Print.Char();LDA #'!' Print.Char();
+Print.Space(); LDA #'O' Print.Char();
 #endif                            
-                            SEC
-                            break;
-#endif                  
+                                SEC
+                                break;
+                            }
                         }
                     }
                 }
@@ -1096,24 +1144,24 @@ Print.Space(); LDA #'O' Print.Char();LDA #'!' Print.Char();
                     {
                         case (VOpCode.GetNEXT | VOpCode.Long):
                         {
-#ifdef PROBLEMPEEPS
-                            // TODO: GetNEXT side effect lost (NEXT no longer has value from GetNEXT)
-                            // GetNEXT, NEXTtoTOP -> GetTOP
-                            popPeep();
-                            popPeep();
-                            DEC vcodeOffset
-                            LDY vcodeOffset
-                            DEY // BP argument
-                            DEY
-                            LDA # (VOpCode.GetTOP | VOpCode.Long)
-                            STA [vcodeBuffer], Y
-                            pushPeep();
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // GetNEXT, NEXTtoTOP -> GetTOP
+                                popPeep();
+                                popPeep();
+                                DEC vcodeOffset
+                                LDY vcodeOffset
+                                DEY // BP argument
+                                DEY
+                                LDA # (VOpCode.GetTOP | VOpCode.Long)
+                                STA [vcodeBuffer], Y
+                                pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
+Print.Space(); LDA #'H' Print.Char();
 #endif                            
-                            SEC
-                            break;
-#endif                  
+                                SEC
+                                break;
+                            }
                         }
                     }
                 }
@@ -1122,6 +1170,30 @@ Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
                     LDA peep1
                     switch (A)
                     {
+                        case (VOpCode.TOPtoNEXT | VOpCode.Long):
+                        {
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // DEFECT: see (c = fgetc(fp)) != -1
+                                // TOPtoNEXT, PutNEXT -> PutTOP
+                                popPeep();
+                                popPeep();
+                                DEC vcodeOffset
+                                LDY vcodeOffset
+                                LDA [vcodeBuffer], Y // BP argument 
+                                DEY 
+                                STA [vcodeBuffer], Y // BP argument 
+                                DEY
+                                LDA # (VOpCode.PutTOP | VOpCode.Int)
+                                STA [vcodeBuffer], Y
+                                pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'I' Print.Char();LDA #'2' Print.Char();
+#endif                            
+                                SEC
+                                break;
+                            }
+                        }
                         case (VOpCode.BYTEtoNEXT | VOpCode.Long):
                         {
                             // BYTEtoNEXT, PutNEXT -> PutZERO | PutONE
@@ -1134,36 +1206,48 @@ Print.Space(); LDA #'H' Print.Char();LDA #'!' Print.Char();
                             LDA [vcodeBuffer], Y // BYTEtoNEXT argument
                             if (Z)
                             {
-                                popPeep();
-                                popPeep();
-                                TXA
-                                STA  [vcodeBuffer], Y // PutNEXT argument  
-                                DEY
-                                LDA #(VOpCode.PutZERO | VOpCode.Int)
-                                STA  [vcodeBuffer], Y
-                                pushPeep();
-                                DEC vcodeOffset
-                                DEC vcodeOffset
+                                if (BBS0, vFlags) // Flushing
+                                {
+                                    popPeep();
+                                    popPeep();
+                                    TXA
+                                    STA  [vcodeBuffer], Y // PutNEXT argument  
+                                    DEY
+                                    LDA #(VOpCode.PutZERO | VOpCode.Int)
+                                    STA  [vcodeBuffer], Y
+                                    pushPeep();
+                                    DEC vcodeOffset
+                                    DEC vcodeOffset
+                                
 #ifdef DEBUG
-Print.Space(); LDA #'Q' Print.Char(); LDA #'1' Print.Char(); LDA #'!' Print.Char();
+Print.Space(); LDA #'Q' Print.Char(); LDA #'1' Print.Char();
 #endif      
+                                    SEC
+                                    break;
+                                }
                             } 
                             CMP #1
                             if (Z)
                             {
-                                popPeep();
-                                popPeep();
-                                TXA
-                                STA  [vcodeBuffer], Y // PutNEXT argument  
-                                DEY
-                                LDA #(VOpCode.PutONE | VOpCode.Int)
-                                STA  [vcodeBuffer], Y
-                                pushPeep();
-                                DEC vcodeOffset
-                                DEC vcodeOffset
+                                if (BBS0, vFlags) // Flushing
+                                {
+                                    popPeep();
+                                    popPeep();
+                                    TXA
+                                    STA  [vcodeBuffer], Y // PutNEXT argument  
+                                    DEY
+                                    LDA #(VOpCode.PutONE | VOpCode.Int)
+                                    STA  [vcodeBuffer], Y
+                                    pushPeep();
+                                    DEC vcodeOffset
+                                    DEC vcodeOffset
+                                    
 #ifdef DEBUG
-Print.Space(); LDA #'Q' Print.Char(); LDA #'3' Print.Char(); LDA #'!' Print.Char();
+Print.Space(); LDA #'Q' Print.Char(); LDA #'3' Print.Char(); 
 #endif      
+                                    SEC
+                                    break;
+                                }
                             }
                                                  
                         }
@@ -1186,63 +1270,71 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'3' Print.Char(); LDA #'!' Print.Char
                             LDA [vcodeBuffer], Y // BYTEtoNEXT argument
                             if (Z)
                             {
-                                popPeep();
-                                popPeep();
-                                TXA
-                                STA  [vcodeBuffer], Y // PutNEXT argument  
-                                DEY
-                                LDA #(VOpCode.PutZERO | VOpCode.Long)
-                                STA  [vcodeBuffer], Y
-                                pushPeep();
-                                DEC vcodeOffset
-                                DEC vcodeOffset
+                                if (BBS0, vFlags) // Flushing
+                                {
+                                    popPeep();
+                                    popPeep();
+                                    TXA
+                                    STA  [vcodeBuffer], Y // PutNEXT argument  
+                                    DEY
+                                    LDA #(VOpCode.PutZERO | VOpCode.Long)
+                                    STA  [vcodeBuffer], Y
+                                    pushPeep();
+                                    DEC vcodeOffset
+                                    DEC vcodeOffset
 #ifdef DEBUG
-Print.Space(); LDA #'Q' Print.Char();  LDA #'2' Print.Char(); LDA #'!' Print.Char();
-#endif                         
+Print.Space(); LDA #'Q' Print.Char(); LDA #'2' Print.Char(); 
+#endif
+                                    SEC
+                                    break;
+                                }
                             }   
                             CMP #1
                             if (Z)
                             {
-                                popPeep();
-                                popPeep();
-                                TXA
-                                STA  [vcodeBuffer], Y // PutNEXT argument  
-                                DEY
-                                LDA #(VOpCode.PutONE | VOpCode.Long)
-                                STA  [vcodeBuffer], Y
-                                pushPeep();
-                                DEC vcodeOffset
-                                DEC vcodeOffset
+                                if (BBS0, vFlags) // Flushing
+                                {
+                                    popPeep();
+                                    popPeep();
+                                    TXA
+                                    STA  [vcodeBuffer], Y // PutNEXT argument  
+                                    DEY
+                                    LDA #(VOpCode.PutONE | VOpCode.Long)
+                                    STA  [vcodeBuffer], Y
+                                    pushPeep();
+                                    DEC vcodeOffset
+                                    DEC vcodeOffset
 #ifdef DEBUG
-Print.Space(); LDA #'Q' Print.Char();  LDA #'4' Print.Char(); LDA #'!' Print.Char();
-#endif                         
+Print.Space(); LDA #'Q' Print.Char(); LDA #'4' Print.Char(); 
+#endif             
+                                    SEC
+                                    break;
+                                }
                             } 
                         }
                         case (VOpCode.TOPtoNEXT | VOpCode.Long):
                         {
-/*                            
-                            // TODO: TOPtoNEXT side effect lost (NEXT no longer has value from TOP)
-                            // DEFECT: see (c = fgetc(fp)) != -1
-                            // TOPtoNEXT, PutNEXT -> PutTOP
-                            popPeep();
-                            popPeep();
-                            DEC vcodeOffset
-                            LDY vcodeOffset
-                            LDA [vcodeBuffer], Y // BP argument 
-                            DEY 
-                            STA [vcodeBuffer], Y // BP argument 
-                            DEY
-                            LDA # (VOpCode.PutTOP | VOpCode.Long)
-                            STA [vcodeBuffer], Y
-                            pushPeep();
-*/                            
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // DEFECT: see (c = fgetc(fp)) != -1
+                                // TOPtoNEXT, PutNEXT -> PutTOP
+                                popPeep();
+                                popPeep();
+                                DEC vcodeOffset
+                                LDY vcodeOffset
+                                LDA [vcodeBuffer], Y // BP argument 
+                                DEY 
+                                STA [vcodeBuffer], Y // BP argument 
+                                DEY
+                                LDA # (VOpCode.PutTOP | VOpCode.Long)
+                                STA [vcodeBuffer], Y
+                                pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'I' Print.Char();LDA #'x' Print.Char(); // missed opportunity?
+Print.Space(); LDA #'I' Print.Char();LDA #'1' Print.Char();
 #endif                            
-/*
-                            SEC
-                            break;
-*/                            
+                                SEC
+                                break;
+                            }
                         }
                     }
                 }
@@ -1357,24 +1449,24 @@ Print.Space(); LDA #'K' Print.Char();
                     {
                         case (VOpCode.CtoNEXT | VOpCode.Long):
                         {
-#ifdef PROBLEMPEEPS
-                            // TODO: CtoNEXT side effect lost (NEXT no longer has value from CtoNEXT)
-                            // CtoNEXT, NEXTZero -> CtoONE
-                            popPeep();
-                            popPeep();
-                            DEC vcodeOffset
-                            LDY vcodeOffset
-                            DEY
-                            LDA # (VOpCode.CtoONE | VOpCode.Long)
-                            ORA vOpBits
-                            STA [vcodeBuffer], Y
-                            pushPeep();
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // CtoNEXT, NEXTZero -> CtoONE
+                                popPeep();
+                                popPeep();
+                                DEC vcodeOffset
+                                LDY vcodeOffset
+                                DEY
+                                LDA # (VOpCode.CtoONE | VOpCode.Long)
+                                ORA vOpBits
+                                STA [vcodeBuffer], Y
+                                pushPeep();
 #ifdef DEBUG
-Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
+Print.Space(); LDA #'J' Print.Char();
 #endif                            
-                            SEC
-                            break;
-#endif                            
+                                SEC
+                                break;
+                            }
                         }
                     }
                 }
@@ -1387,6 +1479,8 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
     
     addVCode()
     {
+        STZ vFlags
+        
         PHY // possible MSB
         PHA // BP offset or LSB
         PHX // VOpCode
@@ -1395,7 +1489,7 @@ Print.Space(); LDA #'J' Print.Char();LDA #'!' Print.Char();
         CPY #250
         if (C) // >= 250
         {
-            Flush(); if (NC) { PLX PLA PLY return; }
+            flush(); if (NC) { PLX PLA PLY return; }
         }
         
         LDY vcodeOffset

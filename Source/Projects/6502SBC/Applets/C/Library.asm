@@ -422,15 +422,17 @@ unit Library
        
     PutcharCall()
     {
+        // TODO: VOp - PutcharCall()
+        
         generateFirstArgExpression();
         if (NC) { return; }
         
         VCode.PopNEXT();if (NC) { return; }
         
         // Move character from NEXT0 to A and call PrintChar
-        LDA #OpCode.LDA_ZP
+        LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // PutcharCall()
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.LDX_IMM
@@ -449,6 +451,8 @@ unit Library
     }
     GetChCall()
     {
+        // TODO: VOp - GetChCall()
+    
         LDA #OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
         LDA #BIOSInterface.SysCall.SerialWaitForChar
@@ -458,7 +462,7 @@ unit Library
         
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // GetChCall()
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STZ_ZP
@@ -484,6 +488,8 @@ unit Library
     }
     KbHitCall()
     {
+        // TODO: VOp - KbHitCall()
+        
         LDA #OpCode.LDX_IMM
         EmitByte(); if (NC) { return; }
         LDA #BIOSInterface.SysCall.SerialIsAvailable
@@ -503,7 +509,7 @@ unit Library
         
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // KbHitCall()
         EmitByte(); if (NC) { return; }
         
         LDA #OpCode.STZ_ZP
@@ -534,6 +540,8 @@ unit Library
     // Stack out: pointer (32-bit, 0x0000 if failed)
     AllocCall()
     {
+        // TODO: VOp - AllocCall()
+        
         generateFirstArgExpression();
         if (NC) { return; }
         
@@ -543,7 +551,7 @@ unit Library
         // malloc takes size_t which is 16-bit on 6502
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // AllocCall()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STA_ZP
@@ -587,7 +595,7 @@ unit Library
         
         LDA # OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // AllocCall()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.LDA_ZP
@@ -609,7 +617,7 @@ unit Library
         // Failed: Return NULL (0x0000)
         LDA # OpCode.STZ_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // AllocCall()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STZ_ZP
@@ -641,6 +649,8 @@ unit Library
     // Stack out: nothing (void function)
     FreeCall()
     {
+        // TODO: VOp - FreeCall()
+        
         generateFirstArgExpression();
         if (NC) { return; }
         
@@ -650,7 +660,7 @@ unit Library
         // LDA ZP.NEXT0 | ORA ZP.NEXT1
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // FreeCall()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.ORA_ZP
@@ -667,7 +677,7 @@ unit Library
         // Move pointer to ZP.IDX for BIOS call
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0
+        LDA # ZP.NEXT0 // FreeCall()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STA_ZP
@@ -741,6 +751,8 @@ unit Library
     // Output: C set on success, clear on failure
     emitCharFormatter()
     {
+        // TODO: VOp - emitCharFormatter()
+    
         // Check we have an argument
         LDA libArgL
         ORA libArgH
@@ -767,7 +779,7 @@ unit Library
         // Generate: LDA NEXT0 (character is in low byte)
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // emitCharFormatter()
         EmitByte(); if (NC) { return; }
         
         // Generate: Call Print.Char() (expects character in A)
@@ -891,7 +903,7 @@ unit Library
                     
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // emitHexFormatter()
         EmitByte(); if (NC) { return; }
         
         // Call Print.Hex
@@ -971,6 +983,8 @@ unit Library
     // Output: C set on success, clear on failure
     emitStringFormatter()
     {
+        // TODO: VOp - emitStringFormatter()
+        
         // Check we have an argument
         LDA libArgL
         ORA libArgH
@@ -1015,7 +1029,7 @@ unit Library
         // Generate: LDA NEXT0
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA #ZP.NEXT0
+        LDA # ZP.NEXT0 // emitStringFormatter()
         EmitByte(); if (NC) { return; }
         
         // Generate: STA STRL
@@ -1307,7 +1321,7 @@ unit Library
         
         LDA # OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FOpenCall()
         EmitByte(); if (NC) { return; }
         
         LDA # OpCode.STA_ZP
@@ -1382,7 +1396,7 @@ unit Library
         VCode.PopTOP();  if (NC) { return; } // char
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FPutCCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -1427,7 +1441,7 @@ unit Library
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FReadCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -1446,7 +1460,7 @@ unit Library
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FReadCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -1465,7 +1479,7 @@ unit Library
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FReadCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -1518,7 +1532,7 @@ unit Library
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FWriteCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -1537,7 +1551,7 @@ unit Library
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FWriteCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }
@@ -1556,7 +1570,7 @@ unit Library
         VCode.PopTOP(); if (NC) { return; }
         LDA #OpCode.LDA_ZP
         EmitByte(); if (NC) { return; }
-        LDA # ZP.TOP0
+        LDA # ZP.TOP0 // FWriteCall()
         EmitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP
         EmitByte(); if (NC) { return; }

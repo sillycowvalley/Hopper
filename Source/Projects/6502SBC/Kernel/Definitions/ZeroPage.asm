@@ -185,10 +185,10 @@ unit ZP // ZeroPage.asm
     
 #if defined(FILEDEBUG)
     // File diagnostics extended workspace (only uses M0-M3)
-    const byte UWIDE0               = 0xE0;
-    const byte UWIDE1               = 0xE1;
-    const byte UWIDE2               = 0xE2;
-    const byte UWIDE3               = 0xE3;
+    const byte UWIDE0               = 0xE8;
+    const byte UWIDE1               = 0xE9;
+    const byte UWIDE2               = 0xEA;
+    const byte UWIDE3               = 0xEB;
 #endif    
 
         

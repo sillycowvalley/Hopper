@@ -1,9 +1,8 @@
 program CC
 {
     #define CPU_65C02S
-    //#define DEBUG
+    #define DEBUG
     #define PEEPHOLE
-    #define PROBLEMPEEPS // include peephole optimizations that have potentially harmful sideffects (NEXT-setting)
     
     uses "../System/Definitions"
     uses "../System/Args"
