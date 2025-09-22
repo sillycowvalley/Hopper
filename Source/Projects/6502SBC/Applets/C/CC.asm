@@ -1,7 +1,7 @@
 program CC
 {
     #define CPU_65C02S
-    //#define DEBUG
+    #define DEBUG
     #define PEEPHOLE
     
     uses "../System/Definitions"
