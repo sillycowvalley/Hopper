@@ -79,6 +79,8 @@ unit VCode
         ZeroNEXT        = 0x21,
         OneNEXT         = 0x22,
         OneTOP          = 0x23,
+        PopBYTE         = 0x24,               // pop LSB to A
+        GetBYTE         = 0x25,
         
         Void            = 0b00000000,
         Char            = 0b01000000,
@@ -93,12 +95,14 @@ unit VCode
     const string strPushNEXT = "pshN";
     const string strPushTOP = "pshT";
     const string strPopNEXT = "popN";
+    const string strPopBYTE = "popBYT";
     const string strPopTOP = "popT";
     const string strPutNEXT = "putN";
     const string strPutZERO = "putZ";
     const string strPutONE  = "put1";
     const string strPutTOP = "putT";
     const string strGetNEXT = "getN";
+    const string strGetBYTE = "getBYT";
     const string strGetTOP = "getT";
     const string strIncNEXT = "incN";
     const string strDecNEXT = "decN";
@@ -235,6 +239,13 @@ unit VCode
                 LDA #(strPopNEXT / 256)
                 STA ZP.STRH
             }
+            case VOpCode.PopBYTE:
+            {
+                LDA #(strPopBYTE % 256)
+                STA ZP.STRL
+                LDA #(strPopBYTE / 256)
+                STA ZP.STRH
+            }
             case VOpCode.PopTOP:
             {
                 LDA #(strPopTOP % 256)
@@ -275,6 +286,13 @@ unit VCode
                 LDA #(strGetNEXT % 256)
                 STA ZP.STRL
                 LDA #(strGetNEXT / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.GetBYTE:
+            {
+                LDA #(strGetBYTE % 256)
+                STA ZP.STRL
+                LDA #(strGetBYTE / 256)
                 STA ZP.STRH
             }
             case VOpCode.GetTOP:
@@ -570,6 +588,10 @@ Gen6502.emitByte(); SEC PLY
                 {
                     PHY popNEXT(); PLY if (NC) { return; }
                 }
+                case VOpCode.PopBYTE:
+                {
+                    PHY popBYTE(); PLY if (NC) { return; }
+                }
                 case VOpCode.PopTOP:
                 {
                     PHY popTOP(); PLY if (NC) { return; }
@@ -614,6 +636,12 @@ Gen6502.emitByte(); SEC PLY
                     LDA [vcodeBuffer], Y // BP offset
                     INY
                     PHY getNEXT(); PLY if (NC) { return; }
+                }
+                case VOpCode.GetBYTE:
+                {
+                    LDA [vcodeBuffer], Y // BP offset
+                    INY
+                    PHY getBYTE(); PLY if (NC) { return; }
                 }
                 case VOpCode.GetTOP:
                 {
@@ -905,6 +933,45 @@ Gen6502.emitByte(); SEC PLY
             LDA peep0
             switch (A)
             {
+                case VOpCode.PopBYTE:
+                {
+                    LDA peep1
+                    switch (A)
+                    {
+                        case (VOpCode.PushNEXT | VOpCode.Int):
+                        case (VOpCode.PushNEXT | VOpCode.Long):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.GetNEXT | VOpCode.Int):
+                                case (VOpCode.GetNEXT | VOpCode.Long):
+                                {
+                                    if (BBS0, vFlags) // Flushing
+                                    {
+                                        // GetNEXT, PushNEXT, PopBYTE -> GetBYTE
+                                        DEC vcodeOffset
+                                        DEC vcodeOffset
+                                        LDY vcodeOffset
+                                        DEY
+                                        DEY
+                                        popPeep();
+                                        popPeep();
+                                        popPeep();
+                                        LDA # VOpCode.GetBYTE
+                                        STA [vcodeBuffer], Y
+                                        pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'U' Print.Char();
+#endif                            
+                                        SEC
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 case VOpCode.Discard:
                 {
                     LDA peep1
@@ -923,6 +990,7 @@ Print.Space(); LDA #'A' Print.Char();
                             SEC
                             break;
                         }
+                        
                         
                         case (VOpCode.PutNEXT | VOpCode.Int):
                         {
@@ -1903,6 +1971,11 @@ Print.Space(); LDA #'J' Print.Char();
         buildTypeX();
         addVCode();
     }
+    PopBYTE()
+    {
+        LDX # VOpCode.PopBYTE
+        addVCode();
+    }
     PushTOP()
     {
         LDX # VOpCode.PushTOP
@@ -2730,6 +2803,31 @@ Print.Space(); LDA #'J' Print.Char();
         } // single exit
     }
     
+    // Generate code to load A from BP+offset
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    getBYTE()
+    {
+        loop
+        {
+            // Calculate effective offset into X
+            calculateBPOffset();
+            if (NC) 
+            {
+                break;
+            }
+                       
+            // Load NEXT0 through pointer
+            LDA #OpCode.LDA_ABS_X
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # 0
+            Gen6502.emitByte(); if (NC) { break; }
+            LDA # (StackPage0 / 256)
+            Gen6502.emitByte(); if (NC) { break; }
+            SEC
+            break;
+        } // single exit
+    }
+    
     // Generate code to load ZP.TOP from BP+offset
     // Input: A = signed BP offset (e.g., 0xFF for -1)
     getTOP()
@@ -3232,6 +3330,16 @@ Print.Space(); LDA #'J' Print.Char();
         LDA #ZP.NEXT3
         Gen6502.emitByte(); if (NC) { return; }
         
+        SEC
+    }
+    
+    // Generate code to pop 8-bit value from stack into A
+    popBYTE()
+    {
+        
+        LDA #OpCode.PLA
+        Gen6502.emitByte(); if (NC) { return; } 
+                
         SEC
     }
     

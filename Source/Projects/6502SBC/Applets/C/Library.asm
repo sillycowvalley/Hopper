@@ -348,14 +348,8 @@ unit Library
         LDA # 8  // Skip next 8 bytes
         EmitByte(); if (NC) { return; }
         
-        // Emit: LDX #PrintChar
-        LDA # OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA # BIOSInterface.SysCall.PrintChar
-        EmitByte(); if (NC) { return; }
-        
-        // Emit: JSR dispatch
-        EmitDispatchCall(); if (NC) { return; }
+        // Generate: Call Print.Char() (expects character in A)
+        EmitPrintChar(); if (NC) { return; }
         
         // Emit: INY
         LDA # OpCode.INY
@@ -427,20 +421,11 @@ unit Library
         generateFirstArgExpression();
         if (NC) { return; }
         
-        VCode.PopNEXT();if (NC) { return; }
+        // Pop value from stack into A
+        VCode.PopBYTE(); if (NC) { return; }
         
-        // Move character from NEXT0 to A and call PrintChar
-        LDA # OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0 // PutcharCall()
-        EmitByte(); if (NC) { return; }
-        
-        LDA #OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #BIOSInterface.SysCall.PrintChar
-        EmitByte(); if (NC) { return; }
-        
-        EmitDispatchCall(); if (NC) { return; }
+        // Generate: Call Print.Char() (expects character in A)
+        EmitPrintChar(); if (NC) { return; }
         
         // replace the slot reserved for "return"
         VCode.Discard();  if (NC) { return; }
@@ -771,24 +756,11 @@ unit Library
         STA ZP.IDXH
         CodeGen.generateExpression(); if (NC) { return; } // emit arg
         
-        // Pop value from stack into NEXT
-        PopNEXT(); if (NC) { return; }
-        
-        // TODO: VCode.PopCHAR()
-        
-        // Generate: LDA NEXT0 (character is in low byte)
-        LDA #OpCode.LDA_ZP
-        EmitByte(); if (NC) { return; }
-        LDA # ZP.NEXT0 // emitCharFormatter()
-        EmitByte(); if (NC) { return; }
+        // Pop value from stack into A
+        VCode.PopBYTE(); if (NC) { return; }
         
         // Generate: Call Print.Char() (expects character in A)
-        LDA #OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #BIOSInterface.SysCall.PrintChar
-        EmitByte(); if (NC) { return; }
-        
-        EmitDispatchCall(); if (NC) { return; }
+        EmitPrintChar(); if (NC) { return; }
         
         // Move to next argument
         LDY #AST.iNext
