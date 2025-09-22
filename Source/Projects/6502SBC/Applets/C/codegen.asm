@@ -641,14 +641,9 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
         VCode.PopTOP();  if (NC) { return; }    
         
         // NEXT = NEXT - TOP (0 - value)
-        LDA #OpCode.LDX_IMM
-        EmitByte(); if (NC) { return; }
-        LDA #BIOSInterface.SysCall.LongSub
-        EmitByte(); if (NC) { return; }
-        Library.EmitDispatchCall(); if (NC) { return; }
+        VCode.LongSUB();  if (NC) { return; }
         
-        PushNEXT(); if (NC) { return; }
-        
+        VCode.PushNEXT(); if (NC) { return; }
         SEC
     }
     
@@ -1339,6 +1334,13 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     SEC
                     break;
                 }
+                case BinOpType.Sub:
+                {
+                    VCode.LongSUB();  if (NC) { break; }
+                    VCode.PushNEXT(); if (NC) { break; }
+                    SEC
+                    break;
+                }
                 case BinOpType.BitwiseAnd:
                 {
                     generateBitwiseAnd(); if (NC) { break; }
@@ -1352,13 +1354,6 @@ LDA #'y' Print.Char(); Print.Space(); Print.String(); Print.Space();
                     VCode.PushNEXT();  if (NC) { break; }
                     SEC
                     break;
-                }
-                case BinOpType.Sub:
-                {
-                    LDA #OpCode.LDX_IMM
-                    EmitByte(); if (NC) { break; }
-                    LDA # BIOSInterface.SysCall.LongSub
-                    EmitByte(); if (NC) { break; }
                 }
                 case BinOpType.Mul:
                 {

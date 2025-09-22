@@ -114,6 +114,7 @@ unit Gen6502
         DEX     = 0xCA,
         BNE     = 0xD0,
         PHX     = 0xDA, 
+        SBC_ZP  = 0xE5,
         INC_ZP  = 0xE6, 
         INX     = 0xE8,
         SBC_IMM = 0xE9, 
