@@ -171,6 +171,10 @@ unit ScreenBuffer
         STA sbWidth
         STY sbHeight
         
+        LDA #0xFF
+        STA sbLastOffsetCol
+        STA sbLastOffsetRow
+        
         // Calculate total size = width (A) * height (Y) * 2
         calculateBufferSize();
         LDA sbOffsetL
@@ -234,6 +238,11 @@ unit ScreenBuffer
         STZ Attributes
         STZ CursorCol
         STZ CursorRow
+        
+        LDA #0xFF
+        STA sbLastOffsetCol
+        STA sbLastOffsetRow
+               
         ScreenBuffer.ShowCursor();
     }
     

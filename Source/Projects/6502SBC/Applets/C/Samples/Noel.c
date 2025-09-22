@@ -2,6 +2,7 @@
 void main() {
     long s;
     long start = millis();
+    int  ss    = seconds();
     int i; int j;
     for (i = 1; i <= 10; i++) {
         s = 0;
@@ -11,6 +12,7 @@ void main() {
         putchar('.');
     }
     
-    printf("%ld\n", s);
+    printf("\n%ld\n", s);
     printf("%ld ms\n", millis() - start);
+    printf("%d seconds\n", seconds() - ss);
 }
