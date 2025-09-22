@@ -81,6 +81,7 @@ unit VCode
         OneTOP          = 0x23,
         PopBYTE         = 0x24,               // pop LSB to A
         GetBYTE         = 0x25,
+        LongADDPut      = 0x26,
         
         Void            = 0b00000000,
         Char            = 0b01000000,
@@ -108,6 +109,7 @@ unit VCode
     const string strDecNEXT = "decN";
     const string strPushC = "pshC";
     const string strLongADD = "lAdd";
+    const string strLongADDPut = "lAddPut";
     const string strLongSUB = "lSub";
     const string strDiscard = "Disc";
     const string strReserve = "Rsrv";
@@ -328,6 +330,13 @@ unit VCode
                 LDA #(strLongADD % 256)
                 STA ZP.STRL
                 LDA #(strLongADD / 256)
+                STA ZP.STRH
+            }
+            case VOpCode.LongADDPut:
+            {
+                LDA #(strLongADDPut % 256)
+                STA ZP.STRL
+                LDA #(strLongADDPut / 256)
                 STA ZP.STRH
             }
             case VOpCode.LongSUB:
@@ -631,6 +640,12 @@ Gen6502.emitByte(); SEC PLY
                     PHY longSUB(); PLY if (NC) { return; }
                 }
                 
+                case VOpCode.LongADDPut:
+                {
+                    LDA [vcodeBuffer], Y // BP offset
+                    INY
+                    PHY longADDPut(); PLY if (NC) { return; }
+                }
                 case VOpCode.GetNEXT:
                 {
                     LDA [vcodeBuffer], Y // BP offset
@@ -978,17 +993,23 @@ Print.Space(); LDA #'U' Print.Char();
                     switch (A)
                     {
                         case (VOpCode.PushNEXT | VOpCode.Long):
+                        case (VOpCode.PushNEXT | VOpCode.Int):
+                        case (VOpCode.PushTOP  | VOpCode.Long):
+                        case (VOpCode.PushTOP  | VOpCode.Int):
                         {
-                            // PushNEXT, Discard -> NOP
-                            DEC vcodeOffset
-                            DEC vcodeOffset
-                            popPeep();
-                            popPeep();
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // PushNEXT, Discard -> NOP
+                                DEC vcodeOffset
+                                DEC vcodeOffset
+                                popPeep();
+                                popPeep();
 #ifdef DEBUG
 Print.Space(); LDA #'A' Print.Char();
 #endif                            
-                            SEC
-                            break;
+                                SEC
+                                break;
+                            }
                         }
                         
                         
@@ -1259,6 +1280,29 @@ Print.Space(); LDA #'B' Print.Char();
                             SEC
                             break;
                         }
+                        case (VOpCode.PushNEXT | VOpCode.Int):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.GetNEXT | VOpCode.Int):
+                                {
+                                    if (BBS0, vFlags) // Flushing
+                                    {
+                                        // GetNEXT, PushNEXT, PopNEXT -> GetNEXT
+                                        popPeep();
+                                        popPeep();
+                                        DEC vcodeOffset
+                                        DEC vcodeOffset
+#ifdef DEBUG
+Print.Space(); LDA #'X' Print.Char();
+#endif                                  
+                                        SEC
+                                        break;  
+                                    }
+                                }
+                            }
+                        }
                         case (VOpCode.PushC | VOpCode.Long):
                         {
                             // PushC, PopNEXT -> CtoNEXT
@@ -1313,8 +1357,71 @@ Print.Space(); LDA #'E' Print.Char();
                             SEC
                             break;
                         }
+                        case (VOpCode.NEXTtoTOP | VOpCode.Int):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.GetNEXT | VOpCode.Int):
+                                {
+                                    // GetNEXT, NEXTtoTOP, PopNEXT -> GetTOP, PopNEXT
+                                    popPeep();
+                                    popPeep();
+                                    popPeep();
+                                    DEC vcodeOffset
+                                    LDY vcodeOffset
+                                    DEY
+                                    LDA # (VOpCode.PopNEXT | VOpCode.Long)
+                                    STA [vcodeBuffer], Y
+                                    DEY
+                                    DEY
+                                    LDA # (VOpCode.GetTOP | VOpCode.Int)
+                                    STA [vcodeBuffer], Y
+                                    pushPeep();
+                                    LDA # (VOpCode.PopNEXT | VOpCode.Long)
+                                    pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'V' Print.Char();LDA #'1' Print.Char();
+#endif                                  
+                                    SEC
+                                    break;  
+                                }
+                            }
+                        }
+                        case (VOpCode.NEXTtoTOP | VOpCode.Long):
+                        {
+                            LDA peep2
+                            switch (A)
+                            {
+                                case (VOpCode.GetNEXT | VOpCode.Long):
+                                {
+                                    // GetNEXT, NEXTtoTOP, PopNEXT -> GetTOP, PopNEXT
+                                    popPeep();
+                                    popPeep();
+                                    popPeep();
+                                    DEC vcodeOffset
+                                    LDY vcodeOffset
+                                    DEY
+                                    LDA # (VOpCode.PopNEXT | VOpCode.Long)
+                                    STA [vcodeBuffer], Y
+                                    DEY
+                                    DEY
+                                    LDA # (VOpCode.GetTOP | VOpCode.Long)
+                                    STA [vcodeBuffer], Y
+                                    pushPeep();
+                                    LDA # (VOpCode.PopNEXT | VOpCode.Long)
+                                    pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'V' Print.Char();LDA #'2' Print.Char();
+#endif                                  
+                                    SEC
+                                    break;   
+                                }
+                            }
+                        }
                     }
-                }
+                } // case (VOpCode.PopNEXT | VOpCode.Long):
+                
                 case (VOpCode.NEXTtoTOP | VOpCode.Int):
                 {
                     LDA peep1
@@ -1509,6 +1616,29 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'3' Print.Char();
                     LDA peep1
                     switch (A)
                     {
+                        case (VOpCode.LongADD | VOpCode.Long):
+                        {
+                            if (BBS0, vFlags) // Flushing
+                            {
+                                // LongADD, PutNEXT -> LongADDPut
+                                popPeep();
+                                popPeep();
+                                DEC vcodeOffset
+                                LDY vcodeOffset
+                                LDA [vcodeBuffer], Y // BP argument 
+                                DEY
+                                STA [vcodeBuffer], Y // BP argument 
+                                DEY
+                                LDA # (VOpCode.LongADDPut | VOpCode.Long)
+                                STA [vcodeBuffer], Y
+                                pushPeep();
+#ifdef DEBUG
+Print.Space(); LDA #'W' Print.Char();
+#endif                            
+                                SEC
+                                break;                                
+                            }
+                        }
                         case VOpCode.ZeroNEXT:
                         {
                             if (BBS0, vFlags) // Flushing
@@ -3604,6 +3734,61 @@ Print.Space(); LDA #'J' Print.Char();
         LDA # ZP.TOP3       Gen6502.emitByte(); if (NC) { return; }
         LDA #OpCode.STA_ZP  Gen6502.emitByte(); if (NC) { return; }
         LDA # ZP.NEXT3      Gen6502.emitByte(); if (NC) { return; }
+        
+        SEC
+    }
+    
+    // Input: A = signed BP offset (e.g., 0xFF for -1)
+    longADDPut()
+    {
+        // Calculate effective offset into X
+        calculateBPOffset(); if (NC) { return; }
+        
+        // [X] = NEXT + TOP
+        LDA # OpCode.CLC    Gen6502.emitByte(); if (NC) { return; }
+        LDA # OpCode.LDA_ZP Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.NEXT0      Gen6502.emitByte(); if (NC) { return; }
+        LDA # OpCode.ADC_ZP Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP0       Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ABS_X
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage0 / 256)
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA # OpCode.LDA_ZP Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.NEXT1      Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.ADC_ZP  Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP1       Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ABS_X
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage1 / 256)
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.LDA_ZP  Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.NEXT2      Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.ADC_ZP  Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP2       Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ABS_X
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage2 / 256)
+        Gen6502.emitByte(); if (NC) { return; }
+        
+        LDA #OpCode.LDA_ZP  Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.NEXT3      Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.ADC_ZP  Gen6502.emitByte(); if (NC) { return; }
+        LDA # ZP.TOP3       Gen6502.emitByte(); if (NC) { return; }
+        LDA #OpCode.STA_ABS_X
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # 0
+        Gen6502.emitByte(); if (NC) { return; }
+        LDA # (StackPage3 / 256)
+        Gen6502.emitByte(); if (NC) { return; }
         
         SEC
     }
