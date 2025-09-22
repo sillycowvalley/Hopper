@@ -2047,7 +2047,7 @@ Print.Space(); LDA #'J' Print.Char();
         SEC
     }
     
-        PushC()
+    PushC()
     {
         LDX # (VOpCode.PushC | VOpCode.Long)
         addVCode();

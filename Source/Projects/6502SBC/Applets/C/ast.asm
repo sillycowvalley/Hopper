@@ -345,6 +345,54 @@ unit AST
                         Memory.Free();
                     }
                 }
+                case NodeType.For:
+                {
+                    // Free init expression if present
+                    LDY # iForInit
+                    LDA [astNode], Y
+                    STA ZP.IDXL
+                    INY
+                    LDA [astNode], Y
+                    STA ZP.IDXH
+                    
+                    LDA ZP.IDXL
+                    ORA ZP.IDXH
+                    if (NZ)
+                    {
+                        FreeNode();  // Recursive call
+                    }
+                    
+                    // Free exit condition if present
+                    LDY #iForExit
+                    LDA [astNode], Y
+                    STA ZP.IDXL
+                    INY
+                    LDA [astNode], Y
+                    STA ZP.IDXH
+                    
+                    LDA ZP.IDXL
+                    ORA ZP.IDXH
+                    if (NZ)
+                    {
+                        FreeNode();  // Recursive call
+                    }
+                    
+                    // Free next/update expression if present
+                    LDY #iForNext
+                    LDA [astNode], Y
+                    STA ZP.IDXL
+                    INY
+                    LDA [astNode], Y
+                    STA ZP.IDXH
+                    
+                    LDA ZP.IDXL
+                    ORA ZP.IDXH
+                    if (NZ)
+                    {
+                        FreeNode();  // Recursive call
+                    }
+                }
+                
             }
             
             // Free first child if exists

@@ -430,9 +430,7 @@ unit Library
         // replace the slot reserved for "return"
         VCode.Discard();  if (NC) { return; }
         // Push character back as return value (already in NEXT0, rest is zero)
-        VCode.PushNEXT(); if (NC) { return; }
-        
-        SEC
+        VCode.PushNEXT();
     }
     GetChCall()
     {
@@ -467,9 +465,7 @@ unit Library
         
         // replace the slot reserved for "return"
         VCode.Discard();  if (NC) { return; }
-        VCode.PushNEXT(); if (NC) { return; }
-        
-        SEC
+        VCode.PushNEXT();
     }
     KbHitCall()
     {
@@ -514,9 +510,7 @@ unit Library
         
         // replace the slot reserved for "return"
         VCode.Discard();  if (NC) { return; }
-        VCode.PushNEXT(); if (NC) { return; }
-        
-        SEC
+        VCode.PushNEXT();
     }
     
     
@@ -621,12 +615,9 @@ unit Library
         EmitByte(); if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Push result back on stack
         VCode.PushNEXT();
-        if (NC) { return; }
-        
-        SEC
     }
     
     // Generate code for free() call
@@ -709,10 +700,8 @@ unit Library
         EmitDispatchCall(); if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         VCode.PushTOP();
-        
-        SEC
     }
     
     SecondsCall()
@@ -725,10 +714,8 @@ unit Library
         EmitDispatchCall(); if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         VCode.PushTOP();
-        
-        SEC
     }
     
     // Generate code to print character argument
@@ -1321,10 +1308,9 @@ unit Library
         if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Result is in TOP, push it
         VCode.PushTOP();
-        if (NC) { return; }
     }
     
     FGetCCall()
@@ -1348,10 +1334,9 @@ unit Library
         if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Result is in TOP, push it
         VCode.PushTOP();
-        if (NC) { return; }
     }
     
     FPutCCall()
@@ -1385,10 +1370,9 @@ unit Library
         if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Result is in TOP, push it
         VCode.PushTOP();
-        if (NC) { return; }
     }
     
     FReadCall()
@@ -1477,7 +1461,7 @@ unit Library
         if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Result is in TOP, push it
         VCode.PushTOP();
     }
@@ -1568,7 +1552,7 @@ unit Library
         if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Result is in TOP, push it
         VCode.PushTOP();
     }
@@ -1594,9 +1578,8 @@ unit Library
         if (NC) { return; }
         
         // replace the slot reserved for "return"
-        VCode.Discard();
+        VCode.Discard(); if (NC) { return; }
         // Result is in TOP, push it
         VCode.PushTOP();
-        if (NC) { return; }
     }  
 }
