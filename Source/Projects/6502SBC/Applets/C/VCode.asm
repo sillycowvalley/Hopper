@@ -1012,7 +1012,6 @@ Print.Space(); LDA #'A' Print.Char();
                             }
                         }
                         
-                        
                         case (VOpCode.PutNEXT | VOpCode.Int):
                         {
                             LDA peep2
@@ -1413,13 +1412,13 @@ Print.Space(); LDA #'V' Print.Char();LDA #'1' Print.Char();
                                     pushPeep();
 #ifdef DEBUG
 Print.Space(); LDA #'V' Print.Char();LDA #'2' Print.Char();
-#endif                                  
+#endif
                                     SEC
                                     break;   
                                 }
                             }
-                        }
-                    }
+                        } // (VOpCode.NEXTtoTOP | VOpCode.Long)
+                    } // switch (peep1)
                 } // case (VOpCode.PopNEXT | VOpCode.Long):
                 
                 case (VOpCode.NEXTtoTOP | VOpCode.Int):
