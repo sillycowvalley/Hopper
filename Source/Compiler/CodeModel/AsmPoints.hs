@@ -1513,7 +1513,10 @@ unit AsmPoints
                                     }
                                     else
                                     {
-                                        PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + Asm6502.GetName(opCodes[0]));
+                                        if (IsExperimental)
+                                        {
+                                            PrintLn(" Inline? " + currentMethodName + "->" + callMethodName + ":" + Asm6502.GetName(opCodes[0]));
+                                        }
                                     }
                                 }
                             }

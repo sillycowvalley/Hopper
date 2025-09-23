@@ -2,7 +2,8 @@ program NRL
 {
 //#define CPU_Z80
     
-    uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/MECB6502"
     
     NRL()
     {

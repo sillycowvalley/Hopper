@@ -2,9 +2,8 @@ unit PIA6821
 {
     friend Parallel, Time;
     
-    #define M6840_PTM
-    
-    // Better Register Aliass:
+#ifdef M6840_PTM    
+    // Better Register Alias:
     const uint Timer1Control   = TCR;
     const uint Timer3Control   = TCR;
     const uint Timer2Control   = TCSR2; // (least significant bit selects TCR as Timer1Control (1) or Timer3Control (0))
@@ -24,7 +23,8 @@ unit PIA6821
     const uint Timer3LSBLatch  = TIMER3_LSB;
     const uint Timer3Counter   = TIMER3_MSB;
     const uint Timer3LSBBuffer = TIMER3_LSB;
-    
+#endif
+
     initialize()
     {
         // Motorola 6821 PIA
@@ -48,6 +48,7 @@ unit PIA6821
         LDA #0b00000100 // Select PRB (PORTB) and clear interrupt flags in CRB
         STA CRB
         
+#ifdef M6840_PTM        
         // 1000us per sample = 1ms units for Time.Delay(..)
         LDA # 0xE8
         STA ZP.TOPL
@@ -55,9 +56,11 @@ unit PIA6821
         STA ZP.TOPH
         
         sharedSamplesMicroSet();
+#endif
     }
     isr()
     {
+#ifdef M6840_PTM        
         BIT TimerStatus
         if (MI) // IRQ by Timer 1, 2 or 3
         {
@@ -87,6 +90,7 @@ unit PIA6821
             }
             PLA
         }
+#endif        
     }   
     
     sharedSamplesMicroSet()
