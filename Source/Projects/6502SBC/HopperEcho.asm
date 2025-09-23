@@ -1,8 +1,10 @@
 program HopperEcho
 {
     #define CPU_65C02S
-    #define ROM_4K
+    #define ROM_16K
     
+    uses "/Source/Runtime/6502/ZeroPage"
+    uses "/Source/Runtime/6502/MemoryMap"
     uses "/Source/Runtime/6502/Serial"
     
     const string Echo = "\nHopper Echo:\n";

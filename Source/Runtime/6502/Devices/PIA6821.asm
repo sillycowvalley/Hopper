@@ -91,9 +91,6 @@ unit PIA6821
     
     sharedSamplesMicroSet()
     {
-        LDA #'<'
-        WriteChar();
-        
         // Motorola 6840 Timer
         SEI
         
@@ -166,10 +163,6 @@ unit PIA6821
         STA Timer2Control
 
         CLI
-        
-        LDA #'>'
-        WriteChar();
-        
     }
     sharedSamplesMicroGet()
     {
