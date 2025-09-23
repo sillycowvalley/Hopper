@@ -88,15 +88,6 @@ unit Utilities // Utilities.asm
             INC ZP.PCH
         }
     }
-    DecPC()
-    {
-        LDA PCL
-        if (Z)
-        {
-            DEC PCH
-        }
-        DEC PCL
-    }
     IncACC()
     {
         INC ZP.ACCL
@@ -106,6 +97,15 @@ unit Utilities // Utilities.asm
         }
     }
 #ifdef HOPPER_BASIC
+    DecPC()
+    {
+        LDA PCL
+        if (Z)
+        {
+            DEC PCH
+        }
+        DEC PCL
+    }
     IncSTR()
     {
         INC ZP.STRL
@@ -114,7 +114,6 @@ unit Utilities // Utilities.asm
             INC ZP.STRH
         }
     }
-#endif
     IncNEXT()
     {
         INC ZP.NEXTL
@@ -123,6 +122,16 @@ unit Utilities // Utilities.asm
             INC ZP.NEXTH
         }
     }
+    DecLENGTH()
+    {
+        LDA FLENGTHL
+        if (Z)
+        {
+            DEC FLENGTHH
+        }
+        DEC FLENGTHL
+    }
+#endif
     DecACCx2()
     {
         PHA
@@ -176,15 +185,7 @@ unit Utilities // Utilities.asm
         }
         DEC FSOURCEADDRESSL
     }
-    DecLENGTH()
-    {
-        LDA FLENGTHL
-        if (Z)
-        {
-            DEC FLENGTHH
-        }
-        DEC FLENGTHL
-    }
+    
     
     // copy LCOUNT bytes from FSOURCEADDRESS to FDESTINATIONADDRESS
     //     munts LCOUNT, FSOURCEADDRESS, FDESTINATIONADDRESS, A, Y
