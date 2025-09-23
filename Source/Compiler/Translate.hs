@@ -25,6 +25,8 @@ program Translate
     bool isMain;
     
     bool IsDebugger { get { return false; } }
+    bool IsAssembly { get { return false; } }
+    
     bool InMain     { get { return isMain; } }
     
     bool isExperimental;

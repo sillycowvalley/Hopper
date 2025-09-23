@@ -194,7 +194,7 @@ unit TranslateExpression
                     }
                     if ((ui < 0x20) || (ui == 0x5C))
                     {
-                        content = "'\x" + ui.ToHexString(2) + "'";
+                        content = "'\\x" + ui.ToHexString(2) + "'";
                     }
                     else
                     {

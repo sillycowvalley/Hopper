@@ -331,6 +331,99 @@ unit Scanner
         }
         return true;
     }
+    <string,string> processEscapeCharacter(bool isChar, ref char c)
+    {
+        <string,string> empty;
+        char p = sourceGetFromPos(currentPos, true); // peek
+        switch (p)
+        {
+            case char(0x5C): // \\
+            {
+                c = advance(); // gobble the \ (literal
+            }
+            case '"': // \"
+            {
+                if (!isChar) // isString
+                {
+                    c = advance(); // "
+                }
+            }
+            
+            case char(0x27): // \'
+            {
+                if (isChar)
+                {
+                    c = advance(); // '
+                }
+            }
+            
+            // supported escape codes:
+            case 'n':
+            {
+                _ = advance();
+                c = Char.EOL;
+            }
+            case 't':
+            {
+                _ = advance();
+                c = Char.Tab;
+            }
+            case 'f':
+            {
+                _ = advance();
+                c = Char.Formfeed;
+            }
+            case 'b':
+            {
+                _ = advance();
+                c = Char.Backspace;
+            }
+            case 'e':
+            {
+                _ = advance();
+                c = Char.Escape;
+            }
+            case 'r':
+            {
+                _ = advance();
+                c = char(0x0D);
+            }
+            case 'x':
+            {
+#if !defined(COMPILER) // Assembler only
+                _ = advance(); // consume the 'x'
+
+                // Read two hex digits
+                char h1 = sourceGetFromPos(currentPos, true);
+                if (!h1.IsHexDigit())
+                {
+                    return errorToken("invalid hex escape sequence - expecting hex digit");
+                }
+                _ = advance();
+                
+                char h2 = sourceGetFromPos(currentPos, true);
+                if (!h2.IsHexDigit())
+                {
+                    return errorToken("invalid hex escape sequence - expecting second hex digit");
+                }
+                _ = advance();
+                
+                // Parse as hex number
+                string hexStr = "0x";
+                String.Build(ref hexStr, h1);
+                String.Build(ref hexStr, h2);
+                
+                uint hv;
+                if (!UInt.TryParse(hexStr, ref hv))
+                {
+                    return errorToken("invalid hex escape sequence");
+                }
+                c = char(hv);
+#endif                
+            }
+        }
+        return empty;
+    }
     <string,string> scanString()
     {
         char c;
@@ -350,78 +443,10 @@ unit Scanner
             c = advance();
             if (c == char(0x5C)) // \
             {
-                p = sourceGetFromPos(currentPos, true); // peek
-                switch (p)
+                <string,string> error = processEscapeCharacter(false, ref c); 
+                if (error.Count != 0)
                 {
-                    case '"': // \"
-                    case char(0x5C): // \\
-                    {
-                        c = advance(); // gobble the \ (literal
-                    }
-                    
-                    // supported escape codes:
-                    case 'n':
-                    {
-                        _ = advance();
-                        c = Char.EOL;
-                    }
-                    case 't':
-                    {
-                        _ = advance();
-                        c = Char.Tab;
-                    }
-                    case 'f':
-                    {
-                        _ = advance();
-                        c = Char.Formfeed;
-                    }
-                    case 'b':
-                    {
-                        _ = advance();
-                        c = Char.Backspace;
-                    }
-                    case 'e':
-                    {
-                        _ = advance();
-                        c = Char.Escape;
-                    }
-                    case 'r':
-                    {
-                        _ = advance();
-                        c = char(0x0D);
-                    }
-                    case 'x':
-                    {
-                        _ = advance(); // consume the 'x'
-    
-                        // Read two hex digits
-                        char h1 = sourceGetFromPos(currentPos, true);
-                        if (!h1.IsHexDigit())
-                        {
-                            return errorToken("invalid hex escape sequence - expecting hex digit");
-                        }
-                        _ = advance();
-                        
-                        char h2 = sourceGetFromPos(currentPos, true);
-                        if (!h2.IsHexDigit())
-                        {
-                            return errorToken("invalid hex escape sequence - expecting second hex digit");
-                        }
-                        _ = advance();
-                        
-                        // Parse as hex number
-                        string hexStr = "0x";
-                        String.Build(ref hexStr, h1);
-                        String.Build(ref hexStr, h2);
-                        
-                        uint hv;
-                        if (!UInt.TryParse(hexStr, ref hv))
-                        {
-                            return errorToken("invalid hex escape sequence");
-                        }
-                        
-                        c = char(hv);
-                    }
+                    return error;
                 }
             }
             String.Build(ref value, c);
@@ -439,86 +464,15 @@ unit Scanner
     }
     <string,string> scanChar()
     {
-        char p;
         char d;
         char c = advance();
         if (c == char(0x5C)) 
         {
-            p = sourceGetFromPos(currentPos, true); // peek
-            switch (p)
+            <string,string> error = processEscapeCharacter(true, ref c); 
+            if (error.Count != 0)
             {
-                case char(0x27): // \'
-                case char(0x5C): // \\
-                {
-                    c = advance(); // gobble the \ (literal
-                }
-                
-                // supported escape codes:
-                case 'n':
-                {
-                    _ = advance();
-                    c = Char.EOL;
-                }
-                case 't':
-                {
-                    _ = advance();
-                    c = Char.Tab;
-                }
-                case 'f':
-                {
-                    _ = advance();
-                    c = Char.Formfeed;
-                }
-                case 'b':
-                {
-                    _ = advance();
-                    c = Char.Backspace;
-                }
-                case 'e':
-                {
-                    _ = advance();
-                    c = Char.Escape;
-                }
-                case 'r':
-                {
-                    _ = advance();
-                    c = char(0x0D);
-                }
-                
-                case 'x':
-                {
-                    _ = advance(); // consume the 'x'
-
-                    // Read two hex digits
-                    char h1 = sourceGetFromPos(currentPos, true);
-                    if (!h1.IsHexDigit())
-                    {
-                        return errorToken("invalid hex escape sequence - expecting hex digit");
-                    }
-                    _ = advance();
-                    
-                    char h2 = sourceGetFromPos(currentPos, true);
-                    if (!h2.IsHexDigit())
-                    {
-                        return errorToken("invalid hex escape sequence - expecting second hex digit");
-                    }
-                    _ = advance();
-                    
-                    // Parse as hex number
-                    string hexStr = "0x";
-                    String.Build(ref hexStr, h1);
-                    String.Build(ref hexStr, h2);
-                    
-                    uint hv;
-                    if (!UInt.TryParse(hexStr, ref hv))
-                    {
-                        return errorToken("invalid hex escape sequence");
-                    }
-                    
-                    c = char(hv);
-                }
+                return error;
             }
-            
         }
         d = advance();
         if (isAtEnd() || (d != char(0x27))) // '

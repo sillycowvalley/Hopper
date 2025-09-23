@@ -1,4 +1,4 @@
-unit ZP // ZeroPage.asm
+unit ZP
 {
 #ifndef TIGGERC
     const byte PC                   = 0x00;
@@ -36,11 +36,8 @@ unit ZP // ZeroPage.asm
     const byte CODESTART            = 0x0D;
     const byte CODESTARTL           = 0x0D;
     const byte CODESTARTH           = 0x0E;
-#ifdef HOPPER_BASIC
-    const byte TraceIndent          = 0x0F; // used by Trace.asm
-#else
+    
     const byte CNP                  = 0x0F;
-#endif
     
     const byte ACC                  = 0x10;
     const byte ACCL                 = 0x10;
@@ -75,8 +72,8 @@ unit ZP // ZeroPage.asm
 
     // used by firmware for 'W'orkspace
     // (for example, Serial also uses these, especially on 6502 where PLX, PLY, PHX and PHY are missing)
-    const byte W0                   = 0x20; // switch table jumps use this slot!!
-    const byte W1                   = 0x21; // switch table jumps use this slot!!
+    const byte W0                   = 0x20;
+    const byte W1                   = 0x21;
     const byte W2                   = 0x22; // used by packed syscalls
     const byte W3                   = 0x23;
     const byte W4                   = 0x24;
@@ -106,91 +103,9 @@ unit ZP // ZeroPage.asm
     const byte TARGET1              = 0x2D;
     const byte TARGET2              = 0x2E;
     const byte TARGET3              = 0x2F;
-    
-#if !defined(TIGGERC) && !defined(HOPPER_BASIC)
+#ifndef TIGGERC
     const byte BRKL                 = 0x30; // .. 0x3F
     const byte BRKH                 = 0x40; // .. 0x4F
-#endif
-
-#if defined(HOPPER_BASIC)
-    // HopperBASIC allocation: 0x30..0x4F (32 bytes total)
-
-    // === CONSOLE INPUT (0x30) ===
-    const byte BasicInputLength     = 0x30;  // Length of current input in BasicInputBuffer
-
-    // === TOKENIZER STATE (0x31-0x34) ===
-    const byte TokenBufferLength    = 0x31;  // Length of tokens in BasicTokenizerBuffer (16-bit)
-    const byte TokenBufferLengthL   = 0x31;  // Low byte
-    const byte TokenBufferLengthH   = 0x32;  // High byte
-    const byte TokenizerPos         = 0x33;  // Current position in token buffer (16-bit)
-    const byte TokenizerPosL        = 0x33;  // Low byte  
-    const byte TokenizerPosH        = 0x34;  // High byte
-
-    // === ERROR HANDLING (0x35-0x36) ===
-    const byte LastErrorL           = 0x35;  // Error message pointer low byte
-    const byte LastErrorH           = 0x36;  // Error message pointer high byte
-
-    // === CURRENT TOKEN CACHE (0x37) ===
-    const byte CurrentToken         = 0x37;  // Current token type/value from token buffer
-
-    // === LITERAL POSITION TRACKING (0x38-0x39) ===
-    const byte TokenLiteralPosL     = 0x38;  // Literal data position low byte
-    const byte TokenLiteralPosH     = 0x39;  // Literal data position high byte
-
-    // === JIT COMPILER STATE (0x3A-0x3F) ===
-    const byte OpCodeBufferLength   = 0x3A;  // Length of opcodes in BasicOpcodeBuffer (16-bit)
-    const byte OpCodeBufferLengthL  = 0x3A;  // Low byte
-    const byte OpCodeBufferLengthH  = 0x3B;  // High byte
-    // Use ZP.PCL/ZP.PCH for opcode execution program counter
-    const byte CompilerTokenPos     = 0x3C;  // Token position during compilation (16-bit)
-    const byte CompilerTokenPosL    = 0x3C;  // Low byte
-    const byte CompilerTokenPosH    = 0x3D;  // High byte
-    const byte CompilerFlags        = 0x3E;  // Compilation flags (bit 0: in function, etc.)
-    const byte OpCodeTemp           = 0x3F;  // Temporary byte for opcode construction
-
-    // === AVAILABLE (0x40-0x4F) ===
-    // 16 bytes still available for future features
-    
-    // === SYMBOL TABLE (0x70-0x7F) ===
-
-    // Table Head Pointers
-    const byte VariablesList        = 0x70;  // Variable (and Constant) table head pointer (16-bit)
-    const byte VariablesListL       = 0x70;  // low byte
-    const byte VariablesListH       = 0x71;  // high byte
-
-    const byte FunctionsList        = 0x72;  // Function (and Argument) table head pointer (16-bit)
-    const byte FunctionsListL       = 0x72;  // low byte
-    const byte FunctionsListH       = 0x73;  // high byte
-
-    // Symbol Node Working Storage (survives Memory.Allocate calls)
-    const byte SymbolType           = 0x74;  // Storage for symbolType|dataType
-    const byte SymbolValue          = 0x75;  // Storage for symbol value (16-bit)
-    const byte SymbolValueL         = 0x75;
-    const byte SymbolValueH         = 0x76;
-    const byte SymbolName           = 0x77;  // Storage for symbol name pointer (16-bit)
-    const byte SymbolNameL          = 0x77;
-    const byte SymbolNameH          = 0x78;
-    const byte SymbolTokens         = 0x79;  // Storage for symbol tokens pointer
-    const byte SymbolTokensL        = 0x79;
-    const byte SymbolTokensH        = 0x7A;
-    const byte SymbolIteratorFilter = 0x7B;
-
-    // Temporary Storage
-    const byte SymbolLength         = 0x7C;  // Storage for symbol name length
-    const byte SymbolTemp0          = 0x7D;  // General temporary storage
-    const byte SymbolTemp1          = 0x7E;  // General temporary storage
-    const byte SymbolTemp2          = 0x7F;  // General temporary storage
-
-    // Repurposed W65C22 VIA slots, for now
-    const byte EmulatorPCL          = 0xF0;  // BIT this address to lock the current PC into this and the next slot
-    const byte EmulatorPCH          = 0xF1;
-    const byte TraceMessageL        = 0xF2;  // used by Trace.asm
-    const byte TraceMessageH        = 0xF3;
-    const byte SystemState          = 0xF4;  // Success, Failure, Exiting
-    
-    
-
-    
 #endif
 
 #ifndef TIGGERC
@@ -252,7 +167,6 @@ unit ZP // ZeroPage.asm
     const byte F14                  = 0x6E;
     const byte F15                  = 0x6F;
     
-  #if !defined(HOPPER_BASIC)     
     // dictionary types (safely unused)
     const byte D0                   = 0x70;
     const byte D1                   = 0x71;
@@ -261,7 +175,6 @@ unit ZP // ZeroPage.asm
     const byte D4                   = 0x74;
     const byte D5                   = 0x75;
     const byte D6                   = 0x76;
-  #endif
 #else
     const byte F0                   = 0x05;
 #endif
@@ -406,15 +319,13 @@ unit ZP // ZeroPage.asm
     const byte ACIADATA             = 0xED; //0x1F;
     
     // W65C22 VIA
-#if !defined(HOPPER_BASIC)
     const byte PORTB                = 0xF0;
     const byte PORTA                = 0xF1;
     const byte DDRB                 = 0xF2;
     const byte DDRA                 = 0xF3;
     const byte T1CL                 = 0xF4; // Timer 1 counter low
     const byte T1CH                 = 0xF5; // Timer 1 counter high
-#endif
-
+    
     const byte T1LL                 = 0xF6; // Timer 1 Latch Low
     const byte T1LH                 = 0xF7; // Timer 1 Latch High
     const byte T2CL                 = 0xF8; // Timer 2 Counter Low
@@ -511,29 +422,17 @@ unit ZP // ZeroPage.asm
     const byte LCURRENTL = F10;
     const byte LCURRENTH = F11;
 
-    
-#if defined(HOPPER_BASIC)
-    const byte LHEAD  = F12;
-    const byte LHEADL = F12;
-    const byte LHEADH = F13;
-#else
     const byte FITEM  = F12;
     const byte FITEML = F12;
     const byte FITEMH = F13;
-#endif
 
     const byte LCOUNT  = F14;
     const byte LCOUNTL = F14;
     const byte LCOUNTH = F15;
-
-#if defined(HOPPER_BASIC)        
-    const byte LHEADX  = F14;
-#else    
+    
     const byte LITYPE  = F14;
-#endif
 
     // used by arrays
     const byte ACARRY   = F14;
 #endif
 }
-

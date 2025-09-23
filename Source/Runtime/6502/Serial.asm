@@ -13,7 +13,6 @@ unit Serial // Serial.asm
 #else
     const byte XOFF = 0x13;  // Ctrl-S
     const byte XON  = 0x11;  // Ctrl-Q
-  
 #endif
     
     // Location of the Serial input buffer (256 bytes)

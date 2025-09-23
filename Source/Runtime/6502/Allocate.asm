@@ -373,13 +373,13 @@ unit Allocate
             {
                 // maBESTSIZE < ACC
 #if defined(HOPPER_BASIC)
-#ifdef DEBUG
+  #ifdef DEBUG
                 Print.NewLine(); LDA #'R' COut(); LDA #':' COut(); LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); 
                 Memory.AvailableACC();
                 Print.NewLine(); LDA #'A' COut(); LDA #':' COut(); LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); 
                 Memory.MaximumACC();
                 Print.NewLine(); LDA #'M' COut(); LDA #':' COut(); LDA ZP.ACCH Print.Hex(); LDA ZP.ACCL Print.Hex(); Print.Space(); 
-#endif
+  #endif
                 LDA #0x03 Debug.Crash(); // Memory allocation failure
 #else
                 LDA #0x0C Diagnostics.die(); // Memory allocation failure

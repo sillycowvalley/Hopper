@@ -28,7 +28,10 @@ unit Symbols
     <uint, long> fStartPos;
     <uint, uint> fStartLine;
     <uint, string> fSourcePath;
+    
+#if !defined(COMPILER) // Assembler only    
     <uint, bool> fInline; // track which methods are inline
+#endif    
     
     <uint, byte> fSysCall;
     <uint, byte> fSysCallOverload;
@@ -1496,6 +1499,7 @@ unit Symbols
         return false;
     }
     
+#if !defined(COMPILER) // Assembler only    
     bool IsInline(uint iOverload)
     {
         return fInline.Contains(iOverload);
@@ -1504,6 +1508,7 @@ unit Symbols
     {
         fInline[iOverload] = true;
     }
+#endif    
     
     
     bool IsSysCall(uint iOverload)
@@ -1682,11 +1687,13 @@ unit Symbols
         }
         
         // Check if this is an inline method
+#if !defined(COMPILER) // Assembler only        
         bool isInline = false;
         if ((blockPos.Count >= 4) && (blockPos[3] == "inline"))
         {
             isInline = true;
         }
+#endif        
     
         loop
         {
@@ -1728,10 +1735,12 @@ unit Symbols
             fArgumentNamesAndTypes[iCurrentOverload] = arguments;
             fReturnTypes[iCurrentOverload] = returnType;
             
+#if !defined(COMPILER) // Assembler only            
             if (isInline)
             {
                 fInline[iCurrentOverload] = true;
             }
+#endif            
             
             long startPos;
             if (blockPos.Count != 0)
@@ -2314,10 +2323,12 @@ unit Symbols
                         odict["libcall"]  = fLibCall[overload];
                         odict["overload"] = fLibCallOverload[overload];
                     }
+#if !defined(COMPILER) // Assembler only                    
                     if (fInline.Contains(overload) && fInline[overload])
                     {
                         odict["inline"] = "true";
                     }
+#endif                    
                     fentry[overload.ToString()] = odict;
                 }
                 fdict[f.key] = fentry;
@@ -2635,12 +2646,14 @@ unit Symbols
                                         }
                                         isLibCall = true;
                                     }
+#if !defined(COMPILER) // Assembler only                                    
                                     bool isInline = false;
                                     if (odict.Contains("inline"))
                                     {
                                         string inlineValue = odict["inline"];
                                         isInline = (inlineValue == "true");
                                     }
+#endif                                    
                                     < <string> > arguments;
                                     if (odict.Contains("arguments"))
                                     {
@@ -2682,10 +2695,12 @@ unit Symbols
                                     {
                                         SetLibCall(iOverload, iLibCall, iLibCallOverload);
                                     }
+#if !defined(COMPILER) // Assembler only                                    
                                     if (isInline)
                                     {
                                         fInline[iOverload] = true;
                                     }
+#endif                                    
                                 } // kv3
                             } // kv2
                         }
@@ -2756,20 +2771,25 @@ unit Symbols
     {
         if (!overloadsCompiled.Contains(iOverload))
         {
-            if (IsSysCall(iOverload))
+            loop
             {
-                overloadsCompiled[iOverload] = true; // syscall : pretend it is already compiled
-            }
-            else if (IsLibCall(iOverload))
-            {
-                overloadsCompiled[iOverload] = true; // libcall : pretend it is already compiled
-            }
-            else if (IsInline(iOverload))
-            {
-                overloadsCompiled[iOverload] = true; // inline : pretend it is already compiled
-            }
-            else
-            {
+                if (IsSysCall(iOverload))
+                {
+                    overloadsCompiled[iOverload] = true; // syscall : pretend it is already compiled
+                    break;
+                }
+                if (IsLibCall(iOverload))
+                {
+                    overloadsCompiled[iOverload] = true; // libcall : pretend it is already compiled
+                    break;
+                }
+#if !defined(COMPILER) // Assembler only            
+                if (IsInline(iOverload))
+                {
+                    overloadsCompiled[iOverload] = true; // inline : pretend it is already compiled
+                    break;
+                }
+#endif            
                 overloadsCompiled[iOverload] = false;
                 
                 <string,variant> methodBlock = Block.GetMethodBlock();
@@ -2789,7 +2809,8 @@ unit Symbols
                         fTouches[iCaller] = touchesList;
                     }
                 }
-            }
+                break;
+            } // loop
         }
     }
     
