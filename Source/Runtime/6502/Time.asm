@@ -1,12 +1,12 @@
-unit Time
+unit Time // Times.asm
 {
     friend W65C22, PIA6821;
     
-    uses "/Source/Runtime/6502/ZeroPage"
-    
 #if defined(W65C22_VIA) || defined(M6840_PTM)
+  #if !defined(HOPPER_BASIC)
     uses "/Source/Runtime/6502/Long"
     uses "/Source/Runtime/6502/Types"
+  #endif
 #endif    
     
     
@@ -21,11 +21,14 @@ unit Time
     DelayTOP()
     {
         PHA
+        PHX
         
         // add ArgumentWord to Ticks0..3 and store in Target0..3
+        LDX ZP.TICK3     // reading TICK3 makes a snapshot of all 4 registers on the emulator      
+        
         CLC
         LDA ZP.TOPL
-        ADC ZP.TICK0     // reading TICK0 makes a snapshot of all 4 registers on the emulator
+        ADC ZP.TICK0
         STA ZP.TARGET0
         LDA ZP.TOPH
         ADC ZP.TICK1
@@ -33,6 +36,7 @@ unit Time
         LDA ZP.TICK2
         ADC #0 // to collect the carry
         STA ZP.TARGET2
+        TXA // restore ZP.TICK3
         LDA ZP.TICK3
         ADC #0 // to collect the carry
         STA ZP.TARGET3
@@ -58,6 +62,7 @@ unit Time
             break; // Target >= Ticks : match ->
         }
         
+        PLX
         PLA
     }
     
@@ -112,15 +117,15 @@ unit Time
         STA LNEXT1
         LDA ZP.TICK0 
         STA LNEXT0
-        
+#ifdef HOPPER_STACK
         LDA # Types.Long
         Long.pushNewFromL();
+#endif
     }
-#endif        
+
+
     Seconds()
     {
-        // LNEXT = LNEXT / LTOP + LRESULT
-        
         LDA ZP.TICK3 // reading TICK3 makes a snapshot of all 4 registers on the emulator
         STA LNEXT3
         LDA ZP.TICK2
@@ -142,7 +147,8 @@ unit Time
         STA LTOP2
         STA LTOP3
 #endif
-        
+      
+        // LNEXT = LNEXT / LTOP + LRESULT  
         Long.DivMod(); // Seconds = Millis / 1000
         
         LDA LNEXT0
@@ -154,4 +160,5 @@ unit Time
         Stacks.PushTop();
 #endif
     }
+#endif
 }
