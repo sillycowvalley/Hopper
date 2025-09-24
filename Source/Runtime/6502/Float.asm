@@ -89,27 +89,51 @@ unit Float
     getSignNEXT()
     {
         STZ LSIGNNEXT
+#ifdef CPU_65C02S        
         if (BBS7, LNEXT3)
         {
             INC LSIGNNEXT
         }
+#else
+        LDA LNEXT3
+        if (MI)
+        {
+            INC LSIGNNEXT
+        }
+#endif
     }
     getSignTOP()
     {
         STZ LSIGNTOP
+#ifdef CPU_65C02S
         if (BBS7, LTOP3)
         {
             INC LSIGNTOP
         }
+#else
+        LDA LTOP3
+        if (MI)
+        {
+            INC LSIGNTOP
+        }
+#endif        
     }
     getExponentNEXT()
     {
         LDA LNEXT3
         ASL A
+#ifdef CPU_65C02S
         if (BBS7, LNEXT2)
         {
             ORA # 0b00000001
-        }        
+        }
+#else
+        LDA LNEXT2
+        if (MI)
+        {
+            ORA # 0b00000001
+        }
+#endif                
         STA NEXTL
         STZ NEXTH
     }
@@ -117,10 +141,18 @@ unit Float
     {
         LDA LTOP3
         ASL A
+#ifdef CPU_65C02S
         if (BBS7, LTOP2)
         {
             ORA # 0b00000001
-        }        
+        }
+#else      
+        LDA LTOP2
+        if (MI)
+        {
+            ORA # 0b00000001
+        }
+#endif          
         STA TOPL
         STZ TOPH
     }
@@ -186,6 +218,7 @@ countEntry:
         Long.commonLongNEXTTOP();
         
         // Flip the sign of TOP
+#ifdef CPU_65C02S
         if (BBS7, LTOP3)
         {
             RMB7 LTOP3
@@ -194,6 +227,11 @@ countEntry:
         {
             SMB7 LTOP3
         }
+#else
+        LDA LTOP3
+        EOR # 0b10000000
+        STA LTOP3
+#endif        
         commonAdd();
     }
     
