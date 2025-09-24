@@ -150,7 +150,8 @@ unit Token
         None    = 0x0000,
         Hopper  = 0x0001,
         M6502   = 0x0010, // original MOS instruction set
-        W65C02  = 0x0030, // MOS set plus WDC / Rockwell set
+        W65C02  = 0x0030, // MOS set plus WDC (STZ, BRA, PHX, PHY, PLX, PLY)
+        W65C02S = 0x0070, // MOS set plus WDC plus Rockwell set (SMB, RMB, BBS, BBR)
         Z80     = 0x0100,
         M6809   = 0x1000,
     }
@@ -422,7 +423,7 @@ unit Token
     {    
         ClearAssembler();
         
-        if (architecture & CPUArchitecture.M6502 != CPUArchitecture.None)
+        if ((architecture & CPUArchitecture.M6502) != CPUArchitecture.None) // include W65C02S and // include W65C02
         {
             // 6502 instructions:
             instructionKeywords["BEQ"] = true;
@@ -516,7 +517,7 @@ unit Token
             conditionKeywords["PL"] = true; // Positive (BPL)
             conditionKeywords["MI"] = true; // Minus (BMI)
         }
-        if (architecture & CPUArchitecture.W65C02 != CPUArchitecture.None)
+        if ((architecture & CPUArchitecture.W65C02) != CPUArchitecture.None) // include W65C02S
         {
             instructionKeywords["BRA"] = true;
             instructionKeywords["TSB"] = true;
@@ -527,7 +528,9 @@ unit Token
             instructionKeywords["PLX"] = true;
             instructionKeywords["PHY"] = true;
             instructionKeywords["PLY"] = true;
-            
+        }
+        if (architecture == CPUArchitecture.W65C02S) // only W65C02S
+        {
             for (byte i=0; i < 8; i++)
             {
                 instructionKeywords["RMB" + i.ToString()] = true;

@@ -1853,6 +1853,10 @@ program Assemble
                 
                 if (Symbols.DefineExists("CPU_65C02S"))
                 {
+                    Architecture = CPUArchitecture.W65C02S;
+                }
+                if (Symbols.DefineExists("CPU_65C02"))
+                {
                     Architecture = CPUArchitecture.W65C02;
                 }
                 if (Symbols.DefineExists("CPU_65UINO"))

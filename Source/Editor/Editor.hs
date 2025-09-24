@@ -1927,6 +1927,11 @@ unit Editor
                             }
                             if (parts[1] == "CPU_65C02S")
                             {
+                                cpuArchitecture = CPUArchitecture.W65C02S;
+                                break;
+                            }
+                            if (parts[1] == "CPU_65C02")
+                            {
                                 cpuArchitecture = CPUArchitecture.W65C02;
                                 break;
                             }

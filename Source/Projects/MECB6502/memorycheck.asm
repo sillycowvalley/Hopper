@@ -1,7 +1,8 @@
 program MemoryCheck
 {
     
-    #define CPU_65C02S
+    //#define CPU_65C02S
+    #define CPU_65C02
     #define ROM_16K
     #define MEMORY_CHECK
     
@@ -56,6 +57,8 @@ program MemoryCheck
     const string I2CScanFound        = ", Found!";
     const string I2CScanNotFound     = ", Not found";
     
+    const string Leaving             = "\nLeaving hopperInit()";
+    const string Leaving2            = "\nLeaving resetVector()";
     
     PrintCount() // prints X in (..)
     {
@@ -176,10 +179,18 @@ program MemoryCheck
         STZ ZP.CNP
         STZ ZP.PCL
         STZ ZP.PCH
+        
+#ifdef  CPU_65C02S
         STZ ZP.FLAGS  // resets ProgramExited
         
         SMB3 ZP.FLAGS // 8 bit SP and BP
         SMB4 ZP.FLAGS // IsInDebugger    
+#else
+        LDA # 0b00011000
+        STA ZP.FLAGS
+#endif        
+        
+        LDA # (Leaving / 256) STA ACCH LDA # (Leaving % 256) STA ACCL PrintIndentACC();
     }
     
     resetVector()
@@ -281,14 +292,19 @@ program MemoryCheck
            
         hopperInit();
         
+        LDA # (Leaving2 / 256) STA ACCH LDA # (Leaving2 % 256) STA ACCL PrintIndentACC();
     }
     
     
     Hopper()
     {
+        SEI
+        
         STZ Indent
         
         resetVector();
+        
+        CLI
         
         LDA # (EchoMessage / 256) STA ACCH LDA # (EchoMessage % 256) STA ACCL PrintACC();
         

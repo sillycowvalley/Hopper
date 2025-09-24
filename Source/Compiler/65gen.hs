@@ -271,7 +271,7 @@ program Generate
     {
         srcFile.Append("#define ROM_START   0x" + romAddress.ToHexString(4) + Char.EOL);
         srcFile.Append("#define ROM_END     0xFFFF" + Char.EOL);
-        if (Architecture == CPUArchitecture.W65C02)
+        if (Architecture == CPUArchitecture.W65C02S)
         {
             srcFile.Append("#define CPU_65C02S" + Char.EOL);
         }
@@ -423,6 +423,10 @@ program Generate
                     Architecture = CPUArchitecture.M6502;
                 }
                 if (DefineExists("CPU_65C02S"))
+                {
+                    Architecture = CPUArchitecture.W65C02S;
+                }
+                if (DefineExists("CPU_65C02"))
                 {
                     Architecture = CPUArchitecture.W65C02;
                 }

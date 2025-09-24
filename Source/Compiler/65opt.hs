@@ -70,6 +70,10 @@ program Optimize
                 }
                 if (pdValues.Contains("CPU_65C02S"))
                 {
+                    Architecture = CPUArchitecture.W65C02S;
+                }
+                if (pdValues.Contains("CPU_65C02"))
+                {
                     Architecture = CPUArchitecture.W65C02;
                 }
                 if (pdValues.Contains("CPU_65UINO"))
@@ -302,7 +306,7 @@ program Optimize
             {
                 modified = true;
             }
-            if (Architecture == CPUArchitecture.W65C02)
+            if ((Architecture == CPUArchitecture.W65C02S) || (Architecture == CPUArchitecture.W65C02))
             {
                 // JMP -> BRA
                 if (AsmPoints.OptimizeJMP())
@@ -313,9 +317,12 @@ program Optimize
                 {
                     modified = true;
                 }
-                if (AsmPoints.OptimizeSMBandRMB())
+                if (Architecture == CPUArchitecture.W65C02S)
                 {
-                    modified = true;
+                    if (AsmPoints.OptimizeSMBandRMB())
+                    {
+                        modified = true;
+                    }
                 }
                 // BEQ BRA -> BNE (for example)
                 if (AsmPoints.OptimizeBEQBRA())
@@ -437,7 +444,7 @@ program Optimize
             
             // TODO:
             //
-            // 1. check for LDA|X|Y #0 followed by STA|X|Y and replace with STZ on W65C02
+            // 1. check for LDA|X|Y #0 followed by STA|X|Y and replace with STZ on W65C02S
             //
             // 2. CMP #0 after LDA, LDX, LDY, INC, INX, INY, DEC, DEX, DEY, INA, DEA, AND, ORA, EOR, ASL, LSR, ROL, 
             //              ROR, PLA, PLX, PLY, SBC, ADC, TAX, TXA, TAY, TYA, and TSX

@@ -216,9 +216,15 @@ unit BuildCommand
             isZ80 = false;            
             switch (Architecture)
             {
-                case CPUArchitecture.W65C02:
+                case CPUArchitecture.W65C02S:
                 {
                     target = " for 65C02S"; 
+                    cpuArchitecture = Architecture;
+                    asmPrefix = "65";
+                }
+                case CPUArchitecture.W65C02:
+                {
+                    target = " for 65C02"; 
                     cpuArchitecture = Architecture;
                     asmPrefix = "65";
                 }
@@ -266,18 +272,18 @@ unit BuildCommand
             }
             else if (isAssembly) // set by source being ".asm"
             {
-                if ((cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502) && (cpuArchitecture != CPUArchitecture.M6809))
+                if ((cpuArchitecture != CPUArchitecture.W65C02S) && (cpuArchitecture != CPUArchitecture.W65C02) && (cpuArchitecture != CPUArchitecture.M6502))
                 {
-                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02S, CPU_65UINO or CPU_6809 for '.asm' projects");
+                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02,  CPU_65C02S or CPU_65UINO for '.asm' projects");
                     break;
                 }
                 arguments.Append("-a");
             }
             else
             {
-                if ((cpuArchitecture == CPUArchitecture.W65C02) || (cpuArchitecture == CPUArchitecture.M6502) || (cpuArchitecture == CPUArchitecture.M6809))
+                if ((cpuArchitecture == CPUArchitecture.W65C02S) || (cpuArchitecture == CPUArchitecture.W65C02) || (cpuArchitecture == CPUArchitecture.M6502))
                 {
-                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02S, CPU_65UINO and CPU_6809 only valid for '.asm' projects");
+                    Editor.SetStatusBarText("#define CPU_6502, CPU_65C02, CPU_65C02S or CPU_65UINO only valid for '.asm' projects");
                     break;
                 }
             }
