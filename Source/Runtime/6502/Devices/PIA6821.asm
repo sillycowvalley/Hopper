@@ -30,13 +30,15 @@ unit PIA6821
         // Motorola 6821 PIA
         // soft reset by zeroing all 6 registers (like a hard reset would do)
         
-        LDA #0b00000000 // Select DDRA
+        //LDA #0b00000000 // Select DDRA
+        LDA #0b00110000 // Bits 5-3=110 (CA2 output high), bit 2=0 (select DDRA)
         STA CRA
         
         LDA #0b00000000 // Set all pins of PORTA as inputs (DDRA)
         STA DDRA
         
-        LDA #0b00000100 // Select PRA (PORTA) and clear interrupt flags in CRA
+        //LDA #0b00000100 // Select PRA (PORTA) and clear interrupt flags in CRA
+        LDA #0b00110100 // Bits 5-3=110 (CA2 output high), bit 2=1 (select PORTA)
         STA CRA
         
         LDA PORTA        // READ to clear interrupt flags! 
