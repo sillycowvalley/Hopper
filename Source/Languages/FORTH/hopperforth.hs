@@ -1,7 +1,8 @@
 program HopperFORTH
 {
     //uses "/Source/Library/Boards/PiPico"
-    uses "/Source/Library/Boards/Hopper6502"
+    //uses "/Source/Library/Boards/Hopper6502"
+    uses "/Source/Library/Boards/MECB6502"
     
     const uint stackLimit = 1024; // Define the maximum stack size
     const uint memorySize = 1024; // Define the memory size

@@ -2,11 +2,8 @@ program Mandelbrot
 {
     //uses "/Source/Library/Boards/PiPico"
     //uses "/Source/Library/Boards/PiPico2"
-    //uses "/Source/Library/Boards/Hopper6502"
     uses "/Source/Library/Boards/MECB6502"
-    //uses "/Source/System/System"
-    //uses "/Source/System/IO"
-        
+       
     Hopper()
     {
         //ClockSpeed = RPClockSpeed.Slow133;
@@ -34,8 +31,6 @@ program Mandelbrot
             for (x = -49; x <= 29; x++)
             {
                 c = x * 229 / 100;
-                IO.Write(c.ToString() + " ");
-                /*
                 d = y * 416 / 100;
                 a = c; b = d; i = 0;
                 loop
@@ -56,7 +51,6 @@ program Mandelbrot
                     }
                     break;
                 }
-                */
             } // next x
             IO.WriteLn(); IO.Write(' ');
         } // next y
