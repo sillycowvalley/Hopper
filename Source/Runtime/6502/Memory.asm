@@ -5,6 +5,14 @@ unit Memory // Memory.asm
     
     probeTest()
     {
+#ifdef MEMORY_CHECK
+        LDA # (ProbingTest / 256) STA ACCH LDA # (ProbingTest % 256) STA ACCL PrintIndentACC(); 
+        LDA ZP.IDXH
+        Serial.HexOut();
+        LDA ZP.IDXL
+        Serial.HexOut();
+#endif       
+        
         // set the carry flag if RAM is found at IDX
         loop
         {
@@ -31,10 +39,16 @@ unit Memory // Memory.asm
                 CMP #0x55
                 if (Z)
                 {
+#ifdef MEMORY_CHECK
+                    LDA # (ProbingRW / 256) STA ACCH LDA # (ProbingRW % 256) STA ACCL PrintACC(); 
+#endif                    
                     SEC // RAM found
                     break;
                 }
             }
+#ifdef MEMORY_CHECK
+            LDA # (ProbingRO / 256) STA ACCH LDA # (ProbingRO % 256) STA ACCL PrintACC(); 
+#endif            
             CLC // not RAM
             break;
         }
@@ -45,6 +59,12 @@ unit Memory // Memory.asm
         loop
         {
             // probe to discover RAM size:
+#ifdef MEMORY_CHECK
+            LDA # (ProbingRAM / 256) STA ACCH LDA # (ProbingRAM % 256) STA ACCL PrintIndentACC();
+            INC Indent
+#endif            
+            
+            
             LDA # 0xFF
             STA ZP.IDXL
             LDA # 0xDF
@@ -52,6 +72,9 @@ unit Memory // Memory.asm
             probeTest();
             if (C)
             {
+#ifdef MEMORY_CHECK
+                LDA # (ProbingSuccess56K / 256) STA ACCH LDA # (ProbingSuccess56K % 256) STA ACCL PrintIndentACC();
+#endif                
                 // A = 0xE0 for 56K
                 LDA # 0xE0
                 break;
@@ -61,6 +84,9 @@ unit Memory // Memory.asm
             probeTest();
             if (C)
             {
+#ifdef MEMORY_CHECK
+                LDA # (ProbingSuccess48K / 256) STA ACCH LDA # (ProbingSuccess48K % 256) STA ACCL PrintIndentACC();
+#endif                
                 // A = 0xC0 for 48K
                 LDA # 0xC0
                 break;
@@ -70,6 +96,9 @@ unit Memory // Memory.asm
             probeTest();
             if (C)
             {
+#ifdef MEMORY_CHECK
+                LDA # (ProbingSuccess32K / 256) STA ACCH LDA # (ProbingSuccess32K % 256) STA ACCL PrintIndentACC();
+#endif
                 // A = 0x80 for 32K
                 LDA # 0x80
                 break;
@@ -79,11 +108,17 @@ unit Memory // Memory.asm
             probeTest();
             if (C)
             {
+#ifdef MEMORY_CHECK
+                LDA # (ProbingSuccess16K / 256) STA ACCH LDA # (ProbingSuccess16K % 256) STA ACCL PrintIndentACC();
+#endif                            
                 // A = 0x40 for 16K
                 LDA # 0x40
                 break;
             }
             
+#ifdef MEMORY_CHECK
+            LDA # (ProbingFailed/ 256) STA ACCH LDA # (ProbingFailed % 256) STA ACCL PrintIndentACC();
+#endif            
             
 #if defined(HOPPER_BASIC)
             LDA # 0x02 Debug.Crash(); // failed to find at least 16K of RAM
@@ -93,6 +128,10 @@ unit Memory // Memory.asm
             
             break;
         } // loop
+        
+#ifdef MEMORY_CHECK
+        DEC Indent
+#endif            
     }        
     
     InitializeHeapSize()
@@ -126,14 +165,27 @@ unit Memory // Memory.asm
         SBC ZP.HEAPSTART
         STA ZP.HEAPSIZE
         
+#ifdef MEMORY_CHECK
+        LDA # (ClearPages / 256) STA ACCH LDA # (ClearPages % 256) STA ACCL PrintIndentACC();
+#endif
+        
         // Zero initialize
         LDA #0
         PHA PHA
         STA IDXL
         LDA ZP.HEAPSTART
         STA IDXH
+#ifdef MEMORY_CHECK
+        Serial.HexOut();
+#endif        
         LDX ZP.HEAPSIZE // number of 256 byte pages is same as MSB of size
+#ifdef MEMORY_CHECK
+        PrintCount();
+#endif
         Utilities.ClearPages(); // munts A, X, Y
+#ifdef MEMORY_CHECK    
+        LDA # (Cleared / 256) STA ACCH LDA # (Cleared % 256) STA ACCL PrintACC();
+#endif
         
         // FreeList = Hopper heap start
         LDA ZP.HEAPSTART

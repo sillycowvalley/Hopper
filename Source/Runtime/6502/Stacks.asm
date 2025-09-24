@@ -23,10 +23,24 @@ unit Stacks // Stacks.asm
         STA IDXL // setting this to 0 once is enough (ClearPages does not modify IDXL)
 #endif
 
+#ifdef MEMORY_CHECK
+        LDA # (ClearPages / 256) STA ACCH LDA # (ClearPages % 256) STA ACCL PrintIndentACC();
+#endif
+
         LDA # (Address.CallStackLSB >> 8)
         STA IDXH
+#ifdef MEMORY_CHECK
+        Serial.HexOut();
+#endif        
         LDX # 5                 // 5 contiguous pages for CallStack, TypeStack and ValueStack
+#ifdef MEMORY_CHECK
+        PrintCount();
+#endif
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized (does not modify IDXL)
+#ifdef MEMORY_CHECK    
+        LDA # (Cleared / 256) STA ACCH LDA # (Cleared % 256) STA ACCL PrintACC();
+#endif        
+        
     }
     
     PopBP()
