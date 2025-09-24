@@ -39,7 +39,7 @@ unit Stacks // Stacks.asm
         Utilities.ClearPages(); // with IDX (memory location) and X (number of pages) initialized (does not modify IDXL)
 #ifdef MEMORY_CHECK    
         LDA # (Cleared / 256) STA ACCH LDA # (Cleared % 256) STA ACCL PrintACC();
-#endif        
+#endif
         
     }
     

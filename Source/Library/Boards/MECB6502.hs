@@ -24,8 +24,8 @@ unit Board
     
     const byte BuiltInLED = Board.GP0;
     
-    const byte I2CSDA0 = 17;
-    const byte I2CSCL0 = 16;
+    const byte I2CSCL0 = GP6; //GP8;
+    const byte I2CSDA0 = GP7; //GP9;
     
     const uint PORTA                = 0xF010;
     const uint PORTB                = 0xF011;

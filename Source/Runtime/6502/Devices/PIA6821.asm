@@ -30,7 +30,7 @@ unit PIA6821
         // Motorola 6821 PIA
         // soft reset by zeroing all 6 registers (like a hard reset would do)
         
-        LDA #0b00000000 // Select DDRA and clear interrupt flags in CRA
+        LDA #0b00000000 // Select DDRA
         STA CRA
         
         LDA #0b00000000 // Set all pins of PORTA as inputs (DDRA)
@@ -39,14 +39,24 @@ unit PIA6821
         LDA #0b00000100 // Select PRA (PORTA) and clear interrupt flags in CRA
         STA CRA
         
-        LDA #0b00000000 // Select DDRB and clear interrupt flags in CRB
+        LDA PORTA        // READ to clear interrupt flags! 
+        
+        LDA #0b00000000 // Clear all output latches
+        STA PORTA       // This writes to output register even though pins are inputs
+        
+        LDA #0b00000000 // Select DDRB
         STA CRB
         
-        LDA #0b00000000 // Set all pins of PORTB as outputs (DDRB)
+        LDA #0b00000000 // Set all pins of PORTB as inputs (DDRB)
         STA DDRB
         
         LDA #0b00000100 // Select PRB (PORTB) and clear interrupt flags in CRB
         STA CRB
+        
+        LDA PORTB       // READ to clear interrupt flags!
+        
+        LDA #0b00000000 // Clear all output latches
+        STA PORTB       // This writes to output register even though pins are inputs
         
 #ifdef M6840_PTM        
         // 1000us per sample = 1ms units for Time.Delay(..)

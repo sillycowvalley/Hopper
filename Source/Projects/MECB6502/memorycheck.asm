@@ -14,6 +14,8 @@ program MemoryCheck
     uses "/Source/Runtime/6502/Memory"
     uses "/Source/Runtime/6502/Stacks"
     
+    uses "/Source/Runtime/6502/I2C"
+    
     IRQ()
     {
         Serial.ISR();
@@ -48,6 +50,11 @@ program MemoryCheck
     const string ProbingTest         = "\nTesting Address 0x";
     const string ProbingRW           = "-> read and write success (RAM)";
     const string ProbingRO           = "-> ROM (or nothing)";
+    
+    const string I2CInitialize       = "\nInitializing I2C:";
+    const string I2CScan             = "\nScanning for device 0x";
+    const string I2CScanFound        = ", Found!";
+    const string I2CScanNotFound     = ", Not found";
     
     
     PrintCount() // prints X in (..)
@@ -175,8 +182,6 @@ program MemoryCheck
         SMB4 ZP.FLAGS // IsInDebugger    
     }
     
-    
-    
     resetVector()
     {
         // zeroes mean faster debug protocol
@@ -221,13 +226,62 @@ program MemoryCheck
         LDA # (Cleared / 256) STA ACCH LDA # (Cleared % 256) STA ACCL PrintACC();
         
         // scan for I2C devices
-
         STZ ZP.PLUGNPLAY
+    #ifdef I2C 
+        LDA # (I2CInitialize / 256) STA ACCH LDA # (I2CInitialize % 256) STA ACCL PrintACC();
+        INC Indent
+        LDA # (I2CScan / 256) STA ACCH LDA # (I2CScan % 256) STA ACCL PrintIndentACC();
+    
+        LDA # I2C.SSD1306Address // SSD1306 OLED
+        
+        Serial.HexOut();
+        
+        I2C.Scan();
+        if (Z)
+        {
+            LDA # (I2CScanFound / 256) STA ACCH LDA # (I2CScanFound % 256) STA ACCL PrintACC();
+            SMB0 ZP.PLUGNPLAY
+        }
+        else
+        {
+            LDA # (I2CScanNotFound / 256) STA ACCH LDA # (I2CScanNotFound % 256) STA ACCL PrintACC();
+        }
+        
+        
+        LDX # I2C.SerialEEPROMAddress // EEPROM?
+        loop
+        {
+            LDA # (I2CScan / 256) STA ACCH LDA # (I2CScan % 256) STA ACCL PrintIndentACC();
+            
+            TXA
+            PHX
+            
+            Serial.HexOut();
+            
+            I2C.Scan();
+            if (Z)
+            {
+                LDA # (I2CScanFound / 256) STA ACCH LDA # (I2CScanFound % 256) STA ACCL PrintACC();
+                SMB1 ZP.PLUGNPLAY
+            }
+            else
+            {
+                LDA # (I2CScanNotFound / 256) STA ACCH LDA # (I2CScanNotFound % 256) STA ACCL PrintACC();
+            }
+            PLX
+            INX
+            CPX #0x58
+            if (Z) { break; }
+        }
+        
+        
+        
+        DEC Indent
+    #endif  
            
         hopperInit();
         
     }
-    
     
     
     Hopper()
@@ -235,8 +289,6 @@ program MemoryCheck
         STZ Indent
         
         resetVector();
-        
-        LDX # 0x00        // Initialise character offset pointer
         
         LDA # (EchoMessage / 256) STA ACCH LDA # (EchoMessage % 256) STA ACCL PrintACC();
         
