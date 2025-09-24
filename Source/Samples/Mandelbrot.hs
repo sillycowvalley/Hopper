@@ -3,8 +3,9 @@ program Mandelbrot
     //uses "/Source/Library/Boards/PiPico"
     //uses "/Source/Library/Boards/PiPico2"
     //uses "/Source/Library/Boards/Hopper6502"
-    uses "/Source/System/System"
-    uses "/Source/System/IO"
+    uses "/Source/Library/Boards/MECB6502"
+    //uses "/Source/System/System"
+    //uses "/Source/System/IO"
         
     Hopper()
     {

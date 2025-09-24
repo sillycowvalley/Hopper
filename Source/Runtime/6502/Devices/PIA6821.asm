@@ -46,13 +46,13 @@ unit PIA6821
         LDA #0b00000000 // Clear all output latches
         STA PORTA       // This writes to output register even though pins are inputs
         
-        LDA #0b00000000 // Select DDRB
+        LDA #0b00110000 // Select DDRB, configure CB2 as output high (like CA2)
         STA CRB
         
         LDA #0b00000000 // Set all pins of PORTB as inputs (DDRB)
         STA DDRB
         
-        LDA #0b00000100 // Select PRB (PORTB) and clear interrupt flags in CRB
+        LDA #0b00110100 // Select PRB (PORTB), maintain CB2 as output high
         STA CRB
         
         LDA PORTB       // READ to clear interrupt flags!
