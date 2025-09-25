@@ -1,7 +1,7 @@
 program CC
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
     #define PEEPHOLE
     
     uses "../System/Definitions"
@@ -105,6 +105,46 @@ program CC
         
         SEC
     }
+    
+    // Get filename argument from command line
+    // Input:  None (reads from command line buffer at Address.LineBuffer)
+    // Output: C set if filename found, clear if none
+    //         ZP.STR = pointer to filename (null-terminated, uppercase)
+    //         A = filename length
+    // Note:   Returns first argument after program name
+    //         BIOS has already uppercased the input
+    GetFilename()
+    {
+        PHY
+        PHX
+        
+        Args.GetArgument(); // filename length -> A, X != 0 means "." seen
+        
+        // append ".C" if there is no "."
+        CPX #0
+        if (Z)
+        {
+            // getArgument gives us a STR that is pointing into Address.LineBuffer so we can extend the filename safely
+            LDY #0
+            loop
+            {
+                LDA [ZP.STR], Y
+                if (Z) { break; } 
+                INY
+            }
+            LDA #'.'
+            STA [ZP.STR], Y
+            INY
+            LDA #'C'
+            STA [ZP.STR], Y
+            INY
+            LDA #0
+            STA [ZP.STR], Y
+            TYA // length -> A
+        }
+        PLX
+        PLY
+    }
 
     
     Hopper()
@@ -127,7 +167,7 @@ program CC
             Errors.Show();
             return;
         }
-        Args.GetFilename();
+        GetFilename(); // appends .C if missing
         LDA ZP.STRL
         STA sourceNameL
         LDA ZP.STRH
