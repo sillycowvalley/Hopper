@@ -12,6 +12,7 @@ program VASM
     uses "../System/Memory"
     
     uses "Buffer"
+    uses "Parser"
     
     const string msgBanner         = "VM Assembler v1.0\n";
     const string msgOutOfMemory    = "Out of memory\n";
@@ -156,6 +157,13 @@ program VASM
             Print.String();
             return;
         }
+        Parser.Initialize();
+        if (NC)
+        {
+            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
+            Print.String();
+            return;
+        }
         
         // open source
         LDA # FileType.Any // all files
@@ -177,20 +185,47 @@ program VASM
             return;
         }
         
+        // file header
+        LDA #'V' Buffer.Emit(); LDA #'M' Buffer.Emit(); LDA #'B' Buffer.Emit();
+        LDA #0 Buffer.Emit(); // number of functions (0..128)
+        LDA #0 Buffer.Emit(); LDA #0 Buffer.Emit();// bytes of globals    (0..256)
+        
+        // reserve space for the function table (256 bytes)
+        LDY #128
+        LDA #0
+        loop {
+            Buffer.Emit();
+            Buffer.Emit();
+            DEY
+            if (Z) { break; }
+        }
+        
+        // reserve space for the globals (256 bytes)
+        LDY #128
+        LDA #0
+        loop {
+            Buffer.Emit();
+            Buffer.Emit();
+            DEY
+            if (Z) { break; }
+        }
+        
         // assemble source
-        
-        
-        // save output: STR -> STR
-        makeOutputName();
+        Parser.Parse();
         if (C)
         {
-            Buffer.Save();
-            if (NC)
+            // save output: STR -> STR
+            makeOutputName();
+            if (C)
             {
-                LDA #(msgFailedSaving / 256) STA ZP.STRH LDA #(msgFailedSaving % 256) STA ZP.STRL
-                Print.String();
+                Buffer.Save();
+                if (NC)
+                {
+                    LDA #(msgFailedSaving / 256) STA ZP.STRH LDA #(msgFailedSaving % 256) STA ZP.STRL
+                    Print.String();
+                }
+                freeOutputName();
             }
-            freeOutputName();
         }
     }
 }

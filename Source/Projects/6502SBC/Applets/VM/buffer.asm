@@ -16,7 +16,13 @@ unit Buffer
     const byte codeCapacityL = bufferSlots+4;
     const byte codeCapacityH = bufferSlots+5;
     
-    const byte codeByte      = bufferSlots+6;
+    const byte codeByte       = bufferSlots+6;
+    
+    const uint functionCount  = bufferSlots+7;
+    
+    const uint globalSize     = bufferSlots+8;
+    const byte globalSizeL    = bufferSlots+8;
+    const byte globalSizeH    = bufferSlots+9;
     
     // Create initial 2K buffer
     // C if success, NC if not
@@ -25,6 +31,10 @@ unit Buffer
         // Clear our slots
         STZ codeOffsetL
         STZ codeOffsetH
+        
+        STZ functionCount
+        STZ globalSizeL
+        STZ globalSizeH
         
         // Allocate 2K initial buffer
         LDA #0x00   // 2048 = 0x0800
@@ -179,7 +189,6 @@ unit Buffer
             
             // Open file for writing
             File.StartSave();  if (NC) { break; }
-LDA #'1' Print.Char();            
             
             // Set source to our code buffer
             LDA codeBufferL
@@ -196,12 +205,9 @@ LDA #'1' Print.Char();
             // Write the code buffer
             File.AppendStream();  if (NC) { break; }
             
-LDA #'2' Print.Char();            
-            
             LDA #0x00  // not executable flag
             File.EndSave(); if (NC) { break; }
-            
-LDA #'3' Print.Char();            
+
             SEC
             break;
         } // single exit
