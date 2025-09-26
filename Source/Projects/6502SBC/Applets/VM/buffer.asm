@@ -203,6 +203,8 @@ unit Buffer
     // C if success, NC if not
     Emit() 
     {
+        PHY
+        
         STA codeByte  // Save byte to emit
         
         loop
@@ -241,6 +243,8 @@ unit Buffer
             
             break;
         } // single exit
+        
+        PLY
     }
     
     // filename in STR

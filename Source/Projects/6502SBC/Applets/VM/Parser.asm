@@ -2,6 +2,7 @@ unit Parser
 {
     uses "Buffer"
     uses "Symbols"
+    uses "OpCodes"
     uses "../System/Char"
     
     // Single base for easy relocation
@@ -41,9 +42,14 @@ unit Parser
     const string errMAINSeen     = ".MAIN already seen";
     const string errIdentifierExpected = "Identifier expected";
     const string errNumberExpected = "Number expected";
+    const string errCharExpected = "Char expected";
+    const string errByteExpected = "Byte expected";
+    const string errWordExpected = "Word expected";
+    const string errIntExpected = "Int expected";
     const string errValueExpected = "Value expected";
     const string errSymbolAddFailed = "Failed to create new symbol";
-    const string errUndefinedConstant = "Undefined constant symbol";
+    const string errUndefinedSymbol = "Undefined symbol";
+    const string errOpCodeExpected = "OpCode expected";
     
     const string mainName = "MAIN";
     
@@ -894,7 +900,7 @@ unit Parser
                     if (NC)
                     {
                         
-                        LDA #(errUndefinedConstant / 256) STA ZP.STRH LDA #(errUndefinedConstant % 256) STA ZP.STRL
+                        LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
                         Print.String();    
                         CLC
                         return;
@@ -905,7 +911,7 @@ unit Parser
                     if (NZ)
                     {
                         
-                        LDA #(errUndefinedConstant / 256) STA ZP.STRH LDA #(errUndefinedConstant % 256) STA ZP.STRL
+                        LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
                         Print.String();    
                         CLC
                         return;
@@ -948,6 +954,148 @@ unit Parser
     }
     parseFuncLine()
     {
-        // TODO
+        LDA tokenType
+        CMP # TokenType.Identifier
+        if (NZ)
+        {
+            LDA #(errOpCodeExpected / 256) STA ZP.STRH LDA #(errOpCodeExpected % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+            return;
+        }
+        
+        LDA tokenBufferL
+        STA STRL
+        LDA tokenBufferH
+        STA STRH
+        
+        // Input: STR points to opcode name to find
+        // Output:
+        //   C if found, NC if not
+        //   OpCode in A
+        //   Arguments in Y
+        OpCodes.FindOpCode();
+        if (NC)
+        {
+            LDA #(errOpCodeExpected / 256) STA ZP.STRH LDA #(errOpCodeExpected % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+            return;
+        }
+        Buffer.Emit(); // emit the opcode
+       
+        CPY # Arguments.None
+        if (NZ)
+        {
+            PHY
+            
+            GetToken();
+            LDA tokenType
+            CMP # TokenType.Number
+            if (NZ)
+            {
+                CMP # TokenType.Identifier
+                if (NZ)
+                {
+                    PLY
+                    LDA #(errNumberExpected / 256) STA ZP.STRH LDA #(errNumberExpected % 256) STA ZP.STRL
+                    Print.String();    
+                    CLC
+                    return;
+                }
+       
+                LDA tokenBufferL
+                STA STRL
+                LDA tokenBufferH
+                STA STRH
+       
+                // name in STR
+                // C if found, NC if not
+                // value in TOP0..1, type in A
+                Symbols.FindSymbol();
+                if (NC)
+                {
+                    PLY
+                    LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
+                    Print.String();    
+                    CLC
+                    return;
+                }
+                STA numberType
+                
+                // could be a constant, ptr to data or ptr to function
+                LDA ZP.TOP0
+                STA tokenValueL
+                LDA ZP.TOP1
+                STA tokenValueH
+            }
+            PLY
+           
+            
+            switch (Y)
+            {
+                case Arguments.Byte:
+                {
+                    LDA numberType
+                    AND # NumberType.Byte
+                    if (Z) // not Byte?
+                    {
+                        LDA #(errByteExpected / 256) STA ZP.STRH LDA #(errByteExpected % 256) STA ZP.STRL
+                        Print.String();    
+                        CLC
+                        return;
+                    }
+                    LDA tokenValueL
+                    Buffer.Emit();
+                }
+                case Arguments.Char:
+                {
+                    LDA numberType
+                    AND # NumberType.Char
+                    if (Z) // not Char?
+                    {
+                        LDA #(errCharExpected / 256) STA ZP.STRH LDA #(errCharExpected % 256) STA ZP.STRL
+                        Print.String();    
+                        CLC
+                        return;
+                    }
+                    LDA tokenValueL
+                    Buffer.Emit();
+                }
+                case Arguments.Word:
+                {
+                    LDA numberType
+                    AND # NumberType.Word
+                    if (Z) // not Word?
+                    {
+                        LDA #(errWordExpected / 256) STA ZP.STRH LDA #(errWordExpected % 256) STA ZP.STRL
+                        Print.String();    
+                        CLC
+                        return;
+                    }
+                    LDA tokenValueL
+                    Buffer.Emit();
+                    LDA tokenValueH
+                    Buffer.Emit();
+                }
+                case Arguments.Int:
+                {
+                    LDA numberType
+                    AND # NumberType.Int
+                    if (Z) // not Int?
+                    {
+                        LDA #(errIntExpected / 256) STA ZP.STRH LDA #(errIntExpected % 256) STA ZP.STRL
+                        Print.String();    
+                        CLC
+                        return;
+                    }
+                    LDA tokenValueL
+                    Buffer.Emit();
+                    LDA tokenValueH
+                    Buffer.Emit();
+                }
+            }
+        }
+        SEC
     }
 }

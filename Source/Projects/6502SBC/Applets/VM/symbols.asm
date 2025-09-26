@@ -238,7 +238,6 @@ unit Symbols
                 LDA [ZP.IDX], Y
                 STA symbolCurrentH
             }
-            CLC
             break;
         } // single exit
     }
@@ -246,6 +245,8 @@ unit Symbols
     // Debug function to dump symbol table
     Dump()
     {
+        Print.NewLine();
+        
         // Start at head
         LDA symbolHeadL
         STA symbolCurrentL
