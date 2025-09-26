@@ -30,6 +30,12 @@ unit Buffer
     const byte headerBlockL   = bufferSlots+10;
     const byte headerBlockH   = bufferSlots+11;
     
+    // Pages:
+    // 0 - function offsets
+    // 1 - function sizes // reserved for globals
+    // 2 - start of constant data, then functions
+    // ...
+    
     GetNextFunctionNumber() // 0..254 in multiples of 2
     {
         LDA nextFunctionID
@@ -45,14 +51,74 @@ unit Buffer
     {
         // address of function table
         LDY ZP.TOP0
+        
+        LDA codeBufferH
+        STA ZP.IDXH
+        STZ ZP.IDXL
+        
         LDA codeOffsetL
-        STA [codeBuffer], Y
+        STA [ZP.IDX], Y
         INY
         LDA codeOffsetH
-        STA [codeBuffer], Y
+        STA [ZP.IDX], Y
+        
+//Print.NewLine(); LDA ZP.TOP0 Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
+//Print.NewLine(); 
+        SEC
+    }
+    // function ID in TOP
+    CaptureFunctionEnd()
+    {
+        // start address
+        LDY nextFunctionID
+        DEY
+        DEY
+        
+        LDA codeBufferH
+        STA ZP.IDXH
+        STZ ZP.IDXL
+        
+        LDA [ZP.IDX], Y
+        STA ZP.NEXT0
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.NEXT1
+        
+        // size = codeOffset - start
+        CLC
+        LDA codeOffsetL
+        SBC ZP.NEXT0
+        STA ZP.NEXT0
+        LDA codeOffsetH
+        SBC ZP.NEXT1
+        STA ZP.NEXT1
+        
+        // address of function size table
+        INC ZP.IDXH
+        
+        DEY
+        LDA ZP.NEXT0
+        STA [ZP.IDX], Y
+        INY
+        LDA ZP.NEXT1
+        STA [ZP.IDX], Y
+        
+//Print.NewLine(); DEY TYA Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space();LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex();
+//Print.NewLine();         
+        SEC
     }
     
     GetDataOffset()
+    {
+        SEC
+        LDA codeOffsetL
+        SBC # 0
+        STA ZP.TOP0
+        LDA codeOffsetH
+        SBC # 2 // after global and function offset and function size pages
+        STA ZP.TOP1
+    }
+    GetCodeOffset()
     {
         SEC
         LDA codeOffsetL
@@ -69,7 +135,7 @@ unit Buffer
         SBC #0
         STA dataSizeL
         LDA codeOffsetH
-        SBC #2 // function and global page
+        SBC #2 // function, function size and global pages
         STA dataSizeH
     }
     
@@ -225,6 +291,39 @@ unit Buffer
         SEC
     }
     
+    Reserve() // same as Emit but without writing
+    {
+        PHY
+        
+        loop
+        {
+            // Check if we need to grow
+            LDA codeOffsetH
+            CMP codeCapacityH
+            if (Z)
+            {
+                LDA codeOffsetL
+                CMP codeCapacityL
+            }
+            if (C) // codeOffset >= codeCapacity
+            {
+                // Low bytes not equal, we have space
+                Grow();
+                if (NC) { break; }
+            }
+            // Now we have space
+            
+            // Increment codeSize
+            INC codeOffsetL if (Z) { INC codeOffsetH }
+            
+            SEC
+            
+            break;
+        } // single exit
+        
+        PLY
+    }
+    
     // A -> buffer, expand if needed
     // C if success, NC if not
     Emit() 
@@ -259,6 +358,17 @@ unit Buffer
             LDA codeOffsetH
             ADC codeBufferH
             STA ZP.IDXH
+            
+            
+            // pretend the Memory size word isn't there
+            SEC
+            LDA ZP.IDXL
+            SBC #2
+            STA ZP.IDXL
+            LDA ZP.IDXH
+            SBC #0
+            STA ZP.IDXH
+            
             LDA codeByte
             STA [ZP.IDX]
             
@@ -270,6 +380,95 @@ unit Buffer
             break;
         } // single exit
         
+        PLY
+    }
+    
+    // Dump 256-byte page in hex/ASCII format
+    // Input: ZP.IDXH = start address of page
+    DumpPage()
+    {
+        PHY
+        
+        STZ ZP.ACCL  // Offset counter
+        STZ ZP.IDXL
+        
+        loop
+        {
+            // Print offset (4 hex digits)
+            LDA ZP.IDXH
+            Print.Hex();
+            LDA ZP.ACCL
+            Print.Hex();
+            LDA #':'
+            Print.Char();
+            Print.Space();
+            
+            // Print 16 bytes in hex
+            LDY #0
+            loop
+            {
+                LDA [ZP.IDX], Y
+                Print.Hex();
+                Print.Space();
+                
+                // Extra space after 8 bytes
+                INY
+                CPY #8
+                if (Z)
+                {
+                    Print.Space();
+                }
+                CPY #16
+                if (Z) { break; }
+            }
+            
+            // Print ASCII representation
+            Print.Space();
+            
+            LDY #0
+            loop
+            {
+                LDA [ZP.IDX], Y
+                // Check if printable (32-126)
+                CMP #32
+                if (C)  // >= 32
+                {
+                    CMP #128
+                    if (C)  // >= 128
+                    {
+                        LDA #'.'    
+                    }
+                }
+                else
+                {
+                    LDA #'.'
+                }
+                Print.Char();
+                
+                INY
+                CPY #16
+                if (Z) { break; }
+            }
+            
+            Print.NewLine();
+            
+            // Advance to next line
+            CLC
+            LDA ZP.IDXL
+            ADC #16
+            STA ZP.IDXL
+            if (C)
+            {
+                INC ZP.IDXH
+            }
+            
+            // Update offset
+            CLC
+            LDA ZP.ACCL
+            ADC #16
+            STA ZP.ACCL
+            if (Z) { break; }  // Wrapped after 256 bytes
+        }
         PLY
     }
     
@@ -315,14 +514,11 @@ unit Buffer
             LDA #0
             STA File.TransferLengthH
 
-Print.NewLine(); 
-LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
-LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
-                                   
             // Write the code buffer
             File.AppendStream();  if (NC) { break; }
             
-            // only emit the used part of the function table (0..256 bytes)
+            
+            // only emit the used part of the function table (0..256 bytes) and function size table (0..256)
             LDA codeBufferL
             STA File.SectorSourceL
             LDA codeBufferH
@@ -332,10 +528,22 @@ LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
             STA File.TransferLengthL
             STZ File.TransferLengthH
 
-Print.NewLine(); 
-LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
-LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
-LDY #0 LDA [codeBuffer], Y Print.Hex(); INY LDA [codeBuffer], Y Print.Hex();
+            LDA File.TransferLengthL
+            ORA File.TransferLengthH
+            if (NZ)
+            {
+                File.AppendStream();  if (NC) { break; }
+            }
+            
+            LDA codeBufferL
+            STA File.SectorSourceL
+            LDA codeBufferH
+            INC
+            STA File.SectorSourceH
+            
+            LDA nextFunctionID // nextFunctionID = functionCount x 2
+            STA File.TransferLengthL
+            STZ File.TransferLengthH
                         
             LDA File.TransferLengthL
             ORA File.TransferLengthH
@@ -343,6 +551,9 @@ LDY #0 LDA [codeBuffer], Y Print.Hex(); INY LDA [codeBuffer], Y Print.Hex();
             {
                 File.AppendStream();  if (NC) { break; }
             }
+            
+            
+            
             
             // Set source to our code buffer
             CLC
@@ -362,10 +573,6 @@ LDY #0 LDA [codeBuffer], Y Print.Hex(); INY LDA [codeBuffer], Y Print.Hex();
             SBC # 2 // 256 byte function table, 256 global bytes
             STA File.TransferLengthH
             
-Print.NewLine(); 
-LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
-LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();            
-            
             LDA File.TransferLengthL
             ORA File.TransferLengthH
             if (NZ)
@@ -375,6 +582,13 @@ LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
             
             LDA #0x00  // not executable flag
             File.EndSave(); if (NC) { break; }
+            
+            LDA codeBufferH
+            STA ZP.IDXH
+            DumpPage();
+            DumpPage();
+            DumpPage();
+            DumpPage();
 
             SEC
             break;

@@ -120,65 +120,74 @@ SAR          0x46                   // Pop int and count, arithmetic shift right
 
 ### Memory Operations - Globals (0x48-0x56)
 ```
-PUSHGB      0x48  + byte       // Push byte from global[offset]
-PUSHGB2     0x4A  + word       // Push byte from global[offset] (>255)
-PUSHGW      0x4C  + byte       // Push word from global[offset]
-PUSHGW2     0x4E  + word       // Push word from global[offset] (>255)
-POPGB       0x50  + byte       // Pop byte to global[offset]
-POPGB2      0x52  + word       // Pop byte to global[offset] (>255)
-POPGW       0x54  + byte       // Pop word to global[offset]
-POPGW2      0x56  + word       // Pop word to global[offset] (>255)
+PUSHGB       0x48  + byte           // Push byte from global[offset]
+PUSHGB2      0x4A  + word           // Push byte from global[offset] (>255)
+PUSHGW       0x4C  + byte           // Push word from global[offset]
+PUSHGW2      0x4E  + word           // Push word from global[offset] (>255)
+POPGB        0x50  + byte           // Pop byte to global[offset]
+POPGB2       0x52  + word           // Pop byte to global[offset] (>255)
+POPGW        0x54  + byte           // Pop word to global[offset]
+POPGW2       0x56  + word           // Pop word to global[offset] (>255)
 ```
 
 ### Memory Operations - Locals (0x58-0x5E)
 ```
-PUSHLB      0x58  + byte       // Push byte from BP[offset]
-PUSHLW      0x5A  + byte       // Push word from BP[offset]
-POPLB       0x5C  + byte       // Pop byte to BP[offset]
-POPLW       0x5E  + byte       // Pop word to BP[offset]
+PUSHLB       0x58  + byte           // Push byte from BP[offset]
+PUSHLW       0x5A  + byte           // Push word from BP[offset]
+POPLB        0x5C  + byte           // Pop byte to BP[offset]
+POPLW        0x5E  + byte           // Pop word to BP[offset]
 ```
 
 ### String Operations (0x60-0x66)
 ```
-PUSHS       0x60  + byte       // Push string address (byte offset)
-PUSHS2      0x62  + word       // Push string address (word offset)
-STRC        0x64               // Pop index, pop string, push char
-STRCMP      0x66               // Pop 2 strings, push -1/0/1
+PUSHSTR      0x60  + byte           // Push string address (byte offset)
+PUSHSTR2     0x62  + word           // Push string address (word offset)
+STRC         0x64                   // Pop index, pop string, push char
+STRCMP       0x66                   // Pop 2 strings, push -1/0/1
 ```
 
 ### Control Flow (0x68-0x76)
 ```
-CALL        0x68  + byte       // Call function (ID × 2 for table lookup)
-RET         0x6A               // Return from function
-BRA         0x6C  + sbyte      // Branch by signed byte offset
-BRA2        0x6E  + int        // Branch by int offset (rare)
-JZ          0x70  + sbyte      // Branch by signed byte offset if TOS is zero
-JZ2         0x72  + int        // Branch by int offset if TOS is zero (rare)
-JNZ         0x74  + sbyte      // Branch by signed byte offset if TOS is not zero
-JNZ2        0x76  + int        // Branch by int offset if TOS is not zero (rare)
+CALL         0x68  + byte           // Call function (ID × 2 for table lookup)
+RET          0x6A                   // Return from function
+BRAB         0x6C  + byte           // Branch backward by byte (0-255)
+BRAF         0x6E  + byte           // Branch forward by byte (0-255)
+BZF          0x70  + byte           // Branch forward by byte if TOS is zero
+BZB          0x72  + byte           // Branch backward by byte if TOS is zero
+BNZF         0x74  + byte           // Branch forward by byte if TOS is not zero
+BNZB         0x76  + byte           // Branch backward by byte if TOS is not zero
 ```
 
 ### Zero Page Operations (0x78-0x7E)
 ```
-PUSHZB      0x78  + byte       // Push byte from ZP[offset]
-PUSHZW      0x7A  + byte       // Push word from ZP[offset]
-POPZB       0x7C  + byte       // Pop byte to ZP[offset]
-POPZW       0x7E  + byte       // Pop word to ZP[offset]
+PUSHZB       0x78  + byte           // Push byte from ZP[offset]
+PUSHZW       0x7A  + byte           // Push word from ZP[offset]
+POPZB        0x7C  + byte           // Pop byte to ZP[offset]
+POPZW        0x7E  + byte           // Pop word to ZP[offset]
 ```
 
-### System Operations (0x80-0x82)
+### System Operations (0x80-0x8C)
 ```
-SYSCALL     0x80  + byte       // Call BIOS function via X register
-HALT        0x82               // Stop execution (return to BIOS)
+SYSCALL      0x80  + byte           // Call BIOS function via X register
+HALT         0x82                   // Stop execution (return to BIOS)
 ```
 
-### Register Operations (0x84-0x8E)
+### Register Operations (0x84-0x8C)
 ```
-POPA        0x84               // Pop byte from stack to A register
-POPY        0x86               // Pop byte from stack to Y register
-PUSHA       0x88               // Push A register to stack
-PUSHC       0x8A               // Push carry flag (1 if set, 0 if clear)
-PUSHZ       0x8C               // Push zero flag (1 if set, 0 if clear)
+POPA         0x84                   // Pop byte from stack to A register
+POPY         0x86                   // Pop byte from stack to Y register
+PUSHA        0x88                   // Push A register to stack
+PUSHC        0x8A                   // Push carry flag (1 if set, 0 if clear)
+PUSHZ        0x8C                   // Push zero flag (1 if set, 0 if clear)
+```
+
+### Branch Offset Handling
+
+All branch instructions use positive byte offsets (0-255):
+- **Forward branches** (BRAF, BZF, BNZF): Add offset to PC of next instruction
+- **Backward branches** (BRAB, BZB, BNZB): Subtract offset from PC of next instruction
+- Branches are guaranteed to stay within the current 256-byte page
+- No page crossing checks needed
 ```
 
 ## Implementation Details

@@ -227,8 +227,8 @@ program VASM
             LDY #128
             LDA #0
             loop {
-                Buffer.Emit();
-                Buffer.Emit();
+                Buffer.Reserve();
+                Buffer.Reserve();
                 DEY
                 if (Z) { break; }
             }
@@ -237,8 +237,8 @@ program VASM
             LDY #128
             LDA #0
             loop {
-                Buffer.Emit();
-                Buffer.Emit();
+                Buffer.Reserve();
+                Buffer.Reserve();
                 DEY
                 if (Z) { break; }
             }

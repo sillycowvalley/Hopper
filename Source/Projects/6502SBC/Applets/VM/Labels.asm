@@ -1,47 +1,31 @@
-unit Symbols
+unit Labels
 {
     uses "../System/String"
     
-    const byte symbolsSlots = 0x80; // 0x80..0x8F
+    const byte labelsSlots = 0xA0; // 0xA0..0xAF
     
-    // Symbol table structure (linked list)
-    const uint symbolHead    = symbolsSlots+0;  // Head of linked list
-    const byte symbolHeadL   = symbolsSlots+0;
-    const byte symbolHeadH   = symbolsSlots+1;
+    // Labels list structure (linked list)
+    const uint labelsHead    = labelsSlots+0;  // Head of linked list
+    const byte labelsHeadL   = labelsSlots+0;
+    const byte labelsHeadH   = labelsSlots+1;
     
     // Temp workspace for traversal
-    const uint symbolCurrent = symbolsSlots+2;  // Current node pointer
-    const byte symbolCurrentL = symbolsSlots+2;
-    const byte symbolCurrentH = symbolsSlots+3;
+    const uint labelsCurrent  = labelsSlots+2;  // Current node pointer
+    const byte labelsCurrentL = labelsSlots+2;
+    const byte labelsCurrentH = labelsSlots+3;
     
-    const byte symbolType     = symbolsSlots+4;
-    
-    const string typeNames0 = "CONST ";
-    const string typeNames1 = "DATA  ";
-    const string typeNames2 = "FUNC  ";
     const string separator  = " = ";
     const string hexPrefix  = "0x";
     
     // Node structure:
     // +0: next pointer (16-bit)
     // +2: value (16-bit)
-    // +4: type (8-bit)
-    // +5: name string (null-terminated, inline)
-    
-    // Symbol types
-    flags SymbolType
-    {
-        Constant = 0b00100000,
-        Data     = 0b01000000,
-        Function = 0b01100000,
-        
-        Mask     = 0b11100000,
-    }
+    // +4: name string (null-terminated, inline)
     
     Initialize()
     {
-        STZ symbolHeadL
-        STZ symbolHeadH
+        STZ labelsHeadL
+        STZ labelsHeadH
         SEC
     }
     
@@ -49,42 +33,40 @@ unit Symbols
     {
         loop
         {
-            LDA symbolHeadL
-            ORA symbolHeadH
+            LDA labelsHeadL
+            ORA labelsHeadH
             if (Z) { break; }  // Empty list
             
             // Save next pointer before freeing
-            LDA symbolHeadL
+            LDA labelsHeadL
             STA ZP.IDXL
-            LDA symbolHeadH
+            LDA labelsHeadH
             STA ZP.IDXH
             LDY #0
             LDA [ZP.IDX], Y  // Next low
-            STA symbolCurrentL
+            STA labelsCurrentL
             INY
             LDA [ZP.IDX], Y  // Next high
-            STA symbolCurrentH
+            STA labelsCurrentH
             
             // Free current node
             Memory.Free();
             
             // Move to next
-            LDA symbolCurrentL
-            STA symbolHeadL
-            LDA symbolCurrentH
-            STA symbolHeadH
+            LDA labelsCurrentL
+            STA labelsHeadL
+            LDA labelsCurrentH
+            STA labelsHeadH
         }
-        STZ symbolHeadL
-        STZ symbolHeadH
+        STZ labelsHeadL
+        STZ labelsHeadH
         SEC
     }
     
-    // name in STR, value in TOP0..1, type in A
+    // name in STR, value in TOP0..1
     // C if ok, NC if failure
     Add()
     {
-        STA symbolType
-        
         LDA ZP.TOP0
         STA ZP.ACCL
         LDA ZP.TOP1
@@ -93,7 +75,7 @@ unit Symbols
         loop
         {
             // Check if already exists
-            FindSymbol();
+            FindLabel();
             if (C)  // Already exists
             {
                 CLC
@@ -129,10 +111,10 @@ unit Symbols
             // Fill node
             // Next pointer = current head
             LDY #0
-            LDA symbolHeadL
+            LDA labelsHeadL
             STA [ZP.IDX], Y
             INY
-            LDA symbolHeadH
+            LDA labelsHeadH
             STA [ZP.IDX], Y
             
             // Value
@@ -143,18 +125,13 @@ unit Symbols
             LDA ZP.TOP1
             STA [ZP.IDX], Y
             
-            // Type
-            INY
-            LDA symbolType
-            STA [ZP.IDX], Y
-            
             LDA ZP.STRL
             STA ZP.IDYL
             LDA ZP.STRH
             STA ZP.IDYH
             
             // Copy string inline
-            INY  // Y=5
+            INY  // Y=4
             loop
             {
                 LDA [ZP.IDY]
@@ -166,9 +143,9 @@ unit Symbols
             
             // Update head
             LDA ZP.IDXL
-            STA symbolHeadL
+            STA labelsHeadL
             LDA ZP.IDXH
-            STA symbolHeadH
+            STA labelsHeadH
             
             SEC
             break;
@@ -177,20 +154,20 @@ unit Symbols
     
     // name in STR
     // C if found, NC if not
-    // value in TOP0..1, type in A
-    FindSymbol()
+    // value in TOP0..1
+    FindLabel()
     {
         // Start at head
-        LDA symbolHeadL
-        STA symbolCurrentL
-        LDA symbolHeadH
-        STA symbolCurrentH
+        LDA labelsHeadL
+        STA labelsCurrentL
+        LDA labelsHeadH
+        STA labelsCurrentH
         
         loop
         {
             // Check end of list
-            LDA symbolCurrentL
-            ORA symbolCurrentH
+            LDA labelsCurrentL
+            ORA labelsCurrentH
             if (Z)  // Not found
             {
                 CLC
@@ -198,15 +175,15 @@ unit Symbols
             }
             
             // Point to current node
-            LDA symbolCurrentL
+            LDA labelsCurrentL
             STA ZP.IDXL
-            LDA symbolCurrentH
+            LDA labelsCurrentH
             STA ZP.IDXH
             
-            // Compare inline string at offset 5
+            // Compare inline string at offset 4
             CLC
             LDA ZP.IDXL
-            ADC #5
+            ADC #4
             STA ZP.NEXT0
             LDA ZP.IDXH
             ADC #0
@@ -223,22 +200,17 @@ unit Symbols
                 LDA [ZP.IDX], Y
                 STA ZP.TOP1
                 
-                // Get type
-                INY
-                LDA [ZP.IDX], Y
-                SEC
                 break;  // Found with value loaded
             }
             
             // Move to next
             LDY #0
             LDA [ZP.IDX], Y
-            STA symbolCurrentL
+            STA labelsCurrentL
             INY
             LDA [ZP.IDX], Y
-            STA symbolCurrentH
+            STA labelsCurrentH
         }
-
     }
     
     // Debug function to dump symbol table
@@ -247,59 +219,28 @@ unit Symbols
         Print.NewLine();
         
         // Start at head
-        LDA symbolHeadL
-        STA symbolCurrentL
-        LDA symbolHeadH
-        STA symbolCurrentH
+        LDA labelsHeadL
+        STA labelsCurrentL
+        LDA labelsHeadH
+        STA labelsCurrentH
         
         loop
         {
             // Check end of list
-            LDA symbolCurrentL
-            ORA symbolCurrentH
+            LDA labelsCurrentL
+            ORA labelsCurrentH
             if (Z) { break; }  // End of list
             
             // Point to current node
-            LDA symbolCurrentL
+            LDA labelsCurrentL
             STA ZP.IDXL
-            LDA symbolCurrentH
+            LDA labelsCurrentH
             STA ZP.IDXH
             
-            // Print type
-            LDY #4
-            LDA [ZP.IDX], Y  // Get type
-            AND # SymbolType.Mask
-            switch (A)
-            {
-                case SymbolType.Constant:
-                {
-                    LDA #(typeNames0 % 256)
-                    STA ZP.STRL
-                    LDA #(typeNames0 / 256)
-                    STA ZP.STRH
-                }
-                case SymbolType.Data:
-                {
-                    LDA #(typeNames1 % 256)
-                    STA ZP.STRL
-                    LDA #(typeNames1 / 256)
-                    STA ZP.STRH
-                }
-                case SymbolType.Function:
-                {
-                    LDA #(typeNames2 % 256)
-                    STA ZP.STRL
-                    LDA #(typeNames2 / 256)
-                    STA ZP.STRH
-                }
-            }
-            Print.String();
-            Print.Space();
-            
-            // Print name (at offset 5)
+            // Print name (at offset 4)
             CLC
             LDA ZP.IDXL
-            ADC #5
+            ADC #4
             STA ZP.STRL
             LDA ZP.IDXH
             ADC #0
@@ -319,16 +260,11 @@ unit Symbols
             LDA #(hexPrefix / 256)
             STA ZP.STRH
             Print.String();
-
-            LDY #4
-            LDA [ZP.IDX], Y  // Get type 
-            AND # (NumberType.Byte | NumberType.Char)
-            if (Z)
-            {
-                LDY #3
-                LDA [ZP.IDX], Y  // Value high
-                Print.Hex();
-            }
+            
+            LDY #3
+            LDA [ZP.IDX], Y  // Value high
+            Print.Hex();
+            
             LDY #2
             LDA [ZP.IDX], Y  // Value low
             Print.Hex();
@@ -338,10 +274,10 @@ unit Symbols
             // Move to next
             LDY #0
             LDA [ZP.IDX], Y
-            STA symbolCurrentL
+            STA labelsCurrentL
             INY
             LDA [ZP.IDX], Y
-            STA symbolCurrentH
+            STA labelsCurrentH
         }
     }
 }

@@ -2,6 +2,7 @@ unit Parser
 {
     uses "Buffer"
     uses "Symbols"
+    uses "Labels"
     uses "OpCodes"
     uses "../System/Char"
     
@@ -50,6 +51,7 @@ unit Parser
     const string errIntExpected        = "Int expected";
     const string errValueExpected      = "Value expected";
     const string errSymbolAddFailed    = "Failed to create new symbol";
+    const string errLabelAddFailed     = "Failed to create new label";
     const string errUndefinedSymbol    = "Undefined symbol";
     const string errOpCodeExpected     = "OpCode expected";
     
@@ -98,6 +100,35 @@ unit Parser
         STZ bufferIndexH
         SEC
     }
+    
+    ErrorLineValue()
+    {
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
+        
+        LDA #'0'
+        Print.Char();
+        LDA #'x'
+        Print.Char();
+        LDA tokenValueH
+        Print.Hex();
+        LDA tokenValueL
+        Print.Hex();
+        
+        Print.Space();
+        LDA #'-'
+        Print.Char();
+        Print.Space();
+        
+        
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        ErrorLine();
+    }                
     
     ErrorLineSTR()
     {
@@ -547,6 +578,7 @@ unit Parser
         STZ currentLineH
         
         Symbols.Initialize();
+        Labels.Initialize();
     }
     Dispose()
     {
@@ -562,6 +594,7 @@ unit Parser
         }
         
         Symbols.Dispose();
+        Labels.Dispose();
     }
     
     UngetToken()
@@ -750,6 +783,11 @@ unit Parser
                     }
                     case 'M': // .MAIN
                     {
+                        if (BBS3, parserFlags) // we were in a function
+                        {
+                            Buffer.CaptureFunctionEnd();
+                            RMB3 parserFlags
+                        }
                         if (BBS0, parserFlags) // Bit 0 - .MAIN seen
                         {
                             LDA #(errMAINSeen / 256) STA ZP.STRH LDA #(errMAINSeen % 256) STA ZP.STRL
@@ -775,7 +813,7 @@ unit Parser
                         
                         LDA # ( SymbolType.Function | NumberType.Byte)
                         // STR = name, TOP = ID
-                        Symbols.Add();
+                        Symbols.Add(); // STR ->
                         if (NC)
                         {
                             LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
@@ -783,12 +821,19 @@ unit Parser
                             CLC
                         }
                         
+                        Labels.Dispose(); // reset labels
+                        
                         // parsing function opcodes now
                         LDA # Section.Func
                         STA parserSection
                     }
                     case 'F': // .FUNC
                     {
+                        if (BBS3, parserFlags) // we were in a function
+                        {
+                            Buffer.CaptureFunctionEnd();
+                            RMB3 parserFlags
+                        }
                         GetToken();
                         
                         LDA tokenType
@@ -806,14 +851,21 @@ unit Parser
                         Buffer.GetNextFunctionNumber(); // -> TOP
                         Buffer.CaptureFunctionStart();  // TOP ->
                         
+                        LDA tokenBufferL
+                        STA STRL
+                        LDA tokenBufferH
+                        STA STRH
+                        
                         LDA # ( SymbolType.Function | NumberType.Byte)
-                        Symbols.Add();
+                        Symbols.Add(); // STR ->
                         if (NC)
                         {
                             LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
-                            ErrorLine();    
+                            ErrorLineSTR();    
                             CLC
                         }
+                        
+                        Labels.Dispose(); // reset labels
                         
                         // parsing function opcodes now    
                         LDA # Section.Func
@@ -843,6 +895,11 @@ unit Parser
         } // loop
         if (C)
         {
+            if (BBS3, parserFlags) // we were in a function
+            {
+                Buffer.CaptureFunctionEnd();
+                RMB3 parserFlags
+            }
             if (BBR0, parserFlags) // Bit 0 - .MAIN seen
             {
                 LDA #(errMAINRequired / 256) STA ZP.STRH LDA #(errMAINRequired % 256) STA ZP.STRL
@@ -852,6 +909,7 @@ unit Parser
         }
 #ifdef DEBUG        
         PHP Symbols.Dump(); PLP
+        PHP Labels.Dump(); PLP
 #endif
     }
     
@@ -1064,9 +1122,39 @@ unit Parser
         OpCodes.FindOpCode();
         if (NC)
         {
-            LDA #(errOpCodeExpected / 256) STA ZP.STRH LDA #(errOpCodeExpected % 256) STA ZP.STRL
-            ErrorLineSTR();    
-            CLC
+            GetToken();
+            CMP # TokenType.Colon
+            if (NZ)
+            {
+                // restore identifier            
+                LDA STRL
+                STA tokenBufferL
+                LDA STRH
+                STA tokenBufferH
+                
+                LDA #(errOpCodeExpected / 256) STA ZP.STRH LDA #(errOpCodeExpected % 256) STA ZP.STRL
+                ErrorLineSTR();
+                CLC
+                return;
+            }
+            
+            Buffer.GetCodeOffset();
+            
+            // label
+            // STR = name, TOP = ID
+            Labels.Add(); // STR ->
+            if (NC)
+            {
+                LDA STRL
+                STA tokenBufferL
+                LDA STRH
+                STA tokenBufferH
+                
+                LDA #(errLabelAddFailed / 256) STA ZP.STRH LDA #(errLabelAddFailed % 256) STA ZP.STRL
+                ErrorLineSTR();    
+                CLC
+            }
+            SEC
             return;
         }
         Buffer.Emit(); // emit the opcode
@@ -1086,7 +1174,7 @@ unit Parser
                 {
                     PLY
                     LDA #(errNumberExpected / 256) STA ZP.STRH LDA #(errNumberExpected % 256) STA ZP.STRL
-                    ErrorLine();    
+                    ErrorLineSTR();    
                     CLC
                     return;
                 }
@@ -1102,15 +1190,56 @@ unit Parser
                 Symbols.FindSymbol();
                 if (NC)
                 {
-                    PLY
-                    LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                    ErrorLine();    
-                    CLC
-                    return;
+                    Labels.FindLabel();
+                    if (NZ)
+                    {
+                        PLY
+                        LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
+                        ErrorLineSTR();    
+                        CLC
+                        return;
+                    }
+                    LDA ZP.TOP0
+                    STA ZP.NEXT0
+                    LDA ZP.TOP1
+                    STA ZP.NEXT1
+                    
+                    Buffer.GetCodeOffset();
+                    INC TOP0 if (Z) { INC TOP1 } // +1 so the starting address is the next instruction
+                    
+                    // branch offset is always positive
+                    LDA ZP.TOP1
+                    CMP ZP.NEXT1
+                    if (Z)
+                    {
+                        LDA ZP.TOP0
+                        CMP ZP.NEXT0
+                    }
+                    if (C) // TOP >= NEXT
+                    {
+                        SEC
+                        LDA ZP.TOP0
+                        SBC ZP.NEXT0
+                        STA ZP.TOP0
+                        LDA ZP.TOP1
+                        SBC ZP.NEXT1
+                        STA ZP.TOP1
+                    }
+                    else
+                    {
+                        SEC
+                        LDA ZP.NEXT0
+                        SBC ZP.TOP0
+                        STA ZP.TOP0
+                        LDA ZP.NEXT1
+                        SBC ZP.TOP1
+                        STA ZP.TOP1
+                    }
+                    LDA # NumberType.Byte
                 }
                 STA numberType
                 
-                // could be a constant, ptr to data or ptr to function
+                // could be a label offset, constant, ptr to data or ptr to function
                 LDA ZP.TOP0
                 STA tokenValueL
                 LDA ZP.TOP1
@@ -1128,7 +1257,7 @@ unit Parser
                     if (Z) // not Byte?
                     {
                         LDA #(errByteExpected / 256) STA ZP.STRH LDA #(errByteExpected % 256) STA ZP.STRL
-                        ErrorLine();    
+                        ErrorLineValue();    
                         CLC
                         return;
                     }
@@ -1142,7 +1271,7 @@ unit Parser
                     if (Z) // not Char?
                     {
                         LDA #(errCharExpected / 256) STA ZP.STRH LDA #(errCharExpected % 256) STA ZP.STRL
-                        ErrorLine();    
+                        ErrorLineValue();    
                         CLC
                         return;
                     }
@@ -1156,7 +1285,7 @@ unit Parser
                     if (Z) // not Word?
                     {
                         LDA #(errWordExpected / 256) STA ZP.STRH LDA #(errWordExpected % 256) STA ZP.STRL
-                        ErrorLine();    
+                        ErrorLineValue();    
                         CLC
                         return;
                     }
@@ -1172,7 +1301,7 @@ unit Parser
                     if (Z) // not Int?
                     {
                         LDA #(errIntExpected / 256) STA ZP.STRH LDA #(errIntExpected % 256) STA ZP.STRL
-                        ErrorLine();    
+                        ErrorLineValue();    
                         CLC
                         return;
                     }

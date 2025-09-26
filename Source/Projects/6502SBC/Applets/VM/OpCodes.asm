@@ -78,12 +78,12 @@ unit OpCodes
         // Control Flow
         0x68, Arguments.Byte, 4, 'C','A','L','L',          // CALL + byte
         0x6A, Arguments.None, 3, 'R','E','T',              // RET
-        0x6C, Arguments.Char, 3, 'B','R','A',              // BRA + sbyte
-        0x6E, Arguments.Int,  4, 'B','R','A','2',          // BRA2 + int
-        0x70, Arguments.Char, 2, 'J','Z',                  // JZ + sbyte
-        0x72, Arguments.Int,  3, 'J','Z','2',              // JZ2 + int
-        0x74, Arguments.Char, 3, 'J','N','Z',              // JNZ + sbyte
-        0x76, Arguments.Int,  4, 'J','N','Z','2',          // JNZ2 + int
+        0x6C, Arguments.Byte, 4, 'B','R','A','B',          // BRAF + byte
+        0x6E, Arguments.Byte, 4, 'B','R','A','F',          // BRAB + byte
+        0x70, Arguments.Byte, 3, 'B','Z','F',              // BZF  + byte
+        0x72, Arguments.Byte, 3, 'B','Z','B',              // BZB  + byte
+        0x74, Arguments.Byte, 4, 'B','N','Z','F',          // BNZF + byte
+        0x76, Arguments.Byte, 4, 'B','N','Z','B',          // BNZB + byte
         
         // Zero Page Operations
         0x78, Arguments.Byte, 6, 'P','U','S','H','Z','B',  // PUSHZB + byte
