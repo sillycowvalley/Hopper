@@ -1,5 +1,5 @@
 // Assembles VM bytecode from .VMA files to .BIN files
-program VMAssembler
+program VASM
 {
     #define CPU_65C02S
     
@@ -177,9 +177,8 @@ program VMAssembler
             return;
         }
         
-        // parse source
-        LDA #'@'
-        Buffer.Emit();
+        // assemble source
+        
         
         // save output: STR -> STR
         makeOutputName();

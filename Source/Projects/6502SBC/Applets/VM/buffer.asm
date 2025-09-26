@@ -1,7 +1,7 @@
 unit Buffer
 {
     // Single base for easy relocation
-    const byte bufferSlots = 0x60;
+    const byte bufferSlots = 0x60; // 0x60..0x6F
     
     // Code buffer management (matching C compiler)
     const uint codeBuffer    = bufferSlots+0;  // Pointer to code buffer
