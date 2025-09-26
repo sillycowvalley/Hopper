@@ -2,7 +2,12 @@
 program VASM
 {
     #define CPU_65C02S
-    //#define DEBUG
+    #define DEBUG
+    
+    const byte vasmSlots = 0x90; // 0x90..0x9F
+    
+    const uint filenameL    = vasmSlots+0;
+    const uint filenameH    = vasmSlots+1;
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -14,6 +19,7 @@ program VASM
     uses "../System/Char"
     
     uses "Buffer"
+    uses "Symbols"
     uses "Parser"
     
     const string msgBanner         = "VM Assembler v1.0\n";
@@ -188,11 +194,6 @@ program VASM
             return;
         }
         
-        // file header
-        LDA #'V' Buffer.Emit(); LDA #'M' Buffer.Emit(); LDA #'B' Buffer.Emit();
-        LDA #0 Buffer.Emit(); // number of functions (0..128)
-        LDA #0 Buffer.Emit(); LDA #0 Buffer.Emit();// bytes of globals    (0..256)
-        
         // reserve space for the function table (256 bytes)
         LDY #128
         LDA #0
@@ -212,11 +213,19 @@ program VASM
             DEY
             if (Z) { break; }
         }
+        LDA STRL
+        STA filenameL
+        LDA STRH
+        STA filenameH
         
         // assemble source
         Parser.Parse();
         if (C)
         {
+            LDA filenameL
+            STA STRL
+            LDA filenameH
+            STA STRH
             // save output: STR -> STR
             makeOutputName();
             if (C)
@@ -227,6 +236,7 @@ program VASM
                     LDA #(msgFailedSaving / 256) STA ZP.STRH LDA #(msgFailedSaving % 256) STA ZP.STRL
                     Print.String();
                 }
+                Buffer.Dispose();
                 freeOutputName();
             }
             Parser.Dispose();

@@ -1,7 +1,6 @@
 unit Buffer
 {
-    // file header size
-    const byte headerSize = 6; 
+    const byte fileHeaderSize = 6;
     
     // Single base for easy relocation
     const byte bufferSlots = 0x60; // 0x60..0x6F
@@ -21,11 +20,45 @@ unit Buffer
     
     const byte codeByte       = bufferSlots+6;
     
-    const uint functionCount  = bufferSlots+7;
+    const uint nextFunctionID = bufferSlots+7;
     
     const uint globalSize     = bufferSlots+8;
     const byte globalSizeL    = bufferSlots+8;
     const byte globalSizeH    = bufferSlots+9;
+    
+    const byte headerBlock    = bufferSlots+10;
+    const byte headerBlockL   = bufferSlots+10;
+    const byte headerBlockH   = bufferSlots+11;
+    
+    GetNextFunctionNumber() // 0..254 in multiples of 2
+    {
+        LDA nextFunctionID
+        STA ZP.TOP0
+        STZ ZP.TOP1
+        
+        INC nextFunctionID
+        INC nextFunctionID
+    }
+    
+    // function ID in TOP
+    CaptureFunctionStart()
+    {
+        // address of function table
+        LDY ZP.TOP0
+        LDA codeOffsetL
+        STA [codeBuffer], Y
+        INY
+        LDA codeOffsetH
+        STA [codeBuffer], Y
+    }
+    
+    GetCodeOffset()
+    {
+        LDA codeOffsetL
+        STA ZP.TOP0
+        LDA codeOffsetH
+        STA ZP.TOP1
+    }
     
     // Create initial 2K buffer
     // C if success, NC if not
@@ -39,8 +72,8 @@ unit Buffer
         STZ globalSizeH
         
         // assume there is always at least 1 (.MAIN)
-        LDA #1
-        STA functionCount
+        LDA #2 // multiples of 2
+        STA nextFunctionID
         
         // Allocate 2K initial buffer
         LDA #0x00   // 2048 = 0x0800
@@ -67,7 +100,36 @@ unit Buffer
         LDA #0x08
         STA codeCapacityH
         
+        LDA # fileHeaderSize
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();
+        if (NC)
+        {
+            // Failed to allocate
+            CLC
+            return;
+        }
+        LDA ZP.IDXH
+        STA headerBlockH
+        LDA ZP.IDXL
+        STA headerBlockL
+        
         SEC  // Success
+    }
+    Dispose()
+    {
+        LDA headerBlockH
+        STA ZP.IDXH
+        LDA headerBlockL
+        STA ZP.IDXL
+        Memory.Free();
+        
+        LDA codeBufferH
+        STA ZP.IDXH
+        LDA codeBufferL
+        STA ZP.IDXL
+        Memory.Free();
     }
     
     // Expand buffer and copy existing.
@@ -197,23 +259,28 @@ unit Buffer
             File.StartSave();  if (NC) { break; }
             
             // update and emit the header
-            LDA functionCount
-            LDY #3
-            STA [codeBuffer], Y
-            INY
+            
+            // file header
+            LDY #0
+            LDA #'V' STA [headerBlock], Y INY
+            LDA #'M' STA [headerBlock], Y INY
+            LDA #'B' STA [headerBlock], Y INY
+            // number of functions is nextFunctionID/2
+            LDA nextFunctionID
+            LSR A
+            STA [headerBlock], Y INY
             LDA globalSizeL
-            STA [codeBuffer], Y
-            INY
+            STA [headerBlock], Y INY
             LDA globalSizeH
-            STA [codeBuffer], Y
+            STA [headerBlock], Y 
             
             // Set source to our code buffer
-            LDA codeBufferL
+            LDA headerBlockL
             STA File.SectorSourceL
-            LDA codeBufferH
+            LDA headerBlockH
             STA File.SectorSourceH
             
-            LDA # headerSize
+            LDA # fileHeaderSize
             STA File.TransferLengthL
             LDA #0
             STA File.TransferLengthH
@@ -226,25 +293,19 @@ LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
             File.AppendStream();  if (NC) { break; }
             
             // only emit the used part of the function table (0..256 bytes)
-            CLC
             LDA codeBufferL
-            ADC # headerSize
             STA File.SectorSourceL
             LDA codeBufferH
-            ADC #0
             STA File.SectorSourceH
             
-            // functionCount x 2
-            CLC
-            LDA functionCount
-            ADC functionCount
+            LDA nextFunctionID // nextFunctionID = functionCount x 2
             STA File.TransferLengthL
-            ADC #0
-            STA File.TransferLengthH
+            STZ File.TransferLengthH
 
 Print.NewLine(); 
 LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
 LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
+LDY #0 LDA [codeBuffer], Y Print.Hex(); INY LDA [codeBuffer], Y Print.Hex();
                         
             LDA File.TransferLengthL
             ORA File.TransferLengthH
@@ -256,7 +317,7 @@ LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
             // only emit the used part of the globals (0..256 bytes)
             CLC
             LDA codeBufferL
-            ADC # headerSize
+            ADC # 0
             STA File.SectorSourceL
             LDA codeBufferH
             ADC # 1 // 256 byte function table
@@ -281,7 +342,7 @@ LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
             // Set source to our code buffer
             CLC
             LDA codeBufferL
-            ADC # headerSize
+            ADC # 0
             STA File.SectorSourceL
             LDA codeBufferH
             ADC # 2 // 256 byte function table, 256 global bytes
@@ -290,7 +351,7 @@ LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
             // Set transfer length to amount of code generated
             SEC
             LDA codeOffsetL
-            SBC # headerSize
+            SBC # 0
             STA File.TransferLengthL
             LDA codeOffsetH
             SBC # 2 // 256 byte function table, 256 global bytes

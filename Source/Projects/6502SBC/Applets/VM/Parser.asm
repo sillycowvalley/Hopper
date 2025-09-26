@@ -1,6 +1,7 @@
 unit Parser
 {
     uses "Buffer"
+    uses "Symbols"
     uses "../System/Char"
     
     // Single base for easy relocation
@@ -10,6 +11,8 @@ unit Parser
     // Bit 0    - .MAIN seen
     // Bit 1    - .CONST seen
     // Bit 2    - .DATA seen
+    
+    // Bit 7 - token pushed back
     
     
     const uint bufferIndexL = parserSlots+1;
@@ -34,6 +37,13 @@ unit Parser
     const string errDirectiveExpected = ".DATA, .CONST, .MAIN or .FUNC expected";
     const string errMAINRequired = ".MAIN required";
     const string errMAINSeen     = ".MAIN already seen";
+    const string errIdentifierExpected = "Identifier expected";
+    const string errNumberExpected = "Number expected";
+    const string errValueExpected = "Value expected";
+    const string errSymbolAddFailed = "Failed to create new symbol";
+    const string errUndefinedConstant = "Undefined constant symbol";
+    
+    const string mainName = "MAIN";
     
     // Token types
     enum TokenType
@@ -44,7 +54,8 @@ unit Parser
         Number     = 3,   // Decimal, hex, or char literal
         String     = 4,   // String literal
         Colon      = 5,   // :
-        Newline    = 6,   // End of line
+        Comma      = 6,   // ,
+        NewLine    = 7,   // End of line
     }
     
     enum Section
@@ -402,6 +413,8 @@ unit Parser
         
         STZ parserSection // no section
         
+        STZ parserFlags
+        
         // Get first character
         refillBuffer();
         if (C)
@@ -413,7 +426,7 @@ unit Parser
         STA currentLineH
         STZ currentLineH
         
-        SEC
+        Symbols.Initialize();
     }
     Dispose()
     {
@@ -422,11 +435,24 @@ unit Parser
         LDA tokenBufferH
         STA ZP.IDXH
         Memory.Free();
+        
+        Symbols.Dispose();
+    }
+    
+    UngetToken()
+    {
+        SMB7 parserFlags        // Set bit 7 = reuse token next time
     }
     
     // Get next token
     GetToken()
     {
+        // Check if token was ungot
+        if (BBS7, parserFlags)  // Bit 7 set = reuse current token
+        {
+            RMB7 parserFlags     // Clear the flag
+            return;              // tokenType, tokenValue, tokenBuffer unchanged
+        }
         skipWhitespace();
         
         peek();
@@ -447,7 +473,7 @@ unit Parser
             {
                 next();
                 INC currentLineL if (Z) { INC currentLineH }
-                LDA #TokenType.Newline
+                LDA #TokenType.NewLine
                 STA tokenType
             }
             case '"': // Check for string
@@ -458,6 +484,12 @@ unit Parser
             {
                 next();
                 LDA #TokenType.Colon
+                STA tokenType
+            }
+            case ',': // Check for comma
+            {
+                next();
+                LDA #TokenType.Comma
                 STA tokenType
             }
             default:
@@ -546,12 +578,17 @@ unit Parser
             LDA tokenType
             if (Z) { SEC break; }  // EOF
             
+            CMP # TokenType.NewLine
+            if (Z)
+            {
+                continue; // ignore newline
+            }
             CMP # TokenType.Directive
             if (Z)
             {
                 // switch modes
                 LDY #1
-                LDA [tokenBuffer]
+                LDA [tokenBuffer], Y
                 switch (A)
                 {
                     case 'C': // .CONST
@@ -577,12 +614,58 @@ unit Parser
                         }
                         SMB0 parserFlags // .MAIN seen
                         
+                        
+                        LDA # (mainName % 256)
+                        STA STRL
+                        LDA # (mainName / 256)
+                        STA STRH
+                        
+                        // always function 0                        
+                        STZ TOP0
+                        STZ TOP1
+                        
+                        Buffer.CaptureFunctionStart();
+                        
+                        LDA # SymbolType.Function
+                        // STR = name, TOP = ID
+                        Symbols.Add();
+                        if (NC)
+                        {
+                            LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
+                            Print.String();    
+                            CLC
+                        }
+                        
                         // parsing function opcodes now
                         LDA # Section.Func
                         STA parserSection
                     }
                     case 'F': // .FUNC
                     {
+                        GetToken();
+                        
+                        LDA tokenType
+                        CMP # TokenType.Identifier
+                        if (NZ)
+                        {
+                            LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
+                            Print.String();    
+                            CLC
+                            return;
+                        }
+                        
+                        Buffer.GetNextFunctionNumber(); // -> TOP
+                        Buffer.CaptureFunctionStart();  // TOP ->
+                        
+                        LDA # SymbolType.Function
+                        Symbols.Add();
+                        if (NC)
+                        {
+                            LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
+                            Print.String();    
+                            CLC
+                        }
+                        
                         // parsing function opcodes now    
                         LDA # Section.Func
                         STA parserSection
@@ -596,15 +679,15 @@ unit Parser
                 {
                     case Section.Const:
                     {
-                        // TODO
+                        parseConstLine(); if (NC) { break; }
                     }
                     case Section.Data:
                     {
-                        // TODO
+                        parseDataLine(); if (NC) { break; }
                     }
                     case Section.Func:
                     {
-                        // TODO
+                        parseFuncLine(); if (NC) { break; }
                     }
                 }
             }
@@ -618,5 +701,172 @@ unit Parser
                 CLC
             }
         }
+#ifdef DEBUG        
+        PHP Symbols.Dump(); PLP
+#endif
+    }
+    
+    parseConstLine()
+    {
+        LDA tokenType
+        CMP # TokenType.Identifier
+        if (NZ)
+        {
+            LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+            return;
+        }
+        
+        GetToken();
+        
+        LDA tokenType
+        CMP # TokenType.Number
+        if (NZ)
+        {
+            LDA #(errNumberExpected / 256) STA ZP.STRH LDA #(errNumberExpected % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+            return;
+        }
+        
+        LDA tokenBufferL
+        STA STRL
+        LDA tokenBufferH
+        STA STRH
+        
+        LDA tokenValueH
+        STA ZP.TOP1
+        LDA tokenValueL
+        STA ZP.TOP0
+        
+        LDA # SymbolType.Constant
+        Symbols.Add();
+        if (NC)
+        {
+            LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+        }
+    }
+    parseDataLine()
+    {
+        // syntax :  name value, value, value
+        LDA tokenType
+        CMP # TokenType.Identifier
+        if (NZ)
+        {
+            LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+            return;
+        }
+        
+        // get the offset where this data element will start
+        Buffer.GetCodeOffset(); // -> TOP
+        
+        LDA tokenBufferL
+        STA STRL
+        LDA tokenBufferH
+        STA STRH
+        LDA # SymbolType.Data
+        Symbols.Add();
+        if (NC)
+        {
+            LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
+            Print.String();    
+            CLC
+        }
+        loop
+        {
+            GetToken();
+            LDA tokenType
+            switch (A)
+            {
+                case TokenType.NewLine:
+                {
+                    continue;
+                }
+                case TokenType.String:
+                {
+                    LDY #0
+                    loop
+                    {
+                        LDA [tokenBuffer], Y
+                        if (Z) { break; }
+                        Buffer.Emit();
+                        INY
+                    }
+                    LDA #0
+                    Buffer.Emit();
+                }
+                case TokenType.Number:
+                {
+                    LDA tokenValueL
+                    Buffer.Emit();
+                    LDA tokenValueH
+                    Buffer.Emit();
+                }
+                case TokenType.Identifier:
+                {
+                    LDA tokenBufferL
+                    STA STRL
+                    LDA tokenBufferH
+                    STA STRH
+                    
+                    // name in STR
+                    // C if found, NC if not
+                    // value in TOP0..1, type in A
+                    FindSymbol();
+                    if (NC)
+                    {
+                        
+                        LDA #(errUndefinedConstant / 256) STA ZP.STRH LDA #(errUndefinedConstant % 256) STA ZP.STRL
+                        Print.String();    
+                        CLC
+                        return;
+                    }
+                    CMP # SymbolType.Constant
+                    if (NC)
+                    {
+                        
+                        LDA #(errUndefinedConstant / 256) STA ZP.STRH LDA #(errUndefinedConstant % 256) STA ZP.STRL
+                        Print.String();    
+                        CLC
+                        return;
+                    }
+                    LDA ZP.TOP0
+                    Buffer.Emit();
+                    LDA ZP.TOP1
+                    Buffer.Emit();
+                }
+                default:
+                {
+                    LDA #(errValueExpected / 256) STA ZP.STRH LDA #(errValueExpected % 256) STA ZP.STRL
+                    Print.String();    
+                    CLC
+                    return;
+                }
+            }
+            
+            loop
+            {
+                GetToken();
+                LDA tokenType
+                CMP # TokenType.NewLine
+                if (NZ) { break; }
+            }
+            CMP #TokenType.Comma
+            if (NZ) 
+            {
+                UngetToken(); 
+                break; 
+            }
+        }
+        SEC
+    }
+    parseFuncLine()
+    {
+        // TODO
     }
 }
