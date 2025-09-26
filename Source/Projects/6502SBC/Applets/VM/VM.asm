@@ -23,6 +23,17 @@ program VM
     const uint bufferIndexL     = vmSlots+3;
     const uint bufferIndexH     = vmSlots+4;
     
+    const uint programMemory    = vmSlots+5;
+    const uint programMemoryL   = vmSlots+5;
+    const uint programMemoryH   = vmSlots+6;
+    
+    const uint index            = vmSlots+7;
+    const uint indexL           = vmSlots+7;
+    const uint indexH           = vmSlots+8;
+    
+    const uint countL           = vmSlots+9;
+    const uint countH           = vmSlots+10;
+    
     const string msgFileNotFound = "File not found";
     const string msgOutOfMemory  = "Out of memory";
     const string msgBadBinary    = "Bad Binary";
@@ -76,36 +87,131 @@ program VM
     
     ReadByte()
     {
-        LDA bufferIndexH
-        CMP File.TransferLengthH
-        if (Z)
+        PHY
+        loop
         {
-            LDA bufferIndexL
-            CMP File.TransferLengthL
-            if (Z)  // Need more data
+            LDA bufferIndexH
+            CMP File.TransferLengthH
+            if (Z)
             {
-                File.NextStream();
-                if (NC)
+                LDA bufferIndexL
+                CMP File.TransferLengthL
+                if (Z)  // Need more data
                 {
-                    return;
+                    File.NextStream();
+                    if (NC)
+                    {
+                        break;
+                    }
+                    STZ bufferIndexL
+                    STZ bufferIndexH
                 }
-                STZ bufferIndexL
-                STZ bufferIndexH
             }
+            
+            // Get character from buffer
+            LDA #(File.FileDataBuffer % 256)
+            STA ZP.IDXL
+            LDA #(File.FileDataBuffer / 256)
+            STA ZP.IDXH
+            
+            LDY bufferIndexL
+            LDA [ZP.IDX], Y
+            
+            INC bufferIndexL
+            if (Z) { INC bufferIndexH }
+            SEC
+            break;
         }
+        PLY
+    }
+    
+    // Dump 256-byte page in hex/ASCII format
+    // Input: ZP.IDXH = start address of page
+    DumpPage()
+    {
+        PHY
         
-        // Get character from buffer
-        LDA #(File.FileDataBuffer % 256)
-        STA ZP.IDXL
-        LDA #(File.FileDataBuffer / 256)
-        STA ZP.IDXH
+        STZ ZP.ACCL  // Offset counter
+        STZ ZP.IDXL
         
-        LDY bufferIndexL
-        LDA [ZP.IDX], Y
-        
-        INC bufferIndexL
-        if (Z) { INC bufferIndexH }
-        SEC
+        loop
+        {
+            // Print offset (4 hex digits)
+            LDA ZP.IDXH
+            Print.Hex();
+            LDA ZP.ACCL
+            Print.Hex();
+            LDA #':'
+            Print.Char();
+            Print.Space();
+            
+            // Print 16 bytes in hex
+            LDY #0
+            loop
+            {
+                LDA [ZP.IDX], Y
+                Print.Hex();
+                Print.Space();
+                
+                // Extra space after 8 bytes
+                INY
+                CPY #8
+                if (Z)
+                {
+                    Print.Space();
+                }
+                CPY #16
+                if (Z) { break; }
+            }
+            
+            // Print ASCII representation
+            Print.Space();
+            
+            LDY #0
+            loop
+            {
+                LDA [ZP.IDX], Y
+                // Check if printable (32-126)
+                CMP #32
+                if (C)  // >= 32
+                {
+                    CMP #128
+                    if (C)  // >= 128
+                    {
+                        LDA #'.'    
+                    }
+                }
+                else
+                {
+                    LDA #'.'
+                }
+                Print.Char();
+                
+                INY
+                CPY #16
+                if (Z) { break; }
+            }
+            
+            Print.NewLine();
+            
+            // Advance to next line
+            CLC
+            LDA ZP.IDXL
+            ADC #16
+            STA ZP.IDXL
+            if (C)
+            {
+                INC ZP.IDXH
+            }
+            
+            // Update offset
+            CLC
+            LDA ZP.ACCL
+            ADC #16
+            STA ZP.ACCL
+            if (Z) { break; }  // Wrapped after 256 bytes
+        }
+        PLY
     }
     
     Hopper()
@@ -172,13 +278,88 @@ program VM
             Print.String();
         }
         
-        // Allocate 2K
-        STZ ZP.ACCL
-        LDA #0x08
-        STZ ZP.ACCH
+        // Allocate 2K (including the 2 byte size field = 0x800 - 2 = 0x7FE)
+        LDA #0xFE
+        STA ZP.ACCL
+        LDA #0x07
+        STA ZP.ACCH
         Memory.Allocate();
+        if (NC)
+        {
+            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
+            Print.String();
+            return;
+        }
+Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space(); LDA functionCount Print.Hex(); Print.Space(); LDA dataSizeH Print.Hex(); LDA dataSizeL Print.Hex();
+Print.NewLine();
         
-        Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();
+        STZ programMemoryL
+        LDA ZP.IDXH
+        STA programMemoryH
         
+        // == Page 0 is the function table starting with .MAIN at slot 1 (slot 0 is empty because it is the size for Memory.Allocate) ==
+        
+        // non existent function 0
+        ReadByte();
+        ReadByte();
+        
+        LDY #2
+        loop
+        {
+            ReadByte();
+            STA [programMemory], Y
+            INY
+            ReadByte();
+            STA [programMemory], Y
+            INY
+            CPY functionCount
+            if (C) { break; } // Y >= functionCount
+        }
+        
+        // == Page 1 is reserved for globals ==
+        
+        // == Page 2 is where we start loading constant data ==
+        LDA dataSizeL
+        STA countL
+        LDA dataSizeH
+        STA countH
+                
+        CLC
+        LDA programMemoryH
+        ADC #2
+        STA indexH
+        STZ indexL
+        
+        loop
+        {
+            LDA countL
+            ORA countH
+            if (Z) { break; }
+            ReadByte();
+            STA [index]
+            INC indexL if (Z) { INC indexH }
+            
+            LDA countL
+            if (Z)
+            {
+                DEC countH
+            }
+            DEC countL
+        }
+        // == done loading constant data ==
+        
+
+        LDA programMemoryH
+        STA ZP.IDXH
+        DumpPage();
+        DumpPage();
+        DumpPage();
+        
+        
+        LDA programMemoryL
+        STA ZP.IDXL
+        LDA programMemoryH
+        STA ZP.IDXH
+        Memory.Free();
     }
 }
