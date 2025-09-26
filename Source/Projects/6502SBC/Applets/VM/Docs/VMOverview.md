@@ -172,6 +172,15 @@ SYSCALL     0x80  + byte       // Call BIOS function via X register
 HALT        0x82               // Stop execution (return to BIOS)
 ```
 
+### Register Operations (0x84-0x8E)
+```
+POPA        0x84               // Pop byte from stack to A register
+POPY        0x86               // Pop byte from stack to Y register
+PUSHA       0x88               // Push A register to stack
+PUSHC       0x8A               // Push carry flag (1 if set, 0 if clear)
+PUSHZ       0x8C               // Push zero flag (1 if set, 0 if clear)
+```
+
 ## Implementation Details
 
 ### Dispatch Loop
@@ -268,30 +277,316 @@ The VM assembler accepts these mnemonics:
 
 ```asm
 ; Example VM assembly program
-.FUNC Main 0              ; Function 0 at 0x2000
-    PUSH_WORD 0x1234      ; Push constant
-    STORE_GLOBAL_B 0      ; Store to global[0]
+.MAIN
+    PUSHW 0x1234      ; Push constant
+    POPGW      0      ; Store to global[0]
     
-    PUSH_STRING_0         ; Push first string
-    PRINT_STRING          ; Print it
+    PUSHSTR 0         ; Push first string
+    POPZW ZP.STR
+    SYSCALL Print.String ; Call BIOS print
     
-    CALL 2                ; Call function 2
+    CALL Helper           ; Call function 2
     
 loop:                     ; Labels for branches
-    LOAD_GLOBAL_B 0
-    PUSH_ONE
-    SUB_BYTE
+    PUSHGB 0
+    PUSH1
+    SUBB
     DUP
-    STORE_GLOBAL_B 0
-    JUMP_NZ_CHAR loop     ; Branch backward
+    POPGB 0
+    JNZ loop     ; Branch backward
     
-    RETURN
+    RET
 
-.FUNC Helper 2            ; Function 2 at 0x2200
-    PUSH_BYTE 42
-    PRINT_BYTE
-    RETURN
+.FUNC Helper
+    PUSH 42
+    POPA                  ; Store to A BIOS
+    SYSCALL Print.Char ; Call BIOS print
+    RET                   ; Return
 ```
+
+## VM Assembly Examples
+
+### Hello World
+```asm
+; Simple Hello World program
+.DATA
+    STR0: "Hello, World!\n"
+
+.MAIN
+    PUSHSTR STR0          ; Push string address
+    POPZW ZP.STR          ; Marshal to BIOS
+    SYSCALL Print.String  ; Print it
+    
+    HALT                  ; Return to BIOS
+```
+
+### Print Digits 0-9
+```asm
+; Print digits from 0 to 9
+.DATA
+    STR0: "Counting: "
+    STR1: "\nDone!\n"
+
+.MAIN
+    ; Print header
+    PUSHSTR STR0             
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Initialize counter to 0
+    PUSH 0
+    POPGB 0              ; global[0] = counter
+    
+loop:
+    ; Print the digit
+    PUSHGB 0             ; Get counter
+    PUSH '0'             ; ASCII '0' 
+    ADDB                 ; Convert to ASCII digit
+    POPA                 
+    SYSCALL Print.Char
+    
+    ; Print space
+    PUSH ' '
+    POPA
+    SYSCALL Print.Char
+    
+    ; Increment counter
+    PUSHGB 0
+    PUSH1
+    ADDB
+    DUP                  ; Keep copy for comparison
+    POPGB 0              ; Store back
+    
+    ; Check if we've done 10 digits
+    PUSH 10
+    EQ                   ; Compare with 10
+    JZ loop              ; Loop if not equal
+    
+    ; Print footer
+    PUSHSTR STR1
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    HALT
+```
+
+### Memory Allocation Test
+```asm
+; Test memory allocation and deallocation
+.DATA
+    STR0: "Allocating 256 bytes..."
+    STR1: "Success! Address: "
+    STR2: "Failed!\n"
+    STR3: "\nFreeing memory..."
+    STR4: "Done.\n"
+
+.MAIN
+    ; Print allocation message
+    PUSHSTR STR0
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Allocate 256 bytes
+    PUSHW 256
+    POPZW ZP.ACC         ; Size to ZP.ACC
+    SYSCALL Memory.Allocate
+    PUSHC                ; Get success flag
+    JZ failed
+    
+    ; Success - print message and address
+    PUSHSTR STR1
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Save and print address (in hex would be nice!)
+    PUSHZW ZP.IDX        ; Get allocated address
+    DUPW
+    POPGW 0              ; Save for later
+    
+    ; Print high byte
+    SWAP                 ; Get high byte
+    CALL PrintHex
+    
+    ; Print low byte  
+    CALL PrintHex
+    
+    ; Free the memory
+    PUSHSTR STR3
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    PUSHGW 0             ; Get saved address
+    POPZW ZP.IDX
+    SYSCALL Memory.Free
+    
+    PUSHSTR STR4
+    POPZW ZP.STR
+    SYSCALL Print.String
+    HALT
+    
+failed:
+    PUSHSTR STR2
+    POPZW ZP.STR
+    SYSCALL Print.String
+    HALT
+
+.FUNC PrintHex           ; Helper to print byte as 2 hex digits
+    ; Input: byte on stack
+    DUP
+    PUSH 4
+    SHR                  ; High nibble
+    CALL PrintNibble
+    
+    PUSH 0x0F
+    AND                  ; Low nibble
+    CALL PrintNibble
+    RET
+
+.FUNC PrintNibble        ; Print single hex digit
+    ; Input: nibble (0-15) on stack
+    DUP
+    PUSH 10
+    LT                   ; Check if < 10
+    JZ letter
+    
+    PUSH '0'
+    ADDB
+    POPA
+    SYSCALL Print.Char
+    RET
+    
+letter:
+    PUSH 10
+    SUBB
+    PUSH 'A'
+    ADDB
+    POPA
+    SYSCALL Print.Char
+    RET
+```
+
+### Fibonacci Sequence
+```asm
+; Print first 10 Fibonacci numbers
+.DATA
+    STR0: "Fibonacci: "
+    STR1: " "
+
+.MAIN
+    ; Print header
+    PUSHSTR STR0
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Initialize: fib[0]=0, fib[1]=1
+    PUSH 0
+    POPGB 0              ; n-2 term
+    PUSH 1
+    POPGB 1              ; n-1 term
+    PUSH 0
+    POPGB 2              ; counter
+    
+    ; Print first number (0)
+    PUSH '0'
+    POPA
+    SYSCALL Print.Char
+    CALL PrintSpace
+    
+    ; Print second number (1) 
+    PUSH '1'
+    POPA
+    SYSCALL Print.Char
+    CALL PrintSpace
+    
+loop:
+    ; Calculate next: fib[n] = fib[n-1] + fib[n-2]
+    PUSHGB 0             ; n-2
+    PUSHGB 1             ; n-1
+    ADDB
+    DUP
+    
+    ; Update for next iteration
+    PUSHGB 1
+    POPGB 0              ; n-2 = old n-1
+    POPGB 1              ; n-1 = new value
+    
+    ; Print the number (simplified, only works for single digits)
+    PUSHGB 1
+    PUSH '0'
+    ADDB
+    POPA
+    SYSCALL Print.Char
+    CALL PrintSpace
+    
+    ; Increment counter
+    PUSHGB 2
+    PUSH1
+    ADDB
+    DUP
+    POPGB 2
+    
+    ; Check if we've printed 8 more (total 10)
+    PUSH 8
+    EQ
+    JZ loop
+    
+    HALT
+
+.FUNC PrintSpace
+    PUSHSTR STR1         ; Space string
+    POPZW ZP.STR
+    SYSCALL Print.String
+    RET
+```
+
+### String Comparison
+```asm
+; Compare two strings
+.DATA
+    STR0: "Hello"
+    STR1: "Hello"
+    STR2: "World"
+    STR3: "Strings match!\n"
+    STR4: "Strings differ!\n"
+
+.MAIN
+    ; Compare STR0 and STR1 (should match)
+    PUSHSTR STR0
+    PUSHSTR STR1
+    STRCMP               ; Returns 0 if equal
+    JNZ different1
+    
+    PUSHSTR STR3
+    POPZW ZP.STR
+    SYSCALL Print.String
+    BRA test2
+    
+different1:
+    PUSHSTR STR4
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+test2:
+    ; Compare STR0 and STR2 (should differ)
+    PUSHSTR STR0
+    PUSHSTR STR2
+    STRCMP
+    JNZ different2
+    
+    PUSHSTR STR3
+    POPZW ZP.STR
+    SYSCALL Print.String
+    HALT
+    
+different2:
+    PUSHSTR STR4
+    POPZW ZP.STR
+    SYSCALL Print.String
+    HALT
+```
+
+
+
 
 ## Performance Characteristics
 
