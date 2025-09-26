@@ -69,9 +69,9 @@ unit OpCodes
         0x5C, Arguments.Char, 5, 'P','O','P','L','B',      // POPLB + char
         0x5E, Arguments.Char, 5, 'P','O','P','L','W',      // POPLW + char
         
-        // String Operations
-        0x60, Arguments.Byte, 5, 'P','U','S','H','S',      // PUSHS + byte
-        0x62, Arguments.Word, 6, 'P','U','S','H','S','2',  // PUSHS2 + word
+        // Data / String Operations
+        0x60, Arguments.Byte, 5, 'P','U','S','H','D',      // PUSHD + byte
+        0x62, Arguments.Word, 6, 'P','U','S','H','D','2',  // PUSHD2 + word
         0x64, Arguments.None, 4, 'S','T','R','C',          // STRC
         0x66, Arguments.None, 6, 'S','T','R','C','M','P',  // STRCMP
         

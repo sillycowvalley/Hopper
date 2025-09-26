@@ -85,7 +85,7 @@ unit Buffer
         STZ dataSizeH
         
         // assume there is always at least 1 (.MAIN)
-        LDA #2 // multiples of 2
+        LDA #4 // multiples of 2, .MAIN is 2
         STA nextFunctionID
         
         // Allocate 2K initial buffer

@@ -703,8 +703,9 @@ unit Parser
                         LDA # (mainName / 256)
                         STA STRH
                         
-                        // always function 0                        
-                        STZ TOP0
+                        // always function 2
+                        LDA #0x02                        
+                        STA TOP0
                         STZ TOP1
                         
                         Buffer.CaptureFunctionStart();
