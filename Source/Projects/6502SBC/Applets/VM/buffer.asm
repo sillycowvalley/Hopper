@@ -1,5 +1,8 @@
 unit Buffer
 {
+    // file header size
+    const byte headerSize = 6; 
+    
     // Single base for easy relocation
     const byte bufferSlots = 0x60; // 0x60..0x6F
     
@@ -190,20 +193,116 @@ unit Buffer
             // Open file for writing
             File.StartSave();  if (NC) { break; }
             
+            // update and emit the header
+            LDA functionCount
+            LDY #3
+            STA [codeBuffer], Y
+            INY
+            LDA globalSizeL
+            STA [codeBuffer], Y
+            INY
+            LDA globalSizeH
+            STA [codeBuffer], Y
+            
             // Set source to our code buffer
             LDA codeBufferL
             STA File.SectorSourceL
             LDA codeBufferH
             STA File.SectorSourceH
             
-            // Set transfer length to amount of code generated
-            LDA codeOffsetL
+            LDA # headerSize
             STA File.TransferLengthL
-            LDA codeOffsetH
+            LDA #0
             STA File.TransferLengthH
-            
+
+Print.NewLine(); 
+LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
+LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
+                                   
             // Write the code buffer
             File.AppendStream();  if (NC) { break; }
+            
+            // only emit the used part of the function table (0..256 bytes)
+            CLC
+            LDA codeBufferL
+            ADC # headerSize
+            STA File.SectorSourceL
+            LDA codeBufferH
+            ADC #0
+            STA File.SectorSourceH
+            
+            // functionCount x 2
+            CLC
+            LDA functionCount
+            ADC functionCount
+            STA File.TransferLengthL
+            ADC #0
+            STA File.TransferLengthH
+
+Print.NewLine(); 
+LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
+LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
+                        
+            LDA File.TransferLengthL
+            ORA File.TransferLengthH
+            if (NZ)
+            {
+                File.AppendStream();  if (NC) { break; }
+            }
+            
+            // only emit the used part of the globals (0..256 bytes)
+            CLC
+            LDA codeBufferL
+            ADC # headerSize
+            STA File.SectorSourceL
+            LDA codeBufferH
+            ADC # 1 // 256 byte function table
+            STA File.SectorSourceH
+                        
+            LDA globalSizeL
+            STA File.TransferLengthL
+            LDA globalSizeH
+            STA File.TransferLengthH
+            
+Print.NewLine(); 
+LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
+LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();            
+            
+            LDA File.TransferLengthL
+            ORA File.TransferLengthH
+            if (NZ)
+            {
+                File.AppendStream();  if (NC) { break; }
+            }
+            
+            // Set source to our code buffer
+            CLC
+            LDA codeBufferL
+            ADC # headerSize
+            STA File.SectorSourceL
+            LDA codeBufferH
+            ADC # 2 // 256 byte function table, 256 global bytes
+            STA File.SectorSourceH
+            
+            // Set transfer length to amount of code generated
+            SEC
+            LDA codeOffsetL
+            SBC # headerSize
+            STA File.TransferLengthL
+            LDA codeOffsetH
+            SBC # 2 // 256 byte function table, 256 global bytes
+            STA File.TransferLengthH
+            
+Print.NewLine(); 
+LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
+LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();            
+            
+            LDA File.TransferLengthL
+            ORA File.TransferLengthH
+            if (NZ)
+            {
+                File.AppendStream();  if (NC) { break; }
+            }
             
             LDA #0x00  // not executable flag
             File.EndSave(); if (NC) { break; }

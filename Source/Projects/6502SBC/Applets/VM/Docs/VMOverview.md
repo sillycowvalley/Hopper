@@ -309,6 +309,11 @@ loop:                     ; Labels for branches
 ### Hello World
 ```asm
 ; Simple Hello World program
+.CONST
+    ZP.STR  0x1E
+    
+    Print.String 0x11
+    
 .DATA
     STR0: "Hello, World!\n"
 
@@ -323,6 +328,12 @@ loop:                     ; Labels for branches
 ### Print Digits 0-9
 ```asm
 ; Print digits from 0 to 9
+.CONST
+    ZP.STR  0x1E
+    
+    Print.String 0x11
+    Print.Char   0x12
+    
 .DATA
     STR0: "Counting: "
     STR1: "\nDone!\n"
