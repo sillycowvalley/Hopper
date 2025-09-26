@@ -2,12 +2,15 @@
 program VASM
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
     
     const byte vasmSlots = 0x90; // 0x90..0x9F
     
     const uint filenameL    = vasmSlots+0;
     const uint filenameH    = vasmSlots+1;
+    
+    const uint outFilenameL = vasmSlots+2;
+    const uint outFilenameH = vasmSlots+3;
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -29,6 +32,7 @@ program VASM
     const string msgSourceNotFound = "Source Not Found\n";
     const string msgFailedLoading  = "Failed Loading Source\n";
     const string msgFailedSaving   = "Failed Writing Output\n";
+    const string msgSuccess        = " Created\n";
     
     // Get filename argument from command line
     // Input:  None (reads from command line buffer at Address.LineBuffer)
@@ -136,9 +140,9 @@ program VASM
     }
     freeOutputName()
     {
-        LDA ZP.STRL
+        LDA outFilenameL
         STA ZP.IDXL
-        LDA ZP.STRH
+        LDA outFilenameH
         STA ZP.IDXH
         Memory.Free();
     }
@@ -230,6 +234,10 @@ program VASM
             makeOutputName();
             if (C)
             {
+                LDA STRL
+                STA outFilenameL
+                LDA STRH
+                STA outFilenameH
                 Buffer.Save();
                 if (NC)
                 {
@@ -237,6 +245,16 @@ program VASM
                     Print.String();
                 }
                 Buffer.Dispose();
+                
+                LDA outFilenameL
+                STA ZP.STRL
+                LDA outFilenameH
+                STA ZP.STRH
+                
+                Print.String();
+                LDA #(msgSuccess / 256) STA ZP.STRH LDA #(msgSuccess % 256) STA ZP.STRL
+                Print.String();
+                
                 freeOutputName();
             }
             Parser.Dispose();

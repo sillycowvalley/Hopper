@@ -12,6 +12,7 @@ unit Parser
     // Bit 0    - .MAIN seen
     // Bit 1    - .CONST seen
     // Bit 2    - .DATA seen
+    // Bit 3    - .FUNC or .MAIN seen
     
     // Bit 7 - token pushed back
     
@@ -37,19 +38,20 @@ unit Parser
     
     const byte numberType    = parserSlots+13;
     
-    const string errDirectiveExpected = ".DATA, .CONST, .MAIN or .FUNC expected";
-    const string errMAINRequired = ".MAIN required";
-    const string errMAINSeen     = ".MAIN already seen";
+    const string errDirectiveExpected  = ".DATA, .CONST, .MAIN or .FUNC expected";
+    const string errMAINRequired       = ".MAIN required";
+    const string errMAINSeen           = ".MAIN already seen";
+    const string errFUNCSeen           = ".DATA not allowed after functions";
     const string errIdentifierExpected = "Identifier expected";
-    const string errNumberExpected = "Number expected";
-    const string errCharExpected = "Char expected";
-    const string errByteExpected = "Byte expected";
-    const string errWordExpected = "Word expected";
-    const string errIntExpected = "Int expected";
-    const string errValueExpected = "Value expected";
-    const string errSymbolAddFailed = "Failed to create new symbol";
-    const string errUndefinedSymbol = "Undefined symbol";
-    const string errOpCodeExpected = "OpCode expected";
+    const string errNumberExpected     = "Number expected";
+    const string errCharExpected       = "Char expected";
+    const string errByteExpected       = "Byte expected";
+    const string errWordExpected       = "Word expected";
+    const string errIntExpected        = "Int expected";
+    const string errValueExpected      = "Value expected";
+    const string errSymbolAddFailed    = "Failed to create new symbol";
+    const string errUndefinedSymbol    = "Undefined symbol";
+    const string errOpCodeExpected     = "OpCode expected";
     
     const string mainName = "MAIN";
     
@@ -671,6 +673,14 @@ unit Parser
                     }
                     case 'D': // .DATA
                     {
+                        if (BBS3, parserFlags) // Bit 3 - .MAIN or .FUNC seen
+                        {
+                            LDA #(errFUNCSeen / 256) STA ZP.STRH LDA #(errFUNCSeen % 256) STA ZP.STRL
+                            Print.String();    
+                            CLC
+                            break;
+                        }
+                        
                         // parsing .DATA lines now    
                         LDA # Section.Data
                         STA parserSection
@@ -685,6 +695,7 @@ unit Parser
                             break;
                         }
                         SMB0 parserFlags // .MAIN seen
+                        SMB3 parserFlags // .MAIN or .FUNC seen
                         
                         
                         LDA # (mainName % 256)
@@ -725,6 +736,8 @@ unit Parser
                             CLC
                             return;
                         }
+                        
+                        SMB3 parserFlags // .MAIN or .FUNC seen
                         
                         Buffer.GetNextFunctionNumber(); // -> TOP
                         Buffer.CaptureFunctionStart();  // TOP ->
@@ -836,13 +849,22 @@ unit Parser
         }
         
         // get the offset where this data element will start
-        Buffer.GetCodeOffset(); // -> TOP
+        Buffer.GetDataOffset(); // -> TOP
+        
         
         LDA tokenBufferL
         STA STRL
         LDA tokenBufferH
         STA STRH
-        LDA # SymbolType.Data
+        LDA ZP.TOP1
+        if (Z)
+        {
+            LDA # (SymbolType.Data | NumberType.Byte)
+        }
+        else
+        {
+            LDA # (SymbolType.Data | NumberType.Word)
+        }
         Symbols.Add();
         if (NC)
         {
@@ -950,6 +972,7 @@ unit Parser
                 break; 
             }
         }
+        Buffer.UpdateDataSize();
         SEC
     }
     parseFuncLine()

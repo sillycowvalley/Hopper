@@ -178,68 +178,65 @@ unit Symbols
     // value in TOP0..1, type in A
     FindSymbol()
     {
+        // Start at head
+        LDA symbolHeadL
+        STA symbolCurrentL
+        LDA symbolHeadH
+        STA symbolCurrentH
+        
         loop
         {
-            // Start at head
-            LDA symbolHeadL
-            STA symbolCurrentL
-            LDA symbolHeadH
-            STA symbolCurrentH
-            
-            loop
+            // Check end of list
+            LDA symbolCurrentL
+            ORA symbolCurrentH
+            if (Z)  // Not found
             {
-                // Check end of list
-                LDA symbolCurrentL
-                ORA symbolCurrentH
-                if (Z)  // Not found
-                {
-                    CLC
-                    break;
-                }
-                
-                // Point to current node
-                LDA symbolCurrentL
-                STA ZP.IDXL
-                LDA symbolCurrentH
-                STA ZP.IDXH
-                
-                // Compare inline string at offset 5
                 CLC
-                LDA ZP.IDXL
-                ADC #5
-                STA ZP.NEXT0
-                LDA ZP.IDXH
-                ADC #0
-                STA ZP.NEXT1
-                String.Compare(); // STR == NEXT -> C or NC
-                
-                if (C) 
-                { 
-                    // Get value
-                    LDY #2
-                    LDA [ZP.IDX], Y
-                    STA ZP.TOP0
-                    INY
-                    LDA [ZP.IDX], Y
-                    STA ZP.TOP1
-                    
-                    // Get type
-                    INY
-                    LDA [ZP.IDX], Y
-                    SEC
-                    break;  // Found with value loaded
-                }
-                
-                // Move to next
-                LDY #0
+                break;
+            }
+            
+            // Point to current node
+            LDA symbolCurrentL
+            STA ZP.IDXL
+            LDA symbolCurrentH
+            STA ZP.IDXH
+            
+            // Compare inline string at offset 5
+            CLC
+            LDA ZP.IDXL
+            ADC #5
+            STA ZP.NEXT0
+            LDA ZP.IDXH
+            ADC #0
+            STA ZP.NEXT1
+            String.Compare(); // STR == NEXT -> C or NC
+            
+            if (C) 
+            { 
+                // Get value
+                LDY #2
                 LDA [ZP.IDX], Y
-                STA symbolCurrentL
+                STA ZP.TOP0
                 INY
                 LDA [ZP.IDX], Y
-                STA symbolCurrentH
+                STA ZP.TOP1
+                
+                // Get type
+                INY
+                LDA [ZP.IDX], Y
+                SEC
+                break;  // Found with value loaded
             }
-            break;
-        } // single exit
+            
+            // Move to next
+            LDY #0
+            LDA [ZP.IDX], Y
+            STA symbolCurrentL
+            INY
+            LDA [ZP.IDX], Y
+            STA symbolCurrentH
+        }
+
     }
     
     // Debug function to dump symbol table

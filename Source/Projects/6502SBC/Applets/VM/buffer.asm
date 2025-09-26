@@ -22,9 +22,9 @@ unit Buffer
     
     const uint nextFunctionID = bufferSlots+7;
     
-    const uint globalSize     = bufferSlots+8;
-    const byte globalSizeL    = bufferSlots+8;
-    const byte globalSizeH    = bufferSlots+9;
+    const uint dataSize       = bufferSlots+8;
+    const byte dataSizeL      = bufferSlots+8;
+    const byte dataSizeH      = bufferSlots+9;
     
     const byte headerBlock    = bufferSlots+10;
     const byte headerBlockL   = bufferSlots+10;
@@ -52,12 +52,25 @@ unit Buffer
         STA [codeBuffer], Y
     }
     
-    GetCodeOffset()
+    GetDataOffset()
     {
+        SEC
         LDA codeOffsetL
+        SBC # 0
         STA ZP.TOP0
         LDA codeOffsetH
+        SBC # 2 // after global and function pages
         STA ZP.TOP1
+    }
+    UpdateDataSize()
+    {
+        SEC
+        LDA codeOffsetL
+        SBC #0
+        STA dataSizeL
+        LDA codeOffsetH
+        SBC #2 // function and global page
+        STA dataSizeH
     }
     
     // Create initial 2K buffer
@@ -68,8 +81,8 @@ unit Buffer
         STZ codeOffsetL
         STZ codeOffsetH
         
-        STZ globalSizeL
-        STZ globalSizeH
+        STZ dataSizeL
+        STZ dataSizeH
         
         // assume there is always at least 1 (.MAIN)
         LDA #2 // multiples of 2
@@ -273,9 +286,9 @@ unit Buffer
             LDA nextFunctionID
             LSR A
             STA [headerBlock], Y INY
-            LDA globalSizeL
+            LDA dataSizeL
             STA [headerBlock], Y INY
-            LDA globalSizeH
+            LDA dataSizeH
             STA [headerBlock], Y 
             
             // Set source to our code buffer
@@ -311,31 +324,6 @@ LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
 LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();
 LDY #0 LDA [codeBuffer], Y Print.Hex(); INY LDA [codeBuffer], Y Print.Hex();
                         
-            LDA File.TransferLengthL
-            ORA File.TransferLengthH
-            if (NZ)
-            {
-                File.AppendStream();  if (NC) { break; }
-            }
-            
-            // only emit the used part of the globals (0..256 bytes)
-            CLC
-            LDA codeBufferL
-            ADC # 0
-            STA File.SectorSourceL
-            LDA codeBufferH
-            ADC # 1 // 256 byte function table
-            STA File.SectorSourceH
-                        
-            LDA globalSizeL
-            STA File.TransferLengthL
-            LDA globalSizeH
-            STA File.TransferLengthH
-            
-Print.NewLine(); 
-LDA SectorSourceH Print.Hex();   LDA SectorSourceL Print.Hex(); Print.Space();
-LDA TransferLengthH Print.Hex(); LDA TransferLengthL Print.Hex(); Print.Space();            
-            
             LDA File.TransferLengthL
             ORA File.TransferLengthH
             if (NZ)
