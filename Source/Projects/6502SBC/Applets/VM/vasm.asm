@@ -10,6 +10,7 @@ program VASM
     uses "../System/Long"
     uses "../System/File"
     uses "../System/Memory"
+    uses "../System/Char"
     
     uses "Buffer"
     uses "Parser"
@@ -157,13 +158,6 @@ program VASM
             Print.String();
             return;
         }
-        Parser.Initialize();
-        if (NC)
-        {
-            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
-            Print.String();
-            return;
-        }
         
         // open source
         LDA # FileType.Any // all files
@@ -181,6 +175,14 @@ program VASM
         if (NC)
         {
             LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
+            Print.String();
+            return;
+        }
+        
+        Parser.Initialize();
+        if (NC)
+        {
+            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
             Print.String();
             return;
         }
@@ -226,6 +228,7 @@ program VASM
                 }
                 freeOutputName();
             }
+            Parser.Dispose();
         }
     }
 }
