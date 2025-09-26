@@ -315,7 +315,7 @@ loop:                     ; Labels for branches
     Print.String 0x11
     
 .DATA
-    STR0: "Hello, World!\n"
+    STR0 "Hello, World!\n"
 
 .MAIN
     PUSHSTR STR0          ; Push string address
@@ -335,8 +335,8 @@ loop:                     ; Labels for branches
     Print.Char   0x12
     
 .DATA
-    STR0: "Counting: "
-    STR1: "\nDone!\n"
+    STR0 "Counting: "
+    STR1 "\nDone!\n"
 
 .MAIN
     ; Print header
@@ -385,11 +385,11 @@ loop:
 ```asm
 ; Test memory allocation and deallocation
 .DATA
-    STR0: "Allocating 256 bytes..."
-    STR1: "Success! Address: "
-    STR2: "Failed!\n"
-    STR3: "\nFreeing memory..."
-    STR4: "Done.\n"
+    STR0 "Allocating 256 bytes..."
+    STR1 "Success! Address: "
+    STR2 "Failed!\n"
+    STR3 "\nFreeing memory..."
+    STR4 "Done.\n"
 
 .MAIN
     ; Print allocation message
