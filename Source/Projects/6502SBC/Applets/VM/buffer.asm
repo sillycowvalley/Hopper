@@ -35,9 +35,12 @@ unit Buffer
         STZ codeOffsetL
         STZ codeOffsetH
         
-        STZ functionCount
         STZ globalSizeL
         STZ globalSizeH
+        
+        // assume there is always at least 1 (.MAIN)
+        LDA #1
+        STA functionCount
         
         // Allocate 2K initial buffer
         LDA #0x00   // 2048 = 0x0800

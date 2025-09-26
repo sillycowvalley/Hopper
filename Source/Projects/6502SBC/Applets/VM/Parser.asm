@@ -7,9 +7,10 @@ unit Parser
     const byte parserSlots = 0x70; // 0x70..0x7F
     
     const uint parserFlags    = parserSlots+0;
-    // Bit 0 - .MAIN seen
-    // Bit 1 - .CONST seen
-    // Bit 2 - .DATA seen
+    // Bit 0    - .MAIN seen
+    // Bit 1    - .CONST seen
+    // Bit 2    - .DATA seen
+    
     
     const uint bufferIndexL = parserSlots+1;
     const uint bufferIndexH = parserSlots+2;
@@ -25,6 +26,15 @@ unit Parser
     const byte tokenBufferL = parserSlots+8;
     const byte tokenBufferH = parserSlots+9;
     
+    const byte currentLineL = parserSlots+10;
+    const byte currentLineH = parserSlots+11;
+    
+    const uint parserSection = parserSlots+12;
+    
+    const string errDirectiveExpected = ".DATA, .CONST, .MAIN or .FUNC expected";
+    const string errMAINRequired = ".MAIN required";
+    const string errMAINSeen     = ".MAIN already seen";
+    
     // Token types
     enum TokenType
     {
@@ -35,6 +45,14 @@ unit Parser
         String     = 4,   // String literal
         Colon      = 5,   // :
         Newline    = 6,   // End of line
+    }
+    
+    enum Section
+    {
+        None,
+        Const,
+        Data,
+        Func
     }
     
     // Refill buffer from file
@@ -382,12 +400,18 @@ unit Parser
         LDA ZP.IDXH
         STA tokenBufferH
         
+        STZ parserSection // no section
+        
         // Get first character
         refillBuffer();
         if (C)
         {
             next();
         }
+        
+        LDA #1
+        STA currentLineH
+        STZ currentLineH
         
         SEC
     }
@@ -422,6 +446,7 @@ unit Parser
             case Char.EOL: // Checkfor newline
             {
                 next();
+                INC currentLineL if (Z) { INC currentLineH }
                 LDA #TokenType.Newline
                 STA tokenType
             }
@@ -491,9 +516,10 @@ unit Parser
         {
             GetToken();
 
-Print.NewLine();                        
+#ifdef DEBUG
+            Print.NewLine();                        
             LDA tokenType
-Print.Hex(); Print.Space();
+            Print.Hex(); Print.Space();
             LDA tokenType
             switch (A)
             {
@@ -515,16 +541,82 @@ Print.Hex(); Print.Space();
                     Print.Hex();
                 }
             }
+#endif
 
             LDA tokenType
-            if (Z) { break; }  // EOF
+            if (Z) { SEC break; }  // EOF
             
-            // Process token based on type
-            // (This is where parsing logic would go)
-            
-            // For now, just continue
+            CMP # TokenType.Directive
+            if (Z)
+            {
+                // switch modes
+                LDY #1
+                LDA [tokenBuffer]
+                switch (A)
+                {
+                    case 'C': // .CONST
+                    {
+                        // parsing .CONST lines now  
+                        LDA # Section.Const
+                        STA parserSection 
+                    }
+                    case 'D': // .DATA
+                    {
+                        // parsing .DATA lines now    
+                        LDA # Section.Data
+                        STA parserSection
+                    }
+                    case 'M': // .MAIN
+                    {
+                        if (BBS0, parserFlags) // Bit 0 - .MAIN seen
+                        {
+                            LDA #(errMAINSeen / 256) STA ZP.STRH LDA #(errMAINSeen % 256) STA ZP.STRL
+                            Print.String();    
+                            CLC
+                            break;
+                        }
+                        SMB0 parserFlags // .MAIN seen
+                        
+                        // parsing function opcodes now
+                        LDA # Section.Func
+                        STA parserSection
+                    }
+                    case 'F': // .FUNC
+                    {
+                        // parsing function opcodes now    
+                        LDA # Section.Func
+                        STA parserSection
+                    }
+                }
+            }
+            else
+            {
+                LDX parserSection
+                switch (X)
+                {
+                    case Section.Const:
+                    {
+                        // TODO
+                    }
+                    case Section.Data:
+                    {
+                        // TODO
+                    }
+                    case Section.Func:
+                    {
+                        // TODO
+                    }
+                }
+            }
+        } // loop
+        if (C)
+        {
+            if (BBR0, parserFlags) // Bit 0 - .MAIN seen
+            {
+                LDA #(errMAINRequired / 256) STA ZP.STRH LDA #(errMAINRequired % 256) STA ZP.STRL
+                Print.String();    
+                CLC
+            }
         }
-        
-        SEC
     }
 }
