@@ -53,6 +53,8 @@ unit Parser
     const string errUndefinedSymbol    = "Undefined symbol";
     const string errOpCodeExpected     = "OpCode expected";
     
+    const string msgOnLine             = " on line ";
+    
     const string mainName = "MAIN";
     
     // Token types
@@ -95,6 +97,57 @@ unit Parser
         STZ bufferIndexL
         STZ bufferIndexH
         SEC
+    }
+    
+    ErrorLineSTR()
+    {
+        LDA ZP.STRL
+        PHA
+        LDA ZP.STRH
+        PHA
+        
+        LDA #'"'
+        Print.Char();
+        
+        LDA tokenBufferL
+        STA STRL
+        LDA tokenBufferH
+        STA STRH
+        Print.String();
+        
+        LDA #'"'
+        Print.Char();
+        Print.Space();
+        LDA #'-'
+        Print.Char();
+        Print.Space();
+        
+        
+        PLA
+        STA ZP.STRH
+        PLA
+        STA ZP.STRL
+        ErrorLine();
+    }
+    
+    ErrorLine()
+    {
+        Print.String();
+        
+        LDA # (msgOnLine % 256)
+        STA ZP.STRL
+        LDA # (msgOnLine / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        LDA currentLineL
+        STA ZP.TOP0
+        LDA currentLineH
+        STA ZP.TOP1
+        STZ ZP.TOP2
+        STZ ZP.TOP3
+        Long.Print();
+        Print.NewLine();
     }
     
     // Get next character -> A, store in currentChar
@@ -466,7 +519,12 @@ unit Parser
         LDA #1  // 256 bytes
         STA ZP.ACCH
         Memory.Allocate();
-        if (NC) { return; }
+        if (NC)
+        { 
+            STZ tokenBufferL
+            STZ tokenBufferH
+            return;
+        }
         
         LDA ZP.IDXL
         STA tokenBufferL
@@ -485,7 +543,7 @@ unit Parser
         }
         
         LDA #1
-        STA currentLineH
+        STA currentLineL
         STZ currentLineH
         
         Symbols.Initialize();
@@ -493,10 +551,15 @@ unit Parser
     Dispose()
     {
         LDA tokenBufferL
-        STA ZP.IDXL
-        LDA tokenBufferH
-        STA ZP.IDXH
-        Memory.Free();
+        ORA tokenBufferH
+        if (NZ)
+        {
+            LDA tokenBufferL
+            STA ZP.IDXL
+            LDA tokenBufferH
+            STA ZP.IDXH
+            Memory.Free();
+        }
         
         Symbols.Dispose();
     }
@@ -676,7 +739,7 @@ unit Parser
                         if (BBS3, parserFlags) // Bit 3 - .MAIN or .FUNC seen
                         {
                             LDA #(errFUNCSeen / 256) STA ZP.STRH LDA #(errFUNCSeen % 256) STA ZP.STRL
-                            Print.String();    
+                            ErrorLine();    
                             CLC
                             break;
                         }
@@ -690,7 +753,7 @@ unit Parser
                         if (BBS0, parserFlags) // Bit 0 - .MAIN seen
                         {
                             LDA #(errMAINSeen / 256) STA ZP.STRH LDA #(errMAINSeen % 256) STA ZP.STRL
-                            Print.String();    
+                            ErrorLine();    
                             CLC
                             break;
                         }
@@ -716,7 +779,7 @@ unit Parser
                         if (NC)
                         {
                             LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
-                            Print.String();    
+                            ErrorLine();    
                             CLC
                         }
                         
@@ -733,7 +796,7 @@ unit Parser
                         if (NZ)
                         {
                             LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
-                            Print.String();    
+                            ErrorLine();    
                             CLC
                             return;
                         }
@@ -748,7 +811,7 @@ unit Parser
                         if (NC)
                         {
                             LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
-                            Print.String();    
+                            ErrorLine();    
                             CLC
                         }
                         
@@ -783,7 +846,7 @@ unit Parser
             if (BBR0, parserFlags) // Bit 0 - .MAIN seen
             {
                 LDA #(errMAINRequired / 256) STA ZP.STRH LDA #(errMAINRequired % 256) STA ZP.STRL
-                Print.String();    
+                ErrorLine();    
                 CLC
             }
         }
@@ -799,7 +862,7 @@ unit Parser
         if (NZ)
         {
             LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLine();    
             CLC
             return;
         }
@@ -811,7 +874,7 @@ unit Parser
         if (NZ)
         {
             LDA #(errNumberExpected / 256) STA ZP.STRH LDA #(errNumberExpected % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLine();    
             CLC
             return;
         }
@@ -832,7 +895,7 @@ unit Parser
         if (NC)
         {
             LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLine();    
             CLC
         }
     }
@@ -844,7 +907,7 @@ unit Parser
         if (NZ)
         {
             LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLine();    
             CLC
             return;
         }
@@ -870,7 +933,7 @@ unit Parser
         if (NC)
         {
             LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLine();    
             CLC
         }
         loop
@@ -924,7 +987,7 @@ unit Parser
                     {
                         
                         LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                        Print.String();    
+                        ErrorLine();    
                         CLC
                         return;
                     }
@@ -935,7 +998,7 @@ unit Parser
                     {
                         
                         LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                        Print.String();    
+                        ErrorLine();    
                         CLC
                         return;
                     }
@@ -953,7 +1016,7 @@ unit Parser
                 default:
                 {
                     LDA #(errValueExpected / 256) STA ZP.STRH LDA #(errValueExpected % 256) STA ZP.STRL
-                    Print.String();    
+                    ErrorLine();    
                     CLC
                     return;
                 }
@@ -983,7 +1046,7 @@ unit Parser
         if (NZ)
         {
             LDA #(errOpCodeExpected / 256) STA ZP.STRH LDA #(errOpCodeExpected % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLine();    
             CLC
             return;
         }
@@ -1002,7 +1065,7 @@ unit Parser
         if (NC)
         {
             LDA #(errOpCodeExpected / 256) STA ZP.STRH LDA #(errOpCodeExpected % 256) STA ZP.STRL
-            Print.String();    
+            ErrorLineSTR();    
             CLC
             return;
         }
@@ -1023,7 +1086,7 @@ unit Parser
                 {
                     PLY
                     LDA #(errNumberExpected / 256) STA ZP.STRH LDA #(errNumberExpected % 256) STA ZP.STRL
-                    Print.String();    
+                    ErrorLine();    
                     CLC
                     return;
                 }
@@ -1041,7 +1104,7 @@ unit Parser
                 {
                     PLY
                     LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                    Print.String();    
+                    ErrorLine();    
                     CLC
                     return;
                 }
@@ -1065,7 +1128,7 @@ unit Parser
                     if (Z) // not Byte?
                     {
                         LDA #(errByteExpected / 256) STA ZP.STRH LDA #(errByteExpected % 256) STA ZP.STRL
-                        Print.String();    
+                        ErrorLine();    
                         CLC
                         return;
                     }
@@ -1079,7 +1142,7 @@ unit Parser
                     if (Z) // not Char?
                     {
                         LDA #(errCharExpected / 256) STA ZP.STRH LDA #(errCharExpected % 256) STA ZP.STRL
-                        Print.String();    
+                        ErrorLine();    
                         CLC
                         return;
                     }
@@ -1093,7 +1156,7 @@ unit Parser
                     if (Z) // not Word?
                     {
                         LDA #(errWordExpected / 256) STA ZP.STRH LDA #(errWordExpected % 256) STA ZP.STRL
-                        Print.String();    
+                        ErrorLine();    
                         CLC
                         return;
                     }
@@ -1109,7 +1172,7 @@ unit Parser
                     if (Z) // not Int?
                     {
                         LDA #(errIntExpected / 256) STA ZP.STRH LDA #(errIntExpected % 256) STA ZP.STRL
-                        Print.String();    
+                        ErrorLine();    
                         CLC
                         return;
                     }

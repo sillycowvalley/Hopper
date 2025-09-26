@@ -25,6 +25,10 @@ program VASM
     uses "Symbols"
     uses "Parser"
     
+    const string msgStart = "Memory: ";
+    const string msgCompiled = "Memory after compile: ";
+    const string msgCleaned = "Memory after cleanup: ";
+    
     const string msgBanner         = "VM Assembler v1.0\n";
     const string msgOutOfMemory    = "Out of memory\n";
     const string msgAssembled      = "Assembled\n0x";
@@ -147,117 +151,166 @@ program VASM
         Memory.Free();
     }
     
+    Error()
+    {
+        Print.String();
+        CLC
+    }
+    
     Hopper()
     {
         LDA #(msgBanner / 256) STA ZP.STRH LDA #(msgBanner % 256) STA ZP.STRL
         Print.String();
         
-        Args.HasFilename();
-        if (NC)
+        STZ outFilenameL
+        STZ outFilenameH
+        
+        LDA #(msgStart % 256)
+        STA ZP.STRL
+        LDA #(msgStart / 256)
+        STA ZP.STRH
+        Print.String();
+        Memory.Available();  // Returns in ZP.ACC
+        Shared.MoveAccToTop();
+        Long.Print();
+        Print.NewLine();
+        
+        loop
         {
-            LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
-            Print.String();
-            return;
-        }
-        // "<source>.VMA" -> STR
-        GetFilename();
-        
-        Buffer.Initialize();
-        if (NC)
-        {
-            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
-            Print.String();
-            return;
-        }
-        
-        // open source
-        LDA # FileType.Any // all files
-        File.Exists();
-        if (NC)
-        {
-            LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
-            Print.String();
-            return;
-        }
-        
-        // Open file for reading
-        LDA # FileType.Any
-        File.StartLoad();
-        if (NC)
-        {
-            LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
-            Print.String();
-            return;
-        }
-        
-        Parser.Initialize();
-        if (NC)
-        {
-            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
-            Print.String();
-            return;
-        }
-        
-        // reserve space for the function table (256 bytes)
-        LDY #128
-        LDA #0
-        loop {
-            Buffer.Emit();
-            Buffer.Emit();
-            DEY
-            if (Z) { break; }
-        }
-        
-        // reserve space for the globals (256 bytes)
-        LDY #128
-        LDA #0
-        loop {
-            Buffer.Emit();
-            Buffer.Emit();
-            DEY
-            if (Z) { break; }
-        }
-        LDA STRL
-        STA filenameL
-        LDA STRH
-        STA filenameH
-        
-        // assemble source
-        Parser.Parse();
-        if (C)
-        {
-            LDA filenameL
-            STA STRL
-            LDA filenameH
-            STA STRH
-            // save output: STR -> STR
-            makeOutputName();
+            Args.HasFilename();
+            if (NC)
+            {
+                LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
+                Error();
+                break;
+            }
+            // "<source>.VMA" -> STR
+            GetFilename();
+            
+            Buffer.Initialize();
+            if (NC)
+            {
+                LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
+                Error();
+                break;
+            }
+            
+            // open source
+            LDA # FileType.Any // all files
+            File.Exists();
+            if (NC)
+            {
+                LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
+                Error();
+                break;
+            }
+            
+            // Open file for reading
+            LDA # FileType.Any
+            File.StartLoad();
+            if (NC)
+            {
+                LDA #(msgSourceNotFound / 256) STA ZP.STRH LDA #(msgSourceNotFound % 256) STA ZP.STRL
+                Error();
+                break;
+            }
+            
+            Parser.Initialize();
+            if (NC)
+            {
+                LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
+                Error();
+                break;
+            }
+            
+            // reserve space for the function table (256 bytes)
+            LDY #128
+            LDA #0
+            loop {
+                Buffer.Emit();
+                Buffer.Emit();
+                DEY
+                if (Z) { break; }
+            }
+            
+            // reserve space for the globals (256 bytes)
+            LDY #128
+            LDA #0
+            loop {
+                Buffer.Emit();
+                Buffer.Emit();
+                DEY
+                if (Z) { break; }
+            }
+            LDA STRL
+            STA filenameL
+            LDA STRH
+            STA filenameH
+            
+            // assemble source
+            Parser.Parse();
             if (C)
             {
-                LDA STRL
-                STA outFilenameL
-                LDA STRH
-                STA outFilenameH
-                Buffer.Save();
-                if (NC)
+                LDA filenameL
+                STA STRL
+                LDA filenameH
+                STA STRH
+                // save output: STR -> STR
+                makeOutputName();
+                if (C)
                 {
-                    LDA #(msgFailedSaving / 256) STA ZP.STRH LDA #(msgFailedSaving % 256) STA ZP.STRL
+                    LDA STRL
+                    STA outFilenameL
+                    LDA STRH
+                    STA outFilenameH
+                    Buffer.Save();
+                    if (NC)
+                    {
+                        LDA #(msgFailedSaving / 256) STA ZP.STRH LDA #(msgFailedSaving % 256) STA ZP.STRL
+                        Error();
+                        break;
+                    }
+                    
+                    LDA #(msgCompiled % 256)
+                    STA ZP.STRL
+                    LDA #(msgCompiled / 256)
+                    STA ZP.STRH
                     Print.String();
+                    Memory.Available();
+                    Shared.MoveAccToTop();
+                    Long.Print();
+                    Print.NewLine();
+                    
+                    LDA outFilenameL
+                    STA ZP.STRL
+                    LDA outFilenameH
+                    STA ZP.STRH
+                    
+                    Print.String();
+                    LDA #(msgSuccess / 256) STA ZP.STRH LDA #(msgSuccess % 256) STA ZP.STRL
+                    Print.String();
+                    
+                    SEC
                 }
-                Buffer.Dispose();
-                
-                LDA outFilenameL
-                STA ZP.STRL
-                LDA outFilenameH
-                STA ZP.STRH
-                
-                Print.String();
-                LDA #(msgSuccess / 256) STA ZP.STRH LDA #(msgSuccess % 256) STA ZP.STRL
-                Print.String();
-                
-                freeOutputName();
             }
+            break;
+        } // single exit
+        
+        if (C)
+        {
+            Buffer.Dispose();
+            freeOutputName();
             Parser.Dispose();
+            
+            LDA #(msgCleaned % 256)
+            STA ZP.STRL
+            LDA #(msgCleaned / 256)
+            STA ZP.STRH
+            Print.String();
+            Memory.Available();
+            Shared.MoveAccToTop();
+            Long.Print();
+            Print.NewLine();
         }
     }
 }

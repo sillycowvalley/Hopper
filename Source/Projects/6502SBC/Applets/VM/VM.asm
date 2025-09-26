@@ -348,9 +348,48 @@ Print.NewLine();
         }
         // == done loading constant data ==
         
+        LDA #2
+        STA countL
+        
+        // == load functions ==
+        loop
+        {
+            CLC
+            LDA programMemoryH
+            INC
+            ADC countL
+            STA indexH
+            STZ indexL
+    
+            // update the function location        
+            LDA programMemoryL
+            STA ZP.IDXL
+            LDA programMemoryH
+            STA ZP.IDXH
+            LDY countL
+            LDA indexL
+            STA [ZP.IDX], Y
+            INY
+            LDA indexH
+            STA [ZP.IDX], Y
+            
+            loop
+            {
+                ReadByte(); if (NC) { break; }
+                STA [index]
+                INC indexL if (Z) { INC indexH }
+            }
+            INC countL
+            INC countL
+            CMP functionCount
+            if (C) { break; } // countL >= functionCount
+            break;
+        }
+        
 
         LDA programMemoryH
         STA ZP.IDXH
+        DumpPage();
         DumpPage();
         DumpPage();
         DumpPage();

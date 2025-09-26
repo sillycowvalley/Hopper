@@ -1,0 +1,15 @@
+; Simple Hello World program
+.CONST
+    ZP.STR  0x1E
+
+    Print.String 0x11
+
+.DATA
+    STR0 "Hello, World!\n"
+
+.MAIN
+    PUSHD STR0          ; Push string address
+    POPZW ZP.STR          ; Marshal to BIOS
+    SYSCALL Print.String  ; Print it
+
+    HALT                  ; Return to BIOS

@@ -97,6 +97,8 @@ unit Buffer
         if (NC)
         {
             // Failed to allocate
+            STZ codeBufferL
+            STZ codeBufferH
             CLC
             return;
         }
@@ -120,6 +122,8 @@ unit Buffer
         if (NC)
         {
             // Failed to allocate
+            STZ headerBlockH
+            STZ headerBlockL
             CLC
             return;
         }
@@ -133,16 +137,25 @@ unit Buffer
     Dispose()
     {
         LDA headerBlockH
-        STA ZP.IDXH
-        LDA headerBlockL
-        STA ZP.IDXL
-        Memory.Free();
-        
+        ORA headerBlockL
+        if (NZ)
+        {
+            LDA headerBlockH
+            STA ZP.IDXH
+            LDA headerBlockL
+            STA ZP.IDXL
+            Memory.Free();
+        }
         LDA codeBufferH
-        STA ZP.IDXH
-        LDA codeBufferL
-        STA ZP.IDXL
-        Memory.Free();
+        ORA codeBufferL
+        if (NZ)
+        {
+            LDA codeBufferH
+            STA ZP.IDXH
+            LDA codeBufferL
+            STA ZP.IDXL
+            Memory.Free();
+        }
     }
     
     // Expand buffer and copy existing.
