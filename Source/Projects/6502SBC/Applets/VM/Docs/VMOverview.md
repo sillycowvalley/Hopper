@@ -45,12 +45,11 @@ At runtime (heap allocated):
 
 ### VM Registers (Zero Page)
 ```
-VM_IP_L:  0x60  // Instruction pointer low (changes within function)
-VM_IP_H:  0x61  // Instruction pointer high (page number, changes only on CALL/RETURN)
-VM_BP:    0x62  // Base pointer for stack frame
+PCL:      0x60  // Instruction pointer low (changes within function)
+PCH:      0x61  // Instruction pointer high (page number, changes only on CALL/RETURN)
+BP:       0x62  // Base pointer for stack frame
 GLOBALS:  0x63  // Globals base address (2 bytes)
 STRINGS:  0x65  // Strings base address (2 bytes)
-VM_TEMP:  0x67  // Temporary workspace (2 bytes)
 ```
 
 ### Function Organization
@@ -69,16 +68,16 @@ VM_TEMP:  0x67  // Temporary workspace (2 bytes)
 
 ### Stack Operations (0x00-0x12)
 ```
-PUSH_BYTE    0x00  + byte           // Push 8-bit immediate
-PUSH_WORD    0x02  + word           // Push 16-bit immediate
-PUSH_ZERO    0x04                   // Push 0 (optimized)
-PUSH_ONE     0x06                   // Push 1 (optimized)
+PUSHB        0x00  + byte           // Push 8-bit immediate
+PUSHW        0x02  + word           // Push 16-bit immediate
+PUSH0        0x04                   // Push 0 (optimized)
+PUSH1        0x06                   // Push 1 (optimized)
 DUP          0x08                   // Duplicate byte on TOS
-DUP2         0x0A                   // Duplicate word on TOS
+DUPW         0x0A                   // Duplicate word on TOS
 DROP         0x0C                   // Remove byte from TOS
-DROP2        0x0E                   // Remove word from TOS
+DROPW        0x0E                   // Remove word from TOS
 SWAP         0x10                   // Swap top two bytes
-SWAP2        0x12                   // Swap top two words
+SWAPW        0x12                   // Swap top two words
 ```
 
 ### Arithmetic Operations (0x14-0x24)
@@ -88,24 +87,24 @@ SUB          0x16                   // Pop 2 words, push difference
 MUL          0x18                   // Pop 2 words, push product
 DIV          0x1A                   // Pop 2 words, push quotient (unsigned)
 MOD          0x1C                   // Pop 2 words, push remainder
-ADD_BYTE     0x1E                   // Pop 2 bytes, push sum
-SUB_BYTE     0x20                   // Pop 2 bytes, push difference
+ADDB         0x1E                   // Pop 2 bytes, push sum
+SUBB         0x20                   // Pop 2 bytes, push difference
 NEG          0x22                   // Negate int (2's complement)
-NEG_BYTE     0x24                   // Negate char (2's complement)
+NEGB         0x24                   // Negate char (2's complement)
 ```
 
 ### Comparison Operations (0x26-0x38)
 ```
-EQ           0x26                   // Pop 2 values, push 1 if equal, 0 if not
-NE           0x28                   // Pop 2 values, push 1 if not equal
+EQ           0x26                   // Pop 2 words or ints, push 1 if equal, 0 if not
+NE           0x28                   // Pop 2 words or ints, push 1 if not equal
 LT           0x2A                   // Pop 2 words, unsigned less than
 GT           0x2C                   // Pop 2 words, unsigned greater than
 LE           0x2E                   // Pop 2 words, unsigned less or equal
 GE           0x30                   // Pop 2 words, unsigned greater or equal
-LT_CHAR      0x32                   // Pop 2 chars, signed less than
-GT_CHAR      0x34                   // Pop 2 chars, signed greater than
-LT_INT       0x36                   // Pop 2 ints, signed less than
-GT_INT       0x38                   // Pop 2 ints, signed greater than
+LTC          0x32                   // Pop 2 chars, signed less than
+GTC          0x34                   // Pop 2 chars, signed greater than
+LTI          0x36                   // Pop 2 ints, signed less than
+GTI          0x38                   // Pop 2 ints, signed greater than
 ```
 
 ### Bitwise Operations (0x3A-0x46)
@@ -121,74 +120,75 @@ SAR          0x46                   // Pop int and count, arithmetic shift right
 
 ### Memory Operations - Globals (0x48-0x5A)
 ```
-LOAD_GLOBAL_B    0x48  + byte       // Load byte from global[offset]
-LOAD_GLOBAL_W    0x4A  + word       // Load byte from global[offset] (>255)
-LOAD_GLOBAL2_B   0x4C  + byte       // Load word from global[offset]
-LOAD_GLOBAL2_W   0x4E  + word       // Load word from global[offset] (>255)
-STORE_GLOBAL_B   0x50  + byte       // Store byte to global[offset]
-STORE_GLOBAL_W   0x52  + word       // Store byte to global[offset] (>255)
-STORE_GLOBAL2_B  0x54  + byte       // Store word to global[offset]
-STORE_GLOBAL2_W  0x56  + word       // Store word to global[offset] (>255)
-PUSH_GLOBAL_B    0x58  + byte       // Push address of global[offset]
-PUSH_GLOBAL_W    0x5A  + word       // Push address of global[offset] (>255)
+LOADGB      0x48  + byte       // Load byte from global[offset]
+LOADGBW     0x4A  + word       // Load byte from global[offset] (>255)
+LOADGWB     0x4C  + byte       // Load word from global[offset]
+LOADGWW     0x4E  + word       // Load word from global[offset] (>255)
+STOREGB     0x50  + byte       // Store byte to global[offset]
+STOREGBW    0x52  + word       // Store byte to global[offset] (>255)
+STOREGWB    0x54  + byte       // Store word to global[offset]
+STOREGWW    0x56  + word       // Store word to global[offset] (>255)
+PUSHPTRB    0x58  + byte       // Push address of global[offset]
+PUSHPTRW    0x5A  + word       // Push address of global[offset] (>255)
 ```
 
 ### Memory Operations - Locals (0x5C-0x62)
 ```
-LOAD_LOCAL       0x5C  + byte       // Load byte from BP[offset]
-LOAD_LOCAL2      0x5E  + byte       // Load word from BP[offset]
-STORE_LOCAL      0x60  + byte       // Store byte to BP[offset]
-STORE_LOCAL2     0x62  + byte       // Store word to BP[offset]
+LOADLB      0x5C  + byte       // Load byte from BP[offset]
+LOADLW      0x5E  + byte       // Load word from BP[offset]
+STORELW     0x60  + byte       // Store byte to BP[offset]
+STORELW     0x62  + byte       // Store word to BP[offset]
 ```
 
 ### Memory Operations - Indirect (0x64-0x6E)
 ```
-LOAD_IND         0x64               // Pop address, push byte
-LOAD_IND2        0x66               // Pop address, push word
-STORE_IND        0x68               // Pop byte, pop address, store
-STORE_IND2       0x6A               // Pop word, pop address, store
-INDEX_BYTE       0x6C               // Pop byte index, pop base, push addr
-INDEX_WORD       0x6E               // Pop word index, pop base, push addr
+LOADPTR         0x64               // Pop address, push byte
+LOADPTRW        0x66               // Pop address, push word
+STOREPTR        0x68               // Pop byte, pop address, store
+STOREPTRW       0x6A               // Pop word, pop address, store
+INDEXB          0x6C               // Pop byte index, pop base, push addr
+INDEXW          0x6E               // Pop word index, pop base, push addr
 ```
 
 ### String Operations (0x70-0x7E)
 ```
-PUSH_STRING_B    0x70  + byte       // Push string address (byte offset)
-PUSH_STRING_W    0x72  + word       // Push string address (word offset)
-PUSH_STRING_0    0x74               // Push address of string 0
-PUSH_STRING_1    0x76               // Push address of string 1
-PUSH_STRING_2    0x78               // Push address of string 2
-STRING_CHAR      0x7A               // Pop index, pop string, push char
-STRING_CHAR_0    0x7C               // Pop string, push first char
-STRING_COMPARE   0x7E               // Pop 2 strings, push -1/0/1
+PUSHSB    0x70  + byte       // Push string address (byte offset)
+PUSHSW    0x72  + word       // Push string address (word offset)
+PUSHS0    0x74               // Push address of string 0
+PUSHS1    0x76               // Push address of string 1
+PUSHS2    0x78               // Push address of string 2
+STRC      0x7A               // Pop index, pop string, push char
+STRC0     0x7C               // Pop string, push first char
+STRCMP    0x7E               // Pop 2 strings, push -1/0/1
 ```
 
 ### Control Flow (0x80-0x8E)
 ```
 CALL             0x80  + byte       // Call function (ID × 2 for table lookup)
-RETURN           0x82               // Return from function
-JUMP_CHAR        0x84  + sbyte      // Branch by signed byte offset
-JUMP_INT         0x86  + word       // Branch by word offset (rare)
-JUMP_Z_CHAR      0x88  + sbyte      // Branch if TOS is zero
-JUMP_Z_INT       0x8A  + word       // Branch if TOS is zero (rare)
-JUMP_NZ_CHAR     0x8C  + sbyte      // Branch if TOS is not zero
-JUMP_NZ_INT      0x8E  + word       // Branch if TOS is not zero (rare)
+RET              0x82               // Return from function
+BRA              0x84  + sbyte      // Branch by signed byte offset
+BRAI             0x86  + word       // Branch by word offset (rare)
+JZ               0x88  + sbyte      // Branch if TOS is zero
+JZI              0x8A  + word       // Branch if TOS is zero (rare)
+JNZ              0x8C  + sbyte      // Branch if TOS is not zero
+JNZI             0x8E  + word       // Branch if TOS is not zero (rare)
 ```
 
 ### I/O Operations (0x90-0x9A)
 ```
-PRINT_CHAR       0x90               // Pop char, print as ASCII
-PRINT_BYTE       0x92               // Pop byte, print as 0-255
-PRINT_INT        0x94               // Pop int, print as signed
-PRINT_WORD       0x96               // Pop word, print as unsigned
-PRINT_STRING     0x98               // Pop string pointer, print
-READ_BYTE        0x9A               // Read byte from input, push
+PRINTC       0x90               // Pop char, print as ASCII
+PRINTB       0x92               // Pop byte, print as 0-255
+PRINTI       0x94               // Pop int, print as signed
+PRINTW       0x96               // Pop word, print as unsigned
+PRINTSTR     0x98               // Pop string pointer, print
+READB        0x9A               // Read byte from input, push
+AVAIL        0x9C               // Push 1 if i, 0 if not
 ```
 
 ### System Operations (0x9C-0x9E)
 ```
 SYSCALL          0x9C  + byte       // Call BIOS function via X register
-HALT             0x9E               // Stop execution
+HALT             0x9E               // Stop execution (return to BIOS)
 ```
 
 ## Implementation Details
@@ -196,11 +196,11 @@ HALT             0x9E               // Stop execution
 ### Dispatch Loop
 ```asm
 mainLoop:
-    LDA [VM_IP_L]         ; Get opcode
-    TAX                   ; Use as index (already even)
-    INC VM_IP_L           ; Next byte (no page check!)
-    JMP [DISPATCH_TABLE,X]; Jump to handler
-    ; Total: ~18 cycles overhead
+    LDA [VM_IP_L]          // Get opcode
+    TAX                    // Use as index (already even)
+    INC VM_IP_L            // Next byte (no page check!)
+    JMP [DISPATCH_TABLE,X] // Jump to handler
+    // Total: ~18 cycles overhead
 ```
 
 ### Page-Constrained Execution

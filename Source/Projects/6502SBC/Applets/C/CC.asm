@@ -40,7 +40,7 @@ program CC
     const byte outputNameL = ccSlots+2;
     const byte outputNameH = ccSlots+3;
     
-    // Create output filename: "HELLO" -> "HELLOX"
+    // Create output filename: "HELLO" -> "HELLO.EXE"
     makeOutputName()
     {
         // Allocate buffer for output name (14 bytes max + ".EXE" + null)
