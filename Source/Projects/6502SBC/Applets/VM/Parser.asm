@@ -34,6 +34,8 @@ unit Parser
     
     const uint parserSection = parserSlots+12;
     
+    const byte numberType    = parserSlots+13;
+    
     const string errDirectiveExpected = ".DATA, .CONST, .MAIN or .FUNC expected";
     const string errMAINRequired = ".MAIN required";
     const string errMAINSeen     = ".MAIN already seen";
@@ -51,11 +53,18 @@ unit Parser
         EOF        = 0,
         Directive  = 1,   // .CONST, .DATA, .MAIN, .FUNC
         Identifier = 2,   // Label or instruction
-        Number     = 3,   // Decimal, hex, or char literal
+        Number     = 3,
         String     = 4,   // String literal
         Colon      = 5,   // :
         Comma      = 6,   // ,
         NewLine    = 7,   // End of line
+    }
+    flags NumberType
+    {
+        Byte   = 0b0001,  // 0..255
+        Word   = 0b0011,  // 0..65535
+        Char   = 0b0100,  // -128..127  
+        Int    = 0b1100,  // -32768..32767
     }
     
     enum Section
@@ -273,6 +282,8 @@ unit Parser
             next();  // Should be closing '
             next();
             
+            LDA #NumberType.Char
+            STA numberType
             LDA #TokenType.Number
             STA tokenType
             return;
@@ -292,6 +303,8 @@ unit Parser
                 return;
             }
             // Was just 0
+            LDA # (NumberType.Byte | NumberType.Char)
+            STA numberType
             LDA #TokenType.Number
             STA tokenType
             return;
@@ -337,6 +350,31 @@ unit Parser
             
             next();
         }
+        LDA tokenValueH
+        if (Z)
+        {
+            LDA tokenValueL
+            if (MI)
+            {
+                LDA # NumberType.Byte // 128..255
+            }
+            else
+            {
+                LDA # (NumberType.Byte | NumberType.Char)  // 1..127
+            }
+        }
+        else
+        {
+            if (MI)
+            {
+                LDA # NumberType.Word                    // 32768..65535
+            }
+            else
+            {
+                LDA # (NumberType.Word | NumberType.Int) // 128..32767
+            }
+        }
+        STA numberType
         
         LDA #TokenType.Number
         STA tokenType
@@ -345,11 +383,15 @@ unit Parser
     // Read hex number (after 0x)
     readHexNumber()
     {
+        LDX #0
         loop
         {
+            PHX
             peek();
+            PLX
             Char.IsHex();
             if (NC) { break; }
+            INX
             
             // Shift left 4 bits
             ASL tokenValueL
@@ -387,9 +429,21 @@ unit Parser
             // Add to value
             ORA tokenValueL
             STA tokenValueL
-            
+       
+            PHX     
             next();
+            PLX
         }
+        CPX #3
+        if (C) // >= 3 digits?
+        {
+            LDA #NumberType.Word 
+        }
+        else
+        {
+            LDA #NumberType.Byte 
+        }
+        STA numberType
         
         LDA #TokenType.Number
         STA tokenType
@@ -527,6 +581,18 @@ unit Parser
                         SBC tokenValueH
                         STA tokenValueH
                         
+                        LDA tokenValueH
+                        CMP # 0xFF
+                        if (Z)
+                        {
+                            LDA # NumberType.Char // -128..-1
+                        }
+                        else
+                        {
+                            LDA # NumberType.Int // -32768..-129
+                        }
+                        STA numberType
+                        
                         LDA #TokenType.Number
                         STA tokenType
                         break;
@@ -626,7 +692,7 @@ unit Parser
                         
                         Buffer.CaptureFunctionStart();
                         
-                        LDA # SymbolType.Function
+                        LDA # ( SymbolType.Function | NumberType.Byte)
                         // STR = name, TOP = ID
                         Symbols.Add();
                         if (NC)
@@ -657,7 +723,7 @@ unit Parser
                         Buffer.GetNextFunctionNumber(); // -> TOP
                         Buffer.CaptureFunctionStart();  // TOP ->
                         
-                        LDA # SymbolType.Function
+                        LDA # ( SymbolType.Function | NumberType.Byte)
                         Symbols.Add();
                         if (NC)
                         {
@@ -740,7 +806,8 @@ unit Parser
         LDA tokenValueL
         STA ZP.TOP0
         
-        LDA # SymbolType.Constant
+        LDA numberType
+        ORA # SymbolType.Constant
         Symbols.Add();
         if (NC)
         {
@@ -804,8 +871,14 @@ unit Parser
                 {
                     LDA tokenValueL
                     Buffer.Emit();
-                    LDA tokenValueH
-                    Buffer.Emit();
+                    
+                    LDA numberType
+                    AND # (NumberType.Byte | NumberType.Char)
+                    if (Z) // not Byte or Char?
+                    {
+                        LDA tokenValueH
+                        Buffer.Emit();
+                    }
                 }
                 case TokenType.Identifier:
                 {
@@ -826,8 +899,10 @@ unit Parser
                         CLC
                         return;
                     }
+                    STA numberType
+                    AND # SymbolType.Mask
                     CMP # SymbolType.Constant
-                    if (NC)
+                    if (NZ)
                     {
                         
                         LDA #(errUndefinedConstant / 256) STA ZP.STRH LDA #(errUndefinedConstant % 256) STA ZP.STRL
@@ -837,8 +912,14 @@ unit Parser
                     }
                     LDA ZP.TOP0
                     Buffer.Emit();
-                    LDA ZP.TOP1
-                    Buffer.Emit();
+                    
+                    LDA numberType
+                    AND # (NumberType.Byte | NumberType.Char)
+                    if (Z) // not Byte or Char?
+                    {
+                        LDA ZP.TOP1
+                        Buffer.Emit();
+                    }
                 }
                 default:
                 {

@@ -29,11 +29,13 @@ unit Symbols
     // +5: name string (null-terminated, inline)
     
     // Symbol types
-    enum SymbolType
+    flags SymbolType
     {
-        Constant = 0,
-        Data     = 1,
-        Function = 2,
+        Constant = 0b00100000,
+        Data     = 0b01000000,
+        Function = 0b01100000,
+        
+        Mask     = 0b11100000,
     }
     
     Initialize()
@@ -266,6 +268,7 @@ unit Symbols
             // Print type
             LDY #4
             LDA [ZP.IDX], Y  // Get type
+            AND # SymbolType.Mask
             switch (A)
             {
                 case SymbolType.Constant:
@@ -316,10 +319,16 @@ unit Symbols
             LDA #(hexPrefix / 256)
             STA ZP.STRH
             Print.String();
-            
-            LDY #3
-            LDA [ZP.IDX], Y  // Value high
-            Print.Hex();
+
+            LDY #4
+            LDA [ZP.IDX], Y  // Get type 
+            AND # (NumberType.Byte | NumberType.Char)
+            if (Z)
+            {
+                LDY #3
+                LDA [ZP.IDX], Y  // Value high
+                Print.Hex();
+            }
             LDY #2
             LDA [ZP.IDX], Y  // Value low
             Print.Hex();
