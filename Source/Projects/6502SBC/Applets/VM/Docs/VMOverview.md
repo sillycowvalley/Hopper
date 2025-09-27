@@ -70,8 +70,8 @@ STRINGS:  0x65  // Strings base address (2 bytes)
 ```
 PUSHB        0x00  + byte           // Push 8-bit immediate
 PUSHW        0x02  + word           // Push 16-bit immediate
-PUSH0        0x04                   // Push 0 (optimized)
-PUSH1        0x06                   // Push 1 (optimized)
+PUSH0        0x04                   // Push 0 16-bit (optimized)
+PUSH1        0x06                   // Push 1 16-bit (optimized)
 DUP          0x08                   // Duplicate byte on TOS
 DUPW         0x0A                   // Duplicate word on TOS
 DROP         0x0C                   // Remove byte from TOS
@@ -138,10 +138,10 @@ POPLB        0x5C  + byte           // Pop byte to BP[offset]
 POPLW        0x5E  + byte           // Pop word to BP[offset]
 ```
 
-### String Operations (0x60-0x66)
+### Data / String Operations (0x60-0x66)
 ```
-PUSHSTR      0x60  + byte           // Push string address (byte offset)
-PUSHSTR2     0x62  + word           // Push string address (word offset)
+PUSHD        0x60  + byte           // Push string address (byte offset)
+PUSHD2       0x62  + word           // Push string address (word offset)
 STRC         0x64                   // Pop index, pop string, push char
 STRCMP       0x66                   // Pop 2 strings, push -1/0/1
 ```

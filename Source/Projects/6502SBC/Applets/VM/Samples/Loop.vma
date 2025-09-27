@@ -4,8 +4,8 @@
     ZP.NEXT0 0x16
     ZP.NEXT2 0x18
     ZP.STR   0x1E
-    Time.Millis  0x17
-    Long.Sub     0x17
+    Time.Millis  0x18
+    Long.Sub     0x1B
     Long.Print   0x1F
     Print.String 0x11
 
@@ -17,8 +17,8 @@
 .MAIN
     ; long start = millis()
     SYSCALL Time.Millis       ; Result in ZP.TOP (4 bytes)
-    PUSHZW ZP.TOP2            ; Push high word
     PUSHZW ZP.TOP0            ; Push low word
+    PUSHZW ZP.TOP2            ; Push high word
     
     ; int j = 0
     PUSHW 0                   ; j on stack
@@ -52,7 +52,6 @@ loop:
     SYSCALL Print.String
     
     ; Print j (convert to long first)
-    DUPW                      ; Keep j
     POPZW ZP.TOP0             ; Low word
     PUSHW 0
     POPZW ZP.TOP2             ; High word = 0
@@ -65,17 +64,26 @@ loop:
     
     ; Get elapsed = millis() - start
     SYSCALL Time.Millis       ; Current time in ZP.TOP
-    POPZW ZP.NEXT2            ; Pop saved start high
-    POPZW ZP.NEXT0            ; Pop saved start low
-    SYSCALL Long.Sub          ; TOP = TOP - NEXT
+    
+    PUSHZW ZP.TOP0            ; TOP -> NEXT
+    PUSHZW ZP.TOP2
+    POPZW ZP.NEXT2
+    POPZW ZP.NEXT0
+    
+    POPZW ZP.TOP2             ; saved start time
+    POPZW ZP.TOP0
+    SYSCALL Long.Sub          ; NEXT = NEXT - TOP
+    
+    PUSHZW ZP.NEXT0           ; NEXT -> TOP
+    PUSHZW ZP.NEXT2
+    POPZW ZP.TOP2
+    POPZW ZP.TOP0
+    
     SYSCALL Long.Print
     
     ; Print " ms\n"
     PUSHD STR2
     POPZW ZP.STR
     SYSCALL Print.String
-    
-    ; Clean up j
-    DROPW
     
     HALT

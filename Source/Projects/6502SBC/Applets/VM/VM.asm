@@ -1,7 +1,7 @@
 program VM
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
     
     uses "../System/Definitions"
     uses "../System/Args"

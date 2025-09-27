@@ -23,9 +23,12 @@ unit Runtime
     const byte codePageH        = runtimeSlots+9;
     
     const byte opCode           = runtimeSlots+10;
-    const byte vmFlags          = runtimeSlots+11;
+    const byte operand          = runtimeSlots+11;
     
-    const byte stackStore       = runtimeSlots+12;
+    const byte vmFlags          = runtimeSlots+12;
+    
+    const byte stackStore       = runtimeSlots+13;
+    
     
     
     // Bit 0 - exiting
@@ -204,27 +207,117 @@ unit Runtime
         
         loop
         {
+#ifdef DEBUG            
+            Print.NewLine(); LDA PC Print.Hex(); Print.Space();
+#endif            
             LDY PC
             LDA [codePage], Y
+#ifdef DEBUG            
+            Print.Hex();            
+#endif
             INC PC
             TAX
             
             switch (X)
             {
                 // Stack Operations
-                case OpCode.PUSHB:    { badOpCode(); }
-                case OpCode.PUSHW:    { badOpCode(); }
-                case OpCode.PUSH0:    { badOpCode(); }
-                case OpCode.PUSH1:    { badOpCode(); }
+                case OpCode.PUSHB:
+                {
+                    INC PC
+                    INY
+                    LDA [codePage], Y // operand LSB
+                    PHA
+                }
+                case OpCode.PUSHW:    
+                {
+                    INC PC
+                    INY
+                    LDA [codePage], Y // operand LSB
+                    PHA
+                    INC PC
+                    INY
+                    LDA [codePage], Y // operand MSB
+                    PHA
+                }
+                case OpCode.PUSH0:
+                { 
+                    LDA #0
+                    PHA
+                    PHA
+                }
+                case OpCode.PUSH1:    
+                { 
+                    LDA #1
+                    PHA
+                    LDA #0
+                    PHA
+                }
                 case OpCode.DUP:      { badOpCode(); }
-                case OpCode.DUPW:     { badOpCode(); }
+                case OpCode.DUPW:     
+                {
+                    TSX               // Get stack pointer to X
+                
+                    // Read the word from stack (without popping)
+                    // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+                    LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
+                    TAY               // Save in Y
+                    LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
+                    
+                    // Push the duplicate (LSB first, then MSB)
+                    PHA               // Push TOP0 (LSB)
+                    TYA               // Get TOP1 back
+                    PHA               // Push TOP1 (MSB)
+                }
                 case OpCode.DROP:     { badOpCode(); }
-                case OpCode.DROPW:    { badOpCode(); }
+                case OpCode.DROPW:    
+                {
+                    PLA
+                    PLA
+                }
                 case OpCode.SWAP:     { badOpCode(); }
-                case OpCode.SWAPW:    { badOpCode(); }
+                case OpCode.SWAPW:    
+                { 
+                    TSX               // Get stack pointer to X
+                
+                    // Swap TOP and NEXT
+                    // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+                    // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+                    
+                    // Swap the low bytes (TOP0 <-> NEXT0)
+                    LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
+                    LDY 0x0104, X     // Load NEXT0 (LSB at SP+4)
+                    STA 0x0104, X     // Store TOP0 to NEXT0 position
+                    TYA
+                    STA 0x0102, X     // Store NEXT0 to TOP0 position
+                    
+                    // Swap the high bytes (TOP1 <-> NEXT1)
+                    LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
+                    LDY 0x0103, X     // Load NEXT1 (MSB at SP+3)
+                    STA 0x0103, X     // Store TOP1 to NEXT1 position
+                    TYA
+                    STA 0x0101, X     // Store NEXT1 to TOP1 position
+                }
                 
                 // Arithmetic Operations
-                case OpCode.ADD:      { badOpCode(); }
+                case OpCode.ADD:      
+                {
+                    TSX               // Get stack pointer to X
+                    
+                    // Add low bytes with carry propagation
+                    // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+                    // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+                    CLC               // Clear carry for addition
+                    LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
+                    ADC 0x0104, X     // Add NEXT0 (LSB at SP+4)
+                    STA 0x0104, X     // Store result to NEXT0
+                    
+                    // Add high bytes with carry
+                    LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
+                    ADC 0x0103, X     // Add NEXT1 (MSB at SP+3) with carry
+                    STA 0x0103, X     // Store result to NEXT1
+                    
+                    INX INX TXS       // Remove TOP from stack
+                }
                 case OpCode.SUB:      { badOpCode(); }
                 case OpCode.MUL:      { badOpCode(); }
                 case OpCode.DIV:      { badOpCode(); }
@@ -239,7 +332,57 @@ unit Runtime
                 case OpCode.NE:       { badOpCode(); }
                 case OpCode.LT:       { badOpCode(); }
                 case OpCode.GT:       { badOpCode(); }
-                case OpCode.LE:       { badOpCode(); }
+                case OpCode.LE:       
+                {
+                    TSX               // Get stack pointer to X
+                    
+                    LDY #1 // NEXT <= TOP
+                    
+#ifdef DEBUG           
+                    /*         
+                    LDA 0x0103, X
+                    STA ZP.NEXT1
+                    LDA 0x0104, X
+                    STA ZP.NEXT0
+                    LDA 0x0101, X
+                    STA ZP.TOP1
+                    LDA 0x0102, X
+                    STA ZP.TOP0
+                    PHX
+                    Print.Space(); LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex(); LDA #'<' Print.Char();LDA #'=' Print.Char(); LDA ZP.TOP1 Print.Hex(); LDA ZP.TOP0 Print.Hex(); 
+                    PLX
+                    */
+#endif                    
+                    
+                    
+                    // Compare NEXT <= TOP
+                    // TOP is at SP+1/SP+2 (top)
+                    // NEXT is at SP+3/SP+4
+                    // First compare high bytes
+                    LDA 0x0103, X     // Load NEXT1
+                    CMP 0x0101, X     // Compare with TOP1
+                    if (Z)            // If NEXT1 == TOP1
+                    {
+                        LDA 0x0104, X // Load NEXT0 Low
+                        CMP 0x0102, X // Compare with TOP0 Low
+                    }
+                    if (NZ) // NEXT != TOP
+                    {
+                        if (C)        // NEXT >= TOP?
+                        {
+                            LDY #0    // NEXT > TOP
+                        }
+                    }
+                    INX               // Adjust stack by 3
+                    INX
+                    INX
+                    TXS
+                    TYA
+                    STA 0x0101, X     // store the boolean result
+#ifdef DEBUG
+                    //Print.Space(); LDA #'-' Print.Char(); LDA #'-' Print.Char(); Print.Space(); TYA Print.Hex();
+#endif
+                }
                 case OpCode.GE:       { badOpCode(); }
                 case OpCode.LTC:      { badOpCode(); }
                 case OpCode.GTC:      { badOpCode(); }
@@ -296,11 +439,35 @@ unit Runtime
                 case OpCode.BZF:      { badOpCode(); }
                 case OpCode.BZB:      { badOpCode(); }
                 case OpCode.BNZF:     { badOpCode(); }
-                case OpCode.BNZB:     { badOpCode(); }
+                case OpCode.BNZB:     
+                {
+                    INC PC
+                    INY
+                    
+                    PLX                   // pop the boolean
+                    if (NZ)
+                    {
+                        SEC               // Branch backward by offset in A
+                        LDA PC
+                        SBC [codePage], Y // Subtract offset from PC
+                        STA PC            // PC wraps naturally at page boundary
+                    }
+                }
                 
                 // Zero Page Operations
                 case OpCode.PUSHZB:   { badOpCode(); }
-                case OpCode.PUSHZW:   { badOpCode(); }
+                case OpCode.PUSHZW:   
+                {
+                    INC PC
+                    INY
+                    LDA [codePage], Y // byte offset  
+                    TAX
+                    LDA 0x00, X 
+                    PHA               // LSB
+                    INX
+                    LDA 0x00, X 
+                    PHA               // MSB
+                }
                 case OpCode.POPZB:    { badOpCode(); }
                 case OpCode.POPZW:    
                 {
@@ -324,7 +491,20 @@ unit Runtime
                     INY
                     LDA [codePage], Y // byte BIOS call index
                     TAX
+#ifdef DEBUG                    
+                    //PHX
+#endif
                     dispatchBIOS();
+#ifdef DEBUG
+                    /*
+                    PLX
+                    CPX # 0x18
+                    if (Z)
+                    {
+Print.NewLine(); LDA TOP3 Print.Hex(); LDA TOP2 Print.Hex(); LDA TOP1 Print.Hex(); LDA TOP0 Print.Hex();
+                    }
+                    */
+#endif
                 }
                 case OpCode.HALT:     { halt(); }
                 
@@ -344,5 +524,6 @@ unit Runtime
         LDX stackStore
         TXS
         
+        LDA #'>' Print.Char();
     }
 }
