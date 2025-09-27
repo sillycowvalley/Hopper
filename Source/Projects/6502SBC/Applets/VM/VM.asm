@@ -1,6 +1,7 @@
 program VM
 {
     #define CPU_65C02S
+    #define DEBUG
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -11,7 +12,7 @@ program VM
     uses "../System/Memory"
     uses "../System/Char"
     
-    uses "Loader"
+    uses "Runtime"
     
     const byte vmSlots = 0x60; // 0x60..0x6F
     
@@ -33,6 +34,11 @@ program VM
     
     const uint countL           = vmSlots+9;
     const uint countH           = vmSlots+10;
+    
+    const uint sizeTable        = vmSlots+11;
+    const uint sizeTableL       = vmSlots+11;
+    const uint sizeTableH       = vmSlots+12;
+    
     
     const string msgFileNotFound = "File not found";
     const string msgOutOfMemory  = "Out of memory";
@@ -88,6 +94,7 @@ program VM
     ReadByte()
     {
         PHY
+        PHX
         loop
         {
             LDA bufferIndexH
@@ -122,6 +129,7 @@ program VM
             SEC
             break;
         }
+        PLX
         PLY
     }
     
@@ -279,10 +287,35 @@ program VM
         }
         
         // Allocate 2K (including the 2 byte size field = 0x800 - 2 = 0x7FE)
-        LDA #0xFE
-        STA ZP.ACCL
-        LDA #0x07
+        // - 256 bytes for function table
+        // - 256 bytes reserved for globals
+        // - round up to nearest page for constant data
+        // - 1 page per function (for now)
+        // - subtract 2 bytes to ignore the Memory size word
+        STZ ZP.ACCL
+        LDA dataSizeH
         STA ZP.ACCH
+        LDA dataSizeL
+        if (NZ)
+        {
+            INC ZP.ACCH
+        }
+        INC ZP.ACCH // function table
+        INC ZP.ACCH // globals
+        
+        CLC
+        LDA ZP.ACCH 
+        ADC functionCount
+        STA ZP.ACCH
+ 
+        SEC  
+        LDA ZP.ACCL
+        SBC #2
+        STA ZP.ACCL
+        LDA ZP.ACCH
+        SBC #0
+        STA ZP.ACCH
+
         Memory.Allocate();
         if (NC)
         {
@@ -290,19 +323,29 @@ program VM
             Print.String();
             return;
         }
-Print.NewLine(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space(); LDA functionCount Print.Hex(); Print.Space(); LDA dataSizeH Print.Hex(); LDA dataSizeL Print.Hex();
-Print.NewLine();
         
         STZ programMemoryL
         LDA ZP.IDXH
         STA programMemoryH
         
+        // temporary space for function sizes
+        LDA #0xFE
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();
+        if (NC)
+        {
+            LDA #(msgOutOfMemory / 256) STA ZP.STRH LDA #(msgOutOfMemory % 256) STA ZP.STRL
+            Print.String();
+            return;
+        }
+        STZ sizeTableL
+        LDA ZP.IDXH
+        STA sizeTableH
+        
         // == Page 0 is the function table starting with .MAIN at slot 1 (slot 0 is empty because it is the size for Memory.Allocate) ==
         
-        // non existent function 0
-        ReadByte();
-        ReadByte();
-        
+        LDX #0
         LDY #2
         loop
         {
@@ -312,8 +355,19 @@ Print.NewLine();
             ReadByte();
             STA [programMemory], Y
             INY
-            CPY functionCount
-            if (C) { break; } // Y >= functionCount
+            
+            DEY
+            DEY
+            ReadByte();
+            STA [sizeTable], Y
+            INY
+            ReadByte();
+            STA [sizeTable], Y
+            INY
+            
+            INX
+            CPX functionCount
+            if (C) { break; } // X >= functionCount
         }
         
         // == Page 1 is reserved for globals ==
@@ -348,45 +402,69 @@ Print.NewLine();
         }
         // == done loading constant data ==
         
+        
+        // set index to be first function page
+        LDA indexL
+        if (NZ)
+        {
+            INC indexH
+        }
+        STZ indexL
+        
         LDA #2
         STA countL
         
         // == load functions ==
+        LDX #0
         loop
         {
-            CLC
-            LDA programMemoryH
+            // function index = (function number + 1) * 2
+            // - get the function size in count
+            // - set the new function offsets in the function table
+            TXA
             INC
-            ADC countL
-            STA indexH
-            STZ indexL
-    
-            // update the function location        
-            LDA programMemoryL
-            STA ZP.IDXL
-            LDA programMemoryH
-            STA ZP.IDXH
-            LDY countL
-            LDA indexL
-            STA [ZP.IDX], Y
+            ASL
+            TAY
+            LDA #0
+            STA [programMemory], Y
+            LDA [sizeTable], Y
+            STA countL
             INY
             LDA indexH
-            STA [ZP.IDX], Y
+            STA [programMemory], Y
+            LDA [sizeTable], Y
+            STA countH
             
             loop
             {
                 ReadByte(); if (NC) { break; }
                 STA [index]
                 INC indexL if (Z) { INC indexH }
+                
+                LDA countL
+                if (Z)
+                {
+                    DEC countH
+                }
+                DEC countL
+                LDA countH
+                ORA countL
+                if (Z) { break; }
             }
-            INC countL
-            INC countL
-            CMP functionCount
-            if (C) { break; } // countL >= functionCount
-            break;
+            // next function page:
+            LDA indexL
+            if (NZ)
+            {
+                INC indexH
+            }
+            STZ indexL
+            
+            INX
+            CPX functionCount
+            if (C) { break; } //  >= functionCount
         }
         
-
+#ifdef DEBUG        
         LDA programMemoryH
         STA ZP.IDXH
         DumpPage();
@@ -394,8 +472,24 @@ Print.NewLine();
         DumpPage();
         DumpPage();
         
+        Print.NewLine();
+        LDA sizeTableH
+        STA ZP.IDXH
+        DumpPage();
+#endif        
         
-        LDA programMemoryL
+        LDA #2
+        STA ZP.IDXL
+        LDA sizeTableH
+        STA ZP.IDXH
+        Memory.Free();
+        
+        
+        Runtime.Initialize();
+        Runtime.Execute();
+        
+        
+        LDA #2
         STA ZP.IDXL
         LDA programMemoryH
         STA ZP.IDXH
