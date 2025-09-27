@@ -1,63 +1,169 @@
 .CONST
-    ZP.TOP0  0x12
-    ZP.TOP2  0x14
-    ZP.STR   0x1E
-    Print.String 0x11
+    ZP.TOP0      0x12
+    ZP.TOP2      0x14
+    ZP.NEXT0     0x16
+    ZP.NEXT2     0x18
+    ZP.STR       0x1E
+    Time.Millis  0x18
+    Time.Seconds 0x19
+    Long.Add     0x1A
+    Long.Sub     0x1B
     Long.Print   0x1F
-
+    Print.String 0x11
+    
 .DATA
-    STR0 "Local 0: "
-    STR1 "\nLocal 1: "
-    STR2 "\nDone\n"
+    STR0 "Noel's RetroLab Benchmark\n"
+    STR1 "."
+    STR2 "\n"
+    STR3 " ms\n"
+    STR4 " seconds\n"
 
 .MAIN
-    ; Set up stack frame
     ENTER
     
-    ; Allocate 2 local words
-    PUSHW 0                   ; Local 0 (offset 0)
-    PUSHW 0                   ; Local 1 (offset 2)
+    ; Allocate locals:
+    PUSHW 0              ; s low at [BP+0]
+    PUSHW 0              ; s high at [BP-2]
+    PUSHW 0              ; start low at [BP-4]
+    PUSHW 0              ; start high at [BP-6]
+    PUSHW 0              ; ss (seconds start) at [BP-8]
+    PUSHW 0              ; i at [BP-10]
+    PUSHW 0              ; j at [BP-12]
     
-    ; Store 42 to local 0
-    PUSHW 42
+    ; start = millis()
+    SYSCALL Time.Millis
+    PUSHZW ZP.TOP0
+    POPLW -4
+    PUSHZW ZP.TOP2
+    POPLW -6
+    
+    ; ss = seconds()
+    SYSCALL Time.Seconds
+    PUSHZW ZP.TOP0
+    POPLW -8
+    
+    ; Print header
+    PUSHD 0
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; for (i = 1; i <= 10; i++)
+    PUSHW 1
+    POPLW -10
+    
+outer_loop:
+    ; s = 0
+    PUSHW 0
     POPLW 0
-    
-    ; Store 1337 to local 1  
-    PUSHW 1337
+    PUSHW 0
     POPLW -2
     
-    ; Print "Local 0: "
-    PUSHD STR0
+    ; for (j = 1; j <= 1000; j++)
+    PUSHW 1
+    POPLW -12
+    
+inner_loop:
+    ; s = s + j
+    PUSHLW -2
+    PUSHLW 0
+    POPZW ZP.NEXT0
+    POPZW ZP.NEXT2
+    
+    PUSHLW -12
+    POPZW ZP.TOP0
+    PUSHW 0
+    POPZW ZP.TOP2
+    
+    SYSCALL Long.Add
+    
+    PUSHZW ZP.NEXT0
+    POPLW 0
+    PUSHZW ZP.NEXT2
+    POPLW -2
+    
+    ; j++
+    PUSHLW -12
+    PUSH1
+    ADD
+    POPLW -12
+    
+    ; j <= 1000?
+    PUSHLW -12
+    PUSHW 1000
+    LE
+    BNZB inner_loop
+    
+    ; Print dot
+    PUSHD 28
     POPZW ZP.STR
     SYSCALL Print.String
     
-    ; Read and print local 0 (should be 42)
+    ; i++
+    PUSHLW -10
+    PUSH1
+    ADD
+    POPLW -10
+    
+    ; i <= 10?
+    PUSHLW -10
+    PUSHW 10
+    LE
+    BNZB outer_loop
+    
+    ; Print newline and s
+    PUSHD 30
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    PUSHLW -2
     PUSHLW 0
     POPZW ZP.TOP0
-    PUSHW 0
     POPZW ZP.TOP2
     SYSCALL Long.Print
     
-    ; Print "\nLocal 1: "
-    PUSHD STR1
+    PUSHD 30
     POPZW ZP.STR
     SYSCALL Print.String
     
-    ; Read and print local 1 (should be 1337)
-    PUSHLW -2
+    ; Print elapsed ms
+    SYSCALL Time.Millis
+    PUSHZW ZP.TOP0
+    PUSHZW ZP.TOP2
+    POPZW ZP.NEXT2
+    POPZW ZP.NEXT0
+    
+    PUSHLW -6
+    PUSHLW -4
+    POPZW ZP.TOP0
+    POPZW ZP.TOP2
+    SYSCALL Long.Sub
+    
+    PUSHZW ZP.NEXT0
+    PUSHZW ZP.NEXT2
+    POPZW ZP.TOP2
+    POPZW ZP.TOP0
+    SYSCALL Long.Print
+    
+    PUSHD 32
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Print elapsed seconds  
+    SYSCALL Time.Seconds
+    PUSHZW ZP.TOP0
+    PUSHLW -8
+    SUB
     POPZW ZP.TOP0
     PUSHW 0
     POPZW ZP.TOP2
     SYSCALL Long.Print
     
-    ; Print "\nDone\n"
-    PUSHD STR2
+    PUSHD 37
     POPZW ZP.STR
     SYSCALL Print.String
     
     ; Clean up
-    DROPW
-    DROPW
-    LEAVE
+    DROPW DROPW DROPW DROPW DROPW DROPW DROPW
     
+    LEAVE
     HALT

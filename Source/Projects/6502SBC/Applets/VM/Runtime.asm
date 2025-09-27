@@ -472,7 +472,7 @@ PUSHD:
             TAX
             JMP [opCodeJumps, X]
             
-BNZB:                    
+BNZB:       
             PLX                   // pop the boolean
             if (NZ)
             {
@@ -481,10 +481,7 @@ BNZB:
                 SBC [codePage], Y // Subtract offset from PC
                 TAY
             }
-            else
-            {
-                INY
-            }
+            INY
             
             LDA [codePage], Y
             INY
