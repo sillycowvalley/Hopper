@@ -188,6 +188,107 @@ All branch instructions use positive byte offsets (0-255):
 - **Backward branches** (BRAB, BZB, BNZB): Subtract offset from PC of next instruction
 - Branches are guaranteed to stay within the current 256-byte page
 - No page crossing checks needed
+
+## BIOS System Call IDs
+
+These are the numeric values for BIOS system calls. Copy these directly into your .CONST section:
+
+```
+; Memory Management
+Memory.Allocate      0x00  ; In: ZP.ACC=size(16b) | Out: ZP.IDX=addr, C=success
+Memory.Free          0x01  ; In: ZP.IDX=address | Out: C=success
+Memory.Available     0x02  ; In: None | Out: ZP.ACC=free bytes
+Memory.Maximum       0x03  ; In: None | Out: ZP.ACC=largest block
+
+; File Operations
+File.Exists          0x04  ; In: ZP.STR=filename, A=type | Out: C=exists
+File.Delete          0x05  ; In: ZP.STR=filename | Out: C=success
+File.Dir             0x06  ; In: None | Out: C=success (prints to serial)
+File.StartSave       0x07  ; In: ZP.STR=filename | Out: C=success
+File.AppendStream    0x08  ; In: FSOURCEADDRESS=data, FLENGTH=bytes | Out: C=success
+File.EndSave         0x09  ; In: A=type(0x80=exec,0x00=data) | Out: C=success
+File.StartLoad       0x0A  ; In: ZP.STR=filename, A=type | Out: C=success
+File.NextStream      0x0B  ; In: None | Out: C=data available, FLENGTH=bytes
+File.Format          0x0C  ; In: None | Out: C=success
+
+; Serial I/O
+Serial.WriteChar     0x0D  ; In: A=character | Out: None
+Serial.WaitForChar   0x0E  ; In: None | Out: A=character
+Serial.IsAvailable   0x0F  ; In: None | Out: C=available
+IsBreak              0x10  ; In: None | Out: C=break detected
+
+; Print/Console
+Print.String         0x11  ; In: ZP.STR=string pointer | Out: None
+Print.Char           0x12  ; In: A=character | Out: None
+Print.Hex            0x13  ; In: A=byte | Out: None (prints 2 hex digits)
+Print.NewLine        0x14  ; In: None | Out: None
+Print.Space          0x15  ; In: None | Out: None
+Print.Spaces         0x16  ; In: Y=count | Out: None
+
+; Timer Services
+Time.Delay           0x17  ; In: ZP.TOP=ms(32b) | Out: None
+Time.Millis          0x18  ; In: None | Out: ZP.TOP=ms since boot(32b)
+Time.Seconds         0x19  ; In: None | Out: ZP.TOP=seconds(32b)
+
+; Long Math (32-bit)
+Long.Add             0x1A  ; In: ZP.NEXT, ZP.TOP | Out: ZP.NEXT=NEXT+TOP
+Long.Sub             0x1B  ; In: ZP.NEXT, ZP.TOP | Out: ZP.NEXT=NEXT-TOP
+Long.Mul             0x1C  ; In: ZP.NEXT, ZP.TOP | Out: ZP.NEXT=NEXT*TOP
+Long.Div             0x1D  ; In: ZP.NEXT, ZP.TOP | Out: ZP.NEXT=NEXT/TOP, C=success
+Long.Mod             0x1E  ; In: ZP.NEXT, ZP.TOP | Out: ZP.NEXT=NEXT%TOP, C=success
+Long.Print           0x1F  ; In: ZP.TOP=value | Out: None (prints decimal)
+Long.LT              0x20  ; In: ZP.NEXT, ZP.TOP | Out: C=(NEXT<TOP)
+Long.GT              0x21  ; In: ZP.NEXT, ZP.TOP | Out: C=(NEXT>TOP)
+Long.EQ              0x22  ; In: ZP.NEXT, ZP.TOP | Out: C=(NEXT==TOP)
+Long.NE              0x23  ; In: ZP.NEXT, ZP.TOP | Out: C=(NEXT!=TOP)
+Long.LE              0x24  ; In: ZP.NEXT, ZP.TOP | Out: C=(NEXT<=TOP)
+Long.GE              0x25  ; In: ZP.NEXT, ZP.TOP | Out: C=(NEXT>=TOP)
+
+; GPIO
+GPIO.PinMode         0x26  ; In: A=pin(0-15), Y=mode(0=IN,1=OUT) | Out: None
+GPIO.PinRead         0x27  ; In: A=pin(0-15) | Out: A=value(0/1), Z=LOW
+GPIO.PinWrite        0x28  ; In: A=pin(0-15), Y=value(0/1) | Out: None
+
+; Float Math (Optional)
+Float.Add            0x29  ; In: ZP.NEXT, ZP.TOP(IEEE754) | Out: ZP.NEXT=NEXT+TOP
+Float.Sub            0x2A  ; In: ZP.NEXT, ZP.TOP(IEEE754) | Out: ZP.NEXT=NEXT-TOP
+Float.Mul            0x2B  ; In: ZP.NEXT, ZP.TOP(IEEE754) | Out: ZP.NEXT=NEXT*TOP
+Float.Div            0x2C  ; In: ZP.NEXT, ZP.TOP(IEEE754) | Out: ZP.NEXT=NEXT/TOP
+Float.ToLong         0x2D  ; In: ZP.NEXT(IEEE float) | Out: ZP.NEXT=(long)NEXT
+Float.LT             0x2E  ; In: ZP.NEXT, ZP.TOP(IEEE floats) | Out: C=(NEXT<TOP)
+Float.EQ             0x2F  ; In: ZP.NEXT, ZP.TOP(IEEE floats) | Out: C=(NEXT==TOP)
+
+; File I/O (Optional)
+File.Open            0x30  ; In: STR=filename, NEXT=mode("w"/"r") | Out: TOP=FILE*/NULL
+File.Close           0x31  ; In: NEXT=FILE* | Out: TOP=0/-1
+File.GetC            0x32  ; In: NEXT=FILE* | Out: TOP=char(0-255)/-1
+File.Read            0x33  ; In: IDX=buf, IDY=size, ACC=count, NEXT=FILE* | Out: TOP=bytes/-1
+File.PutC            0x34  ; In: ACC=char, NEXT=FILE* | Out: TOP=char/-1
+File.Write           0x35  ; In: IDX=buf, IDY=size, ACC=count, NEXT=FILE* | Out: TOP=bytes/-1
+
+; Zero Page Locations (Common)
+ZP.ACC               0x10
+ZP.ACCL              0x10
+ZP.ACCH              0x11
+ZP.TOP               0x12
+ZP.TOP0              0x12
+ZP.TOP1              0x13
+ZP.TOP2              0x14
+ZP.TOP3              0x15
+ZP.NEXT              0x16
+ZP.NEXT0             0x16
+ZP.NEXT1             0x17
+ZP.NEXT2             0x18
+ZP.NEXT3             0x19
+ZP.IDX               0x1A
+ZP.IDXL              0x1A
+ZP.IDXH              0x1B
+ZP.IDY               0x1C
+ZP.IDYL              0x1C
+ZP.IDYH              0x1D
+ZP.STR               0x1E
+ZP.STRL              0x1E
+ZP.STRH              0x1F
 ```
 
 ## Implementation Details
@@ -319,27 +420,25 @@ loop:                     ; Labels for branches
 ```asm
 ; Simple Hello World program
 .CONST
-    ZP.STR  0x1E
-    
+    ZP.STR       0x1E
     Print.String 0x11
     
 .DATA
     STR0 "Hello, World!\n"
 
 .MAIN
-    PUSHSTR STR0          ; Push string address
-    POPZW ZP.STR          ; Marshal to BIOS
-    SYSCALL Print.String  ; Print it
+    PUSHD STR0           ; Push string address
+    POPZW ZP.STR         ; Marshal to BIOS
+    SYSCALL Print.String ; Print it
     
-    HALT                  ; Return to BIOS
+    HALT                 ; Return to BIOS
 ```
 
 ### Print Digits 0-9
 ```asm
 ; Print digits from 0 to 9
 .CONST
-    ZP.STR  0x1E
-    
+    ZP.STR       0x1E
     Print.String 0x11
     Print.Char   0x12
     
@@ -349,24 +448,24 @@ loop:                     ; Labels for branches
 
 .MAIN
     ; Print header
-    PUSHSTR STR0             
+    PUSHD STR0             
     POPZW ZP.STR
     SYSCALL Print.String
     
     ; Initialize counter to 0
-    PUSH 0
+    PUSHB 0
     POPGB 0              ; global[0] = counter
     
 loop:
     ; Print the digit
     PUSHGB 0             ; Get counter
-    PUSH '0'             ; ASCII '0' 
+    PUSHB '0'            ; ASCII '0' 
     ADDB                 ; Convert to ASCII digit
     POPA                 
     SYSCALL Print.Char
     
     ; Print space
-    PUSH ' '
+    PUSHB ' '
     POPA
     SYSCALL Print.Char
     
@@ -378,12 +477,12 @@ loop:
     POPGB 0              ; Store back
     
     ; Check if we've done 10 digits
-    PUSH 10
+    PUSHB 10
     EQ                   ; Compare with 10
-    JZ loop              ; Loop if not equal
+    BZF loop             ; Loop if not equal
     
     ; Print footer
-    PUSHSTR STR1
+    PUSHD STR1
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -393,6 +492,15 @@ loop:
 ### Memory Allocation Test
 ```asm
 ; Test memory allocation and deallocation
+.CONST
+    ZP.STR           0x1E
+    ZP.ACC           0x10
+    ZP.IDX           0x1A
+    Print.String     0x11
+    Print.Char       0x12
+    Memory.Allocate  0x00
+    Memory.Free      0x01
+    
 .DATA
     STR0 "Allocating 256 bytes..."
     STR1 "Success! Address: "
@@ -402,7 +510,7 @@ loop:
 
 .MAIN
     ; Print allocation message
-    PUSHSTR STR0
+    PUSHD STR0
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -411,10 +519,10 @@ loop:
     POPZW ZP.ACC         ; Size to ZP.ACC
     SYSCALL Memory.Allocate
     PUSHC                ; Get success flag
-    JZ failed
+    BZF failed
     
     ; Success - print message and address
-    PUSHSTR STR1
+    PUSHD STR1
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -424,14 +532,14 @@ loop:
     POPGW 0              ; Save for later
     
     ; Print high byte
-    SWAP                 ; Get high byte
+    SWAPW                ; Get high byte
     CALL PrintHex
     
     ; Print low byte  
     CALL PrintHex
     
     ; Free the memory
-    PUSHSTR STR3
+    PUSHD STR3
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -439,13 +547,13 @@ loop:
     POPZW ZP.IDX
     SYSCALL Memory.Free
     
-    PUSHSTR STR4
+    PUSHD STR4
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
     
 failed:
-    PUSHSTR STR2
+    PUSHD STR2
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
@@ -453,11 +561,11 @@ failed:
 .FUNC PrintHex           ; Helper to print byte as 2 hex digits
     ; Input: byte on stack
     DUP
-    PUSH 4
+    PUSHB 4
     SHR                  ; High nibble
     CALL PrintNibble
     
-    PUSH 0x0F
+    PUSHB 0x0F
     AND                  ; Low nibble
     CALL PrintNibble
     RET
@@ -465,20 +573,20 @@ failed:
 .FUNC PrintNibble        ; Print single hex digit
     ; Input: nibble (0-15) on stack
     DUP
-    PUSH 10
+    PUSHB 10
     LT                   ; Check if < 10
-    JZ letter
+    BZF letter
     
-    PUSH '0'
+    PUSHB '0'
     ADDB
     POPA
     SYSCALL Print.Char
     RET
     
 letter:
-    PUSH 10
+    PUSHB 10
     SUBB
-    PUSH 'A'
+    PUSHB 'A'
     ADDB
     POPA
     SYSCALL Print.Char
@@ -488,32 +596,37 @@ letter:
 ### Fibonacci Sequence
 ```asm
 ; Print first 10 Fibonacci numbers
+.CONST
+    ZP.STR       0x1E
+    Print.String 0x11
+    Print.Char   0x12
+    
 .DATA
-    STR0: "Fibonacci: "
-    STR1: " "
+    STR0 "Fibonacci: "
+    STR1 " "
 
 .MAIN
     ; Print header
-    PUSHSTR STR0
+    PUSHD STR0
     POPZW ZP.STR
     SYSCALL Print.String
     
     ; Initialize: fib[0]=0, fib[1]=1
-    PUSH 0
+    PUSHB 0
     POPGB 0              ; n-2 term
-    PUSH 1
+    PUSHB 1
     POPGB 1              ; n-1 term
-    PUSH 0
+    PUSHB 0
     POPGB 2              ; counter
     
     ; Print first number (0)
-    PUSH '0'
+    PUSHB '0'
     POPA
     SYSCALL Print.Char
     CALL PrintSpace
     
     ; Print second number (1) 
-    PUSH '1'
+    PUSHB '1'
     POPA
     SYSCALL Print.Char
     CALL PrintSpace
@@ -532,7 +645,7 @@ loop:
     
     ; Print the number (simplified, only works for single digits)
     PUSHGB 1
-    PUSH '0'
+    PUSHB '0'
     ADDB
     POPA
     SYSCALL Print.Char
@@ -546,14 +659,14 @@ loop:
     POPGB 2
     
     ; Check if we've printed 8 more (total 10)
-    PUSH 8
+    PUSHB 8
     EQ
-    JZ loop
+    BZF loop
     
     HALT
 
 .FUNC PrintSpace
-    PUSHSTR STR1         ; Space string
+    PUSHD STR1         ; Space string
     POPZW ZP.STR
     SYSCALL Print.String
     RET
@@ -562,51 +675,52 @@ loop:
 ### String Comparison
 ```asm
 ; Compare two strings
+.CONST
+    ZP.STR       0x1E
+    Print.String 0x11
+    
 .DATA
-    STR0: "Hello"
-    STR1: "Hello"
-    STR2: "World"
-    STR3: "Strings match!\n"
-    STR4: "Strings differ!\n"
+    STR0 "Hello"
+    STR1 "Hello"
+    STR2 "World"
+    STR3 "Strings match!\n"
+    STR4 "Strings differ!\n"
 
 .MAIN
     ; Compare STR0 and STR1 (should match)
-    PUSHSTR STR0
-    PUSHSTR STR1
+    PUSHD STR0
+    PUSHD STR1
     STRCMP               ; Returns 0 if equal
-    JNZ different1
+    BNZF different1
     
-    PUSHSTR STR3
+    PUSHD STR3
     POPZW ZP.STR
     SYSCALL Print.String
-    BRA test2
+    BRAF test2
     
 different1:
-    PUSHSTR STR4
+    PUSHD STR4
     POPZW ZP.STR
     SYSCALL Print.String
     
 test2:
     ; Compare STR0 and STR2 (should differ)
-    PUSHSTR STR0
-    PUSHSTR STR2
+    PUSHD STR0
+    PUSHD STR2
     STRCMP
-    JNZ different2
+    BNZF different2
     
-    PUSHSTR STR3
+    PUSHD STR3
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
     
 different2:
-    PUSHSTR STR4
+    PUSHD STR4
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
 ```
-
-
-
 
 ## Performance Characteristics
 
