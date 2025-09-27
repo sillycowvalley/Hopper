@@ -109,6 +109,8 @@ unit OpCodes
         0x90, Arguments.None, 5, 'E','N','T','E','R',      // ENTER
         0x92, Arguments.None, 5, 'L','E','A','V','E',      // LEAVE
         
+        0x94, Arguments.None, 4, 'D','U','M','P',          // DUMP
+        
         // End marker
         0xFF
     };

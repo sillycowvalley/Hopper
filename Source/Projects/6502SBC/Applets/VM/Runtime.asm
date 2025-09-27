@@ -131,6 +131,8 @@ unit Runtime
         
         ENTER    = 0x90,  // PUSH BP, SP -> BP
         LEAVE    = 0x92,  // POP BP
+        
+        DUMP     = 0x94,  // diagnostic output
     }
     
     const OpCode[] opCodeJumps;
@@ -168,9 +170,9 @@ unit Runtime
         
         // Start from BP+8 down to BP-8
         LDX BP
-        INX INX INX INX INX INX INX INX  // BP+8
+        INX INX INX INX INX INX INX INX  INX INX // BP+10
         
-        LDY #17  // 17 bytes total (BP+8 to BP-8)
+        LDY #21  // 21 bytes total (BP+10 to BP-10)
         loop
         {
             // Print address
@@ -590,7 +592,14 @@ LEAVE:
             INY
             TAX
             JMP [opCodeJumps, X]
-                                    
+              
+DUMP:
+            debugStack();
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]                                                                 
 HALT:         
             halt();
             break;
