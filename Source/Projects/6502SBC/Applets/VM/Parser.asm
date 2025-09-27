@@ -9,7 +9,7 @@ unit Parser
     // Single base for easy relocation
     const byte parserSlots = 0x70; // 0x70..0x7F
     
-    const uint parserFlags    = parserSlots+0;
+    const byte parserFlags    = parserSlots+0;
     // Bit 0    - .MAIN seen
     // Bit 1    - .CONST seen
     // Bit 2    - .DATA seen
@@ -18,24 +18,24 @@ unit Parser
     // Bit 7 - token pushed back
     
     
-    const uint bufferIndexL = parserSlots+1;
-    const uint bufferIndexH = parserSlots+2;
+    const byte bufferIndexL = parserSlots+1;
+    const byte bufferIndexH = parserSlots+2;
     
     const byte currentChar  = parserSlots+3;  // Current character
     const byte tokenType    = parserSlots+4;  // Type of current token
-    const uint tokenValueL  = parserSlots+5;  // Token value/pointer
-    const uint tokenValueH  = parserSlots+6;
+    const byte tokenValueL  = parserSlots+5;  // Token value/pointer
+    const byte tokenValueH  = parserSlots+6;
     const byte tokenLength  = parserSlots+7;  // Length of identifier/string
     
     // Token buffer for identifiers/strings
-    const uint tokenBuffer  = parserSlots+8;  // Pointer to allocated buffer
+    const byte tokenBuffer  = parserSlots+8;  // Pointer to allocated buffer
     const byte tokenBufferL = parserSlots+8;
     const byte tokenBufferH = parserSlots+9;
     
     const byte currentLineL = parserSlots+10;
     const byte currentLineH = parserSlots+11;
     
-    const uint parserSection = parserSlots+12;
+    const byte parserSection = parserSlots+12;
     
     const byte numberType    = parserSlots+13;
     

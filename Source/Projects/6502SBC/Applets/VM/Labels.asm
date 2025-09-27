@@ -5,12 +5,12 @@ unit Labels
     const byte labelsSlots = 0xA0; // 0xA0..0xAF
     
     // Labels list structure (linked list)
-    const uint labelsHead    = labelsSlots+0;  // Head of linked list
+    const byte labelsHead    = labelsSlots+0;  // Head of linked list
     const byte labelsHeadL   = labelsSlots+0;
     const byte labelsHeadH   = labelsSlots+1;
     
     // Temp workspace for traversal
-    const uint labelsCurrent  = labelsSlots+2;  // Current node pointer
+    const byte labelsCurrent  = labelsSlots+2;  // Current node pointer
     const byte labelsCurrentL = labelsSlots+2;
     const byte labelsCurrentH = labelsSlots+3;
     

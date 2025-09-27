@@ -5,12 +5,12 @@ unit Symbols
     const byte symbolsSlots = 0x80; // 0x80..0x8F
     
     // Symbol table structure (linked list)
-    const uint symbolHead    = symbolsSlots+0;  // Head of linked list
+    const byte symbolHead    = symbolsSlots+0;  // Head of linked list
     const byte symbolHeadL   = symbolsSlots+0;
     const byte symbolHeadH   = symbolsSlots+1;
     
     // Temp workspace for traversal
-    const uint symbolCurrent = symbolsSlots+2;  // Current node pointer
+    const byte symbolCurrent = symbolsSlots+2;  // Current node pointer
     const byte symbolCurrentL = symbolsSlots+2;
     const byte symbolCurrentH = symbolsSlots+3;
     

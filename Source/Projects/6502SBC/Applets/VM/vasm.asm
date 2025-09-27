@@ -6,11 +6,11 @@ program VASM
     
     const byte vasmSlots = 0x90; // 0x90..0x9F
     
-    const uint filenameL    = vasmSlots+0;
-    const uint filenameH    = vasmSlots+1;
+    const byte filenameL    = vasmSlots+0;
+    const byte filenameH    = vasmSlots+1;
     
-    const uint outFilenameL = vasmSlots+2;
-    const uint outFilenameH = vasmSlots+3;
+    const byte outFilenameL = vasmSlots+2;
+    const byte outFilenameH = vasmSlots+3;
     
     uses "../System/Definitions"
     uses "../System/Args"

@@ -16,28 +16,29 @@ program VM
     
     const byte vmSlots = 0x60; // 0x60..0x6F
     
-    const uint functionCount    = vmSlots+0;
+    const byte programMemory    = vmSlots+0;
+    const byte programMemoryL   = vmSlots+0;
+    const byte programMemoryH   = vmSlots+1;
     
-    const uint dataSizeL        = vmSlots+1;
-    const uint dataSizeH        = vmSlots+2;
+    const byte functionCount    = vmSlots+2;
     
-    const uint bufferIndexL     = vmSlots+3;
-    const uint bufferIndexH     = vmSlots+4;
+    const byte dataSizeL        = vmSlots+3;
+    const byte dataSizeH        = vmSlots+4;
+
+    // used in ReadByte()    
+    const byte bufferIndexL     = vmSlots+5;
+    const byte bufferIndexH     = vmSlots+6;
     
-    const uint programMemory    = vmSlots+5;
-    const uint programMemoryL   = vmSlots+5;
-    const uint programMemoryH   = vmSlots+6;
+    const byte index            = vmSlots+7;
+    const byte indexL           = vmSlots+7;
+    const byte indexH           = vmSlots+8;
     
-    const uint index            = vmSlots+7;
-    const uint indexL           = vmSlots+7;
-    const uint indexH           = vmSlots+8;
+    const byte countL           = vmSlots+9;
+    const byte countH           = vmSlots+10;
     
-    const uint countL           = vmSlots+9;
-    const uint countH           = vmSlots+10;
-    
-    const uint sizeTable        = vmSlots+11;
-    const uint sizeTableL       = vmSlots+11;
-    const uint sizeTableH       = vmSlots+12;
+    const byte sizeTable        = vmSlots+11;
+    const byte sizeTableL       = vmSlots+11;
+    const byte sizeTableH       = vmSlots+12;
     
     
     const string msgFileNotFound = "File not found";

@@ -6,23 +6,23 @@ unit Buffer
     const byte bufferSlots = 0x60; // 0x60..0x6F
     
     // Code buffer management (matching C compiler)
-    const uint codeBuffer    = bufferSlots+0;  // Pointer to code buffer
+    const byte codeBuffer    = bufferSlots+0;  // Pointer to code buffer
     const byte codeBufferL   = bufferSlots+0;
     const byte codeBufferH   = bufferSlots+1;
     
-    const uint codeOffset    = bufferSlots+2;  // Current size of code
+    const byte codeOffset    = bufferSlots+2;  // Current size of code
     const byte codeOffsetL   = bufferSlots+2;
     const byte codeOffsetH   = bufferSlots+3;
     
-    const uint codeCapacity  = bufferSlots+4; // Buffer capacity
+    const byte codeCapacity  = bufferSlots+4; // Buffer capacity
     const byte codeCapacityL = bufferSlots+4;
     const byte codeCapacityH = bufferSlots+5;
     
     const byte codeByte       = bufferSlots+6;
     
-    const uint nextFunctionID = bufferSlots+7;
+    const byte nextFunctionID = bufferSlots+7;
     
-    const uint dataSize       = bufferSlots+8;
+    const byte dataSize       = bufferSlots+8;
     const byte dataSizeL      = bufferSlots+8;
     const byte dataSizeH      = bufferSlots+9;
     
@@ -66,7 +66,7 @@ unit Buffer
         LDA codeOffsetH
         STA [ZP.IDX], Y
         
-//Print.NewLine(); LDA ZP.TOP0 Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex();Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
+//Print.NewLine(); LDA ZP.TOP0 Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
 //Print.NewLine(); 
         SEC
     }
@@ -89,7 +89,7 @@ unit Buffer
         STA ZP.NEXT1
         
         // size = codeOffset - start
-        CLC
+        SEC
         LDA codeOffsetL
         SBC ZP.NEXT0
         STA ZP.NEXT0
@@ -107,7 +107,8 @@ unit Buffer
         LDA ZP.NEXT1
         STA [ZP.IDX], Y
         
-//Print.NewLine(); DEY TYA Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space();LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex();
+//Print.NewLine(); DEY TYA Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space();
+//                 LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex();Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
 //Print.NewLine();         
         SEC
     }
