@@ -1,4 +1,4 @@
-# Simple 6502 VM Specification (v2.0)
+# Simple 6502 VM Specification (v2.1)
 
 ## Overview
 
@@ -66,119 +66,130 @@ STRINGS:  0x65  // Strings base address (2 bytes)
 - Odd numbers reserved for future expansion
 - Maximum 128 distinct opcodes
 
-### Stack Operations (0x00-0x12)
+### Stack Operations (0x02-0x14)
 ```
-PUSHB        0x00  + byte           // Push 8-bit immediate
-PUSHW        0x02  + word           // Push 16-bit immediate
-PUSH0        0x04                   // Push 0 16-bit (optimized)
-PUSH1        0x06                   // Push 1 16-bit (optimized)
-DUP          0x08                   // Duplicate byte on TOS
-DUPW         0x0A                   // Duplicate word on TOS
-DROP         0x0C                   // Remove byte from TOS
-DROPW        0x0E                   // Remove word from TOS
-SWAP         0x10                   // Swap top two bytes
-SWAPW        0x12                   // Swap top two words
-```
-
-### Arithmetic Operations (0x14-0x24)
-```
-ADD          0x14                   // Pop 2 words, push sum
-SUB          0x16                   // Pop 2 words, push difference
-MUL          0x18                   // Pop 2 words, push product
-DIV          0x1A                   // Pop 2 words, push quotient (unsigned)
-MOD          0x1C                   // Pop 2 words, push remainder
-ADDB         0x1E                   // Pop 2 bytes, push sum
-SUBB         0x20                   // Pop 2 bytes, push difference
-NEG          0x22                   // Negate int (2's complement)
-NEGB         0x24                   // Negate char (2's complement)
+PUSHB        0x02  + byte           // Push 8-bit immediate
+PUSHW        0x04  + word           // Push 16-bit immediate
+PUSH0        0x06                   // Push 0 16-bit (optimized)
+PUSH1        0x08                   // Push 1 16-bit (optimized)
+DUP          0x0A                   // Duplicate byte on TOS
+DUPW         0x0C                   // Duplicate word on TOS
+DROP         0x0E                   // Remove byte from TOS
+DROPW        0x10                   // Remove word from TOS
+SWAP         0x12                   // Swap top two bytes
+SWAPW        0x14                   // Swap top two words
 ```
 
-### Comparison Operations (0x26-0x38)
+### Arithmetic Operations (0x16-0x26)
 ```
-EQ           0x26                   // Pop 2 words or ints, push 1 if equal, 0 if not
-NE           0x28                   // Pop 2 words or ints, push 1 if not equal
-LT           0x2A                   // Pop 2 words, unsigned less than
-GT           0x2C                   // Pop 2 words, unsigned greater than
-LE           0x2E                   // Pop 2 words, unsigned less or equal
-GE           0x30                   // Pop 2 words, unsigned greater or equal
-LTC          0x32                   // Pop 2 chars, signed less than
-GTC          0x34                   // Pop 2 chars, signed greater than
-LTI          0x36                   // Pop 2 ints, signed less than
-GTI          0x38                   // Pop 2 ints, signed greater than
-```
-
-### Bitwise Operations (0x3A-0x46)
-```
-AND          0x3A                   // Pop 2 words, push bitwise AND
-OR           0x3C                   // Pop 2 words, push bitwise OR
-XOR          0x3E                   // Pop 2 words, push bitwise XOR
-NOT          0x40                   // Pop word, push bitwise NOT
-SHL          0x42                   // Pop word and count, shift left
-SHR          0x44                   // Pop word and count, logical shift right
-SAR          0x46                   // Pop int and count, arithmetic shift right
+ADD          0x16                   // Pop 2 words, push sum
+SUB          0x18                   // Pop 2 words, push difference
+MUL          0x1A                   // Pop 2 words, push product
+DIV          0x1C                   // Pop 2 words, push quotient (unsigned)
+MOD          0x1E                   // Pop 2 words, push remainder
+ADDB         0x20                   // Pop 2 bytes, push sum
+SUBB         0x22                   // Pop 2 bytes, push difference
+NEG          0x24                   // Negate int (2's complement)
+NEGB         0x26                   // Negate char (2's complement)
 ```
 
-### Memory Operations - Globals (0x48-0x56)
+### Comparison Operations (0x28-0x3A)
 ```
-PUSHGB       0x48  + byte           // Push byte from global[offset]
-PUSHGB2      0x4A  + word           // Push byte from global[offset] (>255)
-PUSHGW       0x4C  + byte           // Push word from global[offset]
-PUSHGW2      0x4E  + word           // Push word from global[offset] (>255)
-POPGB        0x50  + byte           // Pop byte to global[offset]
-POPGB2       0x52  + word           // Pop byte to global[offset] (>255)
-POPGW        0x54  + byte           // Pop word to global[offset]
-POPGW2       0x56  + word           // Pop word to global[offset] (>255)
-```
-
-### Memory Operations - Locals (0x58-0x5E)
-```
-PUSHLB       0x58  + byte           // Push byte from BP[offset]
-PUSHLW       0x5A  + byte           // Push word from BP[offset]
-POPLB        0x5C  + byte           // Pop byte to BP[offset]
-POPLW        0x5E  + byte           // Pop word to BP[offset]
+EQ           0x28                   // Pop 2 words or ints, push 1 if equal, 0 if not
+NE           0x2A                   // Pop 2 words or ints, push 1 if not equal
+LT           0x2C                   // Pop 2 words, unsigned less than
+GT           0x2E                   // Pop 2 words, unsigned greater than
+LE           0x30                   // Pop 2 words, unsigned less or equal
+GE           0x32                   // Pop 2 words, unsigned greater or equal
+LTC          0x34                   // Pop 2 chars, signed less than
+GTC          0x36                   // Pop 2 chars, signed greater than
+LTI          0x38                   // Pop 2 ints, signed less than
+GTI          0x3A                   // Pop 2 ints, signed greater than
 ```
 
-### Data / String Operations (0x60-0x66)
+### Bitwise Operations (0x3C-0x48)
 ```
-PUSHD        0x60  + byte           // Push string address (byte offset)
-PUSHD2       0x62  + word           // Push string address (word offset)
-STRC         0x64                   // Pop index, pop string, push char
-STRCMP       0x66                   // Pop 2 strings, push -1/0/1
-```
-
-### Control Flow (0x68-0x76)
-```
-CALL         0x68  + byte           // Call function (ID × 2 for table lookup)
-RET          0x6A                   // Return from function
-BRAB         0x6C  + byte           // Branch backward by byte (0-255)
-BRAF         0x6E  + byte           // Branch forward by byte (0-255)
-BZF          0x70  + byte           // Branch forward by byte if TOS is zero
-BZB          0x72  + byte           // Branch backward by byte if TOS is zero
-BNZF         0x74  + byte           // Branch forward by byte if TOS is not zero
-BNZB         0x76  + byte           // Branch backward by byte if TOS is not zero
+AND          0x3C                   // Pop 2 words, push bitwise AND
+OR           0x3E                   // Pop 2 words, push bitwise OR
+XOR          0x40                   // Pop 2 words, push bitwise XOR
+NOT          0x42                   // Pop word, push bitwise NOT
+SHL          0x44                   // Pop word and count, shift left
+SHR          0x46                   // Pop word and count, logical shift right
+SAR          0x48                   // Pop int and count, arithmetic shift right
 ```
 
-### Zero Page Operations (0x78-0x7E)
+### Memory Operations - Globals (0x4A-0x58)
 ```
-PUSHZB       0x78  + byte           // Push byte from ZP[offset]
-PUSHZW       0x7A  + byte           // Push word from ZP[offset]
-POPZB        0x7C  + byte           // Pop byte to ZP[offset]
-POPZW        0x7E  + byte           // Pop word to ZP[offset]
-```
-
-### System Operations (0x80-0x8C)
-```
-SYSCALL      0x80  + byte           // Call BIOS function via X register
-HALT         0x82                   // Stop execution (return to BIOS)
+PUSHGB       0x4A  + byte           // Push byte from global[offset]
+PUSHGB2      0x4C  + word           // Push byte from global[offset] (>255)
+PUSHGW       0x4E  + byte           // Push word from global[offset]
+PUSHGW2      0x50  + word           // Push word from global[offset] (>255)
+POPGB        0x52  + byte           // Pop byte to global[offset]
+POPGB2       0x54  + word           // Pop byte to global[offset] (>255)
+POPGW        0x56  + byte           // Pop word to global[offset]
+POPGW2       0x58  + word           // Pop word to global[offset] (>255)
 ```
 
-### Register Operations (0x84-0x8C)
+### Memory Operations - Locals (0x5A-0x60)
 ```
-POPA         0x84                   // Pop byte from stack to A register
-POPY         0x86                   // Pop byte from stack to Y register
-PUSHA        0x88                   // Push A register to stack
-PUSHC        0x8A                   // Push carry flag (1 if set, 0 if clear)
-PUSHZ        0x8C                   // Push zero flag (1 if set, 0 if clear)
+PUSHLB       0x5A  + char           // Push byte from BP[offset] (signed offset)
+PUSHLW       0x5C  + char           // Push word from BP[offset] (signed offset)
+POPLB        0x5E  + char           // Pop byte to BP[offset] (signed offset)
+POPLW        0x60  + char           // Pop word to BP[offset] (signed offset)
+```
+
+### Data / String Operations (0x62-0x68)
+```
+PUSHD        0x62  + byte           // Push string address (byte offset)
+PUSHD2       0x64  + word           // Push string address (word offset)
+STRC         0x66                   // Pop index, pop string, push char
+STRCMP       0x68                   // Pop 2 strings, push -1/0/1
+```
+
+### Control Flow (0x6A-0x78)
+```
+CALL         0x6A  + byte           // Call function (ID × 2 for table lookup)
+RET          0x6C                   // Return from function
+BRAB         0x6E  + byte           // Branch backward by byte (0-255)
+BRAF         0x70  + byte           // Branch forward by byte (0-255)
+BZF          0x72  + byte           // Branch forward by byte if TOS is zero
+BZB          0x74  + byte           // Branch backward by byte if TOS is zero
+BNZF         0x76  + byte           // Branch forward by byte if TOS is not zero
+BNZB         0x78  + byte           // Branch backward by byte if TOS is not zero
+```
+
+### Zero Page Operations (0x7A-0x80)
+```
+PUSHZB       0x7A  + byte           // Push byte from ZP[offset]
+PUSHZW       0x7C  + byte           // Push word from ZP[offset]
+POPZB        0x7E  + byte           // Pop byte to ZP[offset]
+POPZW        0x80  + byte           // Pop word to ZP[offset]
+```
+
+### System Operations (0x82-0x84)
+```
+SYSCALL      0x82  + byte           // Call BIOS function via X register
+HALT         0x84                   // Stop execution (return to BIOS)
+```
+
+### Register Operations (0x86-0x8E)
+```
+POPA         0x86                   // Pop byte from stack to A register
+POPY         0x88                   // Pop byte from stack to Y register
+PUSHA        0x8A                   // Push A register to stack
+PUSHC        0x8C                   // Push carry flag (1 if set, 0 if clear)
+PUSHZ        0x8E                   // Push zero flag (1 if set, 0 if clear)
+```
+
+### Stack Frame Operations (0x90-0x92)
+```
+ENTER        0x90                   // Push BP, set BP = SP (stack frame setup)
+LEAVE        0x92                   // Pop BP (stack frame teardown)
+```
+
+### System Operations (0x00)
+```
+NOP          0x00                   // No operation
 ```
 
 ### Branch Offset Handling
@@ -351,9 +362,11 @@ High Memory
     [Argument 1]
     [Return IP Low]
     [Return IP High]
-    [Saved BP]        <- New BP points here
-    [Local 1]
-    [Local 2]
+    [Saved BP]        <- BP+1 (saved by ENTER)
+    [Local 1 Low]     <- BP-1,BP (first local, 16-bit)
+    [Local 1 High]    
+    [Local 2 Low]     <- BP-3,BP-2 (second local, 16-bit)  
+    [Local 2 High]    
     ...               <- SP points here
 Low Memory
 ```
@@ -363,13 +376,13 @@ Low Memory
 ### File Header
 ```
 Offset  Size  Description
-0x0000  2     Magic number (0x564D "VM")
-0x0002  2     Code size in bytes
-0x0004  2     Globals size in bytes
-0x0006  2     Strings size in bytes
-0x0008  1     Function count
-0x0009  1     Entry point (main function ID)
-0x000A  ...   Code follows
+0x0000  3     Magic number (0x564D42 "VMB")
+0x0003  1     Function count
+0x0004  2     Data size in bytes (little endian)
+0x0006  ...   Function table (4 bytes per function)
+              Each entry: offset(2) + size(2)
+...     N     Constant data section
+...     ...   Function code follows
 ```
 
 ### Memory Initialization
@@ -391,7 +404,7 @@ The VM assembler accepts these mnemonics:
     PUSHW 0x1234      ; Push constant
     POPGW      0      ; Store to global[0]
     
-    PUSHSTR 0         ; Push first string
+    PUSHD 0           ; Push first string
     POPZW ZP.STR
     SYSCALL Print.String ; Call BIOS print
     
@@ -401,14 +414,14 @@ loop:                     ; Labels for branches
     PUSHGB 0
     PUSH1
     SUBB
-    DUP
+    DUPW
     POPGB 0
-    JNZ loop     ; Branch backward
+    BNZB loop     ; Branch backward
     
     RET
 
 .FUNC Helper
-    PUSH 42
+    PUSHB 42
     POPA                  ; Store to A BIOS
     SYSCALL Print.Char ; Call BIOS print
     RET                   ; Return
@@ -427,7 +440,7 @@ loop:                     ; Labels for branches
     STR0 "Hello, World!\n"
 
 .MAIN
-    PUSHD STR0           ; Push string address
+    PUSHD 0              ; Push string 0 address
     POPZW ZP.STR         ; Marshal to BIOS
     SYSCALL Print.String ; Print it
     
@@ -448,7 +461,7 @@ loop:                     ; Labels for branches
 
 .MAIN
     ; Print header
-    PUSHD STR0             
+    PUSHD 0             
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -473,7 +486,7 @@ loop:
     PUSHGB 0
     PUSH1
     ADDB
-    DUP                  ; Keep copy for comparison
+    DUPW                 ; Keep copy for comparison
     POPGB 0              ; Store back
     
     ; Check if we've done 10 digits
@@ -482,7 +495,7 @@ loop:
     BZF loop             ; Loop if not equal
     
     ; Print footer
-    PUSHD STR1
+    PUSHD 1
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -510,7 +523,7 @@ loop:
 
 .MAIN
     ; Print allocation message
-    PUSHD STR0
+    PUSHD 0
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -522,7 +535,7 @@ loop:
     BZF failed
     
     ; Success - print message and address
-    PUSHD STR1
+    PUSHD 1
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -539,7 +552,7 @@ loop:
     CALL PrintHex
     
     ; Free the memory
-    PUSHD STR3
+    PUSHD 3
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -547,20 +560,20 @@ loop:
     POPZW ZP.IDX
     SYSCALL Memory.Free
     
-    PUSHD STR4
+    PUSHD 4
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
     
 failed:
-    PUSHD STR2
+    PUSHD 2
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
 
 .FUNC PrintHex           ; Helper to print byte as 2 hex digits
     ; Input: byte on stack
-    DUP
+    DUPW
     PUSHB 4
     SHR                  ; High nibble
     CALL PrintNibble
@@ -572,7 +585,7 @@ failed:
 
 .FUNC PrintNibble        ; Print single hex digit
     ; Input: nibble (0-15) on stack
-    DUP
+    DUPW
     PUSHB 10
     LT                   ; Check if < 10
     BZF letter
@@ -607,7 +620,7 @@ letter:
 
 .MAIN
     ; Print header
-    PUSHD STR0
+    PUSHD 0
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -636,7 +649,7 @@ loop:
     PUSHGB 0             ; n-2
     PUSHGB 1             ; n-1
     ADDB
-    DUP
+    DUPW
     
     ; Update for next iteration
     PUSHGB 1
@@ -655,7 +668,7 @@ loop:
     PUSHGB 2
     PUSH1
     ADDB
-    DUP
+    DUPW
     POPGB 2
     
     ; Check if we've printed 8 more (total 10)
@@ -666,7 +679,7 @@ loop:
     HALT
 
 .FUNC PrintSpace
-    PUSHD STR1         ; Space string
+    PUSHD 1         ; Space string
     POPZW ZP.STR
     SYSCALL Print.String
     RET
@@ -688,35 +701,35 @@ loop:
 
 .MAIN
     ; Compare STR0 and STR1 (should match)
-    PUSHD STR0
-    PUSHD STR1
+    PUSHD 0
+    PUSHD 1
     STRCMP               ; Returns 0 if equal
     BNZF different1
     
-    PUSHD STR3
+    PUSHD 3
     POPZW ZP.STR
     SYSCALL Print.String
     BRAF test2
     
 different1:
-    PUSHD STR4
+    PUSHD 4
     POPZW ZP.STR
     SYSCALL Print.String
     
 test2:
     ; Compare STR0 and STR2 (should differ)
-    PUSHD STR0
-    PUSHD STR2
+    PUSHD 0
+    PUSHD 2
     STRCMP
     BNZF different2
     
-    PUSHD STR3
+    PUSHD 3
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
     
 different2:
-    PUSHD STR4
+    PUSHD 4
     POPZW ZP.STR
     SYSCALL Print.String
     HALT
