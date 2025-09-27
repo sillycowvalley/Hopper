@@ -7,7 +7,7 @@ unit Runtime
     const byte functionTableL   = runtimeSlots+0;
     const uint functionTableH   = runtimeSlots+1;
     
-    const byte PC               = runtimeSlots+2;
+    //const byte PC             = runtimeSlots+2;
     const byte BP               = runtimeSlots+3;
     
     const byte globals          = runtimeSlots+4;
@@ -29,6 +29,7 @@ unit Runtime
     // Bit 0 - exiting
     
     const byte stackStore       = runtimeSlots+13;
+    const byte yStore           = runtimeSlots+14;
     
     enum OpCode
     {
@@ -154,7 +155,7 @@ unit Runtime
         LDA [functionTable], Y
         STA codePageH
         
-        STZ PC
+        LDY #0 // PC
         STZ BP
         
         STZ vmFlags
@@ -209,15 +210,8 @@ unit Runtime
         
         loop
         {
-#ifdef DEBUG            
-            Print.NewLine(); LDA PC Print.Hex(); Print.Space();
-#endif            
-            LDY PC
             LDA [codePage], Y
-#ifdef DEBUG            
-            Print.Hex();            
-#endif
-            INC PC
+            INY
             TAX
             
             JMP [opCodeJumps, X]
@@ -228,25 +222,21 @@ NOP:
 // Stack Operations
                 
 PUSHB:                    
-            INC PC
-            INY
             LDA [codePage], Y // operand LSB
+            INY
             PHA
             continue;
             
 PUSHW:                    
-            INC PC
-            INY
             LDA [codePage], Y // operand LSB
-            PHA
-            INC PC
             INY
+            PHA
             LDA [codePage], Y // operand MSB
+            INY
             PHA
             
-            LDY PC
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
 
@@ -262,9 +252,8 @@ PUSH1:
             LDA #0
             PHA
             
-            LDY PC
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
 
@@ -275,17 +264,16 @@ DUPW:
             // Read the word from stack (without popping)
             // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
             LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
-            TAY               // Save in Y
+            STA operand       // Save in temp
             LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
             
             // Push the duplicate (LSB first, then MSB)
             PHA               // Push TOP0 (LSB)
-            TYA               // Get TOP1 back
+            LDA operand       // Get TOP1 back
             PHA               // Push TOP1 (MSB)
             
-            LDY PC
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
             
@@ -301,6 +289,8 @@ SWAPW:
             // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
             // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
             
+            STY yStore
+            
             // Swap the low bytes (TOP0 <-> NEXT0)
             LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
             LDY 0x0104, X     // Load NEXT0 (LSB at SP+4)
@@ -315,9 +305,10 @@ SWAPW:
             TYA
             STA 0x0101, X     // Store NEXT1 to TOP1 position
             
-            LDY PC
+            LDY yStore
+            
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
 
@@ -339,16 +330,16 @@ ADD:
             
             INX INX TXS       // Remove TOP from stack
             
-            LDY PC
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
                       
 LE:
             TSX               // Get stack pointer to X
             
-            LDY #1 // NEXT <= TOP
+            LDA #1 // NEXT <= TOP
+            STA operand
                     
             // Compare NEXT <= TOP
             // TOP is at SP+1/SP+2 (top)
@@ -365,26 +356,24 @@ LE:
             {
                 if (C)        // NEXT >= TOP?
                 {
-                    LDY #0    // NEXT > TOP
+                    STZ operand   // NEXT > TOP
                 }
             }
             INX               // Adjust stack by 3
             INX
             INX
             TXS
-            TYA
+            LDA operand
             STA 0x0101, X     // store the boolean result
             
-            LDY PC
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
             
 PUSHD:                    
-            INC PC
-            INY
             LDA [codePage], Y // byte offset    
+            INY
             CLC
             ADC constantsL
             PHA               // LSB
@@ -394,28 +383,27 @@ PUSHD:
             continue;
             
 BNZB:                    
-            INC PC
-            INY
-            
             PLX                   // pop the boolean
             if (NZ)
             {
                 SEC               // Branch backward by offset in A
-                LDA PC
+                TYA
                 SBC [codePage], Y // Subtract offset from PC
-                STA PC            // PC wraps naturally at page boundary
+                TAY
+            }
+            else
+            {
+                INY
             }
             
-            LDY PC
             LDA [codePage], Y
-            INC PC
+            INY
             TAX
             JMP [opCodeJumps, X]
 
 PUSHZW:                    
-            INC PC
-            INY
             LDA [codePage], Y // byte offset  
+            INY
             TAX
             LDA 0x00, X 
             PHA               // LSB
@@ -425,9 +413,8 @@ PUSHZW:
             continue;
             
 POPZW:
-            INC PC
-            INY
             LDA [codePage], Y // byte offset  
+            INY
 
             TAX
             INX
@@ -439,11 +426,12 @@ POPZW:
             continue;
                 
 SYSCALL:
-            INC PC
-            INY
             LDA [codePage], Y // byte BIOS call index
+            INY
             TAX
+            PHY
             dispatchBIOS();
+            PLY
             continue;
             
 HALT:         
