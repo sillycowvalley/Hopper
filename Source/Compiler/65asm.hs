@@ -1222,11 +1222,11 @@ program Assemble
                     currentToken = Parser.CurrentToken;
                     tokenType = Token.GetType(currentToken);
                     
-                    //Print(" " + currentToken["line"] + registerName);
+                    // Print(" " + currentToken["line"] + ":" + registerName);
                 }
                 if (tokenType == HopperToken.RBracket)
                 {
-                    if ((addressingModes & (AddressingModes.XIndexedZeroPage)) == AddressingModes.XIndexedZeroPage)
+                    if ((addressingModes & (AddressingModes.XIndexedZeroPage|AddressingModes.AbsoluteIndirectX)) != AddressingModes.None)
                     {
                         Parser.Advance(); // ']'
                         currentToken = Parser.CurrentToken;

@@ -583,6 +583,22 @@ unit Constant
                         value = (GetConstantAddress(name, value)).ToString();
                         constantType = "uint";
                     }
+                    else if (constantType.Contains("[") && constantType.EndsWith("]"))
+                    {
+                        // Extract element type from "OpCode[256]" -> "OpCode"
+                        uint bracketPos;
+                        if (constantType.IndexOf('[', ref bracketPos))
+                        {
+                            string elementType = constantType.Substring(0, bracketPos);
+                            
+                            if (Types.IsEnum(elementType))
+                            {
+                                // Convert enum array to address
+                                value = (GetConstantAddress(name, value)).ToString();
+                                constantType = "uint";
+                            }
+                        }
+                    }
                     else if (constantType == "string")
                     {
                         if (!value.EndsWith(char(0x00)))

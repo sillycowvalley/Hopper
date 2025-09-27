@@ -17,11 +17,17 @@ unit Asm6502
     <string,uint> usedConstants;
     uint romStart;
     
+    <string, uint> enumArrayOffsets; // constant name -> offset in constantStream
+    
     CPUArchitecture cpuArchitecture;
     CPUArchitecture Architecture { get { return cpuArchitecture; } set { cpuArchitecture = value; } }
     
     uint InvalidAddress { get { return 0xFFFF; } }
     
+    <string, uint> GetEnumArrayOffsets()
+    {
+        return enumArrayOffsets;
+    }
     
     
     flags AddressingModes
@@ -642,7 +648,8 @@ unit Asm6502
             case "JMP":
             {
                 addressingModes = AddressingModes.Absolute
-                                | AddressingModes.AbsoluteIndirect;
+                                | AddressingModes.AbsoluteIndirect
+                                | AddressingModes.AbsoluteIndirectX;
             }
             case "JSR":
             case "iJMP":
@@ -1784,6 +1791,22 @@ unit Asm6502
         }
         else
         {
+            
+            // Track if this is an enum array constant
+            string constantType = Symbols.GetConstantType(name);
+            if (constantType.Contains("[") && constantType.EndsWith("]"))
+            {
+                uint bracketPos;
+                if (constantType.IndexOf('[', ref bracketPos))
+                {
+                    string elementType = constantType.Substring(0, bracketPos);
+                    if (Types.IsEnum(elementType))
+                    {
+                        // Record offset within constantStream for enum arrays
+                        enumArrayOffsets[name] = constantStream.Count;
+                    }
+                }
+            }
             address = constantStream.Count + romStart;
             usedConstants[name] = address;
             foreach (var c in value)

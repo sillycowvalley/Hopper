@@ -37,6 +37,22 @@ unit Code
     
     <string,uint> runtimeMap; // Z80 runtime addresses
     
+#ifdef ASSEMBLER    
+    <string,uint> enumArrayOffsets;
+    uint GetEnumArrayOffset(string name)
+    {
+        if (enumArrayOffsets.Contains(name))
+        {
+            return enumArrayOffsets[name];
+        }
+        return 0;
+    }
+    bool HasEnumArray(string name)
+    {
+        return enumArrayOffsets.Contains(name);
+    }
+#endif    
+    
     Clear()
     {
         methodCode.Clear();
@@ -1186,11 +1202,84 @@ unit Code
                         
                         fc = false;
                     } // loop   
+#ifdef ASSEMBLER
+                    methodDictionary["labels"] = labelInfo;
+#else                    
                     if (keepSymbols)
                     {
                         methodDictionary["labels"] = labelInfo;
                     }
+#endif                    
                 } // "labels"
+                case "enumArrays":
+                {
+#ifdef ASSEMBLER                    
+                    Parser.Consume(HopperToken.LBrace);
+                    if (Parser.HadError)
+                    {
+                        break;
+                    }
+                    loop
+                    {
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }    
+                        if (Parser.Check(HopperToken.RBrace))
+                        {
+                            Parser.Advance(); // }
+                            break;
+                        }
+                        
+                        // Parse the key (enum array name)
+                        if (!Parser.Check(HopperToken.StringConstant))
+                        {
+                            Parser.ErrorAtCurrent("string key expected for enumArrays");
+                            break;
+                        }
+                        <string, string> enumInfo = Parser.CurrentToken;
+                        string enumArrayName = enumInfo["lexeme"];
+                        Parser.Advance(); // consume key
+                        
+                        // Parse the colon
+                        Parser.Consume(HopperToken.Colon);
+                        if (Parser.HadError)
+                        {
+                            break;
+                        }
+                        
+                        // Parse the value (offset)
+                        if (!Parser.Check(HopperToken.Integer))
+                        {
+                            Parser.ErrorAtCurrent("integer value expected for enumArrays");
+                            break;
+                        }
+                        enumInfo = Parser.CurrentToken;
+                        string offsetStr = enumInfo["lexeme"];
+                        uint offset;
+                        if (!UInt.TryParse(offsetStr, ref offset))
+                        {
+                            Parser.ErrorAtCurrent("invalid integer value for enumArrays");
+                            break;
+                        }
+                        Parser.Advance(); // consume value
+                        
+                        // Store the enum array information
+                        enumArrayOffsets[enumArrayName] = offset;
+                        
+                        // Handle comma or end of object
+                        if (Parser.Check(HopperToken.Comma))
+                        {
+                            Parser.Advance(); // ,
+                        }
+                        else if (!Parser.Check(HopperToken.RBrace))
+                        {
+                            Parser.ErrorAtCurrent("',' or '}' expected in enumArrays");
+                            break;
+                        }
+                    }
+#endif // ASSEMBLER
+                }
                 case "code":
                 {
                     Parser.Consume(HopperToken.LBracket);
@@ -1246,14 +1335,22 @@ unit Code
             first = false;
         } // loop
         
-        if (!isData && keepSymbols)
+        if (!isData)
         {
-            uint iMethod;
-            if (UInt.TryParse(methodIndex, ref iMethod))
+#ifdef ASSEMBLER
+            bool keep = true;
+#else            
+            bool keep = keepSymbols;
+#endif
+            if (keep)
             {
+                uint iMethod;
+                if (UInt.TryParse(methodIndex, ref iMethod))
+                {
+                }
+                string name = "0x" + iMethod.ToHexString(4);
+                debugSymbols[name] = methodDictionary;
             }
-            string name = "0x" + iMethod.ToHexString(4);
-            debugSymbols[name] = methodDictionary;
         }
         return !Parser.HadError;
     }
@@ -1560,6 +1657,12 @@ unit Code
         {
             <string, variant> cdict;
             cdict["data"] = constantData;
+#ifdef ASSEMBLER
+            if (enumArrayOffsets.Count > 0)
+            {
+                cdict["enumArrays"] = enumArrayOffsets;
+            }
+#endif            
             dict["const"] = cdict;
         }
         if (runtimeMap.Count != 0)

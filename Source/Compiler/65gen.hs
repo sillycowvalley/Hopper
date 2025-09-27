@@ -180,7 +180,106 @@ program Generate
             uint targetAddress = methods[targetMethod];
             output.SetItem(patchAddress,   byte(targetAddress >> 8));
         }
+    }
+    
+    bool getEnumValue(string enumType, string labelName, ref byte value)
+    {
+        // Try with the enum type as-is
+        string candidate = enumType + "." + labelName;
         
+        string typeName;
+        string valueName;
+        uint ivalue;
+        
+        if (Types.EnumValue(candidate, ref typeName, ref valueName, ref ivalue))
+        {
+            value = byte(ivalue);
+            return true;
+        }
+        
+        // Try with just the label name in case it's already qualified
+        if (Types.EnumValue(labelName, ref typeName, ref valueName, ref ivalue))
+        {
+            if (typeName == enumType)
+            {
+                value = byte(ivalue);
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    patchEnumArrayConstants(uint romAddress)
+    {
+        // Get all constants that are enum arrays
+        <string, string> constantValues = Symbols.GetConstantValues();
+        
+        foreach (var constant in constantValues)
+        {
+            string constantName = constant.key;
+            string constantType = Symbols.GetConstantType(constantName);
+            
+            // Check if it's an enum array (e.g., "OpCode[256]")
+            if (!constantType.Contains("[") || !constantType.EndsWith("]"))
+            {
+                continue;
+            }
+
+            uint bracketPos;
+            if (!constantType.IndexOf('[', ref bracketPos))
+            {
+                continue;
+            }
+            string enumType = constantType.Substring(0, bracketPos);
+            if (!Types.IsEnum(enumType))
+            {
+                continue;
+            }
+
+            if (!Code.HasEnumArray(constantName))
+            {
+                continue;
+            }
+            uint arrayAddress = Code.GetEnumArrayOffset(constantName);
+            
+            // Check all method labels for matches to this enum's values
+            foreach (var method in methods)
+            {
+                uint methodIndex = method.key;
+                uint methodAddress = method.value;
+                
+                                
+                <string,variant> methodSymbols = Code.GetMethodSymbols(methodIndex);
+                if (methodSymbols.Contains("labels"))
+                {
+                    <string,string> labelInfo = methodSymbols["labels"];
+                    if (labelInfo.Count > 0)
+                    {
+                        foreach (var label in labelInfo)
+                        {
+                            uint labelOffset;
+                            if (UInt.TryParse(label.key, ref labelOffset))
+                            {
+                                string labelName = label.value;
+                                // Check if this label is a value of the enum
+                                byte enumValue;
+                                if (getEnumValue(enumType, labelName, ref enumValue))
+                                {
+                                    uint labelAddress = methodAddress + labelOffset;
+                                    
+                                    // Patch LSB and MSB
+                                    output.SetItem(arrayAddress + enumValue, 
+                                                  byte(labelAddress & 0xFF));
+                                    output.SetItem(arrayAddress + enumValue + 1, 
+                                                  byte(labelAddress >> 8));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     
     byte hexCheckSum(string values)
@@ -539,6 +638,8 @@ program Generate
                 }
                 doCallPatches();
                 Parser.ProgressTick(".");
+                
+                patchEnumArrayConstants(romAddress);
                 
                 uint iIndex;
                 uint nIndex;

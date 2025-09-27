@@ -31,6 +31,7 @@ unit Symbols
     
 #if !defined(COMPILER) // Assembler only    
     <uint, bool> fInline; // track which methods are inline
+    <uint, bool> fNoOpt;  // track which methods are not to be optimized
 #endif    
     
     <uint, byte> fSysCall;
@@ -1506,7 +1507,15 @@ unit Symbols
     }
     SetIsInline(uint iOverload, bool isInline)
     {
-        fInline[iOverload] = true;
+        fInline[iOverload] = isInline;
+    }
+    bool IsNoOpt(uint iOverload)
+    {
+        return fNoOpt.Contains(iOverload);
+    }
+    SetIsNoOpt(uint iOverload, bool isNoOpt)
+    {
+        fNoOpt[iOverload] = isNoOpt;
     }
 #endif    
     
@@ -1693,6 +1702,19 @@ unit Symbols
         {
             isInline = true;
         }
+        if ((blockPos.Count >= 5) && (blockPos[4] == "inline"))
+        {
+            isInline = true;
+        }
+        bool isNoOpt = false;
+        if ((blockPos.Count >= 4) && (blockPos[3] == "noopt"))
+        {
+            isNoOpt = true;
+        }
+        if ((blockPos.Count >= 5) && (blockPos[4] == "noopt"))
+        {
+            isNoOpt = true;
+        }
 #endif        
     
         loop
@@ -1739,6 +1761,10 @@ unit Symbols
             if (isInline)
             {
                 fInline[iCurrentOverload] = true;
+            }
+            if (isNoOpt)
+            {
+                fNoOpt[iCurrentOverload] = true;
             }
 #endif            
             
@@ -1984,6 +2010,14 @@ unit Symbols
             {
                 <string,variant> cdict;
                 cdict["data"] = constantStream;    
+                
+#ifdef ASSEMBLER
+                <string, uint> enumArrays = Asm6502.GetEnumArrayOffsets();
+                if (enumArrays.Count > 0)
+                {
+                    cdict["enumArrays"] = enumArrays;
+                }
+#endif
                 dict["const"] = cdict;
             }
             
@@ -2328,6 +2362,10 @@ unit Symbols
                     {
                         odict["inline"] = "true";
                     }
+                    if (fNoOpt.Contains(overload) && fNoOpt[overload])
+                    {
+                        odict["noopt"] = "true";
+                    }
 #endif                    
                     fentry[overload.ToString()] = odict;
                 }
@@ -2653,6 +2691,12 @@ unit Symbols
                                         string inlineValue = odict["inline"];
                                         isInline = (inlineValue == "true");
                                     }
+                                    bool isNoOpt = false;
+                                    if (odict.Contains("noopt"))
+                                    {
+                                        string nooptValue = odict["noopt"];
+                                        isNoOpt = (nooptValue == "true");
+                                    }
 #endif                                    
                                     < <string> > arguments;
                                     if (odict.Contains("arguments"))
@@ -2699,6 +2743,10 @@ unit Symbols
                                     if (isInline)
                                     {
                                         fInline[iOverload] = true;
+                                    }
+                                    if (isNoOpt)
+                                    {
+                                        fNoOpt[iOverload] = true;
                                     }
 #endif                                    
                                 } // kv3

@@ -365,6 +365,7 @@ unit Token
         // assembly only
         statementKeywords["reserve"] = true; 
         statementKeywords["inline"] = true; 
+        statementKeywords["noopt"] = true; 
     }
     InitializeTiggerC()
     {

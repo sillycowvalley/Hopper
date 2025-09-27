@@ -250,6 +250,7 @@ program PreProcess
       {
           bool isSystem = false;
           bool isInline = false;
+          bool isNoOpt  = false;
           if (Parser.CheckKeyword("|system|library|"))
           {
               isSystem = true;
@@ -262,6 +263,17 @@ program PreProcess
               if (!Parser.Check(HopperToken.LBrace))
               {
                   Parser.ErrorAtCurrent("'{' expected after 'inline'");
+                  break;
+              }
+          }
+          else if (IsAssembly && Parser.CheckKeyword("noopt"))
+          {
+              isNoOpt = true;
+              // Advance past "noopt" to get to the "{"
+              Parser.Advance();
+              if (!Parser.Check(HopperToken.LBrace))
+              {
+                  Parser.ErrorAtCurrent("'{' expected after 'noopt'");
                   break;
               }
           }
@@ -282,13 +294,20 @@ program PreProcess
               blockPos.Append(currentToken["line"]);
               blockPos.Append(currentToken["source"]);
           }
-          else if (isInline)
+          else if (isInline || isNoOpt)
           {
               // inline methods have source code, but marked specially
               blockPos.Append(pos.ToString());
               blockPos.Append(currentToken["line"]);
               blockPos.Append(currentToken["source"]);
-              blockPos.Append("inline"); // add marker for inline
+              if (isInline)
+              {
+                  blockPos.Append("inline"); // add marker for inline
+              }
+              if (isNoOpt)
+              {
+                  blockPos.Append("noopt"); // add marker for inline
+              }
           }
           else
           {
@@ -383,32 +402,49 @@ program PreProcess
             {
                 break;   
             }
-            Parser.Advance();
-            Parser.Consume(HopperToken.Assign);
-            if (HadError)
-            {
-                break;
-            }    
+            Parser.Advance(); // identifier
             string actualType;
-            string value = ParseConstantExpression(typeString, ref actualType);
-            if (HadError)
+            string value;
+            if (IsAssembly && Parser.Check(HopperToken.SemiColon))
             {
-                break;
+                Parser.Advance(); // consume ';'
+                // Validate it's an enum array type
+                if (!typeString.EndsWith("[]"))
+                {
+                    Parser.ErrorAtCurrent("uninitialized const requires array type");
+                    break;
+                }
+                string elementType = typeString.Substring(0, typeString.Length - 2);
+                if (!Types.IsEnum(elementType))
+                {
+                    Parser.ErrorAtCurrent("uninitialized const array requires enum type");
+                    break;
+                }
+                // Create 256-byte string of zeros
+                for (uint i = 0; i < 256; i++)
+                {
+                    value = value + char(0);
+                }
+                actualType = elementType + "[256]";
             }
-            
+            else
+            {
+                Parser.Consume(HopperToken.Assign);
+                if (HadError)
+                {
+                    break;
+                }    
+                
+                value = ParseConstantExpression(typeString, ref actualType);
+                if (HadError)
+                {
+                    break;
+                }
+                Parser.Consume(HopperToken.SemiColon);
+            }
             string constantName = CurrentNamespace + "." + idToken["lexeme"];
             Symbols.AddConstant(constantName, actualType, value);   
             Symbols.AddLocation(constantName, idToken["source"] + ":" + idToken["line"]);
-            
-            /*
-            <string,string> prev = Parser.PreviousToken;
-            HopperToken prevToken = GetType(prev);
-            if (prevToken != HopperToken.RBrace) // no ';' after hex string constant
-            {
-                Parser.Consume(HopperToken.SemiColon);
-            }
-            */
-            Parser.Consume(HopperToken.SemiColon);
             break;                                 
        }          
         
@@ -872,17 +908,16 @@ program PreProcess
                 break;
             }
             
-            // Inline validation for methods
-            bool isInline = false;
+             // Inline validation for methods
             if ((blockPos.Count >= 4) && (blockPos[3] == "inline"))
             {
-                isInline = true;
                 if (isDelegate)
                 {
                     Parser.ErrorAt(idToken, "delegates cannot be inline");
                     break;
                 }
             }
+            
             Symbols.AddMethod(identifier, arguments, blockPos);
             break;
         }
@@ -940,11 +975,8 @@ program PreProcess
             }
             
             // Validate inline usage
-            bool isInline = false;
             if ((blockPos.Count >= 4) && (blockPos[3] == "inline"))
             {
-                isInline = true;
-                
                 // Add inline-specific validations
                 if (isDelegate)
                 {
