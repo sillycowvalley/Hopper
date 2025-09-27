@@ -1205,7 +1205,7 @@ unit Parser
                     STA ZP.NEXT1
                     
                     Buffer.GetCodeOffset();
-                    INC TOP0 if (Z) { INC TOP1 } // +1 so the starting address is the next instruction
+                    INC TOP0 if (Z) { INC TOP1 } // +1 so the starting address is the next instruction (opcode has already been emitted, branch offset has not)
                     
                     // branch offset is always positive
                     LDA ZP.TOP1

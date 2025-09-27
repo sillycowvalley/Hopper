@@ -41,7 +41,7 @@ loop:
     ; i <= 10000?
     PUSHW 10000
     LE                        ; Compare
-    JNZ loop                  ; Loop if i <= 10000
+    BNZB loop                 ; Loop if i <= 10000
     
     ; Drop i
     DROPW

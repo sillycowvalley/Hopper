@@ -30,6 +30,10 @@ unit Buffer
     const byte headerBlockL   = bufferSlots+10;
     const byte headerBlockH   = bufferSlots+11;
     
+    const byte indexBlock     = headerBlock;
+    const byte indexBlockL    = headerBlockL;
+    const byte indexBlockH    = headerBlockH;
+    
     // Pages:
     // 0 - function offsets
     // 1 - function sizes // reserved for globals
@@ -118,7 +122,7 @@ unit Buffer
         SBC # 2 // after global and function offset and function size pages
         STA ZP.TOP1
     }
-    GetCodeOffset()
+    GetCodeOffset() // used by labels
     {
         SEC
         LDA codeOffsetL
@@ -494,9 +498,10 @@ unit Buffer
             LDA #'V' STA [headerBlock], Y INY
             LDA #'M' STA [headerBlock], Y INY
             LDA #'B' STA [headerBlock], Y INY
-            // number of functions is nextFunctionID/2
+            // number of functions is nextFunctionID/2 - 1
             LDA nextFunctionID
             LSR A
+            DEC
             STA [headerBlock], Y INY
             LDA dataSizeL
             STA [headerBlock], Y INY
@@ -516,52 +521,60 @@ unit Buffer
 
             // Write the code buffer
             File.AppendStream();  if (NC) { break; }
-            
-            
-            // only emit the used part of the function table (0..256 bytes) and function size table (0..256)
-            LDA codeBufferL
-            STA File.SectorSourceL
-            LDA codeBufferH
-            STA File.SectorSourceH
-            
-            LDA nextFunctionID // nextFunctionID = functionCount x 2
-            STA File.TransferLengthL
-            STZ File.TransferLengthH
 
-            LDA File.TransferLengthL
-            ORA File.TransferLengthH
-            if (NZ)
-            {
-                File.AppendStream();  if (NC) { break; }
-            }
-            
-            LDA codeBufferL
-            STA File.SectorSourceL
+            LDA #2
+            STA ZP.IDXL
+            STA ZP.IDYL
             LDA codeBufferH
-            INC
-            STA File.SectorSourceH
-            
-            LDA nextFunctionID // nextFunctionID = functionCount x 2
-            STA File.TransferLengthL
-            STZ File.TransferLengthH
+            STA ZP.IDXH
+            STA ZP.IDYH
+            INC ZP.IDYH
                         
-            LDA File.TransferLengthL
-            ORA File.TransferLengthH
-            if (NZ)
+            LDA nextFunctionID
+            LSR A // /= 2
+            TAX
+            DEX
+            loop
             {
-                File.AppendStream();  if (NC) { break; }
+                LDY #0
+                LDA [ZP.IDX]
+                STA [indexBlock], Y
+                INY
+                IncIDX();
+                LDA [ZP.IDX]
+                DEC
+                DEC
+                STA [indexBlock], Y
+                INY
+                LDA [ZP.IDY]
+                STA [indexBlock], Y
+                INY
+                IncIDY();
+                LDA [ZP.IDY]
+                STA [indexBlock], Y
+                INY
+            
+                LDA indexBlockL
+                STA File.SectorSourceL
+                LDA indexBlockH
+                STA File.SectorSourceH
+            
+                LDA #4
+                STA File.TransferLengthL
+                STZ File.TransferLengthH
+            
+                PHX
+                File.AppendStream();  if (NC) { PLX break; }
+                PLX
+                DEX
+                if (Z) { break; }
             }
-            
-            
-            
             
             // Set source to our code buffer
-            CLC
-            LDA codeBufferL
-            ADC # 0
-            STA File.SectorSourceL
+            STZ File.SectorSourceL
             LDA codeBufferH
-            ADC # 2 // 256 byte function table, 256 global bytes
+            INC // 256 byte function table, 256 global bytes
+            INC
             STA File.SectorSourceH
             
             // Set transfer length to amount of code generated
@@ -583,12 +596,14 @@ unit Buffer
             LDA #0x00  // not executable flag
             File.EndSave(); if (NC) { break; }
             
+#ifdef DEBUG
             LDA codeBufferH
             STA ZP.IDXH
             DumpPage();
             DumpPage();
             DumpPage();
             DumpPage();
+#endif            
 
             SEC
             break;
