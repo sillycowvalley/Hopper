@@ -106,6 +106,9 @@ unit OpCodes
         0x8C, Arguments.None, 5, 'P','U','S','H','C',      // PUSHC
         0x8E, Arguments.None, 5, 'P','U','S','H','Z',      // PUSHZ
         
+        0x90, Arguments.None, 5, 'E','N','T','E','R',      // ENTER
+        0x92, Arguments.None, 5, 'L','E','A','V','E',      // LEAVE
+        
         // End marker
         0xFF
     };

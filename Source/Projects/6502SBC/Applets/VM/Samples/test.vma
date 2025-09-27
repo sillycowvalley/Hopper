@@ -1,0 +1,63 @@
+.CONST
+    ZP.TOP0  0x12
+    ZP.TOP2  0x14
+    ZP.STR   0x1E
+    Print.String 0x11
+    Long.Print   0x1F
+
+.DATA
+    STR0 "Local 0: "
+    STR1 "\nLocal 1: "
+    STR2 "\nDone\n"
+
+.MAIN
+    ; Set up stack frame
+    ENTER
+    
+    ; Allocate 2 local words
+    PUSHW 0                   ; Local 0 (offset 0)
+    PUSHW 0                   ; Local 1 (offset 2)
+    
+    ; Store 42 to local 0
+    PUSHW 42
+    POPLW 0
+    
+    ; Store 1337 to local 1  
+    PUSHW 1337
+    POPLW -2
+    
+    ; Print "Local 0: "
+    PUSHD STR0
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Read and print local 0 (should be 42)
+    PUSHLW 0
+    POPZW ZP.TOP0
+    PUSHW 0
+    POPZW ZP.TOP2
+    SYSCALL Long.Print
+    
+    ; Print "\nLocal 1: "
+    PUSHD STR1
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Read and print local 1 (should be 1337)
+    PUSHLW -2
+    POPZW ZP.TOP0
+    PUSHW 0
+    POPZW ZP.TOP2
+    SYSCALL Long.Print
+    
+    ; Print "\nDone\n"
+    PUSHD STR2
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Clean up
+    DROPW
+    DROPW
+    LEAVE
+    
+    HALT

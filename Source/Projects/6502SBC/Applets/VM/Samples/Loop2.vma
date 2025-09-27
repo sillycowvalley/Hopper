@@ -15,35 +15,42 @@
     STR2 " ms\n"
 
 .MAIN
+    ; Set up stack frame
+    ENTER                     ; Save BP, set new BP
+    
+    ; Allocate locals: start(4) + j(2) + i(2) = 8 bytes
+    PUSHW 0                   ; start time low word (offset 0)
+    PUSHW 0                   ; start time high word (offset 2) 
+    PUSHW 0                   ; j (offset 4)
+    PUSHW 1                   ; i (offset 6)
+    
     ; long start = millis()
     SYSCALL Time.Millis       ; Result in ZP.TOP (4 bytes)
-    PUSHZW ZP.TOP0            ; Push low word
-    PUSHZW ZP.TOP2            ; Push high word
-    
-    ; int j = 0
-    PUSHW 0                   ; j on stack
-    
-    ; int i = 1
-    PUSHW 1                   ; i on stack
+    PUSHZW ZP.TOP0            ; Get low word
+    POPLW 0                   ; Store to start[0:1]
+    PUSHZW ZP.TOP2            ; Get high word  
+    POPLW 2                   ; Store to start[2:3]
     
 loop:
     ; j = j + 1
-    SWAPW                     ; j on top
+    PUSHLW 4                  ; Load j
     PUSH1
     ADD                       ; j + 1
-    SWAPW                     ; i back on top
-
-    ; i++
+    POPLW 4                   ; Store j back
+    
+    ; i = i + 1  
+    PUSHLW 6                  ; Load i
     PUSH1
     ADD                       ; i + 1
     DUPW                      ; Keep copy for comparison
-
+    POPLW 6                   ; Store i back
+    
     ; i <= 10000?
     PUSHW 10000
     LE                        ; Compare
     BNZB loop                 ; Loop if i <= 10000
     
-    ; Drop i
+    ; Drop comparison result
     DROPW
     
     ; Print "\n"
@@ -52,6 +59,7 @@ loop:
     SYSCALL Print.String
     
     ; Print j (convert to long first)
+    PUSHLW 4                  ; Load j
     POPZW ZP.TOP0             ; Low word
     PUSHW 0
     POPZW ZP.TOP2             ; High word = 0
@@ -70,8 +78,10 @@ loop:
     POPZW ZP.NEXT2
     POPZW ZP.NEXT0
     
-    POPZW ZP.TOP2             ; saved start time
+    PUSHLW 2                  ; Load start high word
+    PUSHLW 0                  ; Load start low word  
     POPZW ZP.TOP0
+    POPZW ZP.TOP2
     SYSCALL Long.Sub          ; NEXT = NEXT - TOP
     
     PUSHZW ZP.NEXT0           ; NEXT -> TOP
@@ -85,5 +95,14 @@ loop:
     PUSHD STR2
     POPZW ZP.STR
     SYSCALL Print.String
+    
+    ; Clean up locals before LEAVE
+    DROPW                     ; Remove i
+    DROPW                     ; Remove j  
+    DROPW                     ; Remove start high word
+    DROPW                     ; Remove start low word
+    
+    ; Tear down stack frame
+    LEAVE                     ; Restore old BP
     
     HALT

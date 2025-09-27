@@ -128,6 +128,9 @@ unit Runtime
         PUSHA    = 0x8A,  // Push A register to stack
         PUSHC    = 0x8C,  // Push carry flag (1 if set, 0 if clear)
         PUSHZ    = 0x8E,  // Push zero flag (1 if set, 0 if clear)
+        
+        ENTER    = 0x90,  // PUSH BP, SP -> BP
+        LEAVE    = 0x92,  // POP BP
     }
     
     const OpCode[] opCodeJumps;
@@ -135,6 +138,78 @@ unit Runtime
     const string msgBadOpCode    = "Bad OpCode: 0x";
     
     const string msgBadOpCodeAt  = " at 0x";
+    
+    const string debugHeader = "\n=== STACK DUMP ===\n";
+    const string bpLabel     = "BP: 0x";
+    
+    debugStack()
+    {
+        // Preserve all registers
+        PHA
+        PHX  
+        PHY
+        
+        // Print header
+        LDA #(debugHeader % 256)
+        STA ZP.STRL
+        LDA #(debugHeader / 256)
+        STA ZP.STRH
+        Print.String();
+        
+        // Print BP value
+        LDA #(bpLabel % 256)
+        STA ZP.STRL
+        LDA #(bpLabel / 256)
+        STA ZP.STRH
+        Print.String();
+        LDA BP
+        Print.Hex();
+        Print.NewLine();
+        
+        // Start from BP+8 down to BP-8
+        LDX BP
+        INX INX INX INX INX INX INX INX  // BP+8
+        
+        LDY #17  // 17 bytes total (BP+8 to BP-8)
+        loop
+        {
+            // Print address
+            LDA #'0' PHX Print.Char(); PLX
+            LDA #'1' PHX Print.Char(); PLX
+            TXA
+            PHX Print.Hex(); PLX
+            LDA #':' PHX Print.Char(); PLX
+            LDA #' ' PHX Print.Char(); PLX
+            
+            // Print hex value
+            LDA 0x0100, X
+            PHX Print.Hex(); PLX
+            
+            // Check if this is BP
+            CPX BP
+            if (Z)
+            {
+                LDA #' ' PHX Print.Char(); PLX
+                LDA #'<' PHX Print.Char(); PLX
+                LDA #'-' PHX Print.Char(); PLX
+                LDA #'B' PHX Print.Char(); PLX
+                LDA #'P' PHX Print.Char(); PLX
+            }
+            
+            PHX Print.NewLine(); PLX
+            
+            DEX  // Move down stack
+            DEY
+            if (Z) { break; }
+        }
+        
+        Print.NewLine();
+        
+        // Restore all registers
+        PLY
+        PLX
+        PLA
+    }
     
     
     Initialize()
@@ -203,6 +278,9 @@ unit Runtime
         JMP [ZP.BIOSDISPATCH]
     }
     
+    
+    
+    
     Execute() noopt
     {
         TSX
@@ -210,22 +288,23 @@ unit Runtime
         
         loop
         {
+NOP:        // NOP must be first to get the ball rolling ..
             LDA [codePage], Y
             INY
             TAX
-            
             JMP [opCodeJumps, X]
             
-            
-NOP:                    
-            continue;
 // Stack Operations
                 
 PUSHB:                    
             LDA [codePage], Y // operand LSB
             INY
             PHA
-            continue;
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
             
 PUSHW:                    
             LDA [codePage], Y // operand LSB
@@ -244,7 +323,11 @@ PUSH0:
             LDA #0
             PHA
             PHA
-            continue;
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
 
 PUSH1:                    
             LDA #1
@@ -259,7 +342,6 @@ PUSH1:
 
 DUPW:                    
             TSX               // Get stack pointer to X
-            
               
             // Read the word from stack (without popping)
             // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
@@ -280,7 +362,11 @@ DUPW:
 DROPW:                    
             PLA
             PLA
-            continue;
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
                 
 SWAPW:                    
             TSX               // Get stack pointer to X
@@ -289,23 +375,21 @@ SWAPW:
             // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
             // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
             
-            STY yStore
-            
             // Swap the low bytes (TOP0 <-> NEXT0)
             LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
-            LDY 0x0104, X     // Load NEXT0 (LSB at SP+4)
-            STA 0x0104, X     // Store TOP0 to NEXT0 position
-            TYA
-            STA 0x0102, X     // Store NEXT0 to TOP0 position
+            STA operand
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            STA 0x0102, X     // Store TOP0 to NEXT0 position
+            LDA operand
+            STA 0x0104, X     // Store NEXT0 to TOP0 position
             
             // Swap the high bytes (TOP1 <-> NEXT1)
             LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
-            LDY 0x0103, X     // Load NEXT1 (MSB at SP+3)
-            STA 0x0103, X     // Store TOP1 to NEXT1 position
-            TYA
-            STA 0x0101, X     // Store NEXT1 to TOP1 position
-            
-            LDY yStore
+            STA operand
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            STA 0x0101, X     // Store TOP1 to NEXT1 position
+            LDA operand
+            STA 0x0103, X     // Store NEXT1 to TOP1 position
             
             LDA [codePage], Y
             INY
@@ -380,7 +464,11 @@ PUSHD:
             LDA constantsH
             ADC #0            // MSB
             PHA  
-            continue;
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
             
 BNZB:                    
             PLX                   // pop the boolean
@@ -410,7 +498,11 @@ PUSHZW:
             INX
             LDA 0x00, X 
             PHA               // MSB
-            continue;
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
             
 POPZW:
             LDA [codePage], Y // byte offset  
@@ -423,7 +515,48 @@ POPZW:
             DEX
             PLA               // LSB
             STA 0x00, X 
-            continue;
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+            
+PUSHLW:
+            CLC
+            LDA BP            // BP + offset (LSB address)
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            LDA 0x0100, X     // Load LSB
+            PHA
+            DEX               // BP + offset - 1 (MSB address)  
+            LDA 0x0100, X     // Load MSB
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+POPLW:
+            CLC
+            LDA BP            // BP + offset (LSB address)
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            DEX               // BP + offset - 1 (MSB address)
+            PLA               // MSB
+            STA 0x0100, X
+            INX               // Back to LSB address
+            PLA               // LSB
+            STA 0x0100, X         
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
                 
 SYSCALL:
             LDA [codePage], Y // byte BIOS call index
@@ -432,8 +565,32 @@ SYSCALL:
             PHY
             dispatchBIOS();
             PLY
-            continue;
             
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+ENTER:
+            LDA BP
+            PHA
+            TSX
+            STX BP
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+LEAVE:
+            PLA
+            STA BP
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+                                    
 HALT:         
             halt();
             break;
