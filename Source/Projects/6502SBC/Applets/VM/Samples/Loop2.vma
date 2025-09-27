@@ -42,13 +42,13 @@ loop:
     PUSHLW -6                 ; Load i
     PUSH1
     ADD                       ; i + 1
-    ;DUPW                      ; Keep copy for comparison
+    DUPW                      ; Keep copy for comparison
     POPLW -6                  ; Store i back
     
     ; i <= 10000?
-    ;PUSHW 10000
-    ;LE                        ; Compare
-    ;BNZB loop                 ; Loop if i <= 10000
+    PUSHW 10000
+    LE                        ; Compare
+    BNZB loop                 ; Loop if i <= 10000
     
     ; Print "\n"
     PUSHD STR0

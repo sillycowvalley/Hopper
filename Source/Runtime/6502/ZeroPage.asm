@@ -229,13 +229,12 @@ unit ZP
     
     // Motorola 6821 PIA (Peripheral Interface Adapter)
     const uint PORTA                = 0xF010; // Peripheral A Data Register
-    const uint PORTB                = 0xF011; // Peripheral B Data Register
-    const uint CRA                  = 0xF012; // Control Register A
+    const uint CRA                  = 0xF011; // Control Register A
+    const uint PORTB                = 0xF012; // Peripheral B Data Register
     const uint CRB                  = 0xF013; // Control Register B
     // Data Direction Registers
     const uint DDRA                 = 0xF010; // Data Direction Register A (Shared with PORTA)
     const uint DDRB                 = 0xF011; // Data Direction Register B (Shared with PORTB)
-    
     
 #endif
 
