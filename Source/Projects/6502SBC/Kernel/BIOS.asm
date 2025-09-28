@@ -522,6 +522,83 @@ program BIOS
         // Build filename with .EXE in STR-> GeneralBuffer (not modifying LineBuffer)
         buildExecutableName();  // Creates "COMMAND.EXE" in STR-> GeneralBuffer
         
+        LDA # DirWalkAction.FindExecutable
+        File.Exists();
+        if (NC)
+        {
+            // .EXE did not exist
+            LDY #0
+            loop
+            {
+                LDA [ZP.STR], Y
+                if (Z) { break; } // End of string, not .BIN
+                CMP #'.'
+                if (Z)
+                {
+                    INY
+                    LDA #'B'
+                    STA [ZP.STR], Y
+                    INY
+                    LDA #'I'
+                    STA [ZP.STR], Y
+                    INY
+                    LDA #'N'
+                    STA [ZP.STR], Y
+                    INY
+                    LDA #0
+                    STA [ZP.STR], Y  // Null terminator
+                    break;
+                }
+                INY
+            }
+            
+            LDA # DirWalkAction.FindExecutable
+            File.Exists();
+            if (C)
+            {
+                // .BIN exists - now change GeneralBuffer to "VM.EXE" 
+                // and keep original command line in LineBuffer as the argument
+                LDA #'V'
+                STA Address.GeneralBuffer
+                LDA #'M'
+                STA Address.GeneralBuffer+1
+                LDA #'.'
+                STA Address.GeneralBuffer+2
+                LDA #'E'
+                STA Address.GeneralBuffer+3
+                LDA #'X'
+                STA Address.GeneralBuffer+4
+                LDA #'E'
+                STA Address.GeneralBuffer+5
+                LDA #0
+                STA Address.GeneralBuffer+6
+                
+                // STR already points to GeneralBuffer, now contains "VM.EXE"
+                
+                // Now modify LineBuffer to have: "VM MYPROG.BIN"
+                // Shift the original content to make room for "VM\0"
+                
+                // Shift LineBuffer content right by 3 positions
+                LDY #60  // Start near end of buffer (64 bytes - leave room)
+                loop
+                {
+                    LDA Address.LineBuffer, Y
+                    STA Address.LineBuffer+3, Y
+                    DEY
+                    if (MI) { break; }  // Y went negative (below 0)
+                }
+                
+                // Insert "VM " at the beginning
+                LDA #'V'
+                STA Address.LineBuffer
+                LDA #'M'
+                STA Address.LineBuffer+1
+                LDA #0
+                STA Address.LineBuffer+2
+                
+            }
+        }
+        
         // Input: ZP.STR = pointer to filename (uppercase, null-terminated)
         //        A = DirWalkAction.FindExecutable or DirWalkAction.FindFile
         // Output: C set if successful, NC if error (file not found)

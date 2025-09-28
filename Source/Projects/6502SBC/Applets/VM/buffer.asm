@@ -34,6 +34,7 @@ unit Buffer
     const byte indexBlockL    = headerBlockL;
     const byte indexBlockH    = headerBlockH;
     
+    const string errFunctionTooLarge = "Function exceeds 256 byte limit";
     // Pages:
     // 0 - function offsets
     // 1 - function sizes // reserved for globals
@@ -107,10 +108,38 @@ unit Buffer
         LDA ZP.NEXT1
         STA [ZP.IDX], Y
         
+        loop
+        {
+            LDA ZP.NEXT1
+            if (Z)
+            {
+                // <= 255 bytes
+                SEC
+                break;
+            }
+            CMP #1
+            if (Z)
+            {
+                LDA ZP.NEXT0
+                if (Z)
+                {
+                    // == 256 bytes
+                    SEC
+                    break;
+                }
+            }
+            // size not ok
+            LDA #(errFunctionTooLarge / 256)
+            STA ZP.STRH
+            LDA #(errFunctionTooLarge % 256)
+            STA ZP.STRL
+            ErrorLine(); // does CLC
+            break;
+        }
 //Print.NewLine(); DEY TYA Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space();
 //                 LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex();Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
 //Print.NewLine();         
-        SEC
+        
     }
     
     GetDataOffset()
@@ -594,7 +623,7 @@ unit Buffer
                 File.AppendStream();  if (NC) { break; }
             }
             
-            LDA #0x00  // not executable flag
+            LDA # 0x80  // executable flag
             File.EndSave(); if (NC) { break; }
             
 #ifdef DEBUG
