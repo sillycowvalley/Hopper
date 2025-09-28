@@ -623,6 +623,19 @@ POPLQ:
             JMP [opCodeJumps, X]            
             
                 
+SYSCALLX:
+            LDA [codePage], Y // byte BIOS call index
+            INY
+            TAX
+            PHY
+            dispatchBIOS();
+            PLY
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 SYSCALL:
             LDA [codePage], Y // byte BIOS call index
             INY
@@ -639,7 +652,7 @@ SYSCALL:
             LDA [codePage], Y
             INY
             TAX
-            JMP [opCodeJumps, X]
+            JMP [opCodeJumps, X]            
             
 ENTER:
             LDA BP

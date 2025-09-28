@@ -102,6 +102,7 @@ unit OpCodes
         
         // System Operations
         SYSCALL  = 0x8A,  // Call BIOS function via X register
+        SYSCALLX = 0xA0,  // Call BIOS function via X register
         HALT     = 0x8C,  // Stop execution (return to BIOS)
         
         // Register Operations
@@ -213,6 +214,7 @@ unit OpCodes
         
         // System Operations
         OpCode.SYSCALL, Arguments.Byte, 7, 'S','Y','S','C','A','L','L', // SYSCALL + byte
+        OpCode.SYSCALLX, Arguments.Byte, 8, 'S','Y','S','C','A','L','L','X', // SYSCALL + byte
         OpCode.HALT, Arguments.None, 4, 'H','A','L','T',          // HALT
         
         // Register Operations

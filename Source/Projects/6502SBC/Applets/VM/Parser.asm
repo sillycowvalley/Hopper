@@ -534,7 +534,7 @@ unit Parser
         }
         else
         {
-            LDA #NumberType.Byte 
+            LDA # (NumberType.Byte | NumberType.Char)
         }
         STA numberType
         
