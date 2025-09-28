@@ -574,6 +574,18 @@ ENTER:
             TSX
             STX BP
             
+            LDA [codePage], Y // number of zero bytes to push
+            INY
+            TAX
+            LDA #0
+            loop
+            {
+                CPX #0
+                if (Z) { break; }
+                PHA
+                DEX
+            }
+            
             LDA [codePage], Y
             INY
             TAX

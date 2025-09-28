@@ -19,23 +19,21 @@
     STR4 " seconds\n"
 
 .MAIN
-    ENTER
+    ENTER 14
     
     ; Allocate locals:
-    PUSHW 0              ; s low at [BP+0]
-    PUSHW 0              ; s high at [BP-2]
-    PUSHW 0              ; start low at [BP-4]
-    PUSHW 0              ; start high at [BP-6]
-    PUSHW 0              ; ss (seconds start) at [BP-8]
-    PUSHW 0              ; i at [BP-10]
-    PUSHW 0              ; j at [BP-12]
+    ;PUSH0              ; s low at [BP+0]
+    ;PUSH0              ; s high at [BP-2]
+    ;PUSH0              ; start low at [BP-4]
+    ;PUSH0              ; start high at [BP-6]
+    ;PUSH0              ; ss (seconds start) at [BP-8]
+    ;PUSH0              ; i at [BP-10]
+    ;PUSH0              ; j at [BP-12]
     
     ; start = millis()
     SYSCALL Time.Millis
-    PUSHZW ZP.TOP0
-    POPLW -4
-    PUSHZW ZP.TOP2
-    POPLW -6
+    PUSHZQ ZP.TOP0
+    POPLQ -4
     
     ; ss = seconds()
     SYSCALL Time.Seconds
@@ -48,7 +46,7 @@
     SYSCALL Print.String
     
     ; for (i = 1; i <= 10; i++)
-    PUSHW 1
+    PUSH1
     POPLW -10
     
 outer_loop:
@@ -58,7 +56,7 @@ outer_loop:
     POPLQ 0
     
     ; for (j = 1; j <= 1000; j++)
-    PUSHW 1
+    PUSH1
     POPLW -12
     
 inner_loop:
@@ -67,7 +65,7 @@ inner_loop:
     POPZQ ZP.NEXT0
     
     PUSHLW -12
-    PUSHW 0
+    PUSH0
     POPZQ ZP.TOP0
     
     SYSCALL Long.Add
@@ -137,7 +135,7 @@ inner_loop:
     
     ; Get saved start seconds to TOP
     PUSHLW -8               ; Low word of saved seconds
-    PUSHW 0                 ; High word (was never saved, assume 0)
+    PUSH0                   ; High word (was never saved, assume 0)
     POPZQ ZP.TOP0
     
     ; NEXT = NEXT - TOP (current - start)

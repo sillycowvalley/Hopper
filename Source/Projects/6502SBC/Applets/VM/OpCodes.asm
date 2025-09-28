@@ -112,7 +112,7 @@ unit OpCodes
         PUSHZ    = 0x96,  // Push zero flag (1 if set, 0 if clear)
         
         // Stack Frame Operations
-        ENTER    = 0x98,  // Push BP, set BP = SP (stack frame setup)
+        ENTER    = 0x98,  // Push BP, set BP = SP (stack frame setup), byte number of zero bytes to push
         LEAVE    = 0x9A,  // Pop BP (stack frame teardown)
         
         INCLW    = 0x9C,  // local variable 16-bit increment
@@ -223,7 +223,7 @@ unit OpCodes
         OpCode.PUSHZ, Arguments.None, 5, 'P','U','S','H','Z',      // PUSHZ
         
         // Stack Frame Operations
-        OpCode.ENTER, Arguments.None, 5, 'E','N','T','E','R',      // ENTER
+        OpCode.ENTER, Arguments.Byte, 5, 'E','N','T','E','R',      // ENTER + byte
         OpCode.LEAVE, Arguments.None, 5, 'L','E','A','V','E',      // LEAVE
         
         OpCode.INCLW, Arguments.Char, 5, 'I','N','C','L','W',      // INCLW
