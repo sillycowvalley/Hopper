@@ -176,6 +176,10 @@ unit Runtime
     
     
     
+    
+    
+    
+    
     Execute() noopt
     {
         TSX
@@ -190,6 +194,15 @@ NOP:        // NOP must be first to get the ball rolling ..
             JMP [opCodeJumps, X]
             
 // Stack Operations
+
+PUSHA:
+            LDA aStore       // aStore now has the value for SYSCALL
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
 
 POPA:
             PLA              // Pop byte from stack
@@ -250,7 +263,7 @@ PUSHB:
             TAX
             JMP [opCodeJumps, X]
             
-PUSH0:                    
+PUSHW0:                    
             LDA #0
             PHA
             PHA
@@ -260,7 +273,7 @@ PUSH0:
             TAX
             JMP [opCodeJumps, X]
 
-PUSH1:                    
+PUSHW1:                    
             LDA #1
             PHA
             LDA #0
@@ -271,8 +284,18 @@ PUSH1:
             TAX
             JMP [opCodeJumps, X]
 
+DUPB:
+            TSX
+            LDA 0x0101, X     
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
 DUPW:                    
-            TSX               // Get stack pointer to X
+            TSX
               
             // Read the word from stack (without popping)
             // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
@@ -289,15 +312,32 @@ DUPW:
             INY
             TAX
             JMP [opCodeJumps, X]
-            
-DROPW:                    
+
+DROPW:                        
             PLA
+DROPB:                    
             PLA
             
             LDA [codePage], Y
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+SWAPB:
+            TSX               // Get stack pointer
+            
+            // Stack: SP+1=TOP, SP+2=NEXT
+            LDA 0x0101, X     // Load TOP (at SP+1)
+            STA operand       // Save in temp
+            LDA 0x0102, X     // Load NEXT (at SP+2)
+            STA 0x0101, X     // Store NEXT at TOP position
+            LDA operand       // Get TOP back
+            STA 0x0102, X     // Store TOP at NEXT position
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
                 
 SWAPW:                    
             TSX               // Get stack pointer to X
@@ -327,20 +367,20 @@ SWAPW:
             TAX
             JMP [opCodeJumps, X]
 
-ADD:                    
+ADDW:                    
             TSX               // Get stack pointer to X
             
             // Add low bytes with carry propagation
             // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
             // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
             CLC               // Clear carry for addition
-            LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
-            ADC 0x0104, X     // Add NEXT0 (LSB at SP+4)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            ADC 0x0102, X     // Add TOP0 (LSB at SP+2)
             STA 0x0104, X     // Store result to NEXT0
             
             // Add high bytes with carry
-            LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
-            ADC 0x0103, X     // Add NEXT1 (MSB at SP+3) with carry
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            ADC 0x0101, X     // Add TOP1 (MSB at SP+1) with carry
             STA 0x0103, X     // Store result to NEXT1
             
             INX INX TXS       // Remove TOP from stack
@@ -349,8 +389,136 @@ ADD:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+SUBW:                    
+            TSX               // Get stack pointer to X
+            
+            // Add low bytes with carry propagation
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            SEC               // Set carry for subtraction
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            SBC 0x0102, X     // Add TOP0 (LSB at SP+2)
+            STA 0x0104, X     // Store result to NEXT0
+            
+            // Add high bytes with carry
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            SBC 0x0101, X     // Add TOP1 (MSB at SP+1) with carry
+            STA 0x0103, X     // Store result to NEXT1
+            
+            INX INX TXS       // Remove TOP from stack
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]   
+            
+ANDB:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise AND two bytes
+            // TOP:  SP+1 (single byte)
+            // NEXT: SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT (at SP+2)
+            AND 0x0101, X     // AND with TOP (at SP+1)
+            STA 0x0102, X     // Store result to NEXT position
+            
+            INX TXS           // Remove TOP from stack (1 byte)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+ORB:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise OR two bytes
+            // TOP:  SP+1 (single byte)
+            // NEXT: SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT (at SP+2)
+            ORA 0x0101, X     // OR with TOP (at SP+1)
+            STA 0x0102, X     // Store result to NEXT position
+            
+            INX TXS           // Remove TOP from stack (1 byte)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+ADDB:                    
+            TSX               // Get stack pointer to X
+            
+            // Add two bytes
+            // TOP:  SP+1 (single byte)
+            // NEXT: SP+2 (single byte)
+            CLC               // Clear carry for addition
+            LDA 0x0102, X     // Load NEXT (at SP+2)
+            ADC 0x0101, X     // Add TOP (at SP+1)
+            STA 0x0102, X     // Store result to NEXT position
+            
+            INX TXS           // Remove TOP from stack (1 byte)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+SUBB:                    
+            TSX               // Get stack pointer to X
+            
+            // Subtract two bytes (NEXT - TOP)
+            // TOP:  SP+1 (single byte)
+            // NEXT: SP+2 (single byte)
+            SEC               // Set carry for subtraction
+            LDA 0x0102, X     // Load NEXT (at SP+2)
+            SBC 0x0101, X     // Subtract TOP (at SP+1)
+            STA 0x0102, X     // Store result to NEXT position
+            
+            INX TXS           // Remove TOP from stack (1 byte)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]    
+            
+NEGW:                     
+            TSX               // Get stack pointer to X
+            
+            // Negate 16-bit value (2's complement)
+            // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            SEC               // Set carry for subtraction
+            LDA #0          
+            SBC 0x0102, X     // 0 - TOP0 (LSB at SP+2)
+            STA 0x0102, X     // Store result back
+            
+            LDA #0
+            SBC 0x0101, X     // 0 - TOP1 (MSB at SP+1) with borrow
+            STA 0x0101, X     // Store result back
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+NEGB:                    
+            TSX               // Get stack pointer to X
+            
+            // Negate 8-bit value (2's complement)
+            // TOP: SP+1 (single byte)
+            SEC               // Set carry for subtraction
+            LDA #0
+            SBC 0x0101, X     // 0 - TOP (at SP+1)
+            STA 0x0101, X     // Store result back
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+                                                                                          
                       
-LE:
+LEW:
             TSX               // Get stack pointer to X
             
             LDA #1 // NEXT <= TOP
@@ -386,6 +554,73 @@ LE:
             TAX
             JMP [opCodeJumps, X]
             
+EQW:
+            TSX               // Get stack pointer to X
+            
+            STZ operand       // Default to 0 (not equal)
+                    
+            // Compare NEXT == TOP
+            // TOP is at SP+1/SP+2 (top)
+            // NEXT is at SP+3/SP+4
+            // First compare high bytes
+            LDA 0x0103, X     // Load NEXT1 (MSB)
+            CMP 0x0101, X     // Compare with TOP1 (MSB)
+            if (Z)            // If NEXT1 == TOP1
+            {
+                LDA 0x0104, X // Load NEXT0 (LSB)
+                CMP 0x0102, X // Compare with TOP0 (LSB)
+                if (Z)        // If NEXT0 == TOP0
+                {
+                    INC operand   // Set to 1 (equal)
+                }
+            }
+            
+            INX               // Adjust stack by 3
+            INX
+            INX
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]  
+            
+NEW:
+            TSX               // Get stack pointer to X
+            
+            LDA #1            // Default to 1 (not equal)
+            STA operand       
+                    
+            // Compare NEXT != TOP
+            // TOP is at SP+1/SP+2 (top)
+            // NEXT is at SP+3/SP+4
+            // First compare high bytes
+            LDA 0x0103, X     // Load NEXT1 (MSB)
+            CMP 0x0101, X     // Compare with TOP1 (MSB)
+            if (Z)            // If NEXT1 == TOP1
+            {
+                LDA 0x0104, X // Load NEXT0 (LSB)
+                CMP 0x0102, X // Compare with TOP0 (LSB)
+                if (Z)        // If NEXT0 == TOP0
+                {
+                    STZ operand   // Set to 0 (they're equal)
+                }
+            }
+            
+            INX               // Adjust stack by 3
+            INX
+            INX
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 PUSHD:                    
             LDA [codePage], Y // byte offset    
             INY
@@ -401,7 +636,7 @@ PUSHD:
             TAX
             JMP [opCodeJumps, X]
             
-BNZB:       
+BNZR:       
             PLX                   // pop the boolean
             if (NZ)
             {
@@ -433,7 +668,39 @@ BNZF:
             TAX
             JMP [opCodeJumps, X]
             
-BRAB:
+BZR:       
+            PLX                   // pop the boolean
+            if (Z)
+            {
+                SEC               // Branch backward by offset in A
+                TYA
+                SBC [codePage], Y // Subtract offset from PC
+                TAY
+            }
+            INY
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+BZF:
+            PLA                   // Pop the boolean
+            if (Z)                // If not zero
+            {
+                CLC               // Clear carry for addition
+                TYA               // Current PC to A
+                ADC [codePage], Y // Add branch offset
+                TAY               // New PC back to Y
+            }
+            INY                   // Skip offset byte (whether branching or not)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
+            
+BRAR:
             SEC               // Set carry for subtraction
             TYA               // Current PC to A
             SBC [codePage], Y // Subtract branch offset
@@ -538,7 +805,20 @@ INCLW:
             LDA [codePage], Y
             INY
             TAX
-            JMP [opCodeJumps, X]          
+            JMP [opCodeJumps, X]     
+            
+INCLB:
+            CLC
+            LDA BP            // BP + offset (LSB address)
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            INC 0x0100, X     // Increment LSB
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]                      
             
 PUSHLW:
             CLC

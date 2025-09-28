@@ -17,43 +17,34 @@ unit OpCodes
         // Stack Operations
         PUSHB    = 0x02,  // Push 8-bit immediate
         PUSHW    = 0x04,  // Push 16-bit immediate
-        PUSH0    = 0x06,  // Push 16-bit 0 (optimized)
-        PUSH1    = 0x08,  // Push 16-bit 1 (optimized)
-        DUP      = 0x0A,  // Duplicate byte on TOS
+        PUSHW0   = 0x06,  // Push 16-bit 0 (optimized)
+        PUSHW1   = 0x08,  // Push 16-bit 1 (optimized)
+        DUPB     = 0x0A,  // Duplicate byte on TOS
         DUPW     = 0x0C,  // Duplicate word on TOS
-        DROP     = 0x0E,  // Remove byte from TOS
+        DROPB    = 0x0E,  // Remove byte from TOS
         DROPW    = 0x10,  // Remove word from TOS
-        SWAP     = 0x12,  // Swap top two bytes
+        SWAPB    = 0x12,  // Swap top two bytes
         SWAPW    = 0x14,  // Swap top two words
         
         // Arithmetic Operations
-        ADD      = 0x16,  // Pop 2 words, push sum
-        SUB      = 0x18,  // Pop 2 words, push difference
-        MUL      = 0x1A,  // Pop 2 words, push product
-        DIV      = 0x1C,  // Pop 2 words, push quotient (unsigned)
-        MOD      = 0x1E,  // Pop 2 words, push remainder
+        ADDW     = 0x16,  // Pop 2 words, push sum
+        SUBW     = 0x18,  // Pop 2 words, push difference
         ADDB     = 0x20,  // Pop 2 bytes, push sum
         SUBB     = 0x22,  // Pop 2 bytes, push difference
-        NEG      = 0x24,  // Negate int (2's complement)
+        NEGW     = 0x24,  // Negate int (2's complement)
         NEGB     = 0x26,  // Negate char (2's complement)
         
         // Comparison Operations
-        EQ       = 0x28,  // Pop 2 words/ints, push 1 if equal, 0 if not
-        NE       = 0x2A,  // Pop 2 words/ints, push 1 if not equal
-        LT       = 0x2C,  // Pop 2 words, unsigned less than
-        GT       = 0x2E,  // Pop 2 words, unsigned greater than
-        LE       = 0x30,  // Pop 2 words, unsigned less or equal
-        GE       = 0x32,  // Pop 2 words, unsigned greater or equal
-        LTC      = 0x34,  // Pop 2 chars, signed less than
-        GTC      = 0x36,  // Pop 2 chars, signed greater than
-        LTI      = 0x38,  // Pop 2 ints, signed less than
-        GTI      = 0x3A,  // Pop 2 ints, signed greater than
+        EQW      = 0x28,  // Pop 2 words/ints, push 1 if equal, 0 if not
+        NEW      = 0x2A,  // Pop 2 words/ints, push 1 if not equal
+        LEW      = 0x30,  // Pop 2 words, unsigned less or equal
         
         // Bitwise Operations
-        AND      = 0x3C,  // Pop 2 words, push bitwise AND
-        OR       = 0x3E,  // Pop 2 words, push bitwise OR
+        ANDB     = 0x3C,  // Pop 2 bytes, push bitwise AND
+        ORB      = 0x3E,  // Pop 2 bytes, push bitwise OR
+        
         XOR      = 0x40,  // Pop 2 words, push bitwise XOR
-        NOT      = 0x42,  // Pop word, push bitwise NOT
+        NOTB     = 0x42,  // Pop byte, push bitwise NOT
         SHL      = 0x44,  // Pop word and count, shift left
         SHR      = 0x46,  // Pop word and count, logical shift right
         SAR      = 0x48,  // Pop int and count, arithmetic shift right
@@ -85,12 +76,12 @@ unit OpCodes
         // Control Flow
         CALL     = 0x6E,  // Call function (ID for table lookup)
         RET      = 0x70,  // Return from function
-        BRAB     = 0x72,  // Branch backward by byte (0-255)
+        BRAR     = 0x72,  // Branch reverse by byte (0-255)
         BRAF     = 0x74,  // Branch forward by byte (0-255)
         BZF      = 0x76,  // Branch forward by byte if TOS is zero
-        BZB      = 0x78,  // Branch backward by byte if TOS is zero
+        BZR      = 0x78,  // Branch reverse by byte if TOS is zero
         BNZF     = 0x7A,  // Branch forward by byte if TOS is not zero
-        BNZB     = 0x7C,  // Branch backward by byte if TOS is not zero
+        BNZR     = 0x7C,  // Branch reverse by byte if TOS is not zero
         
         // Zero Page Operations
         PUSHZB   = 0x7E,  // Push byte from ZP[offset]
@@ -102,7 +93,7 @@ unit OpCodes
         
         // System Operations
         SYSCALL  = 0x8A,  // Call BIOS function via X register
-        SYSCALLX = 0xA0,  // Call BIOS function via X register (faster version that ignores A, Y, C and Z)
+        SYSCALLX = 0xA2,  // Call BIOS function via X register (faster version that ignores A, Y, C and Z)
         HALT     = 0x8C,  // Stop execution (return to BIOS)
         
         // Register Operations
@@ -117,9 +108,10 @@ unit OpCodes
         LEAVE    = 0x9A,  // Pop BP (stack frame teardown)
         
         INCLW    = 0x9C,  // local variable 16-bit increment
+        INCL     = 0x9E,  // local variable  8-bit increment
         
         // Debug Operations
-        DUMP     = 0x9E,  // Diagnostic stack dump
+        DUMP     = 0xA0,  // Diagnostic stack dump
     }
     
     const byte[] opCodes = {
@@ -129,43 +121,33 @@ unit OpCodes
         // Stack Operations
         OpCode.PUSHB, Arguments.Byte, 5, 'P','U','S','H','B',      // PUSHB + byte
         OpCode.PUSHW, Arguments.Word, 5, 'P','U','S','H','W',      // PUSHW + word
-        OpCode.PUSH0, Arguments.None, 5, 'P','U','S','H','0',      // PUSH0
-        OpCode.PUSH1, Arguments.None, 5, 'P','U','S','H','1',      // PUSH1
-        OpCode.DUP, Arguments.None, 3, 'D','U','P',              // DUP
+        OpCode.PUSHW0, Arguments.None, 6, 'P','U','S','H','W','0',      // PUSHW0
+        OpCode.PUSHW1, Arguments.None, 6, 'P','U','S','H','W','1',      // PUSHW1
+        OpCode.DUPB, Arguments.None, 4, 'D','U','P','B',              // DUPB
         OpCode.DUPW, Arguments.None, 4, 'D','U','P','W',          // DUPW
-        OpCode.DROP, Arguments.None, 4, 'D','R','O','P',          // DROP
+        OpCode.DROPB, Arguments.None, 5, 'D','R','O','P','B',          // DROPB
         OpCode.DROPW, Arguments.None, 5, 'D','R','O','P','W',      // DROPW
-        OpCode.SWAP, Arguments.None, 4, 'S','W','A','P',          // SWAP
+        OpCode.SWAPB, Arguments.None, 5, 'S','W','A','P','B',        // SWAPB
         OpCode.SWAPW, Arguments.None, 5, 'S','W','A','P','W',      // SWAPW
         
         // Arithmetic Operations
-        OpCode.ADD, Arguments.None, 3, 'A','D','D',              // ADD
-        OpCode.SUB, Arguments.None, 3, 'S','U','B',              // SUB
-        OpCode.MUL, Arguments.None, 3, 'M','U','L',              // MUL
-        OpCode.DIV, Arguments.None, 3, 'D','I','V',              // DIV
-        OpCode.MOD, Arguments.None, 3, 'M','O','D',              // MOD
+        OpCode.ADDW, Arguments.None, 4, 'A','D','D','W',          // ADDW
+        OpCode.SUBW, Arguments.None, 4, 'S','U','B','W',          // SUW
         OpCode.ADDB, Arguments.None, 4, 'A','D','D','B',          // ADDB
         OpCode.SUBB, Arguments.None, 4, 'S','U','B','B',          // SUBB
-        OpCode.NEG, Arguments.None, 3, 'N','E','G',              // NEG
+        OpCode.NEGW, Arguments.None, 4, 'N','E','G','W',          // NEGW
         OpCode.NEGB, Arguments.None, 4, 'N','E','G','B',          // NEGB
         
         // Comparison Operations
-        OpCode.EQ, Arguments.None, 2, 'E','Q',                  // EQ
-        OpCode.NE, Arguments.None, 2, 'N','E',                  // NE
-        OpCode.LT, Arguments.None, 2, 'L','T',                  // LT
-        OpCode.GT, Arguments.None, 2, 'G','T',                  // GT
-        OpCode.LE, Arguments.None, 2, 'L','E',                  // LE
-        OpCode.GE, Arguments.None, 2, 'G','E',                  // GE
-        OpCode.LTC, Arguments.None, 3, 'L','T','C',              // LTC
-        OpCode.GTC, Arguments.None, 3, 'G','T','C',              // GTC
-        OpCode.LTI, Arguments.None, 3, 'L','T','I',              // LTI
-        OpCode.GTI, Arguments.None, 3, 'G','T','I',              // GTI
+        OpCode.EQW, Arguments.None, 3, 'E','Q','W',              // EQW
+        OpCode.NEW, Arguments.None, 3, 'N','E','W',              // NEW
+        OpCode.LEW, Arguments.None, 3, 'L','E','W',              // LEW
         
         // Bitwise Operations
-        OpCode.AND, Arguments.None, 3, 'A','N','D',              // AND
-        OpCode.OR, Arguments.None, 2, 'O','R',                  // OR
+        OpCode.ANDB, Arguments.None, 4, 'A','N','D','B',         // ANDB
+        OpCode.ORB, Arguments.None, 3, 'O','R','b',              // ORB
         OpCode.XOR, Arguments.None, 3, 'X','O','R',              // XOR
-        OpCode.NOT, Arguments.None, 3, 'N','O','T',              // NOT
+        OpCode.NOTB, Arguments.None, 4, 'N','O','T','B',         // NOTB
         OpCode.SHL, Arguments.None, 3, 'S','H','L',              // SHL
         OpCode.SHR, Arguments.None, 3, 'S','H','R',              // SHR
         OpCode.SAR, Arguments.None, 3, 'S','A','R',              // SAR
@@ -197,12 +179,12 @@ unit OpCodes
         // Control Flow
         OpCode.CALL, Arguments.Byte, 4, 'C','A','L','L',          // CALL + byte
         OpCode.RET, Arguments.None, 3, 'R','E','T',              // RET
-        OpCode.BRAB, Arguments.Byte, 4, 'B','R','A','B',          // BRAB + byte
+        OpCode.BRAR, Arguments.Byte, 4, 'B','R','A','R',          // BRAR + byte
         OpCode.BRAF, Arguments.Byte, 4, 'B','R','A','F',          // BRAF + byte
         OpCode.BZF, Arguments.Byte, 3, 'B','Z','F',              // BZF  + byte
-        OpCode.BZB, Arguments.Byte, 3, 'B','Z','B',              // BZB  + byte
+        OpCode.BZR, Arguments.Byte, 3, 'B','Z','R',              // BZR  + byte
         OpCode.BNZF, Arguments.Byte, 4, 'B','N','Z','F',          // BNZF + byte
-        OpCode.BNZB, Arguments.Byte, 4, 'B','N','Z','B',          // BNZB + byte
+        OpCode.BNZR, Arguments.Byte, 4, 'B','N','Z','R',          // BNZR + byte
         
         // Zero Page Operations
         OpCode.PUSHZB, Arguments.Byte, 6, 'P','U','S','H','Z','B',  // PUSHZB + byte
@@ -229,6 +211,7 @@ unit OpCodes
         OpCode.LEAVE, Arguments.None, 5, 'L','E','A','V','E',      // LEAVE
         
         OpCode.INCLW, Arguments.Char, 5, 'I','N','C','L','W',      // INCLW
+        OpCode.INCL,  Arguments.Char, 4, 'I','N','C','L',          // INCL
         
         // Debug Operations
         OpCode.DUMP, Arguments.None, 4, 'D','U','M','P',          // DUMP
