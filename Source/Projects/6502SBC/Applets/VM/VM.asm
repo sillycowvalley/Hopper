@@ -1,7 +1,7 @@
 program VM
 {
     #define CPU_65C02S
-    #define DEBUG
+    //#define DEBUG
     
     uses "../System/Definitions"
     uses "../System/Args"
@@ -350,15 +350,6 @@ program VM
         LDY #2
         loop
         {
-            ReadByte();
-            STA [programMemory], Y
-            INY
-            ReadByte();
-            STA [programMemory], Y
-            INY
-            
-            DEY
-            DEY
             ReadByte();
             STA [sizeTable], Y
             INY

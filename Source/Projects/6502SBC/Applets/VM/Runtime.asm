@@ -685,6 +685,48 @@ LEAVE:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+CALL:
+            LDA [codePage], Y  // function ID
+            INY
+            STA operand
+            
+            // return address PC (Y)
+            PHY 
+            // return address codePage
+            LDA codePageL
+            PHA
+            LDA codePageH
+            PHA
+            
+            // switch to new codePage
+            LDY operand
+            LDA [functionTable], Y
+            STA codePageL
+            INY
+            LDA [functionTable], Y
+            STA codePageH
+            // Y = 0 (PC)
+            LDY #0
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X] 
+            
+RET:
+            // restore codePage
+            PLA
+            STA codePageH
+            PLA
+            STA codePageL
+            // restore PC (Y)
+            PLY
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X] 
               
 DUMP:
             debugStack();

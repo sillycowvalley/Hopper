@@ -557,14 +557,11 @@ PLP
             File.AppendStream();  if (NC) { break; }
 
             LDA #2
-            STA ZP.IDXL
             STA ZP.IDYL
             LDA codeBufferH
-            STA ZP.IDXH
             STA ZP.IDYH
             INC ZP.IDYH
             
-            // IDX = function start table (after first unused word)
             // IDY = function size table   (after first unused word)
                         
             LDA nextFunctionID
@@ -574,16 +571,6 @@ PLP
             loop
             {
                 LDY #0
-                LDA [ZP.IDX]
-                STA [indexBlock], Y  // offset LSB
-                INY
-                IncIDX();
-                LDA [ZP.IDX]
-                DEC
-                DEC
-                STA [indexBlock], Y  // offset MSB
-                INY
-                IncIDX();
                 LDA [ZP.IDY]
                 STA [indexBlock], Y  // size LSB
                 INY
@@ -598,13 +585,12 @@ PLP
                 LDA indexBlockH
                 STA File.SectorSourceH
             
-                LDA #4
+                LDA #2
                 STA File.TransferLengthL
                 STZ File.TransferLengthH
             
-                PHX
-                File.AppendStream();  if (NC) { PLX break; }
-                PLX
+                PHX File.AppendStream();  PLX if (NC) { break; }
+                
                 DEX
                 if (Z) { break; }
             }
@@ -616,13 +602,10 @@ PLP
             INC
             STA File.SectorSourceH
             
-            // Set transfer length to amount of code generated
-            SEC
-            LDA codeOffsetL
-            SBC # 0
+            // Write the data
+            LDA dataSizeL
             STA File.TransferLengthL
-            LDA codeOffsetH
-            SBC # 2 // 256 byte function table, 256 global bytes
+            LDA dataSizeH
             STA File.TransferLengthH
             
             LDA File.TransferLengthL
@@ -631,6 +614,55 @@ PLP
             {
                 File.AppendStream();  if (NC) { break; }
             }
+            
+            // write the function code in order
+            
+            LDA #2
+            STA ZP.IDXL
+            STA ZP.IDYL
+            LDA codeBufferH
+            STA ZP.IDXH
+            STA ZP.IDYH
+            INC ZP.IDYH
+            
+            // IDX = function start table (after first unused word)
+            // IDY = function size table   (after first unused word)
+            LDA nextFunctionID
+            LSR A // /= 2
+            TAX
+            DEX
+            loop
+            {
+                // start address
+                LDA [ZP.IDX]
+                STA File.SectorSourceL                
+                IncIDX();
+                CLC
+                LDA [ZP.IDX]
+                ADC codeBufferH
+                STA File.SectorSourceH                
+                IncIDX();
+                
+                // size
+                LDA [ZP.IDY]
+                STA File.TransferLengthL
+                IncIDY();
+                LDA [ZP.IDY]
+                STA File.TransferLengthH
+                IncIDY();
+                
+                LDA File.TransferLengthL
+                ORA File.TransferLengthH
+                if (NZ)
+                {
+                    PHX File.AppendStream(); PLX if (NC) { break; }
+                }
+                
+                DEX
+                if (Z) { break; }
+            }
+                
+            
             
             LDA # 0x80  // executable flag
             File.EndSave(); if (NC) { break; }
