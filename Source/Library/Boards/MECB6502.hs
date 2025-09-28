@@ -28,13 +28,13 @@ unit Board
     const byte I2CSDA0 = GP7; //GP9;
     
     const uint PORTA                = 0xF010;
-    const uint PORTB                = 0xF011;
+    const uint PORTB                = 0xF012;
     
-    const uint CRA                  = 0xF012; // Control Register A
+    const uint CRA                  = 0xF011; // Control Register A
     const uint CRB                  = 0xF013; // Control Register B
     
     const uint DDRA                 = 0xF010;
-    const uint DDRB                 = 0xF011;
+    const uint DDRB                 = 0xF012;
     
     uses "/Source/Minimal/System"
     uses "/Source/Minimal/MCU"

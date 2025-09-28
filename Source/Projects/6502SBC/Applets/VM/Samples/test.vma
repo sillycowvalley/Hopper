@@ -1,44 +1,71 @@
-; Simple CALL/RET test - main calls a helper function
+; LineBuffer Enumeration Program
+; Enumerates 64 bytes at 0x0700 and prints to screen
+; Replaces \0 characters with spaces
+
 .CONST
+    ZP.STR       0x1E
+    ZP.ACC       0x10
     Print.String 0x11
     Print.Char   0x12
-    ZP.STR       0x1E
+    Print.NewLine 0x14
     
 .DATA
-    STR0 "Before call\n"
-    STR1 "In helper\n"  
-    STR2 "After return\n"
-    
-.FUNC Helper
-    ; Print "In helper"
-    PUSHD STR1           ; Push string 1
+    STR0 "LineBuffer Contents (64 bytes):\n"
+    STR1 "\nDone.\n"
+
+.MAIN
+    ; Print header message
+    PUSHD STR0
     POPZW ZP.STR
     SYSCALL Print.String
     
-    ; Print a character
-    PUSHB 'X'
-    POPA
-    SYSCALL Print.Char
+    ; Initialize: address = 0x0700, counter = 64
+    PUSHW 0x0700
+    POPGW 0              ; global[0] = current address (16-bit)
+    PUSHB 64
+    POPGB 2              ; global[2] = byte counter
     
-    PUSHB 10             ; Newline
-    POPA
-    SYSCALL Print.Char
+loop:
+    ; Read byte from current address
+    PUSHGW 0             ; Push current address
+    READB                ; Read byte from memory
     
-    RET                  ; Return to main
-
-.MAIN
-    ; Print "Before call"
-    PUSHD STR0           ; Push string 0
-    POPZW ZP.STR         ; Marshal to BIOS
-    SYSCALL Print.String
+    ; Check if byte is 0 (null character)
+    DUPB                 ; Duplicate the byte for comparison
+    PUSHB0               ; Push 0 for comparison
+    EQB                  ; Compare: is byte == 0?
+    BZF 3                ; Branch if not zero (not null)
     
-    ; Call helper function (ID 1)
-    CALL Helper          ; Call Helper
+    ; Replace null with space
+    DROPB                ; Drop the original null byte
+    PUSHB 0x20           ; Push space character instead
     
-    ; Print "After return"
-    PUSHD STR2           ; Push string 2
+not_null:
+    ; Print the character
+    POPA                 ; Move byte to A register
+    SYSCALL Print.Char   ; Print it
+    
+    ; Increment address
+    PUSHGW 0             ; Get current address
+    PUSHW1               ; Add 1
+    ADDW
+    POPGW 0              ; Store back incremented address
+    
+    ; Decrement counter
+    PUSHGB 2             ; Get counter
+    PUSHB1               ; Subtract 1
+    SUBB
+    DUPB                 ; Keep copy for comparison
+    POPGB 2              ; Store back decremented counter
+    
+    ; Continue if counter > 0
+    PUSHB0               ; Push 0 for comparison
+    NEB                  ; Compare: counter != 0?
+    BNZR loop            ; Branch back if not zero
+    
+    ; Print completion message
+    PUSHD STR1
     POPZW ZP.STR
     SYSCALL Print.String
     
     HALT
-

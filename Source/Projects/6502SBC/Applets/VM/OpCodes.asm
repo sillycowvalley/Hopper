@@ -111,7 +111,7 @@ unit OpCodes
         STRCMP   = 0x9E,  // Pop 2 strings, push -1/0/1
         
         READB    = 0xA0,  // Pop address word, push byte
-        WRITEB   = 0xA0,  // Pop address word, pop byte
+        WRITEB   = 0xA2,  // Pop address word, pop byte
     }
     
     const byte[] opCodes = {

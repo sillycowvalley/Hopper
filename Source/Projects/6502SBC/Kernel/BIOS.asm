@@ -526,7 +526,6 @@ program BIOS
         File.Exists();
         if (NC)
         {
-            // .EXE did not exist
             LDY #0
             loop
             {

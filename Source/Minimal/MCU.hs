@@ -39,7 +39,9 @@ unit MCU
 #ifdef M6821_PIA
         uint cr  = (pin <= 7) ? CRA  : CRB;
         // Select the DDR
-        byte crValue = (pin <= 7) ? 0b00110000 : 0b00000000;
+        //byte crValue = (pin <= 7) ? 0b00110000 : 0b00000000;
+        //byte crValue = 0b00110000;
+        byte crValue = 0b00000000;
         Memory.WriteByte(cr, crValue);
 #endif        
         pin = pin & 0b00000111;
@@ -60,11 +62,12 @@ unit MCU
 #ifdef M6821_PIA
         // Select the port register
         uint cr   = (pin <= 7) ? CRA   : CRB;
-        byte crValue = (pin <= 7) ? 0b00110100 : 0b00000100;
+        //byte crValue = (pin <= 7) ? 0b00110100 : 0b00000100;
+        //byte crValue = 0b00110100;
+        byte crValue = 0b00000100;
         Memory.WriteByte(cr, crValue);
 #endif   
         byte b = Memory.ReadByte(port);
-        WriteLn(b.ToString());
         return ((Memory.ReadByte(port) & (1 << (pin & 0b00000111))) != 0);
 
     }
