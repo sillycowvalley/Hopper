@@ -24,8 +24,9 @@ unit Runtime
     const byte codePageL        = runtimeSlots+8;
     const byte codePageH        = runtimeSlots+9;
     
-    const byte opCode           = runtimeSlots+10;
-    const byte operand          = runtimeSlots+11;
+    const byte operand          = runtimeSlots+10;
+    const byte operandL         = runtimeSlots+10;
+    const byte operandH         = runtimeSlots+11;
     
     const byte vmFlags          = runtimeSlots+12;
     // Bit 0 - BIOS call Z return
@@ -428,7 +429,90 @@ SUBW:
             LDA [codePage], Y
             INY
             TAX
-            JMP [opCodeJumps, X]   
+            JMP [opCodeJumps, X]  
+            
+XORB:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise XOR two bytes
+            // TOP:  SP+1 (single byte)
+            // NEXT: SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT (at SP+2)
+            EOR 0x0101, X     // XOR with TOP (at SP+1)
+            STA 0x0102, X     // Store result to NEXT position
+            
+            INX TXS           // Remove TOP from stack (1 byte)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+SHLW:
+            LDA [codePage], Y // Get shift count
+            INY
+            STA operand       // Save count
+            
+            if (NZ)           // If count > 0
+            {
+                TSX           // NOW get stack pointer
+                loop
+                {
+                    ASL 0x0102, X // Shift LSB left
+                    ROL 0x0101, X // Rotate MSB left (with carry from LSB)
+                    DEC operand
+                    if (Z) { break; }
+                }
+            }
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+SHRW:
+            LDA [codePage], Y // Get shift count
+            INY
+            STA operand       // Save count
+            
+            if (NZ)           // If count > 0
+            {
+                TSX           // NOW get stack pointer
+                loop
+                {
+                    LSR 0x0101, X // Shift MSB right
+                    ROR 0x0102, X // Rotate LSB right (with carry from MSB)
+                    DEC operand
+                    if (Z) { break; }
+                }
+            }
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+            
+XORW:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise XOR two words
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            EOR 0x0102, X     // XOR with TOP0 (LSB at SP+2)
+            STA 0x0104, X     // Store result to NEXT0
+            
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            EOR 0x0101, X     // XOR with TOP1 (MSB at SP+1)
+            STA 0x0103, X     // Store result to NEXT1
+            
+            INX INX TXS       // Remove TOP from stack
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X] 
             
 ANDB:                    
             TSX               // Get stack pointer to X
@@ -477,6 +561,9 @@ NOTB:
             INY
             TAX
             JMP [opCodeJumps, X]            
+            
+            
+
             
 ADDB:                    
             TSX               // Get stack pointer to X
@@ -707,7 +794,7 @@ EQB:
 NEB:
             TSX               // Get stack pointer to X
             
-            STZ operand       // Default to 0 (equal)       
+            STZ operand       // Default to 0 (equal)       
                     
             // Compare NEXT != TOP
             // TOP is at SP+1 (single byte)
@@ -796,6 +883,38 @@ NEW:
             TAX
             JMP [opCodeJumps, X]
             
+STRC:
+            TSX               // Get stack pointer
+            
+            // Stack has:
+            // SP+1: index (byte)
+            // SP+2/SP+3: string address (word)
+            
+            // Get string address into zero page for indirect addressing
+            LDA 0x0103, X     // String address LSB
+            STA operandL      // Use operand as temporary pointer
+            LDA 0x0102, X     // String address MSB  
+            STA operandH
+            
+            // Get index into Y
+            LDA 0x0101, X     // Index (byte)
+            TAY               // Index in Y
+            
+            // Get character from string
+            LDA [operand], Y  // Load character at string[index]
+            
+            // Adjust stack (remove 2 bytes net: 1+2-1)
+            INX INX
+            TXS
+            
+            // Push character result
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 PUSHD:                    
             LDA [codePage], Y // byte offset    
             INY
@@ -805,6 +924,22 @@ PUSHD:
             LDA constantsH
             ADC #0            // MSB
             PHA  
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+PUSHD2:                    
+            LDA [codePage], Y // Low byte of word offset    
+            INY
+            CLC
+            ADC constantsL
+            PHA               // Push result LSB
+            LDA [codePage], Y // High byte of word offset
+            INY
+            ADC constantsH    // Add with carry from low byte
+            PHA               // Push result MSB
             
             LDA [codePage], Y
             INY
