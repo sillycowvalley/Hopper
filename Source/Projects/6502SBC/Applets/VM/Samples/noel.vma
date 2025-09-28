@@ -22,13 +22,13 @@
     ENTER 14            ; push 14x zero bytes for locals below
     
     ; Allocate locals:
-    ;PUSH0              ; s low at [BP+0]
-    ;PUSH0              ; s high at [BP-2]
-    ;PUSH0              ; start low at [BP-4]
-    ;PUSH0              ; start high at [BP-6]
-    ;PUSH0              ; ss (seconds start) at [BP-8]
-    ;PUSH0              ; i at [BP-10]
-    ;PUSH0              ; j at [BP-12]
+    ;PUSHW0              ; s low at [BP+0]
+    ;PUSHW0              ; s high at [BP-2]
+    ;PUSHW0              ; start low at [BP-4]
+    ;PUSHW0              ; start high at [BP-6]
+    ;PUSHW0              ; ss (seconds start) at [BP-8]
+    ;PUSHW0              ; i at [BP-10]
+    ;PUSHW0              ; j at [BP-12]
     
     ; start = millis()
     SYSCALL Time.Millis
@@ -46,24 +46,24 @@
     SYSCALL Print.String
     
     ; for (i = 1; i <= 10; i++)
-    PUSH1
+    PUSHW1
     POPLW -10
     
 outer_loop:
     ; s = 0 (reset NEXT, not the local)
-    PUSH0
-    PUSH0
+    PUSHW0
+    PUSHW0
     POPZQ ZP.NEXT0
     
     ; for (j = 1; j <= 1000; j++)
-    PUSH1
+    PUSHW1
     POPLW -12
     
 inner_loop:
     ; s = s + j
     
     PUSHLW -12
-    PUSH0
+    PUSHW0
     POPZQ ZP.TOP0
     
     SYSCALLX Long.Add  ; NEXT (s) = NEXT (s) + TOP (j)
@@ -74,8 +74,8 @@ inner_loop:
     ; j <= 1000?
     PUSHLW -12
     PUSHW 1000
-    LE
-    BNZB inner_loop
+    LEW
+    BNZR inner_loop
     
     ; Print dot
     PUSHD STR1
@@ -88,8 +88,8 @@ inner_loop:
     ; i <= 10?
     PUSHLW -10
     PUSHW 10
-    LE
-    BNZB outer_loop
+    LEW
+    BNZR outer_loop
     
     ; Store s back
     PUSHZQ ZP.NEXT0
@@ -134,7 +134,7 @@ inner_loop:
     
     ; Get saved start seconds to TOP
     PUSHLW -8               ; Low word of saved seconds
-    PUSH0                   ; High word (was never saved, assume 0)
+    PUSHW0                   ; High word (was never saved, assume 0)
     POPZQ ZP.TOP0
     
     ; NEXT = NEXT - TOP (current - start)

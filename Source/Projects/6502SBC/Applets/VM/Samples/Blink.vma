@@ -29,7 +29,7 @@ loop:
     ; Delay 1000ms (0x000003E8)
     PUSHW 0x03E8         ; Push 1000 (low word)
     POPZW ZP.TOP         ; Store to ZP.TOP0-1
-    PUSH0                ; Push 0 (high word)
+    PUSHW0               ; Push 0 (high word)
     POPZW 0x14           ; Store to ZP.TOP2-3
     SYSCALL Time.Delay
     
@@ -48,7 +48,7 @@ loop:
     ; Delay 1000ms
     PUSHW 0x03E8         ; Push 1000 (low word)
     POPZW ZP.TOP         ; Store to ZP.TOP0-1
-    PUSH0                ; Push 0 (high word)
+    PUSHW0               ; Push 0 (high word)
     POPZW 0x14           ; Store to ZP.TOP2-3
     SYSCALL Time.Delay
     
@@ -58,7 +58,7 @@ loop:
     BNZF 2               ; Branch forward to exit if break detected
     
     ; Loop forever (unless break detected)
-    BRAB loop            ; Branch back to loop
+    BRAR loop            ; Branch back to loop
     
 exit:
     HALT

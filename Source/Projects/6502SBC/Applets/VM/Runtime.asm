@@ -262,8 +262,16 @@ PUSHB:
             INY
             TAX
             JMP [opCodeJumps, X]
+
+PUSHB0:
+            LDA #0
+            PHA
             
-PUSHW0:                    
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
+PUSHW0:
             LDA #0
             PHA
             PHA
@@ -273,6 +281,15 @@ PUSHW0:
             TAX
             JMP [opCodeJumps, X]
 
+PUSHB1:                    
+            LDA #1
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 PUSHW1:                    
             LDA #1
             PHA
@@ -398,12 +415,12 @@ SUBW:
             // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
             SEC               // Set carry for subtraction
             LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
-            SBC 0x0102, X     // Add TOP0 (LSB at SP+2)
+            SBC 0x0102, X     // Subtract TOP0 (LSB at SP+2)
             STA 0x0104, X     // Store result to NEXT0
             
             // Add high bytes with carry
             LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
-            SBC 0x0101, X     // Add TOP1 (MSB at SP+1) with carry
+            SBC 0x0101, X     // Subtract TOP1 (MSB at SP+1) with carry
             STA 0x0103, X     // Store result to NEXT1
             
             INX INX TXS       // Remove TOP from stack
@@ -446,6 +463,20 @@ ORB:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+NOTB:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise NOT on byte
+            // TOP: SP+1 (single byte)
+            LDA 0x0101, X     // Load TOP (at SP+1)
+            EOR #0xFF         // XOR with 0xFF to flip all bits
+            STA 0x0101, X     // Store result back
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
             
 ADDB:                    
             TSX               // Get stack pointer to X
@@ -516,7 +547,61 @@ NEGB:
             INY
             TAX
             JMP [opCodeJumps, X]
+                   
                                                                                           
+LEB:
+            TSX               // Get stack pointer to X
+            
+            LDA #1            // Default to 1 (NEXT <= TOP)
+            STA operand
+                    
+            // Compare NEXT <= TOP
+            // TOP is at SP+1 (single byte)
+            // NEXT is at SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT
+            CMP 0x0101, X     // Compare with TOP
+            if (NZ)           // If NEXT != TOP
+            {
+                if (C)        // If NEXT >= TOP (carry set)
+                {
+                    STZ operand   // NEXT > TOP, so not <=
+                }
+            }
+            
+            INX               // Adjust stack by 1
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+LTB:
+            TSX               // Get stack pointer to X
+            
+            STZ operand       // Default to 0 (NEXT >= TOP)
+                    
+            // Compare NEXT < TOP
+            // TOP is at SP+1 (single byte)
+            // NEXT is at SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT
+            CMP 0x0101, X     // Compare with TOP
+            if (NC)           // If NEXT < TOP (carry clear)
+            {
+                INC operand   // Set to 1 (NEXT < TOP)
+            }
+            
+            INX               // Adjust stack by 1
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]                                                                       
                       
 LEW:
             TSX               // Get stack pointer to X
@@ -554,6 +639,96 @@ LEW:
             TAX
             JMP [opCodeJumps, X]
             
+LTW:
+            TSX               // Get stack pointer to X
+            
+            STZ operand       // Default to 0 (NEXT >= TOP)
+                    
+            // Compare NEXT < TOP
+            // TOP is at SP+1/SP+2 (top)
+            // NEXT is at SP+3/SP+4
+            // First compare high bytes
+            LDA 0x0103, X     // Load NEXT1 (MSB)
+            CMP 0x0101, X     // Compare with TOP1 (MSB)
+            if (NC)           // If NEXT1 < TOP1 (carry clear)
+            {
+                INC operand   // Set to 1 (NEXT < TOP)
+            }
+            else
+            {
+                if (Z)        // If NEXT1 == TOP1
+                {
+                    LDA 0x0104, X     // Load NEXT0 (LSB)
+                    CMP 0x0102, X     // Compare with TOP0 (LSB)
+                    if (NC)           // If NEXT0 < TOP0
+                    {
+                        INC operand   // Set to 1 (NEXT < TOP)
+                    }
+                }
+            }
+            
+            INX               // Adjust stack by 3
+            INX
+            INX
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
+            
+EQB:
+            TSX               // Get stack pointer to X
+            
+            STZ operand       // Default to 0 (not equal)
+                    
+            // Compare NEXT == TOP
+            // TOP is at SP+1 (single byte)
+            // NEXT is at SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT
+            CMP 0x0101, X     // Compare with TOP
+            if (Z)            // If NEXT == TOP
+            {
+                INC operand   // Set to 1 (equal)
+            }
+            
+            INX               // Adjust stack by 1
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+NEB:
+            TSX               // Get stack pointer to X
+            
+            STZ operand       // Default to 0 (equal)       
+                    
+            // Compare NEXT != TOP
+            // TOP is at SP+1 (single byte)
+            // NEXT is at SP+2 (single byte)
+            LDA 0x0102, X     // Load NEXT
+            CMP 0x0101, X     // Compare with TOP
+            if (NZ)           // If NEXT != TOP
+            {
+                INC operand   // Set to 1 (they're not equal)
+            }
+            
+            INX               // Adjust stack by 1
+            TXS
+            LDA operand
+            STA 0x0101, X     // store the boolean result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+                      
 EQW:
             TSX               // Get stack pointer to X
             
@@ -686,7 +861,7 @@ BZR:
             
 BZF:
             PLA                   // Pop the boolean
-            if (Z)                // If not zero
+            if (Z)                // If zero
             {
                 CLC               // Clear carry for addition
                 TYA               // Current PC to A
@@ -700,6 +875,18 @@ BZF:
             TAX
             JMP [opCodeJumps, X]            
             
+BRAF:
+            CLC               // Clear carry for addition
+            TYA               // Current PC to A
+            ADC [codePage], Y // Add branch offset
+            TAY               // New PC back to Y
+            INY               // Skip offset byte
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]  
+            
 BRAR:
             SEC               // Set carry for subtraction
             TYA               // Current PC to A
@@ -711,7 +898,81 @@ BRAR:
             INY
             TAX
             JMP [opCodeJumps, X]
+
+PUSHGB:
+            LDA [codePage], Y // byte offset  
+            INY
+            STY operand       // Save Y
+            TAY
+            LDA [globals], Y  // Load byte from globals[offset]
+            LDY operand       // Restore Y
+            PHA               // Push it
             
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+POPGB:
+            LDA [codePage], Y // byte offset  
+            INY
+            STY operand       // Save Y
+            TAY
+            PLA               // Pop byte from stack
+            STA [globals], Y  // Store to globals[offset]
+            LDY operand       // Restore Y
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+PUSHGW:
+            LDA [codePage], Y // byte offset  
+            INY
+            STY operand       // Save Y
+            TAY
+            LDA [globals], Y  // Load LSB from globals[offset]
+            PHA               // Push LSB
+            INY
+            LDA [globals], Y  // Load MSB from globals[offset+1]
+            PHA               // Push MSB
+            LDY operand       // Restore Y
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+POPGW:
+            LDA [codePage], Y // byte offset  
+            INY
+            STY operand       // Save Y
+            TAY
+            INY               // Point to MSB position
+            PLA               // Pop MSB
+            STA [globals], Y  // Store MSB to globals[offset+1]
+            DEY               // Back to LSB position
+            PLA               // Pop LSB
+            STA [globals], Y  // Store LSB to globals[offset]
+            LDY operand       // Restore Y
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+                              
+PUSHZB:
+            LDA [codePage], Y // byte offset  
+            INY
+            TAX
+            LDA 0x00, X       // Load byte from ZP[offset]
+            PHA               // Push it
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]  
 
 PUSHZW:                    
             LDA [codePage], Y // byte offset  
@@ -748,6 +1009,18 @@ PUSHZQ:
             INY
             TAX
             JMP [opCodeJumps, X]            
+            
+POPZB:
+            LDA [codePage], Y // byte offset  
+            INY
+            TAX
+            PLA               // Pop byte
+            STA 0x00, X       // Store at ZP[offset]
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
             
 POPZW:
             LDA [codePage], Y // byte offset  
@@ -820,6 +1093,20 @@ INCLB:
             TAX
             JMP [opCodeJumps, X]                      
             
+PUSHLB:
+            CLC
+            LDA BP            // BP + offset
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            LDA 0x0100, X     // Load byte at BP+offset
+            PHA               // Push it
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
+            
 PUSHLW:
             CLC
             LDA BP            // BP + offset (LSB address)
@@ -858,7 +1145,21 @@ PUSHLQ:
             LDA [codePage], Y
             INY
             TAX
-            JMP [opCodeJumps, X]            
+            JMP [opCodeJumps, X]    
+            
+POPLB:
+            CLC
+            LDA BP            // BP + offset
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            PLA               // Pop byte from stack
+            STA 0x0100, X     // Store at BP+offset
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]        
 
 POPLW:
             CLC
