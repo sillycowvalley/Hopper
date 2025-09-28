@@ -53,10 +53,9 @@
     
 outer_loop:
     ; s = 0
-    PUSHW 0
-    POPLW 0
-    PUSHW 0
-    POPLW -2
+    PUSH0
+    PUSH0
+    POPLQ 0
     
     ; for (j = 1; j <= 1000; j++)
     PUSHW 1
@@ -64,28 +63,20 @@ outer_loop:
     
 inner_loop:
     ; s = s + j
-    PUSHLW -2
-    PUSHLW 0
-    POPZW ZP.NEXT0
-    POPZW ZP.NEXT2
+    PUSHLQ 0
+    POPZQ ZP.NEXT0
     
     PUSHLW -12
-    POPZW ZP.TOP0
     PUSHW 0
-    POPZW ZP.TOP2
+    POPZQ ZP.TOP0
     
     SYSCALL Long.Add
     
-    PUSHZW ZP.NEXT0
-    POPLW 0
-    PUSHZW ZP.NEXT2
-    POPLW -2
+    PUSHZQ ZP.NEXT0
+    POPLQ 0
     
     ; j++
-    PUSHLW -12
-    PUSH1
-    ADD
-    POPLW -12
+    INCLW -12
     
     ; j <= 1000?
     PUSHLW -12
@@ -99,10 +90,7 @@ inner_loop:
     SYSCALL Print.String
     
     ; i++
-    PUSHLW -10
-    PUSH1
-    ADD
-    POPLW -10
+    INCLW -10
     
     ; i <= 10?
     PUSHLW -10
@@ -115,10 +103,8 @@ inner_loop:
     POPZW ZP.STR
     SYSCALL Print.String
     
-    PUSHLW -2
-    PUSHLW 0
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
+    PUSHLQ 0
+    POPZQ ZP.TOP0
     SYSCALL Long.Print
     
     PUSHD STR2
@@ -127,15 +113,11 @@ inner_loop:
     
     ; Print elapsed ms
     SYSCALL Time.Millis
-    PUSHZW ZP.TOP0
-    PUSHZW ZP.TOP2
-    POPZW ZP.NEXT2
-    POPZW ZP.NEXT0
+    PUSHZQ ZP.TOP0
+    POPZQ ZP.NEXT0
     
-    PUSHLW -6
-    PUSHLW -4
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
+    PUSHLQ -4
+    POPZQ ZP.TOP0
     SYSCALL Long.Sub
     
     PUSHZW ZP.NEXT0

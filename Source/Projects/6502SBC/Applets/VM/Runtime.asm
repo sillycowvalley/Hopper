@@ -195,9 +195,14 @@ NOP:        // NOP must be first to get the ball rolling ..
             JMP [opCodeJumps, X]
             
 // Stack Operations
+
+PUSHW:                    
+            LDA [codePage], Y
+            INY
+            PHA
                 
 PUSHB:                    
-            LDA [codePage], Y // operand LSB
+            LDA [codePage], Y
             INY
             PHA
             
@@ -206,19 +211,6 @@ PUSHB:
             TAX
             JMP [opCodeJumps, X]
             
-PUSHW:                    
-            LDA [codePage], Y // operand LSB
-            INY
-            PHA
-            LDA [codePage], Y // operand MSB
-            INY
-            PHA
-            
-            LDA [codePage], Y
-            INY
-            TAX
-            JMP [opCodeJumps, X]
-
 PUSH0:                    
             LDA #0
             PHA
@@ -401,6 +393,27 @@ PUSHZW:
             TAX
             JMP [opCodeJumps, X]
             
+PUSHZQ:                    
+            LDA [codePage], Y // byte offset  
+            INY
+            TAX
+            LDA 0x00, X 
+            PHA               // Push byte 0 (LSB)
+            INX
+            LDA 0x00, X 
+            PHA               // Push byte 1
+            INX               
+            LDA 0x00, X 
+            PHA               // Push byte 2
+            INX
+            LDA 0x00, X 
+            PHA               // Push byte 3 (MSB
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
+            
 POPZW:
             LDA [codePage], Y // byte offset  
             INY
@@ -418,6 +431,46 @@ POPZW:
             TAX
             JMP [opCodeJumps, X]
             
+POPZQ:
+            LDA [codePage], Y // byte offset  
+            INY
+            
+            TAX
+            INX INX INX       // Start at byte 3 position
+            PLA               // Pop byte 3 (MSB)
+            STA 0x00, X 
+            DEX
+            PLA               // Pop byte 2
+            STA 0x00, X 
+            DEX
+            PLA               // Pop byte 1
+            STA 0x00, X 
+            DEX
+            PLA               // Pop byte 0 (LSB)
+            STA 0x00, X  
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
+          
+INCLW:
+            CLC
+            LDA BP            // BP + offset (LSB address)
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            INC 0x0100, X     // Increment LSB
+            if (Z)            // If LSB wrapped to 0
+            {
+                DEX           // BP + offset - 1 (MSB address)
+                INC 0x0100, X // Increment MSB
+            }
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]          
             
 PUSHLW:
             CLC
@@ -435,6 +488,29 @@ PUSHLW:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+PUSHLQ:
+            CLC
+            LDA BP            // BP + offset (LSB address)
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            LDA 0x0100, X     // Load byte 0 (LSB)
+            PHA
+            DEX               
+            LDA 0x0100, X     // Load byte 1
+            PHA
+            DEX               
+            LDA 0x0100, X     // Load byte 2
+            PHA
+            DEX               
+            LDA 0x0100, X     // Load byte 3 (MSB)
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
 
 POPLW:
             CLC
@@ -453,6 +529,30 @@ POPLW:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+POPLQ:
+            CLC
+            LDA BP            // BP + offset (LSB address)
+            ADC [codePage], Y // byte offset
+            INY
+            TAX
+            DEX DEX DEX       // Start at byte 3 position
+            PLA               // Pop byte 3 (MSB)
+            STA 0x0100, X
+            INX
+            PLA               // Pop byte 2
+            STA 0x0100, X
+            INX
+            PLA               // Pop byte 1
+            STA 0x0100, X
+            INX
+            PLA               // Pop byte 0 (LSB)
+            STA 0x0100, X
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]            
             
                 
 SYSCALL:
