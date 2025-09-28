@@ -22,18 +22,16 @@ unit Labels
     // Node structure:
     // +0: next pointer (16-bit)
     // +2: ID    (8-bit 1..255 per function)
-    // +3: Resolved? 0 or 1
-    // +4: value (16-bit offset in code buffer)
-    // +6: name string (null-terminated, inline)
+    // +3: value (16-bit offset in code buffer, 0xFFFF means unresolved)
+    // +5: name string (null-terminated, inline)
     
     
     const byte iNext     = 0;
     const byte iID       = 2;
-    const byte iResolved = 3;
-    const byte iValue    = 4;
-    const byte iName     = 6;
+    const byte iValue    = 3;
+    const byte iName     = 5;
     
-    const byte nSize  = 6;
+    const byte nSize  = 5;
     
     Initialize()
     {
@@ -143,10 +141,6 @@ unit Labels
             LDA labelID
             STA [ZP.IDX], Y
             
-            LDY # iResolved
-            LDA #1 // resolved for now
-            STA [ZP.IDX], Y
-            
             LDA ZP.STRL
             STA ZP.IDYL
             LDA ZP.STRH
@@ -177,7 +171,6 @@ unit Labels
     // name in STR
     // C if found, NC if not
     // value    in TOP0..1
-    // resolved in ACCL
     FindLabel()
     {
         // Start at head
@@ -222,11 +215,6 @@ unit Labels
                 INY
                 LDA [ZP.IDX], Y
                 STA ZP.TOP1
-                
-                LDY # iResolved
-                LDA [ZP.IDX], Y
-                STA ZP.ACCL
-                
                 break;  // Found with value loaded
             }
             
