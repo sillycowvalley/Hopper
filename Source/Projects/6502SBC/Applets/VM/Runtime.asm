@@ -1,5 +1,7 @@
 unit Runtime
 {
+    uses "OpCodes"
+    
     const byte runtimeSlots = 0x60; // 0x60..0x6F
     
     // same slot as programMemory : read-only!
@@ -30,110 +32,6 @@ unit Runtime
     
     const byte stackStore       = runtimeSlots+13;
     const byte yStore           = runtimeSlots+14;
-    
-    enum OpCode
-    {
-        // System Operations
-        NOP      = 0x00,  // No operation
-        
-        // Stack Operations
-        PUSHB    = 0x02,  // Push 8-bit immediate
-        PUSHW    = 0x04,  // Push 16-bit immediate
-        PUSH0    = 0x06,  // Push 0 (optimized)
-        PUSH1    = 0x08,  // Push 1 (optimized)
-        DUP      = 0x0A,  // Duplicate byte on TOS
-        DUPW     = 0x0C,  // Duplicate word on TOS
-        DROP     = 0x0E,  // Remove byte from TOS
-        DROPW    = 0x10,  // Remove word from TOS
-        SWAP     = 0x12,  // Swap top two bytes
-        SWAPW    = 0x14,  // Swap top two words
-        
-        // Arithmetic Operations
-        ADD      = 0x16,  // Pop 2 words, push sum
-        SUB      = 0x18,  // Pop 2 words, push difference
-        MUL      = 0x1A,  // Pop 2 words, push product
-        DIV      = 0x1C,  // Pop 2 words, push quotient (unsigned)
-        MOD      = 0x1E,  // Pop 2 words, push remainder
-        ADDB     = 0x20,  // Pop 2 bytes, push sum
-        SUBB     = 0x22,  // Pop 2 bytes, push difference
-        NEG      = 0x24,  // Negate int (2's complement)
-        NEGB     = 0x26,  // Negate char (2's complement)
-        
-        // Comparison Operations
-        EQ       = 0x28,  // Pop 2 words/ints, push 1 if equal, 0 if not
-        NE       = 0x2A,  // Pop 2 words/ints, push 1 if not equal
-        LT       = 0x2C,  // Pop 2 words, unsigned less than
-        GT       = 0x2E,  // Pop 2 words, unsigned greater than
-        LE       = 0x30,  // Pop 2 words, unsigned less or equal
-        GE       = 0x32,  // Pop 2 words, unsigned greater or equal
-        LTC      = 0x34,  // Pop 2 chars, signed less than
-        GTC      = 0x36,  // Pop 2 chars, signed greater than
-        LTI      = 0x38,  // Pop 2 ints, signed less than
-        GTI      = 0x3A,  // Pop 2 ints, signed greater than
-        
-        // Bitwise Operations
-        AND      = 0x3C,  // Pop 2 words, push bitwise AND
-        OR       = 0x3E,  // Pop 2 words, push bitwise OR
-        XOR      = 0x40,  // Pop 2 words, push bitwise XOR
-        NOT      = 0x42,  // Pop word, push bitwise NOT
-        SHL      = 0x44,  // Pop word and count, shift left
-        SHR      = 0x46,  // Pop word and count, logical shift right
-        SAR      = 0x48,  // Pop int and count, arithmetic shift right
-        
-        // Memory Operations - Globals
-        PUSHGB   = 0x4A,  // Push byte from global[offset]
-        PUSHGB2  = 0x4C,  // Push byte from global[offset] (>255)
-        PUSHGW   = 0x4E,  // Push word from global[offset]
-        PUSHGW2  = 0x50,  // Push word from global[offset] (>255)
-        POPGB    = 0x52,  // Pop byte to global[offset]
-        POPGB2   = 0x54,  // Pop byte to global[offset] (>255)
-        POPGW    = 0x56,  // Pop word to global[offset]
-        POPGW2   = 0x58,  // Pop word to global[offset] (>255)
-        
-        // Memory Operations - Locals
-        PUSHLB   = 0x5A,  // Push byte from BP[offset]
-        PUSHLW   = 0x5C,  // Push word from BP[offset]
-        POPLB    = 0x5E,  // Pop byte to BP[offset]
-        POPLW    = 0x60,  // Pop word to BP[offset]
-        
-        // Data/String Operations
-        PUSHD    = 0x62,  // Push string address (byte offset)
-        PUSHD2   = 0x64,  // Push string address (word offset)
-        STRC     = 0x66,  // Pop index, pop string, push char
-        STRCMP   = 0x68,  // Pop 2 strings, push -1/0/1
-        
-        // Control Flow
-        CALL     = 0x6A,  // Call function (ID × 2 for table lookup)
-        RET      = 0x6C,  // Return from function
-        BRAB     = 0x6E,  // Branch backward by byte (0-255)
-        BRAF     = 0x70,  // Branch forward by byte (0-255)
-        BZF      = 0x72,  // Branch forward by byte if TOS is zero
-        BZB      = 0x74,  // Branch backward by byte if TOS is zero
-        BNZF     = 0x76,  // Branch forward by byte if TOS is not zero
-        BNZB     = 0x78,  // Branch backward by byte if TOS is not zero
-        
-        // Zero Page Operations
-        PUSHZB   = 0x7A,  // Push byte from ZP[offset]
-        PUSHZW   = 0x7C,  // Push word from ZP[offset]
-        POPZB    = 0x7E,  // Pop byte to ZP[offset]
-        POPZW    = 0x80,  // Pop word to ZP[offset]
-        
-        // System Operations
-        SYSCALL  = 0x82,  // Call BIOS function via X register
-        HALT     = 0x84,  // Stop execution (return to BIOS)
-        
-        // Register Operations
-        POPA     = 0x86,  // Pop byte from stack to A register
-        POPY     = 0x88,  // Pop byte from stack to Y register
-        PUSHA    = 0x8A,  // Push A register to stack
-        PUSHC    = 0x8C,  // Push carry flag (1 if set, 0 if clear)
-        PUSHZ    = 0x8E,  // Push zero flag (1 if set, 0 if clear)
-        
-        ENTER    = 0x90,  // PUSH BP, SP -> BP
-        LEAVE    = 0x92,  // POP BP
-        
-        DUMP     = 0x94,  // diagnostic output
-    }
     
     const OpCode[] opCodeJumps;
     
