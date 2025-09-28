@@ -19,7 +19,7 @@
     STR4 " seconds\n"
 
 .MAIN
-    ENTER 14
+    ENTER 14            ; push 14x zero bytes for locals below
     
     ; Allocate locals:
     ;PUSH0              ; s low at [BP+0]
@@ -50,10 +50,10 @@
     POPLW -10
     
 outer_loop:
-    ; s = 0
+    ; s = 0 (reset NEXT, not the local)
     PUSH0
     PUSH0
-    POPLQ 0
+    POPZQ ZP.NEXT0
     
     ; for (j = 1; j <= 1000; j++)
     PUSH1
@@ -61,17 +61,12 @@ outer_loop:
     
 inner_loop:
     ; s = s + j
-    PUSHLQ 0
-    POPZQ ZP.NEXT0
     
     PUSHLW -12
     PUSH0
     POPZQ ZP.TOP0
     
-    SYSCALL Long.Add
-    
-    PUSHZQ ZP.NEXT0
-    POPLQ 0
+    SYSCALL Long.Add  ; NEXT (s) = NEXT (s) + TOP (j)
     
     ; j++
     INCLW -12
@@ -95,6 +90,10 @@ inner_loop:
     PUSHW 10
     LE
     BNZB outer_loop
+    
+    ; Store s back
+    PUSHZQ ZP.NEXT0
+    POPLQ 0
     
     ; Print newline and s
     PUSHD STR2
