@@ -120,10 +120,8 @@ inner_loop:
     POPZQ ZP.TOP0
     SYSCALL Long.Sub
     
-    PUSHZW ZP.NEXT0
-    PUSHZW ZP.NEXT2
-    POPZW ZP.TOP2
-    POPZW ZP.TOP0
+    PUSHZQ ZP.NEXT0
+    POPZQ ZP.TOP0
     SYSCALL Long.Print
     
     PUSHD STR3
@@ -134,25 +132,20 @@ inner_loop:
     SYSCALL Time.Seconds     ; Result in ZP.TOP (32-bit)
     
     ; Move current seconds to NEXT
-    PUSHZW ZP.TOP0
-    PUSHZW ZP.TOP2
-    POPZW ZP.NEXT0
-    POPZW ZP.NEXT2
+    PUSHZQ ZP.TOP0
+    POPZQ ZP.NEXT0
     
     ; Get saved start seconds to TOP
     PUSHLW -8               ; Low word of saved seconds
     PUSHW 0                 ; High word (was never saved, assume 0)
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
+    POPZQ ZP.TOP0
     
     ; NEXT = NEXT - TOP (current - start)
     SYSCALL Long.Sub
     
     ; Move result to TOP for printing
-    PUSHZW ZP.NEXT0
-    PUSHZW ZP.NEXT2
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
+    PUSHZQ ZP.NEXT0
+    POPZQ ZP.TOP0
     
     SYSCALL Long.Print
     
