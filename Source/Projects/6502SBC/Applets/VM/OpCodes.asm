@@ -83,7 +83,7 @@ unit OpCodes
         STRCMP   = 0x6C,  // Pop 2 strings, push -1/0/1
         
         // Control Flow
-        CALL     = 0x6E,  // Call function (ID × 2 for table lookup)
+        CALL     = 0x6E,  // Call function (ID for table lookup)
         RET      = 0x70,  // Return from function
         BRAB     = 0x72,  // Branch backward by byte (0-255)
         BRAF     = 0x74,  // Branch forward by byte (0-255)
@@ -102,7 +102,7 @@ unit OpCodes
         
         // System Operations
         SYSCALL  = 0x8A,  // Call BIOS function via X register
-        SYSCALLX = 0xA0,  // Call BIOS function via X register
+        SYSCALLX = 0xA0,  // Call BIOS function via X register (faster version that ignores A, Y, C and Z)
         HALT     = 0x8C,  // Stop execution (return to BIOS)
         
         // Register Operations
@@ -214,7 +214,7 @@ unit OpCodes
         
         // System Operations
         OpCode.SYSCALL, Arguments.Byte, 7, 'S','Y','S','C','A','L','L', // SYSCALL + byte
-        OpCode.SYSCALLX, Arguments.Byte, 8, 'S','Y','S','C','A','L','L','X', // SYSCALL + byte
+        OpCode.SYSCALLX, Arguments.Byte, 8, 'S','Y','S','C','A','L','L','X', // SYSCALL + byte (faster version that ignores A, Y, C and Z)
         OpCode.HALT, Arguments.None, 4, 'H','A','L','T',          // HALT
         
         // Register Operations

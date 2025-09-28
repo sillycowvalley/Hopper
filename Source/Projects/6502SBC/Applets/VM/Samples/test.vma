@@ -1,31 +1,44 @@
-; LED On test - turn LED on pin 0 on and exit
+; Simple CALL/RET test - main calls a helper function
 .CONST
-    GPIO.PinMode    0x26
-    GPIO.PinWrite   0x28
+    Print.String 0x11
+    Print.Char   0x12
+    ZP.STR       0x1E
     
 .DATA
-    ; No data needed
+    STR0 "Before call\n"
+    STR1 "In helper\n"  
+    STR2 "After return\n"
+    
+.FUNC Helper
+    ; Print "In helper"
+    PUSHD STR1           ; Push string 1
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Print a character
+    PUSHB 'X'
+    POPA
+    SYSCALL Print.Char
+    
+    PUSHB 10             ; Newline
+    POPA
+    SYSCALL Print.Char
+    
+    RET                  ; Return to main
 
 .MAIN
-    ; Configure pin 0 as output
-    PUSHB 0              ; Pin 0
-    POPA                 ; A = pin number
-    PUSHB 1              ; OUTPUT mode (1)
-    POPY                 ; Y = mode
+    ; Print "Before call"
+    PUSHD STR0           ; Push string 0
+    POPZW ZP.STR         ; Marshal to BIOS
+    SYSCALL Print.String
     
-    DUMP
+    ; Call helper function (ID 1)
+    CALL Helper          ; Call Helper
     
-    SYSCALL GPIO.PinMode
+    ; Print "After return"
+    PUSHD STR2           ; Push string 2
+    POPZW ZP.STR
+    SYSCALL Print.String
     
-    ; Turn LED ON
-    PUSHB 0              ; Pin 0
-    POPA                 ; A = pin number
-    PUSHB 1              ; HIGH (1)
-    POPY                 ; Y = value
-    
-    DUMP
-    
-    SYSCALL GPIO.PinWrite
-    
-    ; Exit
     HALT
+

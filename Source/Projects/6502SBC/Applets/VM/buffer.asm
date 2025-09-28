@@ -75,9 +75,9 @@ unit Buffer
     CaptureFunctionEnd()
     {
         // start address
-        LDY nextFunctionID
-        DEY
-        DEY
+        LDY ZP.TOP0
+        
+//Print.NewLine(); TYA Print.Hex(); Print.Space();      
         
         LDA codeBufferH
         STA ZP.IDXH
@@ -136,10 +136,13 @@ unit Buffer
             ErrorLine(); // does CLC
             break;
         }
-//Print.NewLine(); DEY TYA Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space();
-//                 LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex();Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
-//Print.NewLine();         
-        
+/*        
+PHP        
+Print.NewLine(); DEY TYA Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space();
+                 LDA ZP.NEXT1 Print.Hex(); LDA ZP.NEXT0 Print.Hex();Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
+Print.NewLine();         
+PLP
+*/        
     }
     
     GetDataOffset()
@@ -533,6 +536,7 @@ unit Buffer
             LSR A
             DEC
             STA [headerBlock], Y INY
+            // size of data section
             LDA dataSizeL
             STA [headerBlock], Y INY
             LDA dataSizeH
@@ -559,6 +563,9 @@ unit Buffer
             STA ZP.IDXH
             STA ZP.IDYH
             INC ZP.IDYH
+            
+            // IDX = function start table (after first unused word)
+            // IDY = function size table   (after first unused word)
                         
             LDA nextFunctionID
             LSR A // /= 2
@@ -568,21 +575,23 @@ unit Buffer
             {
                 LDY #0
                 LDA [ZP.IDX]
-                STA [indexBlock], Y
+                STA [indexBlock], Y  // offset LSB
                 INY
                 IncIDX();
                 LDA [ZP.IDX]
                 DEC
                 DEC
-                STA [indexBlock], Y
+                STA [indexBlock], Y  // offset MSB
                 INY
+                IncIDX();
                 LDA [ZP.IDY]
-                STA [indexBlock], Y
+                STA [indexBlock], Y  // size LSB
                 INY
                 IncIDY();
                 LDA [ZP.IDY]
-                STA [indexBlock], Y
+                STA [indexBlock], Y  // size MSB
                 INY
+                IncIDY();
             
                 LDA indexBlockL
                 STA File.SectorSourceL

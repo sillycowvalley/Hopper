@@ -39,6 +39,8 @@ unit Parser
     
     const byte numberType    = parserSlots+13;
     
+    const byte currentFunctionID = parserSlots+14;
+    
     const string errDirectiveExpected  = ".DATA, .CONST, .MAIN or .FUNC expected";
     const string errMAINRequired       = ".MAIN required";
     const string errMAINSeen           = ".MAIN already seen";
@@ -375,7 +377,11 @@ unit Parser
             next();  // Should be closing '
             next();
             
-            LDA #NumberType.Char
+            LDA # NumberType.Char
+            if (BBR7, tokenValueL)
+            {
+                LDA # (NumberType.Char | NumberType.Byte)
+            }
             STA numberType
             LDA #TokenType.Number
             STA tokenType
@@ -785,6 +791,8 @@ unit Parser
                     {
                         if (BBS3, parserFlags) // we were in a function
                         {
+                            LDA currentFunctionID
+                            STA ZP.TOP0
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
                             RMB3 parserFlags
                         }
@@ -806,6 +814,7 @@ unit Parser
                         // always function 2
                         LDA #0x02                        
                         STA TOP0
+                        STA currentFunctionID
                         STZ TOP1
                         
                         Buffer.CaptureFunctionStart();
@@ -830,6 +839,8 @@ unit Parser
                     {
                         if (BBS3, parserFlags) // we were in a function
                         {
+                            LDA currentFunctionID
+                            STA ZP.TOP0
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
                             RMB3 parserFlags
                         }
@@ -847,6 +858,8 @@ unit Parser
                         SMB3 parserFlags // .MAIN or .FUNC seen
                         
                         Buffer.GetNextFunctionNumber(); // -> TOP
+                        LDA ZP.TOP0
+                        STA currentFunctionID
                         Buffer.CaptureFunctionStart();  // TOP ->
                         
                         LDA tokenBufferL
@@ -895,6 +908,8 @@ unit Parser
         {
             if (BBS3, parserFlags) // we were in a function
             {
+                LDA currentFunctionID
+                STA ZP.TOP0
                 Buffer.CaptureFunctionEnd();
                 RMB3 parserFlags
             }
