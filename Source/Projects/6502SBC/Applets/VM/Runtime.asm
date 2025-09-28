@@ -1368,7 +1368,36 @@ SYSCALL:
             LDA [codePage], Y
             INY
             TAX
-            JMP [opCodeJumps, X]            
+            JMP [opCodeJumps, X]    
+            
+READB:
+            PLA
+            STA operandH
+            PLA
+            STA operandL
+            
+            LDA [operand]
+            PHA
+
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]                 
+            
+WRITEB:
+            PLX
+            PLA
+            STA operandH
+            PLA
+            STA operandL
+            
+            TXA
+            STA [operand]
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X] 
             
 ENTER:
             LDA BP

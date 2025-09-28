@@ -109,6 +109,9 @@ unit OpCodes
         PUSHD2   = 0x9A,  // Push string address (word offset)
         STRC     = 0x9C,  // Pop index, pop string, push char
         STRCMP   = 0x9E,  // Pop 2 strings, push -1/0/1
+        
+        READB    = 0xA0,  // Pop address word, push byte
+        WRITEB   = 0xA0,  // Pop address word, pop byte
     }
     
     const byte[] opCodes = {
@@ -210,6 +213,9 @@ unit OpCodes
         OpCode.PUSHD2,   Arguments.Word, 6, 'P','U','S','H','D','2',             // PUSHD2 + word
         OpCode.STRC,     Arguments.None, 4, 'S','T','R','C',                     // STRC
         OpCode.STRCMP,   Arguments.None, 6, 'S','T','R','C','M','P',             // STRCMP
+        
+        OpCode.READB,    Arguments.None, 5, 'R','E','A','D','B',                 // READB
+        OpCode.WRITEB,   Arguments.None, 6, 'W','R','I','T','E','B',             // WRITEB
         
         // End marker
         0xFF
