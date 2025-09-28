@@ -1183,7 +1183,7 @@ unit Parser
                 if (NC)
                 {
                     Labels.FindLabel();
-                    if (NZ)
+                    if (NC)
                     {
                         PLY
                         LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL

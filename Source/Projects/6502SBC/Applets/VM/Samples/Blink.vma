@@ -1,0 +1,64 @@
+; LED Blink program - blink LED on pin 0 every second
+; Exit on NMI button press
+.CONST
+    GPIO.PinMode    0x26
+    GPIO.PinWrite   0x28
+    Time.Delay      0x17
+    IsBreak         0x10
+    ZP.TOP          0x12
+    
+.DATA
+    ; No data needed
+
+.MAIN
+    ; Configure pin 0 as output
+    PUSHB 0              ; Pin 0
+    POPA                 ; A = pin number
+    PUSHB 1              ; OUTPUT mode (1)
+    POPY                 ; Y = mode
+    SYSCALL GPIO.PinMode
+    
+loop:
+    ; Turn LED ON
+    PUSHB 0              ; Pin 0
+    POPA                 ; A = pin number
+    PUSHB 1              ; HIGH (1)
+    POPY                 ; Y = value
+    SYSCALL GPIO.PinWrite
+    
+    ; Delay 1000ms (0x000003E8)
+    PUSHW 0x03E8         ; Push 1000 (low word)
+    POPZW ZP.TOP         ; Store to ZP.TOP0-1
+    PUSH0                ; Push 0 (high word)
+    POPZW 0x14           ; Store to ZP.TOP2-3
+    SYSCALL Time.Delay
+    
+    ; Check for NMI break
+    SYSCALL IsBreak      ; Returns C flag set if break
+    PUSHC                ; Push carry flag (1 if break, 0 if not)
+    BNZF 25              ; Branch forward to exit if break detected
+    
+    ; Turn LED OFF
+    PUSHB 0              ; Pin 0
+    POPA                 ; A = pin number
+    PUSHB 0              ; LOW (0)
+    POPY                 ; Y = value
+    SYSCALL GPIO.PinWrite
+    
+    ; Delay 1000ms
+    PUSHW 0x03E8         ; Push 1000 (low word)
+    POPZW ZP.TOP         ; Store to ZP.TOP0-1
+    PUSH0                ; Push 0 (high word)
+    POPZW 0x14           ; Store to ZP.TOP2-3
+    SYSCALL Time.Delay
+    
+    ; Check for NMI break again
+    SYSCALL IsBreak      ; Returns C flag set if break
+    PUSHC                ; Push carry flag (1 if break, 0 if not)
+    BNZF 2               ; Branch forward to exit if break detected
+    
+    ; Loop forever (unless break detected)
+    BRAB loop            ; Branch back to loop
+    
+exit:
+    HALT

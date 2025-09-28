@@ -28,10 +28,12 @@ unit Runtime
     const byte operand          = runtimeSlots+11;
     
     const byte vmFlags          = runtimeSlots+12;
-    // Bit 0 - exiting
+    // Bit 0 - BIOS call Z return
+    // Bit 1 - BIOS call C return
     
     const byte stackStore       = runtimeSlots+13;
     const byte yStore           = runtimeSlots+14;
+    const byte aStore           = runtimeSlots+15;
     
     const OpCode[] opCodeJumps;
     
@@ -132,14 +134,8 @@ unit Runtime
         
         LDY #0 // PC
         STZ BP
-        
-        STZ vmFlags
     }
     
-    halt() noopt
-    {
-        SMB0 vmFlags // exiting
-    }
     badOpCode()
     {
         PHX
@@ -170,7 +166,6 @@ unit Runtime
         Print.Hex();
         
         PLX
-        SMB0 vmFlags // exiting
     }
     
     dispatchBIOS() noopt
@@ -196,11 +191,55 @@ NOP:        // NOP must be first to get the ball rolling ..
             
 // Stack Operations
 
+POPA:
+            PLA              // Pop byte from stack
+            STA aStore       // aStore now has the value for SYSCALL
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+POPY:
+            PLA              // Pop byte from stack
+            STA yStore       // yStore now has the value for SYSCALL
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]  
+            
+PUSHC:
+            LDA #0               // Default to 0
+            if (BBS1, vmFlags)   // If carry set from last BIOS call
+            {
+                LDA #1           // Change to 1
+            }
+            PHA                  // Push result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+PUSHZ:
+            LDA #0               // Default to 0
+            if (BBS0, vmFlags)   // If zero set from last BIOS call
+            {
+                LDA #1           // Change to 1
+            }
+            PHA                  // Push result
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]                                                                         
+
 PUSHW:                    
             LDA [codePage], Y
             INY
             PHA
-                
+            // fall through to PUSHB
 PUSHB:                    
             LDA [codePage], Y
             INY
@@ -377,6 +416,35 @@ BNZB:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+BNZF:
+            PLA                   // Pop the boolean
+            if (NZ)               // If not zero
+            {
+                CLC               // Clear carry for addition
+                TYA               // Current PC to A
+                ADC [codePage], Y // Add branch offset
+                TAY               // New PC back to Y
+            }
+            INY                   // Skip offset byte (whether branching or not)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+BRAB:
+            SEC               // Set carry for subtraction
+            TYA               // Current PC to A
+            SBC [codePage], Y // Subtract branch offset
+            TAY               // New PC back to Y
+            INY               // Skip the offset byte
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 
 PUSHZW:                    
             LDA [codePage], Y // byte offset  
@@ -560,7 +628,12 @@ SYSCALL:
             INY
             TAX
             PHY
+            LDY yStore
+            LDA aStore
             dispatchBIOS();
+            if (Z) { SMB0 vmFlags } else { RMB0 vmFlags }
+            if (C) { SMB1 vmFlags } else { RMB1 vmFlags }
+            STA aStore
             PLY
             
             LDA [codePage], Y
@@ -608,7 +681,6 @@ DUMP:
             TAX
             JMP [opCodeJumps, X]                                                                 
 HALT:         
-            halt();
             break;
             
         } // loop

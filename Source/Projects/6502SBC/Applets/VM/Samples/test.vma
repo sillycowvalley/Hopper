@@ -1,185 +1,31 @@
+; LED On test - turn LED on pin 0 on and exit
 .CONST
-    ZP.TOP0      0x12
-    ZP.TOP2      0x14
-    ZP.NEXT0     0x16
-    ZP.NEXT2     0x18
-    ZP.STR       0x1E
-    Time.Millis  0x18
-    Time.Seconds 0x19
-    Long.Add     0x1A
-    Long.Sub     0x1B
-    Long.Print   0x1F
-    Print.String 0x11
+    GPIO.PinMode    0x26
+    GPIO.PinWrite   0x28
     
 .DATA
-    STR0 "Noel's RetroLab Benchmark\n"
-    STR1 "."
-    STR2 "\n"
-    STR3 " ms\n"
-    STR4 " seconds\n"
+    ; No data needed
 
 .MAIN
-    ENTER
+    ; Configure pin 0 as output
+    PUSHB 0              ; Pin 0
+    POPA                 ; A = pin number
+    PUSHB 1              ; OUTPUT mode (1)
+    POPY                 ; Y = mode
     
-    ; Allocate locals:
-    PUSHW 0              ; s low at [BP+0]
-    PUSHW 0              ; s high at [BP-2]
-    PUSHW 0              ; start low at [BP-4]
-    PUSHW 0              ; start high at [BP-6]
-    PUSHW 0              ; ss (seconds start) at [BP-8]
-    PUSHW 0              ; i at [BP-10]
-    PUSHW 0              ; j at [BP-12]
+    DUMP
     
-    ; start = millis()
-    SYSCALL Time.Millis
-    PUSHZW ZP.TOP0
-    POPLW -4
-    PUSHZW ZP.TOP2
-    POPLW -6
+    SYSCALL GPIO.PinMode
     
-    ; ss = seconds()
-    SYSCALL Time.Seconds
-    PUSHZW ZP.TOP0
-    POPLW -8
+    ; Turn LED ON
+    PUSHB 0              ; Pin 0
+    POPA                 ; A = pin number
+    PUSHB 1              ; HIGH (1)
+    POPY                 ; Y = value
     
-    ; Print header
-    PUSHD STR0
-    POPZW ZP.STR
-    SYSCALL Print.String
+    DUMP
     
-    ; for (i = 1; i <= 10; i++)
-    PUSHW 1
-    POPLW -10
+    SYSCALL GPIO.PinWrite
     
-outer_loop:
-    ; s = 0
-    PUSHW 0
-    POPLW 0
-    PUSHW 0
-    POPLW -2
-    
-    ; for (j = 1; j <= 1000; j++)
-    PUSHW 1
-    POPLW -12
-    
-inner_loop:
-    ; s = s + j
-    PUSHLW -2
-    PUSHLW 0
-    POPZW ZP.NEXT0
-    POPZW ZP.NEXT2
-    
-    PUSHLW -12
-    POPZW ZP.TOP0
-    PUSHW 0
-    POPZW ZP.TOP2
-    
-    SYSCALL Long.Add
-    
-    PUSHZW ZP.NEXT0
-    POPLW 0
-    PUSHZW ZP.NEXT2
-    POPLW -2
-    
-    ; j++
-    PUSHLW -12
-    PUSH1
-    ADD
-    POPLW -12
-    
-    ; j <= 1000?
-    PUSHLW -12
-    PUSHW 1000
-    LE
-    BNZB inner_loop
-    
-    ; Print dot
-    PUSHD STR1
-    POPZW ZP.STR
-    SYSCALL Print.String
-    
-    ; i++
-    PUSHLW -10
-    PUSH1
-    ADD
-    POPLW -10
-    
-    ; i <= 10?
-    PUSHLW -10
-    PUSHW 10
-    LE
-    BNZB outer_loop
-    
-    ; Print newline and s
-    PUSHD STR2
-    POPZW ZP.STR
-    SYSCALL Print.String
-    
-    PUSHLW -2
-    PUSHLW 0
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
-    SYSCALL Long.Print
-    
-    PUSHD STR2
-    POPZW ZP.STR
-    SYSCALL Print.String
-    
-    ; Print elapsed ms
-    SYSCALL Time.Millis
-    PUSHZW ZP.TOP0
-    PUSHZW ZP.TOP2
-    POPZW ZP.NEXT2
-    POPZW ZP.NEXT0
-    
-    PUSHLW -6
-    PUSHLW -4
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
-    SYSCALL Long.Sub
-    
-    PUSHZW ZP.NEXT0
-    PUSHZW ZP.NEXT2
-    POPZW ZP.TOP2
-    POPZW ZP.TOP0
-    SYSCALL Long.Print
-    
-    PUSHD STR3
-    POPZW ZP.STR
-    SYSCALL Print.String
-    
-    ; Print elapsed seconds  
-    SYSCALL Time.Seconds     ; Result in ZP.TOP (32-bit)
-    
-    ; Move current seconds to NEXT
-    PUSHZW ZP.TOP0
-    PUSHZW ZP.TOP2
-    POPZW ZP.NEXT0
-    POPZW ZP.NEXT2
-    
-    ; Get saved start seconds to TOP
-    PUSHLW -8               ; Low word of saved seconds
-    PUSHW 0                 ; High word (was never saved, assume 0)
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
-    
-    ; NEXT = NEXT - TOP (current - start)
-    SYSCALL Long.Sub
-    
-    ; Move result to TOP for printing
-    PUSHZW ZP.NEXT0
-    PUSHZW ZP.NEXT2
-    POPZW ZP.TOP0
-    POPZW ZP.TOP2
-    
-    SYSCALL Long.Print
-    
-    PUSHD STR4
-    POPZW ZP.STR
-    SYSCALL Print.String
-    
-    ; Clean up
-    DROPW DROPW DROPW DROPW DROPW DROPW DROPW
-    
-    LEAVE
+    ; Exit
     HALT
