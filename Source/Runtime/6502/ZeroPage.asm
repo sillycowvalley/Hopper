@@ -206,7 +206,7 @@ unit ZP
     // MC6840 PTM  = 0xF000
     
     
-#ifdef MECB6502_IO    
+#ifdef MECB6502_IO
     
     reserve 0xF000, 256
     

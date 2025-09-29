@@ -60,9 +60,7 @@ unit SerialDevice
 
     isr()
     {
-#if !defined(ZEROPAGE_IO)
-        BRK
-#endif
+#if defined(ZEROPAGE_IO)
         loop
         {
             if (BBS7, StatusRegister) // interrupt request by 6850
@@ -93,6 +91,36 @@ unit SerialDevice
             CLC             // No byte added
             break;
         } // single exit
+#else
+        PHA
+        LDA StatusRegister 
+        AND # 0b10000000
+        if (NZ) // interrupt request by 6850
+        {
+            LDA StatusRegister 
+            AND # 0b00000001
+            if (NZ) // RDRF : receive data register full
+            {
+                TXA PHA // can't use XREG in ISR
+                LDA DataRegister // read serial byte
+                CMP #0x03               // is it break? (<ctrl><C>)
+                if (Z)
+                {
+                    LDA #0b00000001
+                    ORA ZP.FLAGS
+                    STA ZP.FLAGS
+                }
+                else
+                {
+                    LDX ZP.SerialInWritePointer    // push it into serial input buffer
+                    STA Address.SerialInBuffer, X
+                    INC ZP.SerialInWritePointer
+                }
+                PLA TAX // can't use XREG in ISR
+            }
+        }
+        PLA
+#endif        
     }
    
    

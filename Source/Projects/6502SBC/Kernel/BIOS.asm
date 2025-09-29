@@ -3,7 +3,7 @@ program BIOS
     #define HOPPER_BIOS
     
     //#define DEBUG     // mimimum of 874 bytes
-    //#define FILEDEBUG
+    #define FILEDEBUG
     #define CPU_65C02S
     
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
@@ -11,8 +11,8 @@ program BIOS
 #ifdef DEBUG    
     #define ROM_32K
 #else
-    //#define ROM_16K
-    #define ROM_8K
+    #define ROM_16K
+    //#define ROM_8K
 #endif
     
     
@@ -81,7 +81,15 @@ program BIOS
     NMI()
     {
         // Hardware break - NMI -> <ctrl><C>
+#ifdef CPU_65C02S        
         SMB0 ZP.FLAGS
+#else
+        PHA
+        LDA #0b00000001
+        ORA ZP.FLAGS
+        STA ZP.FLAGS
+        PLA
+#endif        
     }
     
     Initialize()
@@ -92,6 +100,7 @@ program BIOS
         LDX #0
         loop
         {
+#if defined(ZEROPAGE_IO)            
             CPX # ZP.ACIADATA // don't write to ACIA data register
             if (NZ) 
             {
@@ -105,6 +114,17 @@ program BIOS
                     }
                 }
             }
+#else
+            CPX # ZP.BIOSDISPATCHL // don't overwrite the SysCall dispatch vector
+            if (NZ)
+            {
+                CPX # ZP.BIOSDISPATCHH
+                if (NZ)
+                {
+                    STZ 0x00, X
+                }
+            }
+#endif            
             DEX
             if (Z) { break; }
         } 
@@ -345,11 +365,20 @@ program BIOS
         STA TransferLengthL
         STZ TransferLengthH
         
+#ifdef CPU_65C02S        
         if (BBR7, ZP.TOP0)
         {
             LDA #'.'
             Print.Char();
         }
+#else
+        LDA ZP.TOP0
+        if (PL)
+        {
+            LDA #'.'
+            Print.Char();
+        }   
+#endif
         
         // Skip address (4 hex chars = 2 bytes)
         Serial.HexIn();  // Address high (ignore)
@@ -511,7 +540,17 @@ program BIOS
                 case ErrorWord.CLS:    { cmdCls();     return; }
                 case ErrorWord.HEX:    { cmdHex();     return; }
                 case ErrorWord.DEL:    { cmdDel();     return; }
-                case ErrorWord.EXIT:   { SMB7 ZP.FLAGS return; }
+                case ErrorWord.EXIT:   
+                {
+#ifdef CPU_65C02S
+                    SMB7 ZP.FLAGS
+#else
+                    LDA #0b10000000
+                    ORA ZP.FLAGS
+                    STA ZP.FLAGS
+#endif
+                    return; 
+                }
                 
                 // Keyword from wrong table to cause system calls to be included in the build
                 // so that the optimizer doesn't remove it.
@@ -806,7 +845,12 @@ program BIOS
             printPrompt();
             processCommandLine();
             // Errors are handled by Error.CheckAndPrint() within ProcessCommandLine
+#ifdef CPU_65C02S            
             if (BBS7, ZP.FLAGS) { break; }
+#else
+            LDA ZP.FLAGS
+            if (MI) { break; }
+#endif            
         }
         
     }

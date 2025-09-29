@@ -222,4 +222,35 @@ unit ZP // ZeroPage.asm
     const byte IER                  = 0xFE;  // Interrupt Enable Register
     const byte ORA_NO_HANDSHAKE     = 0xFF;  // Output Register A (no handshake)
 #endif
+
+#ifdef MECB6502_IO
+    reserve 0xF000, 256
+    
+  #ifdef M6840_PTM    
+    // Motorola 6840 PTM (Programmable Timer Module)
+    const uint TCR                  = 0xF000;  // Write: Timer Control Registers 1 & 3   Read: NOP
+    const uint TCSR2                = 0xF001;  // Write: Control Register 2              Read: Status Register (least significant bit selects TCR as TCSR1 or TCSR3)
+    const uint TIMER1_MSB           = 0xF002;  // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint TIMER1_LSB           = 0xF003;  // Write: Timer #1 Latches                Read: LSB Buffer Register
+    const uint TIMER2_MSB           = 0xF004;  // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint TIMER2_LSB           = 0xF005;  // Write: Timer #1 Latches                Read: LSB Buffer Register
+    const uint TIMER3_MSB           = 0xF006;  // Write: MSB Buffer Register             Read: Timer 1 Counter
+    const uint TIMER3_LSB           = 0xF007;  // Write: Timer #1 Latches                Read: LSB Buffer Register
+  #endif
+    
+    // Motorola 6850 ACIA
+    const uint ACIACONTROL          = 0xF008;
+    const uint ACIASTATUS           = 0xF008;
+    const uint ACIADATA             = 0xF009;
+    
+    // Motorola 6821 PIA (Peripheral Interface Adapter)
+    const uint PORTA                = 0xF010; // Peripheral A Data Register
+    const uint CRA                  = 0xF011; // Control Register A
+    const uint PORTB                = 0xF012; // Peripheral B Data Register
+    const uint CRB                  = 0xF013; // Control Register B
+    // Data Direction Registers
+    const uint DDRA                 = 0xF010; // Data Direction Register A (Shared with PORTA)
+    const uint DDRB                 = 0xF012; // Data Direction Register B (Shared with PORTB)
+
+#endif
 }

@@ -2,9 +2,9 @@ program MemoryCheck
 {
     
     //#define CPU_65C02S
-    #define CPU_65C02
-    #define ROM_16K
-    //#define ROM_8K
+    #define CPU_65C02S
+    //#define ROM_16K
+    #define ROM_8K
     #define MEMORY_CHECK
     
     uses "/Source/Runtime/6502/ZeroPage"
