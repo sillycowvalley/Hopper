@@ -3,7 +3,7 @@ program BIOS
     #define HOPPER_BIOS
     
     //#define DEBUG     // mimimum of 874 bytes
-    #define FILEDEBUG
+    //#define FILEDEBUG
     #define CPU_65C02S
     
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
@@ -11,8 +11,11 @@ program BIOS
 #ifdef DEBUG    
     #define ROM_32K
 #else
+  #ifdef MECB6502_IO
     #define ROM_16K
-    //#define ROM_8K
+  #else
+    #define ROM_8K
+  #endif
 #endif
     
     

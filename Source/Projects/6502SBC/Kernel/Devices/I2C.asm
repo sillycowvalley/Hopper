@@ -238,6 +238,11 @@ unit I2C
             {
                 TXA PHA
                 
+#ifdef M6821_PIA
+                LDA # PIA_DDR
+                STA I2C_CR
+#endif
+                
                 LDA I2C_DDR // SDA input
                 AND # SDA_INV
                 STA I2C_DDR
@@ -253,6 +258,11 @@ unit I2C
                     AND # SCL_INV
                     STA I2C_DDR
                     
+#ifdef M6821_PIA
+                    LDA # PIA_PORT
+                    STA I2C_CR
+#endif
+                    
                     LDA  I2C_PORT  // Let's read after SCL goes high
                     AND # SDA
                     if (NZ)
@@ -260,6 +270,11 @@ unit I2C
                         SEC       // 1 -> C
                     }
                     ROL  ZP.InB   // Shift bit into the input byte
+                    
+#ifdef M6821_PIA
+                    LDA # PIA_DDR
+                    STA I2C_CR
+#endif
                     
                     LDA I2C_DDR // SCL low again for the next bit
                     ORA # SCL
@@ -279,10 +294,19 @@ unit I2C
                 
                 PLA TAX
                 
+#ifdef M6821_PIA
+                LDA # PIA_PORT
+                STA I2C_CR
+#endif                
                 
                 LDA I2C_PORT   // make sure SDA is indeed low
                 AND # SDA_INV
                 STA I2C_PORT
+                
+#ifdef M6821_PIA
+                LDA # PIA_DDR
+                STA I2C_CR
+#endif
                 
                 DEX
                 if (Z)
