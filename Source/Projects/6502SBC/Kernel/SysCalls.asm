@@ -4,11 +4,25 @@ unit SysCalls
     isBreak()
     {
         CLC
+#ifdef CPU_65C02S        
         if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
         {
             RMB0 ZP.FLAGS // clear it so we don't get a duplicate <Ctrl><C>
             SEC
         }
+#else
+        PHA   
+        LDA ZP.FLAGS
+        AND #0b00000001
+        if (NZ)   // Bit 0 set? (break detected)
+        {
+            LDA #0b11111110
+            AND ZP.FLAGS
+            STA ZP.FLAGS // clear it so we don't get a duplicate <Ctrl><C>
+            SEC
+        }
+        PLA
+#endif
     }
     
     // System Call Dispatcher

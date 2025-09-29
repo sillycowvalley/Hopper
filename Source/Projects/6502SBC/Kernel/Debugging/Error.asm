@@ -431,6 +431,7 @@ unit Error // ErrorID.asm
         STA ZP.ACCL  // Store target error ID
         STX ZP.ACCH  // Store MessageExtras
         
+#ifdef CPU_65C02S
         if (BBS0, ZP.ACCH) // PrefixSpace
         {
             Print.Space();
@@ -445,6 +446,26 @@ unit Error // ErrorID.asm
             LDA #'(' 
             Print.Char();
         }
+#else
+        LDA ZP.ACCH
+        AND # 0b00000001
+        if (NZ) // PrefixSpace
+        {
+            Print.Space();
+        }
+        LDA ZP.ACCH
+        if (V) // PrefixQuest
+        {
+            LDA #'?' 
+            Print.Char();
+        }
+        LDA ZP.ACCH
+        if (MI) // InParens
+        {
+            LDA #'(' 
+            Print.Char();
+        }
+#endif        
         
         LDA #(errorMessages0 % 256)
         STA ZP.IDYL
@@ -474,6 +495,7 @@ unit Error // ErrorID.asm
             Print.Space();
         }
         
+#ifdef CPU_65C02S        
         if (BBS7, ZP.ACCH) // InParens
         {
             LDA #')' 
@@ -503,6 +525,48 @@ unit Error // ErrorID.asm
         {
             Print.Space();
         }
+#else
+        LDA ZP.ACCH
+        if (MI) // InParens
+        {
+            LDA #')' 
+            Print.Char();
+        }
+        LDA ZP.ACCH
+        AND #0b00000100
+        if (NZ) // SuffixColon
+        {
+            LDA #':' 
+            Print.Char();
+        }
+        LDA ZP.ACCH
+        AND #0b00001000
+        if (NZ) // SuffixQuest
+        {
+            LDA #'?' 
+            Print.Char();
+        }
+        LDA ZP.ACCH
+        AND #0b00010000
+        if (NZ) // SuffixComma
+        {
+            LDA #',' 
+            Print.Char();
+        }
+        LDA ZP.ACCH
+        AND #0b00100000
+        if (NZ) // SuffixPeriod
+        {
+            LDA #'.' 
+            Print.Char();
+        }
+        LDA ZP.ACCH
+        AND #0b00000010
+        if (NZ) // SuffixSpace
+        {
+            Print.Space();
+        }
+#endif        
         PLY
         PLX
     }

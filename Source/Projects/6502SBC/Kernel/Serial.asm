@@ -12,8 +12,14 @@ unit Serial // Serial.asm
         SEI                    // disable interrupts
         STZ ZP.SerialInWritePointer
         STZ ZP.SerialInReadPointer
+#ifdef CPU_65C02S        
         RMB2 ZP.FLAGS // XON / XOFF
         RMB0 ZP.FLAGS // NMI break
+#else
+        LDA #0b11111010
+        AND ZP.FLAGS
+        STA ZP.FLAGS
+#endif        
         CLI                    // enable interrupts
         
         SerialDevice.initialize(); // device-specific initialization
@@ -42,6 +48,7 @@ unit Serial // Serial.asm
             CMP #240              // Nearly full? (240/256 bytes used)
             if (C)                // Carry set if >= 240
             {
+#ifdef CPU_65C02S                
                 if (BBR2, ZP.FLAGS)  // Bit 2 clear? (not stopped yet)
                 {
                     PHX
@@ -51,6 +58,21 @@ unit Serial // Serial.asm
                     
                     SMB2 ZP.FLAGS     // Set bit 2 (XOFF sent)
                 }
+#else
+                LDA ZP.FLAGS
+                AND #0b00000100
+                if (Z)  // Bit 2 clear? (not stopped yet)
+                {
+                    PHX
+                    LDA # Char.XOFF
+                    SerialDevice.writeChar();  // Send XOFF
+                    PLX
+                    
+                    LDA #0b00000100
+                    ORA ZP.FLAGS     // Set bit 2 (XOFF sent)
+                    STA ZP.FLAGS
+                }
+#endif                
             }
             PLA
         }
@@ -60,6 +82,7 @@ unit Serial // Serial.asm
     IsAvailable()
     {
         SEI
+#ifdef CPU_65C02S        
         if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
         {
             // <ctrl><C> is avaiable    
@@ -76,6 +99,29 @@ unit Serial // Serial.asm
                 return;
             }
         }
+#else
+        PHA
+        LDA ZP.FLAGS
+        AND #0b00000001
+        if (NZ) // Bit 0 set? (break detected)
+        {
+            // <ctrl><C> is avaiable    
+        }
+        else
+        {
+            LDA ZP.SerialInReadPointer
+            CMP ZP.SerialInWritePointer
+            // Z means no characters available in buffer
+            if (Z)
+            {
+                PLA
+                CLC
+                CLI
+                return;
+            }
+        }
+        PLA
+#endif        
         SEC
         CLI
     }
@@ -89,6 +135,7 @@ unit Serial // Serial.asm
             IsAvailable();
             if (C) { break; }
         }
+#ifdef CPU_65C02S        
         if (BBS0, ZP.FLAGS) // break?
         {
             RMB0 ZP.FLAGS
@@ -120,6 +167,48 @@ unit Serial // Serial.asm
                 PLA
             }
         }
+#else
+        LDA ZP.FLAGS
+        AND #0b00000001
+        if (NZ) // break?
+        {
+            LDA #0b11111110
+            AND ZP.FLAGS
+            STA ZP.FLAGS
+            LDA # Char.CtrlC // <ctrl><C>
+        }
+        else
+        {
+            PHX
+            LDX ZP.SerialInReadPointer
+            LDA Address.SerialInBuffer, X
+            INC ZP.SerialInReadPointer
+            PLX     
+            
+            // Check if we can send XON after consuming byte
+            LDA ZP.FLAGS
+            AND #0b00000100
+            if (NZ) // Bit 2 set? (currently stopped)
+            {
+                PHA
+                LDA ZP.SerialInWritePointer
+                SEC
+                SBC ZP.SerialInReadPointer
+                CMP #16                  // Mostly empty? (only 16/256 bytes used)
+                if (NC)                  // Carry clear if < 16
+                {
+                    LDA # Char.XON
+                    SerialDevice.writeChar();  // Send XON
+                    
+                    // Clear bit 2 (resume flow)
+                    LDA #0b11111011
+                    AND ZP.FLAGS
+                    STA ZP.FLAGS
+                }
+                PLA
+            }
+        }
+#endif        
     }
        
     // transmits A
