@@ -13,6 +13,8 @@ unit I2C
     const uint I2C_DDR  = ZP.DDRA;
     const uint I2C_PORT = ZP.PORTA;
     const uint I2C_CR   = ZP.CRA;
+    const byte PIA_DDR  = 0b00110000;    // CR for DDR
+    const byte PIA_PORT = 0b00110100;    // CR for PORT
     const byte SCL      = 0b01000000;    // DRA6 bitmask
     const byte SCL_INV  = 0b10111111;    //   inverted for easy clear bit
     const byte SDA      = 0b10000000;    // DRA7 bitmask
@@ -71,7 +73,7 @@ unit I2C
 #else   
 
   #ifdef M6821_PIA
-        LDA #0b00000000
+        LDA # PIA_DDR
         STA I2C_CR
   #endif
         LDA # SCL_INV
@@ -83,7 +85,7 @@ unit I2C
         STA I2C_DDR
 
   #ifdef M6821_PIA
-        LDA #0b00000100
+        LDA # PIA_PORT
         STA I2C_CR
   #endif
         LDA # SDA_INV
@@ -95,7 +97,7 @@ unit I2C
         STA I2C_PORT
         
   #ifdef M6821_PIA
-        LDA #0b00000000
+        LDA # PIA_DDR
         STA I2C_CR
   #endif        
         LDA I2C_DDR
@@ -115,7 +117,7 @@ unit I2C
         PHA          // preserve A (called from loadCommand)
     
   #ifdef M6821_PIA
-        LDA #0b00000000
+        LDA # PIA_DDR
         STA I2C_CR
   #endif    
         LDA I2C_DDR  // SDA low (output mode)
@@ -143,7 +145,7 @@ unit I2C
     
     RequestFrom()
     {
-        PopTop();           // bytes to read (0..255) -> TOPL
+        PopTop();          // bytes to read (0..255) -> TOPL
         PopA();            // I2C address -> A
         RequestFromTOPA();
         // bytes read in TOPL
@@ -380,20 +382,20 @@ unit I2C
         TXA PHA      
         
   #ifdef M6821_PIA
-        LDA #0b00000100
+        LDA # PIA_PORT
         STA I2C_CR
   #endif                                      
         LDA # SDA_INV   // Prepare SDA low for data transmission
         AND I2C_PORT
         STA I2C_PORT
         LDX # 8
+  #ifdef M6821_PIA
+        LDA # PIA_DDR
+        STA I2C_CR
+  #endif        
         JMP first       // Clock already low from Start()
         loop
         {
-  #ifdef M6821_PIA
-            LDA #0b00000000
-            STA I2C_CR
-  #endif
             LDA I2C_DDR
             ORA # SCL   // SCL output, clock low
             STA I2C_DDR
@@ -431,7 +433,7 @@ first:
         STA I2C_DDR
         
   #ifdef M6821_PIA
-        LDA #0b00000100
+        LDA # PIA_PORT
         STA I2C_CR
   #endif        
         LDA I2C_PORT       // Sample ACK bit
@@ -447,7 +449,7 @@ first:
         STA ZP.LastAck 
         
   #ifdef M6821_PIA
-        LDA #0b00000000
+        LDA # PIA_DDR
         STA I2C_CR
   #endif        
         LDA I2C_DDR

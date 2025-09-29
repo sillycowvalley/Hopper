@@ -11,29 +11,10 @@ program Blink
     {
         
         //SampleMicros = 1000;
-        PinMode(Board.GP14, PinModeOption.Input);
-        PinMode(Board.GP15, PinModeOption.Input);    
         loop
         {
             LED = !LED;
-            IO.Write((Time.Seconds).ToString());
-            if (DigitalRead(Board.GP14))
-            {
-                IO.Write(", A HIGH");    
-            }
-            else
-            {
-                IO.Write(", A LOW");    
-            }
-            if (DigitalRead(Board.GP15))
-            {
-                IO.Write(", B HIGH");    
-            }
-            else
-            {
-                IO.Write(", B LOW");    
-            }
-            IO.WriteLn();
+            IO.WriteLn((Time.Seconds).ToString());
             Delay(500);
         }
     }

@@ -234,7 +234,7 @@ unit ZP
     const uint CRB                  = 0xF013; // Control Register B
     // Data Direction Registers
     const uint DDRA                 = 0xF010; // Data Direction Register A (Shared with PORTA)
-    const uint DDRB                 = 0xF011; // Data Direction Register B (Shared with PORTB)
+    const uint DDRB                 = 0xF012; // Data Direction Register B (Shared with PORTB)
     
 #endif
 

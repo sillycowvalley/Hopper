@@ -4,6 +4,7 @@ program MemoryCheck
     //#define CPU_65C02S
     #define CPU_65C02
     #define ROM_16K
+    //#define ROM_8K
     #define MEMORY_CHECK
     
     uses "/Source/Runtime/6502/ZeroPage"
@@ -251,7 +252,9 @@ program MemoryCheck
         if (Z)
         {
             LDA # (I2CScanFound / 256) STA ACCH LDA # (I2CScanFound % 256) STA ACCL PrintACC();
-            SMB0 ZP.PLUGNPLAY
+            LDA ZP.PLUGNPLAY
+            ORA #0b00000001
+            STA ZP.PLUGNPLAY
         }
         else
         {
@@ -273,7 +276,9 @@ program MemoryCheck
             if (Z)
             {
                 LDA # (I2CScanFound / 256) STA ACCH LDA # (I2CScanFound % 256) STA ACCL PrintACC();
-                SMB1 ZP.PLUGNPLAY
+                LDA ZP.PLUGNPLAY
+                ORA #0b00000010
+                STA ZP.PLUGNPLAY
             }
             else
             {

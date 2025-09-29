@@ -23,10 +23,6 @@ unit MCU
         High = 1,
     }
     
-#ifdef M6821_PIA
-    byte portBShadow;
-#endif    
-    
 #ifdef MCU
     PinMode(byte pin, PinModeOption pinMode) library;
     bool DigitalRead(byte pin) library;
@@ -37,12 +33,9 @@ unit MCU
     {
         uint ddr = (pin <= 7) ? DDRA : DDRB;
 #ifdef M6821_PIA
-        uint cr  = (pin <= 7) ? CRA  : CRB;
         // Select the DDR
-        //byte crValue = (pin <= 7) ? 0b00110000 : 0b00000000;
-        //byte crValue = 0b00110000;
-        byte crValue = 0b00000000;
-        Memory.WriteByte(cr, crValue);
+        uint cr  = (pin <= 7) ? CRA  : CRB;
+        Memory.WriteByte(cr, 0b00110000);
 #endif        
         pin = pin & 0b00000111;
         pin = 1 << pin;
@@ -62,10 +55,7 @@ unit MCU
 #ifdef M6821_PIA
         // Select the port register
         uint cr   = (pin <= 7) ? CRA   : CRB;
-        //byte crValue = (pin <= 7) ? 0b00110100 : 0b00000100;
-        //byte crValue = 0b00110100;
-        byte crValue = 0b00000100;
-        Memory.WriteByte(cr, crValue);
+        Memory.WriteByte(cr, 0b00110100);
 #endif   
         byte b = Memory.ReadByte(port);
         return ((Memory.ReadByte(port) & (1 << (pin & 0b00000111))) != 0);
@@ -77,34 +67,8 @@ unit MCU
 #ifdef M6821_PIA
         // Select the port register
         uint cr      = (pin <= 7) ? CRA   : CRB;
-        byte crValue = (pin <= 7) ? 0b00110100 : 0b00000100;
-        Memory.WriteByte(cr, crValue);
-        
-        pin = 1 << (pin & 0b00000111);
-        if (port == PORTB)
-        {
-            if (value)
-            {
-                portBShadow = portBShadow | pin;
-            }
-            else
-            {
-                portBShadow = portBShadow & ~pin;
-            }
-            Memory.WriteByte(port, portBShadow);
-        }
-        else
-        {
-            if (value)
-            {
-                Memory.WriteByte(port, Memory.ReadByte(port) | pin);
-            }
-            else
-            {
-                Memory.WriteByte(port, Memory.ReadByte(port) & ~pin);
-            }
-        }
-#else
+        Memory.WriteByte(cr, 0b00110100);
+#endif
         pin = 1 << (pin & 0b00000111);
         if (value)
         {
@@ -114,7 +78,6 @@ unit MCU
         {
             Memory.WriteByte(port, Memory.ReadByte(port) & ~pin);
         }
-#endif
     }
     
     bool ledState;
