@@ -3,6 +3,34 @@ unit Memory // Memory.asm
     uses "Allocate.asm"
     uses "Free.asm"
     
+#ifdef UNIVERSAL
+    probeTest()
+    {
+        // set the carry flag if RAM is found at IDX
+        LDY #0
+        loop
+        {
+            LDA #0xAA
+            STA [IDX], Y
+            LDA [IDX], Y
+            CMP #0xAA
+            if (Z)
+            {
+                LDA #0x55
+                STA [IDX], Y
+                LDA [IDX], Y
+                CMP #0x55
+                if (Z)
+                {
+                    SEC // RAM found
+                    break;
+                }
+            }
+            CLC // not RAM
+            break;
+        }
+    }
+#else
     probeTest()
     {
         // set the carry flag if RAM is found at IDX
@@ -28,7 +56,7 @@ unit Memory // Memory.asm
             break;
         }
     }
-    
+#endif
     probeRAM()
     {
         loop
@@ -198,8 +226,14 @@ unit Memory // Memory.asm
     Available()
     {
         // uses IDX and ACC
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.ACCL
+        STA ZP.ACCH
+#else        
         STZ ZP.ACCL
         STZ ZP.ACCH
+#endif
         LDA ZP.FREELISTL
         STA ZP.IDXL
         LDA ZP.FREELISTH

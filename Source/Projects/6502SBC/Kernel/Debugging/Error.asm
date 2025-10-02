@@ -292,7 +292,11 @@ unit Error // ErrorID.asm
             {
                 // Found it! Print the word
                 INY  // Move to first character
+#ifdef UNIVERSAL                
+                PLA TAX
+#else
                 PLX                // Pull length into X register
+#endif
                 loop
                 {
                     CPX #0
@@ -327,8 +331,14 @@ unit Error // ErrorID.asm
     // Output: Word printed to serial, C set if found, NC if not found
     PrintWord()
     {
+#ifdef UNIVERSAL
+        STA ZP.TEMP
+        TYA PHA TXA PHA
+        LDA ZP.TEMP
+#else        
         PHY
         PHX
+#endif
         
         TAX
         AND #0x60   // Extract bits 6-5 (table selector)
@@ -360,8 +370,11 @@ unit Error // ErrorID.asm
         STA ZP.IDXH
         printKeywordFromTable(); // Input: X = target word ID, ZP.IDX = table address, munts X, Y
         
-        PLX
-        PLY
+#ifdef UNIVERSAL        
+        PLA TAX PLA TAY
+#else
+        PLX PLY
+#endif
     }
     
     flags MessageExtras
@@ -426,10 +439,9 @@ unit Error // ErrorID.asm
     // Input A = error ID, X = MessageExtras
     Message()
     {
-        PHX 
-        PHY
-        
         STA ZP.ACCL  // Store target error ID
+        TXA PHA TYA PHA
+        
         STX ZP.ACCH  // Store MessageExtras
         
         LDA ZP.ACCH
@@ -522,8 +534,8 @@ unit Error // ErrorID.asm
         {
             Print.Space();
         }
-        PLY
-        PLX
+        
+        PLA TAY PLA TAX
     }
 #else    
     
@@ -701,7 +713,11 @@ unit Error // ErrorID.asm
     // Output: ZP.LastError cleared (set to 0)
     ClearError()
     {
+#ifdef UNIVERSAL
+        LDA #0 STA ZP.LastError
+#else        
         STZ ZP.LastError
+#endif
     }
     
     // Check if error has occurred
@@ -728,7 +744,11 @@ unit Error // ErrorID.asm
     // Modifies: ZP.LastError (cleared if error was printed)
     CheckAndPrint()
     {
+#ifdef UNIVERSAL
+        TXA PHA
+#else        
         PHX
+#endif
         loop
         {
             CheckError();
@@ -746,6 +766,10 @@ unit Error // ErrorID.asm
             CLC  // Error was found and printed
             break;
         } // single exit
+#ifdef UNIVERSAL
+        PLA TAX
+#else
         PLX
+#endif
     }
 }

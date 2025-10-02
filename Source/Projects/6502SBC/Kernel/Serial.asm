@@ -10,13 +10,17 @@ unit Serial // Serial.asm
     {
         // reset buffer so at least start and end are the same
         SEI                    // disable interrupts
-        STZ ZP.SerialInWritePointer
-        STZ ZP.SerialInReadPointer
+        
 #ifdef UNIVERSAL        
+        LDA #0
+        STA ZP.SerialInWritePointer
+        STA ZP.SerialInReadPointer
         LDA #0b11111010
         AND ZP.FLAGS
         STA ZP.FLAGS
 #else
+        STZ ZP.SerialInWritePointer
+        STZ ZP.SerialInReadPointer
         RMB2 ZP.FLAGS // XON / XOFF
         RMB0 ZP.FLAGS // NMI break
 #endif        
@@ -53,10 +57,10 @@ unit Serial // Serial.asm
                 AND #0b00000100
                 if (Z)  // Bit 2 clear? (not stopped yet)
                 {
-                    PHX
+                    TXA PHA
                     LDA # Char.XOFF
                     SerialDevice.writeChar();  // Send XOFF
-                    PLX
+                    PLA TAX
                     
                     LDA #0b00000100
                     ORA ZP.FLAGS     // Set bit 2 (XOFF sent)
@@ -146,11 +150,11 @@ unit Serial // Serial.asm
         }
         else
         {
-            PHX
+            TXA PHA
             LDX ZP.SerialInReadPointer
             LDA Address.SerialInBuffer, X
             INC ZP.SerialInReadPointer
-            TAX
+            STA ZP.TEMP
             
             // Check if we can send XON after consuming byte  
             LDA #0b00000100
@@ -170,9 +174,8 @@ unit Serial // Serial.asm
                     STA ZP.FLAGS     // Clear bit 2 (resume flow)
                 }
             }
-            TXA
-            
-            PLX
+            PLA TAX
+            LDA ZP.TEMP
         }
 #else
         if (BBS0, ZP.FLAGS) // break?
