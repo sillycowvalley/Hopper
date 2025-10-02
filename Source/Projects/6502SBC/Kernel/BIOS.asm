@@ -8,8 +8,7 @@ program BIOS
     #define UNIVERSAL
     
 #ifdef UNIVERSAL        
-    #define CPU_6502
-    //#define CPU_65C02S
+    #define CPU_65C02
 #else
     #define CPU_65C02S
 #endif
@@ -28,7 +27,7 @@ program BIOS
     
     
     // Optional components
-#ifdef UNIVERSAL    
+#ifdef UNIVERSAL
     //#define HASFLOAT  // currently ~1250 bytes
 #endif
     #define HASEEPROM
@@ -112,7 +111,7 @@ program BIOS
         SEI  // Disable interrupts during initialization
         
         
-#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)            
+#if defined(ZEROPAGE_IO)            
         // Clear Zero Page
         LDX #0
         loop
@@ -136,7 +135,6 @@ program BIOS
         STZ ZP.FLAGS
 #else
         // Clear Zero Page
-        LDA #0
         LDX #0
         loop
         {
@@ -146,7 +144,7 @@ program BIOS
                 CPX # ZP.BIOSDISPATCHH
                 if (NZ)
                 {
-                    STA 0x00, X
+                    STZ 0x00, X
                 }
             }
             DEX
@@ -267,7 +265,7 @@ program BIOS
             LDA # ErrorID.YesNo 
             Error.Message();
               
-            Serial.WaitForChar();     // munts X
+            Serial.WaitForChar();
             AND #0xDF                 // Convert to uppercase
             PHA
             Serial.WriteChar();       // Echo
@@ -382,27 +380,24 @@ program BIOS
         // Wait for ':' start character
         loop
         {
-            Serial.WaitForChar(); // munts X
+            Serial.WaitForChar();
             CMP #':'
             if (Z) { break; }
         }
         
         // Get byte count
-        Serial.HexIn(); // munts X
+        Serial.HexIn();
         STA TransferLengthL
-        
-        
+        STZ TransferLengthH 
+          
 #ifdef UNIVERSAL        
-        LDA #0
-        STA TransferLengthH
-        LDA ZP.TOP0
+        BIT ZP.TOP0
         if (PL)
         {
             LDA #'.'
             Print.Char();
         }   
 #else
-        STZ TransferLengthH
         if (BBR7, ZP.TOP0)
         {
             LDA #'.'
@@ -411,19 +406,19 @@ program BIOS
 #endif
         
         // Skip address (4 hex chars = 2 bytes)
-        Serial.HexIn();  // Address high (ignore), munts X
-        Serial.HexIn();  // Address low (ignore), munts X
+        Serial.HexIn();  // Address high (ignore)
+        Serial.HexIn();  // Address low (ignore)
         
         // Get record type
-        Serial.HexIn();  // munts X
+        Serial.HexIn();
         CMP #0x01        // EOF record?
         if (Z)   
         {
-            Serial.HexIn(); // chomp the FF, munts X
+            Serial.HexIn(); // chomp the FF
             Serial.IsAvailable();
             if (C)
             {
-                Serial.WaitForChar(); // final newline, munts X
+                Serial.WaitForChar(); // final newline
             }
             CLC             // Signal EOF
             return;
@@ -437,10 +432,10 @@ program BIOS
             {
                 CPY #0
                 if (Z) { break; }
-                Serial.HexIn(); // munts X
+                Serial.HexIn();
                 DEY
             }
-            Serial.HexIn();  // Skip checksum, munts X
+            Serial.HexIn();  // Skip checksum
             SEC              // Continue
             return;
         }
@@ -453,7 +448,7 @@ program BIOS
         {
             LDA ZP.ACCL
             if (Z) { break; }
-            Serial.HexIn(); // munts X
+            Serial.HexIn();
             STA Address.HexBuffer, Y
             
             INC ZP.TOP0
@@ -494,11 +489,7 @@ program BIOS
     // Returns: STR pointing to GeneralBuffer with null-terminated filename (empty string if error)
     buildExecutableName()
     {
-#ifdef UNIVERSAL
-        TYA PHA TXA PHA        
-#else
         PHY PHX
-#endif
         
         LDY #0  // Source index (LineBuffer)
         LDX #0  // Dest index (GeneralBuffer)
@@ -555,11 +546,7 @@ program BIOS
         LDA # (Address.GeneralBuffer / 256)
         STA ZP.STRH
         
-#ifdef UNIVERSAL
-        PLA TAX PLA TAY
-#else        
         PLX PLY
-#endif
     }
     
     parseAndExecute()
@@ -716,12 +703,8 @@ program BIOS
                 loop
                 {
                     LDA File.FileDataBuffer, X
-#ifdef UNIVERSAL
-                    LDY #0
-                    STA [ZP.IDX], Y
-#else                    
                     STA [ZP.IDX]
-#endif
+
                     IncIDX();
                     INX
                     if (Z) { break; }
@@ -790,13 +773,12 @@ program BIOS
         Error.CheckAndPrint();         // Handle any errors set by commands
     }
     
-#ifdef UNIVERSAL
     readLine()
     {
-        LDY #0
+        LDX #0
         loop
         {
-            Serial.WaitForChar();   // Get character, munts X
+            Serial.WaitForChar();   // Get character
             CMP # Char.EOL          // CR?
             if (Z) 
             { 
@@ -810,10 +792,10 @@ program BIOS
             CMP # Char.Backspace          // Backspace?
             if (Z)
             {
-                CPY #0
+                CPX #0
                 if (NZ) 
                 { 
-                    DEY                   Serial.WriteChar();  // Echo backspace
+                    DEX                   Serial.WriteChar();  // Echo backspace
                     LDA #' '              Serial.WriteChar();  // Space
                     LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
                 }
@@ -823,86 +805,28 @@ program BIOS
             CMP #' '
             if (Z)
             {
-                CPY #0
+                CPX #0
                 if (Z) { continue; }    // Ignore space at start of line
-                PHA
-                LDA #0
-                STA LineBuffer, Y       // store null in buffer (as 'space')
-                PLA
+                STZ LineBuffer, X       // store null in buffer (as 'space')
             }
             else
             {
                 Char.ToUpper();        // A -> uppercase A
-                STA LineBuffer, Y      // store character in buffer
+                STA LineBuffer, X      // store character in buffer
             }
             Serial.WriteChar();        // Echo character
             
-            INY
-            CPY #63                    // Prevent overflow
+            INX
+            CPX #63                    // Prevent overflow
             if (Z) { break; }
         } // loop
         
         Print.NewLine();
-        LDA #0
-        STA Address.LineBuffer, Y      // null terminate
+        STZ Address.LineBuffer, X      // null terminate
         
-        TYA                            // Return length
+        TXA                            // Return length
     }
-#else    
-    readLine()
-    {
-        LDY #0
-        loop
-        {
-            Serial.WaitForChar();   // Get character, munts X
-            CMP # Char.EOL          // CR?
-            if (Z) 
-            { 
-                break;
-            }
-            CMP # 0x0D              // LF?
-            if (Z) 
-            { 
-                break;
-            }
-            CMP # Char.Backspace          // Backspace?
-            if (Z)
-            {
-                CPY #0
-                if (NZ) 
-                { 
-                    DEY                   Serial.WriteChar();  // Echo backspace
-                    LDA #' '              Serial.WriteChar();  // Space
-                    LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
-                }
-                continue;
-            }
-            // Skip leading spaces
-            CMP #' '
-            if (Z)
-            {
-                CPY #0
-                if (Z) { continue; }    // Ignore space at start of line
-                STZ LineBuffer, Y       // store null in buffer (as 'space')
-            }
-            else
-            {
-                Char.ToUpper();        // A -> uppercase A
-                STA LineBuffer, Y      // store character in buffer
-            }
-            Serial.WriteChar();        // Echo character
-            
-            INY
-            CPY #63                    // Prevent overflow
-            if (Z) { break; }
-        } // loop
-        
-        Print.NewLine();
-        STZ Address.LineBuffer, Y      // null terminate
-        
-        TYA                            // Return length
-    }
-#endif    
+ 
     
     printWelcome()
     {
@@ -922,16 +846,6 @@ program BIOS
     clearLineBuffer()
     {
         LDX # 63
-#ifdef UNIVERSAL 
-        LDA #0       
-        loop
-        {
-            STA Address.LineBuffer, X
-            DEX
-            if (MI) { break; }  
-            // Continue while X >= 0
-        }
-#else
         loop
         {
             STZ Address.LineBuffer, X
@@ -939,7 +853,6 @@ program BIOS
             if (MI) { break; }  
             // Continue while X >= 0
         }
-#endif
     }
     
     Hopper()
@@ -958,7 +871,7 @@ program BIOS
             processCommandLine();
             // Errors are handled by Error.CheckAndPrint() within ProcessCommandLine
 #ifdef UNIVERSAL            
-            LDA ZP.FLAGS
+            BIT ZP.FLAGS
             if (MI) { break; }
 #else
             if (BBS7, ZP.FLAGS) { break; }

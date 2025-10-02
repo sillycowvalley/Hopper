@@ -88,14 +88,8 @@ unit Shared
         STA ZP.TOP0
         LDA ZP.ACCH
         STA ZP.TOP1
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.TOP2
-        STA ZP.TOP3
-#else        
         STZ ZP.TOP2
         STZ ZP.TOP3
-#endif
     }
     MoveTopToNext()
     {
@@ -148,50 +142,7 @@ unit Shared
         STA ZP.TOP0
         ZeroTop3();
     }
-#ifdef UNIVERSAL    
-    ZeroTop()
-    {
-        LDA #0
-        STA ZP.TOP0
-        ZeroTop3();
-    }
-    ZeroTop3()
-    {
-        LDA #0
-        STA ZP.TOP1
-        STA ZP.TOP2
-        STA ZP.TOP3
-    }
-    ZeroNext()
-    {
-        LDA #0
-        STA ZP.NEXT0
-        ZeroNext3();
-    }
-    ZeroNext3()
-    {
-        LDA #0
-        STA ZP.NEXT1
-        STA ZP.NEXT2
-        STA ZP.NEXT3
-    }
-    ZeroResult()
-    {
-        LDA #0
-        STA ZP.RESULT0
-        STA ZP.RESULT1
-        STA ZP.RESULT2
-        STA ZP.RESULT3
-    }
-    ZeroResult8()
-    {
-        ZeroResult();
-        STA ZP.RESULT4
-        STA ZP.RESULT5
-        STA ZP.RESULT6
-        STA ZP.RESULT7
-    }
-#else
+
     ZeroTop()
     {
         STZ ZP.TOP0
@@ -229,7 +180,7 @@ unit Shared
         STZ ZP.RESULT6
         STZ ZP.RESULT7
     }
-#endif    
+
     ZeroCheckTop()
     {
         LDA ZP.TOP0

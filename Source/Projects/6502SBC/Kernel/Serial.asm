@@ -11,16 +11,14 @@ unit Serial // Serial.asm
         // reset buffer so at least start and end are the same
         SEI                    // disable interrupts
         
+        STZ ZP.SerialInWritePointer
+        STZ ZP.SerialInReadPointer
+        
 #ifdef UNIVERSAL        
-        LDA #0
-        STA ZP.SerialInWritePointer
-        STA ZP.SerialInReadPointer
         LDA #0b11111010
         AND ZP.FLAGS
         STA ZP.FLAGS
 #else
-        STZ ZP.SerialInWritePointer
-        STZ ZP.SerialInReadPointer
         RMB2 ZP.FLAGS // XON / XOFF
         RMB0 ZP.FLAGS // NMI break
 #endif        
@@ -131,7 +129,6 @@ unit Serial // Serial.asm
     }
     
     // Consumes the next character from the buffer and returns value in A
-    //   munts X
     WaitForChar()
     {
         loop
@@ -151,9 +148,11 @@ unit Serial // Serial.asm
         }
         else
         {
+            PHX
             LDX ZP.SerialInReadPointer
             LDA Address.SerialInBuffer, X
             INC ZP.SerialInReadPointer
+            PLX
             PHA
             
             // Check if we can send XON after consuming byte  
@@ -184,9 +183,11 @@ unit Serial // Serial.asm
         }
         else
         {
+            PHX
             LDX ZP.SerialInReadPointer
             LDA Address.SerialInBuffer, X
             INC ZP.SerialInReadPointer
+            PLX
             PHA
             
             // Check if we can send XON after consuming byte
@@ -262,15 +263,15 @@ unit Serial // Serial.asm
     }
     
     // loads two hex characters from Serial to byte in A
-    //    uses ZP.TEMP, munts X
+    //    uses ZP.TEMP
     HexIn()
     {
-        Serial.WaitForChar(); // munts X
+        Serial.WaitForChar();
         makeNibble();
         ASL A ASL A ASL A ASL A
         AND #0xF0
         STA ZP.TEMP
-        Serial.WaitForChar(); // munts X
+        Serial.WaitForChar();
         makeNibble();
         ORA ZP.TEMP
     }

@@ -88,14 +88,8 @@ unit Free
             LDA FREELISTH
             STA mfCURRENTH
 
-#ifdef UNIVERSAL
-            LDA #0
-            STA mfPREVIOUSL  
-            STA mfPREVIOUSH
-#else            
             STZ mfPREVIOUSL  
             STZ mfPREVIOUSH
-#endif
 
             loop 
             {
@@ -149,18 +143,11 @@ unit Free
             STA mfCURRENTPREVL
             LDA mfPREVIOUSH
             STA mfCURRENTPREVH
-#ifdef UNIVERSAL
-            LDA #0
-            STA mfCURRENTSIZEL
-            STA mfCURRENTSIZEH
-            STA mfCURRENTNEXTL
-            STA mfCURRENTNEXTH
-#else            
             STZ mfCURRENTSIZEL
             STZ mfCURRENTSIZEH
             STZ mfCURRENTNEXTL
             STZ mfCURRENTNEXTH
-#endif       
+
             loop
             {
                 LDA mfCURRENTL

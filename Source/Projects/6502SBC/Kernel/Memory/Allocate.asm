@@ -64,17 +64,6 @@ unit Allocate
         AND # 0xF8     // Mask out the lower 3 bits
         STA ZP.ACCL    // Store the masked low byte back
 
-#ifdef UNIVERSAL
-        LDA #0
-        STA maBESTL
-        STA maBESTH
-        STA maBESTSIZEL
-        STA maBESTSIZEH
-        STA maBESTNEXTL
-        STA maBESTNEXTH
-        STA maBESTPREVL
-        STA maBESTPREVH
-#else
         STZ maBESTL
         STZ maBESTH
         STZ maBESTSIZEL
@@ -83,7 +72,7 @@ unit Allocate
         STZ maBESTNEXTH
         STZ maBESTPREVL
         STZ maBESTPREVH
-#endif   
+
         LDA ACCH
         if (Z) // < 256
         {

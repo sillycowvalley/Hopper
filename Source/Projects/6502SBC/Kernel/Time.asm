@@ -3,11 +3,7 @@ unit Time // Time.asm
     Delay()
     {
         PHA
-#ifdef UNIVERSAL
-        TXA PHA
-#else
         PHX
-#endif
         
         // add ArgumentWord to Ticks0..3 and store in Target0..3
         LDX ZP.TICK3     // reading TICK3 makes a snapshot of all 4 registers on the emulator      
@@ -46,11 +42,7 @@ unit Time // Time.asm
             
             break; // Target >= Ticks : match ->
         }
-#ifdef UNIVERSAL
-        PLA TAX
-#else        
         PLX
-#endif
         PLA
     }
     
@@ -81,14 +73,8 @@ unit Time // Time.asm
         STA TOP0
         LDA # 0x03
         STA TOP1
-#ifdef UNIVERSAL
-        LDA #0
-        STA TOP2
-        STA TOP3
-#else        
         STZ TOP2
         STZ TOP3
-#endif
         
         LDX #0 // Div
         Long.DivMod(); // Seconds = Millis / 1000   

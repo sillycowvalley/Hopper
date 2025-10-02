@@ -226,9 +226,8 @@ unit I2C
           
         Stop();
 #else
-        LDA # 0
-        STA ZP.I2CInWritePtr
-        STA ZP.I2CInReadPtr
+        STZ ZP.I2CInWritePtr
+        STZ ZP.I2CInReadPtr
         LDX ZP.TOP0
         if (NZ) // bytes to read != 0?
         {
@@ -340,14 +339,8 @@ unit I2C
     Read()
     {
         // return zero if we read past end of buffer
-#if !defined(UNIVERSAL)
         STZ ZP.TOP0
         STZ ZP.TOP1
-#else
-        LDA # 0
-        STA ZP.TOP0
-        STA ZP.TOP1
-#endif
         
         LDA ZP.I2CInReadPtr
         CMP ZP.I2CInWritePtr
@@ -364,9 +357,9 @@ unit I2C
      
     ByteOut() // clears ZP.OutB 
     {
-        PHA        
+        PHA   
+        PHX     
 #if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
-        PHX
         
         RMB1 I2C_PORT // in case this is a data byte we set SDA low
         LDX # 8
@@ -401,9 +394,7 @@ unit I2C
         }
         SMB0 I2C_DDR    // clock low
         
-        PLX
 #else             
-        TXA PHA      
         
   #ifdef M6821_PIA
         LDA # PIA_PORT
@@ -480,8 +471,8 @@ first:
         ORA # SCL          // Clock low to complete ACK
         STA I2C_DDR
         
-        PLA TAX
 #endif        
+        PLX
         PLA
     } 
 }

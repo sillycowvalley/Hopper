@@ -25,12 +25,7 @@ unit EEPROM
     // Note: Includes 5ms delay after I2C operations per EEPROM timing requirements
     copyProgramPage()
     {
-#ifdef UNIVERSAL
-        TYA PHA
-#else
         PHY
-#endif
-        
         
         // BeginTx - Start I2C write transaction to set EEPROM read address
         LDA # (I2C.SerialEEPROMAddress << 1)
@@ -57,29 +52,18 @@ unit EEPROM
         RequestFromTOPA(); // A has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
         // assume success
         
-#ifdef UNIVERSAL
-        LDY #0
-#endif        
         LDX # 0
         loop
         {
             LDA Address.I2CInBuffer, X
-#ifdef UNIVERSAL
-            STA [IDX], Y
-#else
             STA [IDX]
-#endif
             IncIDY();
             IncIDX();
             INX
             CPX # serialPageSize
             if (Z) { break; }
         } 
-#ifdef UNIVERSAL
-        PLA TAY
-#else
         PLY
-#endif
     }
 
 
@@ -96,11 +80,8 @@ unit EEPROM
     copyPageToEEPROM()
     {
         PHA
-#ifdef UNIVERSAL 
-        TXA PHA TYA PHA
-#else
         PHX PHY
-#endif
+        
         // initialize the delay in ms for Time.Delay()
         LDA # 5
         Shared.LoadTopByte();
@@ -116,17 +97,10 @@ unit EEPROM
         STA ZP.OutB
         I2C.ByteOut(); // EEPROM address LSB
         
-#ifdef UNIVERSAL
-        LDY # 0
-#endif        
         LDX # serialPageSize
         loop
         {
-#ifdef UNIVERSAL
-            LDA [IDX], Y
-#else
             LDA [IDX]
-#endif
             STA ZP.OutB
             I2C.ByteOut(); // zeros ZP.OutB
             IncIDX();
@@ -139,11 +113,7 @@ unit EEPROM
         // delay 5ms after Stop() for EEPROM (TOP is already initialized with 0x0005)
         Time.Delay();
              
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
         PLA
     }
     
@@ -272,14 +242,8 @@ unit EEPROM
         PHA
         
         // LSB's always zero
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.IDYL
-        STA ZP.IDXL
-#else        
         STZ ZP.IDYL
         STZ ZP.IDXL
-#endif
         
         // copy a 256 byte 6502 page:
         copyPageToEEPROM();
@@ -296,14 +260,9 @@ unit EEPROM
         STA ZP.TOP0
         LDA #0
         STA ZP.TOP1
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.TOP2
-        STA ZP.TOP3
-#else        
         STZ ZP.TOP2
         STZ ZP.TOP3
-#endif
+
         Time.Delay(); // Proper timer-based delay
         
         PLA
@@ -333,14 +292,8 @@ unit EEPROM
         // IDX contains the destination address
         
         // LSB's always zero
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.IDYL
-        STA ZP.IDXL
-#else                
         STZ ZP.IDYL
         STZ ZP.IDXL
-#endif
         
         // copy a 256 byte 6502 page:
         copyProgramPage();
