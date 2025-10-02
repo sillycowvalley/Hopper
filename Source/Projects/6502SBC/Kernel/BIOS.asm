@@ -5,12 +5,13 @@ program BIOS
     //#define DEBUG     // mimimum of 874 bytes
     //#define FILEDEBUG
     
-    //#define UNIVERSAL
+    #define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_6502
+    //#define CPU_65C02S
 #else
-    #define CPU_65C02S    
+    #define CPU_65C02S
 #endif
     
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
@@ -266,7 +267,7 @@ program BIOS
             LDA # ErrorID.YesNo 
             Error.Message();
               
-            Serial.WaitForChar();
+            Serial.WaitForChar();     // munts X
             AND #0xDF                 // Convert to uppercase
             PHA
             Serial.WriteChar();       // Echo
@@ -346,7 +347,7 @@ program BIOS
         Error.MessageNL();
         
         Shared.ZeroTop();
-        
+
         // Process Intel HEX lines
         loop
         {
@@ -357,7 +358,7 @@ program BIOS
         // Close file
         LDA # 0x80 // high bit for executable file
         File.EndSave();
-        
+ 
         Print.NewLine();
         
         LDA # ErrorID.HEXDone
@@ -381,13 +382,13 @@ program BIOS
         // Wait for ':' start character
         loop
         {
-            Serial.WaitForChar();
+            Serial.WaitForChar(); // munts X
             CMP #':'
             if (Z) { break; }
         }
         
         // Get byte count
-        Serial.HexIn();
+        Serial.HexIn(); // munts X
         STA TransferLengthL
         
         
@@ -410,19 +411,19 @@ program BIOS
 #endif
         
         // Skip address (4 hex chars = 2 bytes)
-        Serial.HexIn();  // Address high (ignore)
-        Serial.HexIn();  // Address low (ignore)
+        Serial.HexIn();  // Address high (ignore), munts X
+        Serial.HexIn();  // Address low (ignore), munts X
         
         // Get record type
-        Serial.HexIn();
+        Serial.HexIn();  // munts X
         CMP #0x01        // EOF record?
         if (Z)   
         {
-            Serial.HexIn(); // chomp the FF
+            Serial.HexIn(); // chomp the FF, munts X
             Serial.IsAvailable();
             if (C)
             {
-                Serial.WaitForChar(); // final newline
+                Serial.WaitForChar(); // final newline, munts X
             }
             CLC             // Signal EOF
             return;
@@ -431,35 +432,35 @@ program BIOS
         if (NZ)          // Skip non-data records
         {
             // Skip data bytes and checksum for non-data records
-            LDX TransferLengthL
+            LDY TransferLengthL
             loop
             {
-                CPX #0
+                CPY #0
                 if (Z) { break; }
-                Serial.HexIn();
-                DEX
+                Serial.HexIn(); // munts X
+                DEY
             }
-            Serial.HexIn();  // Skip checksum
+            Serial.HexIn();  // Skip checksum, munts X
             SEC              // Continue
             return;
         }
         
         // Read data bytes into FileDataBuffer
         LDY #0
-        LDX TransferLengthL
+        LDA TransferLengthL
+        STA ZP.ACCL
         loop
         {
-            CPX #0
+            LDA ZP.ACCL
             if (Z) { break; }
-            Serial.HexIn();
+            Serial.HexIn(); // munts X
             STA Address.HexBuffer, Y
-            //Print.Hex();
             
             INC ZP.TOP0
             if (Z) { INC ZP.TOP1 }
             
             INY
-            DEX
+            DEC ZP.ACCL
         }
         
         // Skip checksum
@@ -792,10 +793,10 @@ program BIOS
 #ifdef UNIVERSAL
     readLine()
     {
-        LDX #0
+        LDY #0
         loop
         {
-            Serial.WaitForChar();   // Get character
+            Serial.WaitForChar();   // Get character, munts X
             CMP # Char.EOL          // CR?
             if (Z) 
             { 
@@ -809,10 +810,10 @@ program BIOS
             CMP # Char.Backspace          // Backspace?
             if (Z)
             {
-                CPX #0
+                CPY #0
                 if (NZ) 
                 { 
-                    DEX                   Serial.WriteChar();  // Echo backspace
+                    DEY                   Serial.WriteChar();  // Echo backspace
                     LDA #' '              Serial.WriteChar();  // Space
                     LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
                 }
@@ -822,38 +823,38 @@ program BIOS
             CMP #' '
             if (Z)
             {
-                CPX #0
+                CPY #0
                 if (Z) { continue; }    // Ignore space at start of line
                 PHA
                 LDA #0
-                STA LineBuffer, X       // store null in buffer (as 'space')
+                STA LineBuffer, Y       // store null in buffer (as 'space')
                 PLA
             }
             else
             {
                 Char.ToUpper();        // A -> uppercase A
-                STA LineBuffer, X      // store character in buffer
+                STA LineBuffer, Y      // store character in buffer
             }
             Serial.WriteChar();        // Echo character
             
-            INX
-            CPX #63                    // Prevent overflow
+            INY
+            CPY #63                    // Prevent overflow
             if (Z) { break; }
         } // loop
         
         Print.NewLine();
         LDA #0
-        STA Address.LineBuffer, X      // null terminate
+        STA Address.LineBuffer, Y      // null terminate
         
-        TXA                            // Return length
+        TYA                            // Return length
     }
 #else    
     readLine()
     {
-        LDX #0
+        LDY #0
         loop
         {
-            Serial.WaitForChar();   // Get character
+            Serial.WaitForChar();   // Get character, munts X
             CMP # Char.EOL          // CR?
             if (Z) 
             { 
@@ -867,10 +868,10 @@ program BIOS
             CMP # Char.Backspace          // Backspace?
             if (Z)
             {
-                CPX #0
+                CPY #0
                 if (NZ) 
                 { 
-                    DEX                   Serial.WriteChar();  // Echo backspace
+                    DEY                   Serial.WriteChar();  // Echo backspace
                     LDA #' '              Serial.WriteChar();  // Space
                     LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
                 }
@@ -880,26 +881,26 @@ program BIOS
             CMP #' '
             if (Z)
             {
-                CPX #0
+                CPY #0
                 if (Z) { continue; }    // Ignore space at start of line
-                STZ LineBuffer, X       // store null in buffer (as 'space')
+                STZ LineBuffer, Y       // store null in buffer (as 'space')
             }
             else
             {
                 Char.ToUpper();        // A -> uppercase A
-                STA LineBuffer, X      // store character in buffer
+                STA LineBuffer, Y      // store character in buffer
             }
             Serial.WriteChar();        // Echo character
             
-            INX
-            CPX #63                    // Prevent overflow
+            INY
+            CPY #63                    // Prevent overflow
             if (Z) { break; }
         } // loop
         
         Print.NewLine();
-        STZ Address.LineBuffer, X      // null terminate
+        STZ Address.LineBuffer, Y      // null terminate
         
-        TXA                            // Return length
+        TYA                            // Return length
     }
 #endif    
     

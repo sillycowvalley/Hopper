@@ -130,7 +130,8 @@ unit Serial // Serial.asm
         CLI
     }
     
-    // consumes the next character from the buffer and returns value in A
+    // Consumes the next character from the buffer and returns value in A
+    //   munts X
     WaitForChar()
     {
         loop
@@ -150,11 +151,10 @@ unit Serial // Serial.asm
         }
         else
         {
-            TXA PHA
             LDX ZP.SerialInReadPointer
             LDA Address.SerialInBuffer, X
             INC ZP.SerialInReadPointer
-            STA ZP.TEMP
+            PHA
             
             // Check if we can send XON after consuming byte  
             LDA #0b00000100
@@ -174,8 +174,7 @@ unit Serial // Serial.asm
                     STA ZP.FLAGS     // Clear bit 2 (resume flow)
                 }
             }
-            PLA TAX
-            LDA ZP.TEMP
+            PLA
         }
 #else
         if (BBS0, ZP.FLAGS) // break?
@@ -185,11 +184,10 @@ unit Serial // Serial.asm
         }
         else
         {
-            PHX
             LDX ZP.SerialInReadPointer
             LDA Address.SerialInBuffer, X
             INC ZP.SerialInReadPointer
-            TAX
+            PHA
             
             // Check if we can send XON after consuming byte
             if (BBS2, ZP.FLAGS)      // Bit 2 set? (currently stopped)
@@ -206,8 +204,7 @@ unit Serial // Serial.asm
                     RMB2 ZP.FLAGS     // Clear bit 2 (resume flow)
                 }
             }
-            TXA
-            PLX
+            PLA
         }        
 #endif        
     }
@@ -265,15 +262,15 @@ unit Serial // Serial.asm
     }
     
     // loads two hex characters from Serial to byte in A
-    //    uses ZP.TEMP
+    //    uses ZP.TEMP, munts X
     HexIn()
     {
-        Serial.WaitForChar();
+        Serial.WaitForChar(); // munts X
         makeNibble();
         ASL A ASL A ASL A ASL A
         AND #0xF0
         STA ZP.TEMP
-        Serial.WaitForChar();
+        Serial.WaitForChar(); // munts X
         makeNibble();
         ORA ZP.TEMP
     }
