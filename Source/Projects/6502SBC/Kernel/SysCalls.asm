@@ -4,13 +4,7 @@ unit SysCalls
     isBreak()
     {
         CLC
-#ifdef CPU_65C02S        
-        if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
-        {
-            RMB0 ZP.FLAGS // clear it so we don't get a duplicate <Ctrl><C>
-            SEC
-        }
-#else
+#ifdef UNIVERAL        
         PHA   
         LDA ZP.FLAGS
         AND #0b00000001
@@ -22,6 +16,12 @@ unit SysCalls
             SEC
         }
         PLA
+#else
+        if (BBS0, ZP.FLAGS)   // Bit 0 set? (break detected)
+        {
+            RMB0 ZP.FLAGS // clear it so we don't get a duplicate <Ctrl><C>
+            SEC
+        }
 #endif
     }
     

@@ -39,7 +39,7 @@ unit SerialDevice
     
     writeChar()
     {
-#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         loop
         {
             if (BBS1, StatusRegister) { break; } // loop if not ready (bit set means TDRE is empty and ready)

@@ -115,17 +115,17 @@ unit PIA6821
         SEI
         
         // Zero the tick counter
-#ifdef CPU_65C02S
-        STZ ZP.TICK0
-        STZ ZP.TICK1
-        STZ ZP.TICK2
-        STZ ZP.TICK3
-#else
+#ifdef UNIVERSAL
         LDA #0
         STA ZP.TICK0
         STA ZP.TICK1
         STA ZP.TICK2
         STA ZP.TICK3
+#else
+        STZ ZP.TICK0
+        STZ ZP.TICK1
+        STZ ZP.TICK2
+        STZ ZP.TICK3
 #endif        
         
         // At a CPU clock of 1 mHz = 1000 cycles - 1 = 999 / 0x03E7 would give us a sample cycle of 1ms

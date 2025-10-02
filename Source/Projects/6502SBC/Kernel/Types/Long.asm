@@ -978,16 +978,16 @@ unit Long
         loop
         {
             Shared.MoveTopToNext();
-#ifdef CPU_65C02S
-            if (BBS7, ZP.NEXT3)
+#ifdef UNIVERSAL
+            LDA ZP.NEXT3
+            if (MI)
             {
                 LDA #'-'
                 Serial.WriteChar();
                 NegateNext();
             }
 #else
-            LDA ZP.NEXT3
-            if (MI)
+            if (BBS7, ZP.NEXT3)
             {
                 LDA #'-'
                 Serial.WriteChar();

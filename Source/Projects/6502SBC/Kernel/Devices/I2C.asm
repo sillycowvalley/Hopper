@@ -64,7 +64,7 @@ unit I2C
     }
     Start()
     {
-#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         RMB0 I2C_DDR     // Start with SCL as input HIGH
         SMB1 I2C_DDR     // Ensure SDA is output low before SCL is LOW
         RMB1 I2C_PORT
@@ -109,7 +109,7 @@ unit I2C
     
     Stop()
     {
-#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         SMB1 I2C_DDR // SDA low
         RMB0 I2C_DDR // SCL high
         RMB1 I2C_DDR // SDA high after SCL == Stop condition
@@ -166,7 +166,7 @@ unit I2C
         // (SDA is bit 1, SCL is bit 0)
          
         // initialize the I2C buffer
-#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         STZ ZP.I2CInWritePtr
         STZ ZP.I2CInReadPtr
         LDX ZP.TOP0
@@ -340,7 +340,7 @@ unit I2C
     Read()
     {
         // return zero if we read past end of buffer
-#if defined(CPU_65C02S)
+#if !defined(UNIVERSAL)
         STZ ZP.TOP0
         STZ ZP.TOP1
 #else
@@ -365,7 +365,7 @@ unit I2C
     ByteOut() // clears ZP.OutB 
     {
         PHA        
-#if defined(CPU_65C02S) && defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         PHX
         
         RMB1 I2C_PORT // in case this is a data byte we set SDA low
