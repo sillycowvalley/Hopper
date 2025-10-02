@@ -52,59 +52,38 @@ program VM
     const string msgOutOfMemory  = "Out of memory";
     const string msgBadBinary    = "Bad Binary";
     
-    
-    // Get filename argument from command line
-    // Input:  None (reads from command line buffer at Address.LineBuffer)
-    // Output: C set if filename found, clear if none
-    //         ZP.STR = pointer to filename (null-terminated, uppercase)
-    //         A = filename length
-    // Note:   Returns first argument after program name
-    //         BIOS has already uppercased the input
-    GetFilename()
+    getFilename() // appends .BIN if missing
     {
-#ifdef UNIVERSAL
-        TYA PHA TXA PHA
-#else        
-        PHY PHX
-#endif
+        LDA #1
+        Args.GetArg();  // ZP.STR points to filename
         
-        Args.GetArgument(); // filename length -> A, X != 0 means "." seen
-        
-        // append ".VMA" if there is no "."
-        CPX #0
-        if (Z)
+        // Scan for dot in filename
+        LDY #0
+        loop
         {
-            // getArgument gives us a STR that is pointing into Address.LineBuffer so we can extend the filename safely
-            LDY #0
-            loop
-            {
-                LDA [ZP.STR], Y
-                if (Z) { break; } 
-                INY
-            }
-            LDA #'.'
-            STA [ZP.STR], Y
+            LDA [ZP.STR], Y
+            if (Z) { break; }    // End of string - no dot found
+            CMP #'.'
+            if (Z) { return; }   // Found dot - extension exists, done
             INY
-            LDA #'B'
-            STA [ZP.STR], Y
-            INY
-            LDA #'I'
-            STA [ZP.STR], Y
-            INY
-            LDA #'N'
-            STA [ZP.STR], Y
-            INY
-            LDA #0
-            STA [ZP.STR], Y
-            TYA // length -> A
         }
-#ifdef UNIVERSAL
-        STA ZP.TEMP
-        PLA TAX PLA TAY
-        LDA ZP.TEMP
-#else        
-        PLX PLY
-#endif
+        
+        // No dot found, Y points to null terminator
+        // Append ".BIN" 
+        LDA #'.'
+        STA [ZP.STR], Y
+        INY
+        LDA #'B'
+        STA [ZP.STR], Y
+        INY
+        LDA #'I'
+        STA [ZP.STR], Y
+        INY
+        LDA #'N'
+        STA [ZP.STR], Y
+        INY
+        LDA #0               // New null terminator
+        STA [ZP.STR], Y
     }
     
     ReadByte()
@@ -262,7 +241,7 @@ program VM
             return;
         }
         // "<source>.BIN" -> STR
-        GetFilename();
+        getFilename();
         
         // open source
         LDA # FileType.Any // all files

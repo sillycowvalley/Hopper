@@ -90,6 +90,9 @@ unit BIOSInterface
         FPutC,            // In: ACC=char(0-255), NEXT=FILE* | Out: TOP=char written/-1
         FWrite,           // In: IDX=buffer, IDY=element size, ACC=element count, NEXT=FILE* | Out: TOP=bytes written/-1 (not elements written)
         
+        ArgCount,         // Out: A = number of arguments (including command name)
+        ArgGet,           // In:  A = argument index | Out: ZP.STR argument pointer
+        
         // TODO:
         // - I2C
     }

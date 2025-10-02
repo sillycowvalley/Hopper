@@ -1,6 +1,98 @@
 unit SysCalls
 {
      
+    GetArgCount()
+    {
+        PHY
+        
+        LDY #0               // LineBuffer index
+        LDX #0               // Argument count
+        STZ ZP.ACCH          // Track if we found any non-null in this position
+        
+        loop
+        {
+            LDA Address.LineBuffer, Y
+            if (NZ)
+            {
+                // Found start of argument
+                LDA ZP.ACCH
+                if (Z)
+                {
+                    INX              // Count this argument
+                    INC ZP.ACCH      // Mark we're in an argument
+                }
+            }
+            else
+            {
+                STZ ZP.ACCH          // Reset - we're in nulls now
+            }
+            
+            INY
+            CPY #64          // End of buffer
+            if (Z) { break; }
+        }
+        
+        TXA                  // Return count in A
+        SEC                  // Success
+        
+        PLY
+    }
+    
+    GetArg()  
+    {
+        STA ZP.ACCL          // Save target argument index
+        PHY
+        
+        LDY #0               // LineBuffer index  
+        LDX #0               // Current argument index
+        STZ ZP.ACCH          // In-argument flag
+        
+        loop
+        {
+            LDA Address.LineBuffer, Y
+            if (NZ)
+            {
+                // Found start of argument
+                LDA ZP.ACCH
+                if (Z)
+                {
+                    // Starting new argument
+                    CPX ZP.ACCL
+                    if (Z)
+                    {
+                        // Found target argument - set ZP.STR
+                        TYA
+                        CLC
+                        ADC #(Address.LineBuffer % 256)
+                        STA ZP.STRL
+                        LDA #(Address.LineBuffer / 256)
+                        ADC #0
+                        STA ZP.STRH
+                        SEC              // Success
+                        break;
+                    }
+                    INX                  // Next argument
+                    INC ZP.ACCH          // Mark in-argument
+                }
+            }
+            else
+            {
+                STZ ZP.ACCH              // Not in argument
+            }
+            
+            INY
+            CPY #64                      // End of buffer
+            if (Z) 
+            { 
+                CLC                      // Argument not found
+                break; 
+            }
+        }
+        // Single exit
+        
+        PLY
+    }
+     
     isBreak()
     {
         CLC
@@ -147,6 +239,15 @@ unit SysCalls
             {
                 isBreak();
             }
+            case SysCall.ArgCount:
+            {
+                GetArgCount();
+            }
+            case SysCall.ArgGet:
+            {
+                GetArg();
+            }
+            
             // Print/Console
             case SysCall.PrintString:
             {

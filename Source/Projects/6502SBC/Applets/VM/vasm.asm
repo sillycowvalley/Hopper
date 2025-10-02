@@ -45,50 +45,38 @@ program VASM
     const string msgFailedSaving   = "Failed Writing Output\n";
     const string msgSuccess        = " Created\n";
     
-    // Get filename argument from command line
-    // Input:  None (reads from command line buffer at Address.LineBuffer)
-    // Output: C set if filename found, clear if none
-    //         ZP.STR = pointer to filename (null-terminated, uppercase)
-    //         A = filename length
-    // Note:   Returns first argument after program name
-    //         BIOS has already uppercased the input
-    GetFilename()
+    getFilename() // appends .VMA if missing
     {
-        PHY
-        PHX
+        LDA #1
+        Args.GetArg();  // ZP.STR points to filename
         
-        Args.GetArgument(); // filename length -> A, X != 0 means "." seen
-        
-        // append ".VMA" if there is no "."
-        CPX #0
-        if (Z)
+        // Scan for dot in filename
+        LDY #0
+        loop
         {
-            // getArgument gives us a STR that is pointing into Address.LineBuffer so we can extend the filename safely
-            LDY #0
-            loop
-            {
-                LDA [ZP.STR], Y
-                if (Z) { break; } 
-                INY
-            }
-            LDA #'.'
-            STA [ZP.STR], Y
+            LDA [ZP.STR], Y
+            if (Z) { break; }    // End of string - no dot found
+            CMP #'.'
+            if (Z) { return; }   // Found dot - extension exists, done
             INY
-            LDA #'V'
-            STA [ZP.STR], Y
-            INY
-            LDA #'M'
-            STA [ZP.STR], Y
-            INY
-            LDA #'A'
-            STA [ZP.STR], Y
-            INY
-            LDA #0
-            STA [ZP.STR], Y
-            TYA // length -> A
         }
-        PLX
-        PLY
+        
+        // No dot found, Y points to null terminator
+        // Append ".VMA" 
+        LDA #'.'
+        STA [ZP.STR], Y
+        INY
+        LDA #'V'
+        STA [ZP.STR], Y
+        INY
+        LDA #'M'
+        STA [ZP.STR], Y
+        INY
+        LDA #'A'
+        STA [ZP.STR], Y
+        INY
+        LDA #0               // New null terminator
+        STA [ZP.STR], Y
     }
     
     // Create output filename: "HELLO" | "HELLO.VMA" -> "HELLO.BIN"
@@ -192,7 +180,7 @@ program VASM
                 break;
             }
             // "<source>.VMA" -> STR
-            GetFilename();
+            getFilename();
             
             Buffer.Initialize();
             if (NC)

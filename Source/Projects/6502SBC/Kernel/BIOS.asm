@@ -66,24 +66,6 @@ program BIOS
     uses "SysCalls"
     
     
-    //uses "TestSuite/TestTime"
-    //uses "TestSuite/TestHeap"
-    //uses "TestSuite/TestLong"
-    //uses "TestSuite/TestFloat"
-    
-    Run()
-    {
-        Tests.RunTests();
-        
-        // End marker
-        LDA #'!'
-        Serial.WriteChar();
-        NewLine();
-        
-        loop { }
-    }
-    
-    
     IRQ()
     {
         Serial.ISR();
@@ -306,7 +288,7 @@ program BIOS
             INY
         }
         
-        // Address.LineBuffer + ".EXE" -> STR
+        // Address.LineBuffer + ".COM" -> STR
         buildExecutableName();
         
         // Check if file exists
@@ -467,17 +449,17 @@ program BIOS
     }
     
     // Build executable filename from first word of LineBuffer
-    // Extracts the command name (up to first space) and conditionally appends .EXE
+    // Extracts the command name (up to first space) and conditionally appends .COM
     // 
     // Input:  LineBuffer contains the full command line (e.g., "TYPE SOURCE.C")
     // Output: GeneralBuffer contains executable filename
-    //         - If command has no extension (no dot): appends ".EXE"
+    //         - If command has no extension (no dot): appends ".COM"
     //         - If command already has extension: keeps as-is
     //
     // Examples:
-    //   "TYPE SOURCE.C"  -> "TYPE.EXE"     (command "TYPE" gets .EXE)
+    //   "TYPE SOURCE.C"  -> "TYPE.COM"     (command "TYPE" gets .COM)
     //   "EDIT.TXT FILE"  -> "EDIT.TXT"     (already has extension)
-    //   "PROG"           -> "PROG.EXE"     (no extension, adds .EXE)
+    //   "PROG"           -> "PROG.COM"     (no extension, adds .COM)
     //   "TEST.COM"       -> "TEST.COM"     (keeps original extension)
     //
     // Preserves: LineBuffer unchanged (arguments remain available to program)
@@ -509,25 +491,25 @@ program BIOS
             
             INY
             INX
-            CPX #60  // Leave room for .EXE and null (64 - 4 - 1 = 59, round to 60)
+            CPX #60  // Leave room for .COM and null (64 - 4 - 1 = 59, round to 60)
             if (Z) { break; }  // Prevent buffer overrun
         }
         
-        // Only append .EXE if no dot was found
+        // Only append .COM if no dot was found
         LDA ZP.TEMP
         if (Z)  // No dot found
         {
-            // Append .EXE (we have room since we stopped at 60)
+            // Append .COM (we have room since we stopped at 60)
             LDA #'.'
             STA Address.GeneralBuffer, X
             INX
-            LDA #'E'
+            LDA #'C'
             STA Address.GeneralBuffer, X
             INX
-            LDA #'X'
+            LDA #'O'
             STA Address.GeneralBuffer, X
             INX
-            LDA #'E'
+            LDA #'M'
             STA Address.GeneralBuffer, X
             INX
         }
@@ -577,8 +559,8 @@ program BIOS
             }
         }
         
-        // Build filename with .EXE in STR-> GeneralBuffer (not modifying LineBuffer)
-        buildExecutableName();  // Creates "COMMAND.EXE" in STR-> GeneralBuffer
+        // Build filename with .COM in STR-> GeneralBuffer (not modifying LineBuffer)
+        buildExecutableName();  // Creates "COMMAND.COM" in STR-> GeneralBuffer
         
         LDA # DirWalkAction.FindExecutable
         File.Exists();
@@ -613,7 +595,7 @@ program BIOS
             File.Exists();
             if (C)
             {
-                // .BIN exists - now change GeneralBuffer to "VM.EXE" 
+                // .BIN exists - now change GeneralBuffer to "VM.COM" 
                 // and keep original command line in LineBuffer as the argument
                 LDA #'V'
                 STA Address.GeneralBuffer
@@ -621,16 +603,16 @@ program BIOS
                 STA Address.GeneralBuffer+1
                 LDA #'.'
                 STA Address.GeneralBuffer+2
-                LDA #'E'
+                LDA #'C'
                 STA Address.GeneralBuffer+3
-                LDA #'X'
+                LDA #'O'
                 STA Address.GeneralBuffer+4
-                LDA #'E'
+                LDA #'M'
                 STA Address.GeneralBuffer+5
                 LDA #0
                 STA Address.GeneralBuffer+6
                 
-                // STR already points to GeneralBuffer, now contains "VM.EXE"
+                // STR already points to GeneralBuffer, now contains "VM.COM"
                 
                 // Now modify LineBuffer to have: "VM MYPROG.BIN"
                 // Shift the original content to make room for "VM\0"
@@ -737,36 +719,22 @@ program BIOS
     }
     
     // Parse filename from command line after the command keyword
-    // Input:  X = position in LineBuffer after command word  
     // Output: C set if successful, NC if no filename found
     //         ZP.STR points to filename in LineBuffer
     parseFilename()
     {
-        // Skip any more 'spaces' before the filename
-        loop
+        SysCalls.GetArgCount();
+        CMP #2                    // Should be "COMMAND filename"
+        if (NZ)
         {
-            LDA Address.LineBuffer, X
-            if (NZ) { break; } // not null
-            
-            CPX #63
-            if (Z)  
-            {
-                // end of line, no filename found
-                Error.FilenameExpected();
-                CLC return;
-            }
-            INX
+            Error.FilenameExpected();
+            CLC
+            return;
         }
         
-        // Point ZP.STR to filename start in LineBuffer
-        TXA
-        CLC
-        ADC # (Address.LineBuffer % 256)
-        STA ZP.STRL  
-        LDA # (Address.LineBuffer/ 256)
-        ADC #0
-        STA ZP.STRH
-        SEC  // Success
+        LDA #1
+        SysCalls.GetArg();                 // ZP.STR now points to filename
+        SEC                       // Success
     }
     
     processCommandLine()
@@ -884,9 +852,7 @@ program BIOS
     Hopper()
     {
         Initialize();  
-#ifdef DEBUG        
-        //Run(); // tests
-#endif
+        
         printWelcome();
         
         // Main command loop

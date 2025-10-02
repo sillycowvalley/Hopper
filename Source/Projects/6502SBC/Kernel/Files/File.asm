@@ -2827,7 +2827,7 @@ unit File
                 LDA #0b11000000             // Set open bit (7), set write bit (6), clear eof indicator (1)
                 STA cfilesFILE
                 
-                // If filename for fopen had ".EXE" extension then SMB0 cfilesFILE
+                // If filename for fopen had ".COM" extension then SMB0 cfilesFILE
                 LDY #0
                 loop
                 {
@@ -2844,17 +2844,17 @@ unit File
                     {
                         INY
                         LDA [STR], Y 
-                        CMP #'E'
+                        CMP #'C'
                         if (Z)
                         {
                             INY
                             LDA [STR], Y 
-                            CMP #'X'
+                            CMP #'O'
                             if (Z)
                             {
                                 INY
                                 LDA [STR], Y 
-                                CMP #'E'
+                                CMP #'M'
                                 if (Z)
                                 {
                                     INY

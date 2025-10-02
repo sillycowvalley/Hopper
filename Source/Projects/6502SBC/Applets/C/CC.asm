@@ -48,10 +48,10 @@ program CC
     const byte outputNameL = ccSlots+2;
     const byte outputNameH = ccSlots+3;
     
-    // Create output filename: "HELLO" -> "HELLO.EXE"
+    // Create output filename: "HELLO" -> "HELLO.COM"
     makeOutputName()
     {
-        // Allocate buffer for output name (14 bytes max + ".EXE" + null)
+        // Allocate buffer for output name (14 bytes max + ".COM" + null)
         LDA #20
         STA ZP.ACCL
         STZ ZP.ACCH
@@ -88,17 +88,17 @@ program CC
             }
         }
         
-        // Append ".EXE"
+        // Append ".COM"
         LDA #'.'
         STA [ZP.IDX], Y
         INY
-        LDA #'E'
+        LDA #'C'
         STA [ZP.IDX], Y
         INY
-        LDA #'X'
+        LDA #'O'
         STA [ZP.IDX], Y
         INY
-        LDA #'E'
+        LDA #'M'
         STA [ZP.IDX], Y
         INY
         
@@ -154,6 +154,33 @@ program CC
         PLY
     }
 
+    getFilename() // appends .C if missing
+    {
+        LDA #1
+        Args.GetArg();  // ZP.STR points to filename
+        
+        // Scan for dot in filename
+        LDY #0
+        loop
+        {
+            LDA [ZP.STR], Y
+            if (Z) { break; }    // End of string - no dot found
+            CMP #'.'
+            if (Z) { return; }   // Found dot - extension exists, done
+            INY
+        }
+        
+        // No dot found, Y points to null terminator
+        // Append ".C" 
+        LDA #'.'
+        STA [ZP.STR], Y
+        INY
+        LDA #'C'
+        STA [ZP.STR], Y
+        INY
+        LDA #0               // New null terminator
+        STA [ZP.STR], Y
+    }
     
     Hopper()
     {
@@ -175,7 +202,7 @@ program CC
             Errors.Show();
             return;
         }
-        GetFilename(); // appends .C if missing
+        getFilename(); // appends .C if missing
         LDA ZP.STRL
         STA sourceNameL
         LDA ZP.STRH
@@ -254,7 +281,7 @@ if (NC)
             CodeGen.Compile();
             if (C)
             {
-                // Create output filename by adding ".EXE"
+                // Create output filename by adding ".COM"
                 makeOutputName(); // -> STR
                 if (C)
                 {

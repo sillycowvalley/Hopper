@@ -127,6 +127,16 @@ LDA 0x01, S      // Stack-relative doesn't exist
 - **Public methods preserve X and Y** - only if they modify them
 - **No blanket preservation** - save code space
 
+### 11. Namespace Qualification**
+- Namespace qualification (e.g., `Address.LineBuffer` vs `LineBuffer`) is **optional** in Hopper Assembly
+- Qualification is **only required** to disambiguate between identifiers with the same name
+- The program **will not compile** if an identifier is not defined - there are no "default" or "implicit" namespaces
+- Both `LineBuffer` and `Address.LineBuffer` refer to the same location when no ambiguity exists
+- Use qualification for **clarity** when working with complex codebases, but don't assume it's required for correctness
+
+In Hopper Assembly, namespace qualification is optional.  The program would not compile is something were not defined.
+Namespace qualification is only required to disambiguate between two identifiers of the same name.
+
 ```hopper
 // Public method (uppercase first letter)
 PublicMethod()
