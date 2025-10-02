@@ -1498,8 +1498,10 @@ unit Debug // Debug.asm
     Crash()
     {
         Serial.HexOut();
+        STA ZP.TEMP
         
-        TSX PHX
+        TSX TXA PHA
+        LDA ZP.TEMP
         PHA
         
         Print.NewLine();

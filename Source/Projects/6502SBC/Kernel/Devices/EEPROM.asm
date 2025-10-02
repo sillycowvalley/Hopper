@@ -267,8 +267,14 @@ unit EEPROM
         STA ZP.TOP0
         LDA #0
         STA ZP.TOP1
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.TOP2
+        STA ZP.TOP3
+#else        
         STZ ZP.TOP2
         STZ ZP.TOP3
+#endif
         Time.Delay(); // Proper timer-based delay
         
         PLA

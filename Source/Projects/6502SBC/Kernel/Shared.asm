@@ -175,6 +175,22 @@ unit Shared
         STA ZP.NEXT2
         STA ZP.NEXT3
     }
+    ZeroResult()
+    {
+        LDA #0
+        STA ZP.RESULT0
+        STA ZP.RESULT1
+        STA ZP.RESULT2
+        STA ZP.RESULT3
+    }
+    ZeroResult8()
+    {
+        ZeroResult();
+        STA ZP.RESULT4
+        STA ZP.RESULT5
+        STA ZP.RESULT6
+        STA ZP.RESULT7
+    }
 #else
     ZeroTop()
     {
@@ -198,6 +214,21 @@ unit Shared
         STZ ZP.NEXT2
         STZ ZP.NEXT3
     }
+    ZeroResult()
+    {
+        STZ ZP.RESULT0
+        STZ ZP.RESULT1
+        STZ ZP.RESULT2
+        STZ ZP.RESULT3
+    }
+    ZeroResult8()
+    {
+        ZeroResult();
+        STZ ZP.RESULT4
+        STZ ZP.RESULT5
+        STZ ZP.RESULT6
+        STZ ZP.RESULT7
+    }
 #endif    
     ZeroCheckTop()
     {
@@ -214,20 +245,6 @@ unit Shared
         ORA ZP.NEXT3
     }
     
-    ZeroResult()
-    {
-        STZ ZP.RESULT0
-        STZ ZP.RESULT1
-        STZ ZP.RESULT2
-        STZ ZP.RESULT3
-    }
-    ZeroResult8()
-    {
-        ZeroResult();
-        STZ ZP.RESULT4
-        STZ ZP.RESULT5
-        STZ ZP.RESULT6
-        STZ ZP.RESULT7
-    }    
+        
     
 }

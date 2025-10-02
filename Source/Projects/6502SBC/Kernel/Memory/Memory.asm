@@ -171,7 +171,11 @@ unit Memory // Memory.asm
     Allocate()
     {
         PHA
+#ifdef UNIVERSAL
+        TYA PHA
+#else        
         PHY
+#endif
 
         LDA ZP.ACCL
         PHA
@@ -194,7 +198,11 @@ unit Memory // Memory.asm
         STA ZP.ACCL
         
         SEC
+#ifdef UNIVERSAL
+        PLA TAY
+#else        
         PLY
+#endif
         PLA
     }
     
@@ -204,7 +212,11 @@ unit Memory // Memory.asm
     // Munts:  A, ZP.M* scratch space (internal to memory management operations), C on success
     Free()
     {   
+#ifdef UNIVERSAL
+        TYA PHA
+#else
         PHY
+#endif
 
 #if defined(DEBUG)
         LDA IDXL
@@ -219,8 +231,11 @@ unit Memory // Memory.asm
         
         
         SEC // success
-        
+#ifdef UNIVERSAL
+        PLA TAY
+#else        
         PLY
+#endif
     }
     
     Available()
@@ -277,8 +292,14 @@ unit Memory // Memory.asm
         // uses ACC, IDX and IDY
                
         // available = 0
+#ifdef UNIVERSAL
+        LDA #0
+        STA ACCL
+        STA ACCH
+#else        
         STZ ACCL
         STZ ACCH
+#endif
         
         // current = FREELIST
         LDA FREELISTL
@@ -435,7 +456,12 @@ unit Memory // Memory.asm
     ClearPage()
     {
         STA ZP.IDXH
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.IDXL
+#else        
         STZ ZP.IDXL
+#endif
         
         LDY #0
         LDA #0
