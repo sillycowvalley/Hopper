@@ -55,6 +55,19 @@ unit CodeGen
     
     const string msgMain = "main";
     
+    noMoreLocals()
+    {
+#ifdef UNIVERSAL
+        PHA
+        LDA #0b00000100
+        ORA functionFlags
+        STA functionFlags
+        PLA
+#else        
+        SMB2 functionFlags // no more local variable declarations
+#endif
+    }
+    
     // Initialize code generation buffers and state
     Initialize()
     {
@@ -601,12 +614,23 @@ Print.Hex(); LDA #'f' Print.Char();LDA #'f' Print.Char();
     {
         loop
         {
+#ifdef UNIVERSAL
+            LDA #0b00000100
+            AND functionFlags
+            if (NZ)
+            {
+                LDA # Error.UnsupportedLocalScope
+                Errors.ShowIDX();
+                break;
+            }
+#else            
             if (BBS2, functionFlags)
             {
                 LDA # Error.UnsupportedLocalScope
                 Errors.ShowIDX();
                 break;
             }
+#endif
             // Allocate stack space for the variable - just push a dummy value
             VCode.Reserve(); if (NC) { return; }
             VCode.Flush();   if (NC) { return; }
@@ -2188,7 +2212,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
         {
             case NodeType.CompoundStmt:
             {
-                SMB2 functionFlags // no more local variable declarations
+                noMoreLocals(); // no more local variable declarations
                 generateBlock();
                 if (NC) { return; }
             }
@@ -2199,7 +2223,7 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             }
             case NodeType.For:
             {
-                SMB2 functionFlags // no more local variable declarations
+                noMoreLocals(); // no more local variable declarations
                 generateFor();
                 if (NC) { return; }
             }
@@ -2210,13 +2234,13 @@ LDA #'z' Print.Char(); Print.Space(); Print.String(); Print.Space();
             }
             case NodeType.If:
             {
-                SMB2 functionFlags // no more local variable declarations
+                noMoreLocals(); // no more local variable declarations
                 generateIf();
                 if (NC) { return; }
             }
             case NodeType.While:
             {
-                SMB2 functionFlags // no more local variable declarations
+                noMoreLocals(); // no more local variable declarations
                 generateWhile();
                 if (NC) { return; }
             }
@@ -2799,7 +2823,13 @@ Print.Hex(); LDA #'s' Print.Char();
                 CompareStrings(); // Compare [STR] with [IDY]
                 if (C)
                 {
+#ifdef UNIVERSAL
+                    LDA #0b00000001
+                    ORA functionFlags
+                    STA functionFlags
+#else                    
                     SMB0 functionFlags // Bit 0 - we're in "main"
+#endif
                     
                     // Patch the initial JMP instruction to point to main
                     Gen6502.PatchEntryJump();
@@ -2812,7 +2842,13 @@ Print.Hex(); LDA #'s' Print.Char();
                     AST.CountFunctionParameters(); // [AST.astNode] -> A = count
                     if (NZ)
                     {
+#ifdef UNIVERSAL
+                        LDA #0b00000010
+                        ORA functionFlags
+                        STA functionFlags
+#else                    
                         SMB1 functionFlags // Bit 1 - "main" has arguments
+#endif
                         Gen6502.CreateCLIArguments();
                     }
                     if (NC) { return; }

@@ -22,8 +22,9 @@ unit VCode
     
     const byte VarType         = vzSlots+11;
     const byte vFlags          = vzSlots+12;
-    // Bit 0 - set means currently flushing, not set means adding a VCode
-    // Bit 1 - peeps were printed (in DEBUG)
+    
+    // Bit 7 - set means currently flushing, not set means adding a VCode
+    // Bit 6 - peeps were printed (in DEBUG)
     
     const byte peep0           = vzESlots+0;
     const byte peep1           = vzESlots+1;
@@ -539,7 +540,13 @@ unit VCode
     {
         STZ vFlags
 #ifdef PEEPHOLE  
-        SMB0 vFlags // flushing
+#ifdef UNIVERSAL
+        LDA #0b10000000
+        ORA vFlags
+        STA vFlags
+#else
+        SMB7 vFlags // flushing
+#endif        
         LDX #0
         loop
         {  
@@ -552,10 +559,12 @@ unit VCode
             }
             INX
         }
-        if (BBS1, vFlags)
+  #ifdef DEBUG
+        if (BBS6, vFlags)
         {
             Print.NewLine();
         }
+  #endif
 #endif         
         
         flush();
@@ -865,7 +874,7 @@ Gen6502.emitByte(); SEC PLY
         STZ peep7
     }
     
-    
+#ifdef DEBUG
     dumpPeeps()
     {
         CPX #0
@@ -932,11 +941,11 @@ Gen6502.emitByte(); SEC PLY
                 LDA peep0
                 printPeep(); Print.Space();
                 
-                SMB1 vFlags
+                SMB6 vFlags
             }
         }
     }
-    
+#endif
     // X = number of laps
     tryPeeps()
     {
@@ -962,7 +971,7 @@ Gen6502.emitByte(); SEC PLY
                                 case (VOpCode.GetNEXT | VOpCode.Int):
                                 case (VOpCode.GetNEXT | VOpCode.Long):
                                 {
-                                    if (BBS0, vFlags) // Flushing
+                                    BIT vFlags if (MI) // Flushing
                                     {
                                         // GetNEXT, PushNEXT, PopBYTE -> GetBYTE
                                         DEC vcodeOffset
@@ -997,7 +1006,7 @@ Print.Space(); LDA #'U' Print.Char();
                         case (VOpCode.PushTOP  | VOpCode.Long):
                         case (VOpCode.PushTOP  | VOpCode.Int):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // PushNEXT, Discard -> NOP
                                 DEC vcodeOffset
@@ -1029,7 +1038,7 @@ Print.Space(); LDA #'A' Print.Char();
                                             {
                                                 case (VOpCode.GetNEXT | VOpCode.Int):
                                                 {
-                                                    if (BBS0, vFlags) // Flushing
+                                                    BIT vFlags if (MI) // Flushing
                                                     {
                                                         // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
                                                         //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
@@ -1080,7 +1089,7 @@ Print.Space(); LDA #'G' Print.Char();LDA #'2' Print.Char();
                                             {
                                                 case (VOpCode.GetNEXT | VOpCode.Long):
                                                 {
-                                                    if (BBS0, vFlags) // Flushing
+                                                    BIT vFlags if (MI) // Flushing
                                                     {
                                                         // GetNEXT[BP+offset] + PushNEXT + IncNEXT + PutNEXT[BP+offset] + Discard -> Inc[BP+offset]                                                    
                                                         //                      1 byte     1 byte    2 bytes              1 byte     = 5 bytes to remove
@@ -1286,7 +1295,7 @@ Print.Space(); LDA #'B' Print.Char();
                             {
                                 case (VOpCode.GetNEXT | VOpCode.Int):
                                 {
-                                    if (BBS0, vFlags) // Flushing
+                                    BIT vFlags if (MI) // Flushing
                                     {
                                         // GetNEXT, PushNEXT, PopNEXT -> GetNEXT
                                         popPeep();
@@ -1428,7 +1437,7 @@ Print.Space(); LDA #'V' Print.Char();LDA #'2' Print.Char();
                     {
                         case (VOpCode.GetNEXT | VOpCode.Int):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // GetNEXT, NEXTtoTOP -> GetTOP
                                 popPeep();
@@ -1456,7 +1465,7 @@ Print.Space(); LDA #'O' Print.Char();
                     {
                         case (VOpCode.GetNEXT | VOpCode.Long):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // GetNEXT, NEXTtoTOP -> GetTOP
                                 popPeep();
@@ -1484,7 +1493,7 @@ Print.Space(); LDA #'H' Print.Char();
                     {
                         case VOpCode.ZeroNEXT:
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // ZeroNEXT, PutNEXT -> PutZERO
                                 popPeep();
@@ -1507,7 +1516,7 @@ Print.Space(); LDA #'M' Print.Char(); LDA #'3' Print.Char();
                         }
                         case VOpCode.OneNEXT:
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // OneNEXT, PutNEXT -> PutOne
                                 popPeep();
@@ -1530,7 +1539,7 @@ Print.Space(); LDA #'M' Print.Char(); LDA #'1' Print.Char();
                         }
                         case (VOpCode.TOPtoNEXT | VOpCode.Long):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // TOPtoNEXT, PutNEXT -> PutTOP
                                 popPeep();
@@ -1563,7 +1572,7 @@ Print.Space(); LDA #'I' Print.Char();LDA #'2' Print.Char();
                             LDA [vcodeBuffer], Y // BYTEtoNEXT argument
                             if (Z)
                             {
-                                if (BBS0, vFlags) // Flushing
+                                BIT vFlags if (MI) // Flushing
                                 {
                                     popPeep();
                                     popPeep();
@@ -1586,7 +1595,7 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'1' Print.Char();
                             CMP #1
                             if (Z)
                             {
-                                if (BBS0, vFlags) // Flushing
+                                BIT vFlags if (MI) // Flushing
                                 {
                                     popPeep();
                                     popPeep();
@@ -1617,7 +1626,7 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'3' Print.Char();
                     {
                         case (VOpCode.LongADD | VOpCode.Long):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // LongADD, PutNEXT -> LongADDPut
                                 popPeep();
@@ -1640,7 +1649,7 @@ Print.Space(); LDA #'W' Print.Char();
                         }
                         case VOpCode.ZeroNEXT:
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // ZeroNEXT, PutNEXT -> PutZERO
                                 popPeep();
@@ -1663,7 +1672,7 @@ Print.Space(); LDA #'M' Print.Char(); LDA #'4' Print.Char();
                         }
                         case VOpCode.OneNEXT:
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // OneNEXT, PutNEXT -> PutOne
                                 popPeep();
@@ -1696,7 +1705,7 @@ Print.Space(); LDA #'M' Print.Char(); LDA #'2' Print.Char();
                             LDA [vcodeBuffer], Y // BYTEtoNEXT argument
                             if (Z)
                             {
-                                if (BBS0, vFlags) // Flushing
+                                BIT vFlags if (MI) // Flushing
                                 {
                                     popPeep();
                                     popPeep();
@@ -1718,7 +1727,7 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'2' Print.Char();
                             CMP #1
                             if (Z)
                             {
-                                if (BBS0, vFlags) // Flushing
+                                BIT vFlags if (MI) // Flushing
                                 {
                                     popPeep();
                                     popPeep();
@@ -1740,7 +1749,7 @@ Print.Space(); LDA #'Q' Print.Char(); LDA #'4' Print.Char();
                         }
                         case (VOpCode.TOPtoNEXT | VOpCode.Long):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // DEFECT: see (c = fgetc(fp)) != -1
                                 // TOPtoNEXT, PutNEXT -> PutTOP
@@ -1932,7 +1941,7 @@ Print.Space(); LDA #'K' Print.Char();
                     {
                         case (VOpCode.CtoNEXT | VOpCode.Long):
                         {
-                            if (BBS0, vFlags) // Flushing
+                            BIT vFlags if (MI) // Flushing
                             {
                                 // CtoNEXT, NEXTZero -> CtoONE
                                 popPeep();

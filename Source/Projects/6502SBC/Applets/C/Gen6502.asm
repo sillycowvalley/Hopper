@@ -822,6 +822,22 @@ unit Gen6502
             LDA # runtimeBP
             EmitByte(); if (NC) { break; }
             
+#ifdef UNIVERSAL
+            LDA #0b00000001
+            AND CodeGen.functionFlags
+            if (NZ) // Bit 0 - we're in "main"
+            {
+                LDA #0b00000010
+                AND CodeGen.functionFlags
+                if (NZ) // Bit 1 - "main" had arguments
+                {
+                    VCode.Discard(); if (NC) { break; } // fake return
+                    VCode.Discard(); if (NC) { break; } // fake return
+                    VCode.Discard(); if (NC) { break; } // arg*
+                    VCode.Discard(); if (NC) { break; } // exe*
+                }
+            }
+#else            
             if (BBS0, CodeGen.functionFlags) // Bit 0 - we're in "main"
             {
                 if (BBS1, CodeGen.functionFlags) // Bit 1 - "main" had arguments
@@ -832,6 +848,7 @@ unit Gen6502
                     VCode.Discard(); if (NC) { break; } // exe*
                 }
             }
+#endif
             
             LDA # OpCode.RTS
             EmitByte(); if (NC) { break; }
