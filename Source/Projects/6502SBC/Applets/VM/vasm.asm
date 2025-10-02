@@ -1,8 +1,15 @@
 // Assembles VM bytecode from .VMA files to .BIN files
 program VASM
 {
-    #define CPU_65C02S
+    #define UNIVERSAL
     //#define DEBUG
+    
+#ifdef UNIVERSAL        
+    #define CPU_65C02
+#else
+    #define CPU_65C02S    
+#endif
+    
     
     const byte vasmSlots = 0x90; // 0x90..0x9F
     

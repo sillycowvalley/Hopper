@@ -377,11 +377,19 @@ unit Parser
             next();  // Should be closing '
             next();
             
-            LDA # NumberType.Char
+            LDA # NumberType.Char    
+#ifdef UNIVERSAL            
+            BIT tokenValueL
+            if (PL)
+            {
+                LDA # (NumberType.Char | NumberType.Byte)
+            }
+#else
             if (BBR7, tokenValueL)
             {
                 LDA # (NumberType.Char | NumberType.Byte)
             }
+#endif            
             STA numberType
             LDA #TokenType.Number
             STA tokenType
@@ -606,18 +614,37 @@ unit Parser
     
     UngetToken()
     {
+#ifdef UNIVERSAL
+        PHA
+        LDA #0b10000000
+        ORA parserFlags
+        STA parserFlags
+        PLA
+#else        
         SMB7 parserFlags        // Set bit 7 = reuse token next time
+#endif
     }
     
     // Get next token
     GetToken()
     {
         // Check if token was ungot
+#ifdef UNIVERSAL
+        BIT parserFlags
+        if (MI)  // Bit 7 set = reuse current token
+        {
+            LDA #0b01111111
+            AND parserFlags
+            STA parserFlags      // Clear the flag
+            return;              // tokenType, tokenValue, tokenBuffer unchanged
+        }
+#else        
         if (BBS7, parserFlags)  // Bit 7 set = reuse current token
         {
             RMB7 parserFlags     // Clear the flag
             return;              // tokenType, tokenValue, tokenBuffer unchanged
         }
+#endif
         skipWhitespace();
         
         peek();
@@ -776,12 +803,23 @@ unit Parser
                     }
                     case 'D': // .DATA
                     {
+#ifdef UNIVERSAL
+                        LDA parserFlags
+                        AND #0b00001000 // Bit 3 - .MAIN or .FUNC seen
+                        if (NZ)
+                        {
+                            LDA #(errFUNCSeen / 256) STA ZP.STRH LDA #(errFUNCSeen % 256) STA ZP.STRL
+                            ErrorLine();    
+                            break;
+                        }
+#else                        
                         if (BBS3, parserFlags) // Bit 3 - .MAIN or .FUNC seen
                         {
                             LDA #(errFUNCSeen / 256) STA ZP.STRH LDA #(errFUNCSeen % 256) STA ZP.STRL
                             ErrorLine();    
                             break;
                         }
+#endif                        
                         
                         // parsing .DATA lines now    
                         LDA # Section.Data
@@ -789,6 +827,30 @@ unit Parser
                     }
                     case 'M': // .MAIN
                     {
+#ifdef UNIVERSAL
+                        LDA parserFlags
+                        AND #0b00001000
+                        if (NZ) // we were in a function
+                        {
+                            LDA currentFunctionID
+                            STA ZP.TOP0
+                            Buffer.CaptureFunctionEnd(); if (NC) { break; }
+                            LDA #0b11110111
+                            AND parserFlags
+                            STA parserFlags
+                        }
+                        LDA parserFlags
+                        AND #0b00000001
+                        if (NZ) // Bit 0 - .MAIN seen
+                        {
+                            LDA #(errMAINSeen / 256) STA ZP.STRH LDA #(errMAINSeen % 256) STA ZP.STRL
+                            ErrorLine();    
+                            break;
+                        }
+                        LDA #0b00001001  // .MAIN seen, .MAIN or .FUNC seen
+                        ORA parserFlags 
+                        STA parserFlags
+#else                        
                         if (BBS3, parserFlags) // we were in a function
                         {
                             LDA currentFunctionID
@@ -804,6 +866,7 @@ unit Parser
                         }
                         SMB0 parserFlags // .MAIN seen
                         SMB3 parserFlags // .MAIN or .FUNC seen
+#endif
                         
                         
                         LDA # (mainName % 256)
@@ -837,6 +900,19 @@ unit Parser
                     }
                     case 'F': // .FUNC
                     {
+#ifdef UNIVERSAL         
+                        LDA parserFlags            
+                        AND #0b00001000
+                        if (NZ) // we were in a function
+                        {
+                            LDA currentFunctionID
+                            STA ZP.TOP0
+                            Buffer.CaptureFunctionEnd(); if (NC) { break; }
+                            LDA #0b11110111
+                            AND parserFlags
+                            STA parserFlags
+                        }
+#else
                         if (BBS3, parserFlags) // we were in a function
                         {
                             LDA currentFunctionID
@@ -844,6 +920,7 @@ unit Parser
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
                             RMB3 parserFlags
                         }
+#endif
                         GetToken();
                         
                         LDA tokenType
@@ -854,9 +931,13 @@ unit Parser
                             ErrorLine();    
                             break;
                         }
-                        
+#ifdef UNIVERSAL
+                        LDA #0b00001000
+                        ORA parserFlags
+                        STA parserFlags
+#else                       
                         SMB3 parserFlags // .MAIN or .FUNC seen
-                        
+#endif                        
                         Buffer.GetNextFunctionNumber(); // -> TOP
                         LDA ZP.TOP0
                         STA currentFunctionID
@@ -906,6 +987,19 @@ unit Parser
         } // loop
         if (C)
         {
+#ifdef UNIVERSAL
+            LDA parserFlags
+            AND #0b00001000
+            if (NZ)
+            {
+                LDA currentFunctionID
+                STA ZP.TOP0
+                Buffer.CaptureFunctionEnd();
+                LDA #0b11110111
+                AND parserFlags
+                STA parserFlags
+            }
+#else            
             if (BBS3, parserFlags) // we were in a function
             {
                 LDA currentFunctionID
@@ -913,13 +1007,24 @@ unit Parser
                 Buffer.CaptureFunctionEnd();
                 RMB3 parserFlags
             }
+#endif
             if (C)
             {
+#ifdef UNIVERSAL
+                LDA parserFlags
+                AND #0b00000001
+                if (Z) // Bit 0 - .MAIN seen
+                {
+                    LDA #(errMAINRequired / 256) STA ZP.STRH LDA #(errMAINRequired % 256) STA ZP.STRL
+                    ErrorLine();    
+                }
+#else                
                 if (BBR0, parserFlags) // Bit 0 - .MAIN seen
                 {
                     LDA #(errMAINRequired / 256) STA ZP.STRH LDA #(errMAINRequired % 256) STA ZP.STRL
                     ErrorLine();    
                 }
+#endif                
             }
         }
 #ifdef DEBUG        
