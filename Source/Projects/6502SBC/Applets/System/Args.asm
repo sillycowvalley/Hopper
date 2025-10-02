@@ -45,9 +45,9 @@ unit Args
         ADC #0
         STA ZP.STRH
         
-        // Measure argument length and look for "."
-        STZ ZP.TEMP
+        // Measure argument length and look for "." 
         LDX #0  // Length counter
+        STX ZP.TEMP
         loop
         {
             LDA Address.LineBuffer, Y
@@ -75,9 +75,12 @@ unit Args
     // Note:   Does not modify ZP.STR
     HasFilename()
     {
-        PHY
-        PHX
         PHA
+#ifdef UNIVERSAL
+        TYA PHA TXA PHA   
+#else
+        PHY PHX
+#endif
         
         // Save current STR
         LDA ZP.STRL
@@ -93,8 +96,11 @@ unit Args
         PLA
         STA ZP.STRL
         
+#ifdef UNIVERSAL        
+        PLA TAX PLA TAY
+#else
+        PLX PLY
+#endif
         PLA
-        PLX
-        PLY
     }
 }

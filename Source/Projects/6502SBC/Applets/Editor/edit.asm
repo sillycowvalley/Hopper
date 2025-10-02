@@ -1,6 +1,14 @@
 program Edit
 {
-    #define CPU_65C02S
+
+    //#define UNIVERSAL
+    
+#ifdef UNIVERSAL        
+    #define CPU_6502
+#else
+    #define CPU_65C02S    
+#endif
+
     //#define DEBUG
     
     //#define TURBO

@@ -117,14 +117,28 @@ unit Runtime
     
     Initialize()
     {
-        STZ globalsL
+#ifdef UNIVERSAL
+        LDA #0
+        STA globalsL
+        STA constantsL
+        STA BP
         LDA functionTableH
-        INC
+        CLC
+        ADC #1
         STA globalsH
-        
-        STZ constantsL
-        INC
+        CLC
+        ADC #1
         STA constantsH
+#else        
+        STZ globalsL
+        STZ constantsL
+        STZ BP
+        LDA functionTableH
+        INC A
+        STA globalsH
+        INC A
+        STA constantsH
+#endif
         
         LDY #2 // slot of .MAIN in function table
         LDA [functionTable], Y
@@ -134,7 +148,7 @@ unit Runtime
         STA codePageH
         
         LDY #0 // PC
-        STZ BP
+        
     }
     
     badOpCode()

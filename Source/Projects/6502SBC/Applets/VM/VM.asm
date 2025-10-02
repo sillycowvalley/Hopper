@@ -1,6 +1,13 @@
 program VM
 {
-    #define CPU_65C02S
+    //#define UNIVERSAL
+    
+#ifdef UNIVERSAL        
+    #define CPU_6502
+#else
+    #define CPU_65C02S    
+#endif
+
     //#define DEBUG
     
     uses "../System/Definitions"
@@ -55,8 +62,11 @@ program VM
     //         BIOS has already uppercased the input
     GetFilename()
     {
-        PHY
-        PHX
+#ifdef UNIVERSAL
+        TYA PHA TXA PHA
+#else        
+        PHY PHX
+#endif
         
         Args.GetArgument(); // filename length -> A, X != 0 means "." seen
         
@@ -88,14 +98,22 @@ program VM
             STA [ZP.STR], Y
             TYA // length -> A
         }
-        PLX
-        PLY
+#ifdef UNIVERSAL
+        STA ZP.TEMP
+        PLA TAX PLA TAY
+        LDA ZP.TEMP
+#else        
+        PLX PLY
+#endif
     }
     
     ReadByte()
     {
-        PHY
-        PHX
+#ifdef UNIVERSAL        
+        TYA PHA TXA PHA
+#else
+        PHY PHX
+#endif
         loop
         {
             LDA bufferIndexH
@@ -111,8 +129,14 @@ program VM
                     {
                         break;
                     }
+#ifdef UNIVERSAL
+                    LDA #0
+                    STA bufferIndexL
+                    STA bufferIndexH
+#else
                     STZ bufferIndexL
                     STZ bufferIndexH
+#endif
                 }
             }
             
@@ -130,8 +154,13 @@ program VM
             SEC
             break;
         }
-        PLX
-        PLY
+#ifdef UNIVERSAL
+        STA ZP.TEMP
+        PLA TAX PLA TAY
+        LDA ZP.TEMP
+#else        
+        PLX PLY
+#endif
     }
     
     // Dump 256-byte page in hex/ASCII format
@@ -260,8 +289,14 @@ program VM
             File.NextStream();
             if (NC) { break; }
             
+#ifdef UNIVERSAL
+            LDA #0
+            STA bufferIndexL
+            STA bufferIndexH
+#else            
             STZ bufferIndexL
             STZ bufferIndexH
+#endif
             
             ReadByte(); if (NC) { break; }
             CMP #'V'
@@ -293,7 +328,12 @@ program VM
         // - round up to nearest page for constant data
         // - 1 page per function (for now)
         // - subtract 2 bytes to ignore the Memory size word
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.ACCL
+#else        
         STZ ZP.ACCL
+#endif
         LDA dataSizeH
         STA ZP.ACCH
         LDA dataSizeL
@@ -325,14 +365,21 @@ program VM
             return;
         }
         
+#ifdef UNIVERSAL
+        LDA #0
+        STA programMemoryL
+        STA ZP.ACCH
+#else        
         STZ programMemoryL
+        STZ ZP.ACCH
+#endif
         LDA ZP.IDXH
         STA programMemoryH
         
         // temporary space for function sizes
         LDA #0xFE
         STA ZP.ACCL
-        STZ ZP.ACCH
+        
         Memory.Allocate();
         if (NC)
         {
@@ -340,7 +387,12 @@ program VM
             Print.String();
             return;
         }
+#ifdef UNIVERSAL
+        LDA #0
+        STA sizeTableL
+#else        
         STZ sizeTableL
+#endif
         LDA ZP.IDXH
         STA sizeTableH
         
@@ -374,15 +426,24 @@ program VM
         LDA programMemoryH
         ADC #2
         STA indexH
+#ifdef UNIVERSAL
+        LDA #0
+        STA indexL
+#else
         STZ indexL
-        
+#endif   
         loop
         {
             LDA countL
             ORA countH
             if (Z) { break; }
             ReadByte();
+#ifdef UNIVERSAL
+            LDY #0
+            STA [index], Y
+#else            
             STA [index]
+#endif
             INC indexL if (Z) { INC indexH }
             
             LDA countL
@@ -401,7 +462,12 @@ program VM
         {
             INC indexH
         }
+#ifdef UNIVERSAL
+        LDA #0
+        STA indexL
+#else        
         STZ indexL
+#endif
         
         LDA #2
         STA countL
@@ -414,7 +480,12 @@ program VM
             // - get the function size in count
             // - set the new function offsets in the function table
             TXA
+#ifdef UNIVERSAL
+            SEC
+            SBC #1
+#else
             INC
+#endif
             ASL
             TAY
             LDA #0
@@ -430,7 +501,12 @@ program VM
             loop
             {
                 ReadByte(); if (NC) { break; }
+#ifdef UNIVERSAL
+                LDY #0
+                STA [index], Y
+#else
                 STA [index]
+#endif
                 INC indexL if (Z) { INC indexH }
                 
                 LDA countL
@@ -442,19 +518,25 @@ program VM
                 LDA countH
                 ORA countL
                 if (Z) { break; }
-            }
+            } // loop
+            
             // next function page:
             LDA indexL
             if (NZ)
             {
                 INC indexH
             }
+#ifdef UNIVERSAL
+            LDA #0
+            STA indexL
+#else            
             STZ indexL
+#endif
             
             INX
             CPX functionCount
             if (C) { break; } //  >= functionCount
-        }
+        } // outer loop
         
 #ifdef DEBUG        
         LDA programMemoryH
