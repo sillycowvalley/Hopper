@@ -5,7 +5,7 @@ program BIOS
     //#define DEBUG     // mimimum of 874 bytes
     //#define FILEDEBUG
     
-    #define UNIVERSAL
+    //#define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02
@@ -108,7 +108,6 @@ program BIOS
     {
         SEI  // Disable interrupts during initialization
         
-        
 #if defined(ZEROPAGE_IO)            
         // Clear Zero Page
         LDX #0
@@ -130,7 +129,6 @@ program BIOS
             DEX
             if (Z) { break; }
         } 
-        STZ ZP.FLAGS
 #else
         // Clear Zero Page
         LDX #0
@@ -148,9 +146,9 @@ program BIOS
             DEX
             if (Z) { break; }
         } 
-        STA ZP.FLAGS
-#endif            
         
+#endif            
+        STZ ZP.FLAGS
         
         Error.ClearError();
         
@@ -714,13 +712,22 @@ program BIOS
                 // re-initialize heap
                 LDA ZP.IDXH
                 Memory.Initialize();
-        
+                
                 // execute
                 callApplet(); // must be followed by any instruction to defeat tailcall optimization (JSR RTS -> JMP)
-        
+
                 // free the program space and re-initialize the heap        
                 LDA # (Address.UserMemory >> 8)
                 Memory.Initialize();
+                
+                // not exiting (in case it was corrupted by the applet)
+#ifdef UNIVERSAL
+                LDA #0b01111111
+                AND ZP.FLAGS  
+                STA ZP.FLAGS  
+#else                
+                RMB7 ZP.FLAGS  
+#endif
                 
                 Print.NewLine(); 
                 return;           

@@ -157,6 +157,7 @@ unit Serial // Serial.asm
             
             // Check if we can send XON after consuming byte  
             LDA #0b00000100
+            AND ZP.FLAGS
             if (NZ)      // Bit 2 set? (currently stopped)
             {
                 LDA ZP.SerialInWritePointer

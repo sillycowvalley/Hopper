@@ -726,6 +726,8 @@ unit Error // ErrorID.asm
         PHX
         loop
         {
+//Print.NewLine(); LDA ZP.FLAGS Print.Hex(); Print.Space(); LDA  ZP.LastError Print.Hex();           
+            
             CheckError();
             if (C) 
             { 
