@@ -74,9 +74,10 @@ unit Free
             STA mfCURRENTL
             LDA ZP.IDXH
             SBC # 0
-            STA mfCURRENTH
-            LDA [mfCURRENT]
-            LDY # 1
+            STA mfCURRENTH    
+            LDY #0
+            LDA [mfCURRENT], Y
+            INY
             STA mfSIZEL
             LDA [mfCURRENT], Y
             STA mfSIZEH
@@ -87,8 +88,14 @@ unit Free
             LDA FREELISTH
             STA mfCURRENTH
 
+#ifdef UNIVERSAL
+            LDA #0
+            STA mfPREVIOUSL  
+            STA mfPREVIOUSH
+#else            
             STZ mfPREVIOUSL  
             STZ mfPREVIOUSH
+#endif
 
             loop 
             {
@@ -142,11 +149,18 @@ unit Free
             STA mfCURRENTPREVL
             LDA mfPREVIOUSH
             STA mfCURRENTPREVH
+#ifdef UNIVERSAL
+            LDA #0
+            STA mfCURRENTSIZEL
+            STA mfCURRENTSIZEH
+            STA mfCURRENTNEXTL
+            STA mfCURRENTNEXTH
+#else            
             STZ mfCURRENTSIZEL
             STZ mfCURRENTSIZEH
             STZ mfCURRENTNEXTL
             STZ mfCURRENTNEXTH
-            
+#endif       
             loop
             {
                 LDA mfCURRENTL
@@ -157,10 +171,10 @@ unit Free
                 }
                 // 0 != current
                 // currentSize = ReadWord[mfCURRENT]
-                LDA [mfCURRENT]
-                LDY # 1
+                LDY #0
+                LDA [mfCURRENT], Y
                 STA mfCURRENTSIZEL
-                
+                INY
                 LDA [mfCURRENT], Y
                 STA mfCURRENTSIZEH
                 // currentNext = ReadWord(mfCURRENT + 2)
@@ -239,10 +253,10 @@ unit Free
                     // GAPFRONT == 0
 
                     // nextSize = ReadWord(freeList)
-                    LDA [ZP.FREELIST]
-                    LDY # 1
+                    LDY #0
+                    LDA [ZP.FREELIST], Y
                     STA mfNEXTSIZEL
-                    
+                    INY
                     LDA [ZP.FREELIST], Y
                     STA mfNEXTSIZEH
                     // nextNext = ReadWord(freeList+2);
@@ -263,9 +277,10 @@ unit Free
                     STA mfSIZEH
 
                     // WriteWord(freeSlot, size+nextSize);
+                    LDY #0
                     LDA mfSIZEL
-                    STA [mfFREESLOT]
-                    LDY # 1
+                    STA [mfFREESLOT], Y
+                    INY
                     LDA mfSIZEH
                     STA [mfFREESLOT], Y
 
@@ -361,9 +376,10 @@ unit Free
                 ADC mfPREVSIZEH
                 STA mfSIZEH
                 
+                LDY #0
                 LDA mfSIZEL
-                STA [mfCURRENTPREV]
-                LDY # 1
+                STA [mfCURRENTPREV], Y
+                INY
                 LDA mfSIZEH
                 STA [mfCURRENTPREV], Y
 
@@ -430,9 +446,10 @@ unit Free
                 ADC mfPREVSIZEH
                 STA mfSIZEH
 
+                LDY #0
                 LDA mfSIZEL
-                STA [mfCURRENTPREV]
-                LDY # 1
+                STA [mfCURRENTPREV], Y
+                INY
                 LDA mfSIZEH
                 STA [mfCURRENTPREV], Y
 
@@ -489,9 +506,10 @@ unit Free
             ADC mfCURRENTSIZEH
             STA mfSIZEH
      
+            LDY #0
             LDA mfSIZEL
-            STA [mfFREESLOT]
-            LDY # 1
+            STA [mfFREESLOT], Y
+            INY
             LDA mfSIZEH
             STA [mfFREESLOT], Y
 
@@ -527,8 +545,9 @@ unit Free
     freeHelper1()
     {
         // prevSize = ReadWord(currentPrev);
-        LDA [mfCURRENTPREV]
-        LDY # 1
+        LDY #0
+        LDA [mfCURRENTPREV], Y
+        INY
         STA mfPREVSIZEL
         LDA [mfCURRENTPREV], Y
         STA mfPREVSIZEH

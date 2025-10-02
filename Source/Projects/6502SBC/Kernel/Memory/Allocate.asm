@@ -64,7 +64,17 @@ unit Allocate
         AND # 0xF8     // Mask out the lower 3 bits
         STA ZP.ACCL    // Store the masked low byte back
 
-
+#ifdef UNIVERSAL
+        LDA #0
+        STA maBESTL
+        STA maBESTH
+        STA maBESTSIZEL
+        STA maBESTSIZEH
+        STA maBESTNEXTL
+        STA maBESTNEXTH
+        STA maBESTPREVL
+        STA maBESTPREVH
+#else
         STZ maBESTL
         STZ maBESTH
         STZ maBESTSIZEL
@@ -73,7 +83,7 @@ unit Allocate
         STZ maBESTNEXTH
         STZ maBESTPREVL
         STZ maBESTPREVH
-        
+#endif   
         LDA ACCH
         if (Z) // < 256
         {
@@ -143,9 +153,10 @@ unit Allocate
                 STA maBESTH
         
                 // bestSize = ReadWord(best);
-                LDA [maBEST]
+                LDY #0
+                LDA [maBEST], Y
                 STA maBESTSIZEL
-                LDY # 1
+                INY
                 LDA [maBEST], Y
                 STA maBESTSIZEH
                 // bestNext = ReadWord(best + 2);
@@ -225,9 +236,10 @@ unit Allocate
         
                 // so we now how much to free later
                 // block size includes the size of the size field itself
+                LDY #0
                 LDA ZP.ACCL
-                STA [maBEST]
-                LDY # 1
+                STA [maBEST], Y
+                INY
                 LDA ACCH
                 STA [maBEST], Y
         
@@ -248,9 +260,10 @@ unit Allocate
                 SBC ZP.ACCH
                 STA maNEWHOLESIZEH
      
+                LDY #0
                 LDA maNEWHOLESIZEL
-                STA [maNEWHOLE]
-                LDY # 1
+                STA [maNEWHOLE], Y
+                INY
                 LDA maNEWHOLESIZEH
                 STA [maNEWHOLE], Y
     
@@ -351,9 +364,10 @@ unit Allocate
             // block size includes the size of the size field itself
             // WriteWord(best, bestSize);
             
+            LDY #0
             LDA maBESTSIZEL
-            STA [maBEST]
-            LDY # 1
+            STA [maBEST], Y
+            INY
             LDA maBESTSIZEH
             STA [maBEST], Y
     
@@ -427,6 +441,7 @@ unit Allocate
         ADC ZP.ACCH
         STA maSCRATCHH
 
+        LDY #0
         loop
         {
             LDA maSCRATCHH
@@ -450,8 +465,8 @@ unit Allocate
             DEC maSCRATCHL
     
             // clear
-            LDA # 0
-            STA [maSCRATCH]
+            TYA
+            STA [maSCRATCH], Y
         }
     }
 }

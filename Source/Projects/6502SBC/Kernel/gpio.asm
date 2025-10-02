@@ -25,21 +25,26 @@ unit GPIO
             SBC #8                        // Convert to 0-7 range
             INX  // port B
         }
-        PHY
-        TAY                          // Use as index
-        LDA BitMasks, Y   // Load mask directly from table
+        
             
-        PLY // restore value
+        
         // Set or clear the DDR bit based on mode
         // CPY # PINMODE.INPUT = 0
+        CPY #0
         if (Z)
         {
+            TAY               // Use as index
+            LDA BitMasks, Y   // Load mask directly from table
+        
             // INPUT mode: Clear bit in DDR
             EOR #0xFF        // Invert mask
             AND ZP.DDRA, X
         }
         else
         {
+            TAY               // Use as index
+            LDA BitMasks, Y   // Load mask directly from table
+            
             // OUTPUT mode: Set bit in DDR
             ORA ZP.DDRA, X
         }
@@ -62,20 +67,23 @@ unit GPIO
             SBC #8                        // Convert to 0-7 range
             INX // port B
         }
-        PHY
-        TAY                          // Use as index
-        LDA BitMasks, Y   // Load mask directly from table
         
-        PLY // restore the value
         // Set or clear the port bit based on value
+        CPY #0
         if (Z)
         {
+            TAY                          // Use as index
+            LDA BitMasks, Y   // Load mask directly from table
+        
             // Write LOW: Clear bit
             EOR #0xFF        // Invert mask
             AND ZP.PORTA, X
         }
         else
         {
+            TAY                          // Use as index
+            LDA BitMasks, Y   // Load mask directly from table
+        
             // Write HIGH: Set bit
             ORA ZP.PORTA, X
         }

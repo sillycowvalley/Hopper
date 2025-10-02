@@ -137,7 +137,11 @@ unit Long
         
     utilityDoLongSigns()
     {
+#ifdef UNIVERSAL
+        TXA PHA
+#else        
         PHX
+#endif
         LDX #0
         LDA ZP.NEXT3
         ASL // sign bit into carry
@@ -154,8 +158,11 @@ unit Long
             NegateTop(); // TOP = -TOP
         }
         STX ZP.TEMP // store the sign count
-        
+#ifdef UNIVERSAL
+        PLA TAX
+#else
         PLX
+#endif
     }
     
     commonEQ()

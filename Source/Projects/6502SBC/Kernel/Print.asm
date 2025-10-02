@@ -5,7 +5,11 @@ unit Print
     // Output: String printed to serial
     String()
     {
+#ifdef UNIVERSAL
+        TYA PHA
+#else        
         PHY
+#endif
         LDY #0              // Initialize string index
         
         loop                // Print each character until null terminator
@@ -16,8 +20,11 @@ unit Print
             Serial.WriteChar(); // Print the character
             INY             // Move to next character
         }
-        
+#ifdef UNIVERSAL
+        PLA TAY
+#else
         PLY
+#endif
     }
     
     // Write single character to serial output
@@ -63,10 +70,14 @@ unit Print
     // Print specified number of space characters
     // Input: Y = number of spaces to print
     // Output: Y space characters printed to serial
-    // Munts: Y
+    // Munts: A
     Spaces()
     {
+#ifdef UNIVERSAL
+        TYA PHA
+#else        
         PHY
+#endif
         CPY #0
         if (NZ)
         {
@@ -81,7 +92,11 @@ unit Print
                 }
             }
         }
+#ifdef UNIVERSAL  
+        PLA TAY
+#else      
         PLY
+#endif
     }
     
     // Print 16-bit decimal number with no leading zeros

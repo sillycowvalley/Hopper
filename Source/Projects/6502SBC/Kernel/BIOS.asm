@@ -8,7 +8,6 @@ program BIOS
     #define UNIVERSAL
     
 #ifdef UNIVERSAL        
-    //#define CPU_65C02S
     #define CPU_6502
 #else
     #define CPU_65C02S    
@@ -32,7 +31,9 @@ program BIOS
     //#define HASFLOAT  // currently ~1250 bytes
 #endif
     #define HASEEPROM
+#ifndef UNIVERSAL    
     #define CFILES
+#endif
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"
