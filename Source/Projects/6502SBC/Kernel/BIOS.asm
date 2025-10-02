@@ -31,9 +31,7 @@ program BIOS
     //#define HASFLOAT  // currently ~1250 bytes
 #endif
     #define HASEEPROM
-#ifndef UNIVERSAL    
     #define CFILES
-#endif
     
     uses "Definitions/Limits"
     uses "Definitions/MemoryMap"

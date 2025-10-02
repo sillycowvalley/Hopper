@@ -262,21 +262,53 @@ unit ScreenBuffer
     // Enable bold
     SetBold() inline
     {
+#ifdef UNIVERSAL
+        PHA
+        LDA Attributes
+        ORA #0b01000000
+        STA Attributes
+        PLA
+#else        
         SMB6 Attributes
+#endif
     }
     SetNotBold() inline
     {
+#ifdef UNIVERSAL
+        PHA
+        LDA Attributes
+        AND #0b10111111
+        STA Attributes
+        PLA
+#else        
         RMB6 Attributes
+#endif        
     }
     
     // Enable inverse
     SetInverse() inline
     {
+#ifdef UNIVERSAL
+        PHA
+        LDA Attributes
+        ORA #0b10000000
+        STA Attributes
+        PLA
+#else        
         SMB7 Attributes
+#endif
     }
     SetNotInverse() inline
     {
+#ifdef UNIVERSAL
+        PHA
+        LDA Attributes
+        AND #0b01111111
+        STA Attributes
+        PLA
+#else        
         RMB7 Attributes
+#endif
     }
     
     // Clear all special attributes

@@ -182,10 +182,11 @@ unit File
     
 #if defined(CFILES)
     const byte cfilesFILE             = ZP.FS16;               // single FILE record for CFILES APIS
-    // Bit 0 - open state 
-    // Bit 1 - read "r" (0) or write "w" (1) 1 byte
-    // Bit 2 - eof indicator
-    // Bit 3 - fopen filename was ".EXE"
+    // Bit 7 - open state (1 = open, 0 not open)
+    // Bit 6 - read "r" (0) or write "w" (1) 1 byte
+    // ..
+    // Bit 1 - eof indicator
+    // Bit 0 - fopen filename was ".EXE"
 #endif    
 
     
@@ -196,11 +197,8 @@ unit File
     // Munts: A
     ValidateFilename()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif        
+
         loop // single exit block
         {
             LDY #0
@@ -263,12 +261,7 @@ unit File
                         Error.IllegalFilename(); // last character is dot
                         break;
                     }
-#ifdef UNIVERSAL
-                    LDY #0
-                    LDA [ZP.STR], Y // first character
-#else                    
                     LDA [ZP.STR] // first character
-#endif
                     CMP #'.'
                     if (Z)
                     {
@@ -288,11 +281,7 @@ unit File
             break;
         } // single exit
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     initializeFATandDirectory()
@@ -333,11 +322,8 @@ unit File
     // Munts: A
     GetAvailable()
     {
-#ifdef UNIVERSAL
-        TAX PHA TAY PHA
-#else
         PHX PHY
-#endif   
+
         loop // Single exit for cleanup
         {
             initializeFATandDirectory();
@@ -345,12 +331,7 @@ unit File
 
             // Count free sectors
             LDY #2                   // Start from sector 2 (skip FAT and directory)
-#ifdef UNIVERSAL
-            LDA #0
-            STA ZP.TOP1              // Free sector count
-#else
             STZ ZP.TOP1              // Free sector count
-#endif
             
             loop
             {
@@ -368,11 +349,7 @@ unit File
             SEC                      // Success
             break;
         }
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     // Format EEPROM with empty file system
@@ -466,11 +443,7 @@ unit File
     // Munts: A, file system state  
     AppendStream()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif 
         
         loop // Single exit
         {
@@ -527,11 +500,7 @@ unit File
             
             break;
         }
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     // Input: A = 0x80 for executable file, A = 0x00 for data file
@@ -542,12 +511,7 @@ unit File
     EndSave()
     {
         STA ZP.ACCH
-        
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif 
         
         loop // Single exit
         {
@@ -581,11 +545,7 @@ unit File
             break;
         }
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     // List all files in directory with optional debug info
@@ -594,11 +554,7 @@ unit File
     // Munts: A, file system buffers
     Dir()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif 
         
         loop // Single exit
         {
@@ -631,25 +587,14 @@ unit File
             break;
         }
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     findLastOccupiedEntry()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        STA lastOccupiedEntry
-        STA lastOccupiedSector
-        STA previousSector       // Still needed for unlinking
-#else
         STZ lastOccupiedEntry
         STZ lastOccupiedSector
         STZ previousSector       // Still needed for unlinking
-#endif
         
         LDA #DirWalkAction.FindLast
         STA ZP.ACCH
@@ -760,11 +705,8 @@ unit File
     // Munts: A, file system buffers
     Delete()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif         
+
         // preserve the file name in case this is part of SAVE
         LDA ZP.STRL
         PHA
@@ -865,11 +807,7 @@ unit File
         STA ZP.STRL
         
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
 
@@ -884,11 +822,7 @@ unit File
     Exists()
     {
         STA ZP.ACCH
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif   
         
         // preserve the file name
         LDA ZP.STRL
@@ -917,11 +851,7 @@ unit File
         PLA
         STA ZP.STRL
     
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     // Open file for reading
@@ -934,11 +864,7 @@ unit File
     StartLoad()
     {
         STA ZP.ACCH
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif  
         
         // preserve the file name in case you are just being used to verify the file exists
         LDA ZP.STRL
@@ -978,11 +904,7 @@ unit File
         PLA
         STA ZP.STRL
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     
@@ -1002,11 +924,7 @@ unit File
     //       - No partial read support - caller must consume entire TransferLength
     NextStream()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif 
         
         loop // Single exit
         {
@@ -1029,22 +947,12 @@ unit File
             {
                 LDA bytesRemainingL
                 STA TransferLengthL
-#ifdef UNIVERSAL
-                LDA #0
-                STA TransferLengthH
-#else
                 STZ TransferLengthH
-#endif
                 // Don't invalidate buffer - partial read
             }
             else  // bytesRemaining >= 256
             {
-#ifdef UNIVERSAL
-                LDA #0
-                STA TransferLengthL
-#else
                 STZ TransferLengthL
-#endif
                 LDA #1
                 STA TransferLengthH
                 
@@ -1074,11 +982,7 @@ unit File
             break;
         }
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
           
 
@@ -1219,14 +1123,8 @@ unit File
     {
         LDA #1
         STA currentDirectorySector
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.ACCL              // Tracks position in chain (0x00, 0x10, 0x20...)
-        STA previousSector       // Tracks previous sector for unlinking
-#else                
         STZ ZP.ACCL              // Tracks position in chain (0x00, 0x10, 0x20...)
         STZ previousSector       // Tracks previous sector for unlinking
-#endif
         
         loop 
         {
@@ -1247,11 +1145,7 @@ unit File
                     // Entry occupied - dispatch to action handler
                     
                     // Preserve slot and offset
-#ifdef UNIVERSAL
-                    TYA PHA TXA PHA
-#else                    
                     PHY PHX
-#endif
                     
                     LDA ZP.ACCH
                     switch (A)
@@ -1274,11 +1168,7 @@ unit File
                             processFindLastEntry();   // X = offset, Y = slot
                         }
                     }
-#ifdef UNIVERSAL
-                    PLA TAX PLA TAY
-#else                    
                     PLX PLY
-#endif
                     
                     // Callback returns: C = continue scanning, NC = stop (found)
                     if (NC) { break; }
@@ -1330,11 +1220,7 @@ unit File
     
     processFindFileEntry()  // X = offset, Y = slot
     {
-#ifdef UNIVERSAL
-        TYA PHA
-#else        
         PHY                 // Save slot on stack
-#endif
         
         // if ZP.ACCL == DirWalkAction.FindExecutable, only find executable files
         
@@ -1404,16 +1290,9 @@ unit File
     //         TransferLengthH/bytesRemainingL = total bytes (16-bit)
     countFilesAndBytes()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        STA TransferLengthL      // Initialize file count
-        STA TransferLengthH      // Initialize byte count MSB
-        STA bytesRemainingL      // Initialize byte count LSB
-#else        
         STZ TransferLengthL      // Initialize file count
         STZ TransferLengthH      // Initialize byte count MSB
         STZ bytesRemainingL      // Initialize byte count LSB
-#endif   
         LDA #DirWalkAction.Count
         STA ZP.ACCH
         walkDirectoryChain();
@@ -1423,12 +1302,7 @@ unit File
     // Munts: A, X, Y
     printAllFileEntries()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.ACCL              // Entry counter
-#else        
         STZ ZP.ACCL              // Entry counter
-#endif
         
         LDA #DirWalkAction.Print
         STA ZP.ACCH
@@ -1444,11 +1318,7 @@ unit File
     // Munts: A
     printFilenameFromDirectory()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY TYA
-#endif
         
         CLC
         ADC #3                   // Offset to filename field
@@ -1472,11 +1342,7 @@ unit File
             
         } // single exit
         
-#ifdef UNIVERSAL
-        PLA TAY
-#else                
         PLY // restore name position
-#endif
         
         // Check if executable and print appropriate suffix
         LDA (directoryBuffer - 2), Y  // Size high byte
@@ -1494,11 +1360,7 @@ unit File
             DEX
             if (Z) { break; }
         }
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     // Print file size from current directory entry
@@ -1516,18 +1378,9 @@ unit File
         PHA
         
         // right aligment of numbers in the 10..99999 range
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-        LDA #0
-        STA ZP.NEXT2
-        STA ZP.NEXT3
-#else        
         PHX PHY
         STZ ZP.NEXT2
         STZ ZP.NEXT3
-#endif
-        
-        
         
         // Count digits by dividing by 10
         LDY #5                      // padding counter
@@ -1539,17 +1392,9 @@ unit File
             LDA #10
             Shared.LoadTopByte();
             
-#ifdef UNIVERSAL
-            TYA PHA
-#else            
             PHY
-#endif
             Long.Div();              // NEXT = NEXT / TOP
-#ifdef UNIVERSAL
-            PLA TAY
-#else            
             PLY
-#endif
             
             // Check if quotient is zero
             LDA ZP.NEXT0
@@ -1558,11 +1403,7 @@ unit File
         }
         Print.Spaces();              // print Y spaces (zero is ok)
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
         
         // Restore original value for printing
         PLA
@@ -1590,14 +1431,8 @@ unit File
         STA ZP.TOP0
         LDA TransferLengthH
         STA ZP.TOP1
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.TOP2
-        STA ZP.TOP3
-#else
         STZ ZP.TOP2
         STZ ZP.TOP3
-#endif
         Long.Print();
         
         // " BYTES USED"
@@ -1609,11 +1444,7 @@ unit File
     // Munts: A, X, Y
     writeFilenameToDirectory()
     {   
-#ifdef UNIVERSAL
-        TYA PHA
-#else    
         PHY
-#endif   
         // Calculate directory entry offset: (currentFileEntry & 0x0F) * 16
         fileEntryToDirectoryEntry(); // -> Y
         TYA TAX
@@ -1649,11 +1480,7 @@ unit File
                 break; 
             }
         }
-#ifdef UNIVERSAL
-        PLA TAY
-#else
         PLY
-#endif
     }
     
     // Update directory entry with start sector
@@ -1677,11 +1504,7 @@ unit File
     // Munts: A, Y, file system state
     flushAndAllocateNext()
     {
-#ifdef UNIVERSAL
-        TXA PHA TYA PHA
-#else        
         PHX PHY
-#endif        
         loop // Single exit
         {
             // Write current FileDataBuffer to currentFileSector using existing writeSector()
@@ -1706,14 +1529,8 @@ unit File
             // Move to new sector
             LDA nextFileSector
             STA currentFileSector
-#ifdef UNIVERSAL
-            LDA #0
-            STA sectorPositionL       // Reset to start of new sector
-            STA sectorPositionH
-#else
             STZ sectorPositionL       // Reset to start of new sector
             STZ sectorPositionH
-#endif
             
             // Clear new file data buffer using existing function
             clearFileDataBuffer();
@@ -1722,11 +1539,7 @@ unit File
             break;
         }
         
-#ifdef UNIVERSAL
-        PLA TAY PLA TAX
-#else
         PLY PLX
-#endif
     }
     
     // Allocate first free sector from FAT
@@ -1849,17 +1662,6 @@ unit File
     // Munts: A
     initializeSaveState()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        // Clear file position counters
-        STA filePosition         // filePositionL
-        STA filePosition + 1     // filePositionH
-        STA sectorPositionL      // Byte position within current sector
-        STA sectorPositionH
-        
-        // Clear next sector (will be allocated when needed)
-        STA nextFileSector
-#else        
         // Clear file position counters
         STZ filePosition         // filePositionL
         STZ filePosition + 1     // filePositionH
@@ -1868,7 +1670,6 @@ unit File
         
         // Clear next sector (will be allocated when needed)
         STZ nextFileSector
-#endif
     }
     
     // TODO : inline
@@ -1901,12 +1702,7 @@ unit File
     // Munts: A, EEPROM operation registers
     loadFAT()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
-#else
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
-#endif   
         LDA #(fatBuffer / 256)   // RAM address MSB = fatBuffer (must be page aligned)
         STA ZP.IDXH
         EEPROM.ReadPage();
@@ -1917,12 +1713,7 @@ unit File
     // Write fatBuffer to EEPROM sector 0
     writeFAT()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
-#else        
         STZ ZP.IDYH              // EEPROM address MSB = sector 0 (must be page aligned)
-#endif
         
         LDA #(fatBuffer / 256)   // RAM address MSB = fatBuffer (must be page aligned)
         STA ZP.IDXH
@@ -2021,12 +1812,7 @@ unit File
     getCurrentSectorFirstEntry()
     {
         LDA currentDirectorySector
-#ifdef UNIVERSAL
-        SEC
-        SBC #1
-#else        
         DEC A                   // Sector 1 = entries 0-15
-#endif
         ASL A ASL A ASL A ASL A // * 16
         STA currentFileEntry
     }
@@ -2041,12 +1827,7 @@ unit File
         
         LDA #1                           // Start with first directory sector
         STA currentDirectorySector
-#ifdef UNIVERSAL
-        LDA #0
-        STA currentFileEntry             // Start with entry 0   
-#else
         STZ currentFileEntry             // Start with entry 0
-#endif
         
         loop // Single exit - main search loop
         {
@@ -2999,7 +2780,12 @@ unit File
         loop // single exit
         {
             // Check if file already open
-            if (BBS0, cfilesFILE) { CLC break; }  // Bit 0 set = already open
+#ifdef UNIVERSAL
+            BIT cfilesFILE
+            if (MI)               { CLC break; }  // Bit 7 set = already open
+#else            
+            if (BBS7, cfilesFILE) { CLC break; }  // Bit 7 set = already open
+#endif
             
             // Parse mode string
             LDY #0
@@ -3016,7 +2802,7 @@ unit File
                 STZ sectorPositionL
                 STZ sectorPositionH
                 
-                LDA #0b00000001             // Set open bit, clear write bit
+                LDA #0b10000000             // Set open bit (7), clear write bit (6), clear eof indicator (1)
                 STA cfilesFILE
                 SEC
                 break;
@@ -3038,10 +2824,10 @@ unit File
                 File.StartSave();           // preserves X and Y
                 if (NC) { break; }          // StartSave failed
                 
-                LDA #0b00000011             // Set open bit and write bit
+                LDA #0b11000000             // Set open bit (7), set write bit (6), clear eof indicator (1)
                 STA cfilesFILE
                 
-                // If filename for fopen had ".EXE" extension then SMB3 cfilesFILE
+                // If filename for fopen had ".EXE" extension then SMB0 cfilesFILE
                 LDY #0
                 loop
                 {
@@ -3075,7 +2861,13 @@ unit File
                                     LDA [STR], Y 
                                     if (Z)
                                     {
-                                        SMB3 cfilesFILE
+#ifdef UNIVERSAL
+                                        LDA #0b00000001
+                                        ORA cfilesFILE
+                                        STA cfilesFILE
+#else                                        
+                                        SMB0 cfilesFILE
+#endif
                                     }
                                 }
                             }
@@ -3116,12 +2908,19 @@ unit File
             if (Z)  { CLC break; }   // NULL pointer
             
             // Check if file is open
-            if (BBR0, cfilesFILE) { CLC break; } // Bit 0 clear = not open
-            
+#ifdef UNIVERSAL
+            BIT cfilesFILE
+            if (PL)               { CLC break; } // Bit 7 clear = not open
+#else            
+            if (BBR7, cfilesFILE) { CLC break; } // Bit 7 clear = not open
+#endif            
             // If opened for write, finalize the file
-            if (BBS1, cfilesFILE)  // Bit 1 set = write mode
+#ifdef UNIVERSAL
+            if (V)  // Bit 6 set = write mode
             {
-                if (BBS3, cfilesFILE)  // Bit 3 set = EXE
+                LDA cfilesFILE
+                AND #0b00000001
+                if (NZ)  // Bit 0 set = EXE
                 {
                     LDA #0x80  // Executable flag
                 }
@@ -3132,6 +2931,21 @@ unit File
                 File.EndSave();      // preserves X and Y
                 if (NC) { break; }          // EndSave failed?
             }
+#else            
+            if (BBS6, cfilesFILE)  // Bit 6 set = write mode
+            {
+                if (BBS0, cfilesFILE)  // Bit 0 set = EXE
+                {
+                    LDA #0x80  // Executable flag
+                }
+                else
+                {
+                    LDA #0x00            // Data file (not executable)
+                }
+                File.EndSave();      // preserves X and Y
+                if (NC) { break; }          // EndSave failed?
+            }
+#endif            
             
             // Clear file state
             STZ cfilesFILE
@@ -3164,9 +2978,18 @@ unit File
             if (Z) { CLC break; }  // NULL pointer
             
             // Check if file is open for reading
-            if (BBR0, cfilesFILE) { CLC break; }  // Not open
-            if (BBS1, cfilesFILE) { CLC break; }  // Write mode - can't read
-            if (BBS2, cfilesFILE) { CLC break; }  // EOF already reached
+#ifdef UNIVERSAL
+            BIT cfilesFILE
+            if (PL)               { CLC break; }  // Not open
+            if (V)                { CLC break; }  // Write mode - can't read
+            LDA cfilesFILE
+            AND #0b00000010
+            if (NZ)               { CLC break; }  // EOF already reached
+#else            
+            if (BBR7, cfilesFILE) { CLC break; }  // Not open
+            if (BBS6, cfilesFILE) { CLC break; }  // Write mode - can't read
+            if (BBS1, cfilesFILE) { CLC break; }  // EOF already reached
+#endif            
             
             // Check if we've consumed TransferLength bytes
             LDA sectorPositionH
@@ -3180,7 +3003,13 @@ unit File
                     File.NextStream();  // preserves X and Y
                     if (NC)  // No more data
                     {
-                        SMB2 cfilesFILE  // Set EOF bit
+#ifdef UNIVERSAL
+                        LDA #0b00000010
+                        ORA cfilesFILE
+                        STA cfilesFILE
+#else                        
+                        SMB1 cfilesFILE  // Set EOF bit
+#endif
                         CLC
                         break;
                     }
@@ -3237,9 +3066,14 @@ unit File
             if (Z) { CLC break; }  // NULL pointer
             
             // Check if file is open for reading
-            if (BBR0, cfilesFILE) { CLC break; }  // Not open
-            if (BBS1, cfilesFILE) { CLC break; }  // Write mode - can't read
-            
+#ifdef UNIVERSAL
+            BIT cfilesFILE
+            if (PL)               { CLC break; }  // Not open
+            if (V)                { CLC break; }  // Write mode - can't read
+#else            
+            if (BBR7, cfilesFILE) { CLC break; }  // Not open
+            if (BBS6, cfilesFILE) { CLC break; }  // Write mode - can't read
+#endif       
             loop
             {
                 LDA ZP.IDYL
@@ -3293,8 +3127,13 @@ unit File
                 }
                 
                 // Check EOF flag
-                if (BBS2, cfilesFILE) { SEC break; }  // EOF reached
-                
+#ifdef UNIVERSAL
+                LDA #0b00000010
+                AND cfilesFILE
+                if (NZ)               { SEC break; }  // EOF reached
+#else                
+                if (BBS1, cfilesFILE) { SEC break; }  // EOF reached
+#endif           
                 // Check if we've consumed TransferLength bytes
                 LDA sectorPositionH
                 CMP TransferLengthH
@@ -3307,7 +3146,13 @@ unit File
                         File.NextStream();  // preserves X and Y but munts IDX, IDY, TOP
                         if (NC)  // No more data
                         {
-                            SMB2 cfilesFILE  // Set EOF bit
+#ifdef UNIVERSAL
+                            LDA #0b00000010
+                            ORA cfilesFILE
+                            STA cfilesFILE
+#else
+                            SMB1 cfilesFILE  // Set EOF bit
+#endif
                             SEC
                             break;
                         }
@@ -3355,10 +3200,19 @@ unit File
                 return; // read more than zero bytes
             }
             // If we read 0 bytes and not EOF, return 0
-            if (BBR2, cfilesFILE)  // EOF flag set
+#ifdef UNIVERSAL
+            LDA #0b00000010
+            AND cfilesFILE
+            if (Z)
             {
                 return;
             }
+#else
+            if (BBR1, cfilesFILE)  // EOF not flag set
+            {
+                return;
+            }
+#endif
         }
         // Error or EOF after 0 bytes
         // -> return -1
@@ -3381,8 +3235,14 @@ unit File
             if (Z) { CLC break; }  // NULL pointer
             
             // Check if file is open for writing
-            if (BBR0, cfilesFILE) { CLC break; }  // Not open
-            if (BBR1, cfilesFILE) { CLC break; }  // Read mode - can't write
+#ifdef UNIVERSAL
+            BIT cfilesFILE
+            if (PL)               { CLC break; }  // Not open
+            if (NV)               { CLC break; }  // Read mode - can't write
+#else            
+            if (BBR7, cfilesFILE) { CLC break; }  // Not open
+            if (BBR6, cfilesFILE) { CLC break; }  // Read mode - can't write
+#endif
             
             // Set up for AppendStream
             LDA # ZP.ACCL
@@ -3431,8 +3291,14 @@ unit File
             if (Z) { CLC break; }  // NULL pointer
             
             // Check if file is open for writing
-            if (BBR0, cfilesFILE) { CLC break; }  // Not open
-            if (BBR1, cfilesFILE) { CLC break; }  // Read mode - can't write
+#ifdef UNIVERSAL
+            BIT cfilesFILE
+            if (PL)               { CLC break; }  // Not open
+            if (NV)               { CLC break; }  // Read mode - can't write
+#else            
+            if (BBR7, cfilesFILE) { CLC break; }  // Not open
+            if (BBR6, cfilesFILE) { CLC break; }  // Read mode - can't write
+#endif
             
             LDA ZP.IDXL
             STA SectorSourceL

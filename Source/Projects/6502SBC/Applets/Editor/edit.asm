@@ -1,10 +1,10 @@
 program Edit
 {
 
-    //#define UNIVERSAL
+    #define UNIVERSAL
     
 #ifdef UNIVERSAL        
-    #define CPU_6502
+    #define CPU_65C02
 #else
     #define CPU_65C02S    
 #endif
@@ -120,6 +120,19 @@ program Edit
     const string replacedMsg = "Replaced";
     
     const string noBeginMsg = "No block begin! Use ^K B first.";
+    
+    setModified()
+    {
+#ifdef UNIVERSAL                        
+        PHA
+        LDA #0b00000001
+        ORA EditorFlags
+        STA EditorFlags
+        PLA
+#else            
+        SMB0 EditorFlags
+#endif        
+    }
     
     Initialize()
     {
@@ -1448,8 +1461,8 @@ program Edit
         {
             // Import operation - set modified
             resetBlock();
-            SMB0 EditorFlags
-            
+            setModified();
+                   
             View.CountLines();
             LDX #1
             View.SetCursorPosition();
@@ -2082,7 +2095,7 @@ program Edit
         LDX #0  // Don't render yet
         clearBlock();
         
-        SMB0 EditorFlags  // Modified
+        setModified();
         View.CountLines();
         LDX #1
         View.SetCursorPosition();
@@ -2270,7 +2283,7 @@ program Edit
     
     markModifiedAndRefresh()
     {
-        SMB0 EditorFlags
+        setModified();
         View.CountLines();
         LDX #1
         View.SetCursorPosition();
@@ -2870,7 +2883,13 @@ program Edit
                 case Key.CtrlK:
                 {
                     handleCtrlK();
+#ifdef UNIVERSAL
+                    LDA EditorFlags
+                    AND #0b00000010
+                    if (NZ) { break; } // exit
+#else                    
                     if (BBS1, EditorFlags) { break; } // exit
+#endif
                 }
                 case Key.CtrlQ:
                 {
@@ -2889,7 +2908,7 @@ program Edit
                     GapBuffer.InsertChar();
                     if (C)  // Success
                     {
-                        SMB0 EditorFlags // modified
+                        setModified();
                         // Advance logical position by 1
                         incGapValue();
                         
@@ -2933,7 +2952,7 @@ program Edit
                     CPX #4
                     if (NZ)  // Some spaces were inserted
                     {
-                        SMB0 EditorFlags  // Set modified flag
+                        setModified();
                         
                         // Update display
                         LDX #1  // Force render
@@ -3158,7 +3177,8 @@ program Edit
                         GapBuffer.InsertChar();
                         if (C)  // Success
                         {
-                            SMB0 EditorFlags // modified
+                            setModified();
+                            
                             // Advance logical position by 1
                             incGapValue();
                             
