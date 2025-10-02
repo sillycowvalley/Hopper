@@ -422,6 +422,7 @@ unit Error // ErrorID.asm
         Print.NewLine();
     }
     
+#ifdef UNIVERSAL
     // Input A = error ID, X = MessageExtras
     Message()
     {
@@ -431,22 +432,6 @@ unit Error // ErrorID.asm
         STA ZP.ACCL  // Store target error ID
         STX ZP.ACCH  // Store MessageExtras
         
-#ifdef CPU_65C02S
-        if (BBS0, ZP.ACCH) // PrefixSpace
-        {
-            Print.Space();
-        }
-        if (BBS6, ZP.ACCH) // PrefixQuest
-        {
-            LDA #'?' 
-            Print.Char();
-        }
-        if (BBS7, ZP.ACCH) // InParens
-        {
-            LDA #'(' 
-            Print.Char();
-        }
-#else
         LDA ZP.ACCH
         AND # 0b00000001
         if (NZ) // PrefixSpace
@@ -465,7 +450,6 @@ unit Error // ErrorID.asm
             LDA #'(' 
             Print.Char();
         }
-#endif        
         
         LDA #(errorMessages0 % 256)
         STA ZP.IDYL
@@ -495,37 +479,6 @@ unit Error // ErrorID.asm
             Print.Space();
         }
         
-#ifdef CPU_65C02S        
-        if (BBS7, ZP.ACCH) // InParens
-        {
-            LDA #')' 
-            Print.Char();
-        }
-        if (BBS2, ZP.ACCH) // SuffixColon
-        {
-            LDA #':' 
-            Print.Char();
-        }
-        if (BBS3, ZP.ACCH) // SuffixQuest
-        {
-            LDA #'?' 
-            Print.Char();
-        }
-        if (BBS4, ZP.ACCH) // SuffixComma
-        {
-            LDA #',' 
-            Print.Char();
-        }
-        if (BBS5, ZP.ACCH) // SuffixPeriod
-        {
-            LDA #'.' 
-            Print.Char();
-        }
-        if (BBS1, ZP.ACCH) // SuffixSpace
-        {
-            Print.Space();
-        }
-#else
         LDA ZP.ACCH
         if (MI) // InParens
         {
@@ -566,10 +519,98 @@ unit Error // ErrorID.asm
         {
             Print.Space();
         }
-#endif        
         PLY
         PLX
     }
+#else    
+    
+    // Input A = error ID, X = MessageExtras
+    Message()
+    {
+        PHX 
+        PHY
+        
+        STA ZP.ACCL  // Store target error ID
+        STX ZP.ACCH  // Store MessageExtras
+        
+
+        if (BBS0, ZP.ACCH) // PrefixSpace
+        {
+            Print.Space();
+        }
+        if (BBS6, ZP.ACCH) // PrefixQuest
+        {
+            LDA #'?' 
+            Print.Char();
+        }
+        if (BBS7, ZP.ACCH) // InParens
+        {
+            LDA #'(' 
+            Print.Char();
+        }
+        
+        LDA #(errorMessages0 % 256)
+        STA ZP.IDYL
+        LDA #(errorMessages0 / 256)
+        STA ZP.IDYH
+        findMessage();// munts A, X, Y
+        if (NC)
+        {
+            BRK // internal error - message not found
+        }
+        
+        // Y - location of first word ID
+        // X - word count
+        loop
+        {
+            CPX #0
+            if (Z) { break; }
+            
+            LDA [ZP.IDY], Y    // Get word ID
+            PrintWord(); // word in A
+            INY
+            DEX
+            
+            CPX #0
+            if (Z) { break; }  // Don't add space after last word
+            
+            Print.Space();
+        }
+        
+        if (BBS7, ZP.ACCH) // InParens
+        {
+            LDA #')' 
+            Print.Char();
+        }
+        if (BBS2, ZP.ACCH) // SuffixColon
+        {
+            LDA #':' 
+            Print.Char();
+        }
+        if (BBS3, ZP.ACCH) // SuffixQuest
+        {
+            LDA #'?' 
+            Print.Char();
+        }
+        if (BBS4, ZP.ACCH) // SuffixComma
+        {
+            LDA #',' 
+            Print.Char();
+        }
+        if (BBS5, ZP.ACCH) // SuffixPeriod
+        {
+            LDA #'.' 
+            Print.Char();
+        }
+        if (BBS1, ZP.ACCH) // SuffixSpace
+        {
+            Print.Space();
+        }
+      
+        PLY
+        PLX
+    }
+#endif
     
     commonError()
     {

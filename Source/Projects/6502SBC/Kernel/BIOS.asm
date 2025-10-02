@@ -4,14 +4,21 @@ program BIOS
     
     //#define DEBUG     // mimimum of 874 bytes
     //#define FILEDEBUG
+    
+    #define UNIVERSAL
+    
+#ifdef UNIVERSAL        
     #define CPU_65C02S
+#else
+    #define CPU_65C02S    
+#endif
     
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~40 bytes)
     
 #ifdef DEBUG    
     #define ROM_32K
 #else
-  #ifdef MECB6502_IO
+  #if defined(MECB6502_IO) || defined(UNIVERSAL)
     #define ROM_16K
   #else
     #define ROM_8K
@@ -20,7 +27,9 @@ program BIOS
     
     
     // Optional components
-    //#define HASFLOAT  // currently ~1250 bytes
+#ifdef UNIVERSAL    
+    #define HASFLOAT  // currently ~1250 bytes
+#endif
     #define HASEEPROM
     #define CFILES
     
@@ -84,14 +93,14 @@ program BIOS
     NMI()
     {
         // Hardware break - NMI -> <ctrl><C>
-#ifdef CPU_65C02S        
-        SMB0 ZP.FLAGS
-#else
+#ifdef UNIVERSAL        
         PHA
         LDA #0b00000001
         ORA ZP.FLAGS
         STA ZP.FLAGS
         PLA
+#else
+        SMB0 ZP.FLAGS
 #endif        
     }
     
@@ -368,19 +377,19 @@ program BIOS
         STA TransferLengthL
         STZ TransferLengthH
         
-#ifdef CPU_65C02S        
-        if (BBR7, ZP.TOP0)
-        {
-            LDA #'.'
-            Print.Char();
-        }
-#else
+#ifdef UNIVERSAL        
         LDA ZP.TOP0
         if (PL)
         {
             LDA #'.'
             Print.Char();
         }   
+#else
+        if (BBR7, ZP.TOP0)
+        {
+            LDA #'.'
+            Print.Char();
+        }
 #endif
         
         // Skip address (4 hex chars = 2 bytes)
@@ -545,12 +554,12 @@ program BIOS
                 case ErrorWord.DEL:    { cmdDel();     return; }
                 case ErrorWord.EXIT:   
                 {
-#ifdef CPU_65C02S
-                    SMB7 ZP.FLAGS
-#else
+#ifdef UNIVERSAL
                     LDA #0b10000000
                     ORA ZP.FLAGS
                     STA ZP.FLAGS
+#else
+                    SMB7 ZP.FLAGS
 #endif
                     return; 
                 }
@@ -848,11 +857,11 @@ program BIOS
             printPrompt();
             processCommandLine();
             // Errors are handled by Error.CheckAndPrint() within ProcessCommandLine
-#ifdef CPU_65C02S            
-            if (BBS7, ZP.FLAGS) { break; }
-#else
+#ifdef UNIVERSAL            
             LDA ZP.FLAGS
             if (MI) { break; }
+#else
+            if (BBS7, ZP.FLAGS) { break; }
 #endif            
         }
         

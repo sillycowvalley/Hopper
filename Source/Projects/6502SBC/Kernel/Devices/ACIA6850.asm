@@ -27,7 +27,7 @@ unit SerialDevice
 #if defined(MECB6502_IO)
         LDA # 0b00010101       // 8-N-1, (/16 for 4.9152MHz), no rx interrupt
 #else        
-        LDA #0b00010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), no rx interrupt
+        LDA # 0b00010110        // 8-N-1,  28800 baud (/64 for  1.8432 mHz), no rx interrupt
 #endif
 
 #if defined(HAS_SERIAL_ISR)
