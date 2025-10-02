@@ -123,12 +123,12 @@ unit EEPROM
     // Returns: ZP.FLAGS with device status bits set, C for success, NC for failure to find EEPROM
     Initialize()
     {
-#ifdef CPU_65C02S
-        RMB1 ZP.FLAGS // no EEPROM
-#else
+#ifdef UNIVERSAL
         LDA #0b11111101
         AND ZP.FLAGS
         STA ZP.FLAGS
+#else
+        RMB1 ZP.FLAGS // no EEPROM
 #endif        
         
         // Clear I2C buffer
@@ -139,12 +139,12 @@ unit EEPROM
         I2C.Scan();
         if (Z)
         {
-#ifdef CPU_65C02S            
-            SMB1 ZP.FLAGS // EEPROM exists
-#else
+#ifdef UNIVERSAL            
             LDA #0b00000010
             ORA ZP.FLAGS
             STA ZP.FLAGS
+#else
+            SMB1 ZP.FLAGS // EEPROM exists
 #endif             
             SEC
         }     
@@ -160,13 +160,7 @@ unit EEPROM
     // Munts: None (internally saves/restores)
     Detect()
     {
-#ifdef CPU_65C02S
-        if (BBS1, ZP.FLAGS) // EEPROM exists
-        {
-            SEC  // Set C flag (C = EEPROM present)
-            return;
-        }
-#else
+#ifdef UNIVERSAL
         PHA
         LDA ZP.FLAGS
         AND #0b00000010
@@ -177,6 +171,12 @@ unit EEPROM
             return;
         }
         PLA
+#else
+        if (BBS1, ZP.FLAGS) // EEPROM exists
+        {
+            SEC  // Set C flag (C = EEPROM present)
+            return;
+        }
 #endif        
         CLC      // Clear C flag (NC = no EEPROM)
     }
@@ -185,17 +185,17 @@ unit EEPROM
     // Returns: A register contains size in K (32, 64, or 128) and C, or 0 and NC if no EEPROM
     GetSize()
     {
-#ifdef CPU_65C02S        
-        if (BBR1, ZP.FLAGS) // EEPROM exists?
+#ifdef UNIVERSAL        
+        LDA ZP.FLAGS
+        AND #0b00000010
+        if (Z)
         {
             LDA #0  
             CLC // No EEPROM detected
             return;
         }
 #else
-        LDA ZP.FLAGS
-        AND #0b00000010
-        if (Z)
+        if (BBR1, ZP.FLAGS) // EEPROM exists?
         {
             LDA #0  
             CLC // No EEPROM detected

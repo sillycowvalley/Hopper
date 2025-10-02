@@ -439,13 +439,15 @@ unit Error // ErrorID.asm
             Print.Space();
         }
         LDA ZP.ACCH
-        if (V) // PrefixQuest
+        AND # 0b01000000
+        if (NZ) // PrefixQuest
         {
             LDA #'?' 
             Print.Char();
         }
         LDA ZP.ACCH
-        if (MI) // InParens
+        AND # 0b10000000
+        if (NZ) // InParens
         {
             LDA #'(' 
             Print.Char();
@@ -480,7 +482,8 @@ unit Error // ErrorID.asm
         }
         
         LDA ZP.ACCH
-        if (MI) // InParens
+        AND # 0b10000000
+        if (NZ) // InParens
         {
             LDA #')' 
             Print.Char();
