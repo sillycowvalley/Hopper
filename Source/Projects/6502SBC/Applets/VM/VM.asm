@@ -1,9 +1,9 @@
 program VM
 {
-    //#define UNIVERSAL
+    #define UNIVERSAL
     
 #ifdef UNIVERSAL        
-    #define CPU_6502
+    #define CPU_65C02
 #else
     #define CPU_65C02S    
 #endif
@@ -481,8 +481,8 @@ program VM
             // - set the new function offsets in the function table
             TXA
 #ifdef UNIVERSAL
-            SEC
-            SBC #1
+            CLC
+            ADC #1
 #else
             INC
 #endif

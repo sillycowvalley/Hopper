@@ -29,8 +29,8 @@ unit Runtime
     const byte operandH         = runtimeSlots+11;
     
     const byte vmFlags          = runtimeSlots+12;
-    // Bit 0 - BIOS call Z return
-    // Bit 1 - BIOS call C return
+    // Bit 6 - BIOS call Z return
+    // Bit 7 - BIOS call C return
     
     const byte stackStore       = runtimeSlots+13;
     const byte yStore           = runtimeSlots+14;
@@ -122,6 +122,7 @@ unit Runtime
         STA globalsL
         STA constantsL
         STA BP
+        STA vmFlags
         LDA functionTableH
         CLC
         ADC #1
@@ -133,6 +134,7 @@ unit Runtime
         STZ globalsL
         STZ constantsL
         STZ BP
+        STZ vmFlags
         LDA functionTableH
         INC A
         STA globalsH
@@ -239,10 +241,18 @@ POPY:
             
 PUSHC:
             LDA #0               // Default to 0
-            if (BBS1, vmFlags)   // If carry set from last BIOS call
+#ifdef UNIVERSAL
+            BIT vmFlags
+            if (MI)              // If carry set from last BIOS call
             {
                 LDA #1           // Change to 1
             }
+#else
+            if (BBS7, vmFlags)   // If carry set from last BIOS call
+            {
+                LDA #1           // Change to 1
+            }
+#endif            
             PHA                  // Push result
             
             LDA [codePage], Y
@@ -252,10 +262,18 @@ PUSHC:
             
 PUSHZ:
             LDA #0               // Default to 0
-            if (BBS0, vmFlags)   // If zero set from last BIOS call
+#ifdef UNIVERSAL
+            BIT vmFlags
+            if (V)               // If zero set from last BIOS call
             {
                 LDA #1           // Change to 1
             }
+#else            
+            if (BBS6, vmFlags)   // If zero set from last BIOS call
+            {
+                LDA #1           // Change to 1
+            }
+#endif
             PHA                  // Push result
             
             LDA [codePage], Y
@@ -1374,9 +1392,25 @@ SYSCALL:
             LDY yStore
             LDA aStore
             dispatchBIOS();
-            if (Z) { SMB0 vmFlags } else { RMB0 vmFlags }
-            if (C) { SMB1 vmFlags } else { RMB1 vmFlags }
             STA aStore
+#ifdef UNIVERSAL            
+            if (Z)
+            {
+                LDA #0b01000000
+            }
+            else
+            {
+                LDA #0b00000000
+            }
+            if (C)
+            {
+                ORA #0b10000000
+            }
+            STA vmFlags
+#else
+            if (Z) { SMB6 vmFlags } else { RMB6 vmFlags }
+            if (C) { SMB7 vmFlags } else { RMB7 vmFlags }
+#endif            
             PLY
             
             LDA [codePage], Y
