@@ -5,7 +5,7 @@ program BIOS
     //#define DEBUG     // mimimum of 874 bytes
     //#define FILEDEBUG
     
-    #define UNIVERSAL
+    //#define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02
@@ -783,41 +783,62 @@ program BIOS
         LDX #0
         loop
         {
-            Serial.WaitForChar();   // Get character
-            CMP # Char.EOL          // CR?
-            if (Z) 
-            { 
-                break;
-            }
-            CMP # 0x0D              // LF?
-            if (Z) 
-            { 
-                break;
-            }
-            CMP # Char.Backspace          // Backspace?
-            if (Z)
+            Serial.WaitForChar();   // Get character -> A
+            switch (A)
             {
-                CPX #0
-                if (NZ) 
+                case Char.EOL:          // CR?
+                case 0x0D:              // LF?
                 { 
-                    DEX                   Serial.WriteChar();  // Echo backspace
-                    LDA #' '              Serial.WriteChar();  // Space
-                    LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
+                    break;
                 }
-                continue;
-            }
-            // Skip leading spaces
-            CMP #' '
-            if (Z)
-            {
-                CPX #0
-                if (Z) { continue; }    // Ignore space at start of line
-                STZ LineBuffer, X       // store null in buffer (as 'space')
-            }
-            else
-            {
-                Char.ToUpper();        // A -> uppercase A
-                STA LineBuffer, X      // store character in buffer
+                case Char.Escape:
+                {
+                    // Short delay to see if this is part of an escape sequence
+                    // Escape sequences arrive quickly (<5ms), human typing is slower
+                    LDA #10         // 10ms timeout
+                    Shared.LoadTopByte();
+                    Time.Delay();
+                    // Check if more characters arrived
+                    loop
+                    {
+                        Serial.IsAvailable();
+                        if (NC) { break; }
+                        // character available
+                        Serial.WaitForChar(); // consume them too    
+                    }
+                    continue; // ignore <esc> and what followed
+                }
+                case Char.Backspace:    // Backspace?
+                {
+                    CPX #0
+                    if (NZ) 
+                    { 
+                        DEX                   Serial.WriteChar();  // Echo backspace
+                        LDA #' '              Serial.WriteChar();  // Space
+                        LDA # Char.Backspace  Serial.WriteChar();  // Backspace again
+                    }
+                    continue;
+                }
+                case ' ':               // Skip leading spaces
+                {
+                    CPX #0
+                    if (Z) { continue; }    // Ignore space at start of line
+                    STZ LineBuffer, X       // store null in buffer (as 'space')
+                }
+                case '.':
+                {
+                    STA LineBuffer, X      // store character in buffer
+                }
+                default:
+                {
+                    Char.IsAlphaNumeric();
+                    if (NC)
+                    {
+                        continue; // ignore non-alphanumeric
+                    }
+                    Char.ToUpper();        // A -> uppercase A
+                    STA LineBuffer, X      // store character in buffer
+                }
             }
             Serial.WriteChar();        // Echo character
             
