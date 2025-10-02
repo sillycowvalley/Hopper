@@ -11,8 +11,14 @@ unit VIA65C22
         // VIA initialization assuming the RESB pulse was too short
         // "Reset clears all internal registers (except T1 and T2 counters and latches, and the SR"
 
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.DDRA // set all pins on port A to input (good default in case we don't use it)
+        STA ZP.DDRB // set all pins on port B to input (good default in case we don't use it) 
+#else
         STZ ZP.DDRA // set all pins on port A to input (good default in case we don't use it)
         STZ ZP.DDRB // set all pins on port B to input (good default in case we don't use it) 
+#endif
         
         // start timer last since it generates interrupts
         // VIA interval timer to tick every 1ms or 1000 clock cycles
@@ -31,7 +37,7 @@ unit VIA65C22
     
     isr()
     {
-#if defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         if (BBS7, ZP.IFR) // IRQ by VIA
         {
             if (BBS6, ZP.IFR) // Timer 1 IRQ
@@ -113,11 +119,18 @@ unit VIA65C22
         LDA ZP.TOP1
         STA ZP.T1CH
         
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.TICK0
+        STA ZP.TICK1
+        STA ZP.TICK2
+        STA ZP.TICK3
+#else        
         STZ ZP.TICK0
         STZ ZP.TICK1
         STZ ZP.TICK2
         STZ ZP.TICK3
-        
+#endif   
         LDA # 0b11000000 // Set Timer1 bit in IER to put Timer1 into free run mode
         STA ZP.IER
     }

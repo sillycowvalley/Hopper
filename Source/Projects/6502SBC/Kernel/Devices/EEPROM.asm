@@ -243,8 +243,14 @@ unit EEPROM
         PHA
         
         // LSB's always zero
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.IDYL
+        STA ZP.IDXL
+#else        
         STZ ZP.IDYL
         STZ ZP.IDXL
+#endif
         
         // copy a 256 byte 6502 page:
         copyPageToEEPROM();
@@ -292,8 +298,14 @@ unit EEPROM
         // IDX contains the destination address
         
         // LSB's always zero
+#ifdef UNIVERSAL
+        LDA #0
+        STA ZP.IDYL
+        STA ZP.IDXL
+#else                
         STZ ZP.IDYL
         STZ ZP.IDXL
+#endif
         
         // copy a 256 byte 6502 page:
         copyProgramPage();

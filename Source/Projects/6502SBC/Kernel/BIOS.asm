@@ -29,7 +29,7 @@ program BIOS
     
     // Optional components
 #ifdef UNIVERSAL    
-    #define HASFLOAT  // currently ~1250 bytes
+    //#define HASFLOAT  // currently ~1250 bytes
 #endif
     #define HASEEPROM
     #define CFILES

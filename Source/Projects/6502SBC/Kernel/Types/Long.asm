@@ -410,8 +410,14 @@ unit Long
                     if (Z)  // All high bytes are zero - use 16-bit division
                     {
                         // Clear upper bytes and initialize remainder
+#ifdef UNIVERSAL
+                        LDA #0
+                        STA ZP.NEXT2
+                        STA ZP.NEXT3
+#else
                         STZ ZP.NEXT2
                         STZ ZP.NEXT3
+#endif
                         
                         LDA ZP.TOP1
                         if (Z)
@@ -963,8 +969,11 @@ unit Long
     // Munts: ZP.NEXT, ZP.RESULT, ZP.ACC, A
     Print()
     {
-        PHX
-        PHY
+#ifdef UNIVERSAL
+        TXA PHA TYA PHA
+#else        
+        PHX PHY
+#endif
         
         LDA ZP.NEXT3
         PHA
@@ -1009,7 +1018,11 @@ unit Long
             loop
             {
                 // Setup for DivMod: NEXT = value, TOP = 10
+#ifdef UNIVERSAL
+                TYA PHA
+#else
                 PHY
+#endif
                 LDA ZP.NEXT1
                 ORA ZP.NEXT2
                 ORA ZP.NEXT3
@@ -1030,8 +1043,11 @@ unit Long
                     LDX #1          // X=1 for mod (ensures we get remainder)
                     DivMod();
                 }
-                
+#ifdef UNIVERSAL
+                PLA TAY
+#else
                 PLY
+#endif
                 
                 // Push digit (remainder) onto stack
                 LDA ZP.RESULT0  // Remainder is 0-9
@@ -1064,8 +1080,11 @@ unit Long
         STA ZP.NEXT2
         PLA
         STA ZP.NEXT3
-        
-        PLY
-        PLX
+
+#ifdef UNIVERSAL
+        PLA TAY PLA TAX
+#else
+        PLY PLX
+#endif
     }
 }

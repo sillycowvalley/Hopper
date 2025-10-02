@@ -60,7 +60,7 @@ unit SerialDevice
 
     isr()
     {
-#if defined(ZEROPAGE_IO)
+#if !defined(UNIVERSAL) && defined(ZEROPAGE_IO)
         loop
         {
             if (BBS7, StatusRegister) // interrupt request by 6850

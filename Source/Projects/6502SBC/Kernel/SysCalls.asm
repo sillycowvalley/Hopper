@@ -4,7 +4,7 @@ unit SysCalls
     isBreak()
     {
         CLC
-#ifdef UNIVERAL        
+#ifdef UNIVERSAL        
         PHA   
         LDA ZP.FLAGS
         AND #0b00000001

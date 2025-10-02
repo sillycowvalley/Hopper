@@ -148,6 +148,34 @@ unit Shared
         STA ZP.TOP0
         ZeroTop3();
     }
+#ifdef UNIVERSAL    
+    ZeroTop()
+    {
+        LDA #0
+        STA ZP.TOP0
+        ZeroTop3();
+    }
+    ZeroTop3()
+    {
+        LDA #0
+        STA ZP.TOP1
+        STA ZP.TOP2
+        STA ZP.TOP3
+    }
+    ZeroNext()
+    {
+        LDA #0
+        STA ZP.NEXT0
+        ZeroNext3();
+    }
+    ZeroNext3()
+    {
+        LDA #0
+        STA ZP.NEXT1
+        STA ZP.NEXT2
+        STA ZP.NEXT3
+    }
+#else
     ZeroTop()
     {
         STZ ZP.TOP0
@@ -170,6 +198,7 @@ unit Shared
         STZ ZP.NEXT2
         STZ ZP.NEXT3
     }
+#endif    
     ZeroCheckTop()
     {
         LDA ZP.TOP0
