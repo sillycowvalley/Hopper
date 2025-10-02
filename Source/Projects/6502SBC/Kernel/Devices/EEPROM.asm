@@ -41,9 +41,11 @@ unit EEPROM
         I2C.Stop();
         
         // delay 5ms after Stop() for EEPROM
+        /*
         LDA # 5
         Shared.LoadTopByte();
         Time.Delay();
+        */
         
         // read one page from EEPROM:
         LDA # serialPageSize
@@ -254,6 +256,7 @@ unit EEPROM
 #endif
         // TODO : copyPageToEEPROM already has a built in 5 ms delay (test without this delay)
         
+        /*
         // Proper EEPROM write completion delay
         // EEPROM write operations need 5-10ms to complete
         LDA #10          // 10 milliseconds delay
@@ -264,6 +267,7 @@ unit EEPROM
         STZ ZP.TOP3
 
         Time.Delay(); // Proper timer-based delay
+        */
         
         PLA
         STA ZP.TOP3

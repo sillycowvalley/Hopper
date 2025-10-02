@@ -99,30 +99,31 @@ unit Memory // Memory.asm
         SBC ZP.HEAPSTART
         STA ZP.HEAPSIZE
         
+
+#ifdef DEBUG        
         // Zero initialize
-        LDA #0
-        PHA PHA
-        STA IDXL
+        STZ IDXL
         LDA ZP.HEAPSTART
         STA IDXH
         LDX ZP.HEAPSIZE // number of 256 byte pages is same as MSB of size
         ClearPages(); // munts A, X, Y
+#endif
         
         // FreeList = Hopper heap start
+        STZ ZP.FREELISTL
         LDA ZP.HEAPSTART
         STA ZP.FREELISTH
-        PLA // 0 -> A
-        TAY // 0 -> Y
-        STA ZP.FREELISTL
         
         // all memory is in this single free list record
+        LDY #0
+        LDA #0
         STA [ZP.FREELIST], Y
-        LDA ZP.HEAPSIZE
         INY
+        LDA ZP.HEAPSIZE
         STA [ZP.FREELIST], Y
         
         // next = null
-        PLA // 0 -> A
+        LDA #0
         INY
         STA [ZP.FREELIST], Y
         INY
