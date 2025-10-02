@@ -607,6 +607,52 @@ unit View
                 
         GapBuffer.GetCharAtFastPrep();
         
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND Edit.EditorFlags
+        if (Z)
+        {
+            // Render visible lines (no block active)
+            LDY #0  // Screen row
+            loop
+            {
+                PHY
+                
+                // Position cursor at start of line
+                LDA #0
+                ScreenBuffer.GotoXY();
+                
+                // Render one line
+                renderLine();
+                
+                PLY
+                INY
+                CPY vwScreenRows
+                if (C) { break; }  // row >= screenRows
+            }
+        }
+        else
+        {
+            // Render visible lines (block active)
+            LDY #0  // Screen row
+            loop
+            {
+                PHY
+                
+                // Position cursor at start of line
+                LDA #0
+                ScreenBuffer.GotoXY();
+                
+                // Render one line
+                renderLineWithBlock();
+                
+                PLY
+                INY
+                CPY vwScreenRows
+                if (C) { break; }  // row >= screenRows
+            }
+        }
+#else        
         if (BBR2, Edit.EditorFlags) 
         {
             // Render visible lines (no block active)
@@ -649,6 +695,7 @@ unit View
                 if (C) { break; }  // row >= screenRows
             }
         }
+#endif        
         
         ScreenBuffer.Resume();
         
@@ -1145,7 +1192,13 @@ unit View
     CursorBlockStart()
     {
         // Check if block is active (defensive)
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND Edit.EditorFlags
+        if (Z) { return; }
+#else        
         if (BBR2, Edit.EditorFlags) { return; }
+#endif        
         
         // Load block start position into GapValue
         LDA Edit.BlockStartL
@@ -1162,7 +1215,13 @@ unit View
     CursorBlockEnd()
     {
         // Check if block is active (defensive)
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND Edit.EditorFlags
+        if (Z) { return; }
+#else        
         if (BBR2, Edit.EditorFlags) { return; }
+#endif
         
         // Load block end position into GapValue
         LDA Edit.BlockEndL
@@ -1269,6 +1328,20 @@ unit View
         ScreenBuffer.SetBold();
         
          // Show modified indicator if bit 0 of EditorFlags is set
+#ifdef UNIVERSAL
+        LDA #0b00000001
+        AND Edit.EditorFlags
+        if (NZ)
+        {
+            LDA #'*'
+            ScreenBuffer.Char();
+        }
+        else
+        {
+            LDA #' '
+            ScreenBuffer.Char();
+        }
+#else         
         if (BBS0, Edit.EditorFlags)  // Modified?
         {
             LDA #'*'
@@ -1279,6 +1352,7 @@ unit View
             LDA #' '
             ScreenBuffer.Char();
         }
+#endif
         
         // Print line
         LDA #(rowLabel / 256)
@@ -1403,6 +1477,17 @@ unit View
             INY
         }
         
+#ifdef UNIVERSAL
+        LDA #0b00001000
+        AND Edit.EditorFlags
+        if (Z) // prompt mode?
+        {
+            // Position cursor
+            LDA vwCurrentCol
+            LDY vwCurrentRow
+            ScreenBuffer.GotoXY();
+        }
+#else        
         if (BBR3, Edit.EditorFlags) // prompt mode?
         {
             // Position cursor
@@ -1410,6 +1495,7 @@ unit View
             LDY vwCurrentRow
             ScreenBuffer.GotoXY();
         }
+#endif
         
         ScreenBuffer.SetNotBold();
         ScreenBuffer.Resume();
@@ -1468,6 +1554,16 @@ unit View
             ScreenBuffer.Char();
         }
         
+#ifdef UNIVERSAL
+        LDA #0b00001000
+        AND Edit.EditorFlags
+        if (Z)
+        {
+            LDA vwCurrentCol
+            LDY vwCurrentRow
+            ScreenBuffer.GotoXY();
+        }
+#else        
         if (BBR3, Edit.EditorFlags) // prompt mode?
         {
             // Position cursor
@@ -1475,6 +1571,7 @@ unit View
             LDY vwCurrentRow
             ScreenBuffer.GotoXY();
         }
+#endif
         ScreenBuffer.Resume();
     }
     

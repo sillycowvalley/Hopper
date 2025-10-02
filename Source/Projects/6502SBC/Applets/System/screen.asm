@@ -167,6 +167,31 @@ unit Screen
         PLY
     }
     
+    setWorkingStatus()
+    {
+#ifdef UNIVERSAL
+        PHA
+        LDA #0b00000001
+        ORA workingStatus
+        STA workingStatus
+        PLA
+#else                
+        RMB0 workingStatus
+#endif
+    }
+    clearWorkingStatus()
+    {
+#ifdef UNIVERSAL
+        PHA
+        LDA #0b11111110
+        AND workingStatus
+        STA workingStatus
+        PLA
+#else                
+        RMB0 workingStatus
+#endif
+    }
+    
     // Attributes are:
     // Bit 0-2 : foreground colour
     // Bit 3-5 : background colour
@@ -188,9 +213,9 @@ unit Screen
         LDA #(escape % 256)
         LDY #(escape / 256)
         printString();
-        
-        RMB0 workingStatus
-        
+
+        clearWorkingStatus();        
+    
         // BOLD
         LDA currentAttributes
         AND # Attribute.Bold
@@ -211,7 +236,7 @@ unit Screen
                 LDA currentAttributes
                 ORA # Attribute.Bold
                 STA currentAttributes
-                SMB0 workingStatus
+                setWorkingStatus();
             }
         }
         else
@@ -228,7 +253,7 @@ unit Screen
                 LDA currentAttributes
                 EOR # Attribute.Bold
                 STA currentAttributes
-                SMB0 workingStatus
+                setWorkingStatus();
             }
             else
             {
@@ -250,18 +275,28 @@ unit Screen
             }
             else
             {
+#ifdef UNIVERSAL
+                LDA #0b00000001
+                AND workingStatus
+                if (NZ)
+                {
+                    LDA #';'
+                    Serial.WriteChar();
+                }
+#else    
                 if (BBS0, workingStatus)
                 {
                     LDA #';'
                     Serial.WriteChar();
                 }
+#endif
                 // switch to inverse "7"
                 LDA #'7'
                 Serial.WriteChar();
                 LDA currentAttributes
                 ORA # Attribute.Inverse
                 STA currentAttributes
-                SMB0 workingStatus
+                setWorkingStatus();
             }
         }
         else
@@ -271,11 +306,21 @@ unit Screen
             AND # Attribute.Inverse
             if (Z)
             {
+#ifdef UNIVERSAL
+                LDA #0b00000001
+                AND workingStatus
+                if (NZ)
+                {
+                    LDA #';'
+                    Serial.WriteChar();
+                }
+#else                
                 if (BBS0, workingStatus)
                 {
                     LDA #';'
                     Serial.WriteChar();
                 }
+#endif
                 // switch to not inverse: "27"
                 LDA #'2'
                 Serial.WriteChar();
@@ -284,7 +329,7 @@ unit Screen
                 LDA currentAttributes
                 EOR # Attribute.Inverse
                 STA currentAttributes
-                SMB0 workingStatus
+                setWorkingStatus();
             }
             else
             {
@@ -303,11 +348,21 @@ unit Screen
         if (NZ)
         {
             // foreground has changed
+#ifdef UNIVERSAL
+            LDA #0b00000001
+            AND workingStatus
+            if (NZ)
+            {
+                LDA #';'
+                Serial.WriteChar();
+            }
+#else            
             if (BBS0, workingStatus)
             {
                 LDA #';'
                 Serial.WriteChar();
             }
+#endif
             LDA currentAttributes
             EOR # 0b00000111
             ORA workingColour
@@ -318,7 +373,7 @@ unit Screen
             LDA workingColour   
             ADC #'0'
             Serial.WriteChar();
-            SMB0 workingStatus
+            setWorkingStatus();
         }
         
         // BACKGROUND
@@ -332,11 +387,21 @@ unit Screen
         if (NZ)
         {
             // background has changed
+#ifdef UNIVERSAL
+            LDA #0b00000001
+            AND workingStatus
+            if (NZ)
+            {
+                LDA #';'
+                Serial.WriteChar();
+            }
+#else
             if (BBS0, workingStatus)
             {
                 LDA #';'
                 Serial.WriteChar();
             }
+#endif
             LDA currentAttributes
             EOR # 0b00111000
             ORA workingColour

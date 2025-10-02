@@ -133,6 +133,43 @@ program Edit
         SMB0 EditorFlags
 #endif        
     }
+    clearModified()
+    {
+#ifdef UNIVERSAL                        
+        PHA
+        LDA #0b11111110
+        AND EditorFlags
+        STA EditorFlags
+        PLA
+#else            
+        RMB0 EditorFlags
+#endif        
+    }
+    
+    setBlockActive()
+    {
+#ifdef UNIVERSAL                        
+        PHA
+        LDA #0b00000100
+        ORA EditorFlags
+        STA EditorFlags
+        PLA
+#else            
+        SMB2 EditorFlags
+#endif         
+    }
+    clearBlockActive()
+    {
+#ifdef UNIVERSAL                        
+        PHA
+        LDA #0b11111011
+        AND EditorFlags
+        STA EditorFlags
+        PLA
+#else            
+        RMB2 EditorFlags
+#endif        
+    }
     
     Initialize()
     {
@@ -664,6 +701,19 @@ program Edit
     clearBlock()
     {
         // Check if there was actually a block to clear
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND Edit.EditorFlags
+        if (Z)
+        { 
+            return;  // No block active, nothing to do
+        }
+        
+        // Clear the block active flag
+        LDA #0b11111011
+        AND Edit.EditorFlags
+        STA Edit.EditorFlags
+#else        
         if (BBR2, Edit.EditorFlags) 
         { 
             return;  // No block active, nothing to do
@@ -671,7 +721,7 @@ program Edit
         
         // Clear the block active flag
         RMB2 Edit.EditorFlags
-        
+#endif        
         // Set to invalid position (0xFFFF)
         LDA #0xFF
         STA Edit.BlockStartL
@@ -692,10 +742,19 @@ program Edit
     {
         // Clear any existing block
         LDX #0 // 
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND Edit.EditorFlags
+        if (NZ)
+        {
+            LDX #1 // unless there was an existing block .. render it away
+        }
+#else        
         if (BBS2, Edit.EditorFlags) 
         {
             LDX #1 // unless there was an existing block .. render it away
         }
+#endif
         clearBlock();
         
         // Get current cursor position
@@ -708,7 +767,13 @@ program Edit
         STA Edit.BlockStartH
         
         // Clear block active flag (need both endpoints)
+#ifdef UNIVERSAL
+        LDA #0b11111011
+        AND Edit.EditorFlags
+        STA Edit.EditorFlags
+#else        
         RMB2 Edit.EditorFlags
+#endif
         
     }
     
@@ -757,7 +822,13 @@ program Edit
         }
         
         // Set block active flag
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        ORA Edit.EditorFlags
+        STA Edit.EditorFlags
+#else        
         SMB2 Edit.EditorFlags
+#endif
         
         // Show the highlighted block
         View.Render();
@@ -880,11 +951,21 @@ program Edit
     // Output: A = 0 (cancel), 1 (proceed without save), 2 (saved and proceed)
     checkModified()
     {
+#ifdef UNIVERSAL
+        LDA #0b00000001
+        AND EditorFlags
+        if (Z)
+        {
+            LDA #1  // Proceed
+            return;
+        }
+#else        
         if (BBR0, EditorFlags)  // Not modified?
         {
             LDA #1  // Proceed
             return;
         }
+#endif
         
         // Show modified prompt with 3 options
         LDA #(saveChangesPrompt % 256)
@@ -957,7 +1038,13 @@ program Edit
         
         GapBuffer.Clear();
         disposeFilename();
+#ifdef UNIVERSAL
+        LDA #0b11111110
+        AND EditorFlags
+        STA EditorFlags
+#else
         RMB0 EditorFlags  // Clear modified
+#endif
         
         LDX #0
         clearBlock(); // discards block, render will happen in View.ApplyGapBuffer() below
@@ -1056,12 +1143,28 @@ program Edit
         CPX #1
         if (Z)
         {
+#ifdef UNIVERSAL
+            LDA #0b01000000
+            ORA EditorFlags
+            STA EditorFlags
+#else                        
             SMB6 EditorFlags // block file operation
+#endif
         }
         else
         {
-            if (BBR0, EditorFlags) { SEC return; } // not modified
+            
+#ifdef UNIVERSAL
+            LDA EditorFlags
+            AND #0b00000001
+            if (Z) { SEC return; } // not modified                 
+            LDA EditorFlags
+            AND #0b10111111
+            STA EditorFlags
+#else       
+            if (BBR0, EditorFlags) { SEC return; } // not modified                 
             RMB6 EditorFlags // document file operation
+#endif            
         }
         
         View.StatusClear();
@@ -1123,6 +1226,18 @@ program Edit
         
         loop
         {
+#ifdef UNIVERSAL
+            LDA #0b01000000
+            AND EditorFlags
+            if (Z)            
+            {
+                saveDocument();
+            }
+            else
+            {
+                saveBlock();
+            }
+#else
             if (BBR6, EditorFlags)
             {
                 saveDocument();
@@ -1131,6 +1246,7 @@ program Edit
             {
                 saveBlock();
             }
+#endif
             
             if (NC)
             {
@@ -1172,8 +1288,13 @@ program Edit
                 CLC
                 break;
             }
-
+#ifdef UNIVERSAL
+            LDA #0b11111110
+            AND EditorFlags
+            STA EditorFlags
+#else
             RMB0 EditorFlags  // Clear modified
+#endif            
             
             View.UpdatePosition(); 
             
@@ -1232,7 +1353,13 @@ program Edit
     exportFile()
     {
         // Check if block is active
+#ifdef UNIVERSAL        
+        LDA #0b00000100
+        AND EditorFlags
+        if (Z)  { return; }  // No block
+#else                
         if (BBR2, EditorFlags) { return; }  // No block
+#endif
         
         // store editor filename
         LDA currentFilenameL
@@ -1311,11 +1438,27 @@ program Edit
         CPX #1
         if (Z)
         {
+#ifdef UNIVERSAL
+            PHA
+            LDA #0b01000000
+            ORA EditorFlags
+            STA EditorFlags
+            PLA
+#else            
             SMB6 EditorFlags // block file operation
+#endif
         }
         else
-        {
+        {    
+#ifdef UNIVERSAL
+            PHA
+            LDA #0b10111111
+            AND EditorFlags
+            STA EditorFlags
+            PLA
+#else     
             RMB6 EditorFlags // document file operation
+#endif            
         }
         
         makeFilename();
@@ -1338,7 +1481,21 @@ program Edit
             View.StatusStringPause();
             return;
         }
-        
+#ifdef UNIVERSAL
+        LDA #0b01000000
+        AND EditorFlags
+        if (Z)
+        {
+            // Clear current buffer
+            GapBuffer.Clear();
+        }
+        else
+        {
+            // Move gap to cursor position
+            View.GetCursorPosition();
+            GapBuffer.MoveGapTo();
+        }
+#else        
         if (BBR6, EditorFlags)
         {
             // Clear current buffer
@@ -1350,6 +1507,7 @@ program Edit
             View.GetCursorPosition();
             GapBuffer.MoveGapTo();
         }
+#endif
         
         // Open for reading
         LDA currentFilenameL
@@ -1442,7 +1600,37 @@ program Edit
             }
         }
         
+#ifdef UNIVERSAL
+        LDA #0b01000000
+        AND EditorFlags
+        if (Z)
+        {
+            // Document operation - clear modified
+            LDA #0b11111110
+            AND EditorFlags
+            STA EditorFlags
+            
+            LDX #0
+            clearBlock();
         
+            // Reset cursor to top of file
+            STZ GapBuffer.GapValueL
+            STZ GapBuffer.GapValueH   
+            
+            View.ApplyGapBuffer();
+            View.UpdatePosition();
+        }
+        else
+        {
+            // Import operation - set modified
+            resetBlock();
+            setModified();
+                   
+            View.CountLines();
+            LDX #1
+            View.SetCursorPosition();
+        }
+#else                
         if (BBR6, EditorFlags)
         {
             // Document operation - clear modified
@@ -1467,6 +1655,7 @@ program Edit
             LDX #1
             View.SetCursorPosition();
         }
+#endif        
         
         // Show success message briefly
         LDA #(loadedMsg % 256)
@@ -1619,13 +1808,25 @@ program Edit
                 saveFile();
                 if (C)
                 {
+#ifdef UNIVERSAL
+                    LDA #0b00000010
+                    ORA EditorFlags
+                    STA EditorFlags
+#else                    
                     SMB1 EditorFlags // exit
+#endif
                 }
             }
             case Key.CtrlQ: // finger still down on <ctrl>
             case 'Q':       // Quit without save
             {
+#ifdef UNIVERSAL
+                LDA #0b00000010
+                ORA EditorFlags
+                STA EditorFlags
+#else                
                 SMB1 EditorFlags // exit
+#endif
             }
             case Key.CtrlS: // finger still down on <ctrl>
             case 'S':       // Save
@@ -1686,18 +1887,36 @@ program Edit
             case Key.CtrlB: // finger still down on <ctrl>
             case 'B':       // Beginning of block
             {
+#ifdef UNIVERSAL
+                LDA #00000100
+                AND EditorFlags
+                if (NZ)
+                {
+                    View.CursorBlockStart();
+                }
+#else
                 if (BBS2, EditorFlags) // block active
                 {
                     View.CursorBlockStart();
                 }
+#endif
             }
             case Key.CtrlK: // finger still down on <ctrl>
             case 'K':       // End of block
             {
+#ifdef UNIVERSAL
+                LDA #00000100
+                AND EditorFlags
+                if (NZ)
+                {
+                    View.CursorBlockEnd();
+                }
+#else                
                 if (BBS2, EditorFlags) // block active
                 {
                     View.CursorBlockEnd();
                 }
+#endif
             }
             
             case Key.CtrlS: // finger still down on <ctrl>
@@ -1760,7 +1979,13 @@ program Edit
         STA Edit.BlockEndH
         
         // Set block active flag
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        ORA EditorFlags
+        STA EditorFlags
+#else        
         SMB2 EditorFlags
+#endif
         
         // Update display to show marked word
         View.Render();
@@ -1928,7 +2153,13 @@ program Edit
     copyBlockClipboard()
     {
         // Check if block is active
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND EditorFlags
+        if (Z) { return; }  // No block
+#else        
         if (BBR2, EditorFlags) { return; }  // No block
+#endif
         
         // Set up positions
         LDA BlockStartL
@@ -1981,8 +2212,13 @@ program Edit
     moveBlock()
     {
         // Check if block is active
+#ifdef UNIVERSAL       
+        LDA #0b00000100
+        AND EditorFlags
+        if (Z) { return; }  // No block
+#else
         if (BBR2, EditorFlags) { return; }  // No block
-        
+#endif
         View.GetCursorPosition();
         loop
         {
@@ -2061,8 +2297,13 @@ program Edit
     deleteBlock()
     {
         // Check if block is active
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        AND EditorFlags
+        if (Z) { return; }  // No block
+#else        
         if (BBR2, EditorFlags) { return; }  // No block
-        
+#endif   
         PHX
         
         // Copy block positions to current/target
@@ -2198,7 +2439,13 @@ program Edit
         STA Edit.BlockEndH
         
         // Set block active flag
+#ifdef UNIVERSAL
+        LDA #0b00000100
+        ORA EditorFlags
+        STA EditorFlags       
+#else        
         SMB2 EditorFlags
+#endif        
         
         // Show the highlighted block
         View.Render();
@@ -3037,6 +3284,19 @@ program Edit
                         }
                         case Key.Backspace:
                         {
+#ifdef UNIVERSAL
+                            LDA EditorFlags
+                            AND #0b00000100
+                            if (NZ)
+                            {
+                                LDX #0  // Just delete, don't copy to clipboard
+                                deleteBlock();
+                            }
+                            else
+                            {
+                                backspace();
+                            }
+#else                            
                             if (BBS2, EditorFlags)  // Block active?
                             {
                                 LDX #0  // Just delete, don't copy to clipboard
@@ -3046,10 +3306,24 @@ program Edit
                             {
                                 backspace();
                             }
+#endif
                             continue;
                         }
                         case Key.Delete:
                         {
+#ifdef UNIVERSAL
+                            LDA EditorFlags
+                            AND #0b00000100
+                            if (NZ)
+                            {
+                                LDX #0  // Just delete, don't copy to clipboard
+                                deleteBlock();
+                            }
+                            else
+                            {
+                                delete();
+                            }
+#else
                             if (BBS2, EditorFlags)  // Block active?
                             {
                                 LDX #0  // Just delete, don't copy to clipboard
@@ -3059,6 +3333,7 @@ program Edit
                             {
                                 delete();
                             }
+#endif
                             continue;
                         }
                         case Key.CtrlY:
@@ -3158,6 +3433,19 @@ program Edit
                         resetBlock();
 #else
                         // If block active, delete it first
+  #ifdef UNIVERSAL
+                        LDA EditorFlags
+                        AND #0b00000100
+                        if (NZ)   
+                        {
+                            LDX #0  // Just delete
+                            deleteBlock();
+                        }
+                        else
+                        {
+                            resetBlock();
+                        }                     
+  #else                        
                         if (BBS2, EditorFlags)
                         {
                             LDX #0  // Just delete
@@ -3167,6 +3455,7 @@ program Edit
                         {
                             resetBlock();
                         }
+  #endif
 #endif                        
                         // Get current position and move gap there
                         View.GetCursorPosition();  // Returns position in GapValue

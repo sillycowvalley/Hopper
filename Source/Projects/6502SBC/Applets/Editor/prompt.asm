@@ -116,7 +116,13 @@ unit Prompt
         STA promptMaxLen
         STZ promptLength
         
+#ifdef UNIVERSAL
+        LDA #0b00001000
+        ORA EditorFlags
+        STA EditorFlags
+#else                
         SMB3 EditorFlags // prompt mode
+#endif
         
         // Clear status line and show prompt
         View.StatusClear();
@@ -179,6 +185,30 @@ unit Prompt
                 
                 default:
                 {
+#ifdef UNIVERSAL
+                    LDA #0b10000000
+                    AND EditorFlags
+                    if (NZ)
+                    {
+                        Char.IsAlphaNumeric();
+                        if (NC) 
+                        {
+                            CMP #'.'
+                            if (NZ)
+                            {
+                                continue;
+                            }
+                        }
+                        Char.ToUpper();
+                        STA promptLastChar
+                        SEC
+                    }
+                    else
+                    {
+                        // Check if printable
+                        Char.IsPrintable();
+                    }
+#else                    
                     if (BBS7, EditorFlags) // filename mode
                     {
                         Char.IsAlphaNumeric();
@@ -199,6 +229,7 @@ unit Prompt
                         // Check if printable
                         Char.IsPrintable();
                     }
+#endif                    
                     if (C)
                     {
                         // Check length
@@ -224,7 +255,13 @@ unit Prompt
                 }
             }
         } // loop
+#ifdef UNIVERSAL
+        LDA #0b11110111
+        AND EditorFlags
+        STA EditorFlags
+#else        
         RMB3 EditorFlags // not in prompt mode
+#endif
     }
     
     // Get filename (convenience wrapper)
@@ -232,10 +269,22 @@ unit Prompt
     // Output: C set if entered, promptBuffer contains filename
     GetFilename()
     {
+#ifdef UNIVERSAL
+        LDA #0b10000000
+        ORA EditorFlags
+        STA EditorFlags
+#else        
         SMB7 EditorFlags // entering a filename
+#endif
         LDA #13  // Max filename length for EEPROM filesystem
         GetString();
+#ifdef UNIVERSAL
+        LDA #0b01111111
+        AND EditorFlags
+        STA EditorFlags
+#else
         RMB7 EditorFlags // entering a filename
+#endif
     }
     
     

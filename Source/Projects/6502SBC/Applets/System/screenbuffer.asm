@@ -336,7 +336,15 @@ unit ScreenBuffer
     // Show cursor after updates
     ShowCursor()
     {
+#ifdef UNIVERSAL
+        PHA
+        LDA #0b00000001
+        ORA sbCursorVisible
+        STA sbCursorVisible
+        PLA
+#else        
         SMB0 sbCursorVisible
+#endif
         Screen.ShowCursor();
     }
     

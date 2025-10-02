@@ -1,6 +1,14 @@
 program CC
 {
+    
+    #define UNIVERSAL
+    
+#ifdef UNIVERSAL        
+    #define CPU_65C02
+#else
     #define CPU_65C02S
+#endif    
+    
     //#define DEBUG
     #define PEEPHOLE
     
