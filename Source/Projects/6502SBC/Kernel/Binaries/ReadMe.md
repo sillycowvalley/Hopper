@@ -1,43 +1,59 @@
-## Getting Started with the 8K BIOS
+# Hopper 8K BIOS - Getting Started Guide
 
-In these folders there are currently 4 sets of prebuilt binaries:
-- Hopper 6502 SBC for WDC 65C02S (or Rockwell R65C02) at 8MHz
-- Hopper 6502 SBC for WDC 65C02 (no Rockwell bit instructions) at 8MHz
-- MECB 6502 for WDC 65C02S (or Rockwell R65C02) at 4MHz
-- MECB 6502 for WDC 65C02 (no Rockwell bit instructions) at 4MHz
+## Overview
 
-Only the Hopper 6502 SBC version is currently under 8K (thanks to the zero page IO).
-The MECB 6502 version requires a 16K ROM at the moment.
+This repository contains prebuilt binaries for 4 different 6502 configurations:
 
-## EEPROM Support
+- **Hopper 6502 SBC** - WDC 65C02S (or Rockwell R65C02) at 8MHz
+- **Hopper 6502 SBC** - WDC 65C02 (no Rockwell bit instructions) at 8MHz  
+- **MECB 6502** - WDC 65C02S (or Rockwell R65C02) at 4MHz
+- **MECB 6502** - WDC 65C02 (no Rockwell bit instructions) at 4MHz
 
-For the MECB 6502, we need to add a little EEPROM adapter to the I/O card. For the Hopper 6502 SBC, you just plug in the EEPROM.
+**Note:** Only the Hopper 6502 SBC version fits under 8K (due to zero page I/O). The MECB 6502 version requires a 16K ROM.
 
-I didn't bother with pullup resistors since the Motorola 6821 PIA has built-in pullups and they seem to work fine.
+## Hardware Setup
+
+### EEPROM Installation
+
+- **Hopper 6502 SBC:** Simply plug in the EEPROM
+- **MECB 6502:** Requires an I2C EEPROM adapter on the I/O card
+
+### I2C EEPROM Adapter (MECB 6502 Only)
+
+The adapter uses built-in pullups from the Motorola 6821 PIA, eliminating the need for external pullup resistors.
+
+**Addressing Scheme:** A0=Low, A1=Low, A2=High
+- Makes 24AA1026 or 24LC1025 appear as 2×64K devices at addresses 0x50 and 0x54
 
 ![MECB I/O card I2C adapter](MECBI2C.png)
-
-This same schematic works for a variety of similar serial I2C EEPROMs. I chose this addressing scheme (A0 low, A1 low and A2 high) since
-it will make the 24AA1026 or the 24LC1025 appear as 2x 64K devices at 0x50 and 0x54 respectively.
-
 ![MECB I/O card I2C adapter](MECBI2C.jpeg)
 
-Pick the appropriate BIOS.hex for your machine and burn it to an EEPROM.
+### BIOS Installation
 
-## Terminal
+Select the appropriate `BIOS.hex` file for your hardware configuration and burn it to an EEPROM.
 
-Use your favourite serial terminal that supports VT-100 escape codes (TERM inside the Hopper environment does not). I use PuTTY.
+## Software Setup
 
-I've been running at 57600 baud on the Hopper 6502 SBC and at 76800 baud on the MECB 6502
-8 bits, 1 stop bit, no parity.
-**Important:** Make sure Flow Control is set to XON/XOFF.
-Under terminal I have "Implicit CR in every LF" checked.
+### Terminal Configuration
 
-The rest of my settings are defaults.
+Use a VT-100 compatible serial terminal (PuTTY recommended).
 
-## Bootstrap
+**Serial Settings:**
+- **Baud Rate:** 57,600 (Hopper 6502 SBC) or 76,800 (MECB 6502)
+- **Data Bits:** 8
+- **Stop Bits:** 1  
+- **Parity:** None
+- **Flow Control:** XON/XOFF ⚠️ **Important**
 
-When you first run you should see something like this:
+**Terminal Settings:**
+- Enable "Implicit CR in every LF"
+- Use default settings for everything else
+
+## Initial Setup
+
+### First Boot
+
+Upon startup, you should see:
 
 ```
 HOPPER BIOS
@@ -46,44 +62,62 @@ EEPROM: 64K, 2048 BYTES AVAILABLE
 >
 ```
 
-Before doing anything else, format the storage:
+### Format Storage
+
+**Before doing anything else, format the storage:**
 
 ```
 > FORMAT
 FORMAT WILL ERASE ALL FILES (Y/N)?
 ```
 
-Now you are ready to upload some tools. The `HEX` command is used to get the first applications on the machine
-by copying the Intel IHex files to clipboard and then pasting them in the terminal.
+### Install Core Applications
 
-Start with:
+Use the `HEX` command to install applications by pasting Intel IHex files. The command automatically adds the `.COM` extension and marks files as executable.
+
+**Required Applications:**
+
+1. **EDIT** (Full-screen editor with VT-100 support)
 ```
 > HEX EDIT
 READY FOR HEX:
 ```
+*Paste contents of `edit.hex`*
 
-And past the context of the `edit.hex` file from the subfolder under the version of the BIOS you have installed.
-The `HEX` command will automatically add the `.COM` extension and mark the file as executable.
+2. **CC** (C compiler)
+```
+> HEX CC
+READY FOR HEX:
+```
 
-`EDIT` is a full screen editor that takes advantage of your VT-100 compatible terminal.
+3. **VASM** (VM OpCode assembler)  
+```
+> HEX VASM
+READY FOR HEX:
+```
 
-Also install the C compiler, `CC`,
-the VM OpCode assembler, `VASM`,
-and the OpCode VM, `VM` the same way.
+4. **VM** (OpCode VM)
+```
+> HEX VM
+READY FOR HEX:
+```
 
+## Programming Tutorials
 
-## First C Program
+### C Programming
 
-Under than Applets/C folder are several tools, one of which is currently indispensible:
-https://github.com/sillycowvalley/Hopper/tree/main/Source/Projects/6502SBC/Applets/C/Tools
+#### Essential Tool: CAPTURE
 
-Type `EDIT` to launch the editor.
+Install the `CAPTURE` utility first - it dramatically speeds up file transfers.
 
-Copy the source `CAPTURE.C` to your clipboard and paste into the editor.
-`^K ^D` to save it and give it the name `CAPTURE.C`.
+1. **Create the source file:**
+```
+> EDIT
+```
+*Copy and paste `CAPTURE.C` source code*
+*Save with `^K ^D` and name it `CAPTURE.C`*
 
-Use the C compiler to compile the tool:
-
+2. **Compile the program:**
 ```
 > CC CAPTURE
 Memory: 22014
@@ -91,34 +125,47 @@ Compiling CAPTURE.C
 Saved 1718 bytes
 Memory after compile: 14590
 Memory after cleanup: 22014
-
 >
 ```
 
-You can now use the `CAPTURE` command to transfer other source to your computer much faster than pasting into the editor.
+3. **Use CAPTURE for faster transfers:**
+The `CAPTURE` command allows much faster source code transfer than pasting into the editor.
 
-Try doing this with `TYPE.C` and `HEXDUMP.C` and compiling them. They do what you think they should.
+#### Additional C Tools
 
-## First .VMA Program
+Compile these useful utilities the same way:
+- `TYPE.C` - File display utility
+- `HEXDUMP.C` - Hexadecimal file viewer
 
-To experiment with .VMA programs, that a look in the samples folder:
+### VM Assembly Programming
 
-https://github.com/sillycowvalley/Hopper/tree/main/Source/Projects/6502SBC/Applets/VM/Samples
+#### Hello World Example
 
-Try `HELLO.VMA` or `BLINL.VMA` if you have an LED installed. To compile a .VMA:
-
+1. **Create the source:**
 ```
-
 > VASM HELLO
 VM Assembler v1.0
 Memory: 41470
 Memory after compile: 39046
 HELLO.BIN Created
 Memory after cleanup: 41470
+```
 
+2. **Run the program:**
+```
 > HELLO
 Hello, World!
-
 >
 ```
 
+#### Additional Examples
+
+Try these sample programs:
+- `HELLO.VMA` - Basic hello world
+- `BLINK.VMA` - LED blink test (if LED hardware is installed)
+
+## Additional Resources
+
+- **C Tools:** `Applets/C/Tools/` directory
+- **VM Samples:** `Applets/VM/Samples/` directory
+- **Complete source:** https://github.com/sillycowvalley/Hopper/tree/main/Source/Projects/6502SBC/
