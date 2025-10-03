@@ -5,7 +5,7 @@ program BIOS
     //#define DEBUG     // mimimum of 874 bytes
     //#define FILEDEBUG
     
-    #define UNIVERSAL
+    //#define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02

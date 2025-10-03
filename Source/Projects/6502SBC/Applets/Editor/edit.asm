@@ -1,7 +1,7 @@
 program Edit
 {
 
-    #define UNIVERSAL
+    //#define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02
