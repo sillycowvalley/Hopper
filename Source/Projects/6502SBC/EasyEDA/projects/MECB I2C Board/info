@@ -1,0 +1,79 @@
+{
+  "uuid": "a74a32480d3c18424a1d5b040e7b976a",
+  "path": "Offline/MECB%20I2C%20Board",
+  "name": "MECB I2C Board",
+  "content": "",
+  "created_at": "2025-10-03 11:45:36",
+  "updated_at": "2025-10-03 11:53:42",
+  "stick": "",
+  "documents": [
+    {
+      "uuid": "0fc8f9e0f69a80c7e4cf043cb1d1ab67",
+      "title": "Sheet_1",
+      "description": "",
+      "docType": "1",
+      "master": "",
+      "thumb": "/images/thumb-default.png",
+      "components": {
+        "b781d34dc0d34519aa5c543ba8cd8524": 1,
+        "7a5e2f03edca4a199209369f7e0d10db": 1,
+        "8999e35426a34646945447c487094ae6": 1
+      },
+      "BOM": [
+        [
+          "Value",
+          "Quantity",
+          "Package",
+          "Components",
+          "CustomPara"
+        ],
+        [
+          "470",
+          1,
+          "RES-TH_BD2.3-L6.5-P6.9-D0.5",
+          "R7",
+          {
+            "Manufacturer Part": "RES1/4W33R",
+            "Manufacturer": "null",
+            "Supplier": "LCSC",
+            "Supplier Part": "C9900002916"
+          }
+        ],
+        [
+          "LED",
+          1,
+          "1X2 FEMALE HEADER",
+          "U12",
+          {
+            "Manufacturer Part": "YDXX-1X",
+            "Manufacturer": "buddhika",
+            "Supplier": "",
+            "Supplier Part": "2pin_female_header"
+          }
+        ],
+        [
+          "24AA1026",
+          1,
+          "DIP-8_L9.7-W6.4-P2.54-LS7.6-BL",
+          "U13",
+          {
+            "Manufacturer Part": "24AA1026-I/P",
+            "Manufacturer": "MICROCHIP(美国微芯)",
+            "Supplier": "LCSC",
+            "Supplier Part": "C613619"
+          }
+        ]
+      ],
+      "updateTime": 1759456422,
+      "createTime": 1759455936,
+      "histories": [],
+      "created_at": "2025-10-03 11:45:36",
+      "updated_at": "2025-10-03 11:53:42"
+    }
+  ],
+  "sort": [],
+  "title": "MECB I2C Board",
+  "foldername": "MECB I2C Board",
+  "schfilename": "MECB I2C Board.json",
+  "schfilemtime": 1759456422582
+}

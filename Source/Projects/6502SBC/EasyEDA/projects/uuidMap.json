@@ -1,6 +1,5 @@
 {
   "78aca1eeb5287cc5715be2ebab320c20": "6502 SM",
-  "11bd88dd94c1f8e5d00598037850b349": "6502 SM\\6502 SM.json?Sheet_1",
   "3939621b48be74c8eebc5948164284b4": "6502 v2",
   "3c506664b47db881983ed9add9ffbbc5": "6502 v2\\6502 v2.json?Hopper 6502 SBC",
   "7b24172fffecf2a472b8fb102b1d4600": "6502 v2\\6502 v2.json?VIA",
@@ -8,5 +7,8 @@
   "42e556a53494413b55538589e52e54c8": "6502 v2\\6502 v2.json?Memory",
   "c0318a914f00600031f6f841063351a7": "6502 v2\\PCB_6502 v2.1.json",
   "eb99a42399b21d4f36edb3bd6e4c3a14": "6502 v2\\PCB_6502 v3.json",
-  "12efc521997e8658b65100420f21183e": "6502 v2\\PCB_6502 v4.json"
+  "12efc521997e8658b65100420f21183e": "6502 v2\\PCB_6502 v4.json",
+  "de0176cba7c264afa696bfd1d7c9b684": "MECB",
+  "a74a32480d3c18424a1d5b040e7b976a": "MECB I2C Board",
+  "0fc8f9e0f69a80c7e4cf043cb1d1ab67": "MECB I2C Board\\MECB I2C Board.json?Sheet_1"
 }
