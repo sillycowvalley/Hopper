@@ -19,7 +19,7 @@ void main(char* exe, char* arg) {
         }
         for (i = count; i < bytesPerRow; i++)
         {
-            printf("    ");
+            printf("   ");
         }
         for (i = 0; i < n; i++) {
             if (i % 8 == 0)
