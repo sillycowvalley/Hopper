@@ -36,7 +36,7 @@ loop:
     ; Check for NMI break
     SYSCALL IsBreak      ; Returns C flag set if break
     PUSHC                ; Push carry flag (1 if break, 0 if not)
-    BNZF 25              ; Branch forward to exit if break detected
+    BNZF exit            ; Branch forward to exit if break detected
     
     ; Turn LED OFF
     PUSHB 0              ; Pin 0
@@ -55,7 +55,7 @@ loop:
     ; Check for NMI break again
     SYSCALL IsBreak      ; Returns C flag set if break
     PUSHC                ; Push carry flag (1 if break, 0 if not)
-    BNZF 2               ; Branch forward to exit if break detected
+    BNZF exit            ; Branch forward to exit if break detected
     
     ; Loop forever (unless break detected)
     BRAR loop            ; Branch back to loop

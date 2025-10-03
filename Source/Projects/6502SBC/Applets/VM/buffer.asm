@@ -1,5 +1,7 @@
 unit Buffer
 {
+    friend ForwardRefs;
+    
     const byte fileHeaderSize = 6;
     
     // Single base for easy relocation

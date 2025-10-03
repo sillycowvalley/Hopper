@@ -3,6 +3,7 @@ unit Parser
     uses "Buffer"
     uses "Symbols"
     uses "Labels"
+    uses "ForwardRefs"
     uses "OpCodes"
     uses "../System/Char"
     
@@ -594,6 +595,7 @@ unit Parser
         
         Symbols.Initialize();
         Labels.Initialize();
+        ForwardRefs.Initialize();
     }
     Dispose()
     {
@@ -610,6 +612,7 @@ unit Parser
         
         Symbols.Dispose();
         Labels.Dispose();
+        ForwardRefs.Dispose();
     }
     
     UngetToken()
@@ -835,6 +838,7 @@ unit Parser
                             LDA currentFunctionID
                             STA ZP.TOP0
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
+                            ForwardRefs.Dispose(); if (NC) { break; } // Check for unresolved refs
                             LDA #0b11110111
                             AND parserFlags
                             STA parserFlags
@@ -856,6 +860,7 @@ unit Parser
                             LDA currentFunctionID
                             STA ZP.TOP0
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
+                            ForwardRefs.Dispose(); if (NC) { break; } // Check for unresolved refs
                             RMB3 parserFlags
                         }
                         if (BBS0, parserFlags) // Bit 0 - .MAIN seen
@@ -908,6 +913,7 @@ unit Parser
                             LDA currentFunctionID
                             STA ZP.TOP0
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
+                            ForwardRefs.Dispose(); if (NC) { break; } // Check for unresolved refs
                             LDA #0b11110111
                             AND parserFlags
                             STA parserFlags
@@ -918,6 +924,7 @@ unit Parser
                             LDA currentFunctionID
                             STA ZP.TOP0
                             Buffer.CaptureFunctionEnd(); if (NC) { break; }
+                            ForwardRefs.Dispose(); if (NC) { break; } // Check for unresolved refs
                             RMB3 parserFlags
                         }
 #endif
@@ -958,8 +965,7 @@ unit Parser
                         }
                         
                         Labels.Dispose(); // reset labels
-                        
-                        // parsing function opcodes now    
+                                                // parsing function opcodes now    
                         LDA # Section.Func
                         STA parserSection
                     }
@@ -995,6 +1001,7 @@ unit Parser
                 LDA currentFunctionID
                 STA ZP.TOP0
                 Buffer.CaptureFunctionEnd();
+                ForwardRefs.Dispose(); // Check for unresolved refs
                 LDA #0b11110111
                 AND parserFlags
                 STA parserFlags
@@ -1005,6 +1012,7 @@ unit Parser
                 LDA currentFunctionID
                 STA ZP.TOP0
                 Buffer.CaptureFunctionEnd();
+                ForwardRefs.Dispose(); // Check for unresolved refs
                 RMB3 parserFlags
             }
 #endif
@@ -1267,6 +1275,15 @@ unit Parser
                 ErrorLineSTR();    
                 return;
             }
+            // Patch any forward references to this label
+            ForwardRefs.Patch(); // STR = label name, TOP = label address
+            if (NC)
+            {
+                // Patch failed - but this shouldn't happen in normal cases
+                // Could add error handling here if needed
+            }
+            
+            
             SEC
             return;
         }
@@ -1305,9 +1322,23 @@ unit Parser
                     Labels.FindLabel();
                     if (NC)
                     {
+                        // Label not found - create forward reference
+                        Buffer.GetCodeOffset(); // Current position for patch
+                        ForwardRefs.Add(); // STR=label name, TOP=patch address
+                        if (NC)
+                        {
+                            PLY
+                            LDA #(errLabelAddFailed / 256) STA ZP.STRH LDA #(errLabelAddFailed % 256) STA ZP.STRL
+                            ErrorLineSTR();    
+                            return;
+                        }
+                        
+                        // Emit placeholder offset byte
+                        LDA #0
+                        Buffer.Emit();
+                        
                         PLY
-                        LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                        ErrorLineSTR();    
+                        SEC  // Continue processing successfully
                         return;
                     }
                     LDA ZP.TOP0
