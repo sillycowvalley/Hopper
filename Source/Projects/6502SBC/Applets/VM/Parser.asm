@@ -57,6 +57,7 @@ unit Parser
     const string errLabelAddFailed     = "Failed to create new label";
     const string errUndefinedSymbol    = "Undefined symbol";
     const string errOpCodeExpected     = "OpCode expected";
+    const string errFunctionTooLarge   = "Function exceeds 256 byte limit";
     
     const string msgOnLine             = " on line ";
     
@@ -183,6 +184,16 @@ unit Parser
         Long.Print();
         Print.NewLine();
         CLC
+    }
+    
+    ErrorFunctionTooLarge()
+    {
+        // size not ok
+        LDA #(errFunctionTooLarge / 256)
+        STA ZP.STRH
+        LDA #(errFunctionTooLarge % 256)
+        STA ZP.STRL
+        ErrorLine(); // does CLC
     }
     
     // Get next character -> A, store in currentChar
@@ -1450,6 +1461,10 @@ unit Parser
                 }
             }
         }
-        SEC
+        
+        // function ID in TOP
+        LDA currentFunctionID
+        STA ZP.TOP0
+        Buffer.CheckFunctionSize();
     }
 }

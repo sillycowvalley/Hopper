@@ -1,6 +1,6 @@
 program Blink
 {
-    #define CPU_65C02S
+    #define CPU_65C02
     #define ROM_8K                  // by default the CPLD is programmed for 8K ROM
     
     const uint MECB_IO  = 0xF000;   // yours is most likely at 0xE000

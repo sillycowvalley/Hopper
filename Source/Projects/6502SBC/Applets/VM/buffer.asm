@@ -36,7 +36,6 @@ unit Buffer
     const byte indexBlockL    = headerBlockL;
     const byte indexBlockH    = headerBlockH;
     
-    const string errFunctionTooLarge = "Function exceeds 256 byte limit";
     // Pages:
     // 0 - function offsets
     // 1 - function sizes // reserved for globals
@@ -72,6 +71,43 @@ unit Buffer
 //Print.NewLine(); LDA ZP.TOP0 Print.Hex(); Print.Space(); LDA ZP.IDXH Print.Hex(); LDA ZP.IDXL Print.Hex(); Print.Space(); LDA codeOffsetH Print.Hex(); LDA codeOffsetL Print.Hex();
 //Print.NewLine(); 
         SEC
+    }
+    
+    // function ID in TOP
+    CheckFunctionSize()
+    {
+        // start address
+        LDY ZP.TOP0
+        LDA codeBufferH
+        STA ZP.IDXH
+        STZ ZP.IDXL
+        
+        LDA [ZP.IDX], Y
+        STA ZP.NEXT0
+        INY
+        LDA [ZP.IDX], Y
+        STA ZP.NEXT1
+        
+        // size = codeOffset - start
+        SEC
+        LDA codeOffsetL
+        SBC ZP.NEXT0
+        STA ZP.NEXT0
+        LDA codeOffsetH
+        SBC ZP.NEXT1
+        STA ZP.NEXT1
+        
+        LDA ZP.NEXT0
+        CMP # 250
+        if (C) // >= 250
+        {
+            ErrorFunctionTooLarge();
+            CLC
+        }
+        else
+        {
+            SEC
+        }
     }
     // function ID in TOP
     CaptureFunctionEnd()
@@ -130,12 +166,7 @@ unit Buffer
                     break;
                 }
             }
-            // size not ok
-            LDA #(errFunctionTooLarge / 256)
-            STA ZP.STRH
-            LDA #(errFunctionTooLarge % 256)
-            STA ZP.STRL
-            ErrorLine(); // does CLC
+            ErrorFunctionTooLarge();
             break;
         }
 /*        
