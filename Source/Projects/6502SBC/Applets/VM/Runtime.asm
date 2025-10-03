@@ -117,20 +117,6 @@ unit Runtime
     
     Initialize()
     {
-#ifdef UNIVERSAL
-        LDA #0
-        STA globalsL
-        STA constantsL
-        STA BP
-        STA vmFlags
-        LDA functionTableH
-        CLC
-        ADC #1
-        STA globalsH
-        CLC
-        ADC #1
-        STA constantsH
-#else        
         STZ globalsL
         STZ constantsL
         STZ BP
@@ -140,7 +126,6 @@ unit Runtime
         STA globalsH
         INC A
         STA constantsH
-#endif
         
         LDY #2 // slot of .MAIN in function table
         LDA [functionTable], Y

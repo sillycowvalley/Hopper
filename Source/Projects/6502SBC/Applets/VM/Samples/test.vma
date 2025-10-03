@@ -1,71 +1,84 @@
-; LineBuffer Enumeration Program
-; Enumerates 64 bytes at 0x0700 and prints to screen
-; Replaces \0 characters with spaces
-
 .CONST
-    ZP.STR       0x1E
-    ZP.ACC       0x10
-    Print.String 0x11
-    Print.Char   0x12
+    Print.Char    0x12
+    Print.String   0x11
     Print.NewLine 0x14
-    
-.DATA
-    STR0 "LineBuffer Contents (64 bytes):\n"
-    STR1 "\nDone.\n"
+    CharA         0x41
+    CharB         0x42
+    CharC         0x43
 
+.DATA
+    MSG0 "Testing function packing\n"
+    MSG1 "Function A called\n"
+    MSG2 "Function B called\n"  
+    MSG3 "Function C called\n"
+
+
+
+.FUNC TinyFunc
+    ; Very small function (~8-12 bytes)
+    PUSHD MSG1
+    POPZW 0x1E
+    SYSCALL Print.String
+    RET
+
+.FUNC SmallFunc
+    ; Small function (~20-25 bytes)
+    PUSHD MSG2
+    POPZW 0x1E
+    SYSCALL Print.String
+    
+    PUSHB CharB
+    POPA
+    SYSCALL Print.Char
+    PUSHB CharB
+    POPA
+    SYSCALL Print.Char
+    SYSCALL Print.NewLine
+    RET
+
+.FUNC MediumFunc
+    ; Medium function (~35-45 bytes)
+    PUSHD MSG3
+    POPZW 0x1E
+    SYSCALL Print.String
+    
+    PUSHB CharC
+    POPA
+    SYSCALL Print.Char
+    PUSHB 0x31
+    POPA
+    SYSCALL Print.Char
+    PUSHB 0x32
+    POPA
+    SYSCALL Print.Char
+    PUSHB 0x33
+    POPA
+    SYSCALL Print.Char
+    SYSCALL Print.NewLine
+    
+    PUSHB 0x44
+    POPA
+    SYSCALL Print.Char
+    PUSHB 0x6F
+    POPA
+    SYSCALL Print.Char
+    PUSHB 0x6E
+    POPA
+    SYSCALL Print.Char
+    PUSHB 0x65
+    POPA
+    SYSCALL Print.Char
+    SYSCALL Print.NewLine
+    RET
+    
 .MAIN
-    ; Print header message
-    PUSHD STR0
-    POPZW ZP.STR
+    PUSHD MSG0
+    POPZW 0x1E
     SYSCALL Print.String
     
-    ; Initialize: address = 0x0700, counter = 64
-    PUSHW 0x0700
-    POPGW 0              ; global[0] = current address (16-bit)
-    PUSHB 64
-    POPGB 2              ; global[2] = byte counter
+    CALL TinyFunc
+    CALL SmallFunc
+    CALL MediumFunc
     
-loop:
-    ; Read byte from current address
-    PUSHGW 0             ; Push current address
-    READB                ; Read byte from memory
-    
-    ; Check if byte is 0 (null character)
-    DUPB                 ; Duplicate the byte for comparison
-    PUSHB0               ; Push 0 for comparison
-    EQB                  ; Compare: is byte == 0?
-    BZF 3                ; Branch if not zero (not null)
-    
-    ; Replace null with space
-    DROPB                ; Drop the original null byte
-    PUSHB 0x20           ; Push space character instead
-    
-not_null:
-    ; Print the character
-    POPA                 ; Move byte to A register
-    SYSCALL Print.Char   ; Print it
-    
-    ; Increment address
-    PUSHGW 0             ; Get current address
-    PUSHW1               ; Add 1
-    ADDW
-    POPGW 0              ; Store back incremented address
-    
-    ; Decrement counter
-    PUSHGB 2             ; Get counter
-    PUSHB1               ; Subtract 1
-    SUBB
-    DUPB                 ; Keep copy for comparison
-    POPGB 2              ; Store back decremented counter
-    
-    ; Continue if counter > 0
-    PUSHB0               ; Push 0 for comparison
-    NEB                  ; Compare: counter != 0?
-    BNZR loop            ; Branch back if not zero
-    
-    ; Print completion message
-    PUSHD STR1
-    POPZW ZP.STR
-    SYSCALL Print.String
-    
+    SYSCALL Print.NewLine
     HALT

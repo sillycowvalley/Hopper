@@ -1,6 +1,6 @@
 program VM
 {
-    #define UNIVERSAL
+    //#define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02
@@ -88,11 +88,7 @@ program VM
     
     ReadByte()
     {
-#ifdef UNIVERSAL        
-        TYA PHA TXA PHA
-#else
         PHY PHX
-#endif
         loop
         {
             LDA bufferIndexH
@@ -108,14 +104,8 @@ program VM
                     {
                         break;
                     }
-#ifdef UNIVERSAL
-                    LDA #0
-                    STA bufferIndexL
-                    STA bufferIndexH
-#else
                     STZ bufferIndexL
                     STZ bufferIndexH
-#endif
                 }
             }
             
@@ -133,13 +123,7 @@ program VM
             SEC
             break;
         }
-#ifdef UNIVERSAL
-        STA ZP.TEMP
-        PLA TAX PLA TAY
-        LDA ZP.TEMP
-#else        
         PLX PLY
-#endif
     }
     
     // Dump 256-byte page in hex/ASCII format
@@ -268,14 +252,8 @@ program VM
             File.NextStream();
             if (NC) { break; }
             
-#ifdef UNIVERSAL
-            LDA #0
-            STA bufferIndexL
-            STA bufferIndexH
-#else            
             STZ bufferIndexL
             STZ bufferIndexH
-#endif
             
             ReadByte(); if (NC) { break; }
             CMP #'V'
@@ -307,12 +285,8 @@ program VM
         // - round up to nearest page for constant data
         // - 1 page per function (for now)
         // - subtract 2 bytes to ignore the Memory size word
-#ifdef UNIVERSAL
-        LDA #0
-        STA ZP.ACCL
-#else        
         STZ ZP.ACCL
-#endif
+
         LDA dataSizeH
         STA ZP.ACCH
         LDA dataSizeL
@@ -344,14 +318,9 @@ program VM
             return;
         }
         
-#ifdef UNIVERSAL
-        LDA #0
-        STA programMemoryL
-        STA ZP.ACCH
-#else        
         STZ programMemoryL
         STZ ZP.ACCH
-#endif
+
         LDA ZP.IDXH
         STA programMemoryH
         
@@ -366,12 +335,8 @@ program VM
             Print.String();
             return;
         }
-#ifdef UNIVERSAL
-        LDA #0
-        STA sizeTableL
-#else        
         STZ sizeTableL
-#endif
+
         LDA ZP.IDXH
         STA sizeTableH
         
@@ -405,24 +370,16 @@ program VM
         LDA programMemoryH
         ADC #2
         STA indexH
-#ifdef UNIVERSAL
-        LDA #0
-        STA indexL
-#else
         STZ indexL
-#endif   
+
         loop
         {
             LDA countL
             ORA countH
             if (Z) { break; }
             ReadByte();
-#ifdef UNIVERSAL
-            LDY #0
-            STA [index], Y
-#else            
             STA [index]
-#endif
+
             INC indexL if (Z) { INC indexH }
             
             LDA countL
@@ -441,12 +398,7 @@ program VM
         {
             INC indexH
         }
-#ifdef UNIVERSAL
-        LDA #0
-        STA indexL
-#else        
         STZ indexL
-#endif
         
         LDA #2
         STA countL
@@ -459,15 +411,11 @@ program VM
             // - get the function size in count
             // - set the new function offsets in the function table
             TXA
-#ifdef UNIVERSAL
-            CLC
-            ADC #1
-#else
             INC
-#endif
+
             ASL
             TAY
-            LDA #0
+            LDA indexL
             STA [programMemory], Y
             LDA [sizeTable], Y
             STA countL
@@ -480,12 +428,8 @@ program VM
             loop
             {
                 ReadByte(); if (NC) { break; }
-#ifdef UNIVERSAL
-                LDY #0
-                STA [index], Y
-#else
                 STA [index]
-#endif
+
                 INC indexL if (Z) { INC indexH }
                 
                 LDA countL
@@ -499,22 +443,51 @@ program VM
                 if (Z) { break; }
             } // loop
             
-            // next function page:
-            LDA indexL
-            if (NZ)
-            {
-                INC indexH
-            }
-#ifdef UNIVERSAL
-            LDA #0
-            STA indexL
-#else            
-            STZ indexL
-#endif
-            
+            // Check if next function fits in current page
             INX
             CPX functionCount
-            if (C) { break; } //  >= functionCount
+            if (C) { break; }      // No more functions
+            
+            // Get this function size: 0.. 256 bytes
+            TXA
+            ASL
+            TAY
+            LDA [sizeTable], Y     // Next function size LSB
+            STA ZP.ACCL
+            INY
+            LDA [sizeTable], Y     // Next function size MSB
+            STA ZP.ACCH
+            
+            // Calculate remaining space: 256 - indexL
+            SEC
+            LDA #0           // Low byte of 256
+            SBC indexL       // 256 - indexL  
+            STA ZP.TOP0      // Low byte of remaining space
+            LDA #1           // High byte of 256
+            SBC #0           // Propagate borrow if any
+            STA ZP.TOP1      // High byte of remaining space
+            
+            LDA ZP.TOP1
+            CMP ZP.ACCH
+            if (Z)
+            {
+                LDA ZP.TOP0
+                CMP ZP.ACCL
+            }
+            if (C)  // TOP >= ACC : next function fits in current page
+            {
+                // Stay on current page - don't change indexH/indexL
+            }
+            else
+            {
+                // Move to next page
+                LDA indexL
+                if (NZ)
+                {
+                    INC indexH
+                }
+                STZ indexL
+            }
         } // outer loop
         
 #ifdef DEBUG        
