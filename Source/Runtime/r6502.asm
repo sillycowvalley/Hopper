@@ -831,6 +831,10 @@ program R6502
            return;
        }
   #else
+  #ifdef M6821_PIA
+       LDA # PIA_PORT    // 0b00110100 - select PORT register
+       STA ZP.CRA        // Set control register for PORT access
+  #endif  
        LDA ZP.PORTA
        AND # 0b00000010
        if (Z)
@@ -869,6 +873,7 @@ program R6502
         if (NZ)
         {
             STA ZP.PROGSIZE // in 256 byte pages
+            
             LoadFromEEPROM();
             hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
             

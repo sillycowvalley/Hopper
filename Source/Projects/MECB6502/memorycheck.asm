@@ -61,6 +61,8 @@ program MemoryCheck
     const string Leaving             = "\nLeaving hopperInit()";
     const string Leaving2            = "\nLeaving resetVector()";
     
+    const string AutoLoadMessage     = "\nAttempting AutoLoad. Pages: 0x";
+    
     PrintCount() // prints X in (..)
     {
         PHA
@@ -300,6 +302,57 @@ program MemoryCheck
         LDA # (Leaving2 / 256) STA ACCH LDA # (Leaving2 % 256) STA ACCL PrintIndentACC();
     }
     
+    loadAuto()
+    {
+        // BeginTx
+        LDA # (I2C.SerialEEPROMAddress << 1)
+        STA ZP.OutB
+        I2C.Start();
+        LDA #0
+        STA ZP.OutB
+        I2C.ByteOut(); // EEPROM address MSB (0)
+        LDA #0
+        STA ZP.OutB
+        I2C.ByteOut(); // EEPROM address LSB (0)
+        // EndTx
+        I2C.Stop();
+        
+        // read first 3 bytes from EEPROM:
+        LDA # 3
+        STA ZP.TOPL
+        LDA # I2C.SerialEEPROMAddress
+        
+        
+        RequestFromTOPA();      // A has I2C adddress,     TOPL has number of bytes to return, TOPL returns number of bytes read
+        //STA NEXTL
+        //RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
+        
+        
+        // assume success
+        LDX ZP.I2CInReadPtr
+        LDA Address.I2CInBuffer, X
+        if (NZ)
+        {
+            STA ZP.PROGSIZE // in 256 byte pages
+            
+            Serial.HexOut();
+            
+            //LoadFromEEPROM();
+            //hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
+            
+#ifdef CPU_65C02S
+            //SMB0 ZP.FLAGS                // program is loaded
+            //RMB4 ZP.FLAGS                // !IsInDebugger
+#else
+            //LDA ZP.FLAGS
+            //ORA # 0b00000001             // program is loaded
+            //AND # 0b11101111             // !IsInDebugger
+            //STA ZP.FLAGS
+#endif            
+            //runCommand();
+            //checkRestart();
+        }
+    }
     
     Hopper()
     {
@@ -310,6 +363,15 @@ program MemoryCheck
         resetVector();
         
         CLI
+        
+        LDA ZP.PLUGNPLAY
+        AND # 0b00000010
+        if (NZ) // EEPROM?
+        {
+            LDA # (AutoLoadMessage / 256) STA ACCH LDA # (AutoLoadMessage % 256) STA ACCL PrintACC();
+            loadAuto();
+        }
+        
         
         LDA # (EchoMessage / 256) STA ACCH LDA # (EchoMessage % 256) STA ACCL PrintACC();
         
