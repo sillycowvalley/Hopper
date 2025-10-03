@@ -1182,7 +1182,7 @@ unit Parser
                     {
                         
                         LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                        ErrorLine();    
+                        ErrorLineSTR();    
                         return;
                     }
                     STA numberType
@@ -1192,7 +1192,7 @@ unit Parser
                     {
                         
                         LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
-                        ErrorLine();    
+                        ErrorLineSTR();    
                         return;
                     }
                     LDA ZP.TOP0
