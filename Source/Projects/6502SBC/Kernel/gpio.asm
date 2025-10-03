@@ -10,115 +10,186 @@ unit GPIO
         OUTPUT = 0x01,
     }
     
+#ifdef M6821_PIA    
+    const byte PIA_DDR  = 0b00110000;    // CR for DDR access
+    const byte PIA_PORT = 0b00110100;    // CR for PORT access
+#endif    
+    
     // Configure pin mode (INPUT or OUTPUT)
     // Input: A = pin number (0-15), Y = mode (PinMode.INPUT or PinMode.OUTPUT)
     // Output: None
     PinMode()
     {
-        LDX #0 // port A
-        // Determine which port and create bit mask
         CMP #8
         if (C)
         {
-            // Pin 8-15: Use DDRB
+            // Pin 8-15: Use Port B
             SEC
-            SBC #8                        // Convert to 0-7 range
-            INX  // port B
-        }
-        
+            SBC #8
+            TAX
+            LDA BitMasks, X
             
-        
-        // Set or clear the DDR bit based on mode
-        // CPY # PINMODE.INPUT = 0
-        CPY #0
-        if (Z)
-        {
-            TAY               // Use as index
-            LDA BitMasks, Y   // Load mask directly from table
-        
-            // INPUT mode: Clear bit in DDR
-            EOR #0xFF        // Invert mask
-            AND ZP.DDRA, X
+#ifdef M6821_PIA
+            PHX
+            LDX #PIA_DDR
+            STX ZP.CRB
+            PLX
+#endif
+            
+            CPY #PINMODE.INPUT
+            if (Z)
+            {
+                EOR #0xFF
+                AND ZP.DDRB
+            }
+            else
+            {
+                ORA ZP.DDRB
+            }
+            STA ZP.DDRB
+
+#ifdef M6821_PIA
+            LDX #PIA_PORT
+            STX ZP.CRB
+#endif
         }
         else
         {
-            TAY               // Use as index
-            LDA BitMasks, Y   // Load mask directly from table
+            // Pin 0-7: Use Port A
+            TAX
+            LDA BitMasks, X
             
-            // OUTPUT mode: Set bit in DDR
-            ORA ZP.DDRA, X
+#ifdef M6821_PIA
+            PHX
+            LDX #PIA_DDR
+            STX ZP.CRA
+            PLX
+#endif
+            
+            CPY #PINMODE.INPUT
+            if (Z)
+            {
+                EOR #0xFF
+                AND ZP.DDRA
+            }
+            else
+            {
+                ORA ZP.DDRA
+            }
+            STA ZP.DDRA
+
+#ifdef M6821_PIA
+            LDX #PIA_PORT
+            STX ZP.CRA
+#endif
         }
-        STA ZP.DDRA, X
     }
     
     // Write digital value to pin
     // Input: A = pin number (0-15), Y = value (0 or 1)
-    // Output: None
-    // Modifies: A, X, Y
     PinWrite()
     {
-        LDX #0 // port A
-        // Determine which port and create bit mask
         CMP #8
         if (C)
         {
-            // Pin 8-15: Use PORTB
+            // Pin 8-15: Use Port B
             SEC
-            SBC #8                        // Convert to 0-7 range
-            INX // port B
-        }
-        
-        // Set or clear the port bit based on value
-        CPY #0
-        if (Z)
-        {
-            TAY                          // Use as index
-            LDA BitMasks, Y   // Load mask directly from table
-        
-            // Write LOW: Clear bit
-            EOR #0xFF        // Invert mask
-            AND ZP.PORTA, X
+            SBC #8
+            TAX
+            LDA BitMasks, X
+            
+    #ifdef M6821_PIA
+            PHX
+            LDX #PIA_PORT
+            STX ZP.CRB
+            PLX
+    #endif
+            
+            CPY #0
+            if (Z)
+            {
+                EOR #0xFF
+                AND ZP.PORTB
+            }
+            else
+            {
+                ORA ZP.PORTB
+            }
+            STA ZP.PORTB
         }
         else
         {
-            TAY                          // Use as index
-            LDA BitMasks, Y   // Load mask directly from table
-        
-            // Write HIGH: Set bit
-            ORA ZP.PORTA, X
+            // Pin 0-7: Use Port A
+            TAX
+            LDA BitMasks, X
+            
+    #ifdef M6821_PIA
+            PHX
+            LDX #PIA_PORT
+            STX ZP.CRA
+            PLX
+    #endif
+            
+            CPY #0
+            if (Z)
+            {
+                EOR #0xFF
+                AND ZP.PORTA
+            }
+            else
+            {
+                ORA ZP.PORTA
+            }
+            STA ZP.PORTA
         }
-        STA ZP.PORTA, X
     }
     
     // Read digital value from pin
     // Input:    A = pin number (0-15)
     // Output:   A = pin value (0 or 1), Z flag set if LOW
-    // Modifies: A, X, Y
     PinRead()
     {
-        LDX #0 // port A
-        // Determine which port and create bit mask
         CMP #8
         if (C)
         {
-            // Pin 8-15: Use PORTB
+            // Pin 8-15: Use Port B
             SEC
-            SBC #8                        // Convert to 0-7 range
-            INX // port B
-        }
-        TAY                           // Use as index
-        LDA BitMasks, Y   // Load mask directly from table
+            SBC #8
+            TAX
+            LDA BitMasks, X
             
-        // Read the port and mask the bit
-        AND ZP.PORTA, X
-        if (Z)
-        {
-            LDA #0       // Return 0 for LOW
+    #ifdef M6821_PIA
+            PHX
+            LDX #PIA_PORT
+            STX ZP.CRB
+            PLX
+    #endif
+            
+            AND ZP.PORTB
         }
         else
         {
-            LDA #1       // Return 1 for HIGH
+            // Pin 0-7: Use Port A
+            TAX
+            LDA BitMasks, X
+            
+    #ifdef M6821_PIA
+            PHX
+            LDX #PIA_PORT
+            STX ZP.CRA
+            PLX
+    #endif
+            
+            AND ZP.PORTA
         }
-        // A contains result, Z flag set appropriately
+        
+        if (Z)
+        {
+            LDA #0
+        }
+        else
+        {
+            LDA #1
+        }
     }
 }
