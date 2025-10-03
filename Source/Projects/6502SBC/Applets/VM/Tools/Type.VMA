@@ -27,8 +27,8 @@
     ; Print newline
     SYSCALL Print.NewLine
     
-    ; Get filename argument (arg 1)
-    PUSHB1
+    ; Get filename argument (arg 2, since "VM" is arg 0)
+    PUSHB 2
     POPA
     SYSCALL ArgGet
     ; ZP.STR now points to filename

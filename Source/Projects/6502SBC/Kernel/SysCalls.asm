@@ -44,51 +44,59 @@ unit SysCalls
         PHY
         
         LDY #0               // LineBuffer index  
-        LDX #0               // Current argument index
-        STZ ZP.ACCH          // In-argument flag
+        LDX #0               // Current argument counter
         
         loop
         {
-            LDA Address.LineBuffer, Y
-            if (NZ)
+            // Skip any zeros (gaps between arguments)
+            loop
             {
-                // Found start of argument
-                LDA ZP.ACCH
-                if (Z)
-                {
-                    // Starting new argument
-                    CPX ZP.ACCL
-                    if (Z)
-                    {
-                        // Found target argument - set ZP.STR
-                        TYA
-                        CLC
-                        ADC #(Address.LineBuffer % 256)
-                        STA ZP.STRL
-                        LDA #(Address.LineBuffer / 256)
-                        ADC #0
-                        STA ZP.STRH
-                        SEC              // Success
-                        break;
-                    }
-                    INX                  // Next argument
-                    INC ZP.ACCH          // Mark in-argument
+                CPY #64
+                if (Z) 
+                { 
+                    CLC      // End of buffer, argument not found
+                    break;
                 }
+                LDA Address.LineBuffer, Y
+                if (NZ) { SEC break; }  // Found non-zero, start of argument
+                INY
             }
-            else
+            if (NC) { break; }
+            
+            // Now Y points to start of an argument
+            // Check if this is the argument we want
+            CPX ZP.ACCL
+            if (Z)
             {
-                STZ ZP.ACCH              // Not in argument
+                // Found our target argument
+                TYA
+                CLC
+                ADC #(Address.LineBuffer % 256)
+                STA ZP.STRL
+                LDA #(Address.LineBuffer / 256)
+                ADC #0
+                STA ZP.STRH
+                SEC              // Success
+                break;
             }
             
-            INY
-            CPY #64                      // End of buffer
-            if (Z) 
-            { 
-                CLC                      // Argument not found
-                break; 
+            // Skip to end of current argument
+            loop
+            {
+                CPY #64
+                if (Z) 
+                { 
+                    CLC      // End of buffer, argument not found
+                    break;
+                }
+                LDA Address.LineBuffer, Y
+                if (Z) { break; }  // Found end of argument
+                INY
             }
-        }
-        // Single exit
+            
+            // Move to next argument
+            INX
+        }// loop
         
         PLY
     }

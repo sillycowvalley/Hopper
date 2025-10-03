@@ -1,84 +1,23 @@
 .CONST
-    Print.Char    0x12
-    Print.String   0x11
     Print.NewLine 0x14
-    CharA         0x41
-    CharB         0x42
-    CharC         0x43
+    Print.String  0x11
+    ArgGet        0x37
 
 .DATA
-    MSG0 "Testing function packing\n"
-    MSG1 "Function A called\n"
-    MSG2 "Function B called\n"  
-    MSG3 "Function C called\n"
+    STR0 "r"
 
-
-
-.FUNC TinyFunc
-    ; Very small function (~8-12 bytes)
-    PUSHD MSG1
-    POPZW 0x1E
-    SYSCALL Print.String
-    RET
-
-.FUNC SmallFunc
-    ; Small function (~20-25 bytes)
-    PUSHD MSG2
-    POPZW 0x1E
-    SYSCALL Print.String
-    
-    PUSHB CharB
-    POPA
-    SYSCALL Print.Char
-    PUSHB CharB
-    POPA
-    SYSCALL Print.Char
-    SYSCALL Print.NewLine
-    RET
-
-.FUNC MediumFunc
-    ; Medium function (~35-45 bytes)
-    PUSHD MSG3
-    POPZW 0x1E
-    SYSCALL Print.String
-    
-    PUSHB CharC
-    POPA
-    SYSCALL Print.Char
-    PUSHB 0x31
-    POPA
-    SYSCALL Print.Char
-    PUSHB 0x32
-    POPA
-    SYSCALL Print.Char
-    PUSHB 0x33
-    POPA
-    SYSCALL Print.Char
-    SYSCALL Print.NewLine
-    
-    PUSHB 0x44
-    POPA
-    SYSCALL Print.Char
-    PUSHB 0x6F
-    POPA
-    SYSCALL Print.Char
-    PUSHB 0x6E
-    POPA
-    SYSCALL Print.Char
-    PUSHB 0x65
-    POPA
-    SYSCALL Print.Char
-    SYSCALL Print.NewLine
-    RET
-    
 .MAIN
-    PUSHD MSG0
-    POPZW 0x1E
+    ; Print newline
+    SYSCALL Print.NewLine
+    
+    ; Get filename argument (arg 1)
+    PUSHB 2
+    POPA
+    SYSCALL ArgGet
+    ; ZP.STR now points to filename
+    
     SYSCALL Print.String
     
-    CALL TinyFunc
-    CALL SmallFunc
-    CALL MediumFunc
-    
     SYSCALL Print.NewLine
+    
     HALT

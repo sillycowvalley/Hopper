@@ -47,6 +47,9 @@ program VM
     const byte sizeTableL       = vmSlots+11;
     const byte sizeTableH       = vmSlots+12;
     
+    const byte binName          = vmSlots+13;
+    const byte binNameL         = vmSlots+13;
+    const byte binNameH         = vmSlots+14;
     
     const string msgFileNotFound = "File not found";
     const string msgOutOfMemory  = "Out of memory";
@@ -54,6 +57,16 @@ program VM
     
     getFilename() // appends .BIN if missing
     {
+        // must be 256 bytes
+        LDA #(256-2)
+        STA ZP.ACCL
+        STZ ZP.ACCH
+        Memory.Allocate();
+        LDA ZP.IDXL
+        STA binNameL
+        LDA ZP.IDXH
+        STA binNameH
+        
         LDA #1
         Args.GetArg();  // ZP.STR points to filename
         
@@ -62,28 +75,37 @@ program VM
         loop
         {
             LDA [ZP.STR], Y
+            STA [binName], Y
             if (Z) { break; }    // End of string - no dot found
             CMP #'.'
-            if (Z) { return; }   // Found dot - extension exists, done
+            if (Z)
+            {
+                return; // Found dot - extension exists, done
+            }   
             INY
         }
         
         // No dot found, Y points to null terminator
         // Append ".BIN" 
         LDA #'.'
-        STA [ZP.STR], Y
+        STA [binName], Y
         INY
         LDA #'B'
-        STA [ZP.STR], Y
+        STA [binName], Y
         INY
         LDA #'I'
-        STA [ZP.STR], Y
+        STA [binName], Y
         INY
         LDA #'N'
-        STA [ZP.STR], Y
+        STA [binName], Y
         INY
         LDA #0               // New null terminator
-        STA [ZP.STR], Y
+        STA [binName], Y
+        
+        LDA binNameL
+        STA ZP.STRL
+        LDA binNameH
+        STA ZP.STRH
     }
     
     ReadByte()
@@ -217,6 +239,9 @@ program VM
     
     Hopper()
     {
+        STZ binNameL
+        STZ binNameH
+        
         Args.HasFilename();
         if (NC)
         {
@@ -277,6 +302,18 @@ program VM
         {
             LDA #(msgBadBinary / 256) STA ZP.STRH LDA #(msgBadBinary % 256) STA ZP.STRL
             Print.String();
+        }
+        
+        // done with the file name
+        LDA binNameL
+        ORA binNameH
+        if (NZ)
+        {
+            LDA binNameL
+            STA ZP.IDXL
+            LDA binNameH
+            STA ZP.IDXH
+            Memory.Free();
         }
         
         // Allocate 2K (including the 2 byte size field = 0x800 - 2 = 0x7FE)
@@ -521,5 +558,6 @@ program VM
         LDA programMemoryH
         STA ZP.IDXH
         Memory.Free();
+        
     }
 }
