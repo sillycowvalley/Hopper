@@ -1,0 +1,76 @@
+.CONST
+    ZP.STR       0x1E
+    ZP.STRL      0x1E
+    ZP.STRH      0x1F
+    ZP.NEXT      0x16
+    ZP.NEXT0     0x16
+    ZP.NEXT1     0x17
+    ZP.NEXT2     0x18
+    ZP.NEXT3     0x19
+    ZP.TOP       0x12
+    ZP.TOP0      0x12
+    ZP.TOP1      0x13
+    ZP.TOP2      0x14
+    ZP.TOP3      0x15
+    
+    Print.NewLine 0x14
+    Print.Char    0x12
+    FOpen         0x30
+    FClose        0x31
+    FGetC         0x32
+    ArgGet        0x37
+
+.DATA
+    STR0 "r"
+
+.MAIN
+    ; Print newline
+    SYSCALL Print.NewLine
+    
+    ; Get filename argument (arg 1)
+    PUSHB1
+    POPA
+    SYSCALL ArgGet
+    ; ZP.STR now points to filename
+    
+    ; Set up file mode ("r")
+    PUSHD STR0           ; Push address of "r" string
+    POPZW ZP.NEXT        ; Store in ZP.NEXT for FOpen
+    
+    ; Open file: FOpen(filename, "r")
+    SYSCALL FOpen
+    
+    ; Check if file opened successfully (TOP != 0)
+    PUSHZW ZP.TOP
+    PUSHW0
+    NEW                  ; TOP != 0?
+    BZF file_error       ; If TOP == 0, file failed to open
+    
+read_loop:
+    ; Read character: FGetC(file_handle)
+    ; File handle is already in ZP.TOP from FOpen
+    PUSHZW ZP.TOP
+    POPZW ZP.NEXT        ; Move file handle to ZP.NEXT for FGetC
+    SYSCALL FGetC
+    
+    ; Check for EOF (TOP == -1)
+    PUSHZW ZP.TOP
+    PUSHW 0xFFFF         ; Push -1 (0xFFFF in unsigned)
+    EQW
+    BNZF close_file      ; If equal to -1, EOF reached
+    
+    ; Print character
+    PUSHZB ZP.TOP0       ; Get low byte of character
+    POPA                 ; Move to A register
+    SYSCALL Print.Char
+    
+    BRAR read_loop       ; Continue reading
+    
+close_file:
+    ; Close file: FClose(file_handle)
+    PUSHZW ZP.TOP        ; File handle still in ZP.TOP
+    POPZW ZP.NEXT        ; Move to ZP.NEXT for FClose
+    SYSCALL FClose
+    
+file_error:
+    HALT
