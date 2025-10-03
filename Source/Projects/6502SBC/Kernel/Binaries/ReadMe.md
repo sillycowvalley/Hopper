@@ -1,0 +1,1 @@
+![MECB I/O card I2C adapter](MECBI2C.png)
