@@ -22,8 +22,9 @@ This repository contains prebuilt binaries for 4 different 6502 configurations:
 
 The adapter uses built-in pullups from the Motorola 6821 PIA, eliminating the need for external pullup resistors.
 
-**Addressing Scheme:** A0=Low, A1=Low, A2=High
-- Makes 24AA1026 or 24LC1025 appear as 2×64K devices at addresses 0x50 and 0x54
+**Addressing Scheme:** A0=Low, A1=Low, A2=Low
+- Makes 24AA512 or 24AA256 appear at address 0x50
+- A2=High makes 24AA1026 or 24LC1025 appear as 2×64K devices at addresses 0x50 and 0x54
 
 ![MECB I/O card I2C adapter](MECBI2C.png)
 ![MECB I/O card I2C adapter](MECBI2C.jpeg)
