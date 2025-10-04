@@ -27,14 +27,16 @@ The adapter uses built-in pullups from the Motorola 6821 PIA, eliminating the ne
 - A2=High makes 24AA1026 or 24LC1025 appear as 2×64K devices at addresses 0x50 and 0x54
 
 ![MECB I/O card I2C adapter](MECBI2C.png)
-*MECB I/O card I2C adapter Schematic*
+**MECB I/O card I2C adapter Schematic**
 
 ![MECB I/O card I2C adapter](MECBI2CFront.png)
 ![MECB I/O card I2C adapter](MECBI2CBack.png)
-*Dave's version for the 24AA512*
+
+**Dave's version for the 24AA512**
 
 ![MECB I/O card I2C adapter](MECBI2C.jpeg)
-*My version for the 24LC1025*
+
+**My version for the 24LC1025**
 
 ### BIOS Installation
 
