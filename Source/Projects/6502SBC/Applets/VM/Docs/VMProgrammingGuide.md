@@ -18,6 +18,19 @@ Every VM program consists of:
 - `.FUNC` sections - User-defined functions
 - `.MAIN` section - Program entry point
 
+### 4. Label Syntax
+Labels are defined with a colon suffix and used with branch instructions:
+```asm
+start:
+    ; code here
+    BRAF end        ; Branch forward to 'end'
+loop:
+    ; loop body
+    BRAR loop       ; Branch backward to 'loop'
+end:
+    HALT
+```
+
 ## Simple Hello World Example
 ```asm
 ; Simple Hello World program
@@ -69,6 +82,14 @@ ZP.STR       0x1E-0x1F  ; 16-bit string pointer
 
 ; Extended Workspace (for your use in programs)
 ZP.BUF       0x80       ; Common buffer pointer location
+```
+
+### Direct Zero Page Addressing
+While named constants are preferred for clarity, you can use direct zero page addresses:
+```asm
+POPZW 0x14          ; Direct address (same as POPZW ZP.TOP+2)
+PUSHZB 0x10         ; Direct read from address 0x10
+POPZB 0x58          ; Store to application zero page
 ```
 
 ## Stack Frame Layout
@@ -445,7 +466,7 @@ BZF no_input        ; Branch if 0 (no input)
 ; Input:  None
 ; Output: C = 1 if break detected
 SYSCALL IsBreak
-PUSHC               ; Push carry flag
+PUSHC               ; Push carry flag (1 if break, 0 if not)
 BNZF user_break     ; Branch if 1 (break detected)
 ```
 
@@ -519,9 +540,12 @@ SYSCALL PrintSpaces  ; Print 8 spaces
 ; Delay execution
 ; Input:  ZP.TOP = milliseconds (32-bit)
 ; Output: None
-PUSHW 1000          ; 1 second
-PUSHW0              ; High word
-POPZQ ZP.TOP
+
+; Complete pattern for 1000ms delay (0x000003E8)
+PUSHW 0x03E8        ; Push low word (1000)
+POPZW ZP.TOP        ; Store to ZP.TOP0-1
+PUSHW0              ; Push high word (0)
+POPZW 0x14          ; Store to ZP.TOP2-3 (or POPZW ZP.TOP+2)
 SYSCALL TimeDelay
 ```
 
@@ -610,10 +634,12 @@ LongGE  ; C = 1 if NEXT >= TOP
 ; Input:  A = pin number (0-15)
 ;         Y = mode (0=INPUT, 1=OUTPUT)
 ; Output: None
-PUSHB 5
-POPA
-PUSHB 1             ; OUTPUT
-POPY
+
+; Complete pattern:
+PUSHB 0             ; Pin 0
+POPA                ; A = pin number
+PUSHB 1             ; OUTPUT mode (1)
+POPY                ; Y = mode
 SYSCALL PinMode
 ```
 
@@ -638,10 +664,12 @@ BNZF pin_is_low     ; Branch if equal to 0
 ; Input:  A = pin number (0-15)
 ;         Y = value (0/1)
 ; Output: None
-PUSHB 5
-POPA
-PUSHB 1             ; HIGH
-POPY
+
+; Complete pattern:
+PUSHB 0             ; Pin 0
+POPA                ; A = pin number
+PUSHB 1             ; HIGH (1)
+POPY                ; Y = value
 SYSCALL PinWrite
 ```
 
@@ -1058,6 +1086,173 @@ PUSHW 0x0001
 SHLW 8              ; Result: 0x0100
 ```
 
+### Pattern 7: Hardware Control Loop with Break Detection
+For continuous hardware operation with user break capability:
+```asm
+.CONST
+    GPIO.PinMode    0x26
+    GPIO.PinWrite   0x28
+    Time.Delay      0x17
+    IsBreak         0x10
+    ZP.TOP          0x12
+
+.DATA
+    ; No data needed for this example
+
+.MAIN
+    ; Configure pin 0 as output
+    PUSHB 0             ; Pin 0
+    POPA                ; A = pin number
+    PUSHB 1             ; OUTPUT mode
+    POPY                ; Y = mode
+    SYSCALL GPIO.PinMode
+    
+main_loop:
+    ; Turn LED ON
+    PUSHB 0             ; Pin 0
+    POPA                ; A = pin
+    PUSHB 1             ; HIGH
+    POPY                ; Y = value
+    SYSCALL GPIO.PinWrite
+    
+    ; Delay 1000ms
+    PUSHW 0x03E8        ; 1000 (low word)
+    POPZW ZP.TOP        ; Store to ZP.TOP0-1
+    PUSHW0              ; 0 (high word)
+    POPZW 0x14          ; Store to ZP.TOP2-3
+    SYSCALL Time.Delay
+    
+    ; Check for break
+    SYSCALL IsBreak
+    PUSHC               ; Push carry flag
+    BNZF exit           ; Exit if break detected
+    
+    ; Turn LED OFF
+    PUSHB 0             ; Pin 0
+    POPA                ; A = pin
+    PUSHB 0             ; LOW
+    POPY                ; Y = value
+    SYSCALL GPIO.PinWrite
+    
+    ; Delay 1000ms again
+    PUSHW 0x03E8
+    POPZW ZP.TOP
+    PUSHW0
+    POPZW 0x14
+    SYSCALL Time.Delay
+    
+    ; Check for break again
+    SYSCALL IsBreak
+    PUSHC
+    BNZF exit
+    
+    BRAR main_loop      ; Loop forever
+    
+exit:
+    HALT
+```
+
+## Advanced Patterns (from NOEL Benchmark)
+
+### Pattern 8: Complex Local Variable Organization
+When working with many local variables, organize them clearly:
+```asm
+.MAIN
+    ENTER 14            ; Allocate 14 bytes for locals
+    
+    ; Document your local variable layout:
+    ; s low at [BP+0]
+    ; s high at [BP-2]
+    ; start low at [BP-4]
+    ; start high at [BP-6]
+    ; ss (seconds start) at [BP-8]
+    ; i at [BP-10]
+    ; j at [BP-11]
+```
+
+### Pattern 9: Working with 32-bit Values and Partial Storage
+Sometimes you only need to store part of a 32-bit value:
+```asm
+; Save only low word of 32-bit seconds value
+SYSCALL Time.Seconds    ; Result in ZP.TOP (32-bit)
+PUSHZW ZP.TOP0         ; Push only low 16 bits
+POPLW -8               ; Store in local
+
+; Later, reconstruct with assumed high word
+PUSHLW -8              ; Get saved low word
+PUSHW0                 ; Assume high word is 0
+POPZQ ZP.TOP0         ; Now have full 32-bit value
+```
+
+### Pattern 10: SYSCALLX for Optimized System Calls
+Use SYSCALLX when the syscall ID is constant for slightly better performance:
+```asm
+; Setup operands in ZP.NEXT and ZP.TOP
+PUSHLW -11
+PUSHW0
+POPZQ ZP.TOP0
+
+SYSCALLX Long.Add      ; Faster than SYSCALL Long.Add
+```
+
+### Pattern 11: Efficient Stack Cleanup
+Clean up multiple stack values in one line:
+```asm
+; After complex operations, clean up stack
+DROPW DROPB DROPW DROPW DROPW DROPW DROPW
+```
+
+### Pattern 12: Direct Local Variable Increment
+Use INCLB/INCLW to increment locals without push/pop:
+```asm
+; Increment loop counters efficiently
+INCLB -10              ; i++
+INCLW -11              ; j++ (for 16-bit counter)
+```
+
+### Pattern 13: Nested Loop Pattern
+Efficient nested loop structure:
+```asm
+; Outer loop initialization
+PUSHB1
+POPLB -10              ; i = 1
+
+outer_loop:
+    ; Inner loop initialization
+    PUSHW1
+    POPLW -11          ; j = 1
+    
+inner_loop:
+    ; Inner loop body
+    ; ...
+    
+    INCLW -11          ; j++
+    PUSHLW -11
+    PUSHW 1000
+    LEW                ; j <= 1000?
+    BNZR inner_loop    ; Continue inner loop
+    
+    ; After inner loop
+    INCLB -10          ; i++
+    PUSHLB -10
+    PUSHB 10
+    LEB                ; i <= 10?
+    BNZR outer_loop    ; Continue outer loop
+```
+
+### Pattern 14: Moving Values Between ZP Registers
+When working with 32-bit math operations, you often need to swap operands:
+```asm
+; Move result from NEXT to TOP for printing
+PUSHZQ ZP.NEXT0
+POPZQ ZP.TOP0
+SYSCALL Long.Print
+
+; Move current value to NEXT for subtraction
+PUSHZQ ZP.TOP0
+POPZQ ZP.NEXT0
+```
+
 ## Critical Programming Rules
 
 ### 1. Stack Frame Offsets Are Critical
@@ -1238,107 +1433,6 @@ PUSHD "filename.txt"    ; INVALID SYNTAX!
     POPZW ZP.STR
 ```
 
-## Additional Advanced Patterns (from NOEL Benchmark)
-
-### Pattern 7: Complex Local Variable Organization
-When working with many local variables, organize them clearly:
-```asm
-.MAIN
-    ENTER 14            ; Allocate 14 bytes for locals
-    
-    ; Document your local variable layout:
-    ; s low at [BP+0]
-    ; s high at [BP-2]
-    ; start low at [BP-4]
-    ; start high at [BP-6]
-    ; ss (seconds start) at [BP-8]
-    ; i at [BP-10]
-    ; j at [BP-11]
-```
-
-### Pattern 8: Working with 32-bit Values and Partial Storage
-Sometimes you only need to store part of a 32-bit value:
-```asm
-; Save only low word of 32-bit seconds value
-SYSCALL Time.Seconds    ; Result in ZP.TOP (32-bit)
-PUSHZW ZP.TOP0         ; Push only low 16 bits
-POPLW -8               ; Store in local
-
-; Later, reconstruct with assumed high word
-PUSHLW -8              ; Get saved low word
-PUSHW0                 ; Assume high word is 0
-POPZQ ZP.TOP0         ; Now have full 32-bit value
-```
-
-### Pattern 9: SYSCALLX for Optimized System Calls
-Use SYSCALLX when the syscall ID is constant for slightly better performance:
-```asm
-; Setup operands in ZP.NEXT and ZP.TOP
-PUSHLW -11
-PUSHW0
-POPZQ ZP.TOP0
-
-SYSCALLX Long.Add      ; Faster than SYSCALL Long.Add
-```
-
-### Pattern 10: Efficient Stack Cleanup
-Clean up multiple stack values in one line:
-```asm
-; After complex operations, clean up stack
-DROPW DROPB DROPW DROPW DROPW DROPW DROPW
-```
-
-### Pattern 11: Direct Local Variable Increment
-Use INCLB/INCLW to increment locals without push/pop:
-```asm
-; Increment loop counters efficiently
-INCLB -10              ; i++
-INCLW -11              ; j++ (for 16-bit counter)
-```
-
-### Pattern 12: Nested Loop Pattern
-Efficient nested loop structure:
-```asm
-; Outer loop initialization
-PUSHB1
-POPLB -10              ; i = 1
-
-outer_loop:
-    ; Inner loop initialization
-    PUSHW1
-    POPLW -11          ; j = 1
-    
-inner_loop:
-    ; Inner loop body
-    ; ...
-    
-    INCLW -11          ; j++
-    PUSHLW -11
-    PUSHW 1000
-    LEW                ; j <= 1000?
-    BNZR inner_loop    ; Continue inner loop
-    
-    ; After inner loop
-    INCLB -10          ; i++
-    PUSHLB -10
-    PUSHB 10
-    LEB                ; i <= 10?
-    BNZR outer_loop    ; Continue outer loop
-```
-
-### Pattern 13: Moving Values Between ZP Registers
-When working with 32-bit math operations, you often need to swap operands:
-```asm
-; Move result from NEXT to TOP for printing
-PUSHZQ ZP.NEXT0
-POPZQ ZP.TOP0
-SYSCALL Long.Print
-
-; Move current value to NEXT for subtraction
-PUSHZQ ZP.TOP0
-POPZQ ZP.NEXT0
-```
-
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1359,9 +1453,13 @@ Key concepts to master:
 - Branch flag behavior (BZF branches when Z is false/clear, BNZF branches when Z is true/set)
 - Using PUSHC to access carry flag for branching
 - **String literals must be defined in .DATA section and referenced by label**
+- **Labels use colon suffix** (loop:, exit:, etc.)
+- **Direct zero page addresses can be used** (POPZW 0x14 for ZP.TOP+2)
 - Efficient local variable organization and documentation
 - Working with partial 32-bit values
 - Direct local increment operations (INCLB/INCLW)
 - Moving values between ZP.TOP and ZP.NEXT for 32-bit operations
+- **Complete hardware control patterns with break detection**
+- **Proper GPIO and timer patterns from real examples**
 
 Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first!
