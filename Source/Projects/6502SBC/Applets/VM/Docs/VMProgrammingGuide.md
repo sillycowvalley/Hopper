@@ -939,6 +939,38 @@ file_error:
     HALT
 ```
 
+### Critical Pattern: Understanding Comparisons and Branching
+The C flag behavior with CMP is tricky! For numeric comparisons:
+```asm
+; IMPORTANT: After comparison instructions (LEB, LTB, LEW, LTW):
+; - C flag is SET (1) when condition is TRUE
+; - C flag is CLEAR (0) when condition is FALSE
+
+; Example: Check if j <= 1000
+PUSHLW -11          ; Push j
+PUSHW 1000          ; Push 1000
+LEW                 ; Compare: sets C=1 if j <= 1000
+; Now use PUSHC and branch on the value:
+PUSHC               ; Push 1 if C set (condition true), 0 if clear (false)
+BNZF continue_loop  ; Branch if value is 1 (condition was true)
+BZF exit_loop       ; Branch if value is 0 (condition was false)
+
+; The NOEL pattern uses this shorthand:
+LEW                 ; Sets C flag
+BNZR inner_loop     ; Branch backward if C was set (condition true)
+
+; For equality comparisons (EQB, NEB, EQW, NEW):
+; - Z flag is SET (1) when EQUAL
+; - Z flag is CLEAR (0) when NOT EQUAL
+
+; Example:
+PUSHW value1
+PUSHW value2
+EQW                 ; Sets Z=1 if equal, Z=0 if not equal
+BZF not_equal       ; Branch if Z=0 (values different)
+BNZF equal          ; Branch if Z=1 (values same)
+```
+
 ### Pattern 3: Memory Allocation (from HexDump.VMA)
 ```asm
 ; Allocate buffer
@@ -1206,6 +1238,107 @@ PUSHD "filename.txt"    ; INVALID SYNTAX!
     POPZW ZP.STR
 ```
 
+## Additional Advanced Patterns (from NOEL Benchmark)
+
+### Pattern 7: Complex Local Variable Organization
+When working with many local variables, organize them clearly:
+```asm
+.MAIN
+    ENTER 14            ; Allocate 14 bytes for locals
+    
+    ; Document your local variable layout:
+    ; s low at [BP+0]
+    ; s high at [BP-2]
+    ; start low at [BP-4]
+    ; start high at [BP-6]
+    ; ss (seconds start) at [BP-8]
+    ; i at [BP-10]
+    ; j at [BP-11]
+```
+
+### Pattern 8: Working with 32-bit Values and Partial Storage
+Sometimes you only need to store part of a 32-bit value:
+```asm
+; Save only low word of 32-bit seconds value
+SYSCALL Time.Seconds    ; Result in ZP.TOP (32-bit)
+PUSHZW ZP.TOP0         ; Push only low 16 bits
+POPLW -8               ; Store in local
+
+; Later, reconstruct with assumed high word
+PUSHLW -8              ; Get saved low word
+PUSHW0                 ; Assume high word is 0
+POPZQ ZP.TOP0         ; Now have full 32-bit value
+```
+
+### Pattern 9: SYSCALLX for Optimized System Calls
+Use SYSCALLX when the syscall ID is constant for slightly better performance:
+```asm
+; Setup operands in ZP.NEXT and ZP.TOP
+PUSHLW -11
+PUSHW0
+POPZQ ZP.TOP0
+
+SYSCALLX Long.Add      ; Faster than SYSCALL Long.Add
+```
+
+### Pattern 10: Efficient Stack Cleanup
+Clean up multiple stack values in one line:
+```asm
+; After complex operations, clean up stack
+DROPW DROPB DROPW DROPW DROPW DROPW DROPW
+```
+
+### Pattern 11: Direct Local Variable Increment
+Use INCLB/INCLW to increment locals without push/pop:
+```asm
+; Increment loop counters efficiently
+INCLB -10              ; i++
+INCLW -11              ; j++ (for 16-bit counter)
+```
+
+### Pattern 12: Nested Loop Pattern
+Efficient nested loop structure:
+```asm
+; Outer loop initialization
+PUSHB1
+POPLB -10              ; i = 1
+
+outer_loop:
+    ; Inner loop initialization
+    PUSHW1
+    POPLW -11          ; j = 1
+    
+inner_loop:
+    ; Inner loop body
+    ; ...
+    
+    INCLW -11          ; j++
+    PUSHLW -11
+    PUSHW 1000
+    LEW                ; j <= 1000?
+    BNZR inner_loop    ; Continue inner loop
+    
+    ; After inner loop
+    INCLB -10          ; i++
+    PUSHLB -10
+    PUSHB 10
+    LEB                ; i <= 10?
+    BNZR outer_loop    ; Continue outer loop
+```
+
+### Pattern 13: Moving Values Between ZP Registers
+When working with 32-bit math operations, you often need to swap operands:
+```asm
+; Move result from NEXT to TOP for printing
+PUSHZQ ZP.NEXT0
+POPZQ ZP.TOP0
+SYSCALL Long.Print
+
+; Move current value to NEXT for subtraction
+PUSHZQ ZP.TOP0
+POPZQ ZP.NEXT0
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1214,16 +1347,21 @@ The Hopper VM provides exceptional code density (8-10× better than native 6502)
 3. Efficient BIOS integration via zero page marshalling
 4. Page-constrained functions
 5. Compact bytecode representation
+6. Optimized instruction variants (SYSCALLX, INCLB/INCLW)
 
 Key concepts to master:
 - Stack frame layout (**BP+5 for first argument**, BP+0 for first local, BP+1 for saved BP)
 - Complete instruction set including bitwise, global, and 32-bit operations
 - Zero page marshalling for BIOS calls
-- SYSCALL parameter conventions
-- Stack cleanup responsibilities
+- SYSCALL vs SYSCALLX optimization
+- Stack cleanup responsibilities (including multi-DROP patterns)
 - DUMP opcode for debugging
-- Branch flag behavior (BZF branches when Z is false)
+- Branch flag behavior (BZF branches when Z is false/clear, BNZF branches when Z is true/set)
 - Using PUSHC to access carry flag for branching
 - **String literals must be defined in .DATA section and referenced by label**
+- Efficient local variable organization and documentation
+- Working with partial 32-bit values
+- Direct local increment operations (INCLB/INCLW)
+- Moving values between ZP.TOP and ZP.NEXT for 32-bit operations
 
 Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first!
