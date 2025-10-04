@@ -242,7 +242,8 @@ WRITEB   0xA2       ; Pop address, pop byte, write to memory
 PUSHW size
 POPZW ZP.ACC
 SYSCALL MemAllocate
-BCC allocation_failed
+PUSHC               ; Push carry flag (1=success, 0=fail)
+BZF allocation_failed ; Branch if 0 (failed)
 ; ZP.IDX now contains pointer
 ```
 
@@ -283,7 +284,8 @@ SYSCALL MemMaximum
 ; Output: C = 1 if exists, 0 if not
 PUSHD filename
 POPZW ZP.STR
-LDA #0              ; DirWalkAction
+PUSHB 0             ; DirWalkAction
+POPA
 SYSCALL FileExists
 ```
 
@@ -329,7 +331,8 @@ SYSCALL FileStartSave
 ; Close and finalize file
 ; Input:  A = 0x80 (executable) or 0x00 (data)
 ; Output: C = 1 if successful
-LDA #0x00           ; Data file
+PUSHB 0x00          ; Data file
+POPA
 SYSCALL FileEndSave
 ```
 
@@ -341,7 +344,8 @@ SYSCALL FileEndSave
 ; Output: C = 1 if successful
 PUSHD filename
 POPZW ZP.STR
-LDA #0
+PUSHB 0
+POPA
 SYSCALL FileStartLoad
 ```
 
@@ -353,7 +357,8 @@ SYSCALL FileStartLoad
 ;         TransferLength = bytes read
 ;         Data in FileDataBuffer
 SYSCALL FileNextStream
-BCC end_of_file
+PUSHC               ; Push carry flag
+BZF end_of_file     ; Branch if 0 (no more data)
 ```
 
 #### FileFormat (0x0C)
@@ -391,7 +396,8 @@ SYSCALL SerialWaitForChar
 ; Input:  None
 ; Output: C = 1 if available
 SYSCALL SerialIsAvailable
-BCC no_input
+PUSHC               ; Push carry flag
+BZF no_input        ; Branch if 0 (no input)
 ```
 
 ### Break Detection
@@ -402,7 +408,8 @@ BCC no_input
 ; Input:  None
 ; Output: C = 1 if break detected
 SYSCALL IsBreak
-BCS user_break
+PUSHC               ; Push carry flag
+BNZF user_break     ; Branch if 1 (break detected)
 ```
 
 ### Console Output
@@ -458,7 +465,8 @@ SYSCALL PrintSpace
 ; Print multiple spaces
 ; Input:  Y = space count
 ; Output: None
-LDY #8
+PUSHB 8
+POPY
 SYSCALL PrintSpaces  ; Print 8 spaces
 ```
 
@@ -560,8 +568,10 @@ LongGE  ; C = 1 if NEXT >= TOP
 ; Input:  A = pin number (0-15)
 ;         Y = mode (0=INPUT, 1=OUTPUT)
 ; Output: None
-LDA #5
-LDY #1              ; OUTPUT
+PUSHB 5
+POPA
+PUSHB 1             ; OUTPUT
+POPY
 SYSCALL PinMode
 ```
 
@@ -571,9 +581,13 @@ SYSCALL PinMode
 ; Input:  A = pin number (0-15)
 ; Output: A = value (0/1)
 ;         Z = 1 if LOW
-LDA #5
+PUSHB 5
+POPA
 SYSCALL PinRead
-BEQ pin_is_low
+PUSHA               ; Push A register result
+PUSHB0
+EQB                 ; Compare with 0
+BNZF pin_is_low     ; Branch if equal to 0
 ```
 
 #### PinWrite (0x28)
@@ -582,8 +596,10 @@ BEQ pin_is_low
 ; Input:  A = pin number (0-15)
 ;         Y = value (0/1)
 ; Output: None
-LDA #5
-LDY #1              ; HIGH
+PUSHB 5
+POPA
+PUSHB 1             ; HIGH
+POPY
 SYSCALL PinWrite
 ```
 
@@ -881,7 +897,8 @@ file_error:
 PUSHW 16
 POPZW ZP.ACC
 SYSCALL Mem.Allocate
-BCC alloc_failed
+PUSHC               ; Push carry flag
+BZF alloc_failed    ; Branch if 0 (failed)
 PUSHZW ZP.IDX       ; Get pointer
 POPZW ZP.BUF        ; Save it
 
@@ -992,7 +1009,8 @@ SYSCALL Print.String
 Most syscalls return status in carry flag or ZP.TOP:
 ```asm
 SYSCALL Operation
-BCC failed          ; Carry clear = failure
+PUSHC               ; Push carry flag
+BZF failed          ; Branch if 0 (failure)
 ```
 
 ### 5. Clean Up Stack After Calls
@@ -1002,12 +1020,14 @@ CALL Function
 DROPW               ; Caller cleans up!
 ```
 
-### 6. The C Flag Trap with CMP
-CMP sets carry OPPOSITE to intuition:
-- C=1 if A >= value (no borrow)
-- C=0 if A < value (borrow occurred)
-
-Use EQB/EQW for equality tests to avoid confusion.
+### 6. The C Flag and Branching
+Use PUSHC to access carry flag, then branch on the value:
+```asm
+SYSCALL Something   ; Sets C flag
+PUSHC               ; Push 1 if C set, 0 if clear
+BZF carry_was_clear ; Branch if value is 0
+BNZF carry_was_set  ; Branch if value is 1
+```
 
 ### 7. Branch Instructions and Flags
 - BZF/BZR branch when Z flag is FALSE (zero flag clear)
@@ -1086,6 +1106,19 @@ BZF not_equal      ; Branches if Z=0 (values different)
 BNZF equal         ; Branches if Z=1 (values same)
 ```
 
+### 7. Using Native 6502 Instead of VM Instructions
+```asm
+; WRONG - Using native 6502
+LDA #5
+BCC failed
+
+; CORRECT - Using VM opcodes
+PUSHB 5
+POPA
+PUSHC               ; Get carry flag
+BZF failed          ; Branch if carry was clear
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1103,5 +1136,6 @@ Key concepts to master:
 - Stack cleanup responsibilities
 - DUMP opcode for debugging
 - Branch flag behavior (BZF branches when Z is false)
+- Using PUSHC to access carry flag for branching
 
-Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access.
+Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions!
