@@ -321,12 +321,27 @@ program MemoryCheck
         LDA # 3
         STA ZP.TOPL
         LDA # I2C.SerialEEPROMAddress
-        
-        
         RequestFromTOPA();      // A has I2C adddress,     TOPL has number of bytes to return, TOPL returns number of bytes read
-        //STA NEXTL
-        //RequestFromTOPNEXT(); // NEXTL has I2C adddress, TOPL has number of bytes to return, TOPL returns number of bytes read
         
+        LDX ZP.I2CInReadPtr
+        LDA Address.I2CInBuffer, X
+        Serial.HexOut(); // program size in 256 byte pages
+        
+        INX
+        LDA Address.I2CInBuffer, X
+        Serial.HexOut(); // CRC
+        
+        INX
+        LDA Address.I2CInBuffer, X
+        Serial.HexOut(); // CRC
+        
+        
+        /*
+        // read first 3 bytes from EEPROM:
+        LDA # 3
+        STA ZP.TOPL
+        LDA # I2C.SerialEEPROMAddress
+        RequestFromTOPA();      // A has I2C adddress,     TOPL has number of bytes to return, TOPL returns number of bytes read
         
         // assume success
         LDX ZP.I2CInReadPtr
@@ -335,23 +350,22 @@ program MemoryCheck
         {
             STA ZP.PROGSIZE // in 256 byte pages
             
-            Serial.HexOut();
-            
-            //LoadFromEEPROM();
-            //hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
+            LoadFromEEPROM();
+            hopperInit(); // initialized heap based on program loaded, initializes stacks, sets up the entrypoint ready to run
             
 #ifdef CPU_65C02S
-            //SMB0 ZP.FLAGS                // program is loaded
-            //RMB4 ZP.FLAGS                // !IsInDebugger
+            SMB0 ZP.FLAGS                // program is loaded
+            RMB4 ZP.FLAGS                // !IsInDebugger
 #else
-            //LDA ZP.FLAGS
-            //ORA # 0b00000001             // program is loaded
-            //AND # 0b11101111             // !IsInDebugger
-            //STA ZP.FLAGS
+            LDA ZP.FLAGS
+            ORA # 0b00000001             // program is loaded
+            AND # 0b11101111             // !IsInDebugger
+            STA ZP.FLAGS
 #endif            
-            //runCommand();
-            //checkRestart();
+            runCommand();
+            checkRestart();
         }
+        */
     }
     
     Hopper()
