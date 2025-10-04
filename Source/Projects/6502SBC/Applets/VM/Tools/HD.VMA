@@ -1,0 +1,224 @@
+.CONST
+    ZP.TOP       0x12
+    ZP.NEXT      0x16
+    ZP.STR       0x1E
+    
+    Print.String  0x11
+    Print.Char    0x12
+    Print.Hex     0x13
+    Print.NewLine 0x14
+    
+    FOpen         0x30
+    FClose        0x31
+    FGetC         0x32 
+    Arg.Get       0x37
+    
+    fileHandle     0
+    byteCount     -1
+    hexAddress    -2
+    
+    counter        0
+
+.DATA
+    STR0 "r"
+    
+.FUNC PrintAddress
+    ENTER 0
+    
+    ; Address is at BP+5 (high), BP+6 (low)
+    PUSHLB 5             ; High byte
+    POPA
+    SYSCALL Print.Hex
+    
+    PUSHLB 6             ; Low byte
+    POPA
+    SYSCALL Print.Hex
+    
+    PUSHB ':'
+    POPA
+    SYSCALL Print.Char
+    
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+    
+    LEAVE
+    RET
+    
+.FUNC PrintASCII
+    ENTER 1
+    
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+    
+    ; 16 - bytecount = number of slots to pad with spaces
+    PUSHB 16
+    PUSHLB 5
+    SUBB
+    
+    ; 3x
+    DUPB
+    DUPB
+    ADDB
+    ADDB
+    POPLB counter
+
+more_spaces:
+    PUSHLB counter
+    BZF spaces_done
+    
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+    
+    PUSHLB counter
+    PUSHB1
+    SUBB
+    POPLB counter
+    
+    BRAR more_spaces
+    
+spaces_done:
+    
+    ; Address is at BP+6 (high), BP+7 (low)
+    PUSHLB 6             ; High byte
+    POPA
+    SYSCALL Print.Hex
+    
+    PUSHLB 7             ; Low byte
+    POPA
+    SYSCALL Print.Hex
+    
+    ; Clean up 1 byte
+    DROPB
+    
+    LEAVE
+    RET
+
+.FUNC ProcessFile
+    ENTER 4              ; Locals: fileHandle(1), byteCount(1), hexAddress(2)
+    
+    ; Save file handle
+    PUSHZB ZP.TOP
+    POPLB fileHandle
+    
+    ; Initialize byte count to 0
+    PUSHB0
+    POPLB byteCount
+    
+    ; Initialize address to 0
+    PUSHW0
+    POPLW hexAddress
+    
+main_loop: 
+    ; Check if we need to print address (byte_count == 0)
+    PUSHLB byteCount
+    PUSHB0
+    EQB
+    BZF read_byte
+    
+    ; Print current address
+    PUSHLW hexAddress
+    CALL PrintAddress
+    DROPW ; Clean the argument
+    
+read_byte:
+    ; Set up file handle for FGetC
+    PUSHLB fileHandle
+    POPZB ZP.NEXT
+    SYSCALL FGetC
+    
+    ; Check for EOF (-1)
+    PUSHZW ZP.TOP
+    PUSHW 0xFFFF         ; -1 as unsigned 16-bit
+    EQW
+    BNZF end_loop        ; If EOF, exit
+    
+    ; Print the byte as hex
+    PUSHZB ZP.TOP        ; Get the byte we just read
+    POPA
+    SYSCALL Print.Hex
+    
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+    
+    ; Increment byte count
+    INCLB byteCount
+    
+    ; Check if we've read 8 bytes
+    PUSHLB byteCount
+    PUSHB 8
+    EQB
+    BZF skip_space
+    
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+skip_space:
+
+    ; Check if we've read 16 bytes
+    PUSHLB byteCount
+    PUSHB 16
+    EQB
+    BZR main_loop        ; If not 16 yet, continue reading
+    
+    PUSHLW hexAddress
+    PUSHLB byteCount
+    CALL PrintASCII
+    DROPW DROPB ; Clean the argument
+    
+    ; Reset byte count and advance address
+    PUSHB0
+    POPLB byteCount
+    
+    PUSHLW hexAddress
+    PUSHW 16
+    ADDW
+    POPLW hexAddress
+    
+    SYSCALL Print.NewLine
+    
+    BRAR main_loop       ; Go back to check if we need to print address
+
+end_loop:
+
+    PUSHLW hexAddress
+    PUSHLB byteCount
+    CALL PrintASCII
+    DROPW DROPB ; Clean the argument
+
+    ; Clean up 4 bytes
+    DROPW DROPW
+    LEAVE
+    RET
+
+.MAIN
+    ; Get filename argument
+    PUSHB 2
+    POPA
+    SYSCALL Arg.Get
+    
+    ; Set up file mode ("r")
+    PUSHD STR0
+    POPZW ZP.NEXT
+    
+    ; Open file
+    SYSCALL FOpen
+    
+    ; Check if file opened successfully
+    PUSHZW ZP.TOP
+    PUSHW0
+    NEW
+    BZF file_error
+    
+    PUSHZW ZP.TOP ; save the file handle
+    
+    CALL ProcessFile
+    
+    POPZW ZP.NEXT ; restore the file handle
+    SYSCALL FClose
+
+file_error:
+    HALT
