@@ -718,7 +718,7 @@ unit File
             // Validate filename format
             File.ValidateFilename();
             if (NC) { BIT ZP.EmulatorPCL break; }
-            
+
             initializeFATandDirectory();
             
             // Find the file in directory
@@ -726,7 +726,7 @@ unit File
             STA ZP.ACCH
             findFileInDirectory();
             if (NC)
-            {
+            {         
                 Error.FileNotFound(); BIT ZP.EmulatorPCL
                 break;
             }
@@ -752,7 +752,7 @@ unit File
             LDA currentDirectorySector  
             PHA
             
-            findLastOccupiedEntry();
+            findLastOccupiedEntry(); // -> C if something to move
             
             // Restore deleted entry location
             PLA
@@ -765,8 +765,8 @@ unit File
                 // Only move if the last entry is AFTER the deleted entry
                 LDA lastOccupiedEntry
                 CMP currentFileEntry
-                if (NC) { break; }  // LastOccupiedEntry <= currentFileEntry, no move
-                if (Z)  { break; }  // LastOccupiedEntry == currentFileEntry, no move
+                if (NC) { SEC break; }  // LastOccupiedEntry <= currentFileEntry, no move
+                if (Z)  {     break; }  // LastOccupiedEntry == currentFileEntry, no move
                 
                 // LastOccupiedEntry > currentFileEntry
                 // Move last entry to fill the deleted slot
@@ -795,8 +795,6 @@ unit File
                     }
                 }
             }
-            
-            
             SEC // Success
             break;
         }
@@ -2875,11 +2873,9 @@ unit File
                     }
                     break;
                 } // extension loop
-                
                 SEC
                 break;
             }
-            
             CLC  // Invalid mode
             break;
         } // single exit
@@ -2888,7 +2884,6 @@ unit File
         {
             LDA #0x01                       // Return FILE* = 1
             Shared.LoadTopByte();
-            SEC
         }
         else
         {
