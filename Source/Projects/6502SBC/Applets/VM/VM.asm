@@ -21,7 +21,7 @@ program VM
     
     uses "Runtime"
     
-    const byte vmSlots = 0x70; // 0x70..0x7F
+    const byte vmSlots = 0x60; // 0x60..0x6F (shared with Runtime)
     
     const byte programMemory    = vmSlots+0;
     const byte programMemoryL   = vmSlots+0;
@@ -548,6 +548,8 @@ program VM
         STA ZP.IDXH
         Memory.Free();
         
+        LDA programMemoryH // Runtime also uses zero page slots 0x60..0x6F
+        PHA
         
         Runtime.Initialize();
         Runtime.Execute();
@@ -555,7 +557,7 @@ program VM
         
         LDA #2
         STA ZP.IDXL
-        LDA programMemoryH
+        PLA
         STA ZP.IDXH
         Memory.Free();
         

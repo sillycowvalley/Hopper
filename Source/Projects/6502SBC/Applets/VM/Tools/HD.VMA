@@ -249,7 +249,7 @@ end_loop:
     
     PUSHW 16
     POPZW ZP.ACC
-    CALL Mem.Allocate
+    SYSCALL Mem.Allocate
     PUSHZW ZP.IDX
     POPZW  ZP.BUF
     
@@ -258,7 +258,7 @@ end_loop:
     PUSHZW ZP.BUF
     POPZW  ZP.IDX
     
-    CALL Mem.Free
+    SYSCALL Mem.Free
     
     POPZW ZP.NEXT ; restore the file handle
     SYSCALL FClose
