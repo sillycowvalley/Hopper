@@ -2770,6 +2770,10 @@ unit File
 #endif
 
 #if defined(CFILES)
+    CFilesReset()
+    {
+        STZ cfilesFILE
+    }
     // Open file with C-style mode
     // Input:  ZP.STR = filename, ZP.NEXT = "w" or "r" string pointer
     // Output: ZP.TOP = FILE* (0x01) on success, NULL (0x00) on failure

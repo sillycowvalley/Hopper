@@ -5,7 +5,7 @@ program BIOS
     //#define DEBUG     // mimimum of 874 bytes
     //#define FILEDEBUG
     
-    //#define UNIVERSAL
+    #define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02
@@ -701,6 +701,9 @@ program BIOS
                 // free the program space and re-initialize the heap        
                 LDA # (Address.UserMemory >> 8)
                 Memory.Initialize();
+#if defined(CFILES)
+                File.CFilesReset(); // in case a file was left "open"
+#endif
                 
                 // not exiting (in case it was corrupted by the applet)
 #ifdef UNIVERSAL
@@ -852,6 +855,9 @@ program BIOS
     Hopper()
     {
         Initialize();  
+#if defined(CFILES)
+        File.CFilesReset();
+#endif        
         
         printWelcome();
         

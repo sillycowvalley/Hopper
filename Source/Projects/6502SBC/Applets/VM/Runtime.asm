@@ -28,6 +28,8 @@ unit Runtime
     const byte operandL         = runtimeSlots+10;
     const byte operandH         = runtimeSlots+11;
     
+    const byte currentSP        = operand;
+    
     const byte vmFlags          = runtimeSlots+12;
     // Bit 6 - BIOS call Z return
     // Bit 7 - BIOS call C return
@@ -43,7 +45,6 @@ unit Runtime
     const string msgBadOpCodeAt  = " at 0x";
     
     const string debugHeader = "\n=== STACK DUMP ===\n";
-    const string bpLabel     = "BP: 0x";
     
     debugStack()
     {
@@ -52,22 +53,19 @@ unit Runtime
         PHX  
         PHY
         
+        // Capture current stack pointer and adjust for call overhead
+        TSX
+        TXA
+        CLC
+        ADC #5              // Adjust for return address (2) + PHA/PHX/PHY (3)
+        STA currentSP
+        
         // Print header
         LDA #(debugHeader % 256)
         STA ZP.STRL
         LDA #(debugHeader / 256)
         STA ZP.STRH
         Print.String();
-        
-        // Print BP value
-        LDA #(bpLabel % 256)
-        STA ZP.STRL
-        LDA #(bpLabel / 256)
-        STA ZP.STRH
-        Print.String();
-        LDA BP
-        Print.Hex();
-        Print.NewLine();
         
         // Start from BP+8 down to BP-8
         LDX BP
@@ -84,6 +82,27 @@ unit Runtime
             LDA #':' PHX Print.Char(); PLX
             LDA #' ' PHX Print.Char(); PLX
             
+            // Check if this is SP
+            CPX currentSP
+            if (Z)
+            {
+                LDA #' ' PHX Print.Char(); Print.Char(); Print.Char(); PLX
+                LDA #'<' PHX Print.Char(); PLX
+                LDA #'-' PHX Print.Char(); PLX
+                LDA #'S' PHX Print.Char(); PLX
+                LDA #'P' PHX Print.Char(); PLX
+                
+                // Check if this is BP
+                CPX BP
+                if (Z)
+                {
+                    LDA #'/' PHX Print.Char(); PLX
+                    LDA #'B' PHX Print.Char(); PLX
+                    LDA #'P' PHX Print.Char(); PLX
+                }
+                break;
+            }
+            
             // Print hex value
             LDA 0x0100, X
             PHX Print.Hex(); PLX
@@ -99,6 +118,7 @@ unit Runtime
                 LDA #'P' PHX Print.Char(); PLX
             }
             
+                      
             PHX Print.NewLine(); PLX
             
             DEX  // Move down stack
