@@ -96,6 +96,137 @@ PUSHLB -2           ; Third local
 POPLW 0             ; Store 16-bit at first two locals (BP+0, BP-1)
 ```
 
+## Complete VM Instruction Set
+
+### System Operations (0x00-0x02)
+```asm
+NOP      0x00       ; No operation (MUST be 0x00)
+HALT     0x02       ; Stop execution, return to BIOS
+```
+
+### Stack Operations - Immediates (0x04-0x12)
+```asm
+PUSHB    0x04 byte  ; Push 8-bit immediate value
+PUSHB0   0x06       ; Push 8-bit zero (optimized)
+PUSHB1   0x08       ; Push 8-bit one (optimized)
+PUSHW    0x0A word  ; Push 16-bit immediate value  
+PUSHW0   0x0C       ; Push 16-bit zero (optimized)
+PUSHW1   0x0E       ; Push 16-bit one (optimized)
+PUSHA    0x10       ; Push A register to stack
+PUSHC    0x12       ; Push carry flag (1 if set, 0 if clear)
+```
+
+### Stack Operations - Manipulation (0x14-0x20)
+```asm
+PUSHZ    0x14       ; Push zero flag (1 if set, 0 if clear)
+DUPB     0x16       ; Duplicate byte on TOS
+DUPW     0x18       ; Duplicate word on TOS
+DROPB    0x1A       ; Remove byte from TOS
+DROPW    0x1C       ; Remove word from TOS
+SWAPB    0x1E       ; Swap top two bytes
+SWAPW    0x20       ; Swap top two words
+```
+
+### Arithmetic Operations (0x24-0x32)
+```asm
+ADDB     0x24       ; Pop 2 bytes, push sum
+SUBB     0x26       ; Pop 2 bytes, push difference (TOS-1 - TOS)
+NEGB     0x28       ; Negate byte (2's complement)
+ADDW     0x2A       ; Pop 2 words, push sum
+SUBW     0x2C       ; Pop 2 words, push difference
+NEGW     0x2E       ; Negate word (2's complement)
+INCLB    0x30 offset; Increment local byte at BP+offset
+INCLW    0x32 offset; Increment local word at BP+offset
+```
+
+### Comparison Operations (0x34-0x42)
+```asm
+EQB      0x34       ; Pop 2 bytes, set Z if equal
+NEB      0x36       ; Pop 2 bytes, set Z if not equal
+LTB      0x38       ; Pop 2 bytes, set C if TOS-1 < TOS (unsigned)
+LEB      0x3A       ; Pop 2 bytes, set C if TOS-1 <= TOS (unsigned)
+EQW      0x3C       ; Pop 2 words, set Z if equal
+NEW      0x3E       ; Pop 2 words, set Z if not equal
+LTW      0x40       ; Pop 2 words, set C if TOS-1 < TOS (unsigned)
+LEW      0x42       ; Pop 2 words, set C if TOS-1 <= TOS (unsigned)
+```
+
+### Bitwise Operations (0x44-0x50)
+```asm
+ANDB     0x44       ; Pop 2 bytes, push bitwise AND
+ORB      0x46       ; Pop 2 bytes, push bitwise OR
+XORB     0x48       ; Pop 2 bytes, push bitwise XOR
+NOTB     0x4A       ; Pop byte, push bitwise NOT
+XORW     0x4C       ; Pop 2 words, push bitwise XOR
+SHLW     0x4E byte  ; Shift word left by byte operand
+SHRW     0x50 byte  ; Shift word right by byte operand
+```
+
+### Zero Page Operations (0x54-0x62)
+```asm
+PUSHZB   0x54 addr  ; Push byte from ZP[addr]
+PUSHZW   0x56 addr  ; Push word from ZP[addr]
+PUSHZQ   0x58 addr  ; Push 32-bit from ZP[addr]
+POPZB    0x5A addr  ; Pop byte to ZP[addr]
+POPZW    0x5C addr  ; Pop word to ZP[addr]
+POPZQ    0x5E addr  ; Pop 32-bit to ZP[addr]
+POPA     0x60       ; Pop byte from stack to A register
+POPY     0x62       ; Pop byte from stack to Y register
+```
+
+### Local Variable Operations (0x64-0x6E)
+```asm
+PUSHLB   0x64 offset; Push byte from BP+offset
+PUSHLW   0x66 offset; Push word from BP+offset
+PUSHLQ   0x68 offset; Push 32-bit from BP+offset
+POPLB    0x6A offset; Pop byte to BP+offset
+POPLW    0x6C offset; Pop word to BP+offset
+POPLQ    0x6E offset; Pop 32-bit to BP+offset
+```
+
+### Global Operations (0x70-0x76)
+```asm
+PUSHGB   0x70 offset; Push byte from globals+offset
+PUSHGW   0x72 offset; Push word from globals+offset
+POPGB    0x74 offset; Pop byte to globals+offset
+POPGW    0x76 offset; Pop word to globals+offset
+```
+
+### Control Flow (0x7C-0x8A)
+```asm
+BRAF     0x7C byte  ; Branch forward by byte (0-255)
+BRAR     0x7E byte  ; Branch backward by byte (0-255)
+BZF      0x80 byte  ; Branch forward if Z flag set
+BZR      0x82 byte  ; Branch backward if Z flag set
+BNZF     0x84 byte  ; Branch forward if Z flag clear
+BNZR     0x86 byte  ; Branch backward if Z flag clear
+CALL     0x88 id    ; Call function by ID
+RET      0x8A       ; Return from function
+```
+
+### System & Stack Frame (0x8C-0x94)
+```asm
+SYSCALL  0x8C id    ; Call BIOS function by ID
+SYSCALLX 0x8E       ; Call BIOS function (fast, X preset)
+ENTER    0x90 bytes ; Setup stack frame with local space
+LEAVE    0x92       ; Restore stack frame
+DUMP     0x94       ; Diagnostic stack dump
+```
+
+### String/Data Operations (0x98-0x9E)
+```asm
+PUSHD    0x98 byte  ; Push data address (byte offset)
+PUSHD2   0x9A word  ; Push data address (word offset)
+STRC     0x9C       ; Pop index, pop string, push char
+STRCMP   0x9E       ; Pop 2 strings, push comparison result
+```
+
+### Memory Operations (0xA0-0xA2)
+```asm
+READB    0xA0       ; Pop address word, push byte from memory
+WRITEB   0xA2       ; Pop address, pop byte, write to memory
+```
+
 ## Complete BIOS System Call Reference
 
 ### Memory Management
@@ -338,8 +469,7 @@ SYSCALL PrintSpaces  ; Print 8 spaces
 ; Output: None
 PUSHW 1000          ; 1 second
 PUSHW0              ; High word
-POPZW ZP.TOP+2
-POPZW ZP.TOP
+POPZQ ZP.TOP
 SYSCALL TimeDelay
 ```
 
@@ -600,90 +730,6 @@ SYSCALL ArgGet
 ; ZP.STR now points to argument
 ```
 
-## Complete Instruction Set
-
-### Stack Operations - Constants
-```asm
-PUSHB  value        ; Push 8-bit immediate value
-PUSHB0              ; Push 8-bit zero (optimized)
-PUSHB1              ; Push 8-bit one (optimized)
-PUSHW  value        ; Push 16-bit immediate value
-PUSHW0              ; Push 16-bit zero (optimized)
-PUSHD  label        ; Push address of label (for strings/data)
-```
-
-### Stack Operations - Zero Page
-```asm
-PUSHZB address      ; Push 8-bit value from zero page
-PUSHZW address      ; Push 16-bit value from zero page
-POPZB  address      ; Pop 8-bit value to zero page
-POPZW  address      ; Pop 16-bit value to zero page
-```
-
-### Stack Operations - Locals
-```asm
-PUSHLB offset       ; Push 8-bit local (BP+offset)
-PUSHLW offset       ; Push 16-bit local (BP+offset)
-POPLB  offset       ; Pop 8-bit to local (BP+offset)
-POPLW  offset       ; Pop 16-bit to local (BP+offset)
-INCLB  offset       ; Increment 8-bit local
-INCLW  offset       ; Increment 16-bit local
-```
-
-### Stack Manipulation
-```asm
-DUPB                ; Duplicate 8-bit TOS
-DUPW                ; Duplicate 16-bit TOS
-DROPB               ; Remove 8-bit from TOS
-DROPW               ; Remove 16-bit from TOS
-POPA                ; Pop 8-bit to A register
-```
-
-### Memory Operations
-```asm
-READB               ; Read byte from [TOS] address
-WRITEB              ; Write byte TOS-1 to [TOS] address
-```
-
-### Arithmetic
-```asm
-ADDB/ADDW           ; Add top two stack values
-SUBB/SUBW           ; Subtract TOS from TOS-1
-```
-
-### Comparison
-```asm
-EQB/EQW             ; Compare equal (sets Z flag)
-NEW                 ; Compare not equal (sets Z flag)
-LTB/LTW             ; Less than (unsigned)
-```
-
-### Control Flow
-```asm
-BZF  label          ; Branch if Z flag false (NZ)
-BNZF label          ; Branch if Z flag true (Z)
-BZR  label          ; Branch if Z flag false backward
-BNZR label          ; Branch if Z flag true backward
-BCF  label          ; Branch if C flag false (NC)
-BNCF label          ; Branch if C flag true (C)
-BRAR label          ; Branch always backward (for loops)
-```
-
-### Function Operations
-```asm
-ENTER bytes         ; Setup stack frame, allocate locals
-LEAVE               ; Restore stack frame
-CALL function       ; Call function by name
-RET                 ; Return from function
-```
-
-### System Operations
-```asm
-SYSCALL name        ; Call BIOS function
-HALT                ; End program
-DUMP                ; Debug stack dump (see below)
-```
-
 ## Debugging with DUMP Opcode
 
 The DUMP opcode is a powerful debugging tool that displays the current stack state without affecting any registers, flags, or stack contents.
@@ -845,6 +891,67 @@ POPZW ZP.IDX
 SYSCALL Mem.Free
 ```
 
+### Pattern 4: Working with Globals
+```asm
+; Define global variables in .CONST
+.CONST
+    counter  0      ; Global at offset 0
+    total    1      ; Global at offset 1 (word)
+
+.MAIN
+    ; Initialize global counter
+    PUSHB 0
+    POPGB counter
+    
+    ; Increment global total
+    PUSHGW total
+    PUSHW 10
+    ADDW
+    POPGW total
+```
+
+### Pattern 5: String Operations
+```asm
+; Using PUSHD for string addresses
+PUSHD "Hello"       ; Push string address
+POPZW ZP.STR
+SYSCALL Print.String
+
+; String character access with STRC
+PUSHD message       ; Push string address
+PUSHB 5             ; Index
+STRC                ; Get 6th character
+POPA
+SYSCALL Print.Char
+
+; String comparison
+PUSHD str1
+PUSHD str2
+STRCMP              ; Returns -1/0/1
+```
+
+### Pattern 6: Bitwise Operations
+```asm
+; Masking bits
+PUSHB 0xF0
+PUSHB 0x37
+ANDB                ; Result: 0x30
+
+; Setting bits
+PUSHB 0x40
+PUSHB 0x05
+ORB                 ; Result: 0x45
+
+; Toggle bits
+PUSHB 0xFF
+PUSHB 0xA5
+XORB                ; Result: 0x5A
+
+; Shift operations
+PUSHW 0x0001
+SHLW 8              ; Result: 0x0100
+```
+
 ## Critical Programming Rules
 
 ### 1. Stack Frame Offsets Are Critical
@@ -898,6 +1005,11 @@ CMP sets carry OPPOSITE to intuition:
 
 Use EQB/EQW for equality tests to avoid confusion.
 
+### 7. Branch Instructions and Flags
+- BZF/BZR branch when Z flag is FALSE (zero flag clear)
+- BNZF/BNZR branch when Z flag is TRUE (zero flag set)
+- This is opposite to what the names might suggest!
+
 ## Common Mistakes to Avoid
 
 ### 1. Wrong Local Variable Offset
@@ -948,6 +1060,17 @@ POPZW ZP.STR
 SYSCALL Print.String ; Use immediately
 ```
 
+### 5. Confusing BZF/BNZF Behavior
+```asm
+; After EQW instruction:
+; Z=1 if values were equal
+; Z=0 if values were different
+
+EQW
+BZF not_equal      ; Branches if Z=0 (values different)
+BNZF equal         ; Branches if Z=1 (values same)
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -959,9 +1082,11 @@ The Hopper VM provides exceptional code density (8-10× better than native 6502)
 
 Key concepts to master:
 - Stack frame layout (BP+0 for first local, BP-1 for saved BP)
+- Complete instruction set including bitwise, global, and 32-bit operations
 - Zero page marshalling for BIOS calls
 - SYSCALL parameter conventions
 - Stack cleanup responsibilities
 - DUMP opcode for debugging
+- Branch flag behavior (BZF branches when Z is false)
 
 The three example programs (Type.VMA, ZP.VMA, HexDump.VMA) demonstrate all essential patterns for successful VM programming.
