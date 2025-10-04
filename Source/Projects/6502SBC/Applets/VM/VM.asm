@@ -21,7 +21,7 @@ program VM
     
     uses "Runtime"
     
-    const byte vmSlots = 0x60; // 0x60..0x6F
+    const byte vmSlots = 0x70; // 0x70..0x7F
     
     const byte programMemory    = vmSlots+0;
     const byte programMemoryL   = vmSlots+0;

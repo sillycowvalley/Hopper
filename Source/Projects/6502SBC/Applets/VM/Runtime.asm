@@ -2,7 +2,7 @@ unit Runtime
 {
     uses "OpCodes"
     
-    const byte runtimeSlots = 0x70; // 0x70..0x7F
+    const byte runtimeSlots = 0x60; // 0x60..0x6F
     
     // same slot as programMemory : read-only!
     const byte functionTable    = runtimeSlots+0;
