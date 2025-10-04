@@ -31,6 +31,16 @@ end:
     HALT
 ```
 
+### 5. Comment Style Guidelines
+Use clear inline comments to explain what each section does:
+```asm
+; Get filename argument (arg 2, since "VM" is arg 0)
+PUSHB 2
+POPA
+SYSCALL ArgGet
+; ZP.STR now points to filename
+```
+
 ## Simple Hello World Example
 ```asm
 ; Simple Hello World program
@@ -46,6 +56,79 @@ end:
     POPZW ZP.STR        ; Marshal to BIOS
     SYSCALL Print.String ; Print it
     HALT                ; Return to BIOS
+```
+
+## Complete Minimal File Reader Example (Type.VMA)
+This complete working example demonstrates file operations, argument handling, and error management:
+
+```asm
+.CONST
+    ZP.STR       0x1E
+    ZP.NEXT      0x16
+    ZP.TOP       0x12
+    ZP.TOP0      0x12
+    
+    Print.NewLine 0x14
+    Print.Char    0x12
+    FOpen         0x30
+    FClose        0x31
+    FGetC         0x32
+    ArgGet        0x37
+
+.DATA
+    STR0 "r"
+
+.MAIN
+    ; Print newline
+    SYSCALL Print.NewLine
+    
+    ; Get filename argument (arg 2, since "VM" is arg 0, program name is arg 1)
+    PUSHB 2
+    POPA
+    SYSCALL ArgGet
+    ; ZP.STR now points to filename
+    
+    ; Set up file mode ("r")
+    PUSHD STR0           ; Push address of "r" string
+    POPZW ZP.NEXT        ; Store in ZP.NEXT for FOpen
+    
+    ; Open file: FOpen(filename, "r")
+    SYSCALL FOpen
+    
+    ; Check if file opened successfully (TOP != 0)
+    PUSHZW ZP.TOP
+    PUSHW0
+    NEW                  ; TOP != 0?
+    BZF file_error       ; If TOP == 0, file failed to open
+    
+read_loop:
+    ; Read character: FGetC(file_handle)
+    ; File handle is already in ZP.TOP from FOpen
+    PUSHZW ZP.TOP
+    POPZW ZP.NEXT        ; Move file handle to ZP.NEXT for FGetC
+    SYSCALL FGetC
+    
+    ; Check for EOF (TOP == 0xFFFF which is -1 in unsigned)
+    PUSHZW ZP.TOP
+    PUSHW 0xFFFF         ; Push -1 (0xFFFF in unsigned)
+    EQW
+    BNZF close_file      ; If equal to -1, EOF reached
+    
+    ; Print character (extract byte from word result)
+    PUSHZB ZP.TOP0       ; Get low byte of character
+    POPA                 ; Move to A register
+    SYSCALL Print.Char
+    
+    BRAR read_loop       ; Continue reading
+    
+close_file:
+    ; Close file: FClose(file_handle)
+    PUSHZW ZP.TOP        ; File handle still in ZP.TOP
+    POPZW ZP.NEXT        ; Move to ZP.NEXT for FClose
+    SYSCALL FClose
+    
+file_error:
+    HALT                 ; Common exit point for both error and normal termination
 ```
 
 ## Complete Zero Page Map for VM Programs
@@ -763,10 +846,13 @@ SYSCALL FClose
 ; Read character from file
 ; Input:  ZP.NEXT = file handle
 ; Output: ZP.TOP = character (0-255) or -1 for EOF
-PUSHZW handle
-POPZW ZP.NEXT
+
+; Pattern for EOF checking:
 SYSCALL FGetC
-; Check for 0xFFFF (EOF)
+PUSHZW ZP.TOP
+PUSHW 0xFFFF         ; 0xFFFF is unsigned representation of -1
+EQW
+BNZF end_of_file     ; Branch if EOF reached
 ```
 
 #### FRead (0x33)
@@ -816,9 +902,17 @@ SYSCALL ArgCount
 #### ArgGet (0x37)
 ```asm
 ; Get argument by index
-; Input:  A = argument index (0=command, 1=first arg, etc.)
+; IMPORTANT: Argument indexing:
+;   - Arg 0 = "VM" (the VM itself)
+;   - Arg 1 = program name (e.g. "TYPE.VMA")
+;   - Arg 2 = first user argument
+;   - Arg 3 = second user argument, etc.
+;
+; Input:  A = argument index (0=VM, 1=program, 2=first user arg, etc.)
 ; Output: ZP.STR = pointer to argument string
-PUSHB 1             ; First argument
+
+; Example: Get first user argument
+PUSHB 2             ; First user argument (not 1!)
 POPA
 SYSCALL ArgGet
 ; ZP.STR now points to argument
@@ -873,7 +967,9 @@ Stack dump:
 
 ## Programming Patterns from Working Examples
 
-### Pattern 1: File Reading (from Type.VMA)
+### Pattern 1: File Reading with Handle Preservation (from Type.VMA)
+This pattern shows efficient file handle management by keeping the handle in ZP.TOP across operations:
+
 ```asm
 .CONST
     ZP.STR       0x1E
@@ -891,7 +987,7 @@ Stack dump:
 
 .MAIN
     ; Get filename from command line
-    PUSHB 2
+    PUSHB 2             ; First user argument
     POPA
     SYSCALL ArgGet      ; Sets ZP.STR
     
@@ -900,26 +996,26 @@ Stack dump:
     POPZW ZP.NEXT
     SYSCALL FOpen       ; Returns handle in TOP
     
-    ; Check success
+    ; Check success (handle != NULL)
     PUSHZW ZP.TOP
     PUSHW0
     NEW
-    BZF file_error
+    BZF file_error      ; Common error exit point
     
 read_loop:
-    ; Read character
-    PUSHZW ZP.TOP       ; File handle
+    ; File handle stays in ZP.TOP - just move to NEXT when needed
+    PUSHZW ZP.TOP       
     POPZW ZP.NEXT
-    SYSCALL FGetC
+    SYSCALL FGetC       ; Returns char in TOP
     
-    ; Check EOF
+    ; Check EOF (TOP == 0xFFFF)
     PUSHZW ZP.TOP
-    PUSHW 0xFFFF
+    PUSHW 0xFFFF        ; Unsigned representation of -1
     EQW
     BNZF close_file
     
-    ; Print character
-    PUSHZB ZP.TOP0
+    ; Extract byte from word result
+    PUSHZB ZP.TOP0      ; Use PUSHZB to get low byte
     POPA
     SYSCALL Print.Char
     
@@ -930,7 +1026,7 @@ close_file:
     POPZW ZP.NEXT
     SYSCALL FClose
     
-file_error:
+file_error:             ; Common exit for both error and normal flow
     HALT
 ```
 
@@ -1253,6 +1349,37 @@ PUSHZQ ZP.TOP0
 POPZQ ZP.NEXT0
 ```
 
+### Pattern 15: Common Error Exit Point
+Use a single label for both error handling and normal termination:
+```asm
+.MAIN
+    ; Try to open file
+    SYSCALL FOpen
+    PUSHZW ZP.TOP
+    PUSHW0
+    NEW
+    BZF exit            ; Jump to common exit on error
+    
+    ; Process file...
+    
+    SYSCALL FClose
+    
+exit:                   ; Common exit for all paths
+    HALT
+```
+
+### Pattern 16: Byte Extraction from Word Values
+Use PUSHZB to extract specific bytes from multi-byte values:
+```asm
+; After FGetC returns word in ZP.TOP
+PUSHZB ZP.TOP0          ; Extract just the low byte
+POPA                    ; Move to A for PrintChar
+SYSCALL Print.Char
+
+; Or extract high byte
+PUSHZB ZP.TOP1          ; Extract high byte
+```
+
 ## Critical Programming Rules
 
 ### 1. Stack Frame Offsets Are Critical
@@ -1332,6 +1459,28 @@ PUSHD "Hello"       ; INVALID!
     PUSHD MSG       ; Reference by label
     POPZW ZP.STR
     SYSCALL Print.String
+```
+
+### 9. Understand Argument Indexing
+```asm
+; Command line: VM TYPE.VMA myfile.txt
+; Arg 0 = "VM"
+; Arg 1 = "TYPE.VMA"  
+; Arg 2 = "myfile.txt"  <-- First user argument!
+
+PUSHB 2             ; Get first user argument
+POPA
+SYSCALL ArgGet
+```
+
+### 10. File Handle Preservation
+Keep file handles in ZP.TOP across operations for efficiency:
+```asm
+SYSCALL FOpen       ; Handle returned in ZP.TOP
+; Handle stays in TOP...
+PUSHZW ZP.TOP       ; Only move when needed
+POPZW ZP.NEXT       
+SYSCALL FGetC       ; Now handle back in TOP
 ```
 
 ## Common Mistakes to Avoid
@@ -1433,6 +1582,30 @@ PUSHD "filename.txt"    ; INVALID SYNTAX!
     POPZW ZP.STR
 ```
 
+### 9. Wrong Command Line Argument Index
+```asm
+; WRONG - Assuming first user arg is index 1
+PUSHB 1
+POPA
+SYSCALL ArgGet      ; Gets program name, not user arg!
+
+; CORRECT - First user arg is index 2
+PUSHB 2
+POPA
+SYSCALL ArgGet
+```
+
+### 10. Not Using 0xFFFF for EOF Check
+```asm
+; WRONG - Using signed value
+PUSHW -1
+EQW
+
+; CORRECT - Using unsigned representation
+PUSHW 0xFFFF        ; Unsigned representation of -1
+EQW
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1461,5 +1634,11 @@ Key concepts to master:
 - Moving values between ZP.TOP and ZP.NEXT for 32-bit operations
 - **Complete hardware control patterns with break detection**
 - **Proper GPIO and timer patterns from real examples**
+- **Command line argument indexing** (arg 0=VM, arg 1=program, arg 2=first user arg)
+- **File handle preservation pattern** - keep handles in ZP.TOP
+- **EOF checking with 0xFFFF** - unsigned representation of -1
+- **Common error exit pattern** - single label for all exit paths
+- **PUSHZB for byte extraction** from word values
+- **Clear inline commenting** for maintainable code
 
-Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first!
+Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first! First user command line argument is at index 2, not 1!
