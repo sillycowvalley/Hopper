@@ -1,0 +1,108 @@
+.CONST
+    ZP.ACC       0x10
+    ZP.TOP       0x12
+    ZP.NEXT      0x16
+    ZP.STR       0x1E
+    ZP.IDX       0x1A
+    
+    Print.String  0x11
+    Print.Char    0x12
+    Print.Hex     0x13
+    Print.NewLine 0x14
+    
+    addr          0
+    rowCounter   -2
+
+.FUNC PrintAddress
+    ENTER 0
+    
+    ; Address is at BP+5 (high), BP+6 (low)
+    PUSHLB 5             ; High byte
+    POPA
+    SYSCALL Print.Hex
+    
+    PUSHLB 6             ; Low byte
+    POPA
+    SYSCALL Print.Hex
+    
+    PUSHB ':'
+    POPA
+    SYSCALL Print.Char
+    
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+    
+    LEAVE
+    RET
+
+.MAIN
+    ENTER 3
+    ; Initialize addr = 0
+    PUSHW0
+    POPLW addr
+
+main_loop:
+    ; Check if addr >= 256 (exit condition)
+    PUSHLW addr
+    PUSHW 256
+    LTW
+    BZF end_program      ; If addr >= 256, exit
+    
+    ; Print address
+    PUSHLW addr
+    CALL PrintAddress
+    DROPW                ; Clean up argument
+    
+    ; Initialize row counter for 16 bytes
+    PUSHB0
+    POPLB rowCounter
+    
+hex_loop:
+    ; Check if we've printed 16 bytes
+    PUSHLB rowCounter
+    PUSHB 16
+    EQB
+    BNZF end_row         ; If rowCounter == 16, end row
+    
+    ; Calculate current byte address: addr + rowCounter
+    PUSHLW addr
+    PUSHLB rowCounter
+    PUSHB0               ; Extend byte to word
+    ADDW
+    
+    ; Read byte from that address
+    READB
+    
+    ; Print byte as hex
+    POPA
+    SYSCALL Print.Hex
+    
+    ; Print space
+    PUSHB ' '
+    POPA
+    SYSCALL Print.Char
+    
+    ; Increment row counter
+    INCLB rowCounter
+    
+    ; Continue hex loop
+    BRAR hex_loop
+
+end_row:
+    ; Print newline
+    SYSCALL Print.NewLine
+    
+    ; Add 16 to addr for next row
+    PUSHLW addr
+    PUSHW 16
+    ADDW
+    POPLW addr
+    
+    ; Continue main loop
+    BRAR main_loop
+
+end_program:
+    DROPB DROPW ; clean up locals
+    LEAVE
+    HALT
