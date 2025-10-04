@@ -3146,7 +3146,7 @@ program Edit
                         View.SetCursorPosition();
                     }
                 }
-                
+                case Key.CtrlQuest:
                 case Key.F1:
                 {
                     Help.Show();
@@ -3423,5 +3423,8 @@ program Edit
         
         // Cleanup
         Edit.Dispose();
+        
+        // All attributes back to default  
+        Screen.Defaults();
     }
 }

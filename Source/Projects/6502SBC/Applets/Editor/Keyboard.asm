@@ -44,6 +44,8 @@ unit Keyboard
         CtrlY     = 0x19,  // Delete entire line
         CtrlZ     = 0x1A,  // Undo/Redo (modern)
         
+        CtrlQuest = 0x1F,  // alternative to <F1> for help
+        
         // Extended keys (non-ASCII)
         Up        = 128,
         Down      = 129,

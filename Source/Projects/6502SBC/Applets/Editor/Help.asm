@@ -67,7 +67,7 @@ unit Help
         STA ZP.STRH
         LDY #0
         printLine();
-        Screen.Normal();
+        Screen.Reset();
         
          // Help content - Y is preserved so just increment
         LDY #2  // Skip line 1 (blank)

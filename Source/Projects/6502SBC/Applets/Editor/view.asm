@@ -257,7 +257,7 @@ unit View
     // Output: Updates vwCurrentRow, vwCurrentCol, and vwTopLine if needed
     SetCursorPosition()
     {
-        PHX
+        PHX // X=1 means render
         
         // Save target position
         LDA GapBuffer.GapValueL

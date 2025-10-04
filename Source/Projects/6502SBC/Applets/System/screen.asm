@@ -32,7 +32,8 @@ unit Screen
     const string showCursor = "\x1B[?25h";
     const string saveCursor = "\x1B[s";
     const string restoreCursor = "\x1B[u";
-    const string reset = "\x1B[0;32;40m"; // ensure green on black default
+    const string reset    = "\x1B[0;32;40m"; // ensure green on black default
+    const string defaults = "\x1B[0m";
     const string boldOn  = "\x1B[1m";
     const string boldOff = "\x1B[22m";
     const string dim = "\x1B[2m";
@@ -161,6 +162,17 @@ unit Screen
         PHY
         LDA #(reset % 256)
         LDY #(reset / 256)
+        printString();
+        LDA # 0b00000111
+        STA currentAttributes
+        PLY
+    }
+    
+    Defaults()
+    {
+        PHY
+        LDA #(defaults % 256)
+        LDY #(defaults / 256)
         printString();
         LDA # 0b00000111
         STA currentAttributes
