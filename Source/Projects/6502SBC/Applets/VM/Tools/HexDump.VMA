@@ -101,7 +101,28 @@ more_ascii:
     PUSHLB counter
     BZF ascii_done
     
+    ; store in buffer
+    PUSHZW ZP.BUF
+    PUSHLB counter2
+    PUSHB0
+    ADDW
+    READB
+    
+    DUPB
+    PUSHB 32
+    LTB
+    BNZF print_dot ; char < 32
+    
+    DUPB
+    PUSHB 128
+    LTB
+    BNZF print_char ; char < 128
+    
+print_dot:
+    DROPB
     PUSHB '.'
+
+print_char:
     POPA
     SYSCALL Print.Char
     
@@ -172,6 +193,14 @@ read_byte:
     PUSHZB ZP.TOP        ; Get the byte we just read
     POPA
     SYSCALL Print.Hex
+    
+    ; store in buffer
+    PUSHZW ZP.BUF
+    PUSHLB byteCount
+    PUSHB0
+    ADDW
+    PUSHZB ZP.TOP
+    WRITEB
     
     PUSHB ' '
     POPA
