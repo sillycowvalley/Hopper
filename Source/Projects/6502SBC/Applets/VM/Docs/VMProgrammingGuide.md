@@ -18,6 +18,23 @@ Every VM program consists of:
 - `.FUNC` sections - User-defined functions
 - `.MAIN` section - Program entry point
 
+## Simple Hello World Example
+```asm
+; Simple Hello World program
+.CONST
+    ZP.STR       0x1E
+    Print.String 0x11
+
+.DATA
+    STR0 "Hello, World!\n"
+
+.MAIN
+    PUSHD STR0          ; Push string address
+    POPZW ZP.STR        ; Marshal to BIOS
+    SYSCALL Print.String ; Print it
+    HALT                ; Return to BIOS
+```
+
 ## Complete Zero Page Map for VM Programs
 
 ```asm
@@ -282,6 +299,11 @@ SYSCALL MemMaximum
 ; Input:  ZP.STR = filename pointer
 ;         A = DirWalkAction
 ; Output: C = 1 if exists, 0 if not
+
+.DATA
+    filename "test.txt"
+
+; In code:
 PUSHD filename
 POPZW ZP.STR
 PUSHB 0             ; DirWalkAction
@@ -294,6 +316,11 @@ SYSCALL FileExists
 ; Delete file from storage
 ; Input:  ZP.STR = filename pointer
 ; Output: C = 1 if successful, 0 if failed
+
+.DATA
+    filename "old.txt"
+
+; In code:
 PUSHD filename
 POPZW ZP.STR
 SYSCALL FileDelete
@@ -313,6 +340,11 @@ SYSCALL FileDir
 ; Open file for writing
 ; Input:  ZP.STR = filename pointer
 ; Output: C = 1 if successful
+
+.DATA
+    filename "output.txt"
+
+; In code:
 PUSHD filename
 POPZW ZP.STR
 SYSCALL FileStartSave
@@ -342,6 +374,11 @@ SYSCALL FileEndSave
 ; Input:  ZP.STR = filename pointer
 ;         A = DirWalkAction
 ; Output: C = 1 if successful
+
+.DATA
+    filename "input.txt"
+
+; In code:
 PUSHD filename
 POPZW ZP.STR
 PUSHB 0
@@ -419,7 +456,12 @@ BNZF user_break     ; Branch if 1 (break detected)
 ; Print null-terminated string
 ; Input:  ZP.STR = string pointer
 ; Output: None
-PUSHD "Hello World\n"
+
+.DATA
+    MSG0 "Hello World\n"
+
+; In code:
+PUSHD MSG0
 POPZW ZP.STR
 SYSCALL PrintString
 ```
@@ -664,9 +706,15 @@ All float operations use IEEE 754 single precision format in ZP.NEXT and ZP.TOP.
 ; Input:  ZP.STR = filename pointer
 ;         ZP.NEXT = mode string pointer ("r" or "w")
 ; Output: ZP.TOP = file handle or NULL
+
+.DATA
+    filename "data.txt"
+    readmode "r"
+
+; In code:
 PUSHD filename
 POPZW ZP.STR
-PUSHD "r"
+PUSHD readmode
 POPZW ZP.NEXT
 SYSCALL FOpen
 ; Check ZP.TOP for NULL
@@ -931,22 +979,29 @@ SYSCALL Mem.Free
 
 ### Pattern 5: String Operations
 ```asm
-; Using PUSHD for string addresses
-PUSHD "Hello"       ; Push string address
-POPZW ZP.STR
-SYSCALL Print.String
+.DATA
+    hello "Hello"
+    message "A test message"
+    str1 "First string"
+    str2 "Second string"
 
-; String character access with STRC
-PUSHD message       ; Push string address
-PUSHB 5             ; Index
-STRC                ; Get 6th character
-POPA
-SYSCALL Print.Char
-
-; String comparison
-PUSHD str1
-PUSHD str2
-STRCMP              ; Returns -1/0/1
+.MAIN
+    ; Using PUSHD for string addresses
+    PUSHD hello         ; Push string address
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; String character access with STRC
+    PUSHD message       ; Push string address
+    PUSHB 5             ; Index
+    STRC                ; Get 6th character
+    POPA
+    SYSCALL Print.Char
+    
+    ; String comparison
+    PUSHD str1
+    PUSHD str2
+    STRCMP              ; Returns -1/0/1
 ```
 
 ### Pattern 6: Bitwise Operations
@@ -996,11 +1051,14 @@ POPLB -1            ; Initialize second local
 Before any SYSCALL, data MUST be in the correct zero page location:
 ```asm
 ; WRONG
-PUSHD "Hello"
-SYSCALL Print.String    ; FAILS!
+SYSCALL Print.String    ; FAILS! No string pointer set
 
 ; CORRECT
-PUSHD "Hello"
+.DATA
+    MSG "Hello"
+
+; In code:
+PUSHD MSG
 POPZW ZP.STR
 SYSCALL Print.String
 ```
@@ -1033,6 +1091,21 @@ BNZF carry_was_set  ; Branch if value is 1
 - BZF/BZR branch when Z flag is FALSE (zero flag clear)
 - BNZF/BNZR branch when Z flag is TRUE (zero flag set)
 - This is opposite to what the names might suggest!
+
+### 8. String Literals Must Be Defined in .DATA Section
+```asm
+; WRONG - Cannot use string literals directly
+PUSHD "Hello"       ; INVALID!
+
+; CORRECT - Define strings in .DATA section
+.DATA
+    MSG "Hello"
+
+.MAIN
+    PUSHD MSG       ; Reference by label
+    POPZW ZP.STR
+    SYSCALL Print.String
+```
 
 ## Common Mistakes to Avoid
 
@@ -1119,6 +1192,20 @@ PUSHC               ; Get carry flag
 BZF failed          ; Branch if carry was clear
 ```
 
+### 8. Using String Literals Directly with PUSHD
+```asm
+; WRONG - Cannot use string literal directly
+PUSHD "filename.txt"    ; INVALID SYNTAX!
+
+; CORRECT - Define string in .DATA section
+.DATA
+    filename "filename.txt"
+
+.MAIN
+    PUSHD filename      ; Use the label
+    POPZW ZP.STR
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1137,5 +1224,6 @@ Key concepts to master:
 - DUMP opcode for debugging
 - Branch flag behavior (BZF branches when Z is false)
 - Using PUSHC to access carry flag for branching
+- **String literals must be defined in .DATA section and referenced by label**
 
-Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions!
+Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first!
