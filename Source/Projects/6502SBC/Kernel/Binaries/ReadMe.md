@@ -30,6 +30,7 @@ The adapter uses built-in pullups from the Motorola 6821 PIA, eliminating the ne
 ![MECB I/O card I2C adapter](MECBI2C.png)
 
 **Dave's version for the 24AA512:**
+
 ![MECB I/O card I2C adapter](MECBI2CFront.png)
 ![MECB I/O card I2C adapter](MECBI2CBack.png)
 
