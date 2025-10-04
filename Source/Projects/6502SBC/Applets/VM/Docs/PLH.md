@@ -1,7 +1,7 @@
 # PL/H Language Specification
 ## Minimal Bootstrap Language for Hopper 6502 VM
 
-### Version 1.1
+### Version 1.2
 
 ---
 
@@ -12,10 +12,10 @@ PL/H (Programming Language for Hopper) is a minimal systems programming language
 
 ### 1.2 Design Goals
 - **Minimal keyword count** (8 total)
-- **Single-character tokens** where possible  
+- **Single-character tokens** where possible
 - **Direct mapping** to stack machine operations
+- **Simplified parsing** (hex literals only, parenthesized conditionals)
 - **Minimal local variables** for recursion support
-- **No complex features** (no multiplication, no nested procedures, no parameters)
 - **Self-hosting capability** with practical compiler implementation
 
 ### 1.3 Target Architecture
@@ -33,6 +33,7 @@ The Hopper 6502 VM with:
 ### 2.1 Character Set
 - Letters: `a-z`, `A-Z`, `_`
 - Digits: `0-9`
+- Hex digits: `0-9`, `a-f`, `A-F`
 - Operators: `+` `-` `=` `<` `>` `!` `?` `:`
 - Delimiters: `{` `}` `(` `)` `[` `]` `;`
 - Special: `'` `"` `/`
@@ -53,30 +54,32 @@ return      - Exit procedure
 ```ebnf
 ident = letter { letter | digit }
 letter = "a".."z" | "A".."Z" | "_"
+digit = "0".."9"
 ```
 
 ### 2.4 Literals
 
-#### 2.4.1 Numeric Literals
+#### 2.4.1 Numeric Literals (Hexadecimal Only)
 ```ebnf
-number = digit { digit }
-digit = "0".."9"
+number = "0x" hex_digit { hex_digit }
+hex_digit = "0".."9" | "a".."f" | "A".."F"
 ```
-- Decimal only
-- Range: 0-65535 (word) or 0-255 (byte context)
+- Hexadecimal only in bootstrap version
+- Range: 0x00-0xFFFF (0-65535)
+- Examples: `0xFF`, `0x0A`, `0x1234`
 
 #### 2.4.2 Character Literals
 ```ebnf
 char_literal = "'" printable_char "'"
 ```
 - Single ASCII character
-- Examples: `'A'`, `'0'`, `' '`
+- Examples: `'A'`, `'0'`, `' '`, `'\n'`
 
 #### 2.4.3 String Literals
 ```ebnf
 string_literal = '"' { printable_char } '"'
 ```
-- Used only for constants and error messages
+- Used for constants and print statements
 - No escape sequences in bootstrap version
 
 ### 2.5 Comments
@@ -91,14 +94,16 @@ comment = "//" { any_char } newline
 ## 3. Types and Variables
 
 ### 3.1 Data Types
-- **byte**: 8-bit unsigned (0-255)
-- **word**: 16-bit unsigned (0-65535)
-- **arrays**: Fixed-size byte arrays only
+- **byte**: 8-bit value (0x00-0xFF)
+- **word**: 16-bit value (0x0000-0xFFFF)
+- **string**: Immutable string literals only
+- **arrays**: Fixed-size byte arrays
 
 Type is inferred from context:
 - Array elements are bytes
-- Numeric literals ≤255 are bytes
-- Numeric literals >255 are words
+- Numeric literals ≤0xFF are bytes
+- Numeric literals >0xFF are words
+- Function returns are unchecked
 
 ### 3.2 Global Variable Declarations
 ```ebnf
@@ -108,7 +113,7 @@ var_decl = "var" ident [ "[" number "]" ] ";"
 Global variables are allocated in the 256-byte global page:
 ```c
 var ch;             // Global byte/word variable
-var buffer[32];     // Global 32-byte array  
+var buffer[0x20];   // Global 32-byte array
 var count;          // Global counter
 ```
 
@@ -118,7 +123,7 @@ Local variables are declared within procedures and allocated on the stack:
 proc scan_number {
     var digit;      // Local byte variable
     var value;      // Local word variable
-    var temp[8];    // Local 8-byte array
+    var temp[0x08]; // Local 8-byte array
     
     // Procedure body
 }
@@ -131,9 +136,11 @@ const_decl = "const" ident "=" ( number | char_literal | string_literal ) ";"
 
 Examples:
 ```c
-const EOF = 255;
-const NEWLINE = 10;
+const EOF = 0xFF;           // -1 as unsigned byte
+const SPACE = 0x20;         // Space character
+const NEWLINE = 0x0A;       // Line feed
 const ERROR_MSG = "Syntax error\n";
+const OP_PUSHB = 0x04;      // VM opcode
 ```
 
 ### 3.5 Scope Rules
@@ -142,20 +149,6 @@ const ERROR_MSG = "Syntax error\n";
 - **Local variables**: Accessible only within declaring procedure
 - **Shadowing**: Local variables shadow globals with same name
 - No nested procedures (flat namespace)
-
-### 3.6 Stack Frame Layout
-```
-High Memory
-    [Local N]       <- BP-N
-    ...
-    [Local 2]       <- BP-2  
-    [Local 1]       <- BP-1
-    [Local 0]       <- BP+0 (first local)
-    [Saved BP]      <- BP+1
-    [Return Address (3 bytes)]
-    [Caller's locals...]
-Low Memory
-```
 
 ---
 
@@ -178,7 +171,9 @@ factor = ident
 
 call = "getc" "(" ")"
      | "emit" "(" expr ")"
-     | "print" "(" string_literal ")"
+     | "print" "(" expr | string_literal ")"
+     | "in" "(" ")"
+     | "out" "(" ")"
      | ident "(" ")"
 ```
 
@@ -198,17 +193,12 @@ call = "getc" "(" ")"
 - `>=` Greater than or equal
 
 #### 4.2.3 Assignment
-- `=` Assignment (not an expression)
+- `=` Assignment (statement, not expression)
 
 ### 4.3 Operator Precedence
-1. Primary (literals, identifiers, calls)
-2. Comparison operators  
+1. Primary (literals, identifiers, calls, parentheses)
+2. Comparison operators
 3. Addition and subtraction
-
-### 4.4 Variable Resolution
-1. Check local variables first
-2. Check global variables
-3. Report undefined error
 
 ---
 
@@ -226,7 +216,7 @@ statement = assignment
 
 assignment = ident [ "[" expr "]" ] "=" expr ";"
 
-conditional = expr "?" statement [ ":" statement ]
+conditional = "(" expr ")" "?" statement [ ":" statement ]
 
 loop_stmt = "loop" block
 
@@ -235,32 +225,38 @@ block = "{" { statement } "}"
 
 ### 5.2 Assignment Statement
 ```c
-x = 10;             // Assign to local or global
+x = 0x0A;           // Assign to variable
 buffer[i] = ch;     // Array element assignment
 ```
 
 ### 5.3 Conditional Statement
-Statement-based ternary operator:
+Parenthesized condition with optional else:
 ```c
-x == 5 ? emit(10);              // No else clause
-x == 5 ? emit(10) : emit(20);   // With else clause
+(x == 0x05) ? emit(0x0A);              // No else clause
+(x == 0x05) ? emit(0x0A) : emit(0x14); // With else clause
 
 // With blocks
-x == 5 ? {
-    emit(10);
-    count = count + 1;
+(x > 0x0A) ? {
+    print("Greater\n");
+    count = count + 0x01;
 } : {
-    emit(20);
+    print("Less or equal\n");
 }
+
+// Chained conditionals
+(x == 0x01) ? handle_one() :
+(x == 0x02) ? handle_two() :
+(x == 0x03) ? handle_three() :
+              handle_default();
 ```
 
 ### 5.4 Loop Statement
-Single loop construct with explicit break conditions:
+Single loop construct with explicit conditions:
 ```c
 loop {
     ch = getc();
-    ch == EOF ? break;
-    ch == ' ' ? continue;
+    (ch == 0xFF) ? break;      // EOF
+    (ch == 0x20) ? continue;    // Skip spaces
     emit(ch);
 }
 ```
@@ -268,7 +264,7 @@ loop {
 ### 5.5 Control Flow
 - `break` - Exit innermost loop
 - `continue` - Next iteration of innermost loop
-- `return` - Exit procedure (optional expression)
+- `return` - Exit procedure with optional value
 
 ---
 
@@ -283,31 +279,33 @@ local_var_decl = "var" ident [ "[" number "]" ] ";"
 
 ### 6.2 Local Variables
 - Allocated on stack frame
-- Initialized to undefined values
+- Not initialized (contain garbage)
 - Scope limited to procedure
 - Shadow global variables with same name
 
 ### 6.3 Restrictions
 - No parameters (use globals for communication)
 - No nested procedures
-- No forward declarations (must be defined before use)
+- No forward declarations (define before use)
 - Maximum size: 256 bytes of compiled code
-- Stack usage must fit within ~256 byte hardware stack
+- Stack usage must fit within ~256 byte limit
 
 ### 6.4 Example
 ```c
-proc parse_number {
-    var digit;
-    var value;
+proc skip_whitespace {
+    var ch;
     
-    value = 0;
     loop {
-        digit = ch - '0';
-        digit > 9 ? break;
-        value = value * 10 + digit;  // Would need multiply
         ch = getc();
+        (ch != 0x20) ? {            // Not space
+            (ch != 0x09) ? {        // Not tab
+                (ch != 0x0A) ? {    // Not newline
+                    pushback = ch;   // Save for later
+                    break;
+                }
+            }
+        }
     }
-    return value;
 }
 ```
 
@@ -315,32 +313,66 @@ proc parse_number {
 
 ## 7. Built-in Functions
 
-### 7.1 I/O Functions
+### 7.1 File Argument Functions
 
-#### 7.1.1 `getc()`
-- Returns: Next byte from input file
-- Returns 255 (EOF) at end of file
-- Input file is command line argument 1
+#### 7.1.1 `in()`
+- Returns: Input filename as string, or "" if no input file specified
+- Use: Check if input file was provided
 
-#### 7.1.2 `emit(byte)`
+#### 7.1.2 `out()`
+- Returns: Output filename as string, or "" if no output file specified
+- Use: Check if output file was provided
+
+### 7.2 I/O Functions
+
+#### 7.2.1 `getc()`
+- Returns: Next byte from input file (0x00-0xFF)
+- Returns: -1 (0xFFFFFFFF) if no input file or EOF
+- Input file specified by command line argument
+
+#### 7.2.2 `emit(byte)`
 - Parameters: Byte value to output
-- Effect: Writes byte to output file  
-- Output file is command line argument 2
+- Effect: Writes byte to output file
+- Effect: Does nothing if no output file specified
 
-#### 7.1.3 `print(string)`
-- Parameters: String literal
-- Effect: Writes string to console (for errors/debugging)
+#### 7.2.3 `print(value)`
+- Parameters: Integer expression, character, or string literal
+- Effect: Prints to console (stderr) for debugging
+- Behavior:
+  - Integer: Printed as decimal number
+  - Character: Printed as ASCII character
+  - String: Printed as-is
 
-### 7.2 Usage Example
+### 7.3 Usage Examples
 ```c
-proc copy_file {
-    var ch;
-    
-    loop {
-        ch = getc();
-        ch == 255 ? break;  // EOF
-        emit(ch);
+// Check for required files
+main {
+    (in() == "") ? {
+        print("Error: No input file specified\n");
+        return 0x01;
     }
+    
+    (out() == "") ? {
+        print("Error: No output file specified\n");
+        return 0x01;
+    }
+    
+    // Safe to proceed
+    compile_file();
+    return 0x00;
+}
+
+// Polymorphic print examples
+print(0x41);        // Prints: 65 (decimal)
+print('A');         // Prints: A
+print("Hello\n");   // Prints: Hello (with newline)
+
+// Safe reading
+proc read_char {
+    var ch;
+    ch = getc();
+    (ch == -0x01) ? return 0xFF;  // Convert to byte EOF
+    return ch;
 }
 ```
 
@@ -356,107 +388,129 @@ global_declaration = const_decl | var_decl
 ```
 
 ### 8.2 Execution Model
-1. Runtime opens input file (arg 1) and output file (arg 2)
-2. Global variables initialized to zero
-3. Execution begins at `main`
-4. Return value from main is program exit code
-5. Files automatically closed on exit
+1. Parse command line arguments
+2. If files specified, open them
+3. Global variables initialized to zero
+4. Execution begins at `main`
+5. Return value from main is program exit code (0 = success)
+6. Files automatically closed on exit
 
-### 8.3 Complete Example: Expression Compiler
+### 8.3 Complete Example: Hex Tokenizer
 ```c
-// Minimal expression compiler with locals
-const EOF = 255;
-const TK_NUMBER = 1;
-const TK_PLUS = 2;
-const OP_PUSHB = 0x04;
-const OP_ADDB = 0x24;
+// Minimal hex number tokenizer
+const EOF = 0xFF;
+const TK_NUMBER = 0x01;
+const TK_IDENT = 0x02;
+const TK_ERROR = 0xFF;
 
-var token;          // Current token (global)
-var value;          // Token value (global)  
-var ch;             // Current character (global)
+var token;
+var value;
+var ch;
+
+proc is_hex_digit {
+    (ch >= '0') ? {
+        (ch <= '9') ? return 0x01;
+    }
+    (ch >= 'a') ? {
+        (ch <= 'f') ? return 0x01;
+    }
+    (ch >= 'A') ? {
+        (ch <= 'F') ? return 0x01;
+    }
+    return 0x00;
+}
+
+proc hex_digit_value {
+    (ch >= '0') ? {
+        (ch <= '9') ? return ch - '0';
+    }
+    (ch >= 'a') ? {
+        (ch <= 'f') ? return ch - 'a' + 0x0A;
+    }
+    return ch - 'A' + 0x0A;
+}
+
+proc scan_hex {
+    var digit;
+    
+    value = 0x00;
+    loop {
+        (is_hex_digit() == 0x00) ? break;
+        digit = hex_digit_value();
+        // Note: Need shift operator in real implementation
+        // value = (value << 4) | digit;
+        value = value * 0x10 + digit;  // Temporary workaround
+        ch = getc();
+    }
+    token = TK_NUMBER;
+}
 
 proc next_token {
-    var start;
-    
     // Skip whitespace
     loop {
-        ch == ' ' ? { ch = getc(); continue; }
-        ch == '\n' ? { ch = getc(); continue; }
+        (ch == 0x20) ? { ch = getc(); continue; }  // Space
+        (ch == 0x0A) ? { ch = getc(); continue; }  // Newline
+        (ch == 0x09) ? { ch = getc(); continue; }  // Tab
         break;
     }
     
-    // Check for number
-    ch >= '0' ? {
-        ch <= '9' ? {
-            value = 0;
-            loop {
-                ch < '0' ? break;
-                ch > '9' ? break;
-                value = value * 10;  // Would need multiply
-                value = value + (ch - '0');
-                ch = getc();
-            }
-            token = TK_NUMBER;
+    // Check for hex number
+    (ch == '0') ? {
+        ch = getc();
+        (ch == 'x') ? {
+            ch = getc();
+            scan_hex();
             return;
         }
-    }
-    
-    // Single character tokens
-    ch == '+' ? {
-        token = TK_PLUS;
-        ch = getc();
+        print("Error: Only hex literals (0x...) supported\n");
+        token = TK_ERROR;
         return;
     }
     
+    // Check EOF
+    (ch == -0x01) ? {
+        token = EOF;
+        return;
+    }
+    
+    // Single character token
     token = ch;
     ch = getc();
 }
 
-proc compile_factor {
-    var saved_value;
-    
-    token == TK_NUMBER ? {
-        saved_value = value;
-        emit(OP_PUSHB);
-        emit(saved_value);
-        next_token();
-        return;
-    }
-    
-    token == '(' ? {
-        next_token();
-        compile_expr();
-        token != ')' ? {
-            print("Expected )\n");
-            return 1;
-        }
-        next_token();
-    }
-}
-
-proc compile_expr {
-    var op;
-    
-    compile_factor();
-    loop {
-        token != TK_PLUS ? break;
-        op = token;
-        next_token();
-        compile_factor();
-        emit(OP_ADDB);
-    }
-}
-
 main {
-    ch = getc();
-    next_token();
-    
-    loop {
-        token == EOF ? break;
-        compile_expr();
+    // Validate arguments
+    (in() == "") ? {
+        print("Usage: tokenizer input.plh output.tok\n");
+        return 0x01;
     }
     
-    return 0;
+    // Initialize
+    ch = getc();
+    (ch == -0x01) ? {
+        print("Error: Cannot read input file\n");
+        return 0x01;
+    }
+    
+    // Process tokens
+    loop {
+        next_token();
+        (token == EOF) ? break;
+        
+        (token == TK_NUMBER) ? {
+            (out() != "") ? {
+                emit(TK_NUMBER);
+                emit(value);  // Emit value bytes
+            }
+            continue;
+        }
+        
+        print("Unknown token: ");
+        print(token);
+        print("\n");
+    }
+    
+    return 0x00;
 }
 ```
 
@@ -465,92 +519,88 @@ main {
 ## 9. Code Generation
 
 ### 9.1 Stack Frame Instructions
-Procedures with locals generate frame management:
 ```
 ENTER n     (0x90)  - Allocate n bytes for locals
 LEAVE       (0x92)  - Restore stack frame
-PUSHLB      (0x64)  - Push local byte
-PUSHLW      (0x66)  - Push local word  
+PUSHLB      (0x64)  - Push local byte (BP+offset)
+PUSHLW      (0x66)  - Push local word (BP+offset)
 POPLB       (0x6A)  - Pop to local byte
 POPLW       (0x6C)  - Pop to local word
 ```
 
-### 9.2 Target Instructions
-Primary opcodes for code generation:
+### 9.2 Primary VM Opcodes
 ```
-PUSHB (0x04)    - Push byte immediate
-PUSHW (0x0A)    - Push word immediate
+PUSHB  (0x04)   - Push byte immediate
+PUSHW  (0x0A)   - Push word immediate
 PUSHGB (0x70)   - Push global byte
 PUSHGW (0x72)   - Push global word
-POPGB (0x74)    - Pop to global byte
-POPGW (0x76)    - Pop to global word
-PUSHLB (0x64)   - Push local byte (BP+offset)
-POPLB (0x6A)    - Pop to local byte (BP+offset)
-ADDB (0x24)     - Add bytes
-ADDW (0x2A)     - Add words
-SUBB (0x26)     - Subtract bytes
-SUBW (0x2C)     - Subtract words
-EQB (0x34)      - Compare equal (bytes)
-BZF (0x80)      - Branch if zero flag clear
-BNZF (0x84)     - Branch if zero flag set
-BRAR (0x7E)     - Branch relative backward
-BRAF (0x7C)     - Branch relative forward
-CALL (0x88)     - Call procedure
-RET (0x8A)      - Return from procedure
-HALT (0x02)     - End program
+POPGB  (0x74)   - Pop to global byte
+POPGW  (0x76)   - Pop to global word
+ADDB   (0x24)   - Add bytes
+ADDW   (0x2A)   - Add words
+SUBB   (0x26)   - Subtract bytes
+SUBW   (0x2C)   - Subtract words
+EQB    (0x34)   - Compare equal (bytes)
+EQW    (0x3C)   - Compare equal (words)
+NEB    (0x36)   - Compare not equal (bytes)
+NEW    (0x3E)   - Compare not equal (words)
+LTB    (0x38)   - Less than (bytes)
+LTW    (0x40)   - Less than (words)
+LEB    (0x3A)   - Less or equal (bytes)
+LEW    (0x42)   - Less or equal (words)
+BZF    (0x80)   - Branch forward if Z clear
+BZR    (0x82)   - Branch backward if Z clear
+BNZF   (0x84)   - Branch forward if Z set
+BNZR   (0x86)   - Branch backward if Z set
+BRAF   (0x7C)   - Branch relative forward
+BRAR   (0x7E)   - Branch relative backward
+CALL   (0x88)   - Call procedure
+RET    (0x8A)   - Return from procedure
+HALT   (0x02)   - End program
 ```
 
-### 9.3 Code Patterns
+### 9.3 Code Generation Patterns
 
-#### Procedure with Locals
+#### Parenthesized Conditional
 ```c
-proc example {
-    var x;
-    var y;
-    x = 10;
-    y = x + 5;
+(x == 0x05) ? emit(0x0A) : emit(0x14);
+```
+Generates:
+```asm
+PUSHGB x_offset
+PUSHB 0x05
+EQB
+BZF else_label      ; Branch if not equal
+PUSHB 0x0A
+CALL emit
+BRAF end_label
+else_label:
+PUSHB 0x14
+CALL emit
+end_label:
+```
+
+#### Loop with Break
+```c
+loop {
+    ch = getc();
+    (ch == 0xFF) ? break;
+    emit(ch);
 }
 ```
 Generates:
 ```asm
-example:
-ENTER 2         ; 2 bytes for locals
-PUSHB 10
-POPLB 0         ; x is at BP+0
-PUSHLB 0        ; Load x
-PUSHB 5
-ADDB
-POPLB -1        ; y is at BP-1
-LEAVE
-RET
-```
-
-#### Local vs Global Access
-```c
-var global_x;
-
-proc test {
-    var local_x;
-    
-    local_x = 10;   // Uses POPLB
-    global_x = 20;  // Uses POPGB
-}
-```
-
-#### Loop with Local Counter
-```c
-proc count_chars {
-    var count;
-    var ch;
-    
-    count = 0;
-    loop {
-        ch = getc();
-        ch == EOF ? break;
-        count = count + 1;
-    }
-    return count;
-}
+loop_start:
+CALL getc
+POPGB ch_offset
+PUSHGB ch_offset
+PUSHB 0xFF
+EQB
+BNZF loop_end      ; Branch if equal
+PUSHGB ch_offset
+CALL emit
+BRAR loop_start
+loop_end:
 ```
 
 ---
@@ -560,7 +610,7 @@ proc count_chars {
 ### 10.1 Memory Layout
 ```
 Global Page (256 bytes):
-  0x00-0xFF:  Global variables
+  0x00-0xFF:  Global variables and arrays
 
 Stack (256 bytes):
   - Function return addresses (3 bytes each)
@@ -568,168 +618,102 @@ Stack (256 bytes):
   - Local variables
   - Expression evaluation stack
   
-Heap: 
-  - Not used in bootstrap version
+Code Pages:
+  - One 256-byte page per procedure
+  - Main procedure gets its own page
 ```
 
-### 10.2 Stack Usage
-Each procedure call uses:
-- 3 bytes: return address
-- 1 byte: saved BP
-- N bytes: local variables
-- Variable: expression evaluation
-
-Maximum practical call depth: 8-10 levels
-
-### 10.3 Local Variable Offsets
+### 10.2 Stack Frame Layout
 ```
-First local:  BP+0
-Second local: BP-1
-Third local:  BP-2
-Array local:  BP+0 to BP-(size-1)
+High Memory
+    [Saved BP]      <- BP+1
+    [Local 0]       <- BP+0 (first local)
+    [Local 1]       <- BP-1
+    [Local 2]       <- BP-2
+    ...
+Low Memory
 ```
+
+### 10.3 Stack Usage
+- Each call: 4 bytes overhead (3 return address, 1 saved BP)
+- Plus local variables
+- Plus expression evaluation
+- Maximum practical depth: 8-10 nested calls
 
 ---
 
 ## 11. Symbol Table
 
 ### 11.1 Structure
-The compiler maintains a symbol table with:
-```c
-// Compiler's internal structure (conceptual)
-struct symbol {
-    name[16];       // Identifier name
-    type;           // CONST, VAR, PROC, LOCAL
-    scope;          // GLOBAL or procedure name
-    offset;         // Memory offset or value
-    size;           // For arrays
-}
-```
+The compiler maintains symbols for:
+- Global variables with offsets (0x00-0xFF)
+- Local variables with stack offsets (BP+0, BP-1, etc.)
+- Constants with values
+- Procedures with code addresses
+- Arrays with sizes
 
 ### 11.2 Resolution Order
 1. Search local variables of current procedure
 2. Search global variables
 3. Search constants
 4. Search procedures
-5. Report undefined
+5. Report undefined error
 
 ---
 
 ## 12. Limitations and Constraints
 
-### 12.1 Memory Constraints
-- Global variables: 256 bytes total
-- Stack depth: ~256 bytes (shared with calls and locals)
-- Function size: 256 bytes maximum
-- Local variables: Limited by stack space
-- No dynamic memory allocation
+### 12.1 Bootstrap Version Limitations
+- **Hex literals only** (no decimal in bootstrap)
+- **No multiplication/division** (shifts can substitute)
+- **No bitwise operators** (except in extensions)
+- **No string variables** (only literals)
+- **No type checking** (bytes and words intermixed)
 
-### 12.2 Language Limitations
-- No multiplication or division operators (in bootstrap)
-- No floating point
-- No strings (except literals)
-- No structures or unions
-- No pointers
+### 12.2 Memory Constraints
+- Global variables: 256 bytes maximum
+- Stack: ~256 bytes total (shared)
+- Procedure size: 256 bytes of code maximum
+- No dynamic allocation
+
+### 12.3 Language Constraints
 - No procedure parameters
-- Limited recursion (stack depth)
-- No type declarations
-
-### 12.3 Implementation Notes
-- Two-pass compilation may be needed for forward references
-- Symbol table can be fixed-size array
-- No optimization required
-- Direct code emission (no intermediate representation)
+- No nested procedures
+- No forward declarations
+- Limited recursion depth
+- No floating point
+- No pointers
+- No structures
 
 ---
 
 ## 13. Error Handling
 
 ### 13.1 Compile-Time Errors
-The compiler reports:
-- Syntax errors with line numbers
-- Undefined identifiers
-- Duplicate definitions
-- Stack overflow (too many locals)
-
-### 13.2 Runtime Errors
-No runtime error checking in bootstrap version:
-- Stack overflow is not detected
-- Array bounds not checked
-
-### 13.3 Error Reporting Example
 ```c
-proc error_undefined {
-    var name_len;
-    
-    print("Undefined: ");
-    // Print identifier name
+proc error {
+    print("Error at line ");
+    print(line_number);
+    print(": ");
+    print(error_message);
     print("\n");
-    return 1;
-}
-
-proc expect {
-    var expected;
-    
-    expected = expected_token;  // From global
-    token != expected ? {
-        print("Expected token ");
-        print_number(expected);
-        print(" but got ");
-        print_number(token);
-        print("\n");
-        error_count = error_count + 1;
+    error_count = error_count + 0x01;
+    (error_count > 0x0A) ? {
+        print("Too many errors, aborting\n");
+        halt();
     }
 }
 ```
 
----
-
-## 14. Bootstrap Plan
-
-### 14.1 Stage 0: VM Assembly Implementation
-Write initial PL/H compiler in VM assembly (~2500-3500 lines)
-- Hand-coded recursive descent parser
-- Manual stack frame management
-- Fixed-size symbol table
-
-### 14.2 Stage 1: Self-Hosting
-Rewrite compiler in PL/H itself (~600-900 lines)
-- Cleaner with local variables
-- Natural recursion for parsing
-- Same algorithms as assembly version
-
-### 14.3 Stage 2: Extended Language
-Add features once self-hosting:
-- Multiplication/division operators
-- Procedure parameters
-- Larger local variable space
-- Better string support
-- Optimization passes
+### 13.2 Runtime Behavior
+- No bounds checking
+- Stack overflow unchecked
+- Invalid memory access undefined
+- Division by zero not applicable
 
 ---
 
-## Appendix A: Reserved Words
-
-The following identifiers are reserved:
-```
-const, var, proc, main, loop, break, continue, return,
-getc, emit, print
-```
-
-## Appendix B: ASCII Values
-
-Common ASCII values for the bootstrap compiler:
-```
-'\n' = 10    ' ' = 32     '0' = 48     'A' = 65     'a' = 97
-'\t' = 9     '!' = 33     '9' = 57     'Z' = 90     'z' = 122
-EOF = 255    '=' = 61     '<' = 60     '>' = 62     '?' = 63
-             '(' = 40     ')' = 41     '{' = 123    '}' = 125
-             '[' = 91     ']' = 93     ';' = 59     ':' = 58
-             '/' = 47     '+' = 43     '-' = 45     '"' = 34
-             '\'' = 39
-```
-
-## Appendix C: Complete Grammar Summary
+## 14. Complete Grammar
 
 ```ebnf
 program = { global_declaration } { proc_decl } "main" block
@@ -756,7 +740,7 @@ statement = assignment
 
 assignment = ident [ "[" expr "]" ] "=" expr ";"
 
-conditional = expr "?" statement [ ":" statement ]
+conditional = "(" expr ")" "?" statement [ ":" statement ]
 
 loop_stmt = "loop" block
 
@@ -775,6 +759,88 @@ factor = ident
 
 call = "getc" "(" ")"
      | "emit" "(" expr ")"
-     | "print" "(" string_literal ")"
+     | "print" "(" expr | string_literal ")"
+     | "in" "(" ")"
+     | "out" "(" ")"
      | ident "(" ")"
+
+number = "0x" hex_digit { hex_digit }
+
+hex_digit = "0".."9" | "a".."f" | "A".."F"
+
+char_literal = "'" printable_char "'"
+
+string_literal = '"' { printable_char } '"'
+
+ident = letter { letter | digit }
+
+letter = "a".."z" | "A".."Z" | "_"
+
+digit = "0".."9"
+
+comment = "//" { any_char } newline
+```
+
+---
+
+## 15. Bootstrap Plan
+
+### 15.1 Stage 0: VM Assembly Bootstrap
+- Write PL/H compiler in VM assembly (~2500-3000 lines)
+- Supports hex literals only
+- Minimal error checking
+- Direct code emission
+
+### 15.2 Stage 1: Self-Hosting
+- Rewrite compiler in PL/H (~600-800 lines)
+- Same features as Stage 0
+- Cleaner implementation with locals
+
+### 15.3 Stage 2: Enhanced Compiler
+Once self-hosting, add:
+- Decimal literals
+- Shift operators (`<<`, `>>`)
+- Multiplication/division
+- Procedure parameters
+- Better error messages
+
+---
+
+## Appendix A: Reserved Words
+
+```
+const, var, proc, main, loop, break, continue, return,
+getc, emit, print, in, out
+```
+
+## Appendix B: ASCII Values (Hex)
+
+```
+'\n' = 0x0A    ' '  = 0x20    '0' = 0x30    'A' = 0x41    'a' = 0x61
+'\t' = 0x09    '!'  = 0x21    '9' = 0x39    'Z' = 0x5A    'z' = 0x7A
+'\r' = 0x0D    '"'  = 0x22    ':' = 0x3A    '[' = 0x5B    '{' = 0x7B
+EOF  = 0xFF    '#'  = 0x23    ';' = 0x3B    ']' = 0x5D    '}' = 0x7D
+               '\'' = 0x27    '<' = 0x3C    '_' = 0x5F    
+               '('  = 0x28    '=' = 0x3D
+               ')'  = 0x29    '>' = 0x3E
+               '+'  = 0x2B    '?' = 0x3F
+               '-'  = 0x2D    
+               '/'  = 0x2F
+```
+
+## Appendix C: VM Opcode Quick Reference
+
+```
+0x02  HALT        0x24  ADDB        0x3C  EQW         0x70  PUSHGB
+0x04  PUSHB       0x26  SUBB        0x3E  NEW         0x72  PUSHGW
+0x06  PUSHB0      0x2A  ADDW        0x40  LTW         0x74  POPGB
+0x08  PUSHB1      0x2C  SUBW        0x42  LEW         0x76  POPGW
+0x0A  PUSHW       0x34  EQB         0x64  PUSHLB      0x7C  BRAF
+0x0C  PUSHW0      0x36  NEB         0x66  PUSHLW      0x7E  BRAR
+0x0E  PUSHW1      0x38  LTB         0x6A  POPLB       0x80  BZF
+0x1A  DROPB       0x3A  LEB         0x6C  POPLW       0x82  BZR
+0x1C  DROPW                                           0x84  BNZF
+0x90  ENTER                                           0x86  BNZR
+0x92  LEAVE                                           0x88  CALL
+0x8A  RET                                            0x8C  SYSCALL
 ```
