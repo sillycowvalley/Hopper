@@ -8,9 +8,13 @@ program R6502
     //#define EXPORT_C // uncomment to export for .c for Arduino for RetroShields
     
     // This cannot be in '/Bin/Options/Configuration.options':
-    //#define CPU_65C02S  // Rockwell and WDC 65C02S
-    #define CPU_65C02     // WDC 65C02
-    //#define CPU_6502    // MOS
+    #define UNIVERSAL
+    
+#ifdef UNIVERSAL        
+    #define CPU_65C02 // WDC 65C02
+#else
+    #define CPU_65C02S // Rockwell and WDC 65C02S
+#endif
     
 #if defined(CPU_6502) && defined(FAST_6502_RUNTIME)
     #error "'FAST_6502_RUNTIME' only supported for 65C02S" // comment out in '/Bin/Options/Configuration.options'
@@ -346,9 +350,8 @@ program R6502
 #endif
         Serial.WaitForChar(); // <enter>
         
-        // Y is zero now
-        STY IDYH
-        STY IDYL
+        STZ IDYH
+        STZ IDYL
         loop
         {
             loadRecord();
