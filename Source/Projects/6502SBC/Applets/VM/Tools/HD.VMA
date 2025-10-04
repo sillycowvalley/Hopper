@@ -1,7 +1,15 @@
 .CONST
+    ZP.ACC       0x10
     ZP.TOP       0x12
     ZP.NEXT      0x16
     ZP.STR       0x1E
+    
+    ZP.IDX       0x1A
+    
+    ZP.BUF       0x80
+    
+    Mem.Allocate  0x00
+    Mem.Free      0x01
     
     Print.String  0x11
     Print.Char    0x12
@@ -18,6 +26,7 @@
     hexAddress    -2
     
     counter        0
+    counter2      -1
 
 .DATA
     STR0 "r"
@@ -46,7 +55,7 @@
     RET
     
 .FUNC PrintASCII
-    ENTER 1
+    ENTER 2
     
     PUSHB ' '
     POPA
@@ -80,19 +89,43 @@ more_spaces:
     BRAR more_spaces
     
 spaces_done:
+
+    ; reuse the counter
+    PUSHLB 5
+    POPLB counter
     
-    ; Address is at BP+6 (high), BP+7 (low)
-    PUSHLB 6             ; High byte
+    PUSHB0
+    POPLB counter2
+    
+more_ascii:
+    PUSHLB counter
+    BZF ascii_done
+    
+    PUSHB '.'
     POPA
-    SYSCALL Print.Hex
+    SYSCALL Print.Char
     
-    PUSHLB 7             ; Low byte
+    INCLB counter2
+    PUSHLB counter2
+    PUSHB 8
+    EQB
+    BZF no_extra
+    
+    PUSHB ' '
     POPA
-    SYSCALL Print.Hex
+    SYSCALL Print.Char
     
-    ; Clean up 1 byte
-    DROPB
+no_extra:
+    PUSHLB counter
+    PUSHB1
+    SUBB
+    POPLB counter
     
+    BRAR more_ascii
+    
+ascii_done:
+    ; Clean up 2 bytes
+    DROPW
     LEAVE
     RET
 
@@ -164,10 +197,9 @@ skip_space:
     EQB
     BZR main_loop        ; If not 16 yet, continue reading
     
-    PUSHLW hexAddress
     PUSHLB byteCount
     CALL PrintASCII
-    DROPW DROPB ; Clean the argument
+    DROPB ; Clean the argument
     
     ; Reset byte count and advance address
     PUSHB0
@@ -215,7 +247,18 @@ end_loop:
     
     PUSHZW ZP.TOP ; save the file handle
     
+    PUSHW 16
+    POPZW ZP.ACC
+    CALL Mem.Allocate
+    PUSHZW ZP.IDX
+    POPZW  ZP.BUF
+    
     CALL ProcessFile
+    
+    PUSHZW ZP.BUF
+    POPZW  ZP.IDX
+    
+    CALL Mem.Free
     
     POPZW ZP.NEXT ; restore the file handle
     SYSCALL FClose
