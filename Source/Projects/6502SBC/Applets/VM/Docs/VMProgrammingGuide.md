@@ -64,10 +64,10 @@ High Memory (Higher addresses)
     ...
     [Argument 2]            ; Second argument
     [Argument 1]            ; First argument pushed
-    [Return PC (Y)]         ; 1 byte - PC within calling function's page
+    [Return Y]              ; 1 byte - PC within calling function's page
     [Return Page Low]       ; 2 bytes - calling function's page address
     [Return Page High]      
-    [Saved BP]              ; Previous base pointer (saved at BP-1)
+    [Saved BP]              ; Previous base pointer
     [Local 1]               ; <-- BP points here (first local at BP+0)
     [Local 2]               ; BP-1 (second local)
     [Local 3]               ; BP-2 (third local)
@@ -77,22 +77,24 @@ Low Memory (Lower addresses)
 
 ### Critical Stack Frame Facts:
 - **BP points to the first local variable** (not to saved BP)
-- **Saved BP is at BP-1** (one byte below BP)
+- **Saved BP is at BP+1** (one byte above BP)
 - **First local variable is at BP+0**
-- **Arguments start at BP+3** for single-byte values
+- **Arguments start at BP+5** for single-byte values
 - **Return address is 3 bytes total**: Y (1 byte) + codePage (2 bytes)
+- **Saved BP is at BP+1** (between locals and return address)
 
 ### Accessing Variables:
 ```asm
 ; Arguments (positive offsets from BP):
-PUSHLB 3            ; First 8-bit argument
-PUSHLB 4            ; Second 8-bit argument
-PUSHLW 3            ; First 16-bit argument (uses BP+3 and BP+4)
+PUSHLB 5            ; First 8-bit argument at BP+5
+PUSHLB 6            ; Second 8-bit argument at BP+6
+PUSHLW 5            ; First 16-bit argument (uses BP+5 and BP+6)
+PUSHLW 7            ; Second 16-bit argument (uses BP+7 and BP+8)
 
 ; Local variables (BP+0 and negative offsets):
 PUSHLB 0            ; First local (at BP+0)
-PUSHLB -1           ; Second local
-PUSHLB -2           ; Third local
+PUSHLB -1           ; Second local at BP-1
+PUSHLB -2           ; Third local at BP-2
 POPLW 0             ; Store 16-bit at first two locals (BP+0, BP-1)
 ```
 
@@ -845,12 +847,12 @@ file_error:
 .FUNC PrintAddress
     ENTER 0             ; No locals
     
-    ; Arguments at BP+3, BP+4
-    PUSHLB 3            ; High byte
+    ; Arguments at BP+5, BP+6
+    PUSHLB 5            ; High byte
     POPA
     SYSCALL Print.Hex
     
-    PUSHLB 4            ; Low byte
+    PUSHLB 6            ; Low byte
     POPA
     SYSCALL Print.Hex
     
@@ -959,7 +961,9 @@ SHLW 8              ; Result: 0x0100
 ENTER 2             ; Allocates 2 bytes
 ; First local:  BP+0
 ; Second local: BP-1
-; First arg:    BP+3 (8-bit) or BP+3,BP+4 (16-bit)
+; First 8-bit arg:  BP+5
+; Second 8-bit arg: BP+6
+; First 16-bit arg: BP+5, BP+6
 ```
 
 ### 2. Always Initialize Local Variables
@@ -1012,7 +1016,18 @@ Use EQB/EQW for equality tests to avoid confusion.
 
 ## Common Mistakes to Avoid
 
-### 1. Wrong Local Variable Offset
+### 1. Wrong Argument Offset
+```asm
+; WRONG - Using BP+3 for first argument
+ENTER 2
+PUSHLB 3           ; NO! First argument is at BP+5
+
+; CORRECT
+ENTER 2
+PUSHLB 5            ; First argument at BP+5
+```
+
+### 2. Wrong Local Variable Offset
 ```asm
 ; WRONG - Negative offset for first local
 ENTER 2
@@ -1023,7 +1038,7 @@ ENTER 2
 PUSHLB 0            ; First local at BP+0
 ```
 
-### 2. Forgetting Stack Cleanup
+### 3. Forgetting Stack Cleanup
 ```asm
 ; WRONG
 PUSHW value
@@ -1036,7 +1051,7 @@ CALL Function
 DROPW               ; Clean up argument
 ```
 
-### 3. Not Marshalling to Zero Page
+### 4. Not Marshalling to Zero Page
 ```asm
 ; WRONG
 SYSCALL FGetC       ; No handle in NEXT!
@@ -1047,7 +1062,7 @@ POPZW ZP.NEXT
 SYSCALL FGetC
 ```
 
-### 4. Assuming Zero Page Preserved
+### 5. Assuming Zero Page Preserved
 Zero page marshalling registers are volatile:
 ```asm
 ; WRONG
@@ -1060,7 +1075,7 @@ POPZW ZP.STR
 SYSCALL Print.String ; Use immediately
 ```
 
-### 5. Confusing BZF/BNZF Behavior
+### 6. Confusing BZF/BNZF Behavior
 ```asm
 ; After EQW instruction:
 ; Z=1 if values were equal
@@ -1081,7 +1096,7 @@ The Hopper VM provides exceptional code density (8-10× better than native 6502)
 5. Compact bytecode representation
 
 Key concepts to master:
-- Stack frame layout (BP+0 for first local, BP-1 for saved BP)
+- Stack frame layout (**BP+5 for first argument**, BP+0 for first local, BP+1 for saved BP)
 - Complete instruction set including bitwise, global, and 32-bit operations
 - Zero page marshalling for BIOS calls
 - SYSCALL parameter conventions
@@ -1089,4 +1104,4 @@ Key concepts to master:
 - DUMP opcode for debugging
 - Branch flag behavior (BZF branches when Z is false)
 
-The three example programs (Type.VMA, ZP.VMA, HexDump.VMA) demonstrate all essential patterns for successful VM programming.
+Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access.
