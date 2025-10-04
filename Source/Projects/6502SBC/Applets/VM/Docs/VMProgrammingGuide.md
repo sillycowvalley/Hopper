@@ -13,7 +13,7 @@ System functionality is accessed through SYSCALL instructions that invoke BIOS f
 
 ### 3. Program Structure
 Every VM program consists of:
-- `.CONST` section - Define constants and zero page mappings
+- `.CONST` section - Define constants, zero page mappings, and global variable offsets
 - `.DATA` section - String constants
 - `.FUNC` sections - User-defined functions
 - `.MAIN` section - Program entry point
@@ -41,6 +41,106 @@ SYSCALL ArgGet
 ; ZP.STR now points to filename
 ```
 
+## Global Variables - The 256-Byte Global Page
+
+The VM provides a dedicated 256-byte page (Page 1) for global variables accessible from any function. This is separate from the stack and provides persistent storage throughout program execution.
+
+### Defining Global Variables
+Global variables are defined in the `.CONST` section as offsets from 0x00:
+
+```asm
+.CONST
+    ; Global variable offsets (256 bytes available)
+    GP.Counter   0x00   ; Single byte at offset 0
+    GP.Total     0x01   ; Word at offset 1-2 (define both for clarity)
+    GP.TotalH    0x02   ; High byte of Total
+    
+    ; For 32-bit values, use descriptive naming:
+    GP.START.LOW  0x03   ; Low word of 32-bit timestamp
+    GP.START.HIGH 0x05   ; High word of 32-bit timestamp
+    
+    ; Arrays and buffers
+    GP.Buffer    0x07   ; Start of 16-byte buffer
+    GP.BufferEnd 0x16   ; End marker
+    
+    ; Complex structures
+    GP.Player.X  0x17   ; Player X coordinate
+    GP.Player.Y  0x18   ; Player Y coordinate
+    GP.Player.HP 0x19   ; Player hit points (word)
+```
+
+### Accessing Global Variables
+
+#### Byte Operations
+```asm
+; Write byte to global
+PUSHB 42
+POPGB GP.Counter    ; Store 42 in Counter
+
+; Read byte from global
+PUSHGB GP.Counter   ; Push Counter value to stack
+POPA               ; Move to A register
+```
+
+#### Word Operations
+```asm
+; Write word to global
+PUSHW 1000
+POPGW GP.Total      ; Store 1000 in Total (2 bytes)
+
+; Read word from global
+PUSHGW GP.Total     ; Push Total value to stack
+```
+
+#### 32-bit Value Pattern
+For 32-bit values, split them across two word slots:
+
+```asm
+; Store 32-bit value in globals (from Test.VMA example)
+SYSCALL Time.Millis     ; Get 32-bit milliseconds in ZP.TOP
+PUSHZQ ZP.TOP          ; Push all 32 bits
+POPGW GP.START.HIGH    ; Pop high word first
+POPGW GP.START.LOW     ; Pop low word second
+
+; Retrieve 32-bit value from globals
+PUSHGW GP.START.LOW    ; Push low word first
+PUSHGW GP.START.HIGH   ; Push high word second
+POPZQ ZP.TOP          ; Pop as 32-bit value to ZP.TOP
+```
+
+### Global Variable Best Practices
+
+1. **Organize by Function**: Group related globals together
+```asm
+; Game state (0x00-0x0F)
+GP.Level     0x00
+GP.Score     0x01   ; Word
+GP.Lives     0x03
+
+; Player data (0x10-0x1F)
+GP.Player.X  0x10
+GP.Player.Y  0x11
+```
+
+2. **Document Usage**: Always comment what each global stores
+```asm
+GP.Flags     0x20   ; Bit 0: game active, Bit 1: paused, Bit 2: muted
+```
+
+3. **Use Meaningful Names**: Prefix with `GP.` for clarity
+```asm
+GP.TempWord  0x30   ; Temporary storage for calculations
+```
+
+4. **Consider Alignment**: Word values don't need alignment but grouping them can improve readability
+
+5. **Reserve Space for Growth**: Leave gaps for future additions
+```asm
+; Network state (0x40-0x5F) - 32 bytes reserved
+GP.NET.Status 0x40
+; ... room for expansion
+```
+
 ## Simple Hello World Example
 ```asm
 ; Simple Hello World program
@@ -56,6 +156,87 @@ SYSCALL ArgGet
     POPZW ZP.STR        ; Marshal to BIOS
     SYSCALL Print.String ; Print it
     HALT                ; Return to BIOS
+```
+
+## Complete Example with Globals (Test.VMA Pattern)
+This example shows proper global variable usage for timing measurements:
+
+```asm
+.CONST
+    ZP.TOP       0x12
+    ZP.TOP2      0x14
+    ZP.NEXT      0x16
+    ZP.NEXT2     0x18
+    ZP.STR       0x1E
+    
+    Time.Delay   0x17
+    Time.Millis  0x18
+    Time.Seconds 0x19
+    Long.Sub     0x1B
+    Long.Print   0x1F
+    Print.String 0x11
+    
+    ; Global variable offsets
+    GP.START.LOW  0x00   ; start millis low word
+    GP.START.HIGH 0x02   ; start millis high word
+    
+.DATA
+    STR1 " ms (start)\n"
+    STR2 " ms (current)\n"
+    STR3 " ms (elapsed)\n"
+    
+.MAIN
+    ENTER 0
+    ; Get start millis
+    SYSCALL Time.Millis     ; Result in ZP.TOP
+    
+    ; Save to globals
+    PUSHZQ ZP.TOP
+    POPGW GP.START.HIGH
+    POPGW GP.START.LOW
+    
+    ; Print start time
+    SYSCALL Long.Print
+    PUSHD STR1
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    ; Delay 100ms
+    PUSHW 100
+    PUSHW0
+    POPZQ ZP.TOP
+    SYSCALL Time.Delay
+    
+    ; Get current millis
+    SYSCALL Time.Millis     ; Result in ZP.TOP
+    
+    ; Print current time
+    PUSHZQ ZP.TOP
+    
+    SYSCALL Long.Print
+    PUSHD STR2
+    POPZW ZP.STR
+    SYSCALL Print.String
+    POPZQ ZP.NEXT          ; Pop current time to NEXT
+    
+    ; Load start time from globals to TOP
+    PUSHGW GP.START.LOW
+    PUSHGW GP.START.HIGH
+    POPZQ ZP.TOP
+    
+    SYSCALL Long.Sub       ; NEXT = NEXT - TOP
+    
+    ; Move result from NEXT to TOP for printing
+    PUSHZQ ZP.NEXT
+    POPZQ ZP.TOP
+    SYSCALL Long.Print
+    
+    PUSHD STR3
+    POPZW ZP.STR
+    SYSCALL Print.String
+    
+    LEAVE
+    HALT
 ```
 
 ## Complete Minimal File Reader Example (Type.VMA)
@@ -1118,19 +1299,33 @@ SYSCALL Mem.Free
 ```asm
 ; Define global variables in .CONST
 .CONST
-    counter  0      ; Global at offset 0
-    total    1      ; Global at offset 1 (word)
+    GP.Counter   0x00   ; Global counter byte
+    GP.Total     0x01   ; Global total word
+    GP.Buffer    0x03   ; Start of buffer
+    GP.State     0x13   ; Game state flags
 
 .MAIN
     ; Initialize global counter
     PUSHB 0
-    POPGB counter
+    POPGB GP.Counter
     
     ; Increment global total
-    PUSHGW total
+    PUSHGW GP.Total
     PUSHW 10
     ADDW
-    POPGW total
+    POPGW GP.Total
+    
+    ; Use global as loop counter
+loop:
+    PUSHGB GP.Counter
+    PUSHB1
+    ADDB
+    DUPB                ; Keep copy for comparison
+    POPGB GP.Counter
+    PUSHB 100
+    LEB                 ; Counter <= 100?
+    PUSHC
+    BNZF loop          ; Continue if true
 ```
 
 ### Pattern 5: String Operations
@@ -1326,14 +1521,16 @@ inner_loop:
     PUSHLW -11
     PUSHW 1000
     LEW                ; j <= 1000?
-    BNZR inner_loop    ; Continue inner loop
+    PUSHC
+    BNZF inner_loop    ; Continue if true
     
     ; After inner loop
     INCLB -10          ; i++
     PUSHLB -10
     PUSHB 10
     LEB                ; i <= 10?
-    BNZR outer_loop    ; Continue outer loop
+    PUSHC
+    BNZF outer_loop    ; Continue if true
 ```
 
 ### Pattern 14: Moving Values Between ZP Registers
@@ -1483,6 +1680,23 @@ POPZW ZP.NEXT
 SYSCALL FGetC       ; Now handle back in TOP
 ```
 
+### 11. Global Variable Organization
+Globals provide persistent storage across function calls:
+```asm
+; CORRECT - Well-organized globals
+.CONST
+    ; System state (0x00-0x0F)
+    GP.Flags     0x00
+    GP.Mode      0x01
+    
+    ; Counters (0x10-0x1F)
+    GP.Count     0x10
+    GP.Total     0x11   ; Word
+    
+    ; Buffers (0x20-0x3F)
+    GP.Buffer    0x20   ; 32-byte buffer
+```
+
 ## Common Mistakes to Avoid
 
 ### 1. Wrong Argument Offset
@@ -1606,6 +1820,28 @@ PUSHW 0xFFFF        ; Unsigned representation of -1
 EQW
 ```
 
+### 11. Mixing Up Global and Local Access
+```asm
+; WRONG - Using local syntax for globals
+PUSHLB GP.Counter   ; NO! PUSHLB is for locals
+
+; CORRECT - Use PUSHGB for globals
+PUSHGB GP.Counter   ; Access global variable
+```
+
+### 12. Not Documenting Global Usage
+```asm
+; WRONG - Unclear global usage
+.CONST
+    GP.X  0x00
+    GP.Y  0x01
+
+; CORRECT - Document what globals store
+.CONST
+    GP.CursorX  0x00   ; Screen cursor X position (0-79)
+    GP.CursorY  0x01   ; Screen cursor Y position (0-24)
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1615,10 +1851,13 @@ The Hopper VM provides exceptional code density (8-10× better than native 6502)
 4. Page-constrained functions
 5. Compact bytecode representation
 6. Optimized instruction variants (SYSCALLX, INCLB/INCLW)
+7. **256-byte global page for persistent storage**
 
 Key concepts to master:
 - Stack frame layout (**BP+5 for first argument**, BP+0 for first local, BP+1 for saved BP)
-- Complete instruction set including bitwise, global, and 32-bit operations
+- Complete instruction set including bitwise, **global**, and 32-bit operations
+- **Global variable access through PUSHGB/POPGB and PUSHGW/POPGW**
+- **Organizing globals with GP. prefix and documenting usage**
 - Zero page marshalling for BIOS calls
 - SYSCALL vs SYSCALLX optimization
 - Stack cleanup responsibilities (including multi-DROP patterns)
@@ -1629,6 +1868,7 @@ Key concepts to master:
 - **Labels use colon suffix** (loop:, exit:, etc.)
 - **Direct zero page addresses can be used** (POPZW 0x14 for ZP.TOP+2)
 - Efficient local variable organization and documentation
+- **Global variable patterns for persistent state management**
 - Working with partial 32-bit values
 - Direct local increment operations (INCLB/INCLW)
 - Moving values between ZP.TOP and ZP.NEXT for 32-bit operations
@@ -1641,4 +1881,4 @@ Key concepts to master:
 - **PUSHZB for byte extraction** from word values
 - **Clear inline commenting** for maintainable code
 
-Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first! First user command line argument is at index 2, not 1!
+Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first! First user command line argument is at index 2, not 1! **The 256-byte global page provides persistent storage accessible from any function using PUSHGB/POPGB/PUSHGW/POPGW instructions!**
