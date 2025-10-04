@@ -166,18 +166,8 @@ ascii_done:
     POPLW hexAddress
     
 main_loop: 
-    ; Check if we need to print address (byte_count == 0)
-    PUSHLB byteCount
-    PUSHB0
-    EQB
-    BZF read_byte
     
-    ; Print current address
-    PUSHLW hexAddress
-    CALL PrintAddress
-    DROPW ; Clean the argument
     
-read_byte:
     ; Set up file handle for FGetC
     PUSHLB fileHandle
     POPZB ZP.NEXT
@@ -189,6 +179,20 @@ read_byte:
     EQW
     BNZF end_loop        ; If EOF, exit
     
+    
+    ; Check if we need to print address (byte_count == 0)
+    PUSHLB byteCount
+    PUSHB0
+    EQB
+    BZF no_address
+    
+    ; Print current address
+    PUSHLW hexAddress
+    CALL PrintAddress
+    DROPW ; Clean the argument
+    
+no_address:
+
     ; Print the byte as hex
     PUSHZB ZP.TOP        ; Get the byte we just read
     POPA
