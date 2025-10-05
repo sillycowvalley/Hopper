@@ -321,3 +321,4 @@ enum Opcode : byte
 - **Zero page access** (PUSHZB/POPZB): Direct access to 0x00+offset
 - **Data references** (PUSHD): Push address of DataSectionBase+offset
 
+Ready to implement with this corrected specification following proper 6502 stack conventions?
