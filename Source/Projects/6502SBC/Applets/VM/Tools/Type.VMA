@@ -46,11 +46,12 @@
     NEW                  ; TOP != 0?
     BZF file_error       ; If TOP == 0, file failed to open
     
-read_loop:
-    ; Read character: FGetC(file_handle)
     ; File handle is already in ZP.TOP from FOpen
     PUSHZW ZP.TOP
-    POPZW ZP.NEXT        ; Move file handle to ZP.NEXT for FGetC
+    POPZW ZP.NEXT        ; Move file handle to ZP.NEXT for FGetC and FClose
+    
+read_loop:
+    ; Read character: FGetC(file_handle)
     SYSCALL FGetC
     
     ; Check for EOF (TOP == -1)
@@ -68,8 +69,6 @@ read_loop:
     
 close_file:
     ; Close file: FClose(file_handle)
-    PUSHZW ZP.TOP        ; File handle still in ZP.TOP
-    POPZW ZP.NEXT        ; Move to ZP.NEXT for FClose
     SYSCALL FClose
     
 file_error:

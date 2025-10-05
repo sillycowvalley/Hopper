@@ -129,12 +129,13 @@ inner_loop:
     SYSCALL Time.Seconds     ; Result in ZP.TOP (32-bit)
     
     ; Move current seconds to NEXT
-    PUSHZQ ZP.TOP0
+    PUSHZW ZP.TOP0
+    PUSHW0
     POPZQ ZP.NEXT0
     
     ; Get saved start seconds to TOP
     PUSHLW -8               ; Low word of saved seconds
-    PUSHW0                   ; High word (was never saved, assume 0)
+    PUSHW0                  ; High word (was never saved, assume 0)
     POPZQ ZP.TOP0
     
     ; NEXT = NEXT - TOP (current - start)
