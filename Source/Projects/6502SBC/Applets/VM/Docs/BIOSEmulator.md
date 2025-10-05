@@ -1,4 +1,4 @@
-## Complete BIOS Emulator Specification (Revised v2)
+## Complete BIOS Emulator Specification (Revised v3)
 
 ### VMB File Format
 **Header Structure:**
@@ -25,18 +25,28 @@
 - **0x0400+:** Code Pages (loaded VM code)
 - **0x1000+:** Data Section (strings and constants)
 
-### Stack Behavior (6502 Convention)
-- **SP points to next free location** (one beyond top of stack)
-- Stack Pointer (SP) starts at 0x00 (representing empty stack at 0x100)
-- Stack grows **upward** in SP value as items are pushed
+### Stack Behavior (6502 Hardware Stack Convention)
+- **Stack grows DOWNWARD** - SP decrements when pushing, increments when popping
+- **SP points to the last pushed item** (top of stack)
+- Stack Pointer (SP) starts at 0xFF (representing empty stack)
 - Stack location in memory = 0x100 + SP
-- **Push sequence:** Write to [0x100+SP], then increment SP
-- **Pop sequence:** Decrement SP, then read from [0x100+SP]
-- **Multi-byte values:** Always push/pop LSB first
+- **Push sequence:** Decrement SP, then write to [0x100+SP]
+- **Pop sequence:** Read from [0x100+SP], then increment SP
+- **Multi-byte values:** 
+  - **Push order:** LSB first (pushed deeper), then MSB (at lower SP value)
+  - **Pop order:** MSB first, then LSB (reverse of push order)
+  - This maintains LSB at higher memory address on stack
 
-### Stack Frame Layout (from Documentation)
+### Stack Machine Model (Critical Concept)
+**This VM is a pure stack machine:**
+- **NO processor flags** are used for VM conditional logic
+- **Comparison instructions** push 0 (false) or 1 (true) onto the stack
+- **Branch instructions** pop a value from stack and test if it's 0 or non-zero
+- **PUSHC/PUSHZ** are special - they push the saved flags from the last SYSCALL
+
+### Stack Frame Layout
 ```
-High Memory (Higher addresses)
+High Memory (Higher addresses, Lower SP values)
     [Argument N]            ; Last argument pushed
     ...
     [Argument 2]            ; Second argument
@@ -44,17 +54,17 @@ High Memory (Higher addresses)
     [Return Y]              ; 1 byte - PC within calling function's page
     [Return Page Low]       ; 2 bytes - calling function's page address
     [Return Page High]      
-    [Saved BP]              ; Previous base pointer
+    [Saved BP]              ; Previous base pointer  <- BP-1 in stack memory
     [Local 1]               ; <-- BP points here (first local at BP+0)
     [Local 2]               ; BP-1 (second local)
     [Local 3]               ; BP-2 (third local)
-    ...                     ; <-- SP points here (next free location)
-Low Memory (Lower addresses)
+    ...                     ; <-- SP points here (last pushed item)
+Low Memory (Lower addresses, Higher SP values)
 ```
 
 **Critical Stack Frame Facts:**
 - **BP points to the first local variable** (not to saved BP)
-- **Saved BP is at BP+1** (one byte above BP in memory)
+- **Saved BP is at stack location BP-1** (one position above BP in stack memory)
 - **First local variable is at BP+0**
 - **Arguments start at BP+5** for single-byte values
 - **Return address is 3 bytes total**: Y (1 byte) + codePage (2 bytes)
@@ -67,9 +77,9 @@ The VM uses a **3-byte program counter** model:
 
 **Implications:**
 - All branches within a function only modify Y (byte operations)
-- Operand fetches only increment Y (byte operations)
+- Y naturally wraps: 0xFF + 1 = 0x00, 0x00 - 1 = 0xFF
 - Functions are limited to 256 bytes (one page)
-- No branch or PC operation can overflow outside current function
+- Branches cannot escape the current function's page
 
 ### Class Architecture
 
@@ -99,7 +109,7 @@ The VM uses a **3-byte program counter** model:
 - Manage all memory pages
 - Provide typed access (byte, word, quad)
 - Handle multi-byte storage (LSB first)
-- Stack operations respecting proper 6502 behavior
+- Stack operations following 6502 hardware behavior
 
 **Key Methods:**
 - `byte ReadByte(ushort address)`
@@ -108,19 +118,45 @@ The VM uses a **3-byte program counter** model:
 - `void WriteWord(ushort address, ushort value)` - LSB first
 - `uint ReadQuad(ushort address)` - 32-bit, LSB first
 - `void WriteQuad(ushort address, uint value)` - LSB first
-- `void PushByte(byte value, ref byte sp)` - Write at 0x100+sp, increment sp
-- `byte PopByte(ref byte sp)` - Decrement sp, read from 0x100+sp
+- `void PushByte(byte value, ref byte sp)` - Decrement sp, write at 0x100+sp
+- `byte PopByte(ref byte sp)` - Read from 0x100+sp, increment sp
 - `void PushWord(ushort value, ref byte sp)` - Push LSB then MSB
 - `ushort PopWord(ref byte sp)` - Pop MSB then LSB (reverse of push)
+
+**Stack Implementation:**
+```csharp
+void PushByte(byte value, ref byte sp) {
+    sp--;  // Decrement first
+    WriteByte((ushort)(0x100 + sp), value);
+}
+
+byte PopByte(ref byte sp) {
+    byte value = ReadByte((ushort)(0x100 + sp));
+    sp++;  // Increment after
+    return value;
+}
+
+void PushWord(ushort value, ref byte sp) {
+    PushByte((byte)(value & 0xFF), ref sp);      // LSB first
+    PushByte((byte)(value >> 8), ref sp);        // MSB second
+}
+
+ushort PopWord(ref byte sp) {
+    byte msb = PopByte(ref sp);                  // MSB first
+    byte lsb = PopByte(ref sp);                  // LSB second
+    return (ushort)((msb << 8) | lsb);
+}
+```
 
 #### 3. **VmState** (State Container)
 **Properties:**
 - `ushort CodePage` - Current function base address
 - `byte Y` - Offset within current function (0-255)
-- `byte SP` - Stack pointer (0x00 = empty stack, points to next free)
+- `byte SP` - Stack pointer (0xFF = empty, points to TOS)
 - `byte BP` - Base pointer for stack frame (points to first local)
-- `byte A, X` - Registers (A for marshalling, X for SYSCALLX)
-- `bool ZeroFlag, CarryFlag` - Status flags
+- `byte A` - Accumulator for SYSCALL marshalling
+- `byte X` - X register for SYSCALLX
+- `byte VmFlags` - Saved flags from last SYSCALL (bit 6=Z, bit 7=C)
 - `Dictionary<int, ushort> FunctionTable` - Function ID to address mapping
 - `ushort DataSectionBase` - Location of string data (typically 0x1000)
 
@@ -132,6 +168,7 @@ The VM uses a **3-byte program counter** model:
 - Implement BIOS system calls
 - Marshal data from zero page
 - File I/O operations
+- Set VmFlags for PUSHC/PUSHZ operations
 
 **Key Methods:**
 - `void Execute(byte syscallId, VmState state, Memory memory)`
@@ -145,6 +182,10 @@ The VM uses a **3-byte program counter** model:
   - `void FGetC(Memory memory)` - 0x32
   - `void ArgGet(Memory memory, VmState state)` - 0x37
 
+**Important:** After each SYSCALL, update VmState.VmFlags:
+- Bit 7 (0x80): Set if operation returned carry set
+- Bit 6 (0x40): Set if operation returned zero flag set
+
 **Properties:**
 - `List<string> CommandLineArgs`
 - `Dictionary<ushort, FileStream> OpenFiles` - File handle management
@@ -154,6 +195,7 @@ The VM uses a **3-byte program counter** model:
 - Decode and execute VM opcodes using enum for clarity
 - Manage Y register for PC operations
 - Handle stack operations with proper 6502 behavior
+- Implement pure stack machine comparison/branch model
 
 **Opcode Enum:**
 ```csharp
@@ -232,6 +274,8 @@ enum Opcode : byte
     DUMP = 0x94,
     PUSHD = 0x98,
     PUSHD2 = 0x9A,
+    STRC = 0x9C,
+    STRCMP = 0x9E,
     READB = 0xA0,
     WRITEB = 0xA2
 }
@@ -240,17 +284,80 @@ enum Opcode : byte
 **Key Methods:**
 - `void Execute(Memory memory, VmState state, SyscallHandler syscalls)`
 - All PC operations work with Y register (byte operations)
-- Branch offsets modify Y only (can wrap within function page)
-- Operand fetches increment Y only
+- Y wraps naturally: branches can wrap from 0xFF to 0x00 or vice versa
 
 **Critical Implementation Details:**
-- **Fetching opcodes:** `memory.ReadByte(state.CodePage + state.Y)`
-- **Fetching operands:** `memory.ReadByte(state.CodePage + ++state.Y)`
-- **Branches:** Modify Y by signed offset (can wrap 0x00↔0xFF)
-- **CALL:** Push Y, push CodePage LSB, push CodePage MSB
-- **RET:** Pop CodePage MSB, pop CodePage LSB, pop Y
-- **ENTER:** Push BP, set BP=SP (BP now points to first local), allocate locals by incrementing SP
-- **LEAVE:** Restore SP=BP, pop old BP
+
+**Comparison Instructions (Stack Machine Model):**
+```csharp
+// Example: EQB
+case Opcode.EQB:
+    byte next = memory.PopByte(ref state.SP);
+    byte top = memory.PopByte(ref state.SP);
+    byte result = (byte)(next == top ? 1 : 0);
+    memory.PushByte(result, ref state.SP);
+    break;
+
+// Example: LTW (unsigned comparison)
+case Opcode.LTW:
+    ushort topW = memory.PopWord(ref state.SP);
+    ushort nextW = memory.PopWord(ref state.SP);
+    byte result = (byte)(nextW < topW ? 1 : 0);
+    memory.PushByte(result, ref state.SP);
+    break;
+```
+
+**Branch Instructions (Pop and Test):**
+```csharp
+// Example: BNZF (Branch if Not Zero Forward)
+case Opcode.BNZF:
+    byte value = memory.PopByte(ref state.SP);
+    byte offset = memory.ReadByte((ushort)(state.CodePage + ++state.Y));
+    if (value != 0) {  // Branch if value is non-zero
+        state.Y = (byte)(state.Y + offset);  // Will wrap naturally
+    }
+    break;
+
+// Example: BZR (Branch if Zero Reverse)
+case Opcode.BZR:
+    byte value = memory.PopByte(ref state.SP);
+    byte offset = memory.ReadByte((ushort)(state.CodePage + ++state.Y));
+    if (value == 0) {  // Branch if value is zero
+        state.Y = (byte)(state.Y - offset);  // Will wrap naturally
+    }
+    break;
+```
+
+**PUSHC/PUSHZ (Use Saved SYSCALL Flags):**
+```csharp
+case Opcode.PUSHC:
+    byte carry = (byte)((state.VmFlags & 0x80) != 0 ? 1 : 0);
+    memory.PushByte(carry, ref state.SP);
+    break;
+
+case Opcode.PUSHZ:
+    byte zero = (byte)((state.VmFlags & 0x40) != 0 ? 1 : 0);
+    memory.PushByte(zero, ref state.SP);
+    break;
+```
+
+**Stack Frame Operations:**
+```csharp
+case Opcode.ENTER:
+    byte locals = memory.ReadByte((ushort)(state.CodePage + ++state.Y));
+    memory.PushByte(state.BP, ref state.SP);  // Save old BP
+    state.BP = state.SP;  // BP points to first local
+    // Allocate locals
+    for (int i = 0; i < locals; i++) {
+        memory.PushByte(0, ref state.SP);
+    }
+    break;
+
+case Opcode.LEAVE:
+    state.SP = state.BP;  // Restore SP to BP
+    state.BP = memory.PopByte(ref state.SP);  // Restore old BP
+    break;
+```
 
 ### Execution Flow
 
@@ -261,23 +368,23 @@ enum Opcode : byte
    - Build function table at 0x0300
    - Set CodePage to MAIN function address (from table[2])
    - Set Y to 0
-   - Set SP to 0x00 (empty stack)
+   - Set SP to 0xFF (empty stack)
 
 2. **Execution Loop:**
    - Fetch opcode at CodePage + Y
+   - Increment Y after fetch
    - Decode and execute via OpcodeExecutor
-   - Y increments by instruction length (wraps at 256)
    - Continue until HALT
 
-3. **Stack Frame Management (Corrected for 6502):**
-   - SP starts at 0x00 (stack empty, SP points to next free at 0x100)
+3. **Stack Frame Management:**
+   - SP starts at 0xFF (stack empty)
    - ENTER: 
-     - Push BP (write to 0x100+SP, SP++)
+     - Push BP (SP--, write to 0x100+SP)
      - Set BP=SP (BP now points to first local)
-     - Allocate locals (SP += n)
+     - Allocate locals (push zeros)
    - LEAVE: 
      - Restore SP=BP
-     - Pop BP (SP--, read from 0x100+SP)
+     - Pop BP (read from 0x100+SP, SP++)
    - Stack frame locals accessed via 0x100+BP+offset
 
 4. **Function Calls (3-byte PC):**
@@ -293,30 +400,29 @@ enum Opcode : byte
 
 5. **Branch Instructions:**
    - All branches modify Y only (signed byte offset)
-   - Forward branch: Y = Y + 2 + offset (skip instruction)
-   - Backward branch: Y = Y + 2 - offset
+   - Forward branch: Y = Y + 1 + offset (after fetching offset)
+   - Backward branch: Y = Y + 1 - offset
    - Y wraps naturally (0xFF + 2 = 0x01, 0x00 - 1 = 0xFF)
 
-### Key Corrections from Previous Spec
+### Summary of Key Concepts
 
-1. **Stack grows upward in SP value** (SP increments on push)
-2. **SP points to next free location** (not top of stack)
-3. **Push:** Write then increment SP
-4. **Pop:** Decrement SP then read
-5. **BP points to first local** (at BP+0), not saved BP
-6. **Saved BP is at BP+1** in the stack frame
-7. **Arguments start at BP+5** for accessing
+1. **Pure Stack Machine:** Comparisons and branches work through stack values (0/1), not processor flags
+2. **6502 Stack Convention:** Stack grows downward, SP points to TOS
+3. **PUSHC/PUSHZ Special Case:** These use saved SYSCALL flags from VmFlags register
+4. **3-byte Program Counter:** CodePage + Y with natural byte wrapping
+5. **Stack Frame:** BP points to first local, saved BP is at BP-1 in stack memory
+6. **Multi-byte Values:** LSB pushed first (deeper), MSB popped first
 
 ### Opcode Implementation Notes
 
-- **Stack Operations:** Follow 6502 convention (write then inc for push, dec then read for pop)
+- **Stack Operations:** Follow 6502 hardware convention (dec then write for push, read then inc for pop)
 - **Local Variable Access:**
   - PUSHLB offset: Read from 0x100 + BP + offset
   - POPLB offset: Write to 0x100 + BP + offset
-  - First local at BP+0, second at BP-1, etc.
+  - First local at BP+0, second at BP-1, etc. (offsets in stack direction)
 - **Arguments Access:** Start at BP+5 (after saved BP and 3-byte return address)
-- **Comparison instructions** (EQB, LTB, etc.): Set flags based on unsigned comparison
-- **Branch instructions**: Test flags and modify Y by signed offset
+- **Comparison instructions**: Push 0 (false) or 1 (true) based on unsigned comparison
+- **Branch instructions**: Pop value and branch based on 0 or non-zero
 - **Global variable access** (PUSHGB/POPGB): Direct access to 0x200+offset
 - **Zero page access** (PUSHZB/POPZB): Direct access to 0x00+offset
 - **Data references** (PUSHD): Push address of DataSectionBase+offset
