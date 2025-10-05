@@ -320,5 +320,3 @@ enum Opcode : byte
 - **Global variable access** (PUSHGB/POPGB): Direct access to 0x200+offset
 - **Zero page access** (PUSHZB/POPZB): Direct access to 0x00+offset
 - **Data references** (PUSHD): Push address of DataSectionBase+offset
-
-Ready to implement with this corrected specification following proper 6502 stack conventions?
