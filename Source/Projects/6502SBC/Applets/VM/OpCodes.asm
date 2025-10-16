@@ -221,6 +221,10 @@ unit OpCodes
         OpCode.READB,    Arguments.None, 5, 'R','E','A','D','B',                 // READB
         OpCode.WRITEB,   Arguments.None, 6, 'W','R','I','T','E','B',             // WRITEB
         
+        OpCode.PUSHDA,   Arguments.Word, 6, 'P','U','S','H','D','A',             // PUSHDA + word
+        OpCode.PUSHDAX,  Arguments.Word, 7, 'P','U','S','H','D','A','X',         // PUSHDAX + word
+        OpCode.PUSHDAX2, Arguments.Word, 8, 'P','U','S','H','D','A','X','2',     // PUSHDAX2 + word
+        
         // End marker
         0xFF
     };

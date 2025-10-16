@@ -42,6 +42,8 @@ unit Parser
     
     const byte currentFunctionID = parserSlots+14;
     
+    const byte constantWidth     = parserSlots+15; // 0 - auto-size, 1 = bytes, 2 = words
+    
     const string errDirectiveExpected  = ".DATA, .CONST, .MAIN or .FUNC expected";
     const string errMAINRequired       = ".MAIN required";
     const string errMAINSeen           = ".MAIN already seen";
@@ -1107,6 +1109,95 @@ unit Parser
             return;
         }
         
+        // Default to auto-size
+        STZ constantWidth
+        
+        // Check if this identifier is a size prefix ("byte" or "word")
+        LDA tokenLength
+        CMP #4
+        if (Z)  // Both "byte" and "word" are 4 characters
+        {
+            LDY #0
+            LDA [tokenBuffer], Y
+            
+            // Check for "byte"
+            CMP #'b'
+            if (Z)
+            {
+                INY
+                LDA [tokenBuffer], Y
+                CMP #'y'
+                if (Z)
+                {
+                    INY
+                    LDA [tokenBuffer], Y
+                    CMP #'t'
+                    if (Z)
+                    {
+                        INY
+                        LDA [tokenBuffer], Y
+                        CMP #'e'
+                        if (Z)
+                        {
+                            // Found "byte" prefix
+                            INC constantWidth  // constantWidth = 1
+                            GetToken();
+                            LDA tokenType
+                            CMP # TokenType.Identifier
+                            if (NZ)
+                            {
+                                LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
+                                ErrorLine();    
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Check for "word" (only if constantWidth still 0)
+            LDA constantWidth
+            if (Z)
+            {
+                LDY #0
+                LDA [tokenBuffer], Y
+                CMP #'w'
+                if (Z)
+                {
+                    INY
+                    LDA [tokenBuffer], Y
+                    CMP #'o'
+                    if (Z)
+                    {
+                        INY
+                        LDA [tokenBuffer], Y
+                        CMP #'r'
+                        if (Z)
+                        {
+                            INY
+                            LDA [tokenBuffer], Y
+                            CMP #'d'
+                            if (Z)
+                            {
+                                // Found "word" prefix
+                                LDA #2
+                                STA constantWidth
+                                GetToken();
+                                LDA tokenType
+                                CMP # TokenType.Identifier
+                                if (NZ)
+                                {
+                                    LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
+                                    ErrorLine();    
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         // get the offset where this data element will start
         Buffer.GetDataOffset(); // -> TOP
         
@@ -1159,14 +1250,30 @@ unit Parser
                     LDA tokenValueL
                     Buffer.Emit();
                     
-                    LDA numberType
-                    AND # (NumberType.Byte | NumberType.Char)
-                    if (Z) // not Byte or Char?
+                    // Check constantWidth to determine emission mode
+                    LDA constantWidth
+                    if (Z)  // 0 = auto-size (current behavior)
                     {
-                        LDA tokenValueH
-                        Buffer.Emit();
+                        LDA numberType
+                        AND # (NumberType.Byte | NumberType.Char)
+                        if (Z) // not Byte or Char?
+                        {
+                            LDA tokenValueH
+                            Buffer.Emit();
+                        }
+                    }
+                    else
+                    {
+                        CMP #2
+                        if (Z)  // 2 = word mode (always emit high byte)
+                        {
+                            LDA tokenValueH
+                            Buffer.Emit();
+                        }
+                        // else: 1 = byte mode (already emitted low byte only)
                     }
                 }
+                
                 case TokenType.Identifier:
                 {
                     LDA tokenBufferL

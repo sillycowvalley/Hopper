@@ -14,7 +14,7 @@ System functionality is accessed through SYSCALL instructions that invoke BIOS f
 ### 3. Program Structure
 Every VM program consists of:
 - `.CONST` section - Define constants, zero page mappings, and global variable offsets
-- `.DATA` section - String constants
+- `.DATA` section - String constants, byte arrays, and word arrays
 - `.FUNC` sections - User-defined functions
 - `.MAIN` section - Program entry point
 
@@ -39,6 +39,162 @@ PUSHB 2
 POPA
 SYSCALL ArgGet
 ; ZP.STR now points to filename
+```
+
+## .DATA Section Format
+
+The .DATA section supports multiple formats for defining constants and arrays with explicit type control.
+
+### Data Type Modifiers
+
+**Three sizing modes are supported:**
+
+1. **`byte` prefix** - Forces all values to single bytes (truncates values >255)
+2. **`word` prefix** - Forces all values to 16-bit words (2 bytes each, LSB/MSB)
+3. **No prefix** - Auto-sizing: bytes if ≤255, words if >255
+
+### String Constants
+
+Strings use label syntax with automatic null-termination:
+
+```asm
+.DATA
+str_hello "Hello World\n"
+
+filename "test.txt"
+
+str_prompt "> "
+```
+
+### Byte Arrays
+
+Define arrays of byte values using the `byte` prefix:
+
+```asm
+.DATA
+byte lookup 10, 20, 30, 40, 50
+
+byte flags 0x01, 0x02, 0x04, 0x08, 0x10
+
+byte chars 'A', 'B', 'C', 'D'
+
+byte pixels 128, 64, 32, 16, 8, 4, 2, 1
+```
+
+**Without `byte` prefix (auto-sizing):**
+```asm
+.DATA
+lookup 10, 20, 30, 40, 50        ; All ≤255, stored as bytes
+
+mixed 10, 300, 20, 400           ; 10,20 as bytes; 300,400 as words
+```
+
+### Word Arrays
+
+Define arrays of 16-bit word values (stored as LSB, MSB):
+
+```asm
+.DATA
+word addresses 0x2000, 0x4000, 0x6000, 0x8000
+
+word values 1000, 2000, 3000
+
+word pointers 0xC000, 0xD000, 0xE000
+```
+
+### Mixed Data Declarations
+
+You can mix different types in the .DATA section:
+
+```asm
+.DATA
+; String constants
+str_start " ms (start)\n"
+
+str_elapsed " ms (elapsed)\n"
+
+; Byte arrays
+byte lookup_table 10, 20, 30, 40, 50
+
+byte status_codes 0x00, 0x01, 0xFF
+
+; Word arrays
+word memory_pages 0x2000, 0x4000, 0x6000
+
+word timings 1000, 2000, 5000, 10000
+
+; Auto-sized (will use bytes for small values, words for large)
+thresholds 10, 100, 1000, 10000
+```
+
+### Accessing Data Arrays
+
+Use `PUSHD`/`PUSHD2` to get the data address, then use `PUSHDAX`/`PUSHDAX2` with an index:
+
+#### Byte Array Access Pattern
+```asm
+.CONST
+    ZP.TOP    0x12
+
+.DATA
+byte lookup 10, 20, 30, 40, 50
+
+.MAIN
+    ; Access lookup[2] (value 30)
+    PUSHB 2              ; Index
+    PUSHB0               ; Extend to word
+    PUSHDAX 0            ; PUSHDAX offset, index from stack
+    READB                ; Read the byte
+    ; Result on stack: 30
+```
+
+#### Word Array Access Pattern
+For word arrays, use `PUSHDAX2` which multiplies the index by 2:
+```asm
+.DATA
+word addresses 0x2000, 0x4000, 0x6000
+
+.MAIN
+    ; Access addresses[1] (value 0x4000)
+    PUSHB 1              ; Index
+    PUSHB0               ; Extend to word
+    PUSHDAX2 0           ; Multiply index by 2, add offset
+    DUPW                 ; Duplicate address
+    READB                ; Read LSB
+    POPZB ZP.TOP0
+    PUSHW1
+    ADDW                 ; Address + 1
+    READB                ; Read MSB
+    POPZB ZP.TOP1
+    PUSHZW ZP.TOP        ; Full word on stack: 0x4000
+```
+
+### Data Section Best Practices
+
+1. **Use explicit prefixes for clarity:**
+```asm
+byte flags 0x01, 0x02, 0x04      ; Clear: these are bytes
+word pointers 0xC000, 0xD000     ; Clear: these are words
+```
+
+2. **Group related data:**
+```asm
+; Status codes
+byte error_codes 0x01, 0x02, 0x03, 0xFF
+
+; Error messages
+str_error_1 "File not found\n"
+str_error_2 "Access denied\n"
+```
+
+3. **Document array sizes:**
+```asm
+byte gamma_table 0, 1, 2, 3, 4, 5, 6, 7, 8  ; 9 entries
+```
+
+4. **Use meaningful names:**
+```asm
+byte sine_lookup_64 0, 6, 12, 18, 25, 31, 37, 43  ; 64-entry sine table (showing first 8)
 ```
 
 ## Global Variables - The 256-Byte Global Page
@@ -120,21 +276,37 @@ GP.Lives     0x03
 ; Player data (0x10-0x1F)
 GP.Player.X  0x10
 GP.Player.Y  0x11
+
+; Dynamic memory pointers (0x20-0x2F)
+GP.MainBuffer   0x20   ; Pointer to allocated main buffer
+GP.TempBuffer   0x22   ; Pointer to allocated temp buffer
 ```
 
 2. **Document Usage**: Always comment what each global stores
 ```asm
 GP.Flags     0x20   ; Bit 0: game active, Bit 1: paused, Bit 2: muted
+GP.HeapPtr   0x30   ; Pointer to dynamically allocated memory (2 bytes)
 ```
 
 3. **Use Meaningful Names**: Prefix with `GP.` for clarity
 ```asm
 GP.TempWord  0x30   ; Temporary storage for calculations
+GP.BufferPtr 0x32   ; Pointer to allocated buffer
 ```
 
-4. **Consider Alignment**: Word values don't need alignment but grouping them can improve readability
+4. **Store Memory Pointers**: Globals are perfect for storing 16-bit addresses from MemAllocate
+```asm
+; Allocate and store pointer
+PUSHW 100
+POPZW ZP.ACC
+SYSCALL Mem.Allocate
+PUSHZW ZP.IDX       ; Get allocated address
+POPGW GP.BufferPtr  ; Store in global for program-wide access
+```
 
-5. **Reserve Space for Growth**: Leave gaps for future additions
+5. **Consider Alignment**: Word values don't need alignment but grouping them can improve readability
+
+6. **Reserve Space for Growth**: Leave gaps for future additions
 ```asm
 ; Network state (0x40-0x5F) - 32 bytes reserved
 GP.NET.Status 0x40
@@ -144,15 +316,16 @@ GP.NET.Status 0x40
 ## Simple Hello World Example
 ```asm
 ; Simple Hello World program
+
 .CONST
     ZP.STR       0x1E
     Print.String 0x11
 
 .DATA
-    STR0 "Hello, World!\n"
+str_hello "Hello, World!\n"
 
 .MAIN
-    PUSHD STR0          ; Push string address
+    PUSHD str_hello     ; Push string address
     POPZW ZP.STR        ; Marshal to BIOS
     SYSCALL Print.String ; Print it
     HALT                ; Return to BIOS
@@ -181,9 +354,11 @@ This example shows proper global variable usage for timing measurements:
     GP.START.HIGH 0x02   ; start millis high word
     
 .DATA
-    STR1 " ms (start)\n"
-    STR2 " ms (current)\n"
-    STR3 " ms (elapsed)\n"
+str_start " ms (start)\n"
+
+str_current " ms (current)\n"
+
+str_elapsed " ms (elapsed)\n"
     
 .MAIN
     ENTER 0
@@ -197,7 +372,7 @@ This example shows proper global variable usage for timing measurements:
     
     ; Print start time
     SYSCALL Long.Print
-    PUSHD STR1
+    PUSHD str_start
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -214,7 +389,7 @@ This example shows proper global variable usage for timing measurements:
     PUSHZQ ZP.TOP
     
     SYSCALL Long.Print
-    PUSHD STR2
+    PUSHD str_current
     POPZW ZP.STR
     SYSCALL Print.String
     POPZQ ZP.NEXT          ; Pop current time to NEXT
@@ -231,7 +406,7 @@ This example shows proper global variable usage for timing measurements:
     POPZQ ZP.TOP
     SYSCALL Long.Print
     
-    PUSHD STR3
+    PUSHD str_elapsed
     POPZW ZP.STR
     SYSCALL Print.String
     
@@ -257,7 +432,7 @@ This complete working example demonstrates file operations, argument handling, a
     ArgGet        0x37
 
 .DATA
-    STR0 "r"
+str_mode "r"
 
 .MAIN
     ; Print newline
@@ -270,7 +445,7 @@ This complete working example demonstrates file operations, argument handling, a
     ; ZP.STR now points to filename
     
     ; Set up file mode ("r")
-    PUSHD STR0           ; Push address of "r" string
+    PUSHD str_mode       ; Push address of "r" string
     POPZW ZP.NEXT        ; Store in ZP.NEXT for FOpen
     
     ; Open file: FOpen(filename, "r")
@@ -390,8 +565,8 @@ Low Memory (Lower addresses)
 ; Arguments (positive offsets from BP):
 PUSHLB 5            ; First 8-bit argument at BP+5
 PUSHLB 6            ; Second 8-bit argument at BP+6
-PUSHLW 5            ; First 16-bit argument (uses BP+5 and BP+6)
-PUSHLW 7            ; Second 16-bit argument (uses BP+7 and BP+8)
+PUSHLW 6            ; First 16-bit argument (uses BP+5 and BP+6)
+PUSHLW 8            ; Second 16-bit argument (uses BP+7 and BP+8)
 
 ; Local variables (BP+0 and negative offsets):
 PUSHLB 0            ; First local (at BP+0)
@@ -517,11 +692,13 @@ LEAVE    0x92       ; Restore stack frame
 DUMP     0x94       ; Diagnostic stack dump
 ```
 
-### String/Data Operations (0x98-0x9E)
+### String/Data Operations (0x98-0xA2)
 ```asm
 PUSHD    0x98 byte  ; Push data address (byte offset)
 PUSHD2   0x9A word  ; Push data address (word offset)
-STRC     0x9C       ; Pop index, pop string, push char
+PUSHDAX  0x9B byte  ; Push data address with index (offset + stack index)
+PUSHDAX2 0x9C byte  ; Push data address with index*2 (offset + stack index*2)
+STRC     0x9D       ; Pop index, pop string, push char
 STRCMP   0x9E       ; Pop 2 strings, push comparison result
 ```
 
@@ -586,7 +763,7 @@ SYSCALL MemMaximum
 ; Output: C = 1 if exists, 0 if not
 
 .DATA
-    filename "test.txt"
+filename "test.txt"
 
 ; In code:
 PUSHD filename
@@ -603,7 +780,7 @@ SYSCALL FileExists
 ; Output: C = 1 if successful, 0 if failed
 
 .DATA
-    filename "old.txt"
+filename "old.txt"
 
 ; In code:
 PUSHD filename
@@ -627,7 +804,7 @@ SYSCALL FileDir
 ; Output: C = 1 if successful
 
 .DATA
-    filename "output.txt"
+filename "output.txt"
 
 ; In code:
 PUSHD filename
@@ -661,7 +838,7 @@ SYSCALL FileEndSave
 ; Output: C = 1 if successful
 
 .DATA
-    filename "input.txt"
+filename "input.txt"
 
 ; In code:
 PUSHD filename
@@ -743,10 +920,10 @@ BNZF user_break     ; Branch if 1 (break detected)
 ; Output: None
 
 .DATA
-    MSG0 "Hello World\n"
+msg_hello "Hello World\n"
 
 ; In code:
-PUSHD MSG0
+PUSHD msg_hello
 POPZW ZP.STR
 SYSCALL PrintString
 ```
@@ -1000,8 +1177,9 @@ All float operations use IEEE 754 single precision format in ZP.NEXT and ZP.TOP.
 ; Output: ZP.TOP = file handle or NULL
 
 .DATA
-    filename "data.txt"
-    readmode "r"
+filename "data.txt"
+
+readmode "r"
 
 ; In code:
 PUSHD filename
@@ -1164,7 +1342,7 @@ This pattern shows efficient file handle management by keeping the handle in ZP.
     ArgGet       0x37
 
 .DATA
-    STR0 "r"
+str_mode "r"
 
 .MAIN
     ; Get filename from command line
@@ -1173,7 +1351,7 @@ This pattern shows efficient file handle management by keeping the handle in ZP.
     SYSCALL ArgGet      ; Sets ZP.STR
     
     ; Open file
-    PUSHD STR0
+    PUSHD str_mode
     POPZW ZP.NEXT
     SYSCALL FOpen       ; Returns handle in TOP
     
@@ -1276,24 +1454,73 @@ BZF not_equal       ; Branch if Z=0 (values different)
 BNZF equal          ; Branch if Z=1 (values same)
 ```
 
-### Pattern 3: Memory Allocation (from HexDump.VMA)
+### Pattern 3: Dynamic Memory with Global Pointer Storage
+This pattern shows how to allocate memory and store the pointer in a global variable for access throughout your program:
+
 ```asm
-; Allocate buffer
-PUSHW 16
-POPZW ZP.ACC
-SYSCALL Mem.Allocate
-PUSHC               ; Push carry flag
-BZF alloc_failed    ; Branch if 0 (failed)
-PUSHZW ZP.IDX       ; Get pointer
-POPZW ZP.BUF        ; Save it
+.CONST
+    ZP.ACC       0x10
+    ZP.IDX       0x1A
+    
+    Mem.Allocate 0x00
+    Mem.Free     0x01
+    
+    ; Global variables
+    GP.BufferPtr 0x00   ; 2-byte pointer to allocated memory
+    GP.BufferSize 0x02  ; Size of allocated buffer
 
-; Use buffer...
-
-; Free buffer
-PUSHZW ZP.BUF
-POPZW ZP.IDX
-SYSCALL Mem.Free
+.MAIN
+    ENTER 0
+    
+    ; Allocate 256-byte buffer
+    PUSHW 256
+    POPZW ZP.ACC
+    SYSCALL Mem.Allocate
+    PUSHC               ; Check if successful
+    BZF alloc_failed
+    
+    ; Store pointer in global variable
+    PUSHZW ZP.IDX       ; Get allocated address
+    POPGW GP.BufferPtr  ; Save to global
+    
+    ; Store size for later reference
+    PUSHW 256
+    POPGW GP.BufferSize
+    
+    ; Now use the buffer - write byte to offset 10
+    PUSHGW GP.BufferPtr ; Get buffer address
+    PUSHW 10            ; Add offset
+    ADDW
+    PUSHB 0x42          ; Value to write
+    WRITEB              ; Write to memory
+    
+    ; Read back from offset 10
+    PUSHGW GP.BufferPtr ; Get buffer address
+    PUSHW 10            ; Add offset
+    ADDW
+    READB               ; Read from memory
+    ; Value 0x42 now on stack
+    
+    ; Clean up - free the buffer
+    PUSHGW GP.BufferPtr ; Get pointer from global
+    POPZW ZP.IDX
+    SYSCALL Mem.Free
+    
+    LEAVE
+    HALT
+    
+alloc_failed:
+    ; Handle allocation failure
+    LEAVE
+    HALT
 ```
+
+**Key Points:**
+- Memory allocation returns a 16-bit address in ZP.IDX
+- Store this address in a global variable (2 bytes) for program-wide access
+- Use READB/WRITEB with the pointer to access allocated memory
+- Add offsets to the pointer to access different locations in the buffer
+- Always free allocated memory when done
 
 ### Pattern 4: Working with Globals
 ```asm
@@ -1331,19 +1558,22 @@ loop:
 ### Pattern 5: String Operations
 ```asm
 .DATA
-    hello "Hello"
-    message "A test message"
-    str1 "First string"
-    str2 "Second string"
+str_hello "Hello"
+
+str_message "A test message"
+
+str1 "First string"
+
+str2 "Second string"
 
 .MAIN
     ; Using PUSHD for string addresses
-    PUSHD hello         ; Push string address
+    PUSHD str_hello     ; Push string address
     POPZW ZP.STR
     SYSCALL Print.String
     
     ; String character access with STRC
-    PUSHD message       ; Push string address
+    PUSHD str_message   ; Push string address
     PUSHB 5             ; Index
     STRC                ; Get 6th character
     POPA
@@ -1386,9 +1616,6 @@ For continuous hardware operation with user break capability:
     Time.Delay      0x17
     IsBreak         0x10
     ZP.TOP          0x12
-
-.DATA
-    ; No data needed for this example
 
 .MAIN
     ; Configure pin 0 as output
@@ -1443,9 +1670,51 @@ exit:
     HALT
 ```
 
+### Pattern 8: Accessing Byte Arrays
+Working with byte arrays defined in .DATA section:
+```asm
+.CONST
+    ZP.TOP    0x12
+
+.DATA
+byte lookup 10, 20, 30, 40, 50
+
+.MAIN
+    ; Access lookup[2] (value 30)
+    PUSHB 2              ; Index
+    PUSHB0               ; Extend to word
+    PUSHDAX 0            ; PUSHDAX offset, index from stack
+    READB                ; Read the byte
+    ; Result on stack: 30
+    
+    ; Store in local or ZP
+    POPZB ZP.TOP0
+```
+
+### Pattern 9: Accessing Word Arrays
+Working with word arrays requires reading both LSB and MSB:
+```asm
+.DATA
+word addresses 0x2000, 0x4000, 0x6000
+
+.MAIN
+    ; Access addresses[1] (value 0x4000)
+    PUSHB 1              ; Index
+    PUSHB0               ; Extend to word
+    PUSHDAX2 0           ; Multiply index by 2, add offset
+    DUPW                 ; Duplicate address
+    READB                ; Read LSB
+    POPZB ZP.TOP0
+    PUSHW1
+    ADDW                 ; Address + 1
+    READB                ; Read MSB
+    POPZB ZP.TOP1
+    PUSHZW ZP.TOP        ; Full word on stack: 0x4000
+```
+
 ## Advanced Patterns (from NOEL Benchmark)
 
-### Pattern 8: Complex Local Variable Organization
+### Pattern 10: Complex Local Variable Organization
 When working with many local variables, organize them clearly:
 ```asm
 .MAIN
@@ -1461,7 +1730,7 @@ When working with many local variables, organize them clearly:
     ; j at [BP-11]
 ```
 
-### Pattern 9: Working with 32-bit Values and Partial Storage
+### Pattern 11: Working with 32-bit Values and Partial Storage
 Sometimes you only need to store part of a 32-bit value:
 ```asm
 ; Save only low word of 32-bit seconds value
@@ -1475,7 +1744,7 @@ PUSHW0                 ; Assume high word is 0
 POPZQ ZP.TOP0         ; Now have full 32-bit value
 ```
 
-### Pattern 10: SYSCALLX for Optimized System Calls
+### Pattern 12: SYSCALLX for Optimized System Calls
 Use SYSCALLX when the syscall ID is constant for slightly better performance:
 ```asm
 ; Setup operands in ZP.NEXT and ZP.TOP
@@ -1486,14 +1755,14 @@ POPZQ ZP.TOP0
 SYSCALLX Long.Add      ; Faster than SYSCALL Long.Add
 ```
 
-### Pattern 11: Efficient Stack Cleanup
+### Pattern 13: Efficient Stack Cleanup
 Clean up multiple stack values in one line:
 ```asm
 ; After complex operations, clean up stack
 DROPW DROPB DROPW DROPW DROPW DROPW DROPW
 ```
 
-### Pattern 12: Direct Local Variable Increment
+### Pattern 14: Direct Local Variable Increment
 Use INCLB/INCLW to increment locals without push/pop:
 ```asm
 ; Increment loop counters efficiently
@@ -1501,7 +1770,7 @@ INCLB -10              ; i++
 INCLW -11              ; j++ (for 16-bit counter)
 ```
 
-### Pattern 13: Nested Loop Pattern
+### Pattern 15: Nested Loop Pattern
 Efficient nested loop structure:
 ```asm
 ; Outer loop initialization
@@ -1533,7 +1802,7 @@ inner_loop:
     BNZF outer_loop    ; Continue if true
 ```
 
-### Pattern 14: Moving Values Between ZP Registers
+### Pattern 16: Moving Values Between ZP Registers
 When working with 32-bit math operations, you often need to swap operands:
 ```asm
 ; Move result from NEXT to TOP for printing
@@ -1546,7 +1815,7 @@ PUSHZQ ZP.TOP0
 POPZQ ZP.NEXT0
 ```
 
-### Pattern 15: Common Error Exit Point
+### Pattern 17: Common Error Exit Point
 Use a single label for both error handling and normal termination:
 ```asm
 .MAIN
@@ -1565,7 +1834,7 @@ exit:                   ; Common exit for all paths
     HALT
 ```
 
-### Pattern 16: Byte Extraction from Word Values
+### Pattern 18: Byte Extraction from Word Values
 Use PUSHZB to extract specific bytes from multi-byte values:
 ```asm
 ; After FGetC returns word in ZP.TOP
@@ -1606,10 +1875,10 @@ SYSCALL Print.String    ; FAILS! No string pointer set
 
 ; CORRECT
 .DATA
-    MSG "Hello"
+msg_hello "Hello"
 
 ; In code:
-PUSHD MSG
+PUSHD msg_hello
 POPZW ZP.STR
 SYSCALL Print.String
 ```
@@ -1650,10 +1919,10 @@ PUSHD "Hello"       ; INVALID!
 
 ; CORRECT - Define strings in .DATA section
 .DATA
-    MSG "Hello"
+msg_hello "Hello"
 
 .MAIN
-    PUSHD MSG       ; Reference by label
+    PUSHD msg_hello       ; Reference by label
     POPZW ZP.STR
     SYSCALL Print.String
 ```
@@ -1695,6 +1964,35 @@ Globals provide persistent storage across function calls:
     
     ; Buffers (0x20-0x3F)
     GP.Buffer    0x20   ; 32-byte buffer
+```
+
+### 12. Use PUSHDAX for Array Access
+When accessing array elements, use PUSHDAX (for bytes) or PUSHDAX2 (for words):
+```asm
+; For byte arrays
+PUSHB index
+PUSHB0              ; Extend to word
+PUSHDAX 0          ; offset + index
+READB              ; Read the byte
+
+; For word arrays  
+PUSHB index
+PUSHB0              ; Extend to word
+PUSHDAX2 0         ; offset + (index * 2)
+; Then read LSB and MSB
+```
+
+### 13. Use Explicit Type Prefixes in .DATA
+For clarity and to prevent auto-sizing surprises, use explicit type prefixes:
+```asm
+; GOOD - Explicit intent
+.DATA
+byte flags 0x01, 0x02, 0x04, 0x08
+word addresses 0x2000, 0x4000, 0x6000
+
+; RISKY - Auto-sizing may surprise you
+.DATA
+values 10, 20, 300, 40  ; 300 becomes a word!
 ```
 
 ## Common Mistakes to Avoid
@@ -1782,18 +2080,18 @@ PUSHC               ; Get carry flag
 BZF failed          ; Branch if carry was clear
 ```
 
-### 8. Using String Literals Directly with PUSHD
+### 8. Mixing .DATA Format Styles
 ```asm
-; WRONG - Cannot use string literal directly
-PUSHD "filename.txt"    ; INVALID SYNTAX!
-
-; CORRECT - Define string in .DATA section
+; WRONG - Inconsistent style
 .DATA
-    filename "filename.txt"
+byte lookup 10, 20, 30
+    STR0 "old style"   ; No label!
 
-.MAIN
-    PUSHD filename      ; Use the label
-    POPZW ZP.STR
+; CORRECT - Consistent style
+.DATA
+byte lookup 10, 20, 30
+
+str_message "new style", 0
 ```
 
 ### 9. Wrong Command Line Argument Index
@@ -1842,6 +2140,29 @@ PUSHGB GP.Counter   ; Access global variable
     GP.CursorY  0x01   ; Screen cursor Y position (0-24)
 ```
 
+### 13. Forgetting to Extend Index to Word for PUSHDAX
+```asm
+; WRONG - Pushing byte index directly
+PUSHB 5
+PUSHDAX 0          ; Index must be word!
+
+; CORRECT - Extend to word first
+PUSHB 5
+PUSHB0             ; Extend to word
+PUSHDAX 0
+```
+
+### 14. Forgetting Type Prefix for Large Values
+```asm
+; WRONG - Large values without word prefix will auto-size
+.DATA
+pointers 0xC000, 0xD000  ; Works but unclear intent
+
+; CORRECT - Explicit word prefix
+.DATA
+word pointers 0xC000, 0xD000  ; Clear: these are words
+```
+
 ## Summary
 
 The Hopper VM provides exceptional code density (8-10× better than native 6502) through:
@@ -1852,12 +2173,17 @@ The Hopper VM provides exceptional code density (8-10× better than native 6502)
 5. Compact bytecode representation
 6. Optimized instruction variants (SYSCALLX, INCLB/INCLW)
 7. **256-byte global page for persistent storage**
+8. **Flexible .DATA section with explicit byte and word type control**
 
 Key concepts to master:
 - Stack frame layout (**BP+5 for first argument**, BP+0 for first local, BP+1 for saved BP)
 - Complete instruction set including bitwise, **global**, and 32-bit operations
+- **.DATA section with `byte` and `word` prefixes for explicit type control**
+- **Three sizing modes: `byte` (force bytes), `word` (force words), no prefix (auto-size)**
+- **Array access using PUSHDAX and PUSHDAX2 instructions**
 - **Global variable access through PUSHGB/POPGB and PUSHGW/POPGW**
 - **Organizing globals with GP. prefix and documenting usage**
+- **Storing dynamic memory pointers in globals** - allocated memory addresses are 2-byte values perfect for global storage
 - Zero page marshalling for BIOS calls
 - SYSCALL vs SYSCALLX optimization
 - Stack cleanup responsibilities (including multi-DROP patterns)
@@ -1881,4 +2207,4 @@ Key concepts to master:
 - **PUSHZB for byte extraction** from word values
 - **Clear inline commenting** for maintainable code
 
-Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first! First user command line argument is at index 2, not 1! **The 256-byte global page provides persistent storage accessible from any function using PUSHGB/POPGB/PUSHGW/POPGW instructions!**
+Remember: Arguments always start at BP+5, not BP+3! This is critical for correct function parameter access. All code must use VM opcodes - never use native 6502 instructions! String literals cannot be used directly with PUSHD - they must be defined in the .DATA section first! First user command line argument is at index 2, not 1! **The 256-byte global page provides persistent storage accessible from any function using PUSHGB/POPGB/PUSHGW/POPGW instructions!** **Dynamically allocated memory pointers (16-bit addresses from MemAllocate) can and should be stored in global variables for program-wide access - use READB/WRITEB to access the allocated memory!** **Use explicit `byte` or `word` prefixes in .DATA for clear intent and to avoid auto-sizing surprises!** **Access array elements using PUSHDAX for byte arrays and PUSHDAX2 for word arrays!**
