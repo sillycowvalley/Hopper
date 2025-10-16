@@ -1452,6 +1452,102 @@ WRITEB:
             TAX
             JMP [opCodeJumps, X] 
             
+PUSHDA:
+            LDA [codePage], Y // Low byte of word offset    
+            INY
+            CLC
+            ADC constantsL
+            PHA               // Push result LSB
+            LDA [codePage], Y // High byte of word offset
+            INY
+            ADC constantsH    // Add with carry from low byte
+            PHA               // Push result MSB
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+PUSHDAX:
+            // Fetch the word offset operand
+            LDA [codePage], Y
+            INY
+            STA operandL      // Save offset LSB
+            LDA [codePage], Y
+            INY
+            STA operandH      // Save offset MSB
+            
+            // Pop index word (MSB first, then LSB)
+            PLA               // Pop index MSB
+            TAX               // Save in X
+            PLA               // Pop index LSB (now in A)
+            
+            // Add index + offset -> operand
+            CLC
+            ADC operandL      // A = indexLSB + offsetLSB
+            STA operandL      // Store result LSB
+            TXA               // Get index MSB
+            ADC operandH      // A = indexMSB + offsetMSB + carry
+            STA operandH      // Store result MSB
+            
+            // Add (index+offset) + constants -> push result
+            CLC
+            LDA operandL
+            ADC constantsL
+            PHA               // Push final LSB
+            LDA operandH
+            ADC constantsH
+            PHA               // Push final MSB
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+PUSHDAX2:
+            // Fetch the word offset operand
+            LDA [codePage], Y
+            INY
+            STA operandL      // Save offset LSB
+            LDA [codePage], Y
+            INY
+            STA operandH      // Save offset MSB
+            
+            // Pop index word (MSB first, then LSB)
+            PLA               // Pop index MSB
+            TAX               // Save in X
+            PLA               // Pop index LSB (now in A)
+            
+            // Multiply index by 2
+            ASL A             // indexLSB << 1
+            PHA               // Push doubled LSB to stack temporarily
+            TXA               // Get index MSB
+            ROL A             // indexMSB << 1 with carry
+            TAX               // Save doubled MSB in X
+            PLA               // Pop doubled LSB back to A
+            
+            // Add (index*2) + offset -> operand
+            CLC
+            ADC operandL      // Add offset LSB
+            STA operandL      // Store result LSB
+            TXA               // Get doubled index MSB
+            ADC operandH      // Add offset MSB + carry
+            STA operandH      // Store result MSB
+            
+            // Add ((index*2)+offset) + constants -> push result
+            CLC
+            LDA operandL
+            ADC constantsL
+            PHA               // Push final LSB
+            LDA operandH
+            ADC constantsH
+            PHA               // Push final MSB
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 ENTER:
             LDA BP
             PHA

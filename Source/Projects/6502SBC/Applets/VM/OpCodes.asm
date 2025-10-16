@@ -112,6 +112,10 @@ unit OpCodes
         
         READB    = 0xA0,  // Pop address word, push byte
         WRITEB   = 0xA2,  // Pop address word, pop byte
+        
+        PUSHDA   = 0xA4,  // Push Data section Address (word)
+        PUSHDAX  = 0xA6,  // Push Data section Address + indeX   (word index on stack)
+        PUSHDAX2 = 0xA8,  // Push Data section Address + indeX*2 (word array)
     }
     
     const byte[] opCodes = {
