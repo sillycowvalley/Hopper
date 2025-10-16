@@ -1095,10 +1095,9 @@ unit Parser
         }
         SEC
     }
-    
     parseDataLine()
     {
-        // Current token is Identifier (the label)
+        // syntax :  name value, value, value
         LDA tokenType
         CMP # TokenType.Identifier
         if (NZ)
@@ -1107,131 +1106,131 @@ unit Parser
             ErrorLine();    
             return;
         }
+        
+        // get the offset where this data element will start
+        Buffer.GetDataOffset(); // -> TOP
+        
         
         LDA tokenBufferL
         STA STRL
         LDA tokenBufferH
         STA STRH
-        
-        // Next token must be colon
-        GetToken();
-        LDA tokenType
-        CMP # TokenType.Colon
-        if (NZ)
+        LDA ZP.TOP1
+        if (Z)
         {
-            LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
-            ErrorLine();    
-            return;
+            LDA # (SymbolType.Data | NumberType.Byte)
         }
-        
-        // Add label at current data offset
-        Buffer.GetDataOffset();
-        Labels.Add();
+        else
+        {
+            LDA # (SymbolType.Data | NumberType.Word)
+        }
+        Symbols.Add();
         if (NC)
         {
-            LDA #(errLabelAddFailed / 256) STA ZP.STRH LDA #(errLabelAddFailed % 256) STA ZP.STRL
+            LDA #(errSymbolAddFailed / 256) STA ZP.STRH LDA #(errSymbolAddFailed % 256) STA ZP.STRL
             ErrorLine();    
             return;
         }
-        
-        // Get directive (.byte or .word) - must be on same line
-        GetToken();
-        LDA tokenType
-        CMP # TokenType.Identifier
-        if (NZ)
-        {
-            LDA #(errIdentifierExpected / 256) STA ZP.STRH LDA #(errIdentifierExpected % 256) STA ZP.STRL
-            ErrorLine();    
-            return;
-        }
-        
-        // Check for .byte or .word
-        LDY #1
-        LDA [tokenBuffer], Y
-        CMP #'b'
-        if (Z)
-        {
-            parseByteDirective();
-            return;
-        }
-        CMP #'w'
-        if (Z)
-        {
-            parseWordDirective();
-            return;
-        }
-        
-        // Unknown directive
-        LDA #(errValueExpected / 256) STA ZP.STRH LDA #(errValueExpected % 256) STA ZP.STRL
-        ErrorLine();
-    }
-
-    parseByteDirective()
-    {
         loop
         {
             GetToken();
             LDA tokenType
-            CMP # TokenType.NewLine
-            if (Z) { Buffer.UpdateDataSize(); SEC return; }
-            CMP # TokenType.Comma
-            if (Z) { continue; }
-            
-            CMP # TokenType.String
-            if (Z)
+            switch (A)
             {
-                LDY #0
-                loop
+                case TokenType.NewLine:
                 {
-                    LDA [tokenBuffer], Y
-                    if (Z) { break; }
-                    Buffer.Emit();
-                    INY
+                    continue;
                 }
-                continue;
+                case TokenType.String:
+                {
+                    LDY #0
+                    loop
+                    {
+                        LDA [tokenBuffer], Y
+                        if (Z) { break; }
+                        Buffer.Emit();
+                        INY
+                    }
+                    LDA #0
+                    Buffer.Emit();
+                }
+                case TokenType.Number:
+                {
+                    LDA tokenValueL
+                    Buffer.Emit();
+                    
+                    LDA numberType
+                    AND # (NumberType.Byte | NumberType.Char)
+                    if (Z) // not Byte or Char?
+                    {
+                        LDA tokenValueH
+                        Buffer.Emit();
+                    }
+                }
+                case TokenType.Identifier:
+                {
+                    LDA tokenBufferL
+                    STA STRL
+                    LDA tokenBufferH
+                    STA STRH
+                    
+                    // name in STR
+                    // C if found, NC if not
+                    // value in TOP0..1, type in A
+                    FindSymbol();
+                    if (NC)
+                    {
+                        
+                        LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
+                        ErrorLineSTR();    
+                        return;
+                    }
+                    STA numberType
+                    AND # SymbolType.Mask
+                    CMP # SymbolType.Constant
+                    if (NZ)
+                    {
+                        
+                        LDA #(errUndefinedSymbol / 256) STA ZP.STRH LDA #(errUndefinedSymbol % 256) STA ZP.STRL
+                        ErrorLineSTR();    
+                        return;
+                    }
+                    LDA ZP.TOP0
+                    Buffer.Emit();
+                    
+                    LDA numberType
+                    AND # (NumberType.Byte | NumberType.Char)
+                    if (Z) // not Byte or Char?
+                    {
+                        LDA ZP.TOP1
+                        Buffer.Emit();
+                    }
+                }
+                default:
+                {
+                    LDA #(errValueExpected / 256) STA ZP.STRH LDA #(errValueExpected % 256) STA ZP.STRL
+                    ErrorLine();    
+                    return;
+                }
             }
             
-            CMP # TokenType.Number
-            if (Z)
+            loop
             {
-                LDA tokenValueL
-                Buffer.Emit();
-                continue;
+                GetToken();
+                LDA tokenType
+                CMP # TokenType.NewLine
+                if (NZ) { break; }
             }
-            
-            Buffer.UpdateDataSize();
-            SEC
-            return;
-        }
-    }
-
-    parseWordDirective()
-    {
-        loop
-        {
-            GetToken();
-            LDA tokenType
-            CMP # TokenType.NewLine
-            if (Z) { Buffer.UpdateDataSize(); SEC return; }
-            CMP # TokenType.Comma
-            if (Z) { continue; }
-            
-            CMP # TokenType.Number
-            if (Z)
+            CMP #TokenType.Comma
+            if (NZ) 
             {
-                LDA tokenValueL
-                Buffer.Emit();
-                LDA tokenValueH
-                Buffer.Emit();
-                continue;
+                UngetToken(); 
+                break; 
             }
-            
-            Buffer.UpdateDataSize();
-            SEC
-            return;
         }
+        Buffer.UpdateDataSize();
+        SEC
     }
-
     parseFuncLine()
     {
         LDA tokenType

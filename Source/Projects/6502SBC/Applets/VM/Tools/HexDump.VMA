@@ -29,7 +29,7 @@
     counter2      -1
 
 .DATA
-STR0: .byte "r", 0
+    STR0 "r"
     
 .FUNC PrintAddress
     ENTER 0
