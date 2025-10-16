@@ -116,6 +116,10 @@ unit OpCodes
         PUSHDA   = 0xA4,  // Push Data section Address (word)
         PUSHDAX  = 0xA6,  // Push Data section Address + indeX   (word index on stack)
         PUSHDAX2 = 0xA8,  // Push Data section Address + indeX*2 (word array)
+        
+        ANDW     = 0xAA,  // Pop 4 bytes, push bitwise AND
+        ORW      = 0xAC,  // Pop 4 bytes, push bitwise OR
+        
     }
     
     const byte[] opCodes = {
@@ -164,7 +168,9 @@ unit OpCodes
         
         // Bitwise Operations (0x44-0x50)
         OpCode.ANDB,     Arguments.None, 4, 'A','N','D','B',                     // ANDB
+        OpCode.ANDW,     Arguments.None, 4, 'A','N','D','W',                     // ANDW
         OpCode.ORB,      Arguments.None, 3, 'O','R','B',                         // ORB
+        OpCode.ORW,      Arguments.None, 3, 'O','R','B',                         // ORW
         OpCode.XORB,     Arguments.None, 4, 'X','O','R','B',                     // XORB
         OpCode.NOTB,     Arguments.None, 4, 'N','O','T','B',                     // NOTB
         OpCode.XORW,     Arguments.None, 4, 'X','O','R','W',                     // XORW

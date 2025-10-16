@@ -567,6 +567,27 @@ ANDB:
             INY
             TAX
             JMP [opCodeJumps, X]
+
+ANDW:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise AND two words
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            AND 0x0102, X     // AND with TOP0 (LSB at SP+2)
+            STA 0x0104, X     // Store result to NEXT0
+            
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            AND 0x0101, X     // AND with TOP1 (MSB at SP+1)
+            STA 0x0103, X     // Store result to NEXT1
+            
+            INX INX TXS       // Remove TOP from stack
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
             
 ORB:                    
             TSX               // Get stack pointer to X
@@ -579,6 +600,27 @@ ORB:
             STA 0x0102, X     // Store result to NEXT position
             
             INX TXS           // Remove TOP from stack (1 byte)
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+
+ORW:                    
+            TSX               // Get stack pointer to X
+            
+            // Bitwise OR two words
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            ORA 0x0102, X     // OR with TOP0 (LSB at SP+2)
+            STA 0x0104, X     // Store result to NEXT0
+            
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            ORA 0x0101, X     // OR with TOP1 (MSB at SP+1)
+            STA 0x0103, X     // Store result to NEXT1
+            
+            INX INX TXS       // Remove TOP from stack
             
             LDA [codePage], Y
             INY
