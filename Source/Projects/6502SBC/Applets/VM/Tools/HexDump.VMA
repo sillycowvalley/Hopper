@@ -29,7 +29,7 @@
     counter2      -1
 
 .DATA
-    STR0 "r"
+STR0: .byte "r", 0
     
 .FUNC PrintAddress
     ENTER 0
