@@ -170,7 +170,7 @@ unit OpCodes
         OpCode.ANDB,     Arguments.None, 4, 'A','N','D','B',                     // ANDB
         OpCode.ANDW,     Arguments.None, 4, 'A','N','D','W',                     // ANDW
         OpCode.ORB,      Arguments.None, 3, 'O','R','B',                         // ORB
-        OpCode.ORW,      Arguments.None, 3, 'O','R','B',                         // ORW
+        OpCode.ORW,      Arguments.None, 3, 'O','R','W',                         // ORW
         OpCode.XORB,     Arguments.None, 4, 'X','O','R','B',                     // XORB
         OpCode.NOTB,     Arguments.None, 4, 'N','O','T','B',                     // NOTB
         OpCode.XORW,     Arguments.None, 4, 'X','O','R','W',                     // XORW

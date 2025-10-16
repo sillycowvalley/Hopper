@@ -224,10 +224,10 @@ PLP
         LDA #4 // multiples of 2, .MAIN is 2
         STA nextFunctionID
         
-        // Allocate 2K initial buffer
-        LDA #0x00   // 2048 = 0x0800
+        // Allocate 8K initial buffer
+        LDA #0x00
         STA ZP.ACCL
-        LDA #0x08
+        LDA #0x20
         STA ZP.ACCH
         Memory.Allocate();
         if (NC)
@@ -245,10 +245,10 @@ PLP
         LDA ZP.IDXH
         STA codeBufferH
         
-        // Store capacity
+        // Store capacity (8K)
         LDA #0x00
         STA codeCapacityL
-        LDA #0x08
+        LDA #0x20
         STA codeCapacityH
         
         LDA # fileHeaderSize

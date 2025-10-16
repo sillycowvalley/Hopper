@@ -190,6 +190,9 @@ unit Parser
     
     ErrorFunctionTooLarge()
     {
+        LDA ZP.TOP0
+        Print.Hex();
+        Print.Space();
         // size not ok
         LDA #(errFunctionTooLarge / 256)
         STA ZP.STRH
