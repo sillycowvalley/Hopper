@@ -148,12 +148,22 @@ echo_loop:
     PUSHGW GP.Count
     PUSHW1
     ADDW
-    POPGW GP.Count
+    DUPW                ; Duplicate new count
+    POPGW GP.Count      ; Save to global
     
-    ; Update display every character
-    CALL DisplayCount
+    ; Check if low 4 bits are zero (count % 16 == 0)
+    DROPB               ; Drop high byte
+    PUSHB 0x0F
+    ANDB                ; Mask low 4 bits
+    PUSHB0
+    EQB                 ; Check if == 0
+    BNZF update_display ; Branch if zero (every 16th character)
     
     ; Continue loop
+    BRAR echo_loop
+
+update_display:
+    CALL DisplayCount
     BRAR echo_loop
 
 close_file:
