@@ -686,7 +686,7 @@ RET      0x8A       ; Return from function
 ### System & Stack Frame (0x8C-0x94)
 ```asm
 SYSCALL  0x8C id    ; Call BIOS function by ID
-SYSCALLX 0x8E       ; Call BIOS function (fast, X preset)
+SYSCALLX 0x8E       ; Call BIOS function (faster: does not load or store simulated A and Y registers or C an Z flags)
 ENTER    0x90 bytes ; Setup stack frame with local space
 LEAVE    0x92       ; Restore stack frame
 DUMP     0x94       ; Diagnostic stack dump
@@ -1323,6 +1323,225 @@ Stack dump:
 - **Safe to use anywhere**: Can be inserted between any instructions
 - **Shows context**: Displays offsets relative to BP for easy debugging
 - **Marks key locations**: SP and BP are clearly indicated
+
+
+# SYSCALL vs SYSCALLX: Performance Optimization Guide
+
+## Overview
+
+The VM provides two opcodes for invoking BIOS functions: `SYSCALL` and `SYSCALLX`.
+While both perform the same basic function, `SYSCALLX` is an optimized variant that saves cycles when certain BIOS call
+features are not needed.
+
+## Implementation Differences
+
+### SYSCALL (Full-Featured)
+```asm
+SYSCALL:
+    LDA [codePage], Y // byte BIOS call index
+    INY
+    TAX
+    PHY
+    LDY yStore        // Restore Y register from VM storage
+    LDA aStore        // Restore A register from VM storage
+    dispatchBIOS();
+    STA aStore        // Save A register back to VM storage
+    ; Save Z and C flags to vmFlags
+    if (Z) { SMB6 vmFlags } else { RMB6 vmFlags }
+    if (C) { SMB7 vmFlags } else { RMB7 vmFlags }
+    PLY
+    
+    LDA [codePage], Y
+    INY
+    TAX
+    JMP [opCodeJumps, X]
+```
+
+### SYSCALLX (Optimized)
+```asm
+SYSCALLX:
+    LDA [codePage], Y // byte BIOS call index
+    INY
+    TAX
+    PHY
+    dispatchBIOS();   // A and Y registers NOT restored/saved
+    PLY
+    
+    LDA [codePage], Y
+    INY
+    TAX
+    JMP [opCodeJumps, X]
+```
+
+## Key Differences
+
+### SYSCALL provides:
+1. **Register marshalling** - Restores A and Y registers from VM storage (`aStore`, `yStore`) before the call
+2. **Return value preservation** - Saves A register back to VM storage after the call
+3. **Flag preservation** - Captures Z and C flags in `vmFlags` for `PUSHZ` and `PUSHC` instructions
+4. **Full compatibility** - Works with all BIOS functions
+
+### SYSCALLX omits:
+1. **No register marshalling** - A and Y are NOT restored before the call
+2. **No return value capture** - A register is NOT saved after the call
+3. **No flag preservation** - Z and C flags are NOT captured in `vmFlags`
+4. **Lighter weight** - Saves approximately 10-15 cycles per call
+
+## When to Use SYSCALLX
+
+Use `SYSCALLX` when **ALL** of the following conditions are true:
+
+### 1. The BIOS Call Does Not Use A or Y Registers as Input
+Most BIOS calls receive their parameters via zero page marshalling (e.g., `ZP.STR`, `ZP.TOP`, `ZP.NEXT`), not through registers.
+
+**Good candidates:**
+```asm
+; PrintString only needs ZP.STR
+PUSHD msg_hello
+POPZW ZP.STR
+SYSCALLX PrintString    ✓ Safe - no A/Y input needed
+
+; FOpen needs ZP.STR and ZP.NEXT
+PUSHD filename
+POPZW ZP.STR
+PUSHD mode
+POPZW ZP.NEXT
+SYSCALLX FOpen          ✓ Safe - no A/Y input needed
+
+; PrintChar needs character in A register
+PUSHB 'X'
+POPA                    ; Character now in A
+SYSCALL PrintChar       ✗ Must use SYSCALL - needs A register
+```
+
+### 2. You Don't Need the Return Value in A
+Some BIOS calls return values in the A register. If you need that value, use `SYSCALL`.
+
+```asm
+; SerialWaitForChar returns character in A
+SYSCALL SerialWaitForChar   ; Returns char in A, saved to aStore
+PUSHA                       ; Can retrieve it with PUSHA
+
+SYSCALLX SerialWaitForChar  ✗ Wrong - return value in A is lost
+```
+
+### 3. You Don't Need to Check Z or C Flags After the Call
+If you need to branch based on success/failure or test results, use `SYSCALL`.
+
+```asm
+; FOpen sets C flag on success
+SYSCALL FOpen
+PUSHC                   ; Get the carry flag
+BZF failed             ✓ Can check result
+
+SYSCALLX FOpen
+PUSHC                   ✗ Wrong - C flag not preserved in vmFlags
+BZF failed             ; This won't work correctly
+```
+
+### 4. Zero Page Marshalling is Sufficient
+The BIOS call must work entirely through zero page locations.
+
+```asm
+; PrintHex needs value in A
+PUSHB 0xFF
+POPA
+SYSCALL PrintHex        ✓ Correct - needs A register
+
+; PrintNewLine needs nothing
+SYSCALLX PrintNewLine   ✓ Safe - no parameters needed
+```
+
+## Performance Impact
+
+Using `SYSCALLX` instead of `SYSCALL` saves:
+- **~8 bytes of code** (register restore/save operations)
+- **~10-15 CPU cycles** per call
+- **Zero page operations** (aStore access)
+- **Flag manipulation** operations
+
+For frequently called functions in tight loops, this can yield measurable performance improvements.
+
+## Common BIOS Functions Safe for SYSCALLX
+
+### Always Safe:
+- `PrintString` - Uses ZP.STR
+- `PrintNewLine` - No parameters
+- `FClose` - Uses ZP.NEXT
+- `FPutC` - Uses ZP.ACC and ZP.NEXT
+- Most file operations (except those returning values)
+
+### Never Safe (Use SYSCALL):
+- `PrintChar` - Needs A register input
+- `PrintHex` - Needs A register input
+- `SerialWaitForChar` - Returns in A register
+- `FGetC` - Returns in ZP.TOP and needs success checking
+- `ArgGet` - Returns result that may need checking
+- Any call where you check C or Z flags afterward
+
+### Context Dependent:
+- `FOpen` - Safe if you don't check the success flag, but you usually should check it
+- `ArgCount` - Returns count in A, but if you just need it on stack use `PUSHA` after `SYSCALL`
+
+## Example Optimization
+
+### Before (using SYSCALL everywhere):
+```asm
+echo_loop:
+    SYSCALL SerialWaitForChar   ; Need return value - must use SYSCALL
+    PUSHA
+    PUSHB CtrlZ
+    EQB
+    BNZF close_file
+    
+    POPA
+    POPZB ZP.ACC
+    PUSHGW GP.FileHandle
+    POPZW ZP.NEXT
+    SYSCALL FPutC               ; Could optimize this
+    
+    ; ... counter code ...
+    
+    SYSCALLX PrintChar          ; Wrong! PrintChar needs A register
+```
+
+### After (optimized):
+```asm
+echo_loop:
+    SYSCALL SerialWaitForChar   ; Must use SYSCALL - returns in A
+    PUSHA
+    PUSHB CtrlZ
+    EQB
+    BNZF close_file
+    
+    POPA
+    POPZB ZP.ACC
+    PUSHGW GP.FileHandle
+    POPZW ZP.NEXT
+    SYSCALLX FPutC              ✓ Safe - uses only zero page
+    
+    ; ... counter code ...
+    
+    SYSCALL PrintChar           ✓ Must use SYSCALL - needs A
+```
+
+## Rule of Thumb
+
+**Default to SYSCALL** unless you've verified the specific BIOS call:
+1. Uses only zero page marshalling for input
+2. Doesn't return values you need
+3. Doesn't set flags you need to check
+
+When in doubt, use `SYSCALL` - the safety is worth the small performance cost.
+
+## Debugging Tip
+
+If your code works with `SYSCALL` but fails with `SYSCALLX`, you're likely:
+- Missing a return value that was in A
+- Missing a flag check (C or Z)
+- Calling a function that needs A or Y register input
+
+Simply switch back to `SYSCALL` for that call.
 
 ## Programming Patterns from Working Examples
 

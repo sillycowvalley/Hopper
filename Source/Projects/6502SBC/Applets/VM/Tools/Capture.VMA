@@ -43,17 +43,8 @@ str_mode "w"
     PUSHB 0x08          ; Backspace character
     POPA
     SYSCALL PrintChar
-    
-    PUSHB 0x08
-    POPA
     SYSCALL PrintChar
-    
-    PUSHB 0x08
-    POPA
     SYSCALL PrintChar
-    
-    PUSHB 0x08
-    POPA
     SYSCALL PrintChar
     
     ; Print count as 4 hex digits
@@ -83,7 +74,7 @@ show_usage:
     ; No filename - print usage and exit
     PUSHD msg_usage
     POPZW ZP.STR
-    SYSCALL PrintString
+    SYSCALLX PrintString
     HALT
     
 get_filename:
@@ -96,7 +87,7 @@ get_filename:
     ; Open file for writing
     PUSHD str_mode
     POPZW ZP.NEXT
-    SYSCALL FOpen
+    SYSCALLX FOpen
     ; ZP.TOP now contains file handle (or NULL if failed)
     
     ; Save file handle to global variable
@@ -112,11 +103,11 @@ get_filename:
     ; Display prompt
     PUSHD msg_prompt
     POPZW ZP.STR
-    SYSCALL PrintString
+    SYSCALLX PrintString
     
     PUSHD msg_capturing
     POPZW ZP.STR
-    SYSCALL PrintString
+    SYSCALLX PrintString
     
     ; Initialize counter to 0
     PUSHW0
@@ -142,7 +133,7 @@ echo_loop:
     POPZB ZP.ACC        ; Move character to ZP.ACC for FPutC
     PUSHGW GP.FileHandle ; Get file handle from global
     POPZW ZP.NEXT       ; Move to ZP.NEXT for FPutC
-    SYSCALL FPutC
+    SYSCALLX FPutC
     
     ; Increment counter
     PUSHGW GP.Count
@@ -166,17 +157,17 @@ close_file:
     CALL DisplayCount
     
     ; Print newline
-    SYSCALL PrintNewLine
+    SYSCALLX PrintNewLine
     
     ; Close the file
     PUSHGW GP.FileHandle
     POPZW ZP.NEXT
-    SYSCALL FClose
+    SYSCALLX FClose
     HALT
 
 file_error:
     ; Print error message
     PUSHD msg_cannot
     POPZW ZP.STR
-    SYSCALL PrintString
+    SYSCALLX PrintString
     HALT
