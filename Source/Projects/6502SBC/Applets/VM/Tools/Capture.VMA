@@ -67,8 +67,7 @@ str_mode "w"
     PUSHA
     PUSHB 3             ; Need at least 3 arguments
     LTB                 ; Pops both, pushes 1 if A < 3, else 0
-    BNZF show_usage     ; Branch if result is non-zero (A < 3)
-    BRAF get_filename   ; Skip usage message
+    BZF get_filename    ; Skip usage message
     
 show_usage:
     ; No filename - print usage and exit
