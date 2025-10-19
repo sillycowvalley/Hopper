@@ -7,13 +7,13 @@
     ZP.STR       0x1E
     
     ; BIOS syscalls
-    ArgCount           0x36
-    ArgGet             0x37
-    SerialWaitForChar  0x0E
-    PrintString        0x11
-    PrintChar          0x12
-    PrintHex           0x13
-    PrintNewLine       0x14
+    Arg.Count           0x36
+    Arg.Get             0x37
+    Serial.WaitForChar  0x0E
+    Print.String        0x11
+    Print.Char          0x12
+    Print.Hex           0x13
+    Print.NewLine       0x14
     FOpen              0x30
     FClose             0x31
     FPutC              0x34
@@ -22,8 +22,8 @@
     CtrlZ        0x1A
     
     ; Global variables
-    GP.FileHandle  0x00
-    GP.Count       0x02   ; Word (16-bit counter)
+    GP.FileHandle  0x00   ; 1 Byte file handle
+    GP.Count       0x01   ; Word (16-bit counter)
 
 .DATA
 msg_usage "Usage: CAPTURE <filename>\n"
@@ -42,27 +42,27 @@ str_mode "w"
     ; Print 4 backspaces to erase previous count
     PUSHB 0x08          ; Backspace character
     POPA
-    SYSCALL PrintChar
-    SYSCALL PrintChar
-    SYSCALL PrintChar
-    SYSCALL PrintChar
+    SYSCALL Print.Char
+    SYSCALL Print.Char
+    SYSCALL Print.Char
+    SYSCALL Print.Char
     
     ; Print count as 4 hex digits
     PUSHGW GP.Count
     ; Print high byte
     POPA
-    SYSCALL PrintHex
+    SYSCALL Print.Hex
     
     ; Print low byte
     POPA
-    SYSCALL PrintHex
+    SYSCALL Print.Hex
     
     LEAVE
     RET
 
 .MAIN
     ; Check argument count
-    SYSCALL ArgCount
+    SYSCALL Arg.Count
     ; A contains count (0=VM, 1=program, 2=filename)
     PUSHA
     PUSHB 3             ; Need at least 3 arguments
@@ -74,14 +74,14 @@ show_usage:
     ; No filename - print usage and exit
     PUSHD msg_usage
     POPZW ZP.STR
-    SYSCALLX PrintString
+    SYSCALLX Print.String
     HALT
     
 get_filename:
     ; Get filename argument (index 2)
     PUSHB 2
     POPA
-    SYSCALL ArgGet
+    SYSCALL Arg.Get
     ; ZP.STR now points to filename
     
     ; Open file for writing
@@ -91,23 +91,21 @@ get_filename:
     ; ZP.TOP now contains file handle (or NULL if failed)
     
     ; Save file handle to global variable
-    PUSHZW ZP.TOP
-    POPGW GP.FileHandle
+    PUSHZB ZP.TOP       ; 0x01 if good, 0x00 if not
+    DUPB
+    POPGB  GP.FileHandle
     
     ; Check if file opened successfully
-    PUSHZW ZP.TOP
-    PUSHW0
-    NEW                 ; Pushes 1 if not equal (handle valid), 0 if equal (NULL)
     BZF file_error      ; Branch if 0 (handle was NULL)
     
     ; Display prompt
     PUSHD msg_prompt
     POPZW ZP.STR
-    SYSCALLX PrintString
+    SYSCALLX Print.String
     
     PUSHD msg_capturing
     POPZW ZP.STR
-    SYSCALLX PrintString
+    SYSCALLX Print.String
     
     ; Initialize counter to 0
     PUSHW0
@@ -119,20 +117,20 @@ get_filename:
     ; Main echo loop
 echo_loop:
     ; Get character from keyboard
-    SYSCALL SerialWaitForChar
+    SYSCALL Serial.WaitForChar
     ; Character now in A register
     
     ; Check if Ctrl+Z
-    PUSHA               ; Push A to stack
-    PUSHB CtrlZ         ; Push Ctrl+Z constant
-    EQB                 ; Compare bytes, pushes 1 if equal, 0 if not
-    BNZF close_file     ; Branch if equal (result is 1)
+    PUSHA                ; Push A to stack
+    PUSHB CtrlZ          ; Push Ctrl+Z constant
+    EQB                  ; Compare bytes, pushes 1 if equal, 0 if not
+    BNZF close_file      ; Branch if equal (result is 1)
     
     ; Write character to file
-    PUSHA               ; Push character again (still in A)
-    POPZB ZP.ACC        ; Move character to ZP.ACC for FPutC
-    PUSHGW GP.FileHandle ; Get file handle from global
-    POPZW ZP.NEXT       ; Move to ZP.NEXT for FPutC
+    PUSHA                ; Push character again (still in A)
+    POPZB ZP.ACC         ; Move character to ZP.ACC for FPutC
+    PUSHGB GP.FileHandle ; Get file handle from global
+    POPZB ZP.NEXT        ; Move to ZP.NEXT for FPutC
     SYSCALLX FPutC
     
     ; Increment counter
@@ -146,7 +144,7 @@ echo_loop:
     DROPB               ; Drop high byte
     PUSHB 0x0F
     ANDB                ; Mask low 4 bits
-    BNZF skip_display ; Branch if zero (every 16th character)
+    BNZF skip_display   ; Branch if not zero (not the 16th character)
     
     CALL DisplayCount
 skip_display:
@@ -157,11 +155,11 @@ close_file:
     CALL DisplayCount
     
     ; Print newline
-    SYSCALLX PrintNewLine
+    SYSCALLX Print.NewLine
     
     ; Close the file
-    PUSHGW GP.FileHandle
-    POPZW ZP.NEXT
+    PUSHGB GP.FileHandle
+    POPZB ZP.NEXT
     SYSCALLX FClose
     HALT
 
@@ -169,5 +167,5 @@ file_error:
     ; Print error message
     PUSHD msg_cannot
     POPZW ZP.STR
-    SYSCALLX PrintString
+    SYSCALLX Print.String
     HALT
