@@ -1,10 +1,10 @@
 ; CAPTURE.VMA - Minimal echo program until Ctrl+Z
 .CONST
     ; Zero page marshalling registers
-    ZP.STR       0x1E
+    ZP.ACC       0x10
     ZP.TOP       0x12
     ZP.NEXT      0x16
-    ZP.ACC       0x10
+    ZP.STR       0x1E
     
     ; BIOS syscalls
     ArgCount           0x36
@@ -12,6 +12,8 @@
     SerialWaitForChar  0x0E
     PrintString        0x11
     PrintChar          0x12
+    PrintHex           0x13
+    PrintNewLine       0x14
     FOpen              0x30
     FClose             0x31
     FPutC              0x34
@@ -21,15 +23,51 @@
     
     ; Global variables
     GP.FileHandle  0x00
+    GP.Count       0x02   ; Word (16-bit counter)
 
 .DATA
-msg_usage "Usage: CAPTURE <filename>", 0x0A
+msg_usage "Usage: CAPTURE <filename>\n"
 
-msg_prompt "Paste text, Ctrl+Z to save, Ctrl+C to abort", 0x0A, "Capturing:     "
+msg_prompt "Paste text, Ctrl+Z to save, Ctrl+C to abort\n"
 
-msg_cannot "Cannot create file", 0x0A
+msg_capturing "Capturing:     "
+
+msg_cannot "Cannot create file\n"
 
 str_mode "w"
+
+.FUNC DisplayCount
+    ENTER 0
+    
+    ; Print 4 backspaces to erase previous count
+    PUSHB 0x08          ; Backspace character
+    POPA
+    SYSCALL PrintChar
+    
+    PUSHB 0x08
+    POPA
+    SYSCALL PrintChar
+    
+    PUSHB 0x08
+    POPA
+    SYSCALL PrintChar
+    
+    PUSHB 0x08
+    POPA
+    SYSCALL PrintChar
+    
+    ; Print count as 4 hex digits
+    PUSHGW GP.Count
+    ; Print high byte
+    POPA
+    SYSCALL PrintHex
+    
+    ; Print low byte
+    POPA
+    SYSCALL PrintHex
+    
+    LEAVE
+    RET
 
 .MAIN
     ; Check argument count
@@ -76,6 +114,17 @@ get_filename:
     POPZW ZP.STR
     SYSCALL PrintString
     
+    PUSHD msg_capturing
+    POPZW ZP.STR
+    SYSCALL PrintString
+    
+    ; Initialize counter to 0
+    PUSHW0
+    POPGW GP.Count
+    
+    ; Display initial count
+    CALL DisplayCount
+    
     ; Main echo loop
 echo_loop:
     ; Get character from keyboard
@@ -95,10 +144,25 @@ echo_loop:
     POPZW ZP.NEXT       ; Move to ZP.NEXT for FPutC
     SYSCALL FPutC
     
+    ; Increment counter
+    PUSHGW GP.Count
+    PUSHW1
+    ADDW
+    POPGW GP.Count
+    
+    ; Update display every character
+    CALL DisplayCount
+    
     ; Continue loop
     BRAR echo_loop
-    
+
 close_file:
+    ; Display final count
+    CALL DisplayCount
+    
+    ; Print newline
+    SYSCALL PrintNewLine
+    
     ; Close the file
     PUSHGW GP.FileHandle
     POPZW ZP.NEXT
