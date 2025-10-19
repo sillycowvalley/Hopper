@@ -1,0 +1,113 @@
+; CAPTURE.VMA - Minimal echo program until Ctrl+Z
+.CONST
+    ; Zero page marshalling registers
+    ZP.STR       0x1E
+    ZP.TOP       0x12
+    ZP.NEXT      0x16
+    ZP.ACC       0x10
+    
+    ; BIOS syscalls
+    ArgCount           0x36
+    ArgGet             0x37
+    SerialWaitForChar  0x0E
+    PrintString        0x11
+    PrintChar          0x12
+    FOpen              0x30
+    FClose             0x31
+    FPutC              0x34
+    
+    ; Control characters
+    CtrlZ        0x1A
+    
+    ; Global variables
+    GP.FileHandle  0x00
+
+.DATA
+msg_usage "Usage: CAPTURE <filename>", 0x0A
+
+msg_prompt "Paste text, Ctrl+Z to save, Ctrl+C to abort", 0x0A, "Capturing:     "
+
+msg_cannot "Cannot create file", 0x0A
+
+str_mode "w"
+
+.MAIN
+    ; Check argument count
+    SYSCALL ArgCount
+    ; A contains count (0=VM, 1=program, 2=filename)
+    PUSHA
+    PUSHB 3             ; Need at least 3 arguments
+    LTB                 ; Pops both, pushes 1 if A < 3, else 0
+    BNZF show_usage     ; Branch if result is non-zero (A < 3)
+    BRAF get_filename   ; Skip usage message
+    
+show_usage:
+    ; No filename - print usage and exit
+    PUSHD msg_usage
+    POPZW ZP.STR
+    SYSCALL PrintString
+    HALT
+    
+get_filename:
+    ; Get filename argument (index 2)
+    PUSHB 2
+    POPA
+    SYSCALL ArgGet
+    ; ZP.STR now points to filename
+    
+    ; Open file for writing
+    PUSHD str_mode
+    POPZW ZP.NEXT
+    SYSCALL FOpen
+    ; ZP.TOP now contains file handle (or NULL if failed)
+    
+    ; Save file handle to global variable
+    PUSHZW ZP.TOP
+    POPGW GP.FileHandle
+    
+    ; Check if file opened successfully
+    PUSHZW ZP.TOP
+    PUSHW0
+    NEW                 ; Pushes 1 if not equal (handle valid), 0 if equal (NULL)
+    BZF file_error      ; Branch if 0 (handle was NULL)
+    
+    ; Display prompt
+    PUSHD msg_prompt
+    POPZW ZP.STR
+    SYSCALL PrintString
+    
+    ; Main echo loop
+echo_loop:
+    ; Get character from keyboard
+    SYSCALL SerialWaitForChar
+    ; Character now in A register
+    
+    ; Check if Ctrl+Z
+    PUSHA               ; Push A to stack
+    PUSHB CtrlZ         ; Push Ctrl+Z constant
+    EQB                 ; Compare bytes, pushes 1 if equal, 0 if not
+    BNZF close_file     ; Branch if equal (result is 1)
+    
+    ; Write character to file
+    PUSHA               ; Push character again (still in A)
+    POPZB ZP.ACC        ; Move character to ZP.ACC for FPutC
+    PUSHGW GP.FileHandle ; Get file handle from global
+    POPZW ZP.NEXT       ; Move to ZP.NEXT for FPutC
+    SYSCALL FPutC
+    
+    ; Continue loop
+    BRAR echo_loop
+    
+close_file:
+    ; Close the file
+    PUSHGW GP.FileHandle
+    POPZW ZP.NEXT
+    SYSCALL FClose
+    HALT
+
+file_error:
+    ; Print error message
+    PUSHD msg_cannot
+    POPZW ZP.STR
+    SYSCALL PrintString
+    HALT
