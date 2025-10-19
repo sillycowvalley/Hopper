@@ -155,15 +155,10 @@ echo_loop:
     DROPB               ; Drop high byte
     PUSHB 0x0F
     ANDB                ; Mask low 4 bits
-    PUSHB0
-    EQB                 ; Check if == 0
-    BNZF update_display ; Branch if zero (every 16th character)
+    BNZF skip_display ; Branch if zero (every 16th character)
     
-    ; Continue loop
-    BRAR echo_loop
-
-update_display:
     CALL DisplayCount
+skip_display:
     BRAR echo_loop
 
 close_file:
