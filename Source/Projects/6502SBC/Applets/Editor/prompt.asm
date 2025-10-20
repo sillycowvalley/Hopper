@@ -186,9 +186,8 @@ unit Prompt
                 default:
                 {
 #ifdef UNIVERSAL
-                    LDA #0b10000000
-                    AND EditorFlags
-                    if (NZ)
+                    BIT EditorFlags
+                    if (MI)
                     {
                         Char.IsAlphaNumeric();
                         if (NC) 
