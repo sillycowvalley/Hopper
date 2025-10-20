@@ -50,6 +50,9 @@ unit Help
     const string helpLine19   = "                         MODERN ALIASES:  Ctrl+C=Copy, Ctrl+X=Cut, Ctrl+V=Paste";
     const string helpLine20   = "                         ---------------  Ctrl+Z=Undo/Redo";
 #endif
+    const string memoryLine   = "Available Memory: ";
+    const string bytesLabel   = " bytes";
+
     const string helpBottom   = "                        Press any key to return to editor                       ";
     
     // Display help screen
@@ -214,6 +217,32 @@ unit Help
         INY  
         
         
+        INY
+
+        LDA #(memoryLine % 256)
+        STA ZP.STRL
+        LDA #(memoryLine / 256)
+        STA ZP.STRH
+        LDY #22  // Line 22
+        printLine();
+        
+        // Position after "Memory: " text
+        LDA #18  // Column 8 (after "Available Memory: ")
+        LDY #22
+        Screen.GotoXY();
+        
+        Memory.Available();  // Returns bytes available in ZP.ACC (16-bit)
+        Shared.MoveAccToTop();
+        Long.Print();
+        
+        // Add " bytes" suffix
+        LDA #(bytesLabel % 256)
+        STA ZP.STRL
+        LDA #(bytesLabel / 256)
+        STA ZP.STRH
+        
+        Print.String();
+                
         // Bottom prompt in inverse at line 24
         Screen.Reset();
         Screen.Inverse();
@@ -246,15 +275,7 @@ unit Help
         LDA #0      // Column 0
         Screen.GotoXY();  // A = col (0), Y = row
         
-        // Print string using Serial.WriteChar
-        LDY #0
-        loop
-        {
-            LDA [ZP.STR], Y
-            if (Z) { break; }
-            Serial.WriteChar();
-            INY
-        }
-        
+        Print.String();
+               
         PLY  // Y restored to row number
     }}

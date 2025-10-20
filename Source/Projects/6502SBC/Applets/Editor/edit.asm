@@ -1,7 +1,7 @@
 program Edit
 {
 
-    //#define UNIVERSAL
+    #define UNIVERSAL
     
 #ifdef UNIVERSAL        
     #define CPU_65C02
@@ -24,6 +24,8 @@ program Edit
     uses "../System/ScreenBuffer"
     uses "../System/Char"
     uses "../System/Args"
+    uses "../System/Long"
+    uses "../System/Shared"
      
     uses "./Keyboard"
     uses "./GapBuffer"
