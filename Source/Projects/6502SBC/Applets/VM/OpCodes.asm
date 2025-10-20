@@ -119,7 +119,9 @@ unit OpCodes
         
         ANDW     = 0xAA,  // Pop 4 bytes, push bitwise AND
         ORW      = 0xAC,  // Pop 4 bytes, push bitwise OR
-        
+        MULW     = 0xAE,  // Pop 4 bytes, push unsigned *
+        DIVW     = 0xB0,  // Pop 4 bytes, push unsigned /
+        MODW     = 0xB2,  // Pop 4 bytes, push unsigned %        
     }
     
     const byte[] opCodes = {
@@ -152,6 +154,9 @@ unit OpCodes
         OpCode.NEGB,     Arguments.None, 4, 'N','E','G','B',                     // NEGB
         OpCode.ADDW,     Arguments.None, 4, 'A','D','D','W',                     // ADDW
         OpCode.SUBW,     Arguments.None, 4, 'S','U','B','W',                     // SUBW
+        OpCode.MULW,     Arguments.None, 4, 'M','U','L','W',                     // MULW
+        OpCode.DIVW,     Arguments.None, 4, 'D','I','V','W',                     // DIVW
+        OpCode.MODW,     Arguments.None, 4, 'M','O','D','W',                     // MODW
         OpCode.NEGW,     Arguments.None, 4, 'N','E','G','W',                     // NEGW
         OpCode.INCLB,    Arguments.Char, 5, 'I','N','C','L','B',                 // INCLB + char
         OpCode.INCLW,    Arguments.Char, 5, 'I','N','C','L','W',                 // INCLW + char

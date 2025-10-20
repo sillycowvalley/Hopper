@@ -468,6 +468,138 @@ SUBW:
             TAX
             JMP [opCodeJumps, X]  
             
+DIVW:
+            TSX               // Get stack pointer to X
+            
+            // Load operands from stack to zero page
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            
+            // Load NEXT (second operand)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            STA ZP.NEXT0
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            STA ZP.NEXT1
+                        
+            // Load TOP (first operand)
+            LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
+            STA ZP.TOP0
+            LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
+            STA ZP.TOP1
+            
+            STZ ZP.NEXT2      // Zero high word
+            STZ ZP.NEXT3
+            STZ ZP.TOP2       // Zero high word
+            STZ ZP.TOP3
+            
+            INX INX TXS       // Remove top word (net: pop 4, push 2)
+            
+            // Call divide syscall (munts X)
+            LDX # SysCall.LongDiv
+            PHY
+            dispatchBIOS();
+            PLY
+            
+            // Store result back to stack (now at SP+1, SP+2)
+            TSX
+            LDA ZP.NEXT0      // Get result LSB
+            STA 0x0102, X
+            LDA ZP.NEXT1      // Get result MSB
+            STA 0x0101, X
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X] 
+            
+MODW:
+            TSX               // Get stack pointer to X
+            
+            // Load operands from stack to zero page
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            
+            // Load NEXT (second operand)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            STA ZP.NEXT0
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            STA ZP.NEXT1
+                        
+            // Load TOP (first operand)
+            LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
+            STA ZP.TOP0
+            LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
+            STA ZP.TOP1
+            
+            STZ ZP.NEXT2      // Zero high word
+            STZ ZP.NEXT3
+            STZ ZP.TOP2       // Zero high word
+            STZ ZP.TOP3
+            
+            INX INX TXS       // Remove top word (net: pop 4, push 2)
+            
+            // Call divide syscall (munts X)
+            LDX # SysCall.LongMod
+            PHY
+            dispatchBIOS();
+            PLY
+            
+            // Store result back to stack (now at SP+1, SP+2)
+            TSX
+            LDA ZP.NEXT0      // Get result LSB
+            STA 0x0102, X
+            LDA ZP.NEXT1      // Get result MSB
+            STA 0x0101, X
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]   
+            
+MULW:
+            TSX               // Get stack pointer to X
+            
+            // Load operands from stack to zero page
+            // TOP:  SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            // NEXT: SP+3=NEXT1(MSB), SP+4=NEXT0(LSB)
+            
+            // Load NEXT (second operand)
+            LDA 0x0104, X     // Load NEXT0 (LSB at SP+4)
+            STA ZP.NEXT0
+            LDA 0x0103, X     // Load NEXT1 (MSB at SP+3)
+            STA ZP.NEXT1
+                        
+            // Load TOP (first operand)
+            LDA 0x0102, X     // Load TOP0 (LSB at SP+2)
+            STA ZP.TOP0
+            LDA 0x0101, X     // Load TOP1 (MSB at SP+1)
+            STA ZP.TOP1
+            
+            STZ ZP.NEXT2      // Zero high word
+            STZ ZP.NEXT3
+            STZ ZP.TOP2       // Zero high word
+            STZ ZP.TOP3
+            
+            INX INX TXS       // Remove top word (net: pop 4, push 2)
+            
+            // Call multiply syscall (munts X)
+            LDX # SysCall.LongMul
+            PHY
+            dispatchBIOS();
+            PLY
+            
+            // Store result back to stack (now at SP+1, SP+2)
+            TSX
+            LDA ZP.NEXT0      // Get result LSB
+            STA 0x0102, X
+            LDA ZP.NEXT1      // Get result MSB
+            STA 0x0101, X
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]           
+            
 XORB:                    
             TSX               // Get stack pointer to X
             
