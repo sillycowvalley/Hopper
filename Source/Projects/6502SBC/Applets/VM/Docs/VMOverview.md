@@ -1,4 +1,4 @@
-# Simple 6502 VM Specification (v3.0) - CORRECTED
+# Simple 6502 VM Specification (v3.1) - CORRECTED
 
 ## Overview
 
@@ -25,6 +25,7 @@ Primitive Types:
 Reference Types (16-bit pointers):
 - String constants (immutable, null-terminated)
 - Global arrays (fixed size, allocated at startup)
+- Dynamic memory pointers (from heap allocation)
 ```
 
 ## Memory Model
@@ -38,7 +39,7 @@ Reference Types (16-bit pointers):
 0x8000-0xFFFF: ROM (on systems with ROM)
 
 At runtime (heap allocated):
-- Globals block (allocated at startup)
+- Globals block (allocated at startup, 256 bytes)
 - Constants block (allocated at startup)
 - Function table (256 bytes at fixed location)
 ```
@@ -47,7 +48,7 @@ At runtime (heap allocated):
 ```
 functionTable:  0x60-0x61  // Function table pointer (read-only)
 BP:             0x63       // Base pointer for stack frame
-globals:        0x64-0x65  // Globals base address (2 bytes)
+globals:        0x64-0x65  // Globals base address (2 bytes, points to 256-byte page)
 constants:      0x66-0x67  // Constants base address (2 bytes)
 codePage:       0x68-0x69  // Current function page address
 operand:        0x6A-0x6B  // Temporary operand storage
@@ -55,6 +56,14 @@ vmFlags:        0x6C       // VM status flags (bit 6=Z, bit 7=C from BIOS calls)
 ```
 
 **Note:** The VM uses the 6502 Y register as the program counter (PC) within the current function page. This eliminates the need for zero page PC storage and enables efficient page-constrained execution.
+
+### Global Variables Page
+The VM provides a dedicated 256-byte page for global variables accessible from any function:
+- Allocated at startup from heap
+- Address stored in `globals` register (0x64-0x65)
+- Accessed via PUSHGB/POPGB (bytes) and PUSHGW/POPGW (words) with byte offsets
+- Perfect for storing dynamic memory pointers (16-bit addresses from MemAllocate)
+- Persistent across all function calls
 
 ### Function Organization
 - Functions start at page boundaries (0x2000, 0x2100, 0x2200...)
@@ -187,9 +196,11 @@ DUMP         0x94                   // Diagnostic stack dump
 
 ### String/Data Operations (0x98-0x9E)
 ```
-PUSHD        0x98  + byte           // Push string address (byte offset)
-PUSHD2       0x9A  + word           // Push string address (word offset)
-STRC         0x9C                   // Pop index, pop string, push char
+PUSHD        0x98  + byte           // Push data address (byte offset)
+PUSHD2       0x9A  + word           // Push data address (word offset)
+PUSHDAX      0x9B  + byte           // Push data address with index (offset + stack index)
+PUSHDAX2     0x9C  + byte           // Push data address with index*2 (offset + stack index*2)
+STRC         0x9D                   // Pop index, pop string, push char
 STRCMP       0x9E                   // Pop 2 strings, push -1/0/1
 ```
 
@@ -352,13 +363,18 @@ High Memory
     [Return PC (Y)]       <- Return PC within page
     [Return Page Low]     <- Return function page address
     [Return Page High]    
-    [Saved BP]            <- BP+1 (saved by ENTER)
-    [Local 1 Low]         <- BP-1,BP (first local, 16-bit)
-    [Local 1 High]        
-    [Local 2 Low]         <- BP-3,BP-2 (second local, 16-bit)  
-    [Local 2 High]        
+    [Saved BP]            <- Saved by ENTER
+    [Local 1]             <- BP points here (first local at BP+0)
+    [Local 2]             <- BP-1 (second local)
+    [Local 3]             <- BP-2 (third local)
     ...                   <- SP points here
 Low Memory
+
+CRITICAL: Arguments start at BP+5 (not BP+3!)
+- Saved BP is at BP+1
+- Return address is 3 bytes (Y + codePage low + codePage high) at BP+2,BP+3,BP+4
+- First argument is at BP+5
+- Second argument is at BP+6 (for bytes) or BP+5,BP+6 (for words)
 ```
 
 ## Program Format
@@ -374,9 +390,49 @@ Offset  Size  Description
 ...     ...   Function code follows
 ```
 
+### .DATA Section Format
+The .DATA section supports multiple formats:
+
+**New format (recommended):**
+```asm
+.DATA
+str_hello:
+    .byte "Hello, World!\n", 0
+
+lookup_table:
+    .byte 10, 20, 30, 40, 50
+
+addresses:
+    .word 0x2000, 0x4000, 0x6000
+```
+
+**Old format (still supported):**
+```asm
+.DATA
+    STR0 "Hello, World!\n"
+```
+
+### Array Access
+- **Byte arrays**: Use `PUSHDAX` which adds stack index to offset
+- **Word arrays**: Use `PUSHDAX2` which adds (stack index × 2) to offset
+
+```asm
+; Access byte array element
+PUSHB 2              ; Index
+PUSHB0               ; Extend to word
+PUSHDAX 0            ; Get address of element
+READB                ; Read the byte
+
+; Access word array element
+PUSHB 1              ; Index
+PUSHB0               ; Extend to word
+PUSHDAX2 0           ; Get address of element (index*2)
+; Then read LSB and MSB
+```
+
 ### Memory Initialization
 1. Load program header
-2. Allocate globals block from heap (page-aligned)
+2. Allocate globals block from heap (256 bytes, page-aligned)
 3. Zero-initialize globals
 4. Allocate constants block from heap (page-aligned)
 5. Copy constant data to constants block
@@ -393,10 +449,11 @@ Offset  Size  Description
     PrintString  0x11
     
 .DATA
-    STR0 "Hello, World!\n"
+str_hello:
+    .byte "Hello, World!\n", 0
 
 .MAIN
-    PUSHD STR0           ; Push string STR0 address
+    PUSHD str_hello      ; Push string address
     POPZW ZP.STR         ; Marshal to BIOS
     SYSCALL PrintString  ; Print it
     
@@ -413,23 +470,24 @@ Offset  Size  Description
     PrintNewLine 0x14
     
 .DATA
-    STR0 "Counting: "
+str_counting:
+    .byte "Counting: ", 0
 
 .MAIN
     ENTER 2              ; Allocate 2 bytes for locals
     
     ; Print header
-    PUSHD STR0             
+    PUSHD str_counting             
     POPZW ZP.STR
     SYSCALL PrintString
     
-    ; Initialize counter to 0
+    ; Initialize counter to 0 at first local (BP+0)
     PUSHB0
-    POPLB -1             ; Store in local variable at BP-1
+    POPLB 0              ; Store in first local variable at BP+0
     
 loop:
     ; Print the digit
-    PUSHLB -1            ; Get counter
+    PUSHLB 0             ; Get counter from BP+0
     PUSHB '0'            ; ASCII '0' 
     ADDB                 ; Convert to ASCII digit
     POPA                 
@@ -441,10 +499,10 @@ loop:
     SYSCALL PrintChar
     
     ; Increment counter
-    INCLB -1             ; Increment local variable directly
+    INCLB 0              ; Increment local variable directly at BP+0
     
     ; Check if we've done 10 digits
-    PUSHLB -1            ; Get counter
+    PUSHLB 0             ; Get counter from BP+0
     PUSHB 10
     EQB                  ; Compare with 10
     BZF loop             ; Loop if not equal
@@ -455,7 +513,7 @@ loop:
     HALT
 ```
 
-### Function Call Example
+### Function Call Example (CORRECTED)
 ```asm
 ; Demonstrate function calls with parameters
 .CONST
@@ -466,10 +524,12 @@ loop:
     ; Call PrintDigit with value 5
     PUSHB 5
     CALL PrintDigit
+    DROPB                ; Clean up argument
     
     ; Call PrintDigit with value 7  
     PUSHB 7
     CALL PrintDigit
+    DROPB                ; Clean up argument
     
     SYSCALL PrintNewLine
     HALT
@@ -477,8 +537,8 @@ loop:
 .FUNC PrintDigit
     ENTER 0              ; No local variables needed
     
-    ; Convert digit to ASCII and print
-    PUSHLB 3             ; Get parameter (at BP+3)
+    ; CRITICAL: First argument is at BP+5, not BP+3!
+    PUSHLB 5             ; Get parameter (at BP+5)
     PUSHB '0'
     ADDB
     POPA
@@ -486,6 +546,106 @@ loop:
     
     LEAVE
     RET
+```
+
+### Dynamic Memory with Global Pointers
+```asm
+; Demonstrate allocating memory and storing pointer in globals
+.CONST
+    ZP.ACC       0x10
+    ZP.IDX       0x1A
+    MemAllocate  0x00
+    MemFree      0x01
+    
+    ; Global variable offsets
+    GP.BufferPtr 0x00    ; Pointer to allocated buffer (2 bytes)
+    GP.BufferSize 0x02   ; Size of buffer (2 bytes)
+
+.MAIN
+    ENTER 0
+    
+    ; Allocate 256-byte buffer
+    PUSHW 256
+    POPZW ZP.ACC
+    SYSCALL MemAllocate
+    PUSHC                ; Check if successful
+    BZF alloc_failed
+    
+    ; Store pointer in global variable
+    PUSHZW ZP.IDX        ; Get allocated address
+    POPGW GP.BufferPtr   ; Save to global
+    
+    ; Store size
+    PUSHW 256
+    POPGW GP.BufferSize
+    
+    ; Write byte to buffer[10]
+    PUSHGW GP.BufferPtr  ; Get buffer address
+    PUSHW 10             ; Add offset
+    ADDW
+    PUSHB 0x42           ; Value to write
+    WRITEB               ; Write to memory
+    
+    ; Read back from buffer[10]
+    PUSHGW GP.BufferPtr  ; Get buffer address
+    PUSHW 10             ; Add offset
+    ADDW
+    READB                ; Read from memory
+    ; Value 0x42 now on stack
+    
+    ; Free the buffer
+    PUSHGW GP.BufferPtr  ; Get pointer from global
+    POPZW ZP.IDX
+    SYSCALL MemFree
+    
+    LEAVE
+    HALT
+    
+alloc_failed:
+    LEAVE
+    HALT
+```
+
+### Array Access Example
+```asm
+; Demonstrate byte and word array access
+.CONST
+    ZP.TOP       0x12
+    PrintHex     0x13
+
+.DATA
+byte_array:
+    .byte 10, 20, 30, 40, 50
+
+word_array:
+    .word 0x1234, 0x5678, 0xABCD
+
+.MAIN
+    ENTER 0
+    
+    ; Access byte_array[2] (value 30)
+    PUSHB 2              ; Index
+    PUSHB0               ; Extend to word
+    PUSHDAX 0            ; Get address: byte_array + index
+    READB                ; Read the byte
+    POPA
+    SYSCALL PrintHex     ; Print: 1E (hex for 30)
+    
+    ; Access word_array[1] (value 0x5678)
+    PUSHB 1              ; Index
+    PUSHB0               ; Extend to word
+    PUSHDAX2 0           ; Get address: word_array + (index*2)
+    DUPW                 ; Duplicate address
+    READB                ; Read LSB
+    POPZB ZP.TOP0
+    PUSHW1
+    ADDW                 ; Address + 1
+    READB                ; Read MSB
+    POPZB ZP.TOP1
+    PUSHZW ZP.TOP        ; Full word on stack: 0x5678
+    
+    LEAVE
+    HALT
 ```
 
 ## Performance Characteristics
@@ -509,6 +669,7 @@ loop:
 - VM interpreter: ~1KB
 - Dispatch table: 256 bytes (even opcodes only)
 - Function table: 256 bytes
+- Global variables: 256 bytes (fixed allocation)
 - Zero page usage: 16 bytes (0x60-0x6F)
 - Stack usage: Hardware stack directly
 
@@ -524,5 +685,16 @@ loop:
 8. **Type Safety** - Separate byte/word operations prevent errors
 9. **Memory Access** - Direct memory operations via stack addressing
 10. **Register Usage** - Clever use of Y register as PC eliminates zero page PC storage
+11. **Global Storage** - 256-byte dedicated page for persistent variables and memory pointers
+12. **Array Support** - Built-in byte and word array access with PUSHDAX/PUSHDAX2
+
+## Key Implementation Notes
+
+1. **Stack Frame Offsets**: Arguments always start at BP+5 (saved BP at BP+1, return address at BP+2-4)
+2. **Global Variables**: 256-byte dedicated page perfect for storing dynamic memory pointers
+3. **Array Access**: Use PUSHDAX for byte arrays, PUSHDAX2 for word arrays
+4. **Memory Pointers**: Store MemAllocate results in global variables for program-wide access
+5. **Page Constraints**: Functions never cross page boundaries, enabling optimizations
+6. **Y as PC**: Y register serves as program counter within current function page
 
 This VM occupies a sweet spot between interpreted BASIC and native assembly, providing good performance with excellent code density for memory-constrained 6502 systems. The page-constrained execution model and use of the Y register as PC are key innovations that make this VM particularly efficient on the 6502 architecture.
