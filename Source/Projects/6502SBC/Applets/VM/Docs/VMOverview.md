@@ -454,7 +454,7 @@ READB                ; Read the byte
 PUSHB 1              ; Index
 PUSHB0               ; Extend to word
 PUSHDAX2 0           ; Get address of element (index*2)
-; Then read LSB and MSB
+READW                ; Read the word (LSB, MSB on stack)
 ```
 
 ### Memory Initialization
