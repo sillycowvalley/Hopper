@@ -67,8 +67,9 @@ The VM provides a dedicated 256-byte page for global variables accessible from a
 
 ### Function Organization
 - Functions start at page boundaries (0x2000, 0x2100, 0x2200...)
-- Function IDs: 0, 1, 2, 3... up to 127
-- Function table uses even offsets: ID×2 gives table index
+- Function IDs: 2, 4, 6, 8... 254 (even numbers only)
+- .MAIN is always function ID 2
+- Function table uses function ID directly as index (even numbers)
 - Each function limited to 256 bytes
 - No page-crossing within functions
 
@@ -198,16 +199,45 @@ DUMP         0x94                   // Diagnostic stack dump
 ```
 PUSHD        0x98  + byte           // Push data address (byte offset)
 PUSHD2       0x9A  + word           // Push data address (word offset)
-PUSHDAX      0x9B  + byte           // Push data address with index (offset + stack index)
-PUSHDAX2     0x9C  + byte           // Push data address with index*2 (offset + stack index*2)
-STRC         0x9D                   // Pop index, pop string, push char
+STRC         0x9C                   // Pop index, pop string, push char
 STRCMP       0x9E                   // Pop 2 strings, push -1/0/1
 ```
 
-### Memory Access Operations (0xA0-0xA2)
+### Memory Access Operations (0xA0-0xA6)
 ```
 READB        0xA0                   // Pop address word, push byte
 WRITEB       0xA2                   // Pop address word, pop byte
+READW        0xA4                   // Pop address word, push word
+WRITEW       0xA6                   // Pop address word, pop word
+```
+
+### Data Section Array Access (0xA8-0xAA)
+```
+PUSHDAX      0xA8  + word           // Pop index, push (DATA_START + word offset + index)
+PUSHDAX2     0xAA  + word           // Pop index, push (DATA_START + word offset + index*2)
+```
+
+**Notes:**
+- PUSHDAX and PUSHDAX2 both take word offset operands and pop index from stack
+- All data addresses are relative to DATA_START (0x0400)
+- READB/WRITEB and READW/WRITEW work with any memory address, not just DATA section
+
+### Word Bitwise and Arithmetic Operations (0xAC-0xB6)
+```
+ANDW         0xAC                   // Pop 2 words, push bitwise AND
+ORW          0xAE                   // Pop 2 words, push bitwise OR
+MULW         0xB0                   // Pop 2 words, push product (unsigned)
+DIVW         0xB2                   // Pop 2 words, push quotient (unsigned)
+MODW         0xB4                   // Pop 2 words, push remainder (unsigned)
+NOTW         0xB6                   // Pop word, push bitwise NOT
+```
+
+### Extended Stack Operations (0xC0-0xC8)
+```
+OVERW        0xC0                   // Duplicate second word on stack
+ROTW         0xC2                   // Rotate top 3 words (w3 w2 w1 → w1 w3 w2)
+ROTB         0xC4                   // Rotate top 3 bytes (b3 b2 b1 → b1 b3 b2)
+PICKW        0xC8  + byte           // Duplicate nth word from stack (n=0 is top)
 ```
 
 ### Branch Offset Handling
@@ -437,7 +467,7 @@ PUSHDAX2 0           ; Get address of element (index*2)
 4. Allocate constants block from heap (page-aligned)
 5. Copy constant data to constants block
 6. Build function table with page addresses
-7. Call main function (ID 2, since function IDs start at 2)
+7. Call main function (ID 2, since .MAIN is always function ID 2)
 
 ## VM Assembly Examples
 
@@ -516,9 +546,23 @@ loop:
 ### Function Call Example (CORRECTED)
 ```asm
 ; Demonstrate function calls with parameters
+; NOTE: .FUNC must be defined BEFORE .MAIN since it's called by .MAIN
 .CONST
     PrintChar    0x12
     PrintNewLine 0x14
+
+.FUNC PrintDigit
+    ENTER 0              ; No local variables needed
+    
+    ; CRITICAL: First argument is at BP+5, not BP+3!
+    PUSHLB 5             ; Get parameter (at BP+5)
+    PUSHB '0'
+    ADDB
+    POPA
+    SYSCALL PrintChar
+    
+    LEAVE
+    RET
 
 .MAIN
     ; Call PrintDigit with value 5
@@ -533,19 +577,6 @@ loop:
     
     SYSCALL PrintNewLine
     HALT
-
-.FUNC PrintDigit
-    ENTER 0              ; No local variables needed
-    
-    ; CRITICAL: First argument is at BP+5, not BP+3!
-    PUSHLB 5             ; Get parameter (at BP+5)
-    PUSHB '0'
-    ADDB
-    POPA
-    SYSCALL PrintChar
-    
-    LEAVE
-    RET
 ```
 
 ### Dynamic Memory with Global Pointers
@@ -593,6 +624,20 @@ loop:
     READB                ; Read from memory
     ; Value 0x42 now on stack
     
+    ; Write word to buffer[20]
+    PUSHGW GP.BufferPtr  ; Get buffer address
+    PUSHW 20             ; Add offset
+    ADDW
+    PUSHW 0x1234         ; Value to write
+    WRITEW               ; Write word to memory
+    
+    ; Read back word from buffer[20]
+    PUSHGW GP.BufferPtr  ; Get buffer address
+    PUSHW 20             ; Add offset
+    ADDW
+    READW                ; Read word from memory
+    ; Value 0x1234 now on stack (LSB, MSB)
+    
     ; Free the buffer
     PUSHGW GP.BufferPtr  ; Get pointer from global
     POPZW ZP.IDX
@@ -635,14 +680,8 @@ word_array:
     PUSHB 1              ; Index
     PUSHB0               ; Extend to word
     PUSHDAX2 0           ; Get address: word_array + (index*2)
-    DUPW                 ; Duplicate address
-    READB                ; Read LSB
-    POPZB ZP.TOP0
-    PUSHW1
-    ADDW                 ; Address + 1
-    READB                ; Read MSB
-    POPZB ZP.TOP1
-    PUSHZW ZP.TOP        ; Full word on stack: 0x5678
+    READW                ; Read the word
+    ; Stack now has: [78][56] (LSB, MSB)
     
     LEAVE
     HALT
@@ -683,18 +722,24 @@ word_array:
 6. **Portability** - Runs on any 6502 with BIOS support
 7. **Optimization** - Page-constrained execution eliminates checks
 8. **Type Safety** - Separate byte/word operations prevent errors
-9. **Memory Access** - Direct memory operations via stack addressing
+9. **Memory Access** - Direct memory operations via READB/WRITEB/READW/WRITEW
 10. **Register Usage** - Clever use of Y register as PC eliminates zero page PC storage
 11. **Global Storage** - 256-byte dedicated page for persistent variables and memory pointers
-12. **Array Support** - Built-in byte and word array access with PUSHDAX/PUSHDAX2
+12. **Array Support** - Built-in byte and word array access with PUSHDAX/PUSHDAX2 (both use word offsets)
+13. **Word Operations** - Complete set of 16-bit bitwise and arithmetic operations
+14. **Extended Stack** - Advanced stack manipulation with OVERW, ROTW, ROTB, PICKW
 
 ## Key Implementation Notes
 
 1. **Stack Frame Offsets**: Arguments always start at BP+5 (saved BP at BP+1, return address at BP+2-4)
 2. **Global Variables**: 256-byte dedicated page perfect for storing dynamic memory pointers
-3. **Array Access**: Use PUSHDAX for byte arrays, PUSHDAX2 for word arrays
+3. **Array Access**: Use PUSHDAX for byte arrays, PUSHDAX2 for word arrays (both take word offsets)
 4. **Memory Pointers**: Store MemAllocate results in global variables for program-wide access
 5. **Page Constraints**: Functions never cross page boundaries, enabling optimizations
 6. **Y as PC**: Y register serves as program counter within current function page
+7. **Word Operations**: READW/WRITEW complement READB/WRITEB for 16-bit memory access
+8. **Operand Types**: PUSHDAX and PUSHDAX2 use word offset operands, not byte offsets
+9. **Function IDs**: Even numbers only (2, 4, 6... 254), with .MAIN always at ID 2
+10. **Function Order**: Functions must be defined before they are called
 
 This VM occupies a sweet spot between interpreted BASIC and native assembly, providing good performance with excellent code density for memory-constrained 6502 systems. The page-constrained execution model and use of the Y register as PC are key innovations that make this VM particularly efficient on the 6502 architecture.

@@ -3,6 +3,27 @@
 ## Overview
 A stack-based virtual machine for 6502 processors that provides exceptional code density (8-10× better than native 6502) while maintaining direct hardware access through BIOS syscalls. The VM uses the hardware stack directly and constrains functions to single pages for optimal performance.
 
+## Memory Layout
+
+The VM uses the following memory layout:
+
+```
+0x0000-0x00FF : Zero Page (system variables, workspace, marshalling)
+0x0100-0x01FF : Hardware Stack (Page 1)
+0x0200-0x02FF : Function Table (Page 2)
+0x0300-0x03FF : Global Variables (Page 3) ← 256 bytes for GP.* variables
+0x0400+       : DATA Section (program data, strings, arrays)
+Higher pages  : Function Code (each function in its own page)
+Top of memory : Heap (starts after function code, grows upward)
+```
+
+### Key Points:
+- **Global Variables** are at Page 3 (0x0300-0x03FF), accessed via PUSHGB/POPGB/PUSHGW/POPGW with offsets 0x00-0xFF
+- **DATA Section** starts at 0x0400, accessed via PUSHD/PUSHD2 instructions
+- **Heap location is dynamic** - calculated after loading all function code
+- **Stack grows downward** from 0x01FF in Page 1
+
+
 ## Core Programming Principles
 
 ### 1. Stack-Based Architecture
@@ -199,7 +220,7 @@ byte sine_lookup_64 0, 6, 12, 18, 25, 31, 37, 43  ; 64-entry sine table (showing
 
 ## Global Variables - The 256-Byte Global Page
 
-The VM provides a dedicated 256-byte page (Page 1) for global variables accessible from any function. This is separate from the stack and provides persistent storage throughout program execution.
+The VM provides a dedicated 256-byte page (Page 3) for global variables accessible from any function. This is separate from the stack and provides persistent storage throughout program execution.
 
 ### Defining Global Variables
 Global variables are defined in the `.CONST` section as offsets from 0x00:
@@ -454,8 +475,8 @@ str_mode "r"
     ; Check if file opened successfully (TOP != 0)
     PUSHZW ZP.TOP
     PUSHW0
-    NEW                  ; TOP != 0?
-    BZF file_error       ; If TOP == 0, file failed to open
+    NEW                  ; Pop both, push 1 if not equal, 0 if equal
+    BZF file_error       ; Branch if result is 0 (values were equal, handle is NULL)
     
 read_loop:
     ; Read character: FGetC(file_handle)
@@ -467,8 +488,8 @@ read_loop:
     ; Check for EOF (TOP == 0xFFFF which is -1 in unsigned)
     PUSHZW ZP.TOP
     PUSHW 0xFFFF         ; Push -1 (0xFFFF in unsigned)
-    EQW
-    BNZF close_file      ; If equal to -1, EOF reached
+    EQW                  ; Pop both, push 1 if equal, 0 if not equal
+    BNZF close_file      ; Branch if result is 1 (equal to EOF)
     
     ; Print character (extract byte from word result)
     PUSHZB ZP.TOP0       ; Get low byte of character
@@ -537,10 +558,11 @@ When a function is called, the stack frame is structured as follows:
 
 ```
 High Memory (Higher addresses)
-    [Argument N]            ; Last argument pushed
-    ...
-    [Argument 2]            ; Second argument
+    [Return value]          ; Optional slot for return value
     [Argument 1]            ; First argument pushed
+    [Argument 2]            ; Second argument
+    ...
+    [Argument N]            ; Last argument pushed
     [Return Y]              ; 1 byte - PC within calling function's page
     [Return Page Low]       ; 2 bytes - calling function's page address
     [Return Page High]      
@@ -583,7 +605,7 @@ NOP      0x00       ; No operation (MUST be 0x00)
 HALT     0x02       ; Stop execution, return to BIOS
 ```
 
-### Stack Operations - Immediates (0x04-0x12)
+### Stack Operations - Immediates (0x04-0x0E)
 ```asm
 PUSHB    0x04 byte  ; Push 8-bit immediate value
 PUSHB0   0x06       ; Push 8-bit zero (optimized)
@@ -591,13 +613,17 @@ PUSHB1   0x08       ; Push 8-bit one (optimized)
 PUSHW    0x0A word  ; Push 16-bit immediate value  
 PUSHW0   0x0C       ; Push 16-bit zero (optimized)
 PUSHW1   0x0E       ; Push 16-bit one (optimized)
-PUSHA    0x10       ; Push A register to stack
-PUSHC    0x12       ; Push carry flag (1 if set, 0 if clear)
 ```
 
-### Stack Operations - Manipulation (0x14-0x20)
+### Stack Operations - Manipulation (0x10-0x20)
 ```asm
-PUSHZ    0x14       ; Push zero flag (1 if set, 0 if clear)
+PUSHA    0x10       ; Push A register to stack
+PUSHC    0x12       ; Push carry flag (1 if set, 0 if clear)
+                    ; NOTE: Only meaningful after SYSCALL operations!
+                    ; Comparison operations (EQW, LTW, etc.) already push their result
+PUSHZ    0x14       ; Push zero flag (1 if set, 0 if clear)  
+                    ; NOTE: Only meaningful after SYSCALL operations!
+                    ; Comparison operations (EQW, NEW, etc.) already push their result
 DUPB     0x16       ; Duplicate byte on TOS
 DUPW     0x18       ; Duplicate word on TOS
 DROPB    0x1A       ; Remove byte from TOS
@@ -620,14 +646,14 @@ INCLW    0x32 offset; Increment local word at BP+offset
 
 ### Comparison Operations (0x34-0x42)
 ```asm
-EQB      0x34       ; Pop 2 bytes, set Z if equal
-NEB      0x36       ; Pop 2 bytes, set Z if not equal
-LTB      0x38       ; Pop 2 bytes, set C if TOS-1 < TOS (unsigned)
-LEB      0x3A       ; Pop 2 bytes, set C if TOS-1 <= TOS (unsigned)
-EQW      0x3C       ; Pop 2 words, set Z if equal
-NEW      0x3E       ; Pop 2 words, set Z if not equal
-LTW      0x40       ; Pop 2 words, set C if TOS-1 < TOS (unsigned)
-LEW      0x42       ; Pop 2 words, set C if TOS-1 <= TOS (unsigned)
+EQB      0x34       ; Pop 2 bytes, push 1 if equal, 0 if not equal
+NEB      0x36       ; Pop 2 bytes, push 1 if not equal, 0 if equal
+LTB      0x38       ; Pop 2 bytes, push 1 if TOS-1 < TOS (unsigned), else 0
+LEB      0x3A       ; Pop 2 bytes, push 1 if TOS-1 <= TOS (unsigned), else 0
+EQW      0x3C       ; Pop 2 words, push 1 if equal, 0 if not equal
+NEW      0x3E       ; Pop 2 words, push 1 if not equal, 0 if equal
+LTW      0x40       ; Pop 2 words, push 1 if TOS-1 < TOS (unsigned), else 0
+LEW      0x42       ; Pop 2 words, push 1 if TOS-1 <= TOS (unsigned), else 0
 ```
 
 ### Bitwise Operations (0x44-0x50)
@@ -639,6 +665,44 @@ NOTB     0x4A       ; Pop byte, push bitwise NOT
 XORW     0x4C       ; Pop 2 words, push bitwise XOR
 SHLW     0x4E byte  ; Shift word left by byte operand
 SHRW     0x50 byte  ; Shift word right by byte operand
+```
+
+### Additional Bitwise and Arithmetic Operations (0xAC-0xB6)
+```asm
+ANDW     0xAC       ; Pop 2 words, push bitwise AND
+ORW      0xAE       ; Pop 2 words, push bitwise OR
+MULW     0xB0       ; Pop 2 words, push product (unsigned multiply)
+DIVW     0xB2       ; Pop 2 words, push quotient (unsigned divide)
+MODW     0xB4       ; Pop 2 words, push remainder (unsigned modulo)
+NOTW     0xB6       ; Pop word, push bitwise NOT
+```
+
+**Note:** These are 16-bit operations. For signed multiply/divide, use Long math SYSCALLs.
+
+**Example - Multiply:**
+```asm
+PUSHW 10
+PUSHW 20
+MULW            ; Result: 200 on stack
+```
+
+**Example - Division:**
+```asm
+PUSHW 100       ; Dividend
+PUSHW 7         ; Divisor
+DIVW            ; Quotient: 14
+DROPW
+PUSHW 100
+PUSHW 7
+MODW            ; Remainder: 2
+```
+
+### Stack Manipulation Operations (0xC0-0xC8)
+```asm
+OVERW    0xC0       ; Duplicate second word on stack (w2 w1 → w2 w1 w2)
+ROTW     0xC2       ; Rotate top 3 words (w3 w2 w1 → w1 w3 w2)
+ROTB     0xC4       ; Rotate top 3 bytes (b3 b2 b1 → b1 b3 b2)
+PICKW    0xC8 byte  ; Duplicate nth word from stack (n=0 is top)
 ```
 
 ### Zero Page Operations (0x54-0x62)
@@ -692,23 +756,54 @@ LEAVE    0x92       ; Restore stack frame
 DUMP     0x94       ; Diagnostic stack dump
 ```
 
-### String/Data Operations (0x98-0xA2)
+### String/Data Operations (0x98-0xAA)
 ```asm
-PUSHD    0x98 byte  ; Push data address (byte offset)
-PUSHD2   0x9A word  ; Push data address (word offset)
-PUSHDAX  0x9B byte  ; Push data address with index (offset + stack index)
-PUSHDAX2 0x9C byte  ; Push data address with index*2 (offset + stack index*2)
-STRC     0x9D       ; Pop index, pop string, push char
+PUSHD    0x98 byte  ; Push data address (DATA_START + byte offset)
+PUSHD2   0x9A word  ; Push data address (DATA_START + word offset)
+STRC     0x9C       ; Pop index, pop string, push char
 STRCMP   0x9E       ; Pop 2 strings, push comparison result
+
+READB    0xA0       ; Pop address word, push byte from memory
+WRITEB   0xA2       ; Pop byte, pop address, write byte to memory
+READW    0xA4       ; Pop address word, push word from memory  
+WRITEW   0xA6       ; Pop word, pop address, write word to memory
+
+PUSHDAX  0xA8 word  ; Pop index from stack, push (DATA_START + word offset + index)
+PUSHDAX2 0xAA word  ; Pop index from stack, push (DATA_START + word offset + index*2)
 ```
 
-### Memory Operations (0xA0-0xA2)
-```asm
-READB    0xA0       ; Pop address word, push byte from memory
-WRITEB   0xA2       ; Pop address, pop byte, write to memory
-```
+**Notes:**
+- PUSHD takes byte offset (0-255), PUSHD2 takes word offset (0-65535)
+- PUSHDAX and PUSHDAX2 both take word offset and pop index from stack
+- PUSHDAX is at 0xA8, PUSHDAX2 is at 0xAA (both use word offsets)
+- All data addresses are relative to DATA_START (0x0400)
+- READB/WRITEB and READW/WRITEW work with any memory address, not just DATA section
+
 
 ## Complete BIOS System Call Reference
+
+### ⚠️ Important Note: SYSCALL Numeric IDs Required
+
+**The assembler currently requires numeric IDs for SYSCALL instructions**, not symbolic names. While this guide shows syscalls with descriptive names for clarity (e.g., `SYSCALL MemAllocate`), you must use the numeric ID in actual code:
+
+```asm
+; DOCUMENTED STYLE (for readability in this guide):
+SYSCALL MemAllocate    ; ← This does NOT work in the assembler yet!
+
+; ACTUAL USAGE (required):
+SYSCALL 0x00           ; Use the numeric ID directly
+
+; ALTERNATIVE - Define constants in .CONST section:
+.CONST
+    MemAllocate  0x00
+    MemFree      0x01
+    PrintString  0x11
+    
+; Then use the constants:
+SYSCALL MemAllocate    ; Now resolves to 0x00 via constant lookup
+```
+
+**Throughout this guide, the hex ID is shown in parentheses after each syscall name.** Use these numeric values in your code.
 
 ### Memory Management
 
@@ -1095,8 +1190,8 @@ POPA
 SYSCALL PinRead
 PUSHA               ; Push A register result
 PUSHB0
-EQB                 ; Compare with 0
-BNZF pin_is_low     ; Branch if equal to 0
+EQB                 ; Pop both, push 1 if equal, 0 if not equal
+BNZF pin_is_low     ; Branch if result is 1 (pin was LOW)
 ```
 
 #### PinWrite (0x28)
@@ -1644,33 +1739,40 @@ file_error:             ; Common exit for both error and normal flow
 ### Critical Pattern: Understanding Comparisons and Branching
 The C flag behavior with CMP is tricky! For numeric comparisons:
 ```asm
-; IMPORTANT: After comparison instructions (LEB, LTB, LEW, LTW):
-; - C flag is SET (1) when condition is TRUE
-; - C flag is CLEAR (0) when condition is FALSE
+; IMPORTANT: Comparison instructions PUSH their result (0 or 1) to the stack
+; They do NOT just set flags!
 
 ; Example: Check if j <= 1000
 PUSHLW -11          ; Push j
 PUSHW 1000          ; Push 1000
-LEW                 ; Compare: sets C=1 if j <= 1000
-; Now use PUSHC and branch on the value:
-PUSHC               ; Push 1 if C set (condition true), 0 if clear (false)
-BNZF continue_loop  ; Branch if value is 1 (condition was true)
-BZF exit_loop       ; Branch if value is 0 (condition was false)
+LEW                 ; Pop both, push 1 if j <= 1000, else push 0
+; Result is now on stack (1 or 0)
+BNZF continue_loop  ; Branch if TOS is non-zero (condition was true)
+BZF exit_loop       ; Branch if TOS is zero (condition was false)
 
-; The NOEL pattern uses this shorthand:
-LEW                 ; Sets C flag
-BNZR inner_loop     ; Branch backward if C was set (condition true)
+; Common pattern - pop result and branch:
+PUSHLW -11
+PUSHW 1000
+LEW                 ; Pushes result
+BZF exit_loop       ; Branch if result was 0 (false)
 
 ; For equality comparisons (EQB, NEB, EQW, NEW):
-; - Z flag is SET (1) when EQUAL
-; - Z flag is CLEAR (0) when NOT EQUAL
+; These also PUSH their result (0 or 1) to the stack
 
 ; Example:
 PUSHW value1
 PUSHW value2
-EQW                 ; Sets Z=1 if equal, Z=0 if not equal
-BZF not_equal       ; Branch if Z=0 (values different)
-BNZF equal          ; Branch if Z=1 (values same)
+EQW                 ; Pop both, push 1 if equal, 0 if not equal
+BNZF equal          ; Branch if result is 1 (values same)
+BZF not_equal       ; Branch if result is 0 (values different)
+
+; WRONG - Don't do this:
+EQW
+PUSHZ               ; WRONG! EQW already pushed result, PUSHZ is for SYSCALLs only!
+
+; CORRECT - Direct branch:
+EQW                 ; Pushes 0 or 1
+BZF not_equal       ; Branch if 0
 ```
 
 ### Pattern 3: Dynamic Memory with Global Pointer Storage
