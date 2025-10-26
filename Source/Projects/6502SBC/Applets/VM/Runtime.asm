@@ -367,6 +367,8 @@ DUPW:
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+
 
 DROPW:                        
             PLA
@@ -421,7 +423,116 @@ SWAPW:
             INY
             TAX
             JMP [opCodeJumps, X]
-
+            
+OVERW:
+            TSX               // Get stack pointer
+            
+            // Duplicate second word on stack
+            // Stack: TOP(SP+1,SP+2), NEXT(SP+3,SP+4)
+            // Result: TOP, NEXT, NEXT (duplicate NEXT)
+            
+            LDA 0x0103, X     // Load NEXT MSB (SP+3)
+            PHA               // Push duplicate
+            LDA 0x0104, X     // Load NEXT LSB (SP+4)  
+            PHA               // Push duplicate
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+ROTB:
+            TSX               // Get stack pointer
+            
+            // Rotate top 3 bytes: A B C -> C A B
+            // Stack positions: A(SP+1), B(SP+2), C(SP+3)
+            
+            // Save C
+            LDA 0x0103, X     // C
+            STA operand
+            
+            // Move B to C position
+            LDA 0x0102, X     // B
+            STA 0x0103, X
+            
+            // Move A to B position
+            LDA 0x0101, X     // A
+            STA 0x0102, X
+            
+            // Move saved C to A position
+            LDA operand       // C
+            STA 0x0101, X
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+ROTW:
+            TSX               // Get stack pointer
+            
+            // Rotate top 3 words: A B C -> C A B
+            // Stack positions: A(SP+1,SP+2), B(SP+3,SP+4), C(SP+5,SP+6)
+            
+            // Save C
+            LDA 0x0105, X     // C MSB
+            STA ZP.TOP0
+            LDA 0x0106, X     // C LSB
+            STA ZP.TOP1
+            
+            // Move B to C position
+            LDA 0x0103, X     // B MSB
+            STA 0x0105, X
+            LDA 0x0104, X     // B LSB
+            STA 0x0106, X
+            
+            // Move A to B position
+            LDA 0x0101, X     // A MSB
+            STA 0x0103, X
+            LDA 0x0102, X     // A LSB
+            STA 0x0104, X
+            
+            // Move saved C to A position
+            LDA ZP.TOP0       // C MSB
+            STA 0x0101, X
+            LDA ZP.TOP1       // C LSB
+            STA 0x0102, X
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
+PICKW:
+            // Get byte operand (index)
+            LDA [codePage], Y
+            INY
+            
+            // Index * 2 (words are 2 bytes)
+            ASL A
+            
+            // Calculate stack address
+            TSX               // X = SP
+            PHA               // Save doubled index
+            STX operandL      // operandL = SP
+            
+            // Calculate final address
+            CLC
+            PLA               // doubled index
+            ADC operandL      // X = SP + (N*2)
+            TAX
+            
+            // Read word at calculated position
+            LDA 0x0102, X     // LSB at SP+2+(N*2)
+            PHA
+            LDA 0x0101, X     // MSB at SP+1+(N*2)
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+            
 ADDW:                    
             TSX               // Get stack pointer to X
             
@@ -774,7 +885,23 @@ NOTB:
             JMP [opCodeJumps, X]            
             
             
-
+NOTW:
+            TSX               // Get stack pointer
+            
+            // Bitwise NOT on word
+            // TOP: SP+1=TOP1(MSB), SP+2=TOP0(LSB)
+            LDA 0x0101, X     // Load TOP1 (MSB)
+            EOR #0xFF         // Flip all bits
+            STA 0x0101, X     // Store back
+            
+            LDA 0x0102, X     // Load TOP0 (LSB)
+            EOR #0xFF         // Flip all bits
+            STA 0x0102, X     // Store back
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
             
 ADDB:                    
             TSX               // Get stack pointer to X
@@ -1609,7 +1736,33 @@ READB:
             LDA [codePage], Y
             INY
             TAX
-            JMP [opCodeJumps, X]                 
+            JMP [opCodeJumps, X]        
+            
+READW:
+            // Pop address word (MSB first, then LSB)
+            PLA               // Pop address MSB
+            STA operandH
+            PLA               // Pop address LSB
+            STA operandL
+            
+            // Read word from memory at operand address
+            PHY
+            LDY #0
+            LDA [operand], Y  // Read LSB
+            STA ZP.TOP0
+            INY
+            LDA [operand], Y  // Read MSB
+            STA ZP.TOP1
+            PLY
+            LDA ZP.TOP0
+            PHA
+            LDA ZP.TOP1
+            PHA
+            
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]         
             
 WRITEB:
             PLX
@@ -1626,21 +1779,38 @@ WRITEB:
             TAX
             JMP [opCodeJumps, X] 
             
-PUSHDA:
-            LDA [codePage], Y // Low byte of word offset    
+            
+WRITEW:
+            // Stack: address(MSB), address(LSB), value(MSB), value(LSB)
+            // Pop value word
+            PLA               // value LSB
+            STA ZP.TOP0
+            PLA               // value MSB  
+            STA ZP.TOP1
+            
+            // Pop address word
+            PLA               // address LSB
+            STA operandL
+            PLA               // address MSB
+            STA operandH
+            
+            // Write word to memory
+            PHY
+            LDY #0
+            LDA ZP.TOP0       // Write LSB
+            STA [operand], Y
             INY
-            CLC
-            ADC constantsL
-            PHA               // Push result LSB
-            LDA [codePage], Y // High byte of word offset
-            INY
-            ADC constantsH    // Add with carry from low byte
-            PHA               // Push result MSB
+            LDA ZP.TOP1       // Write MSB
+            STA [operand], Y
+            PLY
             
             LDA [codePage], Y
             INY
             TAX
             JMP [opCodeJumps, X]
+            
+            
+
             
 PUSHDAX:
             // Fetch the word offset operand

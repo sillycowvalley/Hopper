@@ -34,7 +34,7 @@ unit OpCodes
         SWAPB    = 0x1E,  // Swap top two bytes
         SWAPW    = 0x20,  // Swap top two words
         
-        // Arithmetic Operations (0x22-0x32)
+        // Arithmetic Operations (0x24-0x32)
         ADDB     = 0x24,  // Pop 2 bytes, push sum
         SUBB     = 0x26,  // Pop 2 bytes, push difference
         NEGB     = 0x28,  // Negate byte (2's complement)
@@ -63,7 +63,7 @@ unit OpCodes
         SHLW     = 0x4E,  // Shift word left by byte operand
         SHRW     = 0x50,  // Shift word right by byte operand
         
-        // Zero Page Operations (0x52-0x62)
+        // Zero Page Operations (0x54-0x62)
         PUSHZB   = 0x54,  // Push byte from ZP[offset]
         PUSHZW   = 0x56,  // Push word from ZP[offset]
         PUSHZQ   = 0x58,  // Push 32-bit from ZP[offset]
@@ -73,31 +73,31 @@ unit OpCodes
         POPA     = 0x60,  // Pop byte from stack to A register
         POPY     = 0x62,  // Pop byte from stack to Y register
         
-        // Local Operations (0x64-0x6E)
-        PUSHLB   = 0x64,  // Push byte from BP[offset]
-        PUSHLW   = 0x66,  // Push word from BP[offset]
-        PUSHLQ   = 0x68,  // Push 32-bit from BP[offset]
-        POPLB    = 0x6A,  // Pop byte to BP[offset]
-        POPLW    = 0x6C,  // Pop word to BP[offset]
-        POPLQ    = 0x6E,  // Pop 32-bit to BP[offset]
+        // Local Variable Operations (0x64-0x6E)
+        PUSHLB   = 0x64,  // Push byte from BP+offset
+        PUSHLW   = 0x66,  // Push word from BP+offset
+        PUSHLQ   = 0x68,  // Push 32-bit from BP+offset
+        POPLB    = 0x6A,  // Pop byte to BP+offset
+        POPLW    = 0x6C,  // Pop word to BP+offset
+        POPLQ    = 0x6E,  // Pop 32-bit to BP+offset
         
-        // Global Operations (0x70-0x76)
-        PUSHGB   = 0x70,  // Push byte from global[offset]
-        PUSHGW   = 0x72,  // Push word from global[offset]
-        POPGB    = 0x74,  // Pop byte to global[offset]
-        POPGW    = 0x76,  // Pop word to global[offset]
+        // Global Variable Operations (0x70-0x76)
+        PUSHGB   = 0x70,  // Push byte from globals+offset
+        PUSHGW   = 0x72,  // Push word from globals+offset
+        POPGB    = 0x74,  // Pop byte to globals+offset
+        POPGW    = 0x76,  // Pop word to globals+offset
         
-        // Control Flow (0x78-0x8A)
+        // Control Flow (0x7C-0x8A)
         BRAF     = 0x7C,  // Branch forward by byte (0-255)
-        BRAR     = 0x7E,  // Branch reverse by byte (0-255)
-        BZF      = 0x80,  // Branch forward by byte if TOS is zero
-        BZR      = 0x82,  // Branch reverse by byte if TOS is zero
-        BNZF     = 0x84,  // Branch forward by byte if TOS is not zero
-        BNZR     = 0x86,  // Branch reverse by byte if TOS is not zero
-        CALL     = 0x88,  // Call function (ID for table lookup)
+        BRAR     = 0x7E,  // Branch backward by byte (0-255)
+        BZF      = 0x80,  // Branch forward if Z flag set
+        BZR      = 0x82,  // Branch backward if Z flag set
+        BNZF     = 0x84,  // Branch forward if Z flag clear
+        BNZR     = 0x86,  // Branch backward if Z flag clear
+        CALL     = 0x88,  // Call function by ID
         RET      = 0x8A,  // Return from function
         
-        // System Calls & Stack Frame (0x8C-0x96)
+        // System Calls & Stack Frame (0x8C-0x94)
         SYSCALL  = 0x8C,  // Call BIOS function via X register
         SYSCALLX = 0x8E,  // Call BIOS function (fast version)
         ENTER    = 0x90,  // Push BP, set BP = SP, push zeros
@@ -110,18 +110,33 @@ unit OpCodes
         STRC     = 0x9C,  // Pop index, pop string, push char
         STRCMP   = 0x9E,  // Pop 2 strings, push -1/0/1
         
+        // Memory Operations (0xA0-0xA2)
         READB    = 0xA0,  // Pop address word, push byte
         WRITEB   = 0xA2,  // Pop address word, pop byte
+        READW    = 0xA4,  // Pop address word, push word
+        WRITEW   = 0xA6,  // Pop address word, pop word
         
-        PUSHDA   = 0xA4,  // Push Data section Address (word)
-        PUSHDAX  = 0xA6,  // Push Data section Address + indeX   (word index on stack)
-        PUSHDAX2 = 0xA8,  // Push Data section Address + indeX*2 (word array)
+        // Data Section Array Access (0xA8-0xAA)
+        PUSHDAX  = 0xA8,  // Push Data section Address + indeX (word index on stack)
+        PUSHDAX2 = 0xAA,  // Push Data section Address + indeX*2 (word array)
         
-        ANDW     = 0xAA,  // Pop 4 bytes, push bitwise AND
-        ORW      = 0xAC,  // Pop 4 bytes, push bitwise OR
-        MULW     = 0xAE,  // Pop 4 bytes, push unsigned *
-        DIVW     = 0xB0,  // Pop 4 bytes, push unsigned /
-        MODW     = 0xB2,  // Pop 4 bytes, push unsigned %        
+        // Word Bitwise Operations (0xAC-0xAE)
+        ANDW     = 0xAC,  // Pop 2 words, push bitwise AND
+        ORW      = 0xAE,  // Pop 2 words, push bitwise OR
+        
+        // Word Arithmetic (0xB0-0xB4)
+        MULW     = 0xB0,  // Pop 2 words, push product (unsigned)
+        DIVW     = 0xB2,  // Pop 2 words, push quotient (unsigned)
+        MODW     = 0xB4,  // Pop 2 words, push remainder (unsigned)
+        
+        // Word Bitwise (0xB6)
+        NOTW     = 0xB6,  // Pop word, push bitwise NOT
+        
+        // Extended Stack Operations (0xC0-0xC8)
+        OVERW    = 0xC0,  // Duplicate second word on stack
+        ROTW     = 0xC2,  // Rotate top 3 words
+        ROTB     = 0xC4,  // Rotate top 3 bytes
+        PICKW    = 0xC8,  // Pick nth word from stack (takes byte immediate)
     }
     
     const byte[] opCodes = {
@@ -154,9 +169,6 @@ unit OpCodes
         OpCode.NEGB,     Arguments.None, 4, 'N','E','G','B',                     // NEGB
         OpCode.ADDW,     Arguments.None, 4, 'A','D','D','W',                     // ADDW
         OpCode.SUBW,     Arguments.None, 4, 'S','U','B','W',                     // SUBW
-        OpCode.MULW,     Arguments.None, 4, 'M','U','L','W',                     // MULW
-        OpCode.DIVW,     Arguments.None, 4, 'D','I','V','W',                     // DIVW
-        OpCode.MODW,     Arguments.None, 4, 'M','O','D','W',                     // MODW
         OpCode.NEGW,     Arguments.None, 4, 'N','E','G','W',                     // NEGW
         OpCode.INCLB,    Arguments.Char, 5, 'I','N','C','L','B',                 // INCLB + char
         OpCode.INCLW,    Arguments.Char, 5, 'I','N','C','L','W',                 // INCLW + char
@@ -173,9 +185,7 @@ unit OpCodes
         
         // Bitwise Operations (0x44-0x50)
         OpCode.ANDB,     Arguments.None, 4, 'A','N','D','B',                     // ANDB
-        OpCode.ANDW,     Arguments.None, 4, 'A','N','D','W',                     // ANDW
         OpCode.ORB,      Arguments.None, 3, 'O','R','B',                         // ORB
-        OpCode.ORW,      Arguments.None, 3, 'O','R','W',                         // ORW
         OpCode.XORB,     Arguments.None, 4, 'X','O','R','B',                     // XORB
         OpCode.NOTB,     Arguments.None, 4, 'N','O','T','B',                     // NOTB
         OpCode.XORW,     Arguments.None, 4, 'X','O','R','W',                     // XORW
@@ -218,7 +228,7 @@ unit OpCodes
         
         // System Calls & Stack Frame (0x8C-0x94)
         OpCode.SYSCALL,  Arguments.Byte, 7, 'S','Y','S','C','A','L','L',         // SYSCALL + byte
-        OpCode.SYSCALLX, Arguments.Byte, 8, 'S','Y','S','C','A','L','L','X',     // SYSCALLX + byte
+        OpCode.SYSCALLX, Arguments.None, 8, 'S','Y','S','C','A','L','L','X',     // SYSCALLX
         OpCode.ENTER,    Arguments.Byte, 5, 'E','N','T','E','R',                 // ENTER + byte
         OpCode.LEAVE,    Arguments.None, 5, 'L','E','A','V','E',                 // LEAVE
         OpCode.DUMP,     Arguments.None, 4, 'D','U','M','P',                     // DUMP
@@ -229,12 +239,33 @@ unit OpCodes
         OpCode.STRC,     Arguments.None, 4, 'S','T','R','C',                     // STRC
         OpCode.STRCMP,   Arguments.None, 6, 'S','T','R','C','M','P',             // STRCMP
         
+        // Memory Operations (0xA0-0xA6)
         OpCode.READB,    Arguments.None, 5, 'R','E','A','D','B',                 // READB
         OpCode.WRITEB,   Arguments.None, 6, 'W','R','I','T','E','B',             // WRITEB
+        OpCode.READW,    Arguments.None, 5, 'R','E','A','D','W',                 // READW
+        OpCode.WRITEW,   Arguments.None, 6, 'W','R','I','T','E','W',             // WRITEW
         
-        OpCode.PUSHDA,   Arguments.Word, 6, 'P','U','S','H','D','A',             // PUSHDA + word
+        // Data Section Array Access (0xA8-0xAA)
         OpCode.PUSHDAX,  Arguments.Word, 7, 'P','U','S','H','D','A','X',         // PUSHDAX + word
         OpCode.PUSHDAX2, Arguments.Word, 8, 'P','U','S','H','D','A','X','2',     // PUSHDAX2 + word
+        
+        // Word Bitwise Operations (0xAC-0xAE)
+        OpCode.ANDW,     Arguments.None, 4, 'A','N','D','W',                     // ANDW
+        OpCode.ORW,      Arguments.None, 3, 'O','R','W',                         // ORW
+        
+        // Word Arithmetic (0xB0-0xB4)
+        OpCode.MULW,     Arguments.None, 4, 'M','U','L','W',                     // MULW
+        OpCode.DIVW,     Arguments.None, 4, 'D','I','V','W',                     // DIVW
+        OpCode.MODW,     Arguments.None, 4, 'M','O','D','W',                     // MODW
+        
+        // Word Bitwise (0xB6)
+        OpCode.NOTW,     Arguments.None, 4, 'N','O','T','W',                     // NOTW
+        
+        // Extended Stack Operations (0xC0-0xC8)
+        OpCode.OVERW,    Arguments.None, 5, 'O','V','E','R','W',                 // OVERW
+        OpCode.ROTW,     Arguments.None, 4, 'R','O','T','W',                     // ROTW
+        OpCode.ROTB,     Arguments.None, 4, 'R','O','T','B',                     // ROTB
+        OpCode.PICKW,    Arguments.Byte, 5, 'P','I','C','K','W',                 // PICKW + byte
         
         // End marker
         0xFF
