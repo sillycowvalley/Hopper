@@ -1,4 +1,4 @@
-# Simple 6502 VM Specification (v3.1) - CORRECTED
+# Simple 6502 VM Specification (v3.1)
 
 ## Overview
 
@@ -421,26 +421,23 @@ Offset  Size  Description
 ```
 
 ### .DATA Section Format
-The .DATA section supports multiple formats:
+The .DATA section supports explicit type prefixes for clarity:
 
-**New format (recommended):**
 ```asm
 .DATA
-str_hello:
-    .byte "Hello, World!\n", 0
-
-lookup_table:
-    .byte 10, 20, 30, 40, 50
-
-addresses:
-    .word 0x2000, 0x4000, 0x6000
+byte lookup_table 10, 20, 30, 40, 50
+word addresses 0x2000, 0x4000, 0x6000
+str_hello "Hello, World!", 0
 ```
 
-**Old format (still supported):**
-```asm
-.DATA
-    STR0 "Hello, World!\n"
-```
+**Type modifiers:**
+- `byte` prefix: Forces all values to single bytes
+- `word` prefix: Forces all values to 16-bit words (LSB/MSB)
+- No prefix: Auto-sizing based on values (not recommended)
+
+**String literals:**
+- Define strings with label followed by quoted text
+- Strings are null-terminated unless explicitly specified otherwise
 
 ### Array Access
 - **Byte arrays**: Use `PUSHDAX` which adds stack index to offset
@@ -479,8 +476,7 @@ PUSHDAX2 0           ; Get address of element (index*2)
     PrintString  0x11
     
 .DATA
-str_hello:
-    .byte "Hello, World!\n", 0
+str_hello "Hello, World!", 0
 
 .MAIN
     PUSHD str_hello      ; Push string address
@@ -500,8 +496,7 @@ str_hello:
     PrintNewLine 0x14
     
 .DATA
-str_counting:
-    .byte "Counting: ", 0
+str_counting "Counting: ", 0
 
 .MAIN
     ENTER 2              ; Allocate 2 bytes for locals
@@ -543,7 +538,7 @@ loop:
     HALT
 ```
 
-### Function Call Example (CORRECTED)
+### Function Call Example
 ```asm
 ; Demonstrate function calls with parameters
 ; NOTE: .FUNC must be defined BEFORE .MAIN since it's called by .MAIN
@@ -659,11 +654,8 @@ alloc_failed:
     PrintHex     0x13
 
 .DATA
-byte_array:
-    .byte 10, 20, 30, 40, 50
-
-word_array:
-    .word 0x1234, 0x5678, 0xABCD
+byte byte_array 10, 20, 30, 40, 50
+word word_array 0x1234, 0x5678, 0xABCD
 
 .MAIN
     ENTER 0
