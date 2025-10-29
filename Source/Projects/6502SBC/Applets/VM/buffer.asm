@@ -542,6 +542,31 @@ PLP
         PLY
     }
     
+    AppendStreamPreserved()
+    {
+        PHX
+        LDA ZP.IDXL
+        PHA
+        LDA ZP.IDXH
+        PHA
+        LDA ZP.IDYL
+        PHA
+        LDA ZP.IDYH
+        PHA
+        
+        File.AppendStream();
+        
+        PLA
+        STA ZP.IDYH
+        PLA
+        STA ZP.IDYL
+        PLA
+        STA ZP.IDXH
+        PLA
+        STA ZP.IDXL
+        PLX
+    }
+    
     // filename in STR
     Save()
     {
@@ -587,7 +612,7 @@ PLP
             STA File.TransferLengthH
 
             // Write the code buffer
-            File.AppendStream();  if (NC) { break; }
+            AppendStreamPreserved();  if (NC) { break; }
 
             LDA #2
             STA ZP.IDYL
@@ -622,7 +647,7 @@ PLP
                 STA File.TransferLengthL
                 STZ File.TransferLengthH
             
-                PHX File.AppendStream();  PLX if (NC) { break; }
+                AppendStreamPreserved(); if (NC) { break; }
                 
                 DEX
                 if (Z) { break; }
@@ -645,7 +670,7 @@ PLP
             ORA File.TransferLengthH
             if (NZ)
             {
-                File.AppendStream();  if (NC) { break; }
+                AppendStreamPreserved();  if (NC) { break; }
             }
             
             // write the function code in order
@@ -688,7 +713,7 @@ PLP
                 ORA File.TransferLengthH
                 if (NZ)
                 {
-                    PHX File.AppendStream(); PLX if (NC) { break; }
+                    AppendStreamPreserved(); if (NC) { break; }
                 }
                 
                 DEX

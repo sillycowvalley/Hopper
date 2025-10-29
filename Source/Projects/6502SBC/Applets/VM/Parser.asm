@@ -1499,7 +1499,7 @@ unit Parser
                         STA ZP.TOP1
                     }
                     LDA # NumberType.Byte
-                }
+                } // not a symbol
                 STA numberType
                 
                 // could be a label offset, constant, ptr to data or ptr to function
@@ -1507,7 +1507,7 @@ unit Parser
                 STA tokenValueL
                 LDA ZP.TOP1
                 STA tokenValueH
-            }
+            } // not a number
             PLY
            
             
