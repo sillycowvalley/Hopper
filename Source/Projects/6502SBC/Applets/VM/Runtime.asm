@@ -1891,7 +1891,16 @@ PUSHDAX2:
             INY
             TAX
             JMP [opCodeJumps, X]
+       
+PUSHBP:
+            LDA BP
+            PHA
             
+            LDA [codePage], Y
+            INY
+            TAX
+            JMP [opCodeJumps, X]
+               
 ENTER:
             LDA BP
             PHA

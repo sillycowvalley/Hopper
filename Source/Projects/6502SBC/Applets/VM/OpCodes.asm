@@ -137,6 +137,8 @@ unit OpCodes
         ROTW     = 0xC2,  // Rotate top 3 words
         ROTB     = 0xC4,  // Rotate top 3 bytes
         PICKW    = 0xC8,  // Pick nth word from stack (takes byte immediate)
+        
+        PUSHBP   = 0xCA,  // push 8 bit BP
     }
     
     const byte[] opCodes = {
@@ -153,6 +155,7 @@ unit OpCodes
         OpCode.PUSHW1,   Arguments.None, 6, 'P','U','S','H','W','1',             // PUSHW1
         OpCode.PUSHA,    Arguments.None, 5, 'P','U','S','H','A',                 // PUSHA
         OpCode.PUSHC,    Arguments.None, 5, 'P','U','S','H','C',                 // PUSHC
+        OpCode.PUSHBP,   Arguments.None, 6, 'P','U','S','H','B','P',             // PUSHBP
         
         // Stack Operations - Manipulation (0x14-0x20)
         OpCode.PUSHZ,    Arguments.None, 5, 'P','U','S','H','Z',                 // PUSHZ
