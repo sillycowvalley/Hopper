@@ -167,7 +167,7 @@ unit Pages
             zeroPage["HEAPSTART"] = Pages.GetPageByte(ZP.ZHEAPSTART) << 8;
             zeroPage["HEAPSIZE"]  = Pages.GetPageByte(ZP.ZHEAPSIZE) << 8;
             
-            zeroPage["PROGSIZE"]  = Pages.GetPageByte(ZP.PROGSIZE) << 8;
+            zeroPage["PROGSIZE"]  = Pages.GetPageByte(ZP.ZPROGSIZE) << 8;
             
             zeroPage["ACC"]    = Pages.GetPageWord(ZP.ZACC);
             zeroPage["TOP"]    = Pages.GetPageWord(ZP.ZTOP);

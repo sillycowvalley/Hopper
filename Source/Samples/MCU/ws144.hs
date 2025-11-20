@@ -2,7 +2,7 @@ program WaveShareLCD144Demo
 {
     uses "/Source/Library/Fonts/Hitachi5x7"
     
-    uses "/Source/Library/Boards/PiPico2"
+    uses "/Source/Library/Boards/PiPico"
     
     uses "/Source/Library/Devices/WSPicoLCD144"
     

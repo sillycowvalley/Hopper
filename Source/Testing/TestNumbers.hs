@@ -2,9 +2,10 @@ program TestNumbers
 {
 #define MCU
 //#define CDECL
-//#define NO_PACKED_INSTRUCTIONS
+#define NO_PACKED_INSTRUCTIONS
     
-    #define TESTFLOATS
+    //#define TESTFLOATS
+    #define TESTLONGS
     
     //uses "/Source/Minimal/System"
     //uses "/Source/Minimal/IO"
@@ -328,8 +329,10 @@ program TestNumbers
     const uint    globalUInt   = 10000;
     const uint    globalUInt2  = 20000;
     
+#ifdef TESTLONGS    
     const long   globalLong  = 100000;
     const long   globalLong2  = 100001;
+#endif
     const string globalConstant = "aaaaa";
     const int    globalInt  = 10000;
     const string globalConstant2 = "zzzzz";
@@ -356,11 +359,13 @@ program TestNumbers
         {
             PrintFailed("global const float 1 failed");
         }
-#endif        
+#endif   
+#ifdef TESTLONGS     
         if (globalLong != localLong)
         {
             PrintFailed("global const long failed");
         }
+#endif
         if (globalInt != localInt)
         {
             PrintFailed("global const int failed");
@@ -368,7 +373,9 @@ program TestNumbers
 #ifdef TESTFLOATS        
         localFloat = localFloat + 1;
 #endif
+#ifdef TESTLONGS
         localLong = localLong + 1;
+#endif
         localConstant = localConstant + "1";
         localInt = localInt + 1;
         if (globalConstant3 != localConstant)
@@ -381,10 +388,12 @@ program TestNumbers
             PrintFailed("global const float 2 failed");
         }
 #endif
+#ifdef TESTLONGS
         if (globalLong2 != localLong)
         {
             PrintFailed("global const long 2 failed");
         }
+#endif
         if (globalInt2 != localInt)
         {
             PrintFailed("global const int 2 failed");
@@ -399,7 +408,9 @@ program TestNumbers
 #ifdef TESTFLOATS          
         float  localFloat = 4.141;
 #endif
+#ifdef TESTLONGS
         long   localLong  = 100001;
+#endif
         
         uint localUInt0 =   12;
         uint localUInt1 =   23;
@@ -469,10 +480,12 @@ program TestNumbers
             PrintFailed("float < failed");
         }
 #endif        
+#ifdef TESTLONGS
         if (!(globalLong < localLong))
         {
             PrintFailed("long < failed");
         }
+#endif
         if (!(globalInt < localInt))
         {
             PrintFailed("int < failed");
@@ -487,14 +500,17 @@ program TestNumbers
             PrintFailed("float < failed");
         }
 #endif
+#ifdef TESTLONGS
         if (localLong < globalLong)
         {
             PrintFailed("long < failed");
         }
+#endif
         if (localInt < globalInt)
         {
             PrintFailed("int < failed");
         }
+#ifdef TESTLONGS        
         if (!(localInt < localLong))
         {
             PrintFailed("int < long failed");
@@ -503,6 +519,7 @@ program TestNumbers
         {
             PrintFailed("long < int failed");
         }
+#endif
 #ifdef TESTFLOATS          
         if (localInt < localFloat)
         {
@@ -528,8 +545,10 @@ program TestNumbers
         string localConstant = "zzzzz";
 #ifdef TESTFLOATS          
         float  localFloat = 4.141;
-#endif        
+#endif       
+#ifdef TESTLONGS 
         long   localLong  = 100001;
+#endif
         int    localInt   = 10001;
         int localNegInt1  = -10000;
         int localNegInt2  = -10001;
@@ -559,6 +578,7 @@ program TestNumbers
             PrintFailed("float <= failed");
         }
 #endif        
+#ifdef TESTLONGS
         if (!(globalLong <= localLong))
         {
             PrintFailed("long <= failed");
@@ -571,6 +591,7 @@ program TestNumbers
         {
             PrintFailed("long <= failed");
         }
+#endif
         if (!(globalInt <= localInt))
         {
             PrintFailed("int <= failed");
@@ -619,23 +640,26 @@ program TestNumbers
             PrintFailed("float <= failed");
         }
 #endif
+#ifdef TESTLONGS
         if (localLong <= globalLong)
         {
             PrintFailed("long <= failed");
         }
+#endif
         if (localInt <= globalInt)
         {
             PrintFailed("int <= failed");
         }
-        
+#ifdef TESTLONGS
         if (!(localInt <= localLong))
         {
             PrintFailed("int <= long failed");
-        }
+        }       
         if (localLong <= localInt)
         {
             PrintFailed("long <= int failed");
         }
+#endif
 #ifdef TESTFLOATS  
         if (localInt <= localFloat)
         {
@@ -663,7 +687,10 @@ program TestNumbers
 #ifdef TESTFLOATS          
         float  localFloat = 4.141;
 #endif
+#ifdef TESTLONGS
         long   localLong  = 100001;
+        IO.WriteLn(localLong.ToString());
+#endif
         int    localInt   = 10001;
 
         if (!(localConstant > globalConstant))
@@ -680,10 +707,12 @@ program TestNumbers
             PrintFailed("float > failed");
         }
 #endif
+#ifdef TESTLONGS
         if (globalLong > localLong)
         {
             PrintFailed("long > failed");
         }
+#endif
         if ((globalInt > localInt))
         {
             PrintFailed("int > failed");
@@ -698,14 +727,17 @@ program TestNumbers
             PrintFailed("float > failed");
         }
 #endif
+#ifdef TESTLONGS
         if (!(localLong > globalLong))
         {
             PrintFailed("long > failed");
         }
+#endif
         if (!(localInt > globalInt))
         {
             PrintFailed("int > failed");
-        }
+        }        
+#ifdef TESTLONGS
         if (localInt > localLong)
         {
             PrintFailed("int > long failed");
@@ -714,6 +746,7 @@ program TestNumbers
         {
             PrintFailed("long > int failed");
         }
+#endif
 #ifdef TESTFLOATS  
         if (!(localInt > localFloat))
         {
@@ -741,7 +774,9 @@ program TestNumbers
 #ifdef TESTFLOATS  
         float  localFloat = 4.141;
 #endif
+#ifdef TESTLONGS
         long   localLong  = 100001;
+#endif
         int    localInt   = 10001;
         if (globalConstant >= localConstant)
         {
@@ -769,6 +804,7 @@ program TestNumbers
             PrintFailed("float >= failed");
         }
 #endif
+#ifdef TESTLONGS
         if (globalLong >= localLong)
         {
             PrintFailed("long >= failed");
@@ -781,6 +817,7 @@ program TestNumbers
         {
             PrintFailed("long >= failed");
         }
+#endif
         if (globalInt >= localInt)
         {
             PrintFailed("int >= failed");
@@ -803,15 +840,17 @@ program TestNumbers
             PrintFailed("float >= failed");
         }
 #endif
+#ifdef TESTLONGS
         if (!(localLong >= globalLong))
         {
             PrintFailed("long >= failed");
         }
+#endif
         if (!(localInt >= globalInt))
         {
             PrintFailed("int >= failed");
         }
-        
+#ifdef TESTLONGS        
         if (localInt >= localLong)
         {
             PrintFailed("int >= long failed");
@@ -820,6 +859,7 @@ program TestNumbers
         {
             PrintFailed("long >= int failed");
         }
+#endif
 #ifdef TESTFLOATS         
         if (!(localInt >= localFloat))
         {
@@ -991,7 +1031,7 @@ program TestNumbers
         {
             PrintFailed("'uint' 11");
         }
-        
+#ifdef TESTLONGS        
         long total;
         for (uint fi = 0; fi < 400; fi = fi + 27)
         {
@@ -1022,6 +1062,7 @@ program TestNumbers
         {
             PrintFailed("'uint' 13");
         }
+#endif        
         
         uint test = 0xAA55;
         
@@ -1271,6 +1312,7 @@ program TestNumbers
         {
             PrintFailed("'int' 51");
         }
+#ifdef TESTLONGS        
         long total;
         for (int fi = -100; fi < 50; fi = fi + 27)
         {
@@ -1301,6 +1343,7 @@ program TestNumbers
         {
             PrintFailed("'int' 52");
         }
+#endif        
         
         // %
         if (localInt % 3 != 1)
@@ -1317,7 +1360,7 @@ program TestNumbers
         }
     } // TestIntMath
 	
-	
+#ifdef TESTLONGS	
     TestLongMath()
     {
         WriteLn("'long' math");
@@ -1515,6 +1558,7 @@ program TestNumbers
         }
         
     } // TestLongMath
+#endif
     
 #ifdef TESTFLOATS
     TestFloatMath()
@@ -2028,8 +2072,9 @@ program TestNumbers
         TestLessThan();
         
         TestConstants();
-        
+#ifdef TESTLONGS        
         TestLongMath();
+#endif
         TestUIntMath();
         TestIntMath();
         TestShifts();

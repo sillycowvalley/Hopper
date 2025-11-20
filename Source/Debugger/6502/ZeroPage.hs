@@ -51,6 +51,8 @@ unit ZP
     const byte ZTOPT                 = 0x1B;
     const byte ZNEXTT                = 0x1C;  
     
+    const byte ZPROGSIZE             = 0x1D; 
+    
     const byte ZPLUGNPLAY            = 0x27;
     
     const byte ZT0                   = 0x28;
