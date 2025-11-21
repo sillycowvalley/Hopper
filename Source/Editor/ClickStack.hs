@@ -152,9 +152,11 @@ unit ClickStack
                     Editor.SetStatusBarText("Failed to load definitions from '" + Path.GetFileName(jsonPath) + "'");
                     break;
                 }
+#ifndef DEBUGGER
                 // successfully loaded symbols (which called Scanner.New()) so we 
                 // need to reload assembler keywords if isAssembler
                 Editor.CheckAssemblerSource(false);
+#endif
             }
             string currentNamespace = Symbols.GetNamespace(Editor.CurrentPath);
             clickLocation = (Editor.CurrentPath).ToLower() + ":" + clickLine.ToString();

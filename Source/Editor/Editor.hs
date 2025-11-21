@@ -1882,10 +1882,12 @@ unit Editor
             UpdateYoungestFile();
             StatusBar.SetText(statusbar, "Saved");
             
+#ifndef DEBUGGER
             if (CurrentPath == ProjectPath) // updating the main file to build?
             {
                 Editor.CheckAssemblerSource(true);
             }
+#endif
         }
     }
     
@@ -1899,7 +1901,7 @@ unit Editor
         path = Path.GetCorrectCase(path); // full path, correct case
         currentPath = path;
     }
-    
+
     CheckAssemblerSource(bool always)
     {
         if (always || (cpuArchitecture == CPUArchitecture.None))
@@ -2069,7 +2071,9 @@ unit Editor
         if (localProject.Length == 0) // first load
         {
             projectPath = CurrentPath;
+#ifndef DEBUGGER
             Editor.CheckAssemblerSource(true);
+#endif
             UpdateYoungestFile();
         }
         CalculateLineNumberWidth();
