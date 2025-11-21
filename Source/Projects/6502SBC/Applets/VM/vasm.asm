@@ -1,7 +1,7 @@
 // Assembles VM bytecode from .VMA files to .BIN files
 program VASM
 {
-    #define UNIVERSAL
+    //#define UNIVERSAL
     //#define DEBUG
     
 #ifdef UNIVERSAL        
