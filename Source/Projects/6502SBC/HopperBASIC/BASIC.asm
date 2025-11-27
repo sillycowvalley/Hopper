@@ -2,7 +2,7 @@ program HopperBASIC
 {
     // Optional Features
     #define PEEPHOLE    // include the peephole optimizer
-    //#define HASEEPROM   // include EEPROM storage
+    #define HASEEPROM   // include EEPROM storage
     #define HASI2C      // include 6502SBC I2C support
     
     #define RELEASE // remove all the BIT ZP.EmulatorPCL hacks (~450 bytes)
@@ -164,16 +164,19 @@ program HopperBASIC
     {
         // Auto-execute "AUTO" file if it exists
 #ifdef HASEEPROM
-        LDA #(Messages.AutoexecName % 256)
-        STA ZP.STRL
-        LDA #(Messages.AutoexecName / 256)  
-        STA ZP.STRH
-        LDA # DirWalkAction.FindExecutable
-        File.Exists();
-        if (C) 
-        { 
-            Storage.LoadProgram();
-            if (C) { Console.CmdRun(); }
+        if (BBS1, ZP.PORTA)   // if Bit 1 Set (is 1), then the "user" button is not depressed (don't execute)
+        {
+            LDA #(Messages.AutoexecName % 256)
+            STA ZP.STRL
+            LDA #(Messages.AutoexecName / 256)  
+            STA ZP.STRH
+            LDA # DirWalkAction.FindExecutable
+            File.Exists();
+            if (C) 
+            { 
+                Storage.LoadProgram();
+                if (C) { Console.CmdRun(); }
+            }
         }
 #endif        
         
