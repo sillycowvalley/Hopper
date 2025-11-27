@@ -649,7 +649,7 @@ unit BASICSysCalls
                     // I2CFIND(addr) - Test if device responds
                     // Input: ZP.TOP* = I2C address (LONG)
                     // Output: ZP.TOP* = BIT (TRUE/FALSE)
-                    
+#ifdef HASI2C
                     validateTopBYTE();
                     if (NC) { break; }
                     
@@ -666,13 +666,16 @@ unit BASICSysCalls
                     STA ZP.TOP0
                     LDA #BASICType.BIT
                     STA ZP.TOPT
+#else                    
+                    TODO(); BIT ZP.EmulatorPCL // not implemented
+#endif
                 }
                 
                 case SysCallType.I2CBegin:  // ID = 18
                 {
                     // I2CBEGIN(addr) - Start write transaction
                     // Input: ZP.TOP* = I2C address (LONG)
-                    
+#ifdef HASI2C                    
                     validateTopBYTE();
                     if (NC) { break; }
                     
@@ -688,36 +691,46 @@ unit BASICSysCalls
                     STA ZP.OutB
                     // BeginTx
                     I2C.Start();
+#else                    
+                    TODO(); BIT ZP.EmulatorPCL // not implemented
+#endif
                 }
                 
                 case SysCallType.I2CPut:  // ID = 19  
                 {
                     // I2CPUT(byte) - Send byte in transaction
                     // Input: ZP.TOP* = byte value (LONG)
-                    
+#ifdef HASI2C                    
                     validateTopBYTE();
                     if (NC) { break; }
                     // write byte to I2C
                     LDA ZP.TOP0
                     STA ZP.OutB
                     I2C.ByteOut();
+#else                    
+                    TODO(); BIT ZP.EmulatorPCL // not implemented
+#endif
                 }
                 case SysCallType.I2CEnd:  // ID = 20
                 {
                     // I2CEND() - End transaction
                     // Output: ZP.TOP* = BIT (TRUE if ACKed)
+#ifdef HASI2C                    
                     I2C.Stop();
                     LDA ZP.LastAck
                     STA ZP.TOP0
                     LDA #BASICType.BIT
                     STA ZP.TOPT
+#else                    
+                    TODO(); BIT ZP.EmulatorPCL // not implemented
+#endif
                 }
                 case SysCallType.I2CGet:  // ID = 21
                 {
                     // I2CGET(addr, count) - Read bytes from device
                     // Input: ZP.NEXT* = I2C address, ZP.TOP* = byte count
                     // Output: ZP.TOP* = bytes actually read (LONG)
-                    
+#ifdef HASI2C                    
                     // Validate and convert address
                     LDA #BASICType.BYTE
                     STA ZP.ACCT
@@ -742,12 +755,15 @@ unit BASICSysCalls
                     Long.ZeroTop3();
                     pushLongExit();
                     return;
+#else                    
+                    TODO(); BIT ZP.EmulatorPCL // not implemented
+#endif
                 }
                 case SysCallType.I2CNext:  // ID = 22
                 {
                     // I2CNEXT() - Get next byte from buffer
                     // Output: ZP.TOP* = byte value (LONG)
-                    
+#ifdef HASI2C                    
                     STZ ZP.TOP0
                     
                     LDA ZP.I2CInReadPtr
@@ -762,6 +778,9 @@ unit BASICSysCalls
                     Long.ZeroTop3();
                     pushLongExit();
                     return;
+#else                    
+                    TODO(); BIT ZP.EmulatorPCL // not implemented
+#endif
                 }
                 
                

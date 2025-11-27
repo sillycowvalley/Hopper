@@ -725,7 +725,7 @@ unit Error // ErrorID.asm
         commonError();
     }
 
-    TODO() 
+    TODO()
     { 
         LDA #ErrorID.NotImplemented
         commonError();
