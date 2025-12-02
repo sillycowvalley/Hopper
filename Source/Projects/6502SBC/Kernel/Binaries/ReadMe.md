@@ -60,6 +60,10 @@ Use a VT-100 compatible serial terminal (TeraTerm recommended).
 
 **TeraTerm Shortcut Target
 
+Install latest release from here:
+
+`https://github.com/TeraTermProject/teraterm/releases/`
+
 Obviously this will depend on where TeraTerm is installed and where your Hopper tree is located.
 
 `"C:\Program Files\teraterm5\ttermpro.exe" /F="C:\Repos\Hopper\Source\Projects\6502SBC\Kernel\Binaries\TERATERM.ini" /C=14`

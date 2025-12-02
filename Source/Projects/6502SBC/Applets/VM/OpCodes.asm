@@ -231,7 +231,7 @@ unit OpCodes
         
         // System Calls & Stack Frame (0x8C-0x94)
         OpCode.SYSCALL,  Arguments.Byte, 7, 'S','Y','S','C','A','L','L',         // SYSCALL + byte
-        OpCode.SYSCALLX, Arguments.None, 8, 'S','Y','S','C','A','L','L','X',     // SYSCALLX
+        OpCode.SYSCALLX, Arguments.Byte, 8, 'S','Y','S','C','A','L','L','X',     // SYSCALLX + byte
         OpCode.ENTER,    Arguments.Byte, 5, 'E','N','T','E','R',                 // ENTER + byte
         OpCode.LEAVE,    Arguments.None, 5, 'L','E','A','V','E',                 // LEAVE
         OpCode.DUMP,     Arguments.None, 4, 'D','U','M','P',                     // DUMP
