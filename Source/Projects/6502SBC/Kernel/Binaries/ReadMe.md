@@ -45,7 +45,7 @@ Select the appropriate `BIOS.hex` file for your hardware configuration and burn 
 
 ### Terminal Configuration
 
-Use a VT-100 compatible serial terminal (PuTTY recommended).
+Use a VT-100 compatible serial terminal (TeraTerm recommended).
 
 **Serial Settings:**
 - **Baud Rate:** 57,600 (Hopper 6502 SBC) or 76,800 (MECB 6502)
@@ -57,6 +57,12 @@ Use a VT-100 compatible serial terminal (PuTTY recommended).
 **Terminal Settings:**
 - Enable "Implicit CR in every LF"
 - Use default settings for everything else
+
+**TeraTerm Shortcut Target
+
+Obviously this will depend on where TeraTerm is installed and where your Hopper tree is located.
+
+`"C:\Program Files\teraterm5\ttermpro.exe" /F="C:\Repos\Hopper\Source\Projects\6502SBC\Kernel\Binaries\TERATERM.ini" /C=14`
 
 ## Initial Setup
 
