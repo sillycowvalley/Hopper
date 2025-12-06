@@ -57,6 +57,7 @@ Use a VT-100 compatible serial terminal (TeraTerm recommended).
 **Terminal Settings:**
 - Enable "Implicit CR in every LF"
 - Use default settings for everything else
+- for the Editor, you are going to want a terminal size of at least 80x25
 
 **TeraTerm Shortcut Target
 
