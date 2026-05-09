@@ -19,7 +19,7 @@ program GarageBox
     const uint onDarkMinutes    = 3;
     const uint onOpenMinutes    = 10;
     
-    const uint sixPMMinutes = 1080;
+    const uint fivePMMinutes = 1020;
     const uint tenPMMinutes = 1320;
     
     string resetDate;    // date of last reset
@@ -192,7 +192,7 @@ program GarageBox
                     lightTill = currentMinutes + onOpenMinutes;
                     UART.WriteString("ON" + Char.EOL);
                 }
-                else if ((currentMinutes >= sixPMMinutes) && (currentMinutes <= tenPMMinutes + 60))
+                else if ((currentMinutes >= fivePMMinutes) && (currentMinutes <= tenPMMinutes + 60))
                 {     
                     string currentDate = RTC.Date;
                     uint dayOfYear;
@@ -200,7 +200,7 @@ program GarageBox
                     _ = TryDateToDays(currentDate, ref dayOfYear);
                     _ = TryDSTFromDay(dayOfYear, ref dst);
                     uint dstOffset = dst ? 60 : 0;
-                    if (currentMinutes + dstOffset >= sixPMMinutes)
+                    if (currentMinutes + dstOffset >= fivePMMinutes)
                     {
                         if (currentMinutes + dstOffset <= tenPMMinutes)
                         {
